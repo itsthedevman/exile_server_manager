@@ -1,0 +1,15 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  host: ''
+  username: esm
+  password: password12345
+
+development:
+  <<: *default
+  database: esm_development
+
+test: &test
+  <<: *default
+  database: esm_test
