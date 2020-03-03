@@ -11,7 +11,7 @@ before_install:
   - gem install bundler
   - echo $env_key | gpg --passphrase-fd 0 ./.env.gpg
 before_script:
-  - psql -c 'CREATE USER esm WITH ENCRYPTED PASSWORD 'password12345'; GRANT ALL PRIVILEGES ON ALL TABLES TO esm' -U postgres
+  - psql -c "CREATE USER esm WITH ENCRYPTED PASSWORD 'password12345'; GRANT ALL PRIVILEGES ON ALL TABLES TO esm" -U postgres
 script:
   - bin/setup
   - bin/test
