@@ -7,7 +7,7 @@ module ESM
         Faye::WebSocket.load_adapter("puma")
         events = Puma::Events.new($stdout, $stderr)
         binder = Puma::Binder.new(events)
-        binder.parse(["tcp://0.0.0.0:3001"], self)
+        binder.parse(["tcp://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}"], self)
         @server = Puma::Server.new(self, events)
         @server.binder = binder
         @server.run
