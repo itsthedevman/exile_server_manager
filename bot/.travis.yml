@@ -1,6 +1,9 @@
 language: ruby
 os: linux
-cache: bundle
+cache:
+  bundler: true
+  directories:
+    - /home/travis/.rvm/
 rvm:
   - 2.6.5
 services:
@@ -11,7 +14,7 @@ before_install:
   - gem install bundler
   - echo $env_key | gpg --passphrase-fd 0 ./.env.gpg
 before_script:
-  - psql -c "CREATE USER esm WITH ENCRYPTED PASSWORD 'password12345'; GRANT ALL PRIVILEGES ON ALL TABLES TO esm" -U postgres
+  - psql -c "CREATE USER esm WITH ENCRYPTED PASSWORD 'password12345'; ALTER USER esm WITH SUPERUSER;" -U postgres
 script:
   - bin/setup
   - bin/test
