@@ -51,7 +51,9 @@ module ESM
     @logger = Logger.new("logs/#{env}.log")
 
     @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
-      "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
+      message = "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
+      puts message if ENV["PRINT_LOG"]
+      message
     end
   end
 
