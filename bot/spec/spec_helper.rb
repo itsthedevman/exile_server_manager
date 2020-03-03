@@ -36,7 +36,7 @@ RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 
   # For debugging travis ci
-  c.fail_fast = true
+  config.fail_fast = true
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
