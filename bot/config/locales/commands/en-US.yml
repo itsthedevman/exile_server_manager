@@ -1,0 +1,148 @@
+# t('product_price', price: @product.price)
+#
+# en:
+#  product_price: %{price}
+
+en-US:
+  commands:
+    base:
+      description: A test command
+      example: |-
+        A test example
+    eval:
+      description: "Executes the provided string in ruby"
+      example: |-
+        **`!eval true`**: Returns true
+    say:
+      description: "A development command. Forces the bot to say whatever is inputted"
+      example: |-
+        **`!say hello`**: The bot will reply hello
+    help:
+      arguments:
+        category: "The categories can be found by just using `!help`"
+      description: "A helpful command. An unhelpful description"
+      example: |-
+        **`!help`**: Displays information about getting started with Exile Server Manager
+        **`!help commands`**: Displays all commands
+      categories:
+        name: "Categories"
+        value: |-
+         **`!help player`**: Getting started information for Players
+         **`!help server`**: Getting started information for Server Owners
+         **`!help commands`**: List all commands
+         **`!help <command_name>`**: Get information about the provided command
+      getting_started:
+        title: "Hi %{user}! My name is Exile Server Manager, or ESM for short!"
+        description: "I have a bunch of useful commands for both players and server owners alike."
+      commands:
+        title: "Commands"
+        description: "You can view more information about a command by with `%{prefix}help command_name`\nFor example: `%{prefix}help servers`"
+        player_commands_title: "__Player Commands__"
+        admin_commands_title: "__Admin Commands__"
+        development_commands_title: "__Development Commands__"
+      command:
+        title: "`!%{name}` Documentation"
+        usage: "**Usage:**"
+        arguments: "**Arguments:**"
+        examples: "**Examples:**"
+    mode:
+      arguments:
+        mode: "Sets which mode, valid options are `server` or `player`"
+      description: "Changes which mode ESM is in"
+      example: |-
+        **`!mode esm server`**: Disables player mode. Set this mode if your community hosts servers
+        **`!mode esm player`**: Enables player mode. Set this mode if you play on servers
+      error_messages:
+        servers_exist:
+          title: "I'm sorry, %{user}"
+          description: "In order to enable player mode, you must remove any servers you have added to me via my [Dashboard](https://www.esmbot.com/portal)"
+        same_mode:
+          title: "Looks like there's nothing to change"
+          description: "You already have player mode %{state} 👍"
+        no_permissions:
+          title: "I'm sorry, %{user}"
+          description: "Only the owner of this community has access to this command"
+      enabled: "✅ Player mode has been enabled for **%{community_name}**. All of my player commands may now be used on its Discord server"
+      disabled: "✅ Player mode has been disabled for **%{community_name}**. You may now manage your community and servers via my [Dashboard](https://www.esmbot.com/portal)"
+    id:
+      description: "Displays the current Community's community ID for ESM"
+      example: "`!id`: Returns the Community's ID"
+      embed:
+        description: "**%{community_name}'s** community ID is **`%{community_id}`**"
+        field:
+          name: "Want to list all registered servers for this community?"
+          value:  "**`!servers %{community_id}`**"
+    whois:
+      description: "Displays all available information about a player via their Steam UID, Discord ID, or Mention"
+      example: |-
+        **`!whois @Bryan`**: Using their mention, get all available information about this player
+        **`!whois 76561198037177305`**: Using their steam uid, get all available information about this player
+        **`!whois 137709767954137088`**: Using their Discord ID, get all available information about this player
+      discord:
+        header: "__Discord Information__"
+        id: "ID"
+        username: "Username"
+        status: "Status"
+        created_at: "Created"
+      steam:
+        header: "__Steam Information__"
+        id: "ID"
+        username: "Username"
+        visibility: "Profile Visibility"
+        created_at: "Created"
+        community_banned: "Community banned?"
+        vac_banned: "VAC banned?"
+        number_of_vac_bans: "Number of VAC bans"
+        days_since_vac_ban: "Days since last VAC ban"
+    me:
+      description: "Displays information about your player (money, health, poptabs, territories, etc.) on the requested server"
+      example: |-
+        **`!me esm_malden`**: Returns my player information on `esm_malden`
+      embed:
+        title: "%{user}'s stats on `%{server_id}`"
+    server:
+      description: "Displays connection, up time, next restart and other miscellanous information about the provided server ID"
+      example: |-
+        **`!server esm_malden`**: Returns information about the server `esm_malden`
+      online_for: "✅ Online for"
+      restart_in: "⏰ Next restart in"
+      premium_enabled: "🏆 Premium commands are available for use on this server"
+      premium_disabled: "🔒 Premium commands are disabled on this server"
+    servers:
+      description: "Displays all registered servers for a given community ID, regardless if they are online or not"
+      example: |-
+        **`!servers esm`**: Returns all registered servers for `esm`.
+      offline: "❌ Offline"
+      offline_for: "❌ Offline for %{time}"
+      embed:
+        error_messages:
+          no_servers:
+            description: "I was unable to find any registered servers for `%{community_id}`."
+            field_1:
+              name: "Are you the owner?"
+              value: "You can add new servers from your [community dashboard](https://www.esmbot.com/login)"
+    territories:
+      description: "Displays all territories that you own or have joined for the provided server ID"
+      example: |-
+        **`!territories esm_malden`**: Returns all owned or joined territories for server `esm_malden`
+      no_territories: "Hey %{user}, I was unable to find any territories for you on `%{server_id}`"
+      current_territory_stats: "__Current Territory Stats__"
+      next_territory_stats: "__Next Territory Stats__"
+      territory_members: "__Territory Members__"
+    pay:
+      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `!territories %{server_id}`"
+      example: |-
+        **`!pay esm_malden qqoej`**: Pay the territory protection for `qqoej` on server `esm_malden`
+        **`!pay esm_malden fort_kickass`**: Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
+      embed:
+        description: "%{user}, `%{server_id}` has successfully received the payment of **%{cost} poptabs** for `%{territory_id}`.\nYou have **%{locker_amount} poptabs** left in your locker."
+    birb:
+      description: "Who doesn't like some high quality birbs?"
+      example: |-
+        **`!birb`**: Returns a random bird image
+      waiting: "Tossing bird seed..."
+    doggo:
+      description: "Humanity's best friend"
+      example: |-
+        **`!doggo`**: Returns a random dog image
+      waiting: "Shaking treat jar..."

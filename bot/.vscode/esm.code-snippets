@@ -1,0 +1,161 @@
+{
+	// Place your esm_bot workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+	 "ESM Log (Debug)": {
+		"scope": "ruby",
+		"prefix": ["debug", "ESM.logger.debug"],
+		"body": [
+			"ESM.logger.debug(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+		],
+		"description": "Create an debug logger with ESM"
+ 	},
+	"ESM Log (Info)": {
+	 	"scope": "ruby",
+	 	"prefix": ["info", "ESM.logger.info"],
+	 	"body": [
+			 "ESM.logger.info(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+	 	],
+	 	"description": "Create an info logger with ESM"
+	},
+	"ESM Log (Warn)": {
+		"scope": "ruby",
+		"prefix": ["warn", "ESM.logger.warn"],
+		"body": [
+			"ESM.logger.warn(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+		],
+		"description": "Create an warn logger with ESM"
+	 },
+	 "ESM Log (Error)": {
+		"scope": "ruby",
+		"prefix": ["error", "ESM.logger.error"],
+		"body": [
+			"ESM.logger.error(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+		],
+		"description": "Create an error logger with ESM"
+ 	},
+	 "ESM Log (Fatal)": {
+		"scope": "ruby",
+		"prefix": ["fatal", "ESM.logger.fatal"],
+		"body": [
+			"ESM.logger.fatal(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+		],
+		"description": "Create an fatal logger with ESM"
+	 },
+	 "ESM Command Test": {
+		 "scope": "ruby",
+		 "prefix": ["test"],
+		 "body": [
+			"# frozen_string_literal: true",
+			"",
+			"describe ${1:command_name}, category: \"command\" do",
+			"\tlet!(:community) { ESM::Test.community ) }",
+			"\tlet!(:server) { ESM::Test.server }",
+			"\tlet!(:user) { ESM::Test.user }",
+			"\tlet!(:command) { ${1:command_name}.new }",
+			"\tlet(:response) { command.response }",
+			"",
+			"\tit \"should be valid\" do",
+			"\t\texpect(command).not_to be_nil",
+			"\tend",
+			"",
+			"\tit \"should have ${2:arguments} argument\" do",
+			"\t\texpect(command.arguments.size).to eql(${2:arguments})",
+			"\tend",
+			"",
+			"\tit \"should have a description\" do",
+			"\t\texpect(command.description).not_to be_blank",
+			"\tend",
+			"",
+			"\tit \"should have examples\" do",
+			"\t\texpect(command.examples).not_to be_blank",
+			"\tend",
+			"",
+			"\tdescribe \"#execute\" do",
+			"\t\tlet!(:wsc) { WebsocketClient.new(server) }",
+			"\t\tlet(:connection) { ESM::Websocket.connections[server.server_id] }",
+			"",
+			"\t\tbefore :each do",
+			"\t\t\twait_for { wsc.connected? }.to be(true)",
+			"\t\tend",
+			"",
+			"\t\tafter :each do",
+			"\t\t\twsc.disconnect!",
+			"\t\tend",
+			"",
+			"\t\tit \"should return\" do",
+			"\t\t\trequest = nil",
+			"\t\t\tevent = CommandEvent.create(\"!${3:command_name}\", user: user, channel_type: :dm)",
+			"",
+			"\t\t\texpect { request = command.execute(event) }.not_to raise_error",
+			"\t\t\texpect(request).not_to be_nil",
+			"\t\t\twait_for { connection.requests }.to be_blank",
+			"\t\t\texpect(ESM::Test.messages.size).to eql(${4:count})",
+			"\t\t\t$0",
+			"\t\tend",
+			"\tend",
+			"end"
+		 ],
+		 "description": "Create a rspec test for a ESM::Command"
+	 },
+	 "ESM Command": {
+		 "scope": "ruby",
+		 "prefix": ["command"],
+		 "body": [
+				"# frozen_string_literal: true",
+				"",
+				"module ESM",
+				"\tmodule Command",
+				"\t\tmodule ${1:Category}",
+				"\t\t\tclass ${2:Name} < ESM::Command::Base",
+				"\t\t\t\ttype :${3|admin,player,development|}",
+				"\t\t\t\taliases :${4:aliases}",
+				"\t\t\t\tlimit_to :${6|text,dm|}",
+				"\t\t\t\trequires :registration, :premium, :dev, :admin",
+				"",
+				"\t\t\t\tdefine :enabled, modifiable: true, default: ${7|true,false|}",
+				"\t\t\t\tdefine :whitelist_enabled, modifiable: true, default: ${8|false,true|}",
+				"\t\t\t\tdefine :whitelisted_role_ids, modifiable: true, default: []",
+				"\t\t\t\tdefine :allowed_in_text_channels, modifiable: true, default: ${9|true,false|}",
+				"\t\t\t\tdefine :cooldown_time, modifiable: true, default: 2.seconds",
+				"",
+				"\t\t\t\targument :community_id",
+				"\t\t\t\targument :server_id",
+				"\t\t\t\targument :territory_id",
+				"\t\t\t\targument :target",
+				"\t\t\t\targument :xxx, regex: /xxx/, preserve: true, default: \"TODO\", type: :integer, display_as: \"\", multiline: true, description: \"\"",
+				"",
+				"\t\t\t\tdef discord",
+				"\t\t\t\tend",
+				"",
+				"\t\t\t\tdef server",
+				"\t\t\t\tend",
+				"",
+				"\t\t\t\tmodule ErrorMessage",
+				"",
+				"\t\t\t\tend",
+				"",
+				"\t\t\t\t#########################",
+				"\t\t\t\t# Command Methods",
+				"\t\t\t\t#########################",
+				"\t\t\tend",
+				"\t\tend",
+				"\tend",
+				"end"
+		 ],
+		 "description": "Create an empty command"
+	 }
+}

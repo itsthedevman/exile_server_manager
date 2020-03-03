@@ -1,0 +1,2 @@
+#!/bin/bash
+ESM_ENV=test bundle exec rspec spec

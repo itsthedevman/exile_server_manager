@@ -1,0 +1,243 @@
+PATH
+  remote: .
+  specs:
+    esm_bot (0.1.0)
+      actionview
+      activerecord
+      activesupport
+      discordrb
+      dotiw
+      httparty
+      i18n
+      otr-activerecord
+      pg
+      puma
+      steam-condenser
+      symmetric-encryption
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    actionpack (6.0.1)
+      actionview (= 6.0.1)
+      activesupport (= 6.0.1)
+      rack (~> 2.0)
+      rack-test (>= 0.6.3)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.0, >= 1.2.0)
+    actionview (6.0.1)
+      activesupport (= 6.0.1)
+      builder (~> 3.1)
+      erubi (~> 1.4)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.1, >= 1.2.0)
+    activemodel (6.0.1)
+      activesupport (= 6.0.1)
+    activerecord (6.0.1)
+      activemodel (= 6.0.1)
+      activesupport (= 6.0.1)
+    activesupport (6.0.1)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+      zeitwerk (~> 2.2)
+    ast (2.4.0)
+    awesome_print (1.8.0)
+    benchmark-ips (2.7.2)
+    builder (3.2.4)
+    byebug (11.0.1)
+    coderay (1.1.2)
+    coercible (1.0.0)
+      descendants_tracker (~> 0.0.1)
+    concurrent-ruby (1.1.5)
+    crass (1.0.6)
+    database_cleaner (1.7.0)
+    descendants_tracker (0.0.4)
+      thread_safe (~> 0.3, >= 0.3.1)
+    diff-lcs (1.3)
+    discordrb (3.3.0)
+      discordrb-webhooks (~> 3.3.0)
+      ffi (>= 1.9.24)
+      opus-ruby
+      rbnacl (~> 3.4.0)
+      rest-client (>= 2.1.0.rc1)
+      websocket-client-simple (>= 0.3.0)
+    discordrb-webhooks (3.3.0)
+      rest-client (>= 2.1.0.rc1)
+    docile (1.3.2)
+    domain_name (0.5.20190701)
+      unf (>= 0.0.5, < 1.0.0)
+    dotenv (2.7.5)
+    dotiw (4.0.1)
+      actionpack (>= 4)
+      i18n
+    erubi (1.9.0)
+    event_emitter (0.2.6)
+    eventmachine (1.2.7)
+    eventmachine (1.2.7-x64-mingw32)
+    factory_bot (5.1.1)
+      activesupport (>= 4.2.0)
+    faker (2.8.0)
+      i18n (>= 1.6, < 1.8)
+    faraday (0.17.1)
+      multipart-post (>= 1.2, < 3)
+    faye-websocket (0.10.9)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
+    ffi (1.11.3)
+    ffi (1.11.3-x64-mingw32)
+    hashie (4.1.0)
+    hashie-forbidden_attributes (0.1.1)
+      hashie (>= 3.0)
+    http-accept (1.7.0)
+    http-cookie (1.0.3)
+      domain_name (~> 0.5)
+    httparty (0.18.0)
+      mime-types (~> 3.0)
+      multi_xml (>= 0.5.2)
+    i18n (1.7.0)
+      concurrent-ruby (~> 1.0)
+    jaro_winkler (1.5.4)
+    listen (3.2.0)
+      rb-fsevent (~> 0.10, >= 0.10.3)
+      rb-inotify (~> 0.9, >= 0.9.10)
+    loofah (2.4.0)
+      crass (~> 1.0.2)
+      nokogiri (>= 1.5.9)
+    method_source (0.9.2)
+    mime-types (3.3.1)
+      mime-types-data (~> 3.2015)
+    mime-types-data (3.2019.1009)
+    mini_portile2 (2.4.0)
+    minitest (5.13.0)
+    multi_json (1.14.1)
+    multi_xml (0.6.0)
+    multipart-post (2.1.1)
+    netrc (0.11.0)
+    nio4r (2.5.2)
+    nokogiri (1.10.8)
+      mini_portile2 (~> 2.4.0)
+    nokogiri (1.10.8-x64-mingw32)
+      mini_portile2 (~> 2.4.0)
+    opus-ruby (1.0.1)
+      ffi
+    otr-activerecord (1.4.1)
+      activerecord (>= 4.0, < 6.1)
+      hashie-forbidden_attributes (~> 0.1)
+    parallel (1.19.1)
+    parser (2.6.5.0)
+      ast (~> 2.4.0)
+    pg (1.2.2)
+    pg (1.2.2-x64-mingw32)
+    pry (0.12.2)
+      coderay (~> 1.1.0)
+      method_source (~> 0.9.0)
+    puma (4.3.1)
+      nio4r (~> 2.0)
+    rack (2.2.2)
+    rack-test (1.1.0)
+      rack (>= 1.0, < 3)
+    rails-dom-testing (2.0.3)
+      activesupport (>= 4.2.0)
+      nokogiri (>= 1.6)
+    rails-html-sanitizer (1.3.0)
+      loofah (~> 2.3)
+    rainbow (3.0.0)
+    rake (13.0.1)
+    rb-fsevent (0.10.3)
+    rb-inotify (0.10.0)
+      ffi (~> 1.0)
+    rbnacl (3.4.0)
+      ffi
+    rerun (0.13.0)
+      listen (~> 3.0)
+    rest-client (2.1.0)
+      http-accept (>= 1.7.0, < 2.0)
+      http-cookie (>= 1.0.2, < 2.0)
+      mime-types (>= 1.16, < 4.0)
+      netrc (~> 0.8)
+    rest-client (2.1.0-x64-mingw32)
+      ffi (~> 1.9)
+      http-accept (>= 1.7.0, < 2.0)
+      http-cookie (>= 1.0.2, < 2.0)
+      mime-types (>= 1.16, < 4.0)
+      netrc (~> 0.8)
+    rspec (3.9.0)
+      rspec-core (~> 3.9.0)
+      rspec-expectations (~> 3.9.0)
+      rspec-mocks (~> 3.9.0)
+    rspec-core (3.9.0)
+      rspec-support (~> 3.9.0)
+    rspec-expectations (3.9.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.9.0)
+    rspec-mocks (3.9.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.9.0)
+    rspec-support (3.9.0)
+    rspec-wait (0.0.9)
+      rspec (>= 3, < 4)
+    rubocop (0.77.0)
+      jaro_winkler (~> 1.5.1)
+      parallel (~> 1.10)
+      parser (>= 2.6)
+      rainbow (>= 2.2.2, < 4.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 1.4.0, < 1.7)
+    ruby-progressbar (1.10.1)
+    simplecov (0.18.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11.0)
+    simplecov-html (0.11.0)
+    steam-condenser (1.3.11)
+      multi_json (~> 1.6)
+      multi_xml (~> 0.5)
+    steam_web_api (0.0.3)
+      faraday (~> 0.9)
+    symmetric-encryption (4.3.1)
+      coercible (~> 1.0)
+    thread_safe (0.3.6)
+    tzinfo (1.2.5)
+      thread_safe (~> 0.1)
+    unf (0.1.4)
+      unf_ext
+    unf_ext (0.0.7.6)
+    unicode-display_width (1.6.0)
+    websocket (1.2.8)
+    websocket-client-simple (0.3.0)
+      event_emitter
+      websocket
+    websocket-driver (0.7.1)
+      websocket-extensions (>= 0.1.0)
+    websocket-extensions (0.1.4)
+    yard (0.9.20)
+    zeitwerk (2.2.2)
+
+PLATFORMS
+  ruby
+  x64-mingw32
+
+DEPENDENCIES
+  awesome_print
+  benchmark-ips
+  bundler
+  byebug
+  database_cleaner
+  dotenv
+  esm_bot!
+  factory_bot
+  faker
+  faye-websocket
+  pry
+  rake
+  rerun
+  rspec
+  rspec-wait
+  rubocop
+  simplecov
+  steam_web_api
+  yard
+
+BUNDLED WITH
+   2.1.4

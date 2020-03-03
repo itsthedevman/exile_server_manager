@@ -1,0 +1,18 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+/logs/*.log
+/logs/*.log.age
+
+# rspec failure tracking
+.rspec_status
+
+.byebug_history
+*.code-workspace
+.DS_Store
+.env

@@ -1,0 +1,7 @@
+# t('product_price', price: @product.price)
+#
+# en:
+#  product_price: "$%{price}"
+
+en-US:
+  test: "This is a test" # Do not delete (for tests)

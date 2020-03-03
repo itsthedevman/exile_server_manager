@@ -1,0 +1,29 @@
+changes:
+  core:
+    - "Added support for internationalization. If you would like to provide translations, please check out the documentation here: LINK"
+    - "Improved the welcome experience when inviting ESM to a new server"
+    - "Improved message sent to user when they don't provide the correct arguments"
+    - "Improved error messages sent back to users"
+    - "If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user"
+    - "[Request] Communities can now enable and set a whitelist on most commands."
+    - "Communities now have full control of permissions on most commands"
+  commands:
+    whois:
+      - "Added limited information about Community and VAC bans"
+    help:
+      - "Added a proper help command to provide useful and helpful information back to the user"
+    mode:
+      - "`!player_mode` has been depricated in favor of `!mode`. You can read more information by using `!help mode`"
+    me:
+      - "Improved formatting of poptabs and numbers"
+      - "Categorized player information for better display"
+    server:
+      - "Updated embed design"
+      - "Added \"Next restart in\" and \"Game Version\" information"
+    servers:
+      - "Updated embed design"
+      - "When a server is listed as offline, the time since last connection is now displayed"
+      - "Added \"Next restart in\" information"
+    territories:
+      - "Updated embed design"
+      - "Added warning when there is 4 days or less before payment is due"

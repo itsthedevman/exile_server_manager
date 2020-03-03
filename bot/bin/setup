@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+bundle install
+bundle exec rake db:drop
+
+if [[ -f "db/schema.rb" ]]; then
+  rm db/schema.rb
+fi
+
+bundle exec rake db:create
+bundle exec rake db:migrate
+bundle exec rake db:migrate RAILS_ENV=test
