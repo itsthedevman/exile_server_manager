@@ -1,7 +1,15 @@
----
-sudo: false
 language: ruby
-cache: bundler
+os: linux
 rvm:
   - 2.6.5
-before_install: gem install bundler -v 2.0.2
+before_install:
+  - gem install bundler
+  - echo $env_key | gpg --passphrase-fd 0 ./.env.gpg
+services:
+  - postgresql
+script:
+  - bin/setup
+  - bin/test
+env:
+  global:
+    secure: nw06MNFdF2ygAh+zHfwwH7bozhT3/r5nJk8M9zkDehrUbCxxKhUtvu1Yj8XQuAhX5xAz3hQjmHmWDIz9x5ZUZHiuBuUwfE513uDRiQaQj1VN/0glS6srCp37hEKpgSUILVUEK8wIXdGUmS1mylA2QmwsLREh4FDBL1KRhCbDln9S0AIPuaEBvoSQpuzsqpWDNgFeYsByXO00GjmwiNFUqE/pdiiwGkLmH2SsSIVP1pfU4IEjk/S+47AmmVxyk8tRIql1K0VeK5gBT3TKRFphECY0IwSkkYPk/M249AbdJEOvsuKzlMQqLwiB9CFTYVuxAMek95nZOT0ssvOPV/z/+22UrGTZmMHhk+WjUtFhrm3j+FVndI2FccM+3mBq05AanRMrEYkc3LLfuNxa/xM02UPgUJjDiaDuonEo36wmF/bDjmolsYicZ52iGD6Ri5ujD2ci9I9UfXKN/YDhbk+ghNiVqSl1YBt7ytdemiIjvBTMMiiZ1cE+Ke5I5X0xzKrUVr7cQQ8wsTgbLXOSdVkAr0kkrJ+3P8Iy3P0I/g47jWb7KFIckdY1/b9/0M2PKt7MQU/DUqvKm873OBQIzTk8Vwbx7u+QGg5SGBCivXHWPFkAPs1x/Iw0FEfjmsannYQCROidgiqqXdVC1J+sXUYREnB7XmQlxuiyyrDRkWcod9g=

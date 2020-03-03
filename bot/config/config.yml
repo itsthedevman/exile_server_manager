@@ -1,0 +1,15 @@
+default: &default
+  token: <%= ENV["DISCORD_TOKEN"] %>
+  steam_api_key: <%= ENV["STEAM_TOKEN"] %>
+
+development:
+  <<: *default
+  prefix: "~"
+
+test:
+  <<: *default
+  prefix: "~"
+
+production:
+  <<: *default
+  prefix: "!"
