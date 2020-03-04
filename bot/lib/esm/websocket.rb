@@ -161,8 +161,6 @@ module ESM
       # Messages without are DLL generated requests
       message = event.data.to_ostruct
 
-      ESM.logger.info("#{self.class}##{__method__}") { message }
-
       # These are normally empty responses
       # message.returned is legacy
       return if message.ignore || message.returned
