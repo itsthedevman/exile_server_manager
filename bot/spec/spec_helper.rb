@@ -25,7 +25,6 @@ ESM.run!
 
 # Manually connect to the DB
 ESM::Database.connect!
-ESM::Websocket.start!
 ESM::Command.build!
 
 ESM::Database.clean!

@@ -9,7 +9,6 @@ services:
 
 # Lifecycle
 before_install:
-  - netstat -tuln
   - gem install bundler
   - echo $env_key | gpg --passphrase-fd 0 ./.env.gpg
 before_script:
