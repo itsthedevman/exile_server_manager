@@ -7,7 +7,7 @@ require "active_support"
 require "active_support/all"
 require "base64"
 require "discordrb"
-require "dotenv/load"
+require "dotenv"
 require "dotiw"
 require "eventmachine"
 require "faye/websocket"
@@ -22,6 +22,9 @@ require "steam_web_api"
 require "steam-condenser"
 require "symmetric-encryption"
 require "yaml"
+
+Dotenv.load
+Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
 
 require "esm/extension"
 require "esm/color"
