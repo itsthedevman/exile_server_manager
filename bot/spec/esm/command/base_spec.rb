@@ -7,7 +7,8 @@ describe ESM::Command::Base do
   let!(:server) { create(:esm_malden, community_id: community.id) }
   let!(:user) { create(:user) }
   let!(:configuration) { create(:command_configuration, community_id: community.id, command_name: "base") }
-  let(:connection) { WebsocketClient.new(server) }
+  let(:wsc) { WebsocketClient.new(server) }
+  let(:connection) { ESM::Websocket.connections[server.server_id] }
 
   it "should have a valid name" do
     expect(command.name).to eql("base")
@@ -63,11 +64,11 @@ describe ESM::Command::Base do
   # Due to the way discordrb caches users, this needs to be at the top
   describe "#create_user" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should create an unregistered user" do
@@ -80,11 +81,11 @@ describe ESM::Command::Base do
 
   describe "#current_user" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -101,11 +102,11 @@ describe ESM::Command::Base do
 
   describe "#current_community" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -122,11 +123,11 @@ describe ESM::Command::Base do
 
   describe "#target_server" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -149,11 +150,11 @@ describe ESM::Command::Base do
 
   describe "#target_community" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -175,11 +176,11 @@ describe ESM::Command::Base do
 
   describe "#target_user" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -236,11 +237,11 @@ describe ESM::Command::Base do
 
   describe "#execute" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should be defined" do
@@ -257,7 +258,17 @@ describe ESM::Command::Base do
       expect { command.execute(event) }.not_to raise_error
     end
 
-    it "should reset cooldown if errored"
+    it "should reset cooldown if errored" do
+      request = nil
+      server_command = ESM::Command::Test::ServerErrorCommand.new
+      event = CommandEvent.create(server_command.statement(server_id: server.server_id), channel_type: :text, user: user)
+
+      expect { request = server_command.execute(event) }.not_to raise_error
+      expect(request).not_to be_nil
+      wait_for { connection.requests }.to be_blank
+      expect(ESM::Test.messages.size).to eql(1)
+      expect(server_command.current_cooldown.active?).to be(false)
+    end
   end
 
   describe "#error_message" do
@@ -272,11 +283,11 @@ describe ESM::Command::Base do
 
   describe "limit to" do
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     it "should have no limit" do
@@ -409,11 +420,11 @@ describe ESM::Command::Base do
     let(:whitelisted_role_ids) { ["423529426181947393"] }
 
     before :each do
-      wait_for { connection.connected? }.to be(true)
+      wait_for { wsc.connected? }.to be(true)
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
     end
 
     describe "Text Channel" do
