@@ -5,6 +5,7 @@ ENV["ESM_ENV"] = "test"
 
 # Start SimpleCov
 require "simplecov"
+SimpleCov.minimum_coverage 90
 SimpleCov.start
 
 require "bundler/setup"
