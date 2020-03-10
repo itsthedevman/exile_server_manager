@@ -415,8 +415,11 @@ describe ESM::Command::Base do
     end
 
     it "should raise" do
-      command.arguments.server_id = nil
-      expect { command.deliver! }.to raise_error(ESM::Exception::CheckFailure)
+      server_command = ESM::Command::Test::ServerSuccessCommand.new
+      event = CommandEvent.create(server_command.statement(server_id: nil), channel_type: :text, user: user)
+      server_command.event = event
+
+      expect { server_command.deliver! }.to raise_error(ESM::Exception::CheckFailure)
     end
 
     it "should deliver" do
