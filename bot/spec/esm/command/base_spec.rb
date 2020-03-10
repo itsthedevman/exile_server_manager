@@ -406,8 +406,29 @@ describe ESM::Command::Base do
   end
 
   describe "#deliver" do
-    it "should raise"
-    it "should deliver"
+    before :each do
+      wait_for { wsc.connected? }.to be(true)
+    end
+
+    after :each do
+      wsc.disconnect!
+    end
+
+    it "should raise" do
+      command.arguments.server_id = nil
+      expect { command.deliver! }.to raise_error(ESM::Exception::CheckFailure)
+    end
+
+    it "should deliver" do
+      request = nil
+      server_command = ESM::Command::Test::ServerSuccessCommand.new
+      event = CommandEvent.create(server_command.statement(server_id: server.server_id), channel_type: :text, user: user)
+
+      expect { request = server_command.execute(event) }.not_to raise_error
+      expect(request).not_to be_nil
+      wait_for { connection.requests }.to be_blank
+      expect(ESM::Test.messages.size).to eql(1)
+    end
   end
 
   describe "#reply" do

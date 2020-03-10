@@ -7,6 +7,7 @@ class WebsocketClient
     #   send_ignore_message [Boolean] Does this command need to send the ignore message. This matches the expected behavior from the DLL
     #   delay [Range] Delay sending the response by some random number between this range (in seconds). Simulates the delay from the Arma server
     CONFIG = {
+      serversuccesscommand: {},
       servererrorcommand: {},
       post_initialization: {},
       me: { delay: 0..1 },
@@ -14,6 +15,10 @@ class WebsocketClient
       pay: { send_ignore_message: true, delay: 0..3 },
       gamble: { send_ignore_message: true, delay: 0..3 }
     }.freeze
+
+    def response_serversuccesscommand
+      send_response(commandID: @data.commandID, parameters: [])
+    end
 
     def response_servererrorcommand
       send_response(commandID: @data.commandID, parameters: [{ error: "oops" }])
