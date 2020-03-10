@@ -4,9 +4,10 @@
 ENV["ESM_ENV"] = "test"
 
 # Start SimpleCov
-require "simplecov"
-SimpleCov.minimum_coverage 90
-SimpleCov.start
+if ENV["TRAVIS"].nil?
+  require "simplecov"
+  SimpleCov.start
+end
 
 require "bundler/setup"
 require "esm"
