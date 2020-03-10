@@ -432,7 +432,18 @@ describe ESM::Command::Base do
   end
 
   describe "#reply" do
-    it "should have tests"
+    it "should send a message to channel" do
+      server_command = ESM::Command::Test::ServerSuccessCommand.new
+      event = CommandEvent.create(server_command.statement(server_id: server.server_id), channel_type: :text, user: user)
+      server_command.event = event
+
+      server_command.reply("Hello")
+      expect(ESM::Test.messages.size).to eql(1)
+
+      message_array = ESM::Test.messages.first
+      expect(message_array.first.id).to eql(event.channel.id)
+      expect(message_array.second).to eql("Hello")
+    end
   end
 
   # Truth table: https://docs.google.com/spreadsheets/d/1BDHVwhyvgbFPlXnAtFKzOcPtGhZ1zG5H-_1km3VXKr8/edit#gid=0
