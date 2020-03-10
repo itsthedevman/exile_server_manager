@@ -3,6 +3,8 @@
 module ESM
   class Community < ApplicationRecord
     before_create :generate_community_id
+    after_create :create_command_configurations
+    after_create :create_notifications
 
     attribute :community_id, :string
     attribute :community_name, :text
@@ -85,9 +87,34 @@ module ESM
     end
 
     def create_command_configurations
-      return if self.command_configurations.present? || ESM.env.test?
+      return if self.command_configurations.present?
 
-      ESM::Command.create_configurations_for_community(self)
+      ::ESM::Command.create_configurations_for_community(self)
+    end
+
+    def create_notifications
+      return if self.notifications.present?
+
+      ::ESM::Notification::DEFAULTS.each do |category, notifications|
+        notifications.each do |notification|
+          ::ESM::Notification.create!(
+            community_id: self.id,
+            notification_type: notification["type"],
+            notification_title: notification["title"],
+            notification_description: notification["description"],
+            notification_color: notification["color"],
+            notification_category: category
+          )
+        end
+      end
+    end
+
+    def before_save_testing
+      puts "before save"
+    end
+
+    def before_create_testing
+      puts "before create"
     end
   end
 end

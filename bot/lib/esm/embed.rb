@@ -13,9 +13,15 @@ module ESM
     ###########################
     # Class methods
     ###########################
-    def self.build(&block)
+    def self.build(type = nil, **attributes)
       embed = ESM::Embed.new
-      yield(embed)
+
+      if block_given?
+        yield(embed)
+      else
+        embed.build_from_template(type, attributes)
+      end
+
       embed
     end
 
@@ -129,6 +135,17 @@ module ESM
       end
 
       output
+    end
+
+    def build_from_template(type, **attributes)
+      case type
+      when :error
+        self.color = :red
+      end
+
+      attributes.each do |attr_name, attr_value|
+        self.send("#{attr_name}=", attr_value)
+      end
     end
 
     private

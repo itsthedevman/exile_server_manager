@@ -92,6 +92,23 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.datetime "updated_at"
   end
 
+  create_table "gamble_stats", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "server_id", null: false
+    t.integer "current_streak", default: 0, null: false
+    t.integer "total_wins", default: 0, null: false
+    t.integer "longest_win_streak", default: 0, null: false
+    t.integer "total_poptabs_won", default: 0, null: false
+    t.integer "total_poptabs_loss", default: 0, null: false
+    t.integer "longest_loss_streak", default: 0, null: false
+    t.integer "total_losses", default: 0, null: false
+    t.string "last_action"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.index ["server_id"], name: "index_gamble_stats_on_server_id"
+    t.index ["user_id"], name: "index_gamble_stats_on_user_id"
+  end
+
   create_table "logs", force: :cascade do |t|
     t.uuid "uuid", null: false
     t.integer "server_id", null: false
@@ -250,23 +267,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["uuid"], name: "index_uploads_on_uuid"
   end
 
-  create_table "user_gamblings", force: :cascade do |t|
-    t.integer "user_id", null: false
-    t.integer "server_id", null: false
-    t.integer "current_streak", default: 0, null: false
-    t.integer "total_wins", default: 0, null: false
-    t.integer "last_win_streak", default: 0, null: false
-    t.integer "total_poptabs_won", default: 0, null: false
-    t.integer "total_poptabs_loss", default: 0, null: false
-    t.integer "last_loss_streak", default: 0, null: false
-    t.integer "total_losses", default: 0, null: false
-    t.string "last_action"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.index ["server_id"], name: "index_user_gamblings_on_server_id"
-    t.index ["user_id"], name: "index_user_gamblings_on_user_id"
-  end
-
   create_table "user_notification_preferences", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "server_id", null: false
@@ -302,6 +302,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   end
 
   add_foreign_key "command_configurations", "communities"
+  add_foreign_key "gamble_stats", "servers"
+  add_foreign_key "gamble_stats", "users"
   add_foreign_key "logs", "servers"
   add_foreign_key "pledges", "communities"
   add_foreign_key "pledges", "users", column: "redeeming_user_id"
@@ -311,8 +313,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "server_settings", "servers"
   add_foreign_key "servers", "communities"
   add_foreign_key "territories", "servers"
-  add_foreign_key "user_gamblings", "servers"
-  add_foreign_key "user_gamblings", "users"
   add_foreign_key "user_notification_preferences", "servers"
   add_foreign_key "user_notification_preferences", "users"
 end

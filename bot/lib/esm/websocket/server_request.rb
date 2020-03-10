@@ -54,15 +54,15 @@ module ESM
       # @private
       # Reports the error back to the user so they know the command failed
       def on_command_error(error)
+        # Reset the current cooldown
         @request.command.current_cooldown.reset!
 
-        embed =
-          ESM::Embed.build do |e|
-            e.description = "#{@request.user.mention}, #{error}"
-            e.color = :red
-          end
-
+        # Send the error message
+        embed = ESM::Embed.build(:error, description: "#{@request.user.mention}, #{error}")
         @request.command.reply(embed)
+
+        # Remove the request now that we've processed it
+        @connection.remove_request(@message.commandID)
       end
 
       # Error responses from a command

@@ -231,16 +231,16 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.datetime :updated_at
     end
 
-    # user_gambling
-    create_table :user_gamblings do |t|
+    # gambling_stats
+    create_table :gamble_stats do |t|
       t.integer :user_id, null: false, index: true
       t.integer :server_id, null: false, index: true
       t.integer :current_streak, null: false, default: 0
       t.integer :total_wins, null: false, default: 0
-      t.integer :last_win_streak, null: false, default: 0
+      t.integer :longest_win_streak, null: false, default: 0
       t.integer :total_poptabs_won, null: false, default: 0
       t.integer :total_poptabs_loss, null: false, default: 0
-      t.integer :last_loss_streak, null: false, default: 0
+      t.integer :longest_loss_streak, null: false, default: 0
       t.integer :total_losses, null: false, default: 0
       t.string :last_action, default: nil
       t.datetime :created_at
@@ -282,8 +282,8 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_foreign_key :server_rewards, :servers
     add_foreign_key :server_settings, :servers
     add_foreign_key :territories, :servers
-    add_foreign_key :user_gamblings, :users
-    add_foreign_key :user_gamblings, :servers
+    add_foreign_key :gamble_stats, :users
+    add_foreign_key :gamble_stats, :servers
     add_foreign_key :user_notification_preferences, :users
     add_foreign_key :user_notification_preferences, :servers
   end

@@ -7,7 +7,7 @@ module ESM
         Faye::WebSocket.load_adapter("puma")
         events = Puma::Events.new($stdout, $stderr)
         binder = Puma::Binder.new(events)
-        binder.parse(["tcp://localhost:#{ENV["WEBSOCKET_PORT"]}"], self)
+        binder.parse(["tcp://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}"], self)
         @server = Puma::Server.new(self, events)
         @server.binder = binder
         @server.run
@@ -17,7 +17,13 @@ module ESM
         return if !Faye::WebSocket.websocket?(env)
 
         # Create a new websocket client
-        ws = Faye::WebSocket.new(env)
+        # Its important that ping is set to 0.5 for tests
+        # This was causing issues where the websocket was recieving commands late
+        #   with no indication of why, except it would receive the message after 30 seconds.
+        #   Randomly, I read that Websocket has a ping built in.
+        #   Upon setting the ping to a small number, it fixed it. Ugh
+        #   - 2020-03-09
+        ws = Faye::WebSocket.new(env, nil, ping: sleep(ESM.env.test? ? 0.5 : 30))
 
         # Bind it with ESM
         ESM::Websocket.new(ws)
@@ -32,7 +38,6 @@ module ESM
 
       def stop
         ESM::Websocket::RequestWatcher.stop!
-        ESM::Websocket::ConnectionWatcher.stop!
         @server.stop(true)
       end
     end

@@ -7,7 +7,7 @@ module ESM
 
   def self.run!
     # Load our Config
-    @config = load_config
+    load_config
 
     initialize_steam
     initialize_logger
@@ -38,7 +38,7 @@ module ESM
 
   def self.load_config
     config = YAML.safe_load(ERB.new(File.read(File.expand_path("config/config.yml"))).result, aliases: true)[env]
-    JSON.parse(config.to_json, object_class: OpenStruct)
+    @config = JSON.parse(config.to_json, object_class: OpenStruct)
   end
 
   def self.initialize_steam
@@ -52,7 +52,7 @@ module ESM
 
     @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
       message = "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
-      puts message if ENV["PRINT_LOG"]
+      puts message if ENV["PRINT_LOG"] == "true"
       message
     end
   end

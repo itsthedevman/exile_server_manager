@@ -1,0 +1,57 @@
+# The default notifications for Communities
+
+gambling:
+  - color: "random"
+    description: "You lost **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs remaining."
+    title: "Maybe next time **{{ userName }}**!"
+    type: "loss"
+
+  - color: "random"
+    description: "You just lost **{{ amountChanged }}** poptabs, but that doesn't have to happen anymore. This [website](http://www.gamblersanonymous.org/ga/) has some awesome resources to help you get over your addiction. If you won't do it for yourself, please, do it for your community. You have **{{ lockerAfter }}** poptabs left."
+    title: "Look **{{ userName }}**, there is still hope."
+    type: "loss"
+
+  - color: "random"
+    description: "I'm serious, don't. You can't afford to. You lost **{{ amountChanged }}** poptabs and you have **{{ lockerAfter }}** poptabs left."
+    title: "Don't quit your day job **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You lost **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs remaining."
+    title: "RIPs, you are not a winner **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You just lost **{{ amountChanged }}** poptabs, but don't worry! Try gambling again and maybe you'll win it back. :wink:\nYou have **{{ lockerAfter }}** poptabs left."
+    title: "I'm sorry **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You won **{{ amountChanged }}** poptabs. You now have **{{ lockerAfter }}** poptabs"
+    title: "Damn, you won **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "You're one step closer to a new attack helicopter! You won **{{ amountChanged }}** poptabs, and have a total of **{{ lockerAfter }}** poptabs in your locker"
+    title: "Guess what **{{ userName }}**?"
+    type: "won"
+
+  - color: "random"
+    description: "Congratulations, you won **{{ amountChanged }}** poptabs, this is just enough to afford one month of FarmersOnly.com, **PREMIUM**"
+    title: "**{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "You just won **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs in your locker"
+    title: "Slow down **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "Yes, you just won **{{ amountChanged }}** poptabs. Yes, your locker balance is now **{{ lockerAfter }}** poptabs. But did you know gambling is a serious addiction? We are concerned about you, so we found [this](http://www.gamblersanonymous.org/ga/) for you."
+    title: "Hey **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "They just won **{{ amountChanged }}** poptabs. **{{ userTag }}**, you have **{{ lockerAfter }}** poptabs now."
+    title: "Looks like drinks are on **{{ userName }}**"
+    type: "won"

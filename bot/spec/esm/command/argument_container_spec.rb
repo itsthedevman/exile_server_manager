@@ -44,12 +44,12 @@ describe ESM::Command::ArgumentContainer do
       expect { container.parse!(event) }.to raise_error do |error|
         embed = error.data
 
-        expect(embed.title).to eql("**Missing argument `<_preserve>` for `#{ESM.bot.prefix}base`**")
+        expect(embed.title).to eql("**Missing argument `<_preserve>` for `#{ESM.config.prefix}base`**")
         expect(embed.description).to eql("```#{ESM::Command::Test::Base::MISSING_ARGUMENT_USAGE} ```")
         expect(embed.fields.size).to eql(1)
         expect(embed.fields.first.name).to eql("Arguments:")
         expect(embed.fields.first.value).to eql(ESM::Command::Test::Base::COMMAND_AS_STRING)
-        expect(embed.footer.text).to eql("For more information, send me `#{ESM.bot.prefix}help base`")
+        expect(embed.footer.text).to eql("For more information, send me `#{ESM.config.prefix}help base`")
       end
     end
   end

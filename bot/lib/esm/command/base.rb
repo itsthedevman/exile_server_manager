@@ -47,6 +47,7 @@ module ESM
         @limit_to = nil
         @defines = OpenStruct.new
         @requires = []
+        @skipped_checks = Set.new
 
         # ESM::Command::Development::Eval => eval
         @name = self.name.demodulize.downcase
@@ -87,8 +88,15 @@ module ESM
             type: @type,
             limit_to: @limit_to,
             defines: @defines,
-            requires: @requires
+            requires: @requires,
+            skipped_checks: @skipped_checks
           )
+      end
+
+      def self.skip_check(*checks)
+        checks.each do |check|
+          @skipped_checks << check
+        end
       end
 
       #########################
@@ -120,6 +128,12 @@ module ESM
         @defines = attributes.defines
         @requires = attributes.requires
 
+        # Flags for skipping check_for_x! methods
+        @skipped_checks = attributes.skipped_checks
+
+        # Flags for skipping anything else
+        @skip_flags = Set.new
+
         # Store the command on the arguments, so we can access for error reporting
         @arguments.command = self
       end
@@ -133,7 +147,7 @@ module ESM
       end
 
       def usage
-        @usage ||= "#{ESM.bot.prefix}#{name} #{@arguments.map(&:to_s).join(" ")}"
+        @usage ||= "#{@distinct} #{@arguments.map(&:to_s).join(" ")}"
       end
 
       # The user that executed the command
@@ -242,7 +256,7 @@ module ESM
         response = discord
 
         # Update the cooldown
-        create_or_update_cooldown
+        create_or_update_cooldown if !@skip_flags.include?(:cooldown)
 
         # Return the response
         response
@@ -272,8 +286,6 @@ module ESM
       end
 
       def create_or_update_cooldown
-        # Get the current cooldown or create a new one
-        # Modify the expires at
         query = ESM::Cooldown.where(command_name: @name, user_id: current_user.esm_user.id)
         query.where(community_id: target_community.id) if target_community
         query.where(server_id: target_server.id) if target_server
@@ -343,6 +355,10 @@ module ESM
           else
             @defines.cooldown_time.default
           end
+      end
+
+      def skip(*flags)
+        flags.each { |flag| @skip_flags << flag }
       end
     end
   end

@@ -27,3 +27,6 @@ changes:
     territories:
       - "Updated embed design"
       - "Added warning when there is 4 days or less before payment is due"
+    gamble:
+      - "The `info` argument has been renamed to `stats`"
+      - "Added server wide gambling stats"

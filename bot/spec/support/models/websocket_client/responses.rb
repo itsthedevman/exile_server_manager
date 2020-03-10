@@ -2,11 +2,16 @@
 
 class WebsocketClient
   module Responses
+    # This controls how the websocket server treats the command.
+    # Valid options:
+    #   send_ignore_message [Boolean] Does this command need to send the ignore message. This matches the expected behavior from the DLL
+    #   delay [Range] Delay sending the response by some random number between this range (in seconds). Simulates the delay from the Arma server
     CONFIG = {
       post_initialization: {},
-      me: { delay: 0..2 },
-      territories: { delay: 0..2 },
-      pay: { send_ignore_message: true, delay: 0..5 }
+      me: { delay: 0..1 },
+      territories: { delay: 0..1 },
+      pay: { send_ignore_message: true, delay: 0..3 },
+      gamble: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_post_initialization
@@ -63,6 +68,38 @@ class WebsocketClient
         parameters: [{
           payment: Faker::Number.between(from: 20, to: 600),
           locker: Faker::Number.between(from: 2000, to: 1_000_000_000)
+        }]
+      )
+    end
+
+    def response_gamble
+      if @flags.NOT_ENOUGH_MONEY
+        return send_response(
+          commandID: @data.commandID,
+          parameters: [{
+            error: "Not enough poptabs!"
+          }]
+        )
+      end
+
+      amount = @data.parameters.amount.to_i
+      locker_before = amount
+
+      if rand > 0.50
+        type = "won"
+        locker_after = locker_before + amount
+      else
+        type = "loss"
+        locker_after = locker_before - amount
+      end
+
+      send_response(
+        commandID: @data.commandID,
+        parameters: [{
+          type: type,
+          amount: amount,
+          locker_before: locker_before,
+          locker_after: locker_after
         }]
       )
     end

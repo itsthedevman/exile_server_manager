@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "esm/websocket/connection_watcher"
 require "esm/websocket/request"
 require "esm/websocket/request_watcher"
 require "esm/websocket/queue"
@@ -30,9 +29,6 @@ module ESM
 
       # Watches over requests and removes them if the server is taking too long to respond
       ESM::Websocket::RequestWatcher.start!
-
-      # Pings the clients every so often to keep the connection alive
-      ESM::Websocket::ConnectionWatcher.start!
     end
 
     # Delivers the message to the requested server_id

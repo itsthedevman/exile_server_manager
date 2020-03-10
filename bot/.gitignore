@@ -16,6 +16,3 @@
 *.code-workspace
 .DS_Store
 .env
-
-# Ignore symlinks
-config/*.yml

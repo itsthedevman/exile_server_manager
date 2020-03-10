@@ -7,7 +7,7 @@ module ESM
       ESM::ServerReward.delete_all
       ESM::ServerSetting.delete_all
       ESM::Territory.delete_all
-      ESM::UserGambling.delete_all
+      ESM::GambleStat.delete_all
       ESM::UserNotificationPreference.delete_all
       ESM::Cooldown.delete_all
       ESM::Notification.delete_all

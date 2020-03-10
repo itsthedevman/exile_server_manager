@@ -11,10 +11,10 @@ module ESM
       # Binds the Discord Events
       bind_events!
 
-      # Just forward the call if we are in test
-      return super if ESM.env.test?
-
+      # Connect to the database
       ESM::Database.connect!
+
+      # Register all of ESM's commands
       ESM::Command.build!
 
       # Call Discordrb::Commands::Commandbot.run

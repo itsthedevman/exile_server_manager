@@ -17,10 +17,6 @@ FactoryBot.define do
     # attribute :updated_at, :datetime
     # attribute :deleted_at, :datetime
 
-    after :create do |community, _evaluator|
-      ESM::Command.create_configurations_for_community(community)
-    end
-
     factory :esm_community do
       community_id { "esm" }
       community_name { "Exile Server Manager" }

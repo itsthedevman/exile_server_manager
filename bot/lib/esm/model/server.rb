@@ -28,7 +28,7 @@ module ESM
     has_one :server_reward, dependent: :destroy
     has_one :server_setting, dependent: :destroy
     has_many :territories, dependent: :destroy
-    has_many :user_gamblings, dependent: :destroy
+    has_many :gamble_stats, dependent: :destroy
     has_many :user_notification_preferences, dependent: :destroy
 
     def self.find_by_server_id(id)
@@ -58,6 +58,30 @@ module ESM
 
     def time_since_last_connection
       ESM::Time.distance_of_time_in_words(self.disconnected_at)
+    end
+
+    def gamble_stats
+      @gamble_stats ||= super
+    end
+
+    def longest_current_streak
+      gamble_stats.order(current_streak: :asc).first
+    end
+
+    def longest_win_streak
+      gamble_stats.order(current_streak: :asc).first
+    end
+
+    def longest_losing_streak
+      gamble_stats.order(longest_loss_streak: :asc).first
+    end
+
+    def most_poptabs_won
+      gamble_stats.order(total_poptabs_won: :asc).first
+    end
+
+    def most_poptabs_lost
+      gamble_stats.order(total_poptabs_loss: :asc).first
     end
 
     private

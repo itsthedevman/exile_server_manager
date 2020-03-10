@@ -42,7 +42,7 @@ module ESM
         def commands
           ESM::Embed.build do |embed|
             embed.title = t("commands.help.commands.title")
-            embed.description = t("commands.help.commands.description", prefix: ESM.bot.prefix)
+            embed.description = t("commands.help.commands.description", prefix: ESM.config.prefix)
 
             types = %i[player admin]
             types << :development if ESM.env.development?
@@ -73,7 +73,7 @@ module ESM
 
         def format_commands(commands)
           commands.format do |command|
-            "**`#{ESM.bot.prefix}#{command.name}`**: #{command.description}\n"
+            "**`#{command.distinct}`**: #{command.description}\n"
           end
         end
 

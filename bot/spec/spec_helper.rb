@@ -23,19 +23,11 @@ Dir["#{File.expand_path("./spec/support")}/**/*.rb"].each { |file| require file 
 # Start the bot
 ESM.run!
 
-# Manually connect to the DB
-ESM::Database.connect!
-ESM::Command.build!
-
-ESM::Database.clean!
-
+# Ignore debug messages when running tests
 ActiveRecord::Base.logger.level = Logger::INFO
 
 RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
-
-  # For debugging travis ci
-  config.fail_fast = true
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -51,9 +43,6 @@ RSpec.configure do |config|
     FactoryBot.find_definitions
     DatabaseCleaner.clean_with :deletion
     DatabaseCleaner.strategy = :deletion
-
-    # Wait until the bot has fully connected
-    ESM::Test.wait_until { ESM.bot.ready? }
   end
 
   config.before :example do
@@ -84,3 +73,9 @@ def create_request(**params)
     parameters: params
   )
 end
+
+# Wait until the bot has fully connected
+ESM::Test.wait_until { ESM.bot.ready? }
+
+# Clean the database
+ESM::Database.clean!

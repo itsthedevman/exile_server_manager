@@ -256,6 +256,8 @@ describe ESM::Command::Base do
       event = CommandEvent.create(ESM::Command::Test::Base::COMMAND_MINIMAL, user: user)
       expect { command.execute(event) }.not_to raise_error
     end
+
+    it "should reset cooldown if errored"
   end
 
   describe "#error_message" do
@@ -613,5 +615,13 @@ describe ESM::Command::Base do
 
       expect { community_command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /commands for other communities/i)
     end
+  end
+
+  describe "#skip_check" do
+    it "should skip #check_for_connected_server!"
+  end
+
+  describe "#skip" do
+    it "should skip #create_or_update_cooldown"
   end
 end

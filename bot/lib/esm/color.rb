@@ -14,6 +14,19 @@ module ESM
       PURPLE = "#793ADE"
       PINK = "#DE3A9F"
       WHITE = "#FFFFFF"
+
+      def self.colors
+        self.constants(false).map { |c| self.const_get(c) }.select { |c| c.is_a?(String) }
+      end
+    end
+
+    def self.colors
+      self.constants(false).map { |c| self.const_get(c) }.select { |c| c.is_a?(String) }
+    end
+
+    # Randomly select a color from the full color pool
+    def self.random
+      (self.colors + ESM::Color::Toast.colors).sample(1).first
     end
   end
 end

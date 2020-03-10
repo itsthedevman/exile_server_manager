@@ -150,6 +150,26 @@ describe ESM::Embed do
     expect(embed.color).to eql(ESM::Color::Toast::BLUE)
   end
 
+  describe "Build from Template" do
+    it "should build an error template (title)" do
+      embed = ESM::Embed.build(:error, title: "This is an error")
+
+      expect(embed.color).to eql(ESM::Color::Toast::RED)
+      expect(embed.title).to eql("This is an error")
+      expect(embed.description).to be_blank
+    end
+
+    it "should build an error template (description)" do
+      embed = ESM::Embed.build(:error, description: "This is an error")
+
+      expect(embed.color).to eql(ESM::Color::Toast::RED)
+      expect(embed.description).to eql("This is an error")
+      expect(embed.title).to be_blank
+    end
+  end
+
+
+
   describe "#to_s" do
     it "should return all available information" do
       time = DateTime.now

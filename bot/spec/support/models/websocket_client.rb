@@ -10,11 +10,12 @@ class WebsocketClient
 
   attr_reader :ws
   attr_reader :flags
+  attr_reader :server_id
   def initialize(server)
     Thread.new do
       EventMachine.run do
         @ws = Faye::WebSocket::Client.new(
-          "ws://127.0.0.1:#{ENV["WEBSOCKET_PORT"]}",
+          "ws://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}",
           [],
           headers: { "authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}" }
         )
@@ -35,6 +36,10 @@ class WebsocketClient
   def on_message(event)
     @data = event.data.to_ostruct
 
+    ESM.logger.debug("#{self.class}##{__method__}") do
+      JSON.pretty_generate(JSON.parse(event.data))
+    end
+
     command_config = WebsocketClient::Responses::CONFIG[@data.command.to_sym]
     raise "Missing command config for: #{@data.command}" if command_config.nil?
 
@@ -49,17 +54,14 @@ class WebsocketClient
   def on_close(_event); end
 
   def on_error(event)
-    ESM.logger.debug("#{self.class}##{__method__}") { "#{@logging_server_id}\nMessage: #{event.message}" }
+    ESM.logger.debug("#{self.class}##{__method__}") { "#{@logging_server_id} | ON ERROR\nMessage: #{event.message}" }
   end
 
   def connected?
     @connected || false
   end
 
-  def on_ping(event)
-    puts "[WSC on_ping] #{event.data}"
-    @connected = true
-  end
+  def on_ping(event); end
 
   def disconnect!
     @ws.close

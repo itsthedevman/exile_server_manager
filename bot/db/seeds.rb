@@ -1,5 +1,14 @@
 # frozen_string_literal: true
 
+require "esm"
+
+ESM.console!
+ESM.run!
+
+# I don't feel like breaking the bot to fix the seeds file.
+# Just wait a couple of seconds for the DB to connect
+sleep 2
+
 ESM::User.create!(
   discord_id: "137709767954137088",
   discord_username: "Bryan",

@@ -82,12 +82,12 @@ module ESM
 
             e.add_field(
               name: "Need help?",
-              value: "At any time, you can use the `#{ESM.bot.prefix}help` command for quick information. If you don't find your question, or if you have an issue, please join our discord and let us know :smile:"
+              value: "At any time, you can use the `#{ESM.config.prefix}help` command for quick information. If you don't find your question, or if you have an issue, please join our discord and let us know :smile:"
             )
 
             e.add_field(
               name: "One final thing, just in case",
-              value: "If you meant to say _#{server_owner ? "no" : "yes"}_ to that question, you can #{server_owner ? "enable" : "disable"} player mode by sending me `#{ESM.bot.prefix}mode #{server_owner ? "player" : "server"}`. I won't tell :wink:"
+              value: "If you meant to say _#{server_owner ? "no" : "yes"}_ to that question, you can #{server_owner ? "enable" : "disable"} player mode by sending me `#{ESM.config.prefix}mode #{server_owner ? "player" : "server"}`. I won't tell :wink:"
             )
           end
 

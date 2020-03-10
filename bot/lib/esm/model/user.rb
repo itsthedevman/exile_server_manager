@@ -15,7 +15,7 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
-    has_many :user_gamblings
+    has_many :gamble_stats
     has_many :user_notification_preferences
     has_many :commands, foreign_key: "author_user_id"
     has_many :cooldowns

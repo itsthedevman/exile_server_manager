@@ -10,7 +10,8 @@ module ESM
       # @example With arguments !argumentcommand <argument_1> <argument_2>
       #   ESM::Command::ArgumentCommand.statement(argument_1: "foo", argument_2: "bar") -> !argumentcommand foo bar
       def self.statement(**flags)
-        command_statement = "#{ESM.bot.prefix}#{@name}"
+        # Can't use distinct here - 2020-03-10
+        command_statement = "#{ESM.config.prefix}#{@name}"
 
         # !birb, !doggo, etc.
         return command_statement if @arguments.empty?

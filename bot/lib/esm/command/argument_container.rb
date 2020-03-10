@@ -97,7 +97,7 @@ module ESM
               value: self.command.arguments.to_s
             )
 
-            e.footer = "For more information, send me `#{ESM.bot.prefix}help #{self.command.name}`"
+            e.footer = "For more information, send me `#{ESM.config.prefix}help #{self.command.name}`"
           end
 
         raise ESM::Exception::FailedArgumentParse, embed

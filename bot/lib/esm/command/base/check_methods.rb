@@ -20,7 +20,9 @@ module ESM
           check_for_different_community!
           check_for_permissions!
           check_for_cooldown!
-          check_for_connected_server!
+
+          # Check for skip outside of the method so it can be called later if need be
+          check_for_connected_server! if !@skipped_checks.include?(:connected_server)
         end
 
         def check_for_text_only!
@@ -38,9 +40,6 @@ module ESM
           # Load the permissions AFTER we have checked for invalid communities.
           load_permissions
 
-          # Temp!
-          # Raise error if:
-          #   current_community.id != target_community.id
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:command_not_enabled, user: current_user, command_name: self.name) if !enabled?
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_whitelisted, user: current_user, command_name: self.name) if !whitelisted?
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_allowed_in_text_channels, user: current_user, command_name: self.name) if !allowed?
