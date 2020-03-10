@@ -7,6 +7,10 @@ rvm:
 services:
   - postgresql
 
+branches:
+  only:
+    - master
+
 # Lifecycle
 before_install:
   - gem install bundler
