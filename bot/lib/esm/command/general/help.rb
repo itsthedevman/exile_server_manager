@@ -6,13 +6,14 @@ module ESM
       class Help < ESM::Command::Base
         type :player
         aliases :commands
-        argument :category, regex: /.*/, default: nil, description: t("commands.help.arguments.category")
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
         define :whitelisted_role_ids, modifiable: false, default: []
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
+
+        argument :category, regex: /.*/, default: nil, description: t("commands.help.arguments.category")
 
         def discord
           if @arguments.category == "commands"
@@ -48,7 +49,7 @@ module ESM
             types << :development if ESM.env.development?
 
             # Remove :admin if player mode is enabled for this community
-            types.remove(:admin) if current_community&.player_mode_enabled?
+            types.delete(:admin) if current_community&.player_mode_enabled?
 
             # Now build the embed
             types.each do |type|
