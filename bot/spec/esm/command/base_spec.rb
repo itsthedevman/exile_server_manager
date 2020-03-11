@@ -673,6 +673,11 @@ describe ESM::Command::Base do
   end
 
   describe "#skip" do
-    it "should skip #create_or_update_cooldown"
+    it "should skip #create_or_update_cooldown" do
+      skip_command = ESM::Command::Test::SkipCooldownCommand.new
+      event = CommandEvent.create(skip_command.statement(server_id: server.server_id), channel_type: :text, user: user)
+      expect { skip_command.execute(event) }.not_to raise_error
+      expect(skip_command.current_cooldown).to eql(nil)
+    end
   end
 end
