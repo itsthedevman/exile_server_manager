@@ -5,7 +5,10 @@ describe ESM::Time do
   let(:time_two) { "2020-01-18T15:47:52" }
 
   describe "#singularize" do
-    it "should have tests"
+    it "should make the time singular" do
+      expect(ESM::Time.singularize("1 days")).to eql("1 day")
+      expect(ESM::Time.singularize("1 minute, 1 seconds")).to eql("1 minute, 1 second")
+    end
   end
 
   describe "#parse" do
