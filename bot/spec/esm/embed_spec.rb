@@ -168,8 +168,6 @@ describe ESM::Embed do
     end
   end
 
-
-
   describe "#to_s" do
     it "should return all available information" do
       time = DateTime.now
@@ -207,11 +205,34 @@ describe ESM::Embed do
     end
   end
 
-  describe "#add_field_array" do
-    it "should have tests"
+  describe "#add_field" do
+    it "should support array when adding a field value" do
+      embed =
+        ESM::Embed.build do |e|
+          expect { e.add_field(name: "Testing", value: ["Line one", "Line two"]) }.not_to raise_error
+        end
+
+      expect(embed.fields.first.value).to match(/line one\sline two/i)
+    end
+
+    it "should support string when adding a field value" do
+      embed =
+        ESM::Embed.build do |e|
+          expect { e.add_field(name: "Testing", value: "Line one") }.not_to raise_error
+        end
+
+      expect(embed.fields.first.value).to eql("Line one")
+    end
   end
 
   describe "#store_field" do
-    it "should have tests"
+    it "should store the field" do
+      embed =
+        ESM::Embed.build do |e|
+          expect { e.add_field(name: "Testing", value: "Line one") }.not_to raise_error
+        end
+
+      expect(embed.fields.size).to eql(1)
+    end
   end
 end
