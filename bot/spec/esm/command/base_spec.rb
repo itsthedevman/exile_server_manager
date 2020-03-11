@@ -664,7 +664,12 @@ describe ESM::Command::Base do
   end
 
   describe "#skip_check" do
-    it "should skip #check_for_connected_server!"
+    it "should skip #check_for_connected_server!" do
+      # Server is not connected here
+      check_command = ESM::Command::Test::SkipServerCheckCommand.new
+      event = CommandEvent.create(check_command.statement(server_id: server.server_id), channel_type: :text, user: user)
+      expect { check_command.execute(event) }.not_to raise_error
+    end
   end
 
   describe "#skip" do
