@@ -74,7 +74,6 @@ module ESM
         @packet = OpenStruct.new(
           function_name: "postServerInitialization",
           server_id: @server.server_id,
-          is_premium: @server.premium?,
           territory_admins: build_territory_admins.to_json,
           extdb_path: settings.extdb_path || "",
           gambling_modifier: settings.gambling_modifier,

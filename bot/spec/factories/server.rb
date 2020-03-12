@@ -9,7 +9,6 @@ FactoryBot.define do
     # attribute :server_ip, :string
     # attribute :server_port, :string
     # attribute :server_start_time, :datetime
-    # attribute :is_premium, :boolean, default: false
     # attribute :created_at, :datetime
     # attribute :updated_at, :datetime
 
@@ -40,14 +39,6 @@ FactoryBot.define do
       server_ip { "127.0.0.1" }
       server_port { "2602" }
       server_start_time { DateTime.now }
-    end
-
-    trait :premium_enabled do
-      is_premium { true }
-    end
-
-    trait :premium_disabled do
-      is_premium { false }
     end
   end
 end

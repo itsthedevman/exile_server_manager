@@ -60,9 +60,6 @@ module ESM
                   t("commands.servers.offline_for", time: @server.time_since_last_connection)
                 end
             end
-
-            # Displays if the server has premium or not
-            e.set_footer(text: footer_message)
           end
         end
 
@@ -70,14 +67,6 @@ module ESM
           e.add_field(name: t(:server_id), value: "```#{@server.server_id}```", inline: true)
           e.add_field(name: t(:ip), value: "```#{@server.server_ip}```", inline: true)
           e.add_field(name: t(:port), value: "```#{@server.server_port}```", inline: true)
-        end
-
-        def footer_message
-          if @server.premium?
-            t("commands.server.premium_enabled")
-          else
-            t("commands.server.premium_disabled")
-          end
         end
       end
     end

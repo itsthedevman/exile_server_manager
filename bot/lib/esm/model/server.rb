@@ -14,7 +14,6 @@ module ESM
     attribute :server_port, :string
     attribute :server_start_time, :datetime
     attribute :disconnected_at, :datetime
-    attribute :is_premium, :boolean, default: false
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
@@ -37,10 +36,6 @@ module ESM
 
     def territories
       ESM::Territory.order(:server_id).where(server_id: self.id).order(:territory_level)
-    end
-
-    def premium?
-      self.is_premium
     end
 
     def online?

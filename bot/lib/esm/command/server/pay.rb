@@ -7,7 +7,7 @@ module ESM
         type :player
 
         limit_to :dm
-        requires :registration, :premium
+        requires :registration
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false

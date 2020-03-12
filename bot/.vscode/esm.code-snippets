@@ -124,7 +124,7 @@
 				"\t\t\t\ttype :${3|admin,player,development|}",
 				"\t\t\t\taliases :${4:aliases}",
 				"\t\t\t\tlimit_to :${6|text,dm|}",
-				"\t\t\t\trequires :registration, :premium, :dev, :admin",
+				"\t\t\t\trequires :registration, :dev, :admin",
 				"",
 				"\t\t\t\tdefine :enabled, modifiable: true, default: ${7|true,false|}",
 				"\t\t\t\tdefine :whitelist_enabled, modifiable: true, default: ${8|false,true|}",

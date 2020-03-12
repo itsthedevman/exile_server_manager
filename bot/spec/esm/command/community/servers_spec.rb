@@ -48,12 +48,10 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.second.value).to eql("```#{server.server_ip}```")
       expect(embed.fields.third.name).to eql(t(:port))
       expect(embed.fields.third.value).to eql("```#{server.server_port}```")
-      expect(embed.footer.text).to eql(t("commands.server.premium_disabled"))
     end
 
     it "should return one online server" do
       connection
-      server.update(is_premium: true)
 
       wait_for { connection.connected? }.to be(true)
 
@@ -76,7 +74,6 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.fourth.value).to eql("```#{server.uptime}```")
       expect(embed.fields.fifth.name).to eql(t("commands.server.restart_in"))
       expect(embed.fields.fifth.value).to eql("```#{server.time_left_before_restart}```")
-      expect(embed.footer.text).to eql(t("commands.server.premium_enabled"))
 
       connection.disconnect!
     end

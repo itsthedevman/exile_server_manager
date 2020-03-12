@@ -130,7 +130,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :server_port
       t.datetime :server_start_time
       t.datetime :disconnected_at
-      t.boolean :is_premium, default: false
       t.datetime :created_at
       t.datetime :updated_at
       t.datetime :deleted_at, index: true

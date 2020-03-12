@@ -106,8 +106,6 @@ en-US:
         **`!server esm_malden`**: Returns information about the server `esm_malden`
       online_for: "✅ Online for"
       restart_in: "⏰ Next restart in"
-      premium_enabled: "🏆 Premium commands are available for use on this server"
-      premium_disabled: "🔒 Premium commands are disabled on this server"
     servers:
       description: "Displays all registered servers for a given community ID, regardless if they are online or not"
       example: |-

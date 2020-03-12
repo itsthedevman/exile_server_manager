@@ -91,7 +91,6 @@ describe ESM::Event::ServerInitialization do
       it "should be valid" do
         expect(event.packet.function_name).to eql("postServerInitialization")
         expect(event.packet.server_id).to eql(server.server_id)
-        expect(event.packet.is_premium).to eql(server.premium?)
         expect(event.packet.territory_admins).to eql("[\"#{user.steam_uid}\"]")
         expect(event.packet.extdb_path).to eql(setting.extdb_path || "")
         expect(event.packet.gambling_modifier).to eql(setting.gambling_modifier)

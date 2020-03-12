@@ -27,9 +27,6 @@ module ESM
 
             # Mods
             add_server_mods(e)
-
-            # Displays if the server has premium or not
-            e.set_footer(text: footer_message)
           end
         end
 
@@ -100,14 +97,6 @@ module ESM
           end
 
           e.add_field(mod_field)
-        end
-
-        def footer_message
-          if target_server.premium?
-            t("commands.server.premium_enabled")
-          else
-            t("commands.server.premium_disabled")
-          end
         end
       end
     end

@@ -12,7 +12,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        requires :registration, :premium
+        requires :registration
 
         argument :server_id
 
