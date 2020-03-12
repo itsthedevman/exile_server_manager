@@ -11,7 +11,6 @@ module ESM
     attribute :community_website, :text
     attribute :guild_id, :string
     attribute :logging_channel_id, :string
-    attribute :pledge_id, :integer, default: nil
     attribute :reconnect_notification_enabled, :boolean, default: false
     attribute :broadcast_notification_enabled, :boolean, default: false
     attribute :player_mode_enabled, :boolean, default: true
@@ -24,7 +23,6 @@ module ESM
     has_many :command_configurations
     has_many :cooldowns
     has_many :notifications
-    has_one :pledge
     has_many :servers
 
     alias_attribute :name, :community_name

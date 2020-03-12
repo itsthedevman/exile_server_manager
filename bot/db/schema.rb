@@ -49,7 +49,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.text "community_website"
     t.string "guild_id", null: false
     t.string "logging_channel_id"
-    t.integer "pledge_id"
     t.boolean "reconnect_notification_enabled", default: false
     t.boolean "broadcast_notification_enabled", default: false
     t.boolean "player_mode_enabled", default: true
@@ -61,7 +60,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["deleted_at"], name: "index_communities_on_deleted_at"
     t.index ["guild_id"], name: "index_communities_on_guild_id", unique: true
-    t.index ["pledge_id"], name: "index_communities_on_pledge_id"
   end
 
   create_table "cooldowns", force: :cascade do |t|
@@ -135,22 +133,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.index ["community_id"], name: "index_notifications_on_community_id"
-  end
-
-  create_table "pledges", force: :cascade do |t|
-    t.uuid "uuid", null: false
-    t.string "previous_uuid"
-    t.integer "community_id"
-    t.integer "redeeming_user_id"
-    t.string "patreon_email"
-    t.integer "pledge_type", default: 0
-    t.datetime "redeemed_at"
-    t.datetime "deleted_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.index ["deleted_at"], name: "index_pledges_on_deleted_at"
-    t.index ["patreon_email"], name: "index_pledges_on_patreon_email"
-    t.index ["uuid"], name: "index_pledges_on_uuid", unique: true
   end
 
   create_table "requests", force: :cascade do |t|
@@ -304,8 +286,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "gamble_stats", "servers"
   add_foreign_key "gamble_stats", "users"
   add_foreign_key "logs", "servers"
-  add_foreign_key "pledges", "communities"
-  add_foreign_key "pledges", "users", column: "redeeming_user_id"
   add_foreign_key "requests", "users"
   add_foreign_key "server_mods", "servers"
   add_foreign_key "server_rewards", "servers"

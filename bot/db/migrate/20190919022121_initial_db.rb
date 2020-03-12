@@ -19,7 +19,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :community_website
       t.string :guild_id, null: false # has unique index
       t.string :logging_channel_id
-      t.integer :pledge_id, index: true, default: nil
       t.boolean :reconnect_notification_enabled, default: false
       t.boolean :broadcast_notification_enabled, default: false
       t.boolean :player_mode_enabled, default: true
@@ -92,20 +91,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :notification_description
       t.string :notification_color
       t.string :notification_category
-      t.datetime :created_at
-      t.datetime :updated_at
-    end
-
-    # pledges
-    create_table :pledges do |t|
-      t.uuid :uuid, null: false
-      t.string :previous_uuid
-      t.integer :community_id, default: nil
-      t.integer :redeeming_user_id, default: nil
-      t.string :patreon_email, index: true
-      t.integer :pledge_type, default: 0
-      t.datetime :redeemed_at
-      t.datetime :deleted_at, default: nil, index: true
       t.datetime :created_at
       t.datetime :updated_at
     end
@@ -266,15 +251,12 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_index :communities, :community_id, unique: true
     add_index :communities, :guild_id, unique: true
     add_index :logs, :uuid, unique: true
-    add_index :pledges, :uuid, unique: true
     add_index :servers, :server_id, unique: true
     add_index :servers, :server_key, unique: true
     add_index :users, :discord_id, unique: true
 
     add_foreign_key :command_configurations, :communities
     add_foreign_key :logs, :servers
-    add_foreign_key :pledges, :communities
-    add_foreign_key :pledges, :users, column: :redeeming_user_id
     add_foreign_key :requests, :users
     add_foreign_key :servers, :communities
     add_foreign_key :server_mods, :servers

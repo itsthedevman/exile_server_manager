@@ -2,7 +2,6 @@ module ESM
   class Database
     def self.clean!
       ESM::Request.delete_all
-      ESM::Pledge.delete_all
       ESM::ServerMod.delete_all
       ESM::ServerReward.delete_all
       ESM::ServerSetting.delete_all

@@ -7,7 +7,6 @@ FactoryBot.define do
     # attribute :community_website, :text
     # attribute :guild_id, :string
     # attribute :logging_channel_id, :string
-    # attribute :pledge_id, :integer, default: nil
     # attribute :reconnect_notification_enabled, :boolean, default: false
     # attribute :broadcast_notification_enabled, :boolean, default: false
     # attribute :player_mode_enabled, :boolean, default: true

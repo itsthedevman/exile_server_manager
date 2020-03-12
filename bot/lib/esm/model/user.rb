@@ -20,7 +20,6 @@ module ESM
     has_many :commands, foreign_key: "author_user_id"
     has_many :cooldowns
     has_many :requests
-    has_many :pledges, foreign_key: "redeeming_user_id"
 
     attr_accessor :GUILD_TYPE if ESM.env.test?
 
