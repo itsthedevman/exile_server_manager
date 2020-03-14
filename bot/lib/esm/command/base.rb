@@ -217,16 +217,24 @@ module ESM
         current_cooldown.active?
       end
 
-      def deliver!(**parameters)
+      # Send a request to the DLL
+      #
+      # @param command_name [String, nil] The name of the command to send to the DLL. Default: self.name
+      def deliver!(command_name: nil, timeout: 30, **parameters)
         raise ESM::Exception::CheckFailure, "Command does not have an associated server" if target_server.nil?
 
-        ESM::Websocket.deliver!(
-          target_server.server_id,
+        # Build the request
+        request = ESM::Websocket::Request.new(
           command: self,
+          command_name: command_name,
           user: current_user,
+          channel: @event.channel,
           parameters: parameters,
-          channel: @event.channel
+          timeout: timeout
         )
+
+        # Send it to the dll
+        ESM::Websocket.deliver!(target_server.server_id, request)
       end
 
       # Convenience method for replying back to the event's channel
@@ -239,6 +247,9 @@ module ESM
       def from_discord(event)
         @event = event
         @executed_at = DateTime.now
+
+        # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
+        @event.channel.start_typing
 
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)

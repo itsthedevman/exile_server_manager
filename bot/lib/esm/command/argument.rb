@@ -8,7 +8,7 @@ module ESM
       attr_reader :name
 
       def initialize(name, opts = {})
-        opts = default_from_name(name, opts) if default_argument?(name)
+        opts = default_from_name(opts[:template] || name, opts) if default_argument?(opts[:template] || name)
 
         raise ESM::Exception::InvalidCommandArgument, "Missing regex for argument :#{name}" if opts[:regex].nil?
         raise ESM::Exception::InvalidCommandArgument, "Missing description for argument :#{name}" if opts[:description].nil?
@@ -65,9 +65,12 @@ module ESM
           end
 
         string + ">"
+      rescue TypeError
+        byebug
       end
 
       private
+
       def defaults
         @defaults ||= {
           community_id: {

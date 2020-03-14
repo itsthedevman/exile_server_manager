@@ -6,16 +6,17 @@ module ESM
       attr_reader :id, :user, :command, :channel
       attr_reader :command_name, :user_info if ESM.env.test?
 
-      def initialize(command:, user:, channel:, parameters:, timeout: 30)
-        @command = command
-        @user = user
+      # command: nil, user: nil, channel: nil, parameters: nil, timeout: 30, command_name: nil
+      def initialize(**args)
+        @command = args[:command]
+        @user = args[:user]
 
         # String for direct calls, Otherwise its a command
         @command_name =
-          if @command.is_a?(ESM::Command::Base)
-            @command.name
+          if args[:command_name].present?
+            args[:command_name]
           else
-            @command
+            @command.name
           end
 
         @user_info =
@@ -25,10 +26,10 @@ module ESM
             [@user.mention, @user.id]
           end
 
-        @channel = channel
-        @parameters = parameters
+        @channel = args[:channel]
+        @parameters = args[:parameters]
         @id = SecureRandom.uuid
-        @timeout = timeout
+        @timeout = args[:timeout] || 30
         @created_at = ::Time.now
       end
 

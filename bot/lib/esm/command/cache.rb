@@ -13,6 +13,7 @@ module ESM
         @examples = opts[:examples]
         @usage = opts[:usage]
         @defines = opts[:defines]
+        @distinct = "#{ESM.config.prefix}#{@name}"
       end
 
       def build!

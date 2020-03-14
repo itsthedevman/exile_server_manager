@@ -141,6 +141,8 @@ module ESM
       case type
       when :error
         self.color = :red
+      when :success
+        self.color = :green
       end
 
       attributes.each do |attr_name, attr_value|

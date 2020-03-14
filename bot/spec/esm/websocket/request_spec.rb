@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 describe ESM::Websocket::Request do
-  it "should accept string for command" do
+  it "should accept string for command name" do
     request = ESM::Websocket::Request.new(
-      command: "testing",
+      command_name: "testing",
       user: nil,
       parameters: nil,
       channel: nil
@@ -27,7 +27,7 @@ describe ESM::Websocket::Request do
 
   it "should accept nil for user" do
     request = ESM::Websocket::Request.new(
-      command: nil,
+      command_name: "testing",
       user: nil,
       parameters: nil,
       channel: nil
@@ -41,7 +41,7 @@ describe ESM::Websocket::Request do
   it "should accept a valid user" do
     user = ESM.bot.user(ESM::User::Bryan::ID)
     request = ESM::Websocket::Request.new(
-      command: nil,
+      command_name: "testing",
       user: user,
       parameters: nil,
       channel: nil
@@ -76,12 +76,12 @@ describe ESM::Websocket::Request do
 
   describe "#timed_out?" do
     it "should be timed out" do
-      request = ESM::Websocket::Request.new(user: nil, channel: nil, command: nil, parameters: nil, timeout: 0)
+      request = ESM::Websocket::Request.new(command_name: "testing", user: nil, channel: nil, command: nil, parameters: nil, timeout: 0)
       expect(request.timed_out?).to be(true)
     end
 
     it "should not be timed out" do
-      request = ESM::Websocket::Request.new(user: nil, channel: nil, command: nil, parameters: nil)
+      request = ESM::Websocket::Request.new(command_name: "testing", user: nil, channel: nil, command: nil, parameters: nil)
       expect(request.timed_out?).to be(false)
     end
   end

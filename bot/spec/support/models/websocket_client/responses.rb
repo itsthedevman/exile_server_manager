@@ -13,7 +13,8 @@ class WebsocketClient
       me: { delay: 0..1 },
       territories: { delay: 0..1 },
       pay: { send_ignore_message: true, delay: 0..3 },
-      gamble: { send_ignore_message: true, delay: 0..3 }
+      gamble: { send_ignore_message: true, delay: 0..3 },
+      setterritoryid: { delay: 0..1 }
     }.freeze
 
     def response_serversuccesscommand
@@ -112,6 +113,14 @@ class WebsocketClient
           locker_after: locker_after
         }]
       )
+    end
+
+    # The command is actually !setid, but the v1 DLL is expecting this.
+    def response_setterritoryid
+      return send_response(commandID: @data.commandID, parameters: [{ success: false, reason: "Some reason" }]) if @flags.FAIL_WITH_REASON
+      return send_response(commandID: @data.commandID, parameters: [{ success: false }]) if @flags.FAIL_WITHOUT_REASON
+
+      send_response(commandID: @data.commandID, parameters: [{ success: true }])
     end
   end
 end

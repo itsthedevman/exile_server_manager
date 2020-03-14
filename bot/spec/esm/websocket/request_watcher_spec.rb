@@ -20,7 +20,7 @@ describe ESM::Websocket::RequestWatcher do
 
     before :each do
       iterations.times do
-        server_connection.requests << ESM::Websocket::Request.new(user: nil, channel: nil, command: nil, parameters: nil)
+        server_connection.requests << ESM::Websocket::Request.new(user: nil, channel: nil, command_name: "testing", parameters: nil)
       end
     end
 
@@ -31,7 +31,7 @@ describe ESM::Websocket::RequestWatcher do
     end
 
     it "should remove the timed out request" do
-      server_connection.requests << ESM::Websocket::Request.new(user: user, channel: nil, command: nil, parameters: nil, timeout: 0)
+      server_connection.requests << ESM::Websocket::Request.new(user: user, channel: nil, command_name: "testing", parameters: nil, timeout: 0)
 
       expect(server_connection.requests.size).to eql(iterations + 1)
       sleep(1)

@@ -22,14 +22,17 @@ describe ESM::Websocket::ServerRequest do
   end
 
   let(:request) do
-    connection.send(
-      :add_request,
+    request = ESM::Websocket::Request.new(
       command: command,
       user: user,
       channel: channel,
       parameters: [],
       timeout: 15
     )
+
+    connection.requests << request
+
+    request
   end
 
   before :each do

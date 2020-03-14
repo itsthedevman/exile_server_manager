@@ -20,7 +20,9 @@ describe ESM::Command::Argument do
     end
   end
 
-  describe "Invalid Argument (missing description)"
+  describe "Invalid Argument (missing description)" do
+    it "should have tests"
+  end
 
   describe "Display Name Argument" do
     let(:argument) { ESM::Command::Argument.new(:foo, regex: /foo/, display_as: "FOOBAR", description: "Test") }
@@ -123,6 +125,23 @@ describe ESM::Command::Argument do
     it "should use the display_as" do
       argument = ESM::Command::Argument.new(:foo, regex: /.+/, display_as: "bar", description: "Test")
       expect(argument.to_s).to eql("<bar>")
+    end
+  end
+
+  describe "Arugment with template name" do
+    it "should get defaults" do
+      argument = ESM::Command::Argument.new(:server_id)
+      expect(argument.regex).to eql(ESM::Regex::SERVER_ID)
+      expect(argument.description).not_to be_blank
+    end
+  end
+
+  describe "Argument with template keyword" do
+    it "should get defaults" do
+      argument = ESM::Command::Argument.new(:some_other_argument, template: :server_id)
+      expect(argument.name).to eql(:some_other_argument)
+      expect(argument.regex).to eql(ESM::Regex::SERVER_ID)
+      expect(argument.description).not_to be_blank
     end
   end
 end

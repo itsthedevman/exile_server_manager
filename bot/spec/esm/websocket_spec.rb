@@ -4,14 +4,14 @@ describe ESM::Websocket do
   # This test requires esm_community/esm_server
   let!(:esm_community) { create(:esm_community) }
   let!(:esm_malden) { create(:esm_malden, community_id: esm_community.id) }
-  let!(:esm_malden_connection) { WebsocketClient.new(esm_malden) }
+  let!(:esm_malden_wsc) { WebsocketClient.new(esm_malden) }
 
   before :each do
-    wait_for { esm_malden_connection.connected? }.to be(true)
+    wait_for { esm_malden_wsc.connected? }.to be(true)
   end
 
   after :each do
-    esm_malden_connection.disconnect!
+    esm_malden_wsc.disconnect!
   end
 
   it "should raise invalid key" do
@@ -48,16 +48,22 @@ describe ESM::Websocket do
 
   describe "#deliver!" do
     it "should deliver" do
+      connection = ESM::Websocket.connections[esm_malden.server_id]
+
       user = ESM.bot.user(ESM::User::Bryan::ID)
       command = ESM::Command::Test::Base.new
-      request = ESM::Websocket.deliver!(
-        esm_malden.server_id,
+
+      request = ESM::Websocket::Request.new(
         command: command,
         user: user,
-        parameters: { foo: "Foo", bar: ["Bar"], baz: false }
+        channel: nil,
+        parameters: [],
+        timeout: 15
       )
 
-      expect(request).not_to be_nil
+      ESM::Websocket.deliver!(esm_malden.server_id, request)
+
+      expect(connection.requests.size).to eql(1)
     end
   end
 
@@ -93,15 +99,17 @@ describe ESM::Websocket do
       command
     end
 
-    let!(:request) do
-      ws_connection.send(
-        :add_request,
+    let(:request) do
+      request = ESM::Websocket::Request.new(
         command: command,
-        user: discord_user,
+        user: user,
         channel: channel,
         parameters: [],
-        timeout: 5
+        timeout: 15
       )
+
+      ws_connection.requests << request
+      request
     end
 
     # Ignored commands do not remove the request.

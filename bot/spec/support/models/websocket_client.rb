@@ -15,7 +15,7 @@ class WebsocketClient
     Thread.new do
       EventMachine.run do
         @ws = Faye::WebSocket::Client.new(
-          "ws://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}",
+          "ws://localhost:#{ENV["WEBSOCKET_PORT"]}",
           [],
           headers: { "authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}" }
         )

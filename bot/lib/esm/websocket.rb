@@ -32,9 +32,9 @@ module ESM
     end
 
     # Delivers the message to the requested server_id
-    def self.deliver!(server_id, command: nil, user: nil, channel: nil, parameters: [], timeout: 30)
+    def self.deliver!(server_id, request)
       connection = @connections[server_id]
-      connection.deliver!(command: command, user: user, channel: channel, parameters: parameters, timeout: timeout)
+      connection.deliver!(request)
     rescue StandardError => e
       ESM.logger.fatal("#{self.class}##{__method__}") { "Message:\n#{e.message}\n\nBacktrace:\n#{e.backtrace}" }
       nil
@@ -83,8 +83,9 @@ module ESM
       on_open
     end
 
-    def deliver!(command:, user:, channel:, parameters:, timeout:)
-      request = add_request(command: command, user: user, channel: channel, parameters: parameters, timeout: timeout)
+    def deliver!(request)
+      # If the user is nil, there is no point in tracking the request
+      @requests << request if !request.user.nil?
       @connection.send(request.to_s)
       request
     end
@@ -120,17 +121,6 @@ module ESM
       @connection.on(:close, &method(:on_close))
       @connection.on(:message, &method(:on_message))
       @connection.on(:pong, &method(:on_pong))
-    end
-
-    # @private
-    # Adds a request to the servers requests and returns it
-    # @return [ESM::Websocket::Request]
-    def add_request(command:, user:, channel:, parameters:, timeout:)
-      request = ESM::Websocket::Request.new(command: command, user: user, channel: channel, parameters: parameters, timeout: timeout)
-
-      # If the user is nil, there is no point in tracking the request
-      @requests << request if !user.nil?
-      request
     end
 
     # @private

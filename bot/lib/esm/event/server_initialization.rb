@@ -102,7 +102,8 @@ module ESM
           reward_player_poptabs: rewards.player_poptabs,
           reward_locker_poptabs: rewards.locker_poptabs,
           reward_respect: rewards.respect,
-          reward_items: rewards.reward_items.to_a.to_json
+          reward_items: rewards.reward_items.to_a.to_json,
+          is_premium: true # Needed for legacy v1.0 support
         )
       end
 
@@ -125,11 +126,11 @@ module ESM
       end
 
       def send_response
-        ESM::Websocket.deliver!(
-          @server.server_id,
-          command: "post_initialization",
-          parameters: @packet.to_h
-        )
+        # Build the request
+        request = ESM::Websocket::Request.new(command_name: "post_initialization", parameters: @packet.to_h)
+
+        # Send it to the dll
+        ESM::Websocket.deliver!(@server.server_id, request)
       end
     end
   end

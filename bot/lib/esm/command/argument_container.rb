@@ -25,12 +25,12 @@ module ESM
         return "" if self.blank?
 
         self.format do |argument|
-          output = "**`#{argument}`:**"
+          output = "**`#{argument}`**\n"
 
           # Only add the period to optional if there is no default
-          output += " Optional#{argument.default? ? "" : "."}" if !argument.required?
-          output += ", defaults to `#{argument.default}`." if argument.default?
-          output += " #{argument.description}\n"
+          output += "Optional#{argument.default? ? "" : ". "}" if !argument.required?
+          output += ", defaults to `#{argument.default}`. " if argument.default?
+          output += "#{argument.description}\n\n"
 
           output
         end

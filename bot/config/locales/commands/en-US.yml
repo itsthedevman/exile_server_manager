@@ -128,7 +128,7 @@ en-US:
       next_territory_stats: "__Next Territory Stats__"
       territory_members: "__Territory Members__"
     pay:
-      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `!territories %{server_id}`"
+      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `!territories`"
       example: |-
         **`!pay esm_malden qqoej`**: Pay the territory protection for `qqoej` on server `esm_malden`
         **`!pay esm_malden fort_kickass`**: Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
@@ -171,3 +171,15 @@ en-US:
         longest_current_streak: "Longest Current Streak"
         user_with: "%{user} with %{value}"
         user_with_poptabs: "%{user} with %{value} poptabs"
+    setid:
+      description: "**Territory Owner Only.** Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
+      example: |-
+        **`!setid esm_malden jqjoe no_u`**: Sets territory `jqjoe` to be `kickass`
+        **`!setid esm_altis fort_awesome tent_sadness`**: Changes territory `fort_awesome` to be `tent_sadness`
+      arguments:
+        new_territory_id: "The new territory ID to use. This ID can be 3 to 30 characters long and can **only contain letters, numbers, and underscores**."
+      error_message:
+        minimum_characters: "I'm sorry %{user}, the new territory ID must be at least 3 characters long"
+        maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 30 characters"
+        access_denied: "I'm sorry %{user}, you are not allowed to do that."
+      success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```!pay %{server_id} %{new_territory_id}```"

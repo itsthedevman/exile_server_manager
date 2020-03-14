@@ -7,7 +7,7 @@ module ESM
         Faye::WebSocket.load_adapter("puma")
         events = Puma::Events.new($stdout, $stderr)
         binder = Puma::Binder.new(events)
-        binder.parse(["tcp://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}"], self)
+        binder.parse(["tcp://localhost:#{ENV["WEBSOCKET_PORT"]}"], self)
         @server = Puma::Server.new(self, events)
         @server.binder = binder
         @server.run
@@ -23,7 +23,9 @@ module ESM
         #   Randomly, I read that Websocket has a ping built in.
         #   Upon setting the ping to a small number, it fixed it. Ugh
         #   - 2020-03-09
-        ws = Faye::WebSocket.new(env, nil, ping: sleep(ESM.env.test? ? 0.5 : 30))
+
+        # I definitely caused this issue. There shouldn't be a reason why I have to ping every 0.5 seconds. Dev is having this issue too
+        ws = Faye::WebSocket.new(env, nil, ping: 0.5)
 
         # Bind it with ESM
         ESM::Websocket.new(ws)
