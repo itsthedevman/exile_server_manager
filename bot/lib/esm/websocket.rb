@@ -22,10 +22,7 @@ module ESM
       @server_ids = ESM::Server.all.pluck(:server_id)
 
       # Start the websocket server
-      # @note If the event machine is not running, the WS server will "delay" sending messages, if at all.
-      EventMachine.run_block do
-        ESM::Websocket::Server.new
-      end
+      ESM::Websocket::Server.new
 
       # Watches over requests and removes them if the server is taking too long to respond
       ESM::Websocket::RequestWatcher.start!
