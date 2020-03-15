@@ -178,8 +178,6 @@ module ESM
             lockerafter: @response.locker_after
           )
 
-          ESM.logger.debug("#{self.class}##{__method__}") { embed.to_s }
-
           embed.footer = "Current Streak: #{gamble_stat.current_streak}"
           reply(embed)
         end
