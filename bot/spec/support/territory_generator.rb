@@ -59,7 +59,7 @@ class TerritoryGenerator
   #   esm_custom_id
   # }
   def self.generate(moderator_count: 3, extra_builders: 0, level: nil, stolen: nil)
-    level = level.nil? ? Faker::Number.between(from: 1, to: TERRITORY_LEVELS.size) : level
+    level = level.nil? ? Faker::Number.between(from: 1, to: TERRITORY_LEVELS.size - 1) : level
     raise StandardError, "Level of territory does not exist in TERRITORY_LEVELS" if level > TERRITORY_LEVELS.size
 
     level_info = TERRITORY_LEVELS[level - 1]
