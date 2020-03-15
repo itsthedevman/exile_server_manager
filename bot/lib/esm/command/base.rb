@@ -249,7 +249,7 @@ module ESM
         @executed_at = DateTime.now
 
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
-        @event.channel.start_typing
+        @event.channel.start_typing if !ESM.env.test?
 
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)
