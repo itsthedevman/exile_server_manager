@@ -35,7 +35,7 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
 
   # Timeout for rspec/wait, default timeout for requests
-  config.wait_timeout = 30 # seconds
+  config.wait_timeout = 10 # seconds
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
