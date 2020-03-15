@@ -53,7 +53,7 @@ module ESM
 
     # Removes all connections
     def self.remove_all_connections!
-      @connections.each { |server_id, connection| self.remove_connection(connection) }
+      @connections.each { |_server_id, connection| self.remove_connection(connection) }
     end
 
     # Checks to see if there are any corrections and provides them for the server id
@@ -118,6 +118,7 @@ module ESM
       @connection.on(:close, &method(:on_close))
       @connection.on(:message, &method(:on_message))
       @connection.on(:pong, &method(:on_pong))
+      @connection.on(:error, &method(:on_error))
     end
 
     # @private
@@ -167,6 +168,10 @@ module ESM
     # Websocket event, executes when the A3 server replies to a pong? IDK yet, untested.
     def on_pong(message)
       puts "[WS on_pong] #{message}"
+    end
+
+    def on_error(event)
+      ESM.logger.debug("#{self.class}##{__method__}") { "#{@server.server_id} | ON ERROR\nMessage: #{event.message}" }
     end
   end
 end

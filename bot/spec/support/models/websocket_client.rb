@@ -12,7 +12,7 @@ class WebsocketClient
   attr_reader :flags
   attr_reader :server_id
   def initialize(server)
-    Thread.new do
+    @thread = Thread.new do
       EventMachine.run do
         @ws = Faye::WebSocket::Client.new(
           "ws://localhost:#{ENV["WEBSOCKET_PORT"]}",
@@ -65,6 +65,7 @@ class WebsocketClient
 
   def disconnect!
     @ws.close
+    @thread.stop(true)
   end
 
   def send_response(packet)
