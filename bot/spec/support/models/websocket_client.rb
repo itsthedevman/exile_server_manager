@@ -65,7 +65,7 @@ class WebsocketClient
 
   def disconnect!
     @ws.close
-    @thread.stop(true)
+    Thread.kill(@thread)
   end
 
   def send_response(packet)
