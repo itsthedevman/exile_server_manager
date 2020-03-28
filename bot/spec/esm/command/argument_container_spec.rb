@@ -155,4 +155,12 @@ describe ESM::Command::ArgumentContainer do
       expect(container.map(&:value).reject(&:nil?)).to be_empty
     end
   end
+
+  describe "#to_h" do
+    it "should have all attributes and values" do
+      hash = container.to_h
+      expect(hash.keys).to match_array(container.map(&:name))
+      expect(hash.values).to match_array(container.map(&:value))
+    end
+  end
 end

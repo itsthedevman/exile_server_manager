@@ -26,4 +26,13 @@ class String
     helper = Object.new.extend(ActionView::Helpers::NumberHelper)
     helper.number_with_delimiter(self)
   end
+
+  # Extending active support classify to allow leaving the s on the end
+  def classify(keep_plural: false)
+    if keep_plural
+      self.sub(/.*\./, "").camelize
+    else
+      ActiveSupport::Inflector.classify(self)
+    end
+  end
 end

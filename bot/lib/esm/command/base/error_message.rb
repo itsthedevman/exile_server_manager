@@ -100,6 +100,10 @@ module ESM
             e.color = :red
           end
         end
+
+        def self.pending_request(user:)
+          ESM::Embed.build(:error, description: t("command_errors.pending_request", user: user.mention))
+        end
       end
     end
   end

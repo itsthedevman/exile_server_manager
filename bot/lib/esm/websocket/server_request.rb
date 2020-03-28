@@ -57,8 +57,11 @@ module ESM
         # Reset the current cooldown
         @request.command.current_cooldown.reset!
 
+        # Some errors from the dll already have a mention in them...
+        error = "#{@request.user.mention}, #{error}" if !error.start_with?("<")
+
         # Send the error message
-        embed = ESM::Embed.build(:error, description: "#{@request.user.mention}, #{error}")
+        embed = ESM::Embed.build(:error, description: error)
         @request.command.reply(embed)
 
         # Remove the request now that we've processed it

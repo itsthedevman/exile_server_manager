@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-describe ESM::Command::Server::SetID, category: "command" do
-  let!(:command) { ESM::Command::Server::SetID.new }
+describe ESM::Command::Server::SetId, category: "command" do
+  let!(:command) { ESM::Command::Server::SetId.new }
 
   it "should be valid" do
     expect(command).not_to be_nil
@@ -37,10 +37,13 @@ describe ESM::Command::Server::SetID, category: "command" do
 
     it "should return" do
       request = nil
-      old_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      new_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      event = CommandEvent.create("!setid #{server.server_id} #{old_territory_id} #{new_territory_id}", user: user, channel_type: :dm)
+      statement = command.statement(
+        server_id: server.server_id,
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+      )
 
+      event = CommandEvent.create(statement, user: user, channel_type: :dm)
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
@@ -52,17 +55,23 @@ describe ESM::Command::Server::SetID, category: "command" do
     end
 
     it "should error (Minimum characters)" do
-      old_territory_id = Faker::Alphanumeric.alphanumeric(number: 2)
-      new_territory_id = Faker::Alphanumeric.alphanumeric(number: 2)
-      event = CommandEvent.create("!setid #{server.server_id} #{old_territory_id} #{new_territory_id}", user: user, channel_type: :dm)
+      statement = command.statement(
+        server_id: server.server_id,
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 2),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 2)
+      )
+      event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /must be at least 3/i)
     end
 
     it "should error (Maximum characters)" do
-      old_territory_id = Faker::Alphanumeric.alphanumeric(number: 31)
-      new_territory_id = Faker::Alphanumeric.alphanumeric(number: 31)
-      event = CommandEvent.create("!setid #{server.server_id} #{old_territory_id} #{new_territory_id}", user: user, channel_type: :dm)
+      statement = command.statement(
+        server_id: server.server_id,
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 31),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 31)
+      )
+      event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /cannot be longer than 30/i)
     end
@@ -70,9 +79,12 @@ describe ESM::Command::Server::SetID, category: "command" do
     #
     it "should error (DLL Reason)" do
       request = nil
-      old_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      new_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      event = CommandEvent.create("!setid #{server.server_id} #{old_territory_id} #{new_territory_id}", user: user, channel_type: :dm)
+      statement = command.statement(
+        server_id: server.server_id,
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+      )
+      event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
       wsc.flags.FAIL_WITH_REASON = true
       expect { request = command.execute(event) }.not_to raise_error
@@ -87,9 +99,12 @@ describe ESM::Command::Server::SetID, category: "command" do
 
     it "should error (Permission denied)" do
       request = nil
-      old_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      new_territory_id = Faker::Alphanumeric.alphanumeric(number: 3..30)
-      event = CommandEvent.create("!setid #{server.server_id} #{old_territory_id} #{new_territory_id}", user: user, channel_type: :dm)
+      statement = command.statement(
+        server_id: server.server_id,
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+      )
+      event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
       wsc.flags.FAIL_WITHOUT_REASON = true
       expect { request = command.execute(event) }.not_to raise_error

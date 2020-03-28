@@ -8,7 +8,7 @@ require "esm/command/argument_container"
 
 module ESM
   module Command
-    CATEGORIES = %w[development general server community entertainment].freeze
+    CATEGORIES = %w[development general server community entertainment system].freeze
 
     class << self
       attr_reader :all
@@ -39,7 +39,7 @@ module ESM
       end
 
       # Lock it!
-      @all = @all.freeze
+      @all = @all.freeze if !ESM.env.test?
     end
 
     def self.process_command(command_path, category)
@@ -53,7 +53,7 @@ module ESM
       define(command)
 
       # Cache Command
-      cache(command, category)
+      cache(command_name, command, category)
     end
 
     def self.parse_command_name_from_path(command_path)
@@ -61,7 +61,12 @@ module ESM
     end
 
     def self.build(command_name, category)
-      "ESM::Command::#{category.camelize}::#{command_name.camelize}".constantize.new
+      # set_id -> SetId or pay -> Pay
+      command_name = command_name.classify(keep_plural: true)
+      category = category.classify(keep_plural: true)
+
+      # "ESM::Command::Server::Pay" -> ESM::Command::Server::Pay -> New instance
+      "ESM::Command::#{category}::#{command_name}".constantize.new
     end
 
     def self.define(command)
@@ -71,12 +76,13 @@ module ESM
       end
     end
 
-    def self.cache(command, category)
+    def self.cache(command_name, command, category)
       # Background commands do not have types
       return if command.type.nil?
 
+      # Use command_name instead of command.name to get set_id instead of setid
       @all << ESM::Command::Cache.new(
-        name: command.name,
+        name: command_name,
         type: command.type,
         category: category,
         description: command.description,

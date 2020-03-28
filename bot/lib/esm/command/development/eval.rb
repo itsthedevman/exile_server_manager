@@ -18,8 +18,8 @@ module ESM
         def discord
           response = eval @arguments.code # rubocop:disable Security/Eval
           "Input:\n```ruby\n#{@arguments.code}\n```\nOutput:\n```ruby\n#{response}\n```"
-        rescue StandardError
-          "An error occurred"
+        rescue StandardError => e
+          "An error occurred: ```#{e.message}```"
         end
       end
     end

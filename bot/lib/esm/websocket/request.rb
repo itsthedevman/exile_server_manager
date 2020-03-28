@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "esm/websocket/request/overseer"
+
 module ESM
   class Websocket
     class Request

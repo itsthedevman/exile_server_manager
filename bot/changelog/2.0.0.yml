@@ -5,9 +5,16 @@ changes:
     - "Improved message sent to user when they don't provide the correct arguments"
     - "Improved error messages sent back to users"
     - "If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user"
-    - "[Request] Communities can now enable and set a whitelist on most commands."
-    - "Communities now have full control of permissions on most commands"
+    - "[Requested] Communities can now enable and set a whitelist on most commands."
+    - "[Requested] Communities now have full control of permissions on most commands"
+    - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
   commands:
+    accept:
+      - "**New command**"
+      - "Part of the new requests system, this command will accept a pending request by its UUID"
+    decline:
+      - "**New command**"
+      - "Part of the new requests system, this command will decline a pending request by its UUID"
     whois:
       - "Added limited information about Community and VAC bans"
     help:
@@ -30,3 +37,5 @@ changes:
     gamble:
       - "The `info` argument has been renamed to `stats`"
       - "Added server wide gambling stats"
+    add:
+      - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"

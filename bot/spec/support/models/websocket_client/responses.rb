@@ -7,27 +7,28 @@ class WebsocketClient
     #   send_ignore_message [Boolean] Does this command need to send the ignore message. This matches the expected behavior from the DLL
     #   delay [Range] Delay sending the response by some random number between this range (in seconds). Simulates the delay from the Arma server
     CONFIG = {
-      serversuccesscommand: {},
-      servererrorcommand: {},
+      server_success_command: {},
+      server_error_command: {},
       post_initialization: {},
       me: { delay: 0..1 },
       territories: { delay: 0..1 },
       pay: { send_ignore_message: true, delay: 0..3 },
       gamble: { send_ignore_message: true, delay: 0..3 },
-      setterritoryid: { delay: 0..1 }
+      setterritoryid: { delay: 0..1 },
+      add: { delay: 0..3 }
     }.freeze
 
-    def response_serversuccesscommand
-      send_response(commandID: @data.commandID, parameters: [])
+    def response_server_success_command
+      send_response
     end
 
-    def response_servererrorcommand
-      send_response(commandID: @data.commandID, parameters: [{ error: "oops" }])
+    def response_server_error_command
+      send_response(parameters: [{ error: "oops" }])
     end
 
     def response_post_initialization
       @connected = true
-      send_response(commandID: @data.commandID, ignore: true)
+      send_ignore_message
       @server_id = @data.parameters.server_id
     end
 
@@ -41,7 +42,6 @@ class WebsocketClient
       end
 
       send_response(
-        commandID: @data.commandID,
         parameters: {
           locker: Faker::Number.within(range: 1..30_000),
           score: Faker::Number.within(range: 1..30_000),
@@ -58,7 +58,7 @@ class WebsocketClient
     end
 
     def response_territories
-      return send_response(commandID: @data.commandID, parameters: []) if @flags.RETURN_NO_TERRITORIES
+      return send_response if @flags.RETURN_NO_TERRITORIES
 
       # One static to test large amounts of moderators
       territories = [
@@ -70,12 +70,11 @@ class WebsocketClient
         territories << TerritoryGenerator.generate
       end
 
-      send_response(commandID: @data.commandID, parameters: territories)
+      send_response(parameters: territories)
     end
 
     def response_pay
       send_response(
-        commandID: @data.commandID,
         parameters: [{
           payment: Faker::Number.between(from: 20, to: 600),
           locker: Faker::Number.between(from: 2000, to: 1_000_000_000)
@@ -84,14 +83,7 @@ class WebsocketClient
     end
 
     def response_gamble
-      if @flags.NOT_ENOUGH_MONEY
-        return send_response(
-          commandID: @data.commandID,
-          parameters: [{
-            error: "Not enough poptabs!"
-          }]
-        )
-      end
+      return send_response(parameters: [{ error: "Not enough poptabs!" }]) if @flags.NOT_ENOUGH_MONEY
 
       amount = @data.parameters.amount.to_i
       locker_before = amount
@@ -105,7 +97,6 @@ class WebsocketClient
       end
 
       send_response(
-        commandID: @data.commandID,
         parameters: [{
           type: type,
           amount: amount,
@@ -117,10 +108,14 @@ class WebsocketClient
 
     # The command is actually !setid, but the v1 DLL is expecting this.
     def response_setterritoryid
-      return send_response(commandID: @data.commandID, parameters: [{ success: false, reason: "Some reason" }]) if @flags.FAIL_WITH_REASON
-      return send_response(commandID: @data.commandID, parameters: [{ success: false }]) if @flags.FAIL_WITHOUT_REASON
+      return send_response(parameters: [{ success: false, reason: "Some reason" }]) if @flags.FAIL_WITH_REASON
+      return send_response(parameters: [{ success: false }]) if @flags.FAIL_WITHOUT_REASON
 
-      send_response(commandID: @data.commandID, parameters: [{ success: true }])
+      send_response(parameters: [{ success: true }])
+    end
+
+    def response_add
+      send_response
     end
   end
 end

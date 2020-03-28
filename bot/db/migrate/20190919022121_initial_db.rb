@@ -97,9 +97,13 @@ class InitialDb < ActiveRecord::Migration[5.2]
 
     # requests
     create_table :requests do |t|
-      t.integer :user_id, index: true
-      t.string :request_name, null: false
-      t.json :request_metadata, default: nil
+      t.uuid :uuid, index: true
+      t.string :uuid_short
+      t.integer :requestor_user_id
+      t.integer :requestee_user_id
+      t.string :requested_from_channel_id, null: false
+      t.string :command_name, null: false
+      t.json :command_arguments, default: nil
       t.datetime :expires_at, index: true
       t.datetime :created_at
       t.datetime :updated_at
@@ -254,10 +258,12 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_index :servers, :server_id, unique: true
     add_index :servers, :server_key, unique: true
     add_index :users, :discord_id, unique: true
+    add_index :requests, %i[requestee_user_id uuid_short], unique: true
 
     add_foreign_key :command_configurations, :communities
     add_foreign_key :logs, :servers
-    add_foreign_key :requests, :users
+    add_foreign_key :requests, :users, column: :requestor_user_id
+    add_foreign_key :requests, :users, column: :requestee_user_id
     add_foreign_key :servers, :communities
     add_foreign_key :server_mods, :servers
     add_foreign_key :server_rewards, :servers

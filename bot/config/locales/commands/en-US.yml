@@ -5,6 +5,14 @@
 
 en-US:
   commands:
+    request:
+      sent: "Request `%{uuid}` has been sent to %{user}. They have 1 day to respond to your request."
+      accept_name: "To **accept** this request"
+      accept_value: "[ACCEPT](%{url})"
+      decline_name: "To **decline** this request"
+      decline_value: "[DECLINE](%{url})"
+      command_usage_name: "Don't feel safe going to my website?"
+      command_usage_value: "That's okay! You can accept or decline this request by using ```%{prefix}accept %{uuid}``` or ```%{prefix}decline %{uuid}```"
     base:
       description: A test command
       example: |-
@@ -27,8 +35,6 @@ en-US:
       categories:
         name: "Categories"
         value: |-
-         **`!help player`**: Getting started information for Players
-         **`!help server`**: Getting started information for Server Owners
          **`!help commands`**: List all commands
          **`!help <command_name>`**: Get information about the provided command
       getting_started:
@@ -171,7 +177,7 @@ en-US:
         longest_current_streak: "Longest Current Streak"
         user_with: "%{user} with %{value}"
         user_with_poptabs: "%{user} with %{value} poptabs"
-    setid:
+    set_id:
       description: "**Territory Owner Only.** Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
       example: |-
         **`!setid esm_malden jqjoe no_u`**: Sets territory `jqjoe` to be `kickass`
@@ -183,3 +189,27 @@ en-US:
         maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 30 characters"
         access_denied: "I'm sorry %{user}, you are not allowed to do that."
       success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```!pay %{server_id} %{new_territory_id}```"
+    accept:
+      description: "Accepts a request based off its UUID"
+      example: |-
+        **`!accept c619`:** Accepts request `c619` from your pending requests
+      error_message:
+        invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
+      success_message: "The request has been accepted and I've notified the requestor"
+    decline:
+      description: "Declines a request based off its UUID"
+      example: |-
+        **`!decline e09e`:** Declines request `e09e` from your pending requests
+      error_message:
+        invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
+      success_message: "The request has been declined. The requestor **has not** be notified"
+    add:
+      description: "Adds the target user as a builder in the provided territory"
+      example: |-
+        **`!add esm_malden jqjoe @Bryan`:** Adds @Bryan to `jqjoe` on `esm_malden`
+        **`!add esm_malden some_territory @your_username`:** If you are a territory admin, you may replace `@your_username` with a tag of yourself to add yourself to this territory.
+      request_description: "Hi %{target_user}!\n%{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`"
+      requestee_description: "Hi %{target_user}!\n%{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`"
+      requestor_accepted: "Request `%{uuid}` has been accepted. Processing your request to add %{target_user} to `%{territory_id}` on `%{server_id}`"
+      requestor_success: "Hi %{current_user}, %{target_user} has been added to territory `%{territory_id}` on %{server_id}"
+      requestee_success: "Hi %{user}, you've been added to `%{territory_id}` successfully. Welcome aboard!"

@@ -132,6 +132,14 @@ module ESM
 
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:different_community_in_text, user: current_user)
         end
+
+        # Used by calling in a command that uses the request system.
+        # This will raise ESM::Exception::CheckFailure if there is a pending request for the target_user
+        def check_for_pending_request!
+          return if request.nil?
+
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:pending_request, user: current_user)
+        end
       end
     end
   end

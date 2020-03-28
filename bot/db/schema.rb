@@ -136,14 +136,19 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   end
 
   create_table "requests", force: :cascade do |t|
-    t.integer "user_id"
-    t.string "request_name", null: false
-    t.json "request_metadata"
+    t.uuid "uuid"
+    t.string "uuid_short"
+    t.integer "requestor_user_id"
+    t.integer "requestee_user_id"
+    t.string "requested_from_channel_id", null: false
+    t.string "command_name", null: false
+    t.json "command_arguments"
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.index ["expires_at"], name: "index_requests_on_expires_at"
-    t.index ["user_id"], name: "index_requests_on_user_id"
+    t.index ["requestee_user_id", "uuid_short"], name: "index_requests_on_requestee_user_id_and_uuid_short", unique: true
+    t.index ["uuid"], name: "index_requests_on_uuid"
   end
 
   create_table "server_mods", force: :cascade do |t|
@@ -286,7 +291,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "gamble_stats", "servers"
   add_foreign_key "gamble_stats", "users"
   add_foreign_key "logs", "servers"
-  add_foreign_key "requests", "users"
+  add_foreign_key "requests", "users", column: "requestee_user_id"
+  add_foreign_key "requests", "users", column: "requestor_user_id"
   add_foreign_key "server_mods", "servers"
   add_foreign_key "server_rewards", "servers"
   add_foreign_key "server_settings", "servers"

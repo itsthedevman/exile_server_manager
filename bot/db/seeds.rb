@@ -21,7 +21,7 @@ community = ESM::Community.create!(
   community_id: "esm",
   community_name: "Exile Server Manager",
   community_website: "https://www.esmbot.com",
-  guild_id: ESM::Community::Secondary::ID,
+  guild_id: ESM::Community::ESM::ID,
   logging_channel_id: "624387002443497489"
 )
 

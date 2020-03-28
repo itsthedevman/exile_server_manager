@@ -106,13 +106,5 @@ module ESM
         end
       end
     end
-
-    def before_save_testing
-      puts "before save"
-    end
-
-    def before_create_testing
-      puts "before create"
-    end
   end
 end

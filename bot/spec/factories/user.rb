@@ -3,7 +3,8 @@
 FactoryBot.define do
   factory :user, class: "ESM::User" do
     transient do
-      user do
+      not_user {}
+      users do
         [
           {
             id: "264594717939859457",
@@ -89,8 +90,9 @@ FactoryBot.define do
             steam_uid: "76561198310067286",
             steam_username: "Russ"
           }
-        ].sample(1).first
+        ]
       end
+      user { users.sample }
     end
 
     # attribute :discord_id, :string
@@ -111,9 +113,21 @@ FactoryBot.define do
     steam_uid { user[:steam_uid] }
     steam_username { user[:steam_username] }
 
-    # Used only in tests. Tracks the type of guild the user has joined
+    # Tracks the type of guild the user has joined
     # :primary for Exile Server Manager, :secondary for my test server
     GUILD_TYPE { :primary }
+
+    before(:create) do |user, evaluator|
+      next if evaluator.not_user.nil?
+
+      # Create another user that isn't the discord ID passed in
+      new_user = evaluator.users.reject { |u| u[:id] == evaluator.not_user.discord_id }.sample
+      user.discord_id = new_user[:id]
+      user.discord_username = new_user[:name]
+      user.discord_discriminator = new_user[:discriminator]
+      user.steam_uid = new_user[:steam_uid]
+      user.steam_username = new_user[:steam_username]
+    end
 
     trait :unregistered do
       steam_uid { nil }
@@ -149,7 +163,7 @@ FactoryBot.define do
               steam_uid: ESM::User::BryanV3::STEAM_UID,
               steam_username: ESM::User::BryanV3::STEAM_USERNAME
             }
-          ].sample(1).first
+          ].sample
         end
       end
 

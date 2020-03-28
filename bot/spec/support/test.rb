@@ -24,6 +24,11 @@ module ESM
       @user ||= FactoryBot.create(@user_type)
     end
 
+    # Creates a second user that isn't #user
+    def self.second_user
+      @second_user ||= FactoryBot.create(@user_type, not_user: user)
+    end
+
     def self.server
       @server ||= FactoryBot.create(:server, community_id: community.id)
     end
@@ -48,6 +53,7 @@ module ESM
       @community = nil
       @server = nil
       @user = nil
+      @second_user = nil
 
       @community_type = %i[esm_community secondary_community].sample(1).first
       @user_type = @community_type == :esm_community ? :user : :secondary_user

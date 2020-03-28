@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Websocket::RequestWatcher do
+describe ESM::Websocket::Request::Overseer do
   let!(:community) { ESM::Test.community }
   let!(:server) { ESM::Test.server }
   let!(:user) { ESM.bot.user(ESM::Test.user.discord_id) }

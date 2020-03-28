@@ -3,10 +3,8 @@
 module ESM
   module Command
     module Test
-      class SkipServerCheckCommand < ESM::Command::Base
+      class RequestCommand < ESM::Command::Base
         type :player
-
-        skip_check :connected_server
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -14,13 +12,19 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        argument :server_id
+        argument :target
 
         def discord
-          "Hello"
+          add_request
         end
 
-        def server; end
+        def request_accepted
+          ESM.bot.deliver("accepted", to: @request.requestor.discord_user)
+        end
+
+        def request_declined
+          ESM.bot.deliver("declined", to: @request.requestor.discord_user)
+        end
       end
     end
   end

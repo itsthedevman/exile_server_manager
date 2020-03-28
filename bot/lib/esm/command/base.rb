@@ -49,8 +49,8 @@ module ESM
         @requires = []
         @skipped_checks = Set.new
 
-        # ESM::Command::Development::Eval => eval
-        @name = self.name.demodulize.downcase
+        # ESM::Command::Server::SetId => set_id
+        @name = self.name.demodulize.underscore.downcase
       end
 
       def self.aliases(*aliases)
@@ -165,6 +165,10 @@ module ESM
         @current_cooldown ||= load_current_cooldown
       end
 
+      def current_channel
+        @current_channel ||= @event.channel
+      end
+
       # @returns [ESM::Server, nil] The server that the command was executed for
       def target_server
         return nil if @arguments.server_id.blank?
@@ -185,6 +189,13 @@ module ESM
       # @returns [ESM::User, nil] The user that the command was executed against
       def target_user
         @target_user ||= ESM::User.parse(@arguments.target)
+      end
+
+      # @returns [Boolean] If the current user is the target user.
+      def same_user?
+        return false if target_user.nil?
+
+        current_user.id == target_user.id
       end
 
       def dm_only?
@@ -228,7 +239,7 @@ module ESM
           command: self,
           command_name: command_name,
           user: current_user,
-          channel: @event.channel,
+          channel: current_channel,
           parameters: parameters,
           timeout: timeout
         )
@@ -239,10 +250,50 @@ module ESM
 
       # Convenience method for replying back to the event's channel
       def reply(message)
-        ESM.bot.deliver(message, to: @event.channel)
+        ESM.bot.deliver(message, to: current_channel)
+      end
+
+      # @param request [ESM::Request] The request to build this command with
+      # @param accepted [Boolean] If the request was accepted (true) or denied (false)
+      def from_request(request)
+        @request = request
+
+        # Initialize our command from the request
+        @arguments.from_hash(request.command_arguments) if request.command_arguments.present?
+        @current_user = ESM::User.parse(request.requestor.discord_id)
+        @target_user = ESM::User.parse(request.requestee.discord_id)
+        @current_channel = ESM.bot.channel(request.requested_from_channel_id)
+
+        if @request.accepted
+          request_accepted
+        else
+          request_declined
+        end
+      end
+
+      def request
+        @request ||= lambda do
+          # Don't look for the requestor because multiple different people could attempt to invite them
+          # requestor_user_id: current_user.esm_user.id,
+          query = ESM::Request.where(requestee_user_id: target_user.esm_user.id, command_name: @name)
+
+          @arguments.to_h.each do |name, value|
+            query = query.where("command_arguments->>'#{name}' = ?", value)
+          end
+
+          query.first
+        end.call
       end
 
       private
+
+      def discord; end
+
+      def server; end
+
+      def request_accepted; end
+
+      def request_declined; end
 
       def from_discord(event)
         @event = event
@@ -362,6 +413,7 @@ module ESM
         @cooldown_time =
           if config_present
             # [2, "seconds"] -> 2 seconds
+            # Calls .seconds, .days, .months, etc
             config.cooldown_quantity.send(config.cooldown_type)
           else
             @defines.cooldown_time.default
@@ -370,6 +422,44 @@ module ESM
 
       def skip(*flags)
         flags.each { |flag| @skip_flags << flag }
+      end
+
+      def add_request
+        @request =
+          ESM::Request.create!(
+            requestor_user_id: current_user.esm_user.id,
+            requestee_user_id: target_user.esm_user.id,
+            requested_from_channel_id: current_channel.id.to_s,
+            command_name: @name.underscore,
+            command_arguments: @arguments.to_h
+          )
+      end
+
+      def request_url
+        return nil if @request.nil?
+
+        "#{ENV["REQUEST_URL"]}/#{@request.uuid}"
+      end
+
+      def accept_request_url
+        "#{request_url}/accept"
+      end
+
+      def decline_request_url
+        "#{request_url}/decline"
+      end
+
+      def send_request_message(description: "")
+        embed =
+          ESM::Embed.build do |e|
+            e.set_author(name: current_user.distinct, icon_url: current_user.avatar_url)
+            e.description = description
+            e.add_field(name: t("commands.request.accept_name"), value: t("commands.request.accept_value", url: accept_request_url), inline: true)
+            e.add_field(name: t("commands.request.decline_name"), value: t("commands.request.decline_value", url: decline_request_url), inline: true)
+            e.add_field(name: t("commands.request.command_usage_name"), value: t("commands.request.command_usage_value", prefix: ESM.config.prefix, uuid: request.uuid_short))
+          end
+
+        ESM.bot.deliver(embed, to: target_user)
       end
     end
   end

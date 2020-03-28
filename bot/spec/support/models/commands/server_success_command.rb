@@ -4,6 +4,7 @@ module ESM
   module Command
     module Test
       class ServerSuccessCommand < ESM::Command::Base
+        type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true

@@ -1,0 +1,56 @@
+# frozen_string_literal: true
+
+describe ESM::Command::System::Accept, category: "command" do
+  let!(:command) { ESM::Command::System::Accept.new }
+
+  it "should be valid" do
+    expect(command).not_to be_nil
+  end
+
+  it "should have 1 argument" do
+    expect(command.arguments.size).to eql(1)
+  end
+
+  it "should have a description" do
+    expect(command.description).not_to be_blank
+  end
+
+  it "should have examples" do
+    expect(command.example).not_to be_blank
+  end
+
+  describe "#execute" do
+    let!(:community) { ESM::Test.community }
+    let!(:server) { ESM::Test.server }
+    let!(:user_1) { ESM::Test.user }
+    let!(:user_2) { ESM::Test.second_user }
+
+    let!(:request) do
+      channel_id = [ESM::Community::ESM::SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
+
+      create(
+        :request,
+        requestor_user_id: user_1.id,
+        requestee_user_id: user_2.id,
+        requested_from_channel_id: channel_id,
+        command_name: "id"
+      )
+    end
+
+    it "should run (Valid UUID)" do
+      embed = nil
+      event = CommandEvent.create("!accept #{request.uuid_short}", user: user_2, channel_type: :dm)
+
+      expect { embed = command.execute(event) }.not_to raise_error
+      expect(embed).not_to be(nil)
+      expect(ESM::Request.all.size).to eql(0)
+    end
+
+    it "should run (Invalid UUID)" do
+      # The uuid is valid, but the user_1 is not the who the request is for
+      event = CommandEvent.create("!accept #{request.uuid_short}", user: user_1, channel_type: :dm)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /unable to find a request/i)
+    end
+  end
+end

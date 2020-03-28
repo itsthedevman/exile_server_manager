@@ -4,6 +4,8 @@ module ESM
   module Command
     module Test
       class SkipCooldownCommand < ESM::Command::Base
+        type :player
+
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
         define :whitelisted_role_ids, modifiable: true, default: []

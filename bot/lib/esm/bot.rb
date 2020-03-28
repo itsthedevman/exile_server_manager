@@ -34,12 +34,14 @@ module ESM
       self.user_unban(&method(:esm_user_unban))
     end
 
-    def esm_disconnected(event)
+    def esm_disconnected(_event)
       # This event is raised when the bot has disconnected from the WebSocket, due to the Bot#stop method or external causes.
       # IDEA: Maybe send email?
+      ESM::Request::Overseer.die
+      ESM::Websocket::Overseer.die
     end
 
-    def esm_mention(event)
+    def esm_mention(_event)
       # This event is raised when the bot is mentioned in a message.
     end
 
@@ -47,6 +49,7 @@ module ESM
       # Wait until the bot has connected before starting the websocket.
       # This is to avoid servers connecting before the bot is ready
       ESM::Websocket.start!
+      ESM::Request::Overseer.watch
 
       puts "Exile Server Manager has started\nInvite URL: #{self.invite_url}"
       @ready = true

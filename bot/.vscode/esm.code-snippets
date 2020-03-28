@@ -39,7 +39,7 @@
 		],
 		"description": "Create an warn logger with ESM"
 	 },
-	 "ESM Log (Error)": {
+	"ESM Log (Error)": {
 		"scope": "ruby",
 		"prefix": ["error", "ESM.logger.error"],
 		"body": [
@@ -47,13 +47,29 @@
 		],
 		"description": "Create an error logger with ESM"
  	},
-	 "ESM Log (Fatal)": {
+	"ESM Log (Fatal)": {
 		"scope": "ruby",
 		"prefix": ["fatal", "ESM.logger.fatal"],
 		"body": [
 			"ESM.logger.fatal(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
 		],
 		"description": "Create an fatal logger with ESM"
+	 },
+	 "Ruby Prof (Start)": {
+		"scope": "ruby",
+		"prefix": ["prof-start"],
+		"body": [
+			"RubyProf.start"
+		],
+		"description": "Inserts a ruby prof start command"
+	 },
+	 "Ruby Prof (Stop)": {
+		"scope": "ruby",
+		"prefix": ["prof-stop"],
+		"body": [
+			"RubyProf::FlatPrinter.new(RubyProf.stop).print(STDOUT)"
+		],
+		"description": "Inserts a ruby prof stop command"
 	 },
 	 "ESM Command Test": {
 		 "scope": "ruby",
@@ -84,6 +100,7 @@
 			"\t\tlet!(:community) { ESM::Test.community }",
 			"\t\tlet!(:server) { ESM::Test.server }",
 			"\t\tlet!(:user) { ESM::Test.user }",
+			"\t\tlet(:second_user) { ESM::Test.second_user }",
 			"\t\tlet!(:wsc) { WebsocketClient.new(server) }",
 			"\t\tlet(:connection) { ESM::Websocket.connections[server.server_id] }",
 			"\t\tlet(:response) { command.response }",
@@ -98,7 +115,8 @@
 			"",
 			"\t\tit \"should return\" do",
 			"\t\t\trequest = nil",
-			"\t\t\tevent = CommandEvent.create(\"!${3:command_name}\", user: user, channel_type: :dm)",
+			"\t\t\tcommand_statement = command.statement(${3:arguments})",
+			"\t\t\tevent = CommandEvent.create(command_statement, user: user, channel_type: :dm)",
 			"",
 			"\t\t\texpect { request = command.execute(event) }.not_to raise_error",
 			"\t\t\texpect(request).not_to be_nil",
@@ -146,21 +164,17 @@
 				"\t\t\t\t# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
 				"\t\t\t\t# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
 				"\t\t\t\t# @param template [Symbol] The name of one of the templates to use for this command."
-				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: t(\"commands.${12:command_name}.${10:name}\"), preserve: true, default: nil, type: nil, display_as: nil, multiline: true",
+				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: t(\"commands.${12:command_name}.arguments.${10:name}\"), preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil",
 				"",
-				"\t\t\t\tdef discord",
-				"\t\t\t\tend",
+				"\t\t\t\tdef discord; end",
 				"",
-				"\t\t\t\tdef server",
-				"\t\t\t\tend",
+				"\t\t\t\tdef server; end",
 				"",
-				"\t\t\t\tmodule ErrorMessage",
+				"\t\t\t\tdef request_accepted(request); end",
 				"",
-				"\t\t\t\tend",
+				"\t\t\t\tdef request_declined(request); end",
 				"",
-				"\t\t\t\t#########################",
-				"\t\t\t\t# Command Methods",
-				"\t\t\t\t#########################",
+				"\t\t\t\tmodule ErrorMessage; end",
 				"\t\t\tend",
 				"\t\tend",
 				"\tend",

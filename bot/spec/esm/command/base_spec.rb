@@ -6,7 +6,7 @@ describe ESM::Command::Base do
   let!(:community) { create(:esm_community) }
   let!(:server) { create(:esm_malden, community_id: community.id) }
   let!(:user) { create(:user) }
-  let!(:configuration) { create(:command_configuration, community_id: community.id, command_name: "base") }
+  let!(:configuration) { community.command_configurations.where(command_name: "base").first }
   let(:wsc) { WebsocketClient.new(server) }
   let(:connection) { ESM::Websocket.connections[server.server_id] }
 
@@ -678,6 +678,44 @@ describe ESM::Command::Base do
       event = CommandEvent.create(skip_command.statement(server_id: server.server_id), channel_type: :text, user: user)
       expect { skip_command.execute(event) }.not_to raise_error
       expect(skip_command.current_cooldown).to eql(nil)
+    end
+  end
+
+  describe "#add_request" do
+    let!(:secondary_user) { create(:secondary_user) }
+
+    it "should add the request" do
+      request_command = ESM::Command::Test::RequestCommand.new
+      event = CommandEvent.create(request_command.statement(target: secondary_user.discord_id), channel_type: :text, user: user)
+      expect { request_command.execute(event) }.not_to raise_error
+      expect(ESM::Request.all.size).to eql(1)
+      expect(secondary_user.pending_requests.size).to eql(1)
+    end
+  end
+
+  describe "#from_request" do
+    let!(:secondary_user) { create(:secondary_user) }
+
+    it "should be accepted" do
+      request_command = ESM::Command::Test::RequestCommand.new
+      event = CommandEvent.create(request_command.statement(target: secondary_user.discord_id), channel_type: :text, user: user)
+      expect { request_command.execute(event) }.not_to raise_error
+
+      request = ESM::Request.first
+      request.respond(true)
+      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.first.second).to eql("accepted")
+    end
+
+    it "should be declined" do
+      request_command = ESM::Command::Test::RequestCommand.new
+      event = CommandEvent.create(request_command.statement(target: secondary_user.discord_id), channel_type: :text, user: user)
+      expect { request_command.execute(event) }.not_to raise_error
+
+      request = ESM::Request.first
+      request.respond(false)
+      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.first.second).to eql("declined")
     end
   end
 end

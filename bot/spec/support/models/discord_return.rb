@@ -3,9 +3,9 @@
 # The ruby version of my C# class
 class DiscordReturn
   def initialize(**args)
-    @command_id = args[:commandID]
-    @command = args[:command]
-    @parameters = args[:parameters]
+    @command_id = args[:commandID] || ""
+    @command = args[:command] || ""
+    @parameters = args[:parameters] || []
     @error = args[:error]
     @ignore = args[:ignore]
   end

@@ -18,12 +18,19 @@ require "faker"
 require "byebug"
 require "awesome_print"
 require "pry"
-
-# Require all our supports
-Dir["#{File.expand_path("./spec/support")}/**/*.rb"].each { |file| require file }
+require "ruby-prof"
 
 # Start the bot
 ESM.run!
+
+# Require all our supports
+Dir["#{File.expand_path("./spec/support")}/**/*.rb"].each do |file|
+  if file.match(/commands\/.+\.rb$/i)
+    ESM::Command.process_command(file, "test")
+  else
+    require file
+  end
+end
 
 # Ignore debug messages when running tests
 ActiveRecord::Base.logger.level = Logger::INFO

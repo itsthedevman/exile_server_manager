@@ -45,6 +45,23 @@ module ESM
         self.any? { |argument| argument.name == :community_id }
       end
 
+      def to_h
+        hash = {}
+
+        self.each do |argument|
+          hash[argument.name] = argument.value
+        end
+
+        hash
+      end
+
+      # Pulls the values for arguments from a hash with the key being the argument name
+      def from_hash(hash)
+        self.each do |argument|
+          argument.value = hash[argument.name.to_s]
+        end
+      end
+
       # rubocop:disable Style/MethodMissingSuper
       # Act like ostruct and return nil if the method isn't defined
       def method_missing(method_name, *arguments, &block)

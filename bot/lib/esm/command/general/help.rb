@@ -58,7 +58,7 @@ module ESM
               embed.add_field(value: t("commands.help.commands.#{type}_commands_title"))
               categories(type).each do |category, commands|
                 embed.add_field(
-                  name: category.humanize,
+                  name: "**__#{category.humanize}__**",
                   value: format_commands(commands)
                 )
               end
@@ -74,7 +74,7 @@ module ESM
 
         def format_commands(commands)
           commands.format do |command|
-            "**`#{command.distinct}`**: #{command.description}\n"
+            "**`#{command.distinct}`**\n#{command.description}\n\n"
           end
         end
 

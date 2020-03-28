@@ -24,3 +24,4 @@ en-US:
     doggo_not_found: "Hey %{user}, all of the doggos were asleep. Please wait a few moments before trying again"
     player_mode_command_not_available: "I'm sorry %{user}, `!%{command_name}` is not available in player mode."
     different_community_in_text: "I'm sorry %{user}, using commands for other communities is only allowed a **direct message** with me or with [Player Mode](https://www.esmbot.com/wiki/player_mode) turned on."
+    pending_request: "I'm sorry %{current_user}, %{target_user} already has a request pending"

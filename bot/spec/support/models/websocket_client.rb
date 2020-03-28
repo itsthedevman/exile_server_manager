@@ -68,8 +68,9 @@ class WebsocketClient
     Thread.kill(@thread)
   end
 
-  def send_response(packet)
-    @ws.send(DiscordReturn.new(packet).to_json)
+  def send_response(**args)
+    args[:commandID] = @data.commandID if @data
+    @ws.send(DiscordReturn.new(args).to_json)
   end
 
   private
@@ -99,7 +100,7 @@ class WebsocketClient
   end
 
   def send_ignore_message
-    send_response(commandID: @data.commandID, ignore: true)
+    send_response(ignore: true)
   end
 
   def delay(range)
