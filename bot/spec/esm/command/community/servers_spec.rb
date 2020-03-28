@@ -40,13 +40,13 @@ describe ESM::Command::Community::Servers, category: "command" do
       embed = ESM::Test.messages.first.second
 
       expect(embed.title).to eql(server.server_name)
-      expect(embed.description).to eql(t("commands.servers.offline"))
+      expect(embed.description).to eql(I18n.t("commands.servers.offline"))
       expect(embed.fields.size).to eql(3)
-      expect(embed.fields.first.name).to eql(t(:server_id))
+      expect(embed.fields.first.name).to eql(I18n.t(:server_id))
       expect(embed.fields.first.value).to eql("```#{server.server_id}```")
-      expect(embed.fields.second.name).to eql(t(:ip))
+      expect(embed.fields.second.name).to eql(I18n.t(:ip))
       expect(embed.fields.second.value).to eql("```#{server.server_ip}```")
-      expect(embed.fields.third.name).to eql(t(:port))
+      expect(embed.fields.third.name).to eql(I18n.t(:port))
       expect(embed.fields.third.value).to eql("```#{server.server_port}```")
     end
 
@@ -64,15 +64,15 @@ describe ESM::Command::Community::Servers, category: "command" do
 
       expect(embed.title).to eql(server.server_name)
       expect(embed.fields.size).to eql(5)
-      expect(embed.fields.first.name).to eql(t(:server_id))
+      expect(embed.fields.first.name).to eql(I18n.t(:server_id))
       expect(embed.fields.first.value).to eql("```#{server.server_id}```")
-      expect(embed.fields.second.name).to eql(t(:ip))
+      expect(embed.fields.second.name).to eql(I18n.t(:ip))
       expect(embed.fields.second.value).to eql("```#{server.server_ip}```")
-      expect(embed.fields.third.name).to eql(t(:port))
+      expect(embed.fields.third.name).to eql(I18n.t(:port))
       expect(embed.fields.third.value).to eql("```#{server.server_port}```")
-      expect(embed.fields.fourth.name).to eql(t("commands.server.online_for"))
+      expect(embed.fields.fourth.name).to eql(I18n.t("commands.server.online_for"))
       expect(embed.fields.fourth.value).to eql("```#{server.uptime}```")
-      expect(embed.fields.fifth.name).to eql(t("commands.server.restart_in"))
+      expect(embed.fields.fifth.name).to eql(I18n.t("commands.server.restart_in"))
       expect(embed.fields.fifth.value).to eql("```#{server.time_left_before_restart}```")
 
       connection.disconnect!

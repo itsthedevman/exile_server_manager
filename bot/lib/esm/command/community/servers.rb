@@ -28,10 +28,10 @@ module ESM
         module ErrorMessage
           def self.no_servers(community_id:)
             ESM::Embed.build do |e|
-              e.description = t("commands.servers.embed.error_messages.no_servers.description", community_id: community_id)
+              e.description = I18n.t("commands.servers.embed.error_messages.no_servers.description", community_id: community_id)
               e.add_field(
-                name: t("commands.servers.embed.error_messages.no_servers.field_1.name"),
-                value: t("commands.servers.embed.error_messages.no_servers.field_1.value")
+                name: I18n.t("commands.servers.embed.error_messages.no_servers.field_1.name"),
+                value: I18n.t("commands.servers.embed.error_messages.no_servers.field_1.value")
               )
             end
           end
@@ -50,23 +50,23 @@ module ESM
             add_server_connection_info(e)
 
             if @server.online?
-              e.add_field(name: t("commands.server.online_for"), value: "```#{@server.uptime}```")
-              e.add_field(name: t("commands.server.restart_in"), value: "```#{@server.time_left_before_restart}```")
+              e.add_field(name: I18n.t("commands.server.online_for"), value: "```#{@server.uptime}```")
+              e.add_field(name: I18n.t("commands.server.restart_in"), value: "```#{@server.time_left_before_restart}```")
             else
               e.description =
                 if @server.disconnected_at.nil?
-                  t("commands.servers.offline")
+                  I18n.t("commands.servers.offline")
                 else
-                  t("commands.servers.offline_for", time: @server.time_since_last_connection)
+                  I18n.t("commands.servers.offline_for", time: @server.time_since_last_connection)
                 end
             end
           end
         end
 
         def add_server_connection_info(e)
-          e.add_field(name: t(:server_id), value: "```#{@server.server_id}```", inline: true)
-          e.add_field(name: t(:ip), value: "```#{@server.server_ip}```", inline: true)
-          e.add_field(name: t(:port), value: "```#{@server.server_port}```", inline: true)
+          e.add_field(name: I18n.t(:server_id), value: "```#{@server.server_id}```", inline: true)
+          e.add_field(name: I18n.t(:ip), value: "```#{@server.server_ip}```", inline: true)
+          e.add_field(name: I18n.t(:port), value: "```#{@server.server_port}```", inline: true)
         end
       end
     end

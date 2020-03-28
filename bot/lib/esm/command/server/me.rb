@@ -27,13 +27,13 @@ module ESM
           # What if the player is dead?
           embed =
             ESM::Embed.build do |e|
-              e.title = t("commands.me.embed.title", server_id: target_server.server_id, user: @response.name)
+              e.title = I18n.t("commands.me.embed.title", server_id: target_server.server_id, user: @response.name)
 
               add_general_field(e)
               add_currency_field(e)
               add_scoreboard_field(e)
 
-              e.add_field(name: t("territories"), value: build_territory_field) if !@response.territories.to_h.blank?
+              e.add_field(name: I18n.t("territories"), value: build_territory_field) if !@response.territories.to_h.blank?
             end
 
           reply(embed)
@@ -53,9 +53,9 @@ module ESM
           embed.add_field(
             name: "General",
             value: [
-              "**_#{t(:damage)}:_**\n#{(@response.damage * 100).round(2)}%",
-              "**_#{t(:hunger)}:_**\n#{@response.hunger.round(2)}%",
-              "**_#{t(:thirst)}:_**\n#{@response.thirst.round(2)}%"
+              "**_#{I18n.t(:damage)}:_**\n#{(@response.damage * 100).round(2)}%",
+              "**_#{I18n.t(:hunger)}:_**\n#{@response.hunger.round(2)}%",
+              "**_#{I18n.t(:thirst)}:_**\n#{@response.thirst.round(2)}%"
             ].join("\n"),
             inline: true
           )
@@ -65,9 +65,9 @@ module ESM
           embed.add_field(
             name: "Currency",
             value: [
-              "**_#{t(:money)}:_**\n#{@response.money.to_poptab}",
-              "**_#{t(:locker)}:_**\n#{@response.locker.to_poptab}",
-              "**_#{t(:respect)}:_**\n#{@response.score.to_readable}"
+              "**_#{I18n.t(:money)}:_**\n#{@response.money.to_poptab}",
+              "**_#{I18n.t(:locker)}:_**\n#{@response.locker.to_poptab}",
+              "**_#{I18n.t(:respect)}:_**\n#{@response.score.to_readable}"
             ].join("\n"),
             inline: true
           )
@@ -77,9 +77,9 @@ module ESM
           embed.add_field(
             name: "Scoreboard",
             value: [
-              "**_#{t(:kills)}:_**\n#{@response.kills.to_readable}",
-              "**_#{t(:deaths)}:_**\n#{@response.deaths.to_readable}",
-              "**_#{t(:kd_ratio)}:_**\n#{kd_ratio}"
+              "**_#{I18n.t(:kills)}:_**\n#{@response.kills.to_readable}",
+              "**_#{I18n.t(:deaths)}:_**\n#{@response.deaths.to_readable}",
+              "**_#{I18n.t(:kd_ratio)}:_**\n#{kd_ratio}"
             ].join("\n"),
             inline: true
           )

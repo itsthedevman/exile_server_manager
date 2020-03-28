@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "esm/command/base/check_methods"
-require "esm/command/base/error_message"
-require "esm/command/base/logging_methods"
-require "esm/command/base/permission_methods"
-
 # The main driver for all of ESM's commands. This class is synomysis with ActiveRecord::Base in that all commands inherit
 # from this class and this class gives access to a lot of the core functionality.
 module ESM
@@ -106,7 +101,7 @@ module ESM
                   :description, :aliases, :offset, :distinct, :limit_to,
                   :defines, :requires, :executed_at, :response, :cooldown_time
 
-      attr_writer :limit_to, :event, :executed_at, :requires if ESM.env.test?
+      attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
 
       def initialize
         attributes = self.class.attributes
@@ -114,8 +109,8 @@ module ESM
         @name = attributes.name
 
         # Attempt to pull the description and examples from translation. Default to empty
-        @description = t("commands.#{@name}.description", default: "")
-        @example = t("commands.#{@name}.example", default: "")
+        @description = I18n.t("commands.#{@name}.description", default: "")
+        @example = I18n.t("commands.#{@name}.example", default: "")
 
         # ESM::Command::Development => Development (God I love ActiveSupport)
         @category = self.class.module_parent.name.demodulize
@@ -454,9 +449,9 @@ module ESM
           ESM::Embed.build do |e|
             e.set_author(name: current_user.distinct, icon_url: current_user.avatar_url)
             e.description = description
-            e.add_field(name: t("commands.request.accept_name"), value: t("commands.request.accept_value", url: accept_request_url), inline: true)
-            e.add_field(name: t("commands.request.decline_name"), value: t("commands.request.decline_value", url: decline_request_url), inline: true)
-            e.add_field(name: t("commands.request.command_usage_name"), value: t("commands.request.command_usage_value", prefix: ESM.config.prefix, uuid: request.uuid_short))
+            e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url), inline: true)
+            e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url), inline: true)
+            e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", prefix: ESM.config.prefix, uuid: request.uuid_short))
           end
 
         ESM.bot.deliver(embed, to: target_user)

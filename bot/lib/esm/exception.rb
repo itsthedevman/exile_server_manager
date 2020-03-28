@@ -43,7 +43,7 @@ module ESM
         super("")
         @data =
           ESM::Embed.build do |e|
-            e.description = t("exceptions.text_only", user: user)
+            e.description = I18n.t("exceptions.text_only", user: user)
             e.color = :red
           end
       end
@@ -55,7 +55,7 @@ module ESM
         super("")
         @data =
           ESM::Embed.build do |e|
-            e.description = t("exceptions.dm_only", user: user)
+            e.description = I18n.t("exceptions.dm_only", user: user)
             e.color = :red
           end
       end

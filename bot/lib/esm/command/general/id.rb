@@ -15,10 +15,10 @@ module ESM
 
         def discord
           ESM::Embed.build do |e|
-            e.description = t("commands.id.embed.description", community_name: current_community.name, community_id: current_community.c_id)
+            e.description = I18n.t("commands.id.embed.description", community_name: current_community.name, community_id: current_community.c_id)
             e.add_field(
-              name: t("commands.id.embed.field.name"),
-              value: t("commands.id.embed.field.value", community_id: current_community.c_id)
+              name: I18n.t("commands.id.embed.field.name"),
+              value: I18n.t("commands.id.embed.field.value", community_id: current_community.c_id)
             )
           end
         end

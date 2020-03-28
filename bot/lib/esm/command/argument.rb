@@ -75,19 +75,19 @@ module ESM
         @defaults ||= {
           community_id: {
             regex: ESM::Regex::COMMUNITY_ID,
-            description: t("default_arguments.community_id")
+            description: I18n.t("default_arguments.community_id")
           },
           target: {
             regex: ESM::Regex::TARGET,
-            description: t("default_arguments.target")
+            description: I18n.t("default_arguments.target")
           },
           server_id: {
             regex: ESM::Regex::SERVER_ID,
-            description: t("default_arguments.server_id")
+            description: I18n.t("default_arguments.server_id")
           },
           territory_id: {
             regex: ESM::Regex::TERRITORY_ID,
-            description: t("default_arguments.territory_id")
+            description: I18n.t("default_arguments.territory_id")
           }
         }
       end

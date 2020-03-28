@@ -50,11 +50,11 @@ module ESM
         end
 
         def add_connection_info(e)
-          e.add_field(name: t(:server_id), value: "```#{target_server.server_id}```")
-          e.add_field(name: t(:ip), value: "```#{target_server.server_ip}```", inline: true)
-          e.add_field(name: t(:port), value: "```#{target_server.server_port}```", inline: true)
-          e.add_field(name: t("commands.server.online_for"), value: "```#{target_server.uptime}```")
-          e.add_field(name: t("commands.server.restart_in"), value: "```#{target_server.time_left_before_restart}```")
+          e.add_field(name: I18n.t(:server_id), value: "```#{target_server.server_id}```")
+          e.add_field(name: I18n.t(:ip), value: "```#{target_server.server_ip}```", inline: true)
+          e.add_field(name: I18n.t(:port), value: "```#{target_server.server_port}```", inline: true)
+          e.add_field(name: I18n.t("commands.server.online_for"), value: "```#{target_server.uptime}```")
+          e.add_field(name: I18n.t("commands.server.restart_in"), value: "```#{target_server.time_left_before_restart}```")
         end
 
         def add_server_info(e)
@@ -62,15 +62,15 @@ module ESM
 
           return if query_response.nil?
 
-          e.add_field(name: t(:map), value: query_response.map_name, inline: true)
-          e.add_field(name: t(:players), value: "#{query_response.number_of_players}/#{query_response.max_players}", inline: true)
-          e.add_field(name: t(:game_version), value: query_response.game_version, inline: true)
+          e.add_field(name: I18n.t(:map), value: query_response.map_name, inline: true)
+          e.add_field(name: I18n.t(:players), value: "#{query_response.number_of_players}/#{query_response.max_players}", inline: true)
+          e.add_field(name: I18n.t(:game_version), value: query_response.game_version, inline: true)
         end
 
         def add_server_mods(e)
           return if target_server.server_mods.blank?
 
-          grouped_mods = target_server.server_mods.group_by { |mod| mod.mod_required? ? t(:required_mods) : t(:optional_mods) }
+          grouped_mods = target_server.server_mods.group_by { |mod| mod.mod_required? ? I18n.t(:required_mods) : I18n.t(:optional_mods) }
           grouped_mods.each do |header, mods|
             mod_field = { name: header, value: [], inline: true }
             process_mods(e, mod_field, mods)
@@ -90,7 +90,7 @@ module ESM
             # If the owner added more mods than our field can hold, send it and create a new field
             if (mod_field[:value].total_size + mod_line.size) > ESM::Embed::Limit::FIELD_VALUE_LENGTH_MAX
               e.add_field(mod_field)
-              mod_field = { name: "#{mod_field[:name]} #{t(:continued)}", value: [], inline: true }
+              mod_field = { name: "#{mod_field[:name]} #{I18n.t(:continued)}", value: [], inline: true }
             end
 
             mod_field[:value] << mod_line

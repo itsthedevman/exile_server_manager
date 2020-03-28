@@ -49,7 +49,7 @@ module ESM
 
           embed =
             ESM::Embed.build do |e|
-              e.description = t(
+              e.description = I18n.t(
                 "request_timed_out",
                 server_id: @connection.server.server_id,
                 user: request.user.mention

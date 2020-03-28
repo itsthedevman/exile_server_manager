@@ -24,7 +24,7 @@ module ESM
         module ErrorMessage
           def self.birb_not_found(user:)
             ESM::Embed.build do |e|
-              e.description = t("command_errors.birb_not_found", user: user)
+              e.description = I18n.t("command_errors.birb_not_found", user: user)
               e.color = :red
             end
           end
@@ -53,7 +53,7 @@ module ESM
         end
 
         def send_waiting_message
-          @message = reply(t("commands.birb.waiting"))
+          @message = reply(I18n.t("commands.birb.waiting"))
         end
 
         # Remove the "Waiting..." message

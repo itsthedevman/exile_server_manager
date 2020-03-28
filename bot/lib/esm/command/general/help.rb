@@ -13,7 +13,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        argument :category, regex: /.*/, default: nil, description: t("commands.help.arguments.category")
+        argument :category, regex: /.*/, default: nil, description: I18n.t("commands.help.arguments.category")
 
         def discord
           if @arguments.category == "commands"
@@ -30,20 +30,20 @@ module ESM
         #########################
         def getting_started
           ESM::Embed.build do |embed|
-            embed.title = t("commands.help.getting_started.title", user: @event.author.username)
-            embed.description = t("commands.help.getting_started.description")
+            embed.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
+            embed.description = I18n.t("commands.help.getting_started.description")
 
             embed.add_field(
-              name: t("commands.help.categories.name"),
-              value: t("commands.help.categories.value")
+              name: I18n.t("commands.help.categories.name"),
+              value: I18n.t("commands.help.categories.value")
             )
           end
         end
 
         def commands
           ESM::Embed.build do |embed|
-            embed.title = t("commands.help.commands.title")
-            embed.description = t("commands.help.commands.description", prefix: ESM.config.prefix)
+            embed.title = I18n.t("commands.help.commands.title")
+            embed.description = I18n.t("commands.help.commands.description", prefix: ESM.config.prefix)
 
             types = %i[player admin]
             types << :development if ESM.env.development?
@@ -55,7 +55,7 @@ module ESM
             types.each do |type|
               next if categories(type).blank?
 
-              embed.add_field(value: t("commands.help.commands.#{type}_commands_title"))
+              embed.add_field(value: I18n.t("commands.help.commands.#{type}_commands_title"))
               categories(type).each do |category, commands|
                 embed.add_field(
                   name: "**__#{category.humanize}__**",
@@ -82,19 +82,19 @@ module ESM
           command = ESM::Command[@arguments.category]
 
           ESM::Embed.build do |embed|
-            embed.title = t("commands.help.command.title", name: command.name)
+            embed.title = I18n.t("commands.help.command.title", name: command.name)
             embed.description = command.description
 
             # Usage
             embed.add_field(
-              name: t("commands.help.command.usage"),
+              name: I18n.t("commands.help.command.usage"),
               value: "```#{command.usage}```"
             )
 
             # Arguments
             if command.arguments.present?
               embed.add_field(
-                name: t("commands.help.command.arguments"),
+                name: I18n.t("commands.help.command.arguments"),
                 value: command.arguments
               )
             end
@@ -102,7 +102,7 @@ module ESM
             # Examples
             if command.examples.present?
               embed.add_field(
-                name: t("commands.help.command.examples"),
+                name: I18n.t("commands.help.command.examples"),
                 value: command.examples
               )
             end

@@ -25,7 +25,7 @@ module ESM
         def server
           embed =
             ESM::Embed.build do |e|
-              e.description = t(
+              e.description = I18n.t(
                 "commands.pay.embed.description",
                 user: current_user.mention,
                 server_id: target_server.server_id,

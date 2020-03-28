@@ -164,7 +164,7 @@
 				"\t\t\t\t# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
 				"\t\t\t\t# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
 				"\t\t\t\t# @param template [Symbol] The name of one of the templates to use for this command."
-				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: t(\"commands.${12:command_name}.arguments.${10:name}\"), preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil",
+				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: I18n.t(\"commands.${12:command_name}.arguments.${10:name}\"), preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil",
 				"",
 				"\t\t\t\tdef discord; end",
 				"",

@@ -37,7 +37,7 @@ describe ESM::Websocket::Request::Overseer do
       sleep(1)
       expect(server_connection.requests.size).to eql(iterations)
       expect(ESM::Test.messages.size).to eql(1)
-      expect(ESM::Test.messages.first[1].description).to eql(t("request_timed_out", server_id: server.server_id, user: user.mention))
+      expect(ESM::Test.messages.first[1].description).to eql(I18n.t("request_timed_out", server_id: server.server_id, user: user.mention))
     end
   end
 end

@@ -14,6 +14,6 @@ describe ESM do
   end
 
   it "should have i18n loaded" do
-    expect(t(:test)).to eql("This is a test")
+    expect(I18n.t(:test)).to eql("This is a test")
   end
 end

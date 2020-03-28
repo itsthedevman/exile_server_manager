@@ -8,7 +8,7 @@ module ESM
         limit_to :dm
 
         argument :community_id
-        argument :mode, regex: /player|server/, description: t("commands.mode.arguments.mode")
+        argument :mode, regex: /player|server/, description: I18n.t("commands.mode.arguments.mode")
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
@@ -30,8 +30,8 @@ module ESM
         module ErrorMessage
           def self.servers_exist(user:)
             ESM::Embed.build do |e|
-              e.title = t("commands.mode.error_messages.servers_exist.title", user: user.mention)
-              e.description = t("commands.mode.error_messages.servers_exist.description")
+              e.title = I18n.t("commands.mode.error_messages.servers_exist.title", user: user.mention)
+              e.description = I18n.t("commands.mode.error_messages.servers_exist.description")
               e.color = :red
             end
           end
@@ -40,16 +40,16 @@ module ESM
             player_mode = mode == "player"
 
             ESM::Embed.build do |e|
-              e.title = t("commands.mode.error_messages.same_mode.title")
-              e.description = t("commands.mode.error_messages.same_mode.description", state: player_mode ? "enabled" : "disabled")
+              e.title = I18n.t("commands.mode.error_messages.same_mode.title")
+              e.description = I18n.t("commands.mode.error_messages.same_mode.description", state: player_mode ? "enabled" : "disabled")
               e.color = :yellow
             end
           end
 
           def self.no_permissions(user:)
             ESM::Embed.build do |e|
-              e.title = t("commands.mode.error_messages.no_permissions.title", user: user.mention)
-              e.description = t("commands.mode.error_messages.no_permissions.description")
+              e.title = I18n.t("commands.mode.error_messages.no_permissions.title", user: user.mention)
+              e.description = I18n.t("commands.mode.error_messages.no_permissions.description")
               e.color = :red
             end
           end
@@ -90,7 +90,7 @@ module ESM
 
           # Reply back
           ESM::Embed.build do |e|
-            e.description = t("commands.mode.enabled", community_name: target_community.name)
+            e.description = I18n.t("commands.mode.enabled", community_name: target_community.name)
             e.color = :green
           end
         end
@@ -101,7 +101,7 @@ module ESM
 
           # Reply back
           ESM::Embed.build do |e|
-            e.description = t("commands.mode.disabled", community_name: target_community.name)
+            e.description = I18n.t("commands.mode.disabled", community_name: target_community.name)
             e.color = :green
           end
         end

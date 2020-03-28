@@ -1,4 +1,4 @@
-# t('product_price', price: @product.price)
+# I18n.t('product_price', price: @product.price)
 #
 # en:
 #  product_price: "$%{price}"

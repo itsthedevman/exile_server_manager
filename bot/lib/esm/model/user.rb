@@ -22,7 +22,7 @@ module ESM
     has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request"
     has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request"
 
-    attr_accessor :GUILD_TYPE if ESM.env.test?
+    attr_accessor :GUILD_TYPE if ENV["ESM_ENV"] == "test"
 
     module Bryan
       ID = "137709767954137088"

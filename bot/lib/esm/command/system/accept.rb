@@ -12,19 +12,19 @@ module ESM
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        argument :uuid, regex: /[0-9a-fA-F]{4}/, description: t("commands.accept.arguments.uuid")
+        argument :uuid, regex: /[0-9a-fA-F]{4}/, description: I18n.t("commands.accept.arguments.uuid")
 
         def discord
           request = current_user.esm_user.pending_requests.where(uuid_short: @arguments.uuid).first
           check_for_request!(request)
           request.respond(true)
 
-          ESM::Embed.build(:success, description: t("commands.accept.success_message"))
+          ESM::Embed.build(:success, description: I18n.t("commands.accept.success_message"))
         end
 
         module ErrorMessage
           def self.invalid_request_id(user:)
-            t("commands.accept.error_message.invalid_request_id", user: user.mention)
+            I18n.t("commands.accept.error_message.invalid_request_id", user: user.mention)
           end
         end
 

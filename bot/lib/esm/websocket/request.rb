@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "esm/websocket/request/overseer"
-
 module ESM
   class Websocket
     class Request
       attr_reader :id, :user, :command, :channel
-      attr_reader :command_name, :user_info if ESM.env.test?
+      attr_reader :command_name, :user_info if ENV["ESM_ENV"] == "test"
 
       # command: nil, user: nil, channel: nil, parameters: nil, timeout: 30, command_name: nil
       def initialize(**args)

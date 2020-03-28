@@ -135,7 +135,7 @@ module ESM
         counter += 1
       end
 
-      raise ESM::Exception::CheckFailure, t("failure_to_communicate") if match.nil?
+      raise ESM::Exception::CheckFailure, I18n.t("failure_to_communicate") if match.nil?
 
       # Return the match
       match[1]
@@ -145,7 +145,7 @@ module ESM
 
     def format_invalid_response(expected)
       expected_string = expected.map { |value| "`#{value}`" }.join(" or ")
-      t("invalid_response", expected: expected_string)
+      I18n.t("invalid_response", expected: expected_string)
     end
 
     # @private

@@ -50,5 +50,3 @@ module ESM
     end
   end
 end
-
-require "esm/model/request/overseer"

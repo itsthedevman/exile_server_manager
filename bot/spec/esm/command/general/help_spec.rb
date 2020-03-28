@@ -32,10 +32,10 @@ describe ESM::Command::General::Help, category: "command" do
       expect { embed = command.execute(event) }.not_to raise_error
 
       expect(embed.title).to match(/my name is exile server manager/i)
-      expect(embed.description).to eql(t("commands.help.getting_started.description"))
+      expect(embed.description).to eql(I18n.t("commands.help.getting_started.description"))
       expect(embed.fields.size).to eql(1)
-      expect(embed.fields.first.name).to eql(t("commands.help.categories.name"))
-      expect(embed.fields.first.value).to eql(t("commands.help.categories.value"))
+      expect(embed.fields.first.name).to eql(I18n.t("commands.help.categories.name"))
+      expect(embed.fields.first.value).to eql(I18n.t("commands.help.categories.value"))
     end
 
     it "should return a valid embed (commands)" do

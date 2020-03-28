@@ -35,7 +35,7 @@ describe ESM::Command::General::Mode, category: "command" do
 
       expect(community.player_mode_enabled?).to be(false)
 
-      expect(response.description).to eql(t("commands.mode.disabled", community_name: community.name))
+      expect(response.description).to eql(I18n.t("commands.mode.disabled", community_name: community.name))
       expect(response.color).to eql(ESM::Color::Toast::GREEN)
     end
 
@@ -50,7 +50,7 @@ describe ESM::Command::General::Mode, category: "command" do
 
       expect(community.player_mode_enabled?).to be(true)
 
-      expect(response.description).to eql(t("commands.mode.enabled", community_name: community.name))
+      expect(response.description).to eql(I18n.t("commands.mode.enabled", community_name: community.name))
       expect(response.color).to eql(ESM::Color::Toast::GREEN)
     end
 
@@ -72,8 +72,8 @@ describe ESM::Command::General::Mode, category: "command" do
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
-        expect(embed.title).to eql(t("commands.mode.error_messages.same_mode.title"))
-        expect(embed.description).to eql(t("commands.mode.error_messages.same_mode.description", state: "enabled"))
+        expect(embed.title).to eql(I18n.t("commands.mode.error_messages.same_mode.title"))
+        expect(embed.description).to eql(I18n.t("commands.mode.error_messages.same_mode.description", state: "enabled"))
         expect(embed.color).to eql(ESM::Color::Toast::YELLOW)
       end
     end
@@ -86,7 +86,7 @@ describe ESM::Command::General::Mode, category: "command" do
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
-        expect(embed.title).to eql(t("commands.mode.error_messages.servers_exist.title", user: event.user.mention))
+        expect(embed.title).to eql(I18n.t("commands.mode.error_messages.servers_exist.title", user: event.user.mention))
         expect(embed.description).to eql("In order to enable player mode, you must remove any servers you have added to me via my [Dashboard](https://www.esmbot.com/portal)")
         expect(embed.color).to eql(ESM::Color::Toast::RED)
       end
@@ -98,8 +98,8 @@ describe ESM::Command::General::Mode, category: "command" do
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
-        expect(embed.title).to eql(t("commands.mode.error_messages.no_permissions.title", user: event.user.mention))
-        expect(embed.description).to eql(t("commands.mode.error_messages.no_permissions.description", user: event.user.mention))
+        expect(embed.title).to eql(I18n.t("commands.mode.error_messages.no_permissions.title", user: event.user.mention))
+        expect(embed.description).to eql(I18n.t("commands.mode.error_messages.no_permissions.description", user: event.user.mention))
         expect(embed.color).to eql(ESM::Color::Toast::RED)
       end
     end

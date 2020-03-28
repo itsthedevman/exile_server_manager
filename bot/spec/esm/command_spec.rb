@@ -24,7 +24,7 @@ describe ESM::Command do
   end
 
   it "should format result (System Exception)" do
-    expectation = t("exceptions.system", message: "Something bad happened!")
+    expectation = I18n.t("exceptions.system", message: "Something bad happened!")
     result = ESM::Command.send(:send_result, ::Exception.new("Something bad happened!"), event)
 
     expect(result).to eql(expectation)

@@ -24,7 +24,7 @@ require "ruby-prof"
 ESM.run!
 
 # Require all our supports
-Dir["#{File.expand_path("./spec/support")}/**/*.rb"].each do |file|
+Dir["#{__dir__}/support/**/*.rb"].each do |file|
   if file.match(/commands\/.+\.rb$/i)
     ESM::Command.process_command(file, "test")
   else

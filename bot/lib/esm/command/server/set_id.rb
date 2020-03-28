@@ -16,7 +16,7 @@ module ESM
 
         argument :server_id
         argument :old_territory_id, template: :territory_id
-        argument :new_territory_id, template: :territory_id, description: t("commands.set_id.arguments.new_territory_id")
+        argument :new_territory_id, template: :territory_id, description: I18n.t("commands.set_id.arguments.new_territory_id")
 
         def discord
           # Require at least 3 characters and a max of 30
@@ -40,15 +40,15 @@ module ESM
 
         module ErrorMessage
           def self.minimum_characters(user:)
-            t("commands.set_id.error_message.minimum_characters", user: user)
+            I18n.t("commands.set_id.error_message.minimum_characters", user: user)
           end
 
           def self.maximum_characters(user:)
-            t("commands.set_id.error_message.maximum_characters", user: user)
+            I18n.t("commands.set_id.error_message.maximum_characters", user: user)
           end
 
           def self.access_denied(user:)
-            t("commands.set_id.error_message.access_denied", user: user)
+            I18n.t("commands.set_id.error_message.access_denied", user: user)
           end
 
           # DLL error messages can't be localized
@@ -86,7 +86,7 @@ module ESM
         def success_message
           ESM::Embed.build(
             :success,
-            description: t(
+            description: I18n.t(
               "commands.set_id.success_message",
               server_id: target_server.server_id,
               old_territory_id: @arguments.old_territory_id,

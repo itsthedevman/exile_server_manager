@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "esm/websocket/request"
-require "esm/websocket/queue"
-require "esm/websocket/server"
-require "esm/websocket/server_request"
-
 module ESM
   class Websocket
     class << self
@@ -69,7 +64,7 @@ module ESM
     # Public Instance Methods
     ###########################
     attr_reader :server, :connection, :requests
-    attr_writer :requests if ESM.env.test?
+    attr_writer :requests if ENV["ESM_ENV"] == "test"
 
     def initialize(connection)
       @connection = connection

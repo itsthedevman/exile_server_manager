@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require "esm/command/base"
-require "esm/command/categories"
-require "esm/command/cache"
-require "esm/command/argument"
-require "esm/command/argument_container"
-
 module ESM
   module Command
     CATEGORIES = %w[development general server community entertainment system].freeze
@@ -124,7 +118,7 @@ module ESM
       when ESM::Exception::DataError
         message = result.data
       when ::Exception
-        message = t("exceptions.system", message: result.message)
+        message = I18n.t("exceptions.system", message: result.message)
       when String, ESM::Embed
         message = result
       else
