@@ -20,7 +20,8 @@ changes:
     help:
       - "Added a proper help command to provide useful and helpful information back to the user"
     mode:
-      - "`!player_mode` has been depricated in favor of `!mode`. You can read more information by using `!help mode`"
+      - "`!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`"
+      - "`!playermode` may still be used instead of `!mode`"
     me:
       - "Improved formatting of poptabs and numbers"
       - "Categorized player information for better display"
@@ -39,3 +40,6 @@ changes:
       - "Added server wide gambling stats"
     add:
       - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"
+    set_id:
+      - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`"
+      - "`!setterritoryid` may still be used instead of `!set_id`"
