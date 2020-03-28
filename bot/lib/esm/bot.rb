@@ -15,7 +15,7 @@ module ESM
       ESM::Database.connect!
 
       # Register all of ESM's commands
-      ESM::Command.build!
+      ESM::Command.load_commands
 
       # Call Discordrb::Commands::Commandbot.run
       super

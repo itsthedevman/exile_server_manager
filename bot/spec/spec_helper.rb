@@ -20,16 +20,22 @@ require "awesome_print"
 require "pry"
 require "ruby-prof"
 
+# Load all of our support files
+loader = Zeitwerk::Loader.new
+loader.inflector.inflect("esm" => "ESM")
+loader.push_dir("#{__dir__}/support")
+loader.collapse("#{__dir__}/support/model")
+
+# Load everything right meow
+loader.setup
+loader.eager_load
+
 # Start the bot
 ESM.run!
 
-# Require all our supports
-Dir["#{__dir__}/support/**/*.rb"].each do |file|
-  if file.match(/commands\/.+\.rb$/i)
-    ESM::Command.process_command(file, "test")
-  else
-    require file
-  end
+# Load all of our test commands
+Dir["#{__dir__}/support/esm/command/test/*.rb"].each do |file|
+  ESM::Command.process_command(file, "test")
 end
 
 # Ignore debug messages when running tests
@@ -85,6 +91,3 @@ end
 
 # Wait until the bot has fully connected
 ESM::Test.wait_until { ESM.bot.ready? }
-
-# Clean the database
-ESM::Database.clean!

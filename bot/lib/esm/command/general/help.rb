@@ -91,6 +91,16 @@ module ESM
               value: "```#{command.usage}```"
             )
 
+            # Aliases
+            if command.aliases.present?
+              aliases = command.aliases.map { |a| "`#{ESM.config.prefix}#{a}`" }.to_sentence
+
+              embed.add_field(
+                name: I18n.t("commands.help.command.aliases"),
+                value: "This command supports being activated by #{aliases} instead of `#{command.distinct}`"
+              )
+            end
+
             # Arguments
             if command.arguments.present?
               embed.add_field(

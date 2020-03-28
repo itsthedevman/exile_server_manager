@@ -65,8 +65,6 @@ module ESM
           end
 
         string + ">"
-      rescue TypeError
-        byebug
       end
 
       private

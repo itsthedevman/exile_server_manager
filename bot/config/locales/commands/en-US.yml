@@ -49,6 +49,7 @@ en-US:
       command:
         title: "`!%{name}` Documentation"
         usage: "**Usage:**"
+        aliases: "**Aliases:**"
         arguments: "**Arguments:**"
         examples: "**Examples:**"
     mode:

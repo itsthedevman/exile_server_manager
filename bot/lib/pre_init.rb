@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 #############################
+# Load Locales
+#############################
+I18n.load_path += Dir[File.expand_path("config/locales/**") + "/*.yml"]
+I18n.default_locale = "en-US"
+I18n::Backend::Simple.send(:include, I18n::Backend::Fallbacks)
+
+#############################
 # Load Extensions
 #############################
 Dir["#{__dir__}/esm/extension/**/*.rb"].each { |extension| require extension }
@@ -28,14 +35,8 @@ loader.ignore("#{__dir__}/pre_init.rb")
 
 # gemspec expects this file, but Zeitwerk does not like it
 loader.ignore("#{__dir__}/esm/version.rb")
+loader.ignore("#{__dir__}/esm/esm.rb")
 
 # Load everything right meow
 loader.setup
 loader.eager_load
-
-#############################
-# Load Locales
-#############################
-I18n.load_path += Dir[File.expand_path("config/locales/**") + "/*.yml"]
-I18n.default_locale = "en-US"
-I18n::Backend::Simple.send(:include, I18n::Backend::Fallbacks)

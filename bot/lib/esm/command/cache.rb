@@ -3,7 +3,7 @@
 module ESM
   module Command
     class Cache
-      attr_accessor :name, :type, :category, :description, :arguments, :examples, :usage, :defines
+      attr_accessor :name, :type, :category, :description, :arguments, :examples, :usage, :defines, :distinct, :aliases
       def initialize(**opts)
         @name = opts[:name]
         @type = opts[:type]
@@ -14,6 +14,7 @@ module ESM
         @usage = opts[:usage]
         @defines = opts[:defines]
         @distinct = "#{ESM.config.prefix}#{@name}"
+        @aliases = opts[:aliases]
       end
 
       def build!

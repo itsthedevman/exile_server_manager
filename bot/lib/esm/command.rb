@@ -4,16 +4,12 @@ module ESM
   module Command
     CATEGORIES = %w[development general server community entertainment system].freeze
 
+    @all = []
+    @by_category = nil
+    @by_type = nil
+
     class << self
       attr_reader :all
-    end
-
-    def self.build!
-      @all = []
-      @by_category = nil
-      @by_type = nil
-
-      load_commands
     end
 
     def self.[](command_name)
@@ -37,7 +33,6 @@ module ESM
     end
 
     def self.process_command(command_path, category)
-      require command_path
       command_name = parse_command_name_from_path(command_path)
 
       # Create our command to be stored
@@ -71,6 +66,7 @@ module ESM
     end
 
     def self.cache(command_name, command, category)
+      ESM::
       # Background commands do not have types
       return if command.type.nil?
 
@@ -83,7 +79,8 @@ module ESM
         arguments: command.arguments.to_s,
         examples: command.example,
         usage: command.usage,
-        defines: command.defines
+        defines: command.defines,
+        aliases: command.aliases
       )
     end
 
