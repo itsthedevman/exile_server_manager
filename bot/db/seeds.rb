@@ -25,6 +25,13 @@ community = ESM::Community.create!(
   logging_channel_id: "624387002443497489"
 )
 
+ESM::Community.create!(
+  community_id: "test",
+  community_name: "Bryan's Test Server",
+  community_website: "https://www.esmbot.com",
+  guild_id: ESM::Community::Secondary::ID
+)
+
 server = ESM::Server.create!(
   community_id: community.id,
   server_id: "esm_malden",

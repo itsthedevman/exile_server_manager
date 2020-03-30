@@ -8,13 +8,12 @@ module ESM
       attr_reader :name
 
       def initialize(name, opts = {})
-        opts = default_from_name(opts[:template] || name, opts) if default_argument?(opts[:template] || name)
-
-        raise ESM::Exception::InvalidCommandArgument, "Missing regex for argument :#{name}" if opts[:regex].nil?
-        raise ESM::Exception::InvalidCommandArgument, "Missing description for argument :#{name}" if opts[:description].nil?
-
         @name = name
-        @opts = opts
+        @opts = load_options(opts)
+
+        # Run some checks on the argument
+        check_for_regex!
+        check_for_description!
       end
 
       def regex
@@ -49,8 +48,11 @@ module ESM
         !default.blank?
       end
 
-      def description
-        @opts[:description] ||= ""
+      def description(prefix = ESM.config.prefix || "!")
+        return "" if @opts[:description].blank?
+
+        # Call I18n with the name of the translation and pass the prefix into the translation by default
+        I18n.send(:t, @opts[:description], prefix: prefix, default: "")
       end
 
       def to_s
@@ -73,21 +75,34 @@ module ESM
         @defaults ||= {
           community_id: {
             regex: ESM::Regex::COMMUNITY_ID,
-            description: I18n.t("default_arguments.community_id")
+            description: "default_arguments.community_id"
           },
           target: {
             regex: ESM::Regex::TARGET,
-            description: I18n.t("default_arguments.target")
+            description: "default_arguments.target"
           },
           server_id: {
             regex: ESM::Regex::SERVER_ID,
-            description: I18n.t("default_arguments.server_id")
+            description: "default_arguments.server_id"
           },
           territory_id: {
             regex: ESM::Regex::TERRITORY_ID,
-            description: I18n.t("default_arguments.territory_id")
+            description: "default_arguments.territory_id"
           }
         }
+      end
+
+      def check_for_regex!
+        raise ESM::Exception::InvalidCommandArgument, "Missing regex for argument :#{@name}" if @opts[:regex].nil?
+      end
+
+      def check_for_description!
+        raise ESM::Exception::InvalidCommandArgument, "Missing description for argument :#{@name}" if @opts[:description].nil?
+      end
+
+      def load_options(opts)
+        opts = default_from_name(opts[:template] || @name, opts) if default_argument?(opts[:template] || @name)
+        opts
       end
 
       def default_argument?(name)

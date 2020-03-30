@@ -9,6 +9,16 @@ module ESM
       include CheckMethods
       include LoggingMethods
 
+      class << self
+        attr_reader :defines, :command_type, :category
+      end
+
+      def self.name
+        return @command_name if !@command_name.nil?
+
+        super
+      end
+
       def self.error_message(name, **args)
         if args.blank?
           ESM::Command::Base::ErrorMessage.send(name)
@@ -44,8 +54,11 @@ module ESM
         @requires = []
         @skipped_checks = Set.new
 
+        # ESM::Command::System::Accept => system
+        @category = self.module_parent.name.demodulize.downcase
+
         # ESM::Command::Server::SetId => set_id
-        @name = self.name.demodulize.underscore.downcase
+        @command_name = self.name.demodulize.underscore.downcase
       end
 
       def self.aliases(*aliases)
@@ -56,9 +69,11 @@ module ESM
         @arguments << ESM::Command::Argument.new(name, opts)
       end
 
+      # I wanted these as methods instead of attributes
+      #
       # rubocop:disable Style/TrivialAccessors
       def self.type(type)
-        @type = type
+        @command_type = type
       end
 
       def self.limit_to(channel_type)
@@ -77,10 +92,11 @@ module ESM
       def self.attributes
         @attributes ||=
           OpenStruct.new(
-            name: @name,
+            name: @command_name,
+            category: @category,
             aliases: @aliases,
             arguments: @arguments,
-            type: @type,
+            type: @command_type,
             limit_to: @limit_to,
             defines: @defines,
             requires: @requires,
@@ -97,25 +113,17 @@ module ESM
       #########################
       # Public Instance Methods
       #########################
-      attr_reader :name, :category, :type, :example, :arguments,
-                  :description, :aliases, :offset, :distinct, :limit_to,
+      attr_reader :name, :category, :type, :arguments, :aliases, :limit_to,
                   :defines, :requires, :executed_at, :response, :cooldown_time
 
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
+      attr_writer :current_community
 
       def initialize
         attributes = self.class.attributes
 
         @name = attributes.name
-
-        # Attempt to pull the description and examples from translation. Default to empty
-        @description = I18n.t("commands.#{@name}.description", default: "")
-        @example = I18n.t("commands.#{@name}.example", default: "")
-
-        # ESM::Command::Development => Development (God I love ActiveSupport)
-        @category = self.class.module_parent.name.demodulize
-        @distinct = "#{ESM.config.prefix}#{@name}"
-        @offset = @distinct.size
+        @category = attributes.category
         @aliases = attributes.aliases
         @arguments = attributes.arguments
         @type = attributes.type
@@ -142,7 +150,30 @@ module ESM
       end
 
       def usage
-        @usage ||= "#{@distinct} #{@arguments.map(&:to_s).join(" ")}"
+        @usage ||= "#{distinct} #{@arguments.map(&:to_s).join(" ")}"
+      end
+
+      # Dont't memoize this, prefix can change based on when its called
+      def distinct
+        "#{prefix}#{@name}"
+      end
+
+      def offset
+        distinct.size
+      end
+
+      def example
+        I18n.t("commands.#{@name}.example", prefix: prefix, default: "")
+      end
+
+      def description
+        I18n.t("commands.#{@name}.description", prefix: prefix, default: "")
+      end
+
+      def prefix
+        return ESM.config.prefix if current_community&.command_prefix.nil?
+
+        current_community.command_prefix
       end
 
       # The user that executed the command
@@ -152,7 +183,7 @@ module ESM
 
       # @returns [ESM::Community, nil] The community the command was executed from. Nil if sent from Direct Message
       def current_community
-        @current_community ||= ESM::Community.find_by_guild_id(@event.server&.id)
+        @current_community ||= ESM::Community.find_by_guild_id(@event&.server&.id)
       end
 
       # @returns [ESM::Cooldown] The cooldown for this command and user
@@ -286,9 +317,9 @@ module ESM
       #   ESM::Command::SomeCommand.statement -> "!somecommand"
       # @example With arguments !argumentcommand <argument_1> <argument_2>
       #   ESM::Command::ArgumentCommand.statement(argument_1: "foo", argument_2: "bar") -> !argumentcommand foo bar
-      def self.statement(**flags)
+      def statement(**flags)
         # Can't use distinct here - 2020-03-10
-        command_statement = "#{ESM.config.prefix}#{@name}"
+        command_statement = "#{prefix}#{@name}"
 
         # !birb, !doggo, etc.
         return command_statement if @arguments.empty?
@@ -299,10 +330,6 @@ module ESM
         end
 
         command_statement
-      end
-
-      def statement(**flags)
-        self.class.statement(flags)
       end
 
       private
@@ -476,7 +503,7 @@ module ESM
             e.description = description
             e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url), inline: true)
             e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url), inline: true)
-            e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", prefix: ESM.config.prefix, uuid: request.uuid_short))
+            e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", prefix: prefix, uuid: request.uuid_short))
           end
 
         ESM.bot.deliver(embed, to: target_user)

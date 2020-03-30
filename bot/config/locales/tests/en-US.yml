@@ -5,3 +5,9 @@
 
 en-US:
   test: "This is a test" # Do not delete (for tests)
+  test_base:
+    _integer: "one"
+    _preserve: "two"
+    _display_as: "three"
+    _default: "default"
+    _multiline: "wild"

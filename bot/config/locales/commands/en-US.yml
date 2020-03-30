@@ -20,23 +20,23 @@ en-US:
     eval:
       description: "Executes the provided string in ruby"
       example: |-
-        **`!eval true`**: Returns true
+        **`%{prefix}eval true`**: Returns true
     say:
       description: "A development command. Forces the bot to say whatever is inputted"
       example: |-
-        **`!say hello`**: The bot will reply hello
+        **`%{prefix}say hello`**: The bot will reply hello
     help:
       arguments:
-        category: "The categories can be found by just using `!help`"
+        category: "The categories can be found by just using `%{prefix}help`"
       description: "A helpful command. An unhelpful description"
       example: |-
-        **`!help`**: Displays information about getting started with Exile Server Manager
-        **`!help commands`**: Displays all commands
+        **`%{prefix}help`**: Displays information about getting started with Exile Server Manager
+        **`%{prefix}help commands`**: Displays all commands
       categories:
         name: "Categories"
         value: |-
-         **`!help commands`**: List all commands
-         **`!help <command_name>`**: Get information about the provided command
+         **`%{prefix}help commands`**: List all commands
+         **`%{prefix}help <command_name>`**: Get information about the provided command
       getting_started:
         title: "Hi %{user}! My name is Exile Server Manager, or ESM for short!"
         description: "I have a bunch of useful commands for both players and server owners alike."
@@ -47,9 +47,11 @@ en-US:
         admin_commands_title: "__Admin Commands__"
         development_commands_title: "__Development Commands__"
       command:
-        title: "`!%{name}` Documentation"
+        title: "`%{prefix}%{name}` Documentation"
         usage: "**Usage:**"
-        aliases: "**Aliases:**"
+        aliases:
+          name: "**Aliases:**"
+          value: "This command supports being activated by %{aliases} instead of `%{prefix}%{name}`"
         arguments: "**Arguments:**"
         examples: "**Examples:**"
     mode:
@@ -57,8 +59,8 @@ en-US:
         mode: "Sets which mode, valid options are `server` or `player`"
       description: "Changes which mode ESM is in"
       example: |-
-        **`!mode esm server`**: Disables player mode. Set this mode if your community hosts servers
-        **`!mode esm player`**: Enables player mode. Set this mode if you play on servers
+        **`%{prefix}mode esm server`**: Disables player mode. Set this mode if your community hosts servers
+        **`%{prefix}mode esm player`**: Enables player mode. Set this mode if you play on servers
       error_messages:
         servers_exist:
           title: "I'm sorry, %{user}"
@@ -73,18 +75,18 @@ en-US:
       disabled: "✅ Player mode has been disabled for **%{community_name}**. You may now manage your community and servers via my [Dashboard](https://www.esmbot.com/portal)"
     id:
       description: "Displays the current Community's community ID for ESM"
-      example: "`!id`: Returns the Community's ID"
+      example: "`%{prefix}id`: Returns the Community's ID"
       embed:
         description: "**%{community_name}'s** community ID is **`%{community_id}`**"
         field:
           name: "Want to list all registered servers for this community?"
-          value:  "**`!servers %{community_id}`**"
+          value:  "**`%{prefix}servers %{community_id}`**"
     whois:
       description: "Displays all available information about a player via their Steam UID, Discord ID, or Mention"
       example: |-
-        **`!whois @Bryan`**: Using their mention, get all available information about this player
-        **`!whois 76561198037177305`**: Using their steam uid, get all available information about this player
-        **`!whois 137709767954137088`**: Using their Discord ID, get all available information about this player
+        **`%{prefix}whois @Bryan`**: Using their mention, get all available information about this player
+        **`%{prefix}whois 76561198037177305`**: Using their steam uid, get all available information about this player
+        **`%{prefix}whois 137709767954137088`**: Using their Discord ID, get all available information about this player
       discord:
         header: "__Discord Information__"
         id: "ID"
@@ -104,19 +106,19 @@ en-US:
     me:
       description: "Displays information about your player (money, health, poptabs, territories, etc.) on the requested server"
       example: |-
-        **`!me esm_malden`**: Returns my player information on `esm_malden`
+        **`%{prefix}me esm_malden`**: Returns my player information on `esm_malden`
       embed:
         title: "%{user}'s stats on `%{server_id}`"
     server:
       description: "Displays connection, up time, next restart and other miscellanous information about the provided server ID"
       example: |-
-        **`!server esm_malden`**: Returns information about the server `esm_malden`
+        **`%{prefix}server esm_malden`**: Returns information about the server `esm_malden`
       online_for: "✅ Online for"
       restart_in: "⏰ Next restart in"
     servers:
       description: "Displays all registered servers for a given community ID, regardless if they are online or not"
       example: |-
-        **`!servers esm`**: Returns all registered servers for `esm`.
+        **`%{prefix}servers esm`**: Returns all registered servers for `esm`.
       offline: "❌ Offline"
       offline_for: "❌ Offline for %{time}"
       embed:
@@ -129,35 +131,35 @@ en-US:
     territories:
       description: "Displays all territories that you own or have joined for the provided server ID"
       example: |-
-        **`!territories esm_malden`**: Returns all owned or joined territories for server `esm_malden`
+        **`%{prefix}territories esm_malden`**: Returns all owned or joined territories for server `esm_malden`
       no_territories: "Hey %{user}, I was unable to find any territories for you on `%{server_id}`"
       current_territory_stats: "__Current Territory Stats__"
       next_territory_stats: "__Next Territory Stats__"
       territory_members: "__Territory Members__"
     pay:
-      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `!territories`"
+      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `%{prefix}territories`"
       example: |-
-        **`!pay esm_malden qqoej`**: Pay the territory protection for `qqoej` on server `esm_malden`
-        **`!pay esm_malden fort_kickass`**: Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
+        **`%{prefix}pay esm_malden qqoej`**: Pay the territory protection for `qqoej` on server `esm_malden`
+        **`%{prefix}pay esm_malden fort_kickass`**: Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
       embed:
         description: "%{user}, `%{server_id}` has successfully received the payment of **%{cost} poptabs** for `%{territory_id}`.\nYou have **%{locker_amount} poptabs** left in your locker."
     birb:
       description: "Who doesn't like some high quality birbs?"
       example: |-
-        **`!birb`**: Returns a random bird image
+        **`%{prefix}birb`**: Returns a random bird image
       waiting: "Tossing bird seed..."
     doggo:
       description: "Humanity's best friend"
       example: |-
-        **`!doggo`**: Returns a random dog image
+        **`%{prefix}doggo`**: Returns a random dog image
       waiting: "Shaking treat jar..."
     gamble:
       description: "Feeling lucky? This command will gamble the specified amount of poptabs for the provided server ID. Poptabs are taken from your locker on that server."
       example: |-
-        **`!gamble esm_malden 50`**: Gambles 50 poptabs from the locker on server `esm_malden`
-        **`!gamble esm_altis half`**: Gambles half of the poptabs in the locker on server `esm_altis`
-        **`!gamble esm_tanoa all`**: Gambles all of the poptabs in the locker on server `esm_tanoa`
-        **`!gamble esm_namalsk stats`**: Displays gambling statistics for server `esm_namalsk`
+        **`%{prefix}gamble esm_malden 50`**: Gambles 50 poptabs from the locker on server `esm_malden`
+        **`%{prefix}gamble esm_altis half`**: Gambles half of the poptabs in the locker on server `esm_altis`
+        **`%{prefix}gamble esm_tanoa all`**: Gambles all of the poptabs in the locker on server `esm_tanoa`
+        **`%{prefix}gamble esm_namalsk stats`**: Displays gambling statistics for server `esm_namalsk`
       arguments:
         amount: "The amount of poptabs to gamble. Poptabs are withdrawled from your locker.\nThe following options can be provided instead of a number:\n- `all`: Gambles all of your poptabs in your locker.\n- `half`: Gambles half of your poptabs in your locker\n- `stats`: Returns win/loss statistics for the provided server"
       error_message:
@@ -181,34 +183,34 @@ en-US:
     set_id:
       description: "**Territory Owner Only.** Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
       example: |-
-        **`!setid esm_malden jqjoe no_u`**: Sets territory `jqjoe` to be `kickass`
-        **`!setid esm_altis fort_awesome tent_sadness`**: Changes territory `fort_awesome` to be `tent_sadness`
+        **`%{prefix}setid esm_malden jqjoe no_u`**: Sets territory `jqjoe` to be `no_u`
+        **`%{prefix}setid esm_altis fort_awesome tent_sadness`**: Changes territory `fort_awesome` to be `tent_sadness`
       arguments:
         new_territory_id: "The new territory ID to use. This ID can be 3 to 30 characters long and can **only contain letters, numbers, and underscores**."
       error_message:
         minimum_characters: "I'm sorry %{user}, the new territory ID must be at least 3 characters long"
         maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 30 characters"
         access_denied: "I'm sorry %{user}, you are not allowed to do that."
-      success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```!pay %{server_id} %{new_territory_id}```"
+      success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```%{prefix}pay %{server_id} %{new_territory_id}```"
     accept:
       description: "Accepts a request based off its UUID"
       example: |-
-        **`!accept c619`:** Accepts request `c619` from your pending requests
+        **`%{prefix}accept c619`:** Accepts request `c619` from your pending requests
       error_message:
         invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
       success_message: "The request has been accepted and I've notified the requestor"
     decline:
       description: "Declines a request based off its UUID"
       example: |-
-        **`!decline e09e`:** Declines request `e09e` from your pending requests
+        **`%{prefix}decline e09e`:** Declines request `e09e` from your pending requests
       error_message:
         invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
       success_message: "The request has been declined. The requestor **has not** be notified"
     add:
       description: "Adds the target user as a builder in the provided territory"
       example: |-
-        **`!add esm_malden jqjoe @Bryan`:** Adds @Bryan to `jqjoe` on `esm_malden`
-        **`!add esm_malden some_territory @your_username`:** If you are a territory admin, you may replace `@your_username` with a tag of yourself to add yourself to this territory.
+        **`%{prefix}add esm_malden jqjoe @Bryan`:** Adds @Bryan to `jqjoe` on `esm_malden`
+        **`%{prefix}add esm_malden some_territory @your_username`:** If you are a territory admin, you may replace `@your_username` with a tag of yourself to add yourself to this territory.
       request_description: "Hi %{target_user}!\n%{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`"
       requestee_description: "Hi %{target_user}!\n%{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`"
       requestor_accepted: "Request `%{uuid}` has been accepted. Processing your request to add %{target_user} to `%{territory_id}` on `%{server_id}`"

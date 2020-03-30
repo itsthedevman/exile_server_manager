@@ -15,7 +15,7 @@ describe ESM::Command::Base do
   end
 
   it "should have a valid category" do
-    expect(command.category).to eql("Test")
+    expect(command.category).to eql("test")
   end
 
   it "should have 2 aliases" do

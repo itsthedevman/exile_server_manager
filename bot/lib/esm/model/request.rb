@@ -29,7 +29,7 @@ module ESM
       @accepted = accepted
 
       # Build the command
-      command = ESM::Command[self.command_name].build!
+      command = ESM::Command[self.command_name].new
 
       # Respond
       command.from_request(self)

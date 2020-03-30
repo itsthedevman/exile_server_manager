@@ -42,7 +42,7 @@ module ESM
       define(command)
 
       # Cache Command
-      cache(command_name, command, category)
+      cache(command)
     end
 
     def self.parse_command_name_from_path(command_path)
@@ -65,23 +65,12 @@ module ESM
       end
     end
 
-    def self.cache(command_name, command, category)
-      ESM::
+    def self.cache(command)
       # Background commands do not have types
       return if command.type.nil?
 
       # Use command_name instead of command.name to get set_id instead of setid
-      @all << ESM::Command::Cache.new(
-        name: command_name,
-        type: command.type,
-        category: category,
-        description: command.description,
-        arguments: command.arguments.to_s,
-        examples: command.example,
-        usage: command.usage,
-        defines: command.defines,
-        aliases: command.aliases
-      )
+      @all << command.class
     end
 
     def self.execute(event, command)
@@ -132,11 +121,11 @@ module ESM
     end
 
     def self.by_category
-      @by_category ||= @all.group_by(&:category).to_ostruct
+      @by_category ||= @all.group_by(&:category.downcase).to_ostruct
     end
 
     def self.by_type
-      @by_type ||= @all.group_by(&:type).to_ostruct
+      @by_type ||= @all.group_by(&:command_type).to_ostruct
     end
 
     def self.create_configurations_for_community(community)

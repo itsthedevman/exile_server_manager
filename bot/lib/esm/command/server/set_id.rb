@@ -16,7 +16,7 @@ module ESM
 
         argument :server_id
         argument :old_territory_id, template: :territory_id
-        argument :new_territory_id, template: :territory_id, description: I18n.t("commands.set_id.arguments.new_territory_id")
+        argument :new_territory_id, template: :territory_id, description: "commands.set_id.arguments.new_territory_id"
 
         def discord
           # Require at least 3 characters and a max of 30
@@ -88,6 +88,7 @@ module ESM
             :success,
             description: I18n.t(
               "commands.set_id.success_message",
+              prefix: prefix,
               server_id: target_server.server_id,
               old_territory_id: @arguments.old_territory_id,
               new_territory_id: @arguments.new_territory_id

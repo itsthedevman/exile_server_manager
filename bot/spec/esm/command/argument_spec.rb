@@ -63,7 +63,7 @@ describe ESM::Command::Argument do
 
     it "should have a default value" do
       expect(argument.default?).to be(true)
-      expect(argument.default).to be("Hello World")
+      expect(argument.default).to eql("Hello World")
     end
 
     it "should not be required" do
@@ -72,15 +72,15 @@ describe ESM::Command::Argument do
   end
 
   describe "Description Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /hello/, description: "Hello world") }
+    let(:argument) { ESM::Command::Argument.new(:foo, regex: /hello/, description: "test") }
 
     it "should have a description" do
-      expect(argument.description).to be("Hello world")
+      expect(argument.description).to eql("This is a test")
     end
   end
 
   describe "Argument with default values" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /.+/, description: "Test") }
+    let(:argument) { ESM::Command::Argument.new(:foo, regex: /.+/, description: "test") }
 
     it "should not preserve case" do
       expect(argument.preserve_case?).to be(false)
@@ -107,23 +107,23 @@ describe ESM::Command::Argument do
     end
 
     it "should have a description" do
-      expect(argument.description).to be("Test")
+      expect(argument.description).to eql("This is a test")
     end
   end
 
   describe "#to_s" do
     it "should be a standard argument" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, description: "Test")
+      argument = ESM::Command::Argument.new(:foo, regex: /.+/, description: "test")
       expect(argument.to_s).to eql("<foo>")
     end
 
     it "should be an optional argument" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, default: "foobar", description: "Test")
+      argument = ESM::Command::Argument.new(:foo, regex: /.+/, default: "foobar", description: "test")
       expect(argument.to_s).to eql("<?foo>")
     end
 
     it "should use the display_as" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, display_as: "bar", description: "Test")
+      argument = ESM::Command::Argument.new(:foo, regex: /.+/, display_as: "bar", description: "test")
       expect(argument.to_s).to eql("<bar>")
     end
   end

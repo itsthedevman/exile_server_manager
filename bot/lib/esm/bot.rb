@@ -2,17 +2,20 @@
 
 module ESM
   class Bot < Discordrb::Commands::CommandBot
-    attr_reader :config
+    attr_reader :config, :prefix
+
     def initialize
-      super(token: ESM.config.token, prefix: ESM.config.prefix, help_command: false)
+      # Connect to the database
+      ESM::Database.connect!
+
+      load_community_prefixes
+
+      super(token: ESM.config.token, prefix: method(:determine_activation_prefix), help_command: false)
     end
 
     def run
       # Binds the Discord Events
       bind_events!
-
-      # Connect to the database
-      ESM::Database.connect!
 
       # Register all of ESM's commands
       ESM::Command.load_commands
@@ -142,6 +145,25 @@ module ESM
     end
 
     private
+
+    def load_community_prefixes
+      @prefixes = {}
+      @prefixes.default = ESM.config.prefix
+
+      ESM::Community.all.each do |community|
+        next if community.command_prefix.nil?
+
+        @prefixes[community.guild_id] = community.command_prefix
+      end
+    end
+
+    def determine_activation_prefix(message)
+      # The default for @prefixes is the config prefix (NOT NIL)
+      prefix = @prefixes[message.channel&.server&.id.to_s]
+      return nil if !message.content.start_with?(prefix)
+
+      message.content[prefix.size..-1]
+    end
 
     def format_invalid_response(expected)
       expected_string = expected.map { |value| "`#{value}`" }.join(" or ")

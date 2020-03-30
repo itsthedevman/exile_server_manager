@@ -35,7 +35,7 @@ describe ESM::Command::General::Help, category: "command" do
       expect(embed.description).to eql(I18n.t("commands.help.getting_started.description"))
       expect(embed.fields.size).to eql(1)
       expect(embed.fields.first.name).to eql(I18n.t("commands.help.categories.name"))
-      expect(embed.fields.first.value).to eql(I18n.t("commands.help.categories.value"))
+      expect(embed.fields.first.value).to eql(I18n.t("commands.help.categories.value", prefix: ESM.config.prefix))
     end
 
     it "should return a valid embed (commands)" do

@@ -32,7 +32,7 @@ describe ESM::Command::General::Id, category: "command" do
       expect(request.description).to match(/community id is/i)
       expect(request.fields.size).to eql(1)
       expect(request.fields.first.name).to eql("Want to list all registered servers for this community?")
-      expect(request.fields.first.value).to match(/!servers/i)
+      expect(request.fields.first.value).to match(/~servers/i)
     end
   end
 end

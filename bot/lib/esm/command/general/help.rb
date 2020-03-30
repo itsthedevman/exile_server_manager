@@ -35,7 +35,7 @@ module ESM
 
             embed.add_field(
               name: I18n.t("commands.help.categories.name"),
-              value: I18n.t("commands.help.categories.value")
+              value: I18n.t("commands.help.categories.value", prefix: prefix)
             )
           end
         end
@@ -43,7 +43,7 @@ module ESM
         def commands
           ESM::Embed.build do |embed|
             embed.title = I18n.t("commands.help.commands.title")
-            embed.description = I18n.t("commands.help.commands.description", prefix: ESM.config.prefix)
+            embed.description = I18n.t("commands.help.commands.description", prefix: prefix)
 
             types = %i[player admin]
             types << :development if ESM.env.development?
@@ -74,15 +74,16 @@ module ESM
 
         def format_commands(commands)
           commands.format do |command|
-            "**`#{command.distinct}`**\n#{command.description}\n\n"
+            "**`#{prefix}#{command.name}`**\n#{command.description}\n\n"
           end
         end
 
         def command
-          command = ESM::Command[@arguments.category]
+          command = ESM::Command[@arguments.category].new
+          command.current_community = current_community
 
           ESM::Embed.build do |embed|
-            embed.title = I18n.t("commands.help.command.title", name: command.name)
+            embed.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)
             embed.description = command.description
 
             # Usage
@@ -93,11 +94,11 @@ module ESM
 
             # Aliases
             if command.aliases.present?
-              aliases = command.aliases.map { |a| "`#{ESM.config.prefix}#{a}`" }.to_sentence
+              aliases = command.aliases.map { |a| "`#{prefix}#{a}`" }.to_sentence
 
               embed.add_field(
-                name: I18n.t("commands.help.command.aliases"),
-                value: "This command supports being activated by #{aliases} instead of `#{command.distinct}`"
+                name: I18n.t("commands.help.command.aliases.name"),
+                value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
               )
             end
 
@@ -105,15 +106,15 @@ module ESM
             if command.arguments.present?
               embed.add_field(
                 name: I18n.t("commands.help.command.arguments"),
-                value: command.arguments
+                value: command.arguments.to_s
               )
             end
 
             # Examples
-            if command.examples.present?
+            if command.example.present?
               embed.add_field(
                 name: I18n.t("commands.help.command.examples"),
-                value: command.examples
+                value: command.example
               )
             end
           end

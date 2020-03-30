@@ -32,7 +32,7 @@ describe ESM::Command::ArgumentContainer do
   end
 
   describe "Invalid Argument Container (Raises error/forgotten arguments)" do
-    let!(:content) { "!base esm esm_malden 137709767954137088 1" }
+    let!(:content) { "~base esm esm_malden 137709767954137088 1" }
     let!(:event) { CommandEvent.create(content, user: user) }
 
     it "should have a valid event" do

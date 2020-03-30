@@ -30,7 +30,7 @@ module ESM
           # Only add the period to optional if there is no default
           output += "Optional#{argument.default? ? "" : ". "}" if !argument.required?
           output += ", defaults to `#{argument.default}`. " if argument.default?
-          output += "#{argument.description}\n\n"
+          output += "#{argument.description(command.prefix)}\n\n"
 
           output
         end
@@ -111,10 +111,10 @@ module ESM
 
             e.add_field(
               name: "Arguments:",
-              value: self.command.arguments.to_s
+              value: self.to_s
             )
 
-            e.footer = "For more information, send me `#{ESM.config.prefix}help #{self.command.name}`"
+            e.footer = "For more information, send me `#{command.prefix}help #{self.command.name}`"
           end
 
         raise ESM::Exception::FailedArgumentParse, embed

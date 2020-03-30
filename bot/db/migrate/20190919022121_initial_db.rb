@@ -24,6 +24,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.boolean :player_mode_enabled, default: true
       t.boolean :log_xm8_notifications, default: true
       t.json :territory_admin_ids, default: []
+      t.string :command_prefix, default: nil
       t.datetime :created_at
       t.datetime :updated_at
       t.datetime :deleted_at, index: true

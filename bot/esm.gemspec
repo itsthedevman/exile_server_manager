@@ -52,6 +52,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "factory_bot"
   spec.add_development_dependency "faker"
   spec.add_development_dependency "faye-websocket"
+  spec.add_development_dependency "memory_profiler"
   spec.add_development_dependency "pry"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rerun"
