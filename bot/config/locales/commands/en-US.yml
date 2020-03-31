@@ -153,6 +153,16 @@ en-US:
       example: |-
         **`%{prefix}doggo`**: Returns a random dog image
       waiting: "Shaking treat jar..."
+    meow:
+      description: "It's so fluffy I'm going to die!!!"
+      example: |-
+        **`%{prefix}meow`**: Returns a random cat image
+      waiting: "pispispispispispispispis"
+    snek:
+      description: "Nope rope, danger noodle, whatever you want to call them. One thing for sure is that they are cute."
+      example: |-
+        **`%{prefix}snek`**: Returns a random snake image
+      waiting: "Slithering..."
     gamble:
       description: "Feeling lucky? This command will gamble the specified amount of poptabs for the provided server ID. Poptabs are taken from your locker on that server."
       example: |-
