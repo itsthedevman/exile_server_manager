@@ -40,9 +40,9 @@ module ESM
           # Load the permissions AFTER we have checked for invalid communities.
           load_permissions
 
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:command_not_enabled, user: current_user, command_name: self.name) if !enabled?
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_whitelisted, user: current_user, command_name: self.name) if !whitelisted?
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_allowed_in_text_channels, user: current_user, command_name: self.name) if !allowed?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:command_not_enabled, prefix: prefix, user: current_user, command_name: self.name) if !enabled?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_whitelisted, prefix: prefix, user: current_user, command_name: self.name) if !whitelisted?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_allowed_in_text_channels, prefix: prefix, user: current_user, command_name: self.name) if !allowed?
         end
 
         def check_for_registered!
@@ -55,7 +55,7 @@ module ESM
           return if ESM.env.test? && ESM::Test.skip_cooldown
           return if !on_cooldown?
 
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:on_cooldown, user: current_user, time_left: current_cooldown.to_s, command_name: @name)
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:on_cooldown, prefix: prefix, user: current_user, time_left: current_cooldown.to_s, command_name: @name)
         end
 
         def check_for_dev_only!
@@ -114,7 +114,7 @@ module ESM
           # Only allow player commands
           return if @type == :player
 
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:player_mode_command_not_available, user: current_user, command_name: @name)
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:player_mode_command_not_available, prefix: prefix, user: current_user, command_name: @name)
         end
 
         def check_for_different_community!

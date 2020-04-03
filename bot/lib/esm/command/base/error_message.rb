@@ -4,9 +4,9 @@ module ESM
   module Command
     class Base
       module ErrorMessage
-        def self.on_cooldown(user:, time_left:, command_name:)
+        def self.on_cooldown(prefix:, user:, time_left:, command_name:)
           ESM::Embed.build do |e|
-            e.description = I18n.t("command_errors.on_cooldown", user: user.mention, time_left: time_left, command_name: command_name)
+            e.description = I18n.t("command_errors.on_cooldown", prefix: prefix, user: user.mention, time_left: time_left, command_name: command_name)
             e.color = :yellow
           end
         end
@@ -66,30 +66,30 @@ module ESM
           end
         end
 
-        def self.command_not_enabled(user:, command_name:)
+        def self.command_not_enabled(prefix:, user:, command_name:)
           ESM::Embed.build do |e|
-            e.description = I18n.t("command_errors.command_not_enabled", user: user.mention, command_name: command_name)
+            e.description = I18n.t("command_errors.command_not_enabled", prefix: prefix, user: user.mention, command_name: command_name)
             e.color = :red
           end
         end
 
-        def self.not_whitelisted(user:, command_name:)
+        def self.not_whitelisted(prefix:, user:, command_name:)
           ESM::Embed.build do |e|
-            e.description = I18n.t("command_errors.not_whitelisted", user: user.mention, command_name: command_name)
+            e.description = I18n.t("command_errors.not_whitelisted", prefix: prefix, user: user.mention, command_name: command_name)
             e.color = :red
           end
         end
 
-        def self.not_allowed_in_text_channels(user:, command_name:)
+        def self.not_allowed_in_text_channels(prefix:, user:, command_name:)
           ESM::Embed.build do |e|
-            e.description = I18n.t("command_errors.not_allowed_in_text_channels", user: user.mention, command_name: command_name)
+            e.description = I18n.t("command_errors.not_allowed_in_text_channels", prefix: prefix, user: user.mention, command_name: command_name)
             e.color = :red
           end
         end
 
-        def self.player_mode_command_not_available(user:, command_name:)
+        def self.player_mode_command_not_available(prefix:, user:, command_name:)
           ESM::Embed.build do |e|
-            e.description = I18n.t("command_errors.player_mode_command_not_available", user: user.mention, command_name: command_name)
+            e.description = I18n.t("command_errors.player_mode_command_not_available", prefix: prefix, user: user.mention, command_name: command_name)
             e.color = :red
           end
         end
