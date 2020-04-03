@@ -8,6 +8,7 @@ changes:
     - "[Requested] Communities can now enable and set a whitelist on most commands."
     - "[Requested] Communities now have full control of permissions on most commands"
     - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
+    - "Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration."
   commands:
     accept:
       - "**New command**"
