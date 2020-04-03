@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 #############################
-# Load Locales
-#############################
-I18n.load_path += Dir[File.expand_path("config/locales/**") + "/*.yml"]
-I18n.default_locale = "en-US"
-I18n::Backend::Simple.send(:include, I18n::Backend::Fallbacks)
-
-#############################
 # Load Extensions
 #############################
 Dir["#{__dir__}/esm/extension/**/*.rb"].each { |extension| require extension }
@@ -30,8 +23,9 @@ loader.collapse("#{__dir__}/esm/model")
 # Don't load extensions, we do that above
 loader.ignore("#{__dir__}/esm/extension")
 
-# Ignore this file!
+# Ignore preinits
 loader.ignore("#{__dir__}/pre_init.rb")
+loader.ignore("#{__dir__}/pre_init_dev.rb")
 
 # gemspec expects this file, but Zeitwerk does not like it
 loader.ignore("#{__dir__}/esm/version.rb")

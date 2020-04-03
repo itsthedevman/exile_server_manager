@@ -22,6 +22,9 @@ module ESM
       # @private
       # Processes a command response from the A3 server.
       def process_command_response
+        # Save this response on the request
+        @request.response = @message.parameters
+
         # We have an error from the DLL
         check_for_command_error!
 

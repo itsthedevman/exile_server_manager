@@ -3,7 +3,7 @@
 # en:
 #  product_price: "$%{price}"
 
-en-US:
+en:
   test: "This is a test" # Do not delete (for tests)
   test_base:
     _integer: "one"

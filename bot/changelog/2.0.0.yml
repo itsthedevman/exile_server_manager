@@ -41,5 +41,10 @@ changes:
     add:
       - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"
     set_id:
-      - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`"
-      - "`!setterritoryid` may still be used instead of `!set_id`"
+      - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`."
+      - "This command also has aliases, which can be viewed in the help documentation."
+    server_territories:
+      - "`!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`."
+      - "This command also has aliases, which can be viewed in the help documentation."
+      - "Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back"
+      - "Territories are now properly formatted in an ASCII table for ease of readability"

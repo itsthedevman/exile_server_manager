@@ -15,7 +15,8 @@ class WebsocketClient
       pay: { send_ignore_message: true, delay: 0..3 },
       gamble: { send_ignore_message: true, delay: 0..3 },
       setterritoryid: { delay: 0..1 },
-      add: { delay: 0..3 }
+      add: { send_ignore_message: true, delay: 0..3 },
+      allterritories: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -116,6 +117,22 @@ class WebsocketClient
 
     def response_add
       send_response
+    end
+
+    def response_allterritories
+      return send_response(parameters: []) if @flags.RETURN_NO_TERRITORIES
+
+      territories = []
+      Faker::Number.between(from: 100, to: 400).times do
+        territories << {
+          id: rand < 0.5 ? SecureRandom.uuid[0..4] : Faker::Lorem.sentence[0..20],
+          territory_name: Faker::Lorem.sentence,
+          owner_name: Faker::Name.name,
+          owner_uid: Faker::Number.number(digits: 17).to_s
+        }
+      end
+
+      send_response(parameters: territories)
     end
   end
 end

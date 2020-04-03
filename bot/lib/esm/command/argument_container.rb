@@ -161,6 +161,8 @@ module ESM
             value.to_f
           when :json
             JSON.parse(value)
+          when :symbol
+            value.to_sym
           else
             value
           end

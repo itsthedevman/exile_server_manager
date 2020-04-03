@@ -20,11 +20,13 @@ require "securerandom"
 require "steam_web_api"
 require "steam-condenser"
 require "symmetric-encryption"
+require "terminal-table"
 require "yaml"
 require "zeitwerk"
 
 # Run pre_init (Throwback to Exile)
 require_relative "pre_init"
+require_relative "pre_init_dev"
 
 module ESM
   class << self
@@ -32,8 +34,8 @@ module ESM
   end
 
   def self.run!
-    # Load our Config
     load_config
+    load_i18n
 
     initialize_steam
     initialize_logger
@@ -65,6 +67,11 @@ module ESM
   def self.load_config
     config = YAML.safe_load(ERB.new(File.read(File.expand_path("config/config.yml"))).result, aliases: true)[env]
     @config = JSON.parse(config.to_json, object_class: OpenStruct)
+  end
+
+  def self.load_i18n
+    I18n.load_path += Dir[File.expand_path("config/locales/**") + "/*.yml"]
+    I18n.reload!
   end
 
   def self.initialize_steam

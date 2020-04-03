@@ -9,6 +9,17 @@ class Array
 
   # Adds up all the sizes of every element inside the array
   def total_size
-    self.reduce(0) { |total, i| total + i.size }
+    self.reduce(0) do |total, i|
+      size =
+        if i.is_a?(Array)
+          i.total_size
+        elsif i.is_a?(Integer)
+          i
+        else
+          i.size
+        end
+
+      total + size
+    end
   end
 end

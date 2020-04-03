@@ -108,21 +108,17 @@ module ESM
       end
 
       def build_territory_admins
-        steam_uids = []
-
         # Get all roles with administrator or that are set as territory admins
         roles = @guild.roles.select { |role| role.permissions.administrator || @community.territory_admin_ids.include?(role.id.to_s) }
 
-        # Now get all of the steam uids from those users
-        roles.each do |role|
-          steam_uids += role.users.map { |member| ESM::User.find_by_discord_id(member.id)&.steam_uid }.reject(&:nil?)
-        end
+        # Get all of the user's discord IDs who have these roles
+        discord_ids =
+          roles.map do |role|
+            role.users.map { |user| user.id.to_s }
+          end.flatten
 
-        # Add the owner to the territory admins
-        owner_user = ESM::User.find_by_discord_id(@guild.owner.id)
-        steam_uids << owner_user.steam_uid if owner_user.present?
-
-        steam_uids
+        # Pluck all the steam UIDs we have, including the guild owners
+        ESM::User.where("discord_id IN (?)", discord_ids + [@guild.owner.id.to_s]).pluck(:steam_uid)
       end
 
       def send_response

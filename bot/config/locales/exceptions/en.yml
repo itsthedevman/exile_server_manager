@@ -3,7 +3,7 @@
 # en:
 #  product_price: "$%{price}"
 
-en-US:
+en:
   exceptions:
     system: "Well, this is awkward. Can you let my developer know that something bad happened?\nGive him this error:\n```%{message}```"
     text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
@@ -25,3 +25,4 @@ en-US:
     player_mode_command_not_available: "I'm sorry %{user}, `!%{command_name}` is not available in player mode."
     different_community_in_text: "I'm sorry %{user}, using commands for other communities is only allowed a **direct message** with me or with [Player Mode](https://www.esmbot.com/wiki/player_mode) turned on."
     pending_request: "I'm sorry %{current_user}, %{target_user} already has a request pending"
+    owned_server: "Hey %{user}, you can only access servers belonging to `%{community_id}`. Please provide a different server ID."

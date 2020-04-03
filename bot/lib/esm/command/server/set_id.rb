@@ -68,7 +68,7 @@ module ESM
         def check_for_maximum_characters!
           return if @arguments.new_territory_id.nil?
 
-          raise ESM::Exception::CheckFailure, error_message(:maximum_characters, user: current_user.mention) if @arguments.new_territory_id.size > 30
+          raise ESM::Exception::CheckFailure, error_message(:maximum_characters, user: current_user.mention) if @arguments.new_territory_id.size > 20
         end
 
         def check_for_failure!

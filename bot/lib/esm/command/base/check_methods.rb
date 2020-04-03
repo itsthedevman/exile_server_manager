@@ -140,6 +140,14 @@ module ESM
 
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:pending_request, user: current_user)
         end
+
+        # Raises CheckFailure if the target_server does not belong to the current_community
+        def check_for_owned_server!
+          return if target_server.nil?
+          return if target_server.community_id == current_community.id
+
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:owned_server, user: current_user, community_id: current_community.community_id)
+        end
       end
     end
   end

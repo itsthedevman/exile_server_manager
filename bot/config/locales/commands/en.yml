@@ -3,7 +3,7 @@
 # en:
 #  product_price: %{price}
 
-en-US:
+en:
   commands:
     request:
       sent: "Request `%{uuid}` has been sent to %{user}. They have 1 day to respond to your request."
@@ -196,10 +196,10 @@ en-US:
         **`%{prefix}setid esm_malden jqjoe no_u`**: Sets territory `jqjoe` to be `no_u`
         **`%{prefix}setid esm_altis fort_awesome tent_sadness`**: Changes territory `fort_awesome` to be `tent_sadness`
       arguments:
-        new_territory_id: "The new territory ID to use. This ID can be 3 to 30 characters long and can **only contain letters, numbers, and underscores**."
+        new_territory_id: "The new territory ID to use. This ID can be 3 to 20 characters long and can **only contain letters, numbers, and underscores**."
       error_message:
         minimum_characters: "I'm sorry %{user}, the new territory ID must be at least 3 characters long"
-        maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 30 characters"
+        maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 20 characters"
         access_denied: "I'm sorry %{user}, you are not allowed to do that."
       success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```%{prefix}pay %{server_id} %{new_territory_id}```"
     accept:
@@ -226,3 +226,12 @@ en-US:
       requestor_accepted: "Request `%{uuid}` has been accepted. Processing your request to add %{target_user} to `%{territory_id}` on `%{server_id}`"
       requestor_success: "Hi %{current_user}, %{target_user} has been added to territory `%{territory_id}` on %{server_id}"
       requestee_success: "Hi %{user}, you've been added to `%{territory_id}` successfully. Welcome aboard!"
+    server_territories:
+      description: "Displays the ID, name, and owner information for every territory on the provided server"
+      example: |-
+        **`%{prefix}server_territories esm_malden`:** Displays all territories for server `esm_malden`
+        **`%{prefix}server_territories esm_tanoa owner_name`:** Displays all territories for server `esm_tanoa`, but they are sorted the owner's name
+      arguments:
+        order_by: "Controls how the territories are sorted before they are displayed"
+      error_message:
+        no_territories: "I'm sorry %{user}, it doesn't appear to be any territories on this server"

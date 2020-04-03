@@ -104,6 +104,10 @@ module ESM
         def self.pending_request(user:)
           ESM::Embed.build(:error, description: I18n.t("command_errors.pending_request", user: user.mention))
         end
+
+        def self.owned_server(user:, community_id:)
+          ESM::Embed.build(:error, description: I18n.t("command_errors.owned_server", user: user.mention, community_id: community_id))
+        end
       end
     end
   end

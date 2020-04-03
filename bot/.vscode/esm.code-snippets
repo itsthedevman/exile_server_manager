@@ -163,7 +163,7 @@
 				"\t\t\t\t# @param type [Symbol] What type should this argument be stored as? Valid Options: :integer, :string, :float, :json (Optional. Default: :string)",
 				"\t\t\t\t# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
 				"\t\t\t\t# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
-				"\t\t\t\t# @param template [Symbol] The name of one of the templates to use for this command."
+				"\t\t\t\t# @param template [Symbol] The name of one of the templates to use for this command.",
 				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: I18n.t(\"commands.${12:command_name}.arguments.${10:name}\"), preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil",
 				"",
 				"\t\t\t\tdef discord; end",
@@ -181,5 +181,24 @@
 				"end"
 		 ],
 		 "description": "Create an empty command"
-	 }
+	 },
+	 "ESM Command Argument": {
+		"scope": "ruby",
+		"prefix": ["argument"],
+		"body": [
+			"# @param name [symbol] The name of the argument. This can be anything include one of the templates",
+			"# @param regex [RegExp] Regex that matches the value you expect for this argument ",
+			"# @param description [String] A short description of this argument. Make sure to include how to use it, and any other helpful tips.",
+			"# @param preserve [Boolean] Preserve the case when parsing this argument. Otherwise, the value is stored as lowercase (Optional. Default: false)",
+			"# @param default [Any] The default value for this argument if the user did not provide it. Also makes this argument optional (Optional. Default: nil)",
+			"# @param type [Symbol] What type should this argument be stored as? Valid Options: :integer, :string, :float, :json (Optional. Default: :string)",
+			"# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
+			"# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
+			"# @param template [Symbol] The name of one of the templates to use for this command.",
+			"argument :${1:name}, regex: /${2:regex}/, description: \"commands.${3:command_name}.arguments.${1:name}\", preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil"
+		],
+		"description": "Inserts an argument for an ESM command"
+	 },
+
+
 }

@@ -40,7 +40,7 @@ describe ESM::Command::Server::SetId, category: "command" do
       statement = command.statement(
         server_id: server.server_id,
         old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
-        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..20)
       )
 
       event = CommandEvent.create(statement, user: user, channel_type: :dm)
@@ -68,12 +68,12 @@ describe ESM::Command::Server::SetId, category: "command" do
     it "should error (Maximum characters)" do
       statement = command.statement(
         server_id: server.server_id,
-        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 31),
-        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 31)
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 21),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 21)
       )
       event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
-      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /cannot be longer than 30/i)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /cannot be longer than 20/i)
     end
 
     #
@@ -81,8 +81,8 @@ describe ESM::Command::Server::SetId, category: "command" do
       request = nil
       statement = command.statement(
         server_id: server.server_id,
-        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
-        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..20),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..20)
       )
       event = CommandEvent.create(statement, user: user, channel_type: :dm)
 
@@ -101,8 +101,8 @@ describe ESM::Command::Server::SetId, category: "command" do
       request = nil
       statement = command.statement(
         server_id: server.server_id,
-        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30),
-        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..30)
+        old_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..20),
+        new_territory_id: Faker::Alphanumeric.alphanumeric(number: 3..20)
       )
       event = CommandEvent.create(statement, user: user, channel_type: :dm)
 

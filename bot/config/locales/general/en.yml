@@ -1,4 +1,4 @@
-en-US:
+en:
   "yes": "Yes"
   "no": "No"
   invalid_response: "I'm sorry, I don't know how to reply to your response.\nI was expecting %{expected}"

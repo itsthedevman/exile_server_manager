@@ -22,7 +22,7 @@ module ESM
               "Channel: #{Discordrb::Channel::TYPE_NAMES[current_channel&.type]} (#{current_channel&.id})",
               "Command: #{@name}",
               "Arguments: #{@arguments.map(&:value)}",
-              "Response: #{@response}"
+              "Response: #{@response.map(&:to_h)}"
             ].join("\n")
           end
         end

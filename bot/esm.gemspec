@@ -39,9 +39,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "puma"
   spec.add_dependency "steam-condenser"
   spec.add_dependency "symmetric-encryption"
+  spec.add_dependency "terminal-table"
   spec.add_dependency "zeitwerk"
 
   # Development Only
+  spec.add_development_dependency "active_record_query_trace"
   spec.add_development_dependency "awesome_print"
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "bundler"
