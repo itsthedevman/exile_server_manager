@@ -163,4 +163,13 @@ describe ESM::Command::ArgumentContainer do
       expect(hash.values).to match_array(container.map(&:value))
     end
   end
+
+  describe "Aliases" do
+    let!(:content) { ESM::Command::Test::Base::COMMAND_MINIMAL_ALIAS }
+    let!(:event) { CommandEvent.create(content, user: user) }
+
+    it "should properly slice out alias correctly" do
+      expect { container.parse!(event) }.not_to raise_error
+    end
+  end
 end

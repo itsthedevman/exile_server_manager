@@ -13,7 +13,7 @@ module ESM
         self.clear!
 
         # Remove the prefix and command name from the message
-        @message = event.message.content[@command.offset..-1]
+        @message = extract_argument_string(event.message.content)
 
         # Loop through each match
         self.each do |argument|
@@ -183,6 +183,23 @@ module ESM
             "#{a.value} "
           end
         end
+      end
+
+      # Aliases may be of different lengths, this accounts for the different lengths when parsing the command string
+      # For example: "!server_territories".size (default) is not the same length as "!all_territories".size (alias)
+      def extract_argument_string(content)
+        command_aliases = self.command.aliases + [self.command.name]
+
+        # Determine what alias they are using.
+        # I can't use `alias` as a variable, so `alias_` is how it's going to be
+        command_alias =
+          command_aliases.find do |alias_|
+            content.match?(/#{alias_}/i)
+          end
+
+        # Remove the prefix and alias.
+        # Note: We're not caring about the prefix for this.
+        content.sub(/^.+#{command_alias}/i, "")
       end
     end
   end

@@ -1,8 +1,11 @@
 #!/bin/bash
+
+ESM_ENV=development
+
 # Set dev
 if [[ -z $1 ]]
 then
-  ESM_ENV=development rerun --dir lib bin/start.rb
+  rerun --dir lib bin/start.rb
 else
-  ESM_ENV=development bundle exec ruby bin/start.rb
+  bundle exec ruby bin/start.rb
 fi

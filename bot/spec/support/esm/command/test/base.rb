@@ -6,6 +6,7 @@ module ESM
       class Base < ESM::Command::Base
         COMMAND_FULL = "~base esm esm_malden 137709767954137088 1 PRESERVE display_as default multi\nline"
         COMMAND_MINIMAL = "~base esm esm_malden 137709767954137088 1 PRESERVE display_as"
+        COMMAND_MINIMAL_ALIAS = "~base1 esm esm_malden 137709767954137088 1 PRESERVE display_as"
         COMMAND_INVALID_COMMUNITY = "~base es esm_malden 137709767954137088 1 PRESERVE display_as"
         COMMAND_INVALID_SERVER = "~base esm esm_mal 137709767954137088 1 PRESERVE display_as"
         COMMAND_INVALID_USER = "~base esm esm_malden 000000000000000000 1 PRESERVE display_as"
