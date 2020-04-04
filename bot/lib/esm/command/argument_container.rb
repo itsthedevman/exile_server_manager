@@ -199,7 +199,7 @@ module ESM
 
         # Remove the prefix and alias.
         # Note: We're not caring about the prefix for this.
-        content.sub("#{self.command.prefix}#{command_alias}", "")
+        content.sub(/#{self.command.prefix}#{command_alias}/i, "")
       end
     end
   end

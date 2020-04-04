@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 describe ESM::Command::ArgumentContainer do
-  let(:command) { ESM::Command::Test::Base.new }
-  let(:container) { command.arguments }
+  let!(:command) { ESM::Command::Test::Base.new }
+  let!(:container) { command.arguments }
   let!(:user) { create(:user) }
 
   it "should have #{ESM::Command::Test::Base::ARGUMENT_COUNT} arguments" do
@@ -75,7 +75,7 @@ describe ESM::Command::ArgumentContainer do
     let!(:content) { ESM::Command::Test::Base::COMMAND_FULL.dup.upcase }
     let!(:event) { CommandEvent.create(content, user: user) }
 
-    it "should parse" do
+    before :each do
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -87,7 +87,6 @@ describe ESM::Command::ArgumentContainer do
       expect(container._multiline).to eql("MULTI\nLINE")
     end
   end
-
 
   describe "Valid Argument Container (Type)" do
     let!(:content) { ESM::Command::Test::Base::COMMAND_FULL }
