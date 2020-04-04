@@ -121,11 +121,11 @@ module ESM
     end
 
     def self.by_category
-      @by_category ||= @all.group_by(&:category.downcase)
+      @by_category ||= OpenStruct.new(@all.group_by(&:category.downcase))
     end
 
     def self.by_type
-      @by_type ||= @all.group_by(&:command_type)
+      @by_type ||= OpenStruct.new(@all.group_by(&:command_type))
     end
 
     def self.create_configurations_for_community(community)
