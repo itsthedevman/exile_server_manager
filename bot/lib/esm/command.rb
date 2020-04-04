@@ -13,11 +13,11 @@ module ESM
     end
 
     def self.[](command_name)
-      @all.find { |command| command.name == command_name }
+      @all.find { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
     end
 
     def self.include?(command_name)
-      @all.any? { |command| command_name == command.name }
+      @all.any? { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
     end
 
     def self.load_commands
@@ -121,11 +121,11 @@ module ESM
     end
 
     def self.by_category
-      @by_category ||= @all.group_by(&:category.downcase).to_ostruct
+      @by_category ||= @all.group_by(&:category.downcase)
     end
 
     def self.by_type
-      @by_type ||= @all.group_by(&:command_type).to_ostruct
+      @by_type ||= @all.group_by(&:command_type)
     end
 
     def self.create_configurations_for_community(community)
