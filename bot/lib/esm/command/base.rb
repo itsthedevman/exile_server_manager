@@ -10,7 +10,7 @@ module ESM
       include LoggingMethods
 
       class << self
-        attr_reader :defines, :command_type, :category
+        attr_reader :defines, :command_type, :category, :command_aliases
       end
 
       def self.name
@@ -46,7 +46,7 @@ module ESM
       end
 
       def self.reset_variables!
-        @aliases = []
+        @command_aliases = []
         @arguments = ESM::Command::ArgumentContainer.new
         @type = nil
         @limit_to = nil
@@ -61,17 +61,25 @@ module ESM
         @command_name = self.name.demodulize.underscore.downcase
       end
 
-      def self.aliases(*aliases)
-        @aliases = aliases
-      end
-
       def self.argument(name, opts = {})
         @arguments << ESM::Command::Argument.new(name, opts)
+      end
+
+      def self.example(prefix = ESM.config.prefix)
+        I18n.t("commands.#{@command_name}.example", prefix: prefix, default: "")
+      end
+
+      def self.description(prefix = ESM.config.prefix)
+        I18n.t("commands.#{@command_name}.description", prefix: prefix, default: "")
       end
 
       # I wanted these as methods instead of attributes
       #
       # rubocop:disable Style/TrivialAccessors
+      def self.aliases(*aliases)
+        @command_aliases = aliases
+      end
+
       def self.type(type)
         @command_type = type
       end
@@ -94,7 +102,7 @@ module ESM
           OpenStruct.new(
             name: @command_name,
             category: @category,
-            aliases: @aliases,
+            aliases: @command_aliases,
             arguments: @arguments,
             type: @command_type,
             limit_to: @limit_to,
@@ -178,12 +186,18 @@ module ESM
 
       # The user that executed the command
       def current_user
-        @current_user ||= ESM::User.parse(@event.user&.id)
+        return @current_user if defined?(@current_user)
+        return nil if @event.user.nil?
+
+        @current_user ||= ESM::User.parse(@event.user.id)
       end
 
       # @returns [ESM::Community, nil] The community the command was executed from. Nil if sent from Direct Message
       def current_community
-        @current_community ||= ESM::Community.find_by_guild_id(@event&.server&.id)
+        return @current_community if defined?(@current_community)
+        return nil if @event&.server.nil?
+
+        @current_community ||= ESM::Community.find_by_guild_id(@event.server.id)
       end
 
       # @returns [ESM::Cooldown] The cooldown for this command and user

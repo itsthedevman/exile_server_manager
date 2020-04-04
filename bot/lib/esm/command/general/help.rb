@@ -74,7 +74,7 @@ module ESM
 
         def format_commands(commands)
           commands.format do |command|
-            "**`#{prefix}#{command.name}`**\n#{command.description}\n\n"
+            "**`#{prefix}#{command.name}`**\n#{command.description(prefix)}\n\n"
           end
         end
 
