@@ -15,7 +15,7 @@ module ESM
         define :cooldown_time, modifiable: true, default: 2.seconds
 
         argument :server_id
-        argument :amount, regex: /\d+|half|all|stats/, description: I18n.t("commands.gamble.arguments.amount")
+        argument :amount, regex: /\d+|half|all|stats/, description: "commands.gamble.arguments.amount"
 
         def discord
           return send_stats if @arguments.amount == "stats"

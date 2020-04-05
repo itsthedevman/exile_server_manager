@@ -13,7 +13,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        argument :category, regex: /.*/, default: nil, description: I18n.t("commands.help.arguments.category")
+        argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
           if @arguments.category == "commands"

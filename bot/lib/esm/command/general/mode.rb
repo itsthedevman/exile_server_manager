@@ -7,14 +7,14 @@ module ESM
         type :admin
         limit_to :dm
 
-        argument :community_id
-        argument :mode, regex: /player|server/, description: I18n.t("commands.mode.arguments.mode")
-
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
         define :whitelisted_role_ids, modifiable: false, default: []
         define :allowed_in_text_channels, modifiable: false, default: false
         define :cooldown_time, modifiable: false, default: 2.seconds
+
+        argument :community_id
+        argument :mode, regex: /player|server/, description: "commands.mode.arguments.mode"
 
         def discord
           check_for_permissions!

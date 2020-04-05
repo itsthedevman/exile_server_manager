@@ -12,7 +12,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        argument :uuid, regex: /[0-9a-fA-F]{4}/, description: I18n.t("commands.accept.arguments.uuid")
+        argument :uuid, regex: /[0-9a-fA-F]{4}/, description: "commands.accept.arguments.uuid"
 
         def discord
           request = current_user.esm_user.pending_requests.where(uuid_short: @arguments.uuid).first
