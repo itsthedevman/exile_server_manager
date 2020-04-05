@@ -54,12 +54,12 @@ en:
         development_commands_title: "__Development Commands__"
       command:
         title: "`%{prefix}%{name}` Documentation"
-        usage: "**Usage:**"
+        usage: "**__Usage__**"
         aliases:
-          name: "**Aliases:**"
+          name: "**__Aliases__**"
           value: "This command can also be accessed by the following aliases: %{aliases}"
-        arguments: "**Arguments:**"
-        examples: "**Examples:**"
+        arguments: "**__Arguments__**"
+        examples: "**__Examples__**"
     mode:
       arguments:
         mode: "Sets which mode, valid options are `server` or `player`"
