@@ -277,6 +277,6 @@ en:
         **`%{prefix}server_territories esm_tanoa owner_name`**
         Displays all territories for server `esm_tanoa`, but they are sorted the owner's name
       arguments:
-        order_by: "Controls how the territories are sorted before they are displayed"
+        order_by: "Controls how the territories are sorted before they are displayed.\nValid options are: `id`, `territory_name`, `owner_uid`"
       error_message:
         no_territories: "I'm sorry %{user}, it doesn't appear to be any territories on this server"

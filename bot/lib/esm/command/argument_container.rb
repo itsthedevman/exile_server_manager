@@ -28,11 +28,11 @@ module ESM
           output = "**`#{argument}`**\n"
 
           # Only add the period to optional if there is no default
-          output += "Optional#{argument.default? ? "" : ". "}" if !argument.required?
-          output += ", defaults to `#{argument.default}`. " if argument.default?
-          output += "#{argument.description(command.prefix)}\n\n"
+          output += "#{argument.description(command.prefix)}."
+          output += "\n**Note:** This argument is optional#{argument.default? ? "" : ". "}" if !argument.required?
+          output += " and it defaults to `#{argument.default}`. " if argument.default?
 
-          output
+          output + "\n\n"
         end
       end
 
