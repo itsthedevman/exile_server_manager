@@ -32,6 +32,9 @@ en:
 
         **`%{prefix}help commands`**
         Displays all commands
+
+        **`%{prefix}help set_id`**
+        Displays detailed information about the `set_id` command
       categories:
         name: "Categories"
         value: |-
