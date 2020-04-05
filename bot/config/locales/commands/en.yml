@@ -46,7 +46,7 @@ en:
         usage: "**Usage:**"
         aliases:
           name: "**Aliases:**"
-          value: "This command supports being activated by %{aliases} instead of `%{prefix}%{name}`"
+          value: "This command can also be accessed by the following aliases: %{aliases}"
         arguments: "**Arguments:**"
         examples: "**Examples:**"
     mode:

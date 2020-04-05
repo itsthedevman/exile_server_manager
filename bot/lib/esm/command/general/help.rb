@@ -92,16 +92,6 @@ module ESM
               value: "```#{command.usage}```"
             )
 
-            # Aliases
-            if command.aliases.present?
-              aliases = command.aliases.map { |a| "`#{prefix}#{a}`" }.to_sentence
-
-              embed.add_field(
-                name: I18n.t("commands.help.command.aliases.name"),
-                value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
-              )
-            end
-
             # Arguments
             if command.arguments.present?
               embed.add_field(
@@ -115,6 +105,16 @@ module ESM
               embed.add_field(
                 name: I18n.t("commands.help.command.examples"),
                 value: command.example
+              )
+            end
+
+            # Aliases
+            if command.aliases.present?
+              aliases = "```\n#{command.aliases.map { |a| "#{prefix}#{a}" }.join("\n")}\n```"
+
+              embed.add_field(
+                name: I18n.t("commands.help.command.aliases.name"),
+                value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
               )
             end
           end
