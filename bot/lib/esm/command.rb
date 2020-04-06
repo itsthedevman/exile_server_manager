@@ -21,6 +21,9 @@ module ESM
     end
 
     def self.load_commands
+      # Remove all the caches since this will recache
+      ESM::CommandCache.destroy_all
+
       path = File.expand_path("lib/esm/command")
       CATEGORIES.each do |category|
         Dir["#{path}/#{category}/*.rb"].each do |command_path|
@@ -71,6 +74,20 @@ module ESM
 
       # Use command_name instead of command.name to get set_id instead of setid
       @all << command.class
+
+      # Don't cache development commands
+      return if command.type == :development
+
+      # Store in the DB so the website can read this data
+      ESM::CommandCache.create!(
+        command_name: command.distinct,
+        command_category: command.category,
+        command_description: command.description,
+        command_example: command.example,
+        command_usage: command.arguments.map(&:to_s).join(" "),
+        command_arguments: command.arguments.to_s,
+        command_aliases: command.aliases
+      )
     end
 
     def self.execute(event, command)

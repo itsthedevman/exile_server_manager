@@ -9,6 +9,13 @@ ESM.run!
 # Just wait a couple of seconds for the DB to connect
 sleep 2
 
+ESM::BotAttribute.create!(
+  maintenance_mode_enabled: false,
+  maintenance_message: "",
+  status_type: "PLAYING",
+  status_message: "!register"
+)
+
 ESM::User.create!(
   discord_id: "137709767954137088",
   discord_username: "Bryan",

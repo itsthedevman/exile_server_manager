@@ -3,13 +3,15 @@ class InitialDb < ActiveRecord::Migration[5.2]
     enable_extension 'hstore' unless extension_enabled?('hstore')
     enable_extension 'uuid-ossp' unless extension_enabled?("uuid-ossp")
 
-    # Bots
-    create_table :bots do |t|
-      t.string :short_name, null: false
+    # Attributes for ESM
+    create_table :bot_attributes do |t|
       t.boolean :maintenance_mode_enabled, null: false, default: false
       t.string :maintenance_message, null: true
       t.string :status_type, null: false, default: "PLAYING"
       t.string :status_message, null: true
+      t.integer :community_count, default: 0
+      t.integer :server_count, default: 0
+      t.integer :user_count, default: 0
     end
 
     # communities
@@ -43,6 +45,17 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.datetime :created_at
       t.datetime :updated_at
       t.datetime :deleted_at, index: true
+    end
+
+    # Command Cache
+    create_table :command_caches do |t|
+      t.string :command_name, index: true
+      t.string :command_category
+      t.text :command_description
+      t.text :command_example
+      t.text :command_usage
+      t.text :command_arguments
+      t.json :command_aliases
     end
 
     # cooldowns
@@ -252,7 +265,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.boolean :protection_money_paid, null: false, default: true
     end
 
-    add_index :bots, :short_name, unique: true
     add_index :communities, :community_id, unique: true
     add_index :communities, :guild_id, unique: true
     add_index :logs, :uuid, unique: true

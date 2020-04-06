@@ -17,13 +17,25 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   enable_extension "plpgsql"
   enable_extension "uuid-ossp"
 
-  create_table "bots", force: :cascade do |t|
-    t.string "short_name", null: false
+  create_table "bot_attributes", force: :cascade do |t|
     t.boolean "maintenance_mode_enabled", default: false, null: false
     t.string "maintenance_message"
     t.string "status_type", default: "PLAYING", null: false
     t.string "status_message"
-    t.index ["short_name"], name: "index_bots_on_short_name", unique: true
+    t.integer "community_count", default: 0
+    t.integer "server_count", default: 0
+    t.integer "user_count", default: 0
+  end
+
+  create_table "command_caches", force: :cascade do |t|
+    t.string "command_name"
+    t.string "command_category"
+    t.text "command_description"
+    t.text "command_example"
+    t.text "command_usage"
+    t.text "command_arguments"
+    t.json "command_aliases"
+    t.index ["command_name"], name: "index_command_caches_on_command_name"
   end
 
   create_table "command_configurations", force: :cascade do |t|
