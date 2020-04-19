@@ -1,62 +1,74 @@
 changes:
-  core:
-    - "Added support for internationalization. If you would like to provide translations, please check out the documentation here: LINK"
-    - "Improved the welcome experience when inviting ESM to a new server"
-    - "Improved message sent to user when they don't provide the correct arguments"
-    - "Improved error messages sent back to users"
-    - "If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user"
-    - "[Requested] Communities can now enable and set a whitelist on most commands."
-    - "[Requested] Communities now have full control of permissions on most commands"
-    - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
-    - "Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration."
-    - "Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)"
-  commands:
-    accept:
-      - "**New command**"
-      - "Part of the new requests system, this command will accept a pending request by its UUID"
-    decline:
-      - "**New command**"
-      - "Part of the new requests system, this command will decline a pending request by its UUID"
-    whois:
-      - "Added limited information about Community and VAC bans"
-    help:
-      - "**New Command**"
-      - "Replaces `!commands`, this command actually provides useful information! Shock!"
-      - "Added new help documentation, detailed information about commands and how to use them"
-    mode:
-      - "`!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`"
-      - "`!playermode` may still be used instead of `!mode`"
-    me:
-      - "Improved formatting of poptabs and numbers"
-      - "Categorized player information for better display"
-    server:
-      - "Updated embed design"
-      - "Added \"Next restart in\" and \"Game Version\" information"
-    servers:
-      - "Updated embed design"
-      - "When a server is listed as offline, the time since last connection is now displayed"
-      - "Added \"Next restart in\" information"
-    territories:
-      - "Updated embed design"
-      - "Added warning when there is 4 days or less before payment is due"
-    gamble:
-      - "The `info` argument has been renamed to `stats`"
-      - "Added server wide gambling stats"
-    add:
-      - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"
-    set_id:
-      - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`."
-      - "This command also has aliases, which can be viewed in the help documentation."
-    server_territories:
-      - "`!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`."
-      - "This command also has aliases, which can be viewed in the help documentation."
-      - "Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back"
-      - "Territories are now properly formatted in an ASCII table for ease of readability"
-    birb:
-      - "Added waiting message when fetching pictures"
-    doggo:
-      - "Added waiting message when fetching pictures"
-    snek:
-      - "Added waiting message when fetching pictures"
-    meow:
-      - "Added waiting message when fetching pictures"
+  bot:
+    core:
+      - "Added support for internationalization. If you would like to provide translations, please check out the documentation here: LINK"
+      - "Improved the welcome experience when inviting ESM to a new server"
+      - "Improved message sent to user when they don't provide the correct arguments"
+      - "Improved error messages sent back to users"
+      - "If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user"
+      - "[Requested] Communities can now enable and set a whitelist on most commands."
+      - "[Requested] Communities now have full control of permissions on most commands"
+      - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
+      - "Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration."
+      - "Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)"
+    commands:
+      accept:
+        - "**New command**"
+        - "Part of the new requests system, this command will accept a pending request by its UUID"
+      decline:
+        - "**New command**"
+        - "Part of the new requests system, this command will decline a pending request by its UUID"
+      whois:
+        - "Added limited information about Community and VAC bans"
+      help:
+        - "**New Command**"
+        - "Replaces `!commands`, this command actually provides useful information! Shock!"
+        - "Added new help documentation, detailed information about commands and how to use them"
+      mode:
+        - "`!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`"
+        - "`!playermode` may still be used instead of `!mode`"
+      me:
+        - "Improved formatting of poptabs and numbers"
+        - "Categorized player information for better display"
+      server:
+        - "Updated embed design"
+        - "Added \"Next restart in\" and \"Game Version\" information"
+      servers:
+        - "Updated embed design"
+        - "When a server is listed as offline, the time since last connection is now displayed"
+        - "Added \"Next restart in\" information"
+      territories:
+        - "Updated embed design"
+        - "Added warning when there is 4 days or less before payment is due"
+      gamble:
+        - "The `info` argument has been renamed to `stats`"
+        - "Added server wide gambling stats"
+      add:
+        - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"
+      set_id:
+        - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`."
+        - "This command also has aliases, which can be viewed in the help documentation."
+      server_territories:
+        - "`!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`."
+        - "This command also has aliases, which can be viewed in the help documentation."
+        - "Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back"
+        - "Territories are now properly formatted in an ASCII table for ease of readability"
+      birb:
+        - "Added waiting message when fetching pictures"
+      doggo:
+        - "Added waiting message when fetching pictures"
+      snek:
+        - "Added waiting message when fetching pictures"
+      meow:
+        - "Added waiting message when fetching pictures"
+  website:
+    core:
+      - "Removed premium throughout the site. Previously locked content for premium is now available to every community"
+    wiki:
+      - "Removed outdated guides and pages"
+    server_dashboard:
+      - "Renamed server portal to server dashboard"
+      - "Improved logging channel selector by adding the channel categories as separators"
+      - "Changed format of community selector. The format is now `[Community ID] Discord Server Name`"
+      - "When a notification's color is set to random, the color on the preview will also be random"
+      - "Improved the overall user experience with register/modify server"

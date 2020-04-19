@@ -80,13 +80,14 @@ module ESM
 
       # Store in the DB so the website can read this data
       ESM::CommandCache.create!(
-        command_name: command.distinct,
+        command_name: command.name,
         command_category: command.category,
         command_description: command.description,
         command_example: command.example,
         command_usage: command.arguments.map(&:to_s).join(" "),
         command_arguments: command.arguments.to_s,
-        command_aliases: command.aliases
+        command_aliases: command.aliases,
+        command_defines: command.defines.to_h
       )
     end
 

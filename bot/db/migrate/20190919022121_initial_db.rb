@@ -56,6 +56,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :command_usage
       t.text :command_arguments
       t.json :command_aliases
+      t.json :command_defines
     end
 
     # cooldowns
@@ -69,17 +70,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :cooldown_type
       t.integer :cooldown_amount
       t.datetime :expires_at
-      t.datetime :created_at
-      t.datetime :updated_at
-    end
-
-    # downloads
-    create_table :downloads do |t|
-      t.string :download_name, null: false
-      t.string :file, null: false
-      t.string :file_name, null: false
-      t.integer :file_size, unsigned: true
-      t.json :file_metadata, default: nil
       t.datetime :created_at
       t.datetime :updated_at
     end

@@ -29,14 +29,23 @@ community = ESM::Community.create!(
   community_name: "Exile Server Manager",
   community_website: "https://www.esmbot.com",
   guild_id: ESM::Community::ESM::ID,
-  logging_channel_id: "624387002443497489"
+  logging_channel_id: "624387002443497489",
+  command_prefix: "~"
 )
 
 ESM::Community.create!(
   community_id: "test",
   community_name: "Bryan's Test Server",
   community_website: "https://www.esmbot.com",
-  guild_id: ESM::Community::Secondary::ID
+  guild_id: ESM::Community::Secondary::ID,
+  command_prefix: "pls "
+)
+
+ESM::Community.create!(
+  community_id: "zdt",
+  community_name: "ZDT",
+  community_website: "https://www.zdt.com",
+  guild_id: "421111581267591168"
 )
 
 server = ESM::Server.create!(

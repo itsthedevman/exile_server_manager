@@ -35,6 +35,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.text "command_usage"
     t.text "command_arguments"
     t.json "command_aliases"
+    t.json "command_defines"
     t.index ["command_name"], name: "index_command_caches_on_command_name"
   end
 
@@ -91,16 +92,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["server_id"], name: "index_cooldowns_on_server_id"
     t.index ["steam_uid"], name: "index_cooldowns_on_steam_uid"
     t.index ["user_id"], name: "index_cooldowns_on_user_id"
-  end
-
-  create_table "downloads", force: :cascade do |t|
-    t.string "download_name", null: false
-    t.string "file", null: false
-    t.string "file_name", null: false
-    t.integer "file_size"
-    t.json "file_metadata"
-    t.datetime "created_at"
-    t.datetime "updated_at"
   end
 
   create_table "gamble_stats", force: :cascade do |t|
