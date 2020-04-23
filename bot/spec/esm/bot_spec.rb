@@ -98,7 +98,7 @@ describe ESM::Bot do
     describe "Send to user" do
       it "should send and reply (Correct)" do
         ESM::Test.response = "good"
-        ESM.bot.deliver_and_await!("Hello, how are you today?", user: ESM::User::Bryan::ID, expected: %w[good bad])
+        ESM.bot.deliver_and_await!("Hello, how are you today?", to: ESM::User::Bryan::ID, expected: %w[good bad])
 
         expect(ESM::Test.messages.size).to eql(1)
         message_array = ESM::Test.messages.first
@@ -131,8 +131,8 @@ describe ESM::Bot do
         # Start the request
         ESM.bot.deliver_and_await!(
           "Who wants to party?!?",
-          user: ESM::User::Bryan::ID,
-          send_to_channel: ESM::Community::ESM::SPAM_CHANNEL,
+          to: ESM::Community::ESM::SPAM_CHANNEL,
+          owner: ESM::User::Bryan::ID,
           expected: ["i do", "i don't"]
         )
 
@@ -159,8 +159,8 @@ describe ESM::Bot do
         # Start the request
         ESM.bot.deliver_and_await!(
           "Who wants to party?!?",
-          user: ESM::User::Bryan::ID,
-          send_to_channel: ESM::Community::ESM::SPAM_CHANNEL,
+          to: ESM::Community::ESM::SPAM_CHANNEL,
+          owner: ESM::User::Bryan::ID,
           expected: ["i do", "i don't"],
           invalid_response: "Noup" # Useful!
         )
@@ -187,7 +187,7 @@ describe ESM::Bot do
 
     it "should give a failed response" do
       expect do
-        ESM.bot.deliver_and_await!("Who wants to party?!?", user: ESM::User::Bryan::ID, send_to_channel: ESM::Community::ESM::SPAM_CHANNEL, expected: [], give_up_after: 0)
+        ESM.bot.deliver_and_await!("Who wants to party?!?", to: ESM::Community::ESM::SPAM_CHANNEL, owner: ESM::User::Bryan::ID, expected: [], give_up_after: 0)
       end.to raise_error(ESM::Exception::CheckFailure, /failure to communicate/i)
     end
   end

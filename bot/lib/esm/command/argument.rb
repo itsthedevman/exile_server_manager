@@ -61,7 +61,7 @@ module ESM
 
         string +=
           if display_as.present?
-            display_as
+            display_as.to_s
           else
             name.to_s
           end
@@ -101,16 +101,19 @@ module ESM
       end
 
       def load_options(opts)
-        opts = default_from_name(opts[:template] || @name, opts) if default_argument?(opts[:template] || @name)
-        opts
+        if default_argument?(opts[:template] || @name)
+          default_from_name(opts[:template] || @name).merge(opts)
+        else
+          opts
+        end
       end
 
       def default_argument?(name)
         defaults.key?(name)
       end
 
-      def default_from_name(name, opts)
-        defaults[name].merge(opts)
+      def default_from_name(name)
+        defaults[name]
       end
     end
   end

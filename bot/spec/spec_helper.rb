@@ -19,6 +19,7 @@ require "byebug"
 require "awesome_print"
 require "pry"
 require "ruby-prof"
+require "rspec/expectations"
 
 # Load all of our support files
 loader = Zeitwerk::Loader.new

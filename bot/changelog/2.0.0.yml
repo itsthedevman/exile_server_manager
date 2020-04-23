@@ -61,6 +61,9 @@ changes:
         - "Added waiting message when fetching pictures"
       meow:
         - "Added waiting message when fetching pictures"
+      broadcast:
+        - "You will now be shown a preview and prompted to confirm before the message is sent."
+        - "Users will now only receive the message once if they are on multiple servers."
   website:
     core:
       - "Removed premium throughout the site. Previously locked content for premium is now available to every community"

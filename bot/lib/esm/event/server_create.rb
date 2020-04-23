@@ -54,7 +54,7 @@ module ESM
             e.add_field(value: "_Just reply back `yes` or `no` when you're ready_")
           end
 
-        response = ESM.bot.deliver_and_await!(embed, user: @owner, expected: %w[yes no])
+        response = ESM.bot.deliver_and_await!(embed, to: @owner, expected: %w[yes no])
 
         # This is a server community, turn off player mode
         if (server_owner = (response.downcase == "yes"))

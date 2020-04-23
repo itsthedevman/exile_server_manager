@@ -101,32 +101,29 @@ module ESM
       delivery_channel.send_message(message)
     end
 
-    def deliver_and_await!(message, user:, expected:, send_to_channel: nil, invalid_response: nil, timeout: nil, give_up_after: 99)
+    def deliver_and_await!(message, to:, owner: to, expected:, invalid_response: nil, timeout: nil, give_up_after: 99)
       counter = 0
       match = nil
       invalid_response = format_invalid_response(expected) if invalid_response.nil?
-      user = determine_delivery_channel(user)
+      channel = determine_delivery_channel(to)
+      owner = self.user(owner)
 
       while match.nil? && counter < give_up_after
-        if send_to_channel.nil?
-          deliver(message, to: user)
-        else
-          deliver(message, to: send_to_channel)
-        end
+        deliver(message, to: channel)
 
         response =
           if ESM.env.test?
             ESM::Test.await
           else
             # Add the await event
-            user.await!(timeout: timeout)
+            owner.await!(timeout: timeout)
           end
 
         # We timed out, return nil
         return nil if response.nil?
 
         # Parse the match from the event
-        match = response.message.content.match(Regexp.new("(#{expected.join("|")})", Regexp::IGNORECASE))
+        match = response.message.content.match(Regexp.new("(#{expected.map(&:downcase).join("|")})", Regexp::IGNORECASE))
 
         # We found what we were looking for
         break if !match.nil?

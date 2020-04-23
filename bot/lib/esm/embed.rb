@@ -139,6 +139,8 @@ module ESM
 
     def build_from_template(type, **attributes)
       case type
+      when :info
+        self.color = :blue
       when :error
         self.color = :red
       when :success

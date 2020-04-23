@@ -55,7 +55,7 @@ module ESM
       @user = nil
       @second_user = nil
 
-      @community_type = %i[esm_community secondary_community].sample(1).first
+      @community_type = %i[esm_community secondary_community].sample
       @user_type = @community_type == :esm_community ? :user : :secondary_user
     end
 

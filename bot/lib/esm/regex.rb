@@ -15,6 +15,7 @@ module ESM
     TERRITORY_ID = /\w+/.freeze
     TERRITORY_ID_ONLY = /^\w+$/.freeze
     FLAG_NAME = /(flag_.*)\.paa/.freeze
+    BROADCAST = /#{SERVER_ID}|all|preview/.freeze
   end
 end
 

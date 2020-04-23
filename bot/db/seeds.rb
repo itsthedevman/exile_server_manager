@@ -16,7 +16,7 @@ ESM::BotAttribute.create!(
   status_message: "!register"
 )
 
-ESM::User.create!(
+user = ESM::User.create!(
   discord_id: "137709767954137088",
   discord_username: "Bryan",
   discord_discriminator: "9876",
@@ -81,3 +81,5 @@ ESM::ServerMod.create!(
   mod_version: "1",
   mod_required: false
 )
+
+ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)

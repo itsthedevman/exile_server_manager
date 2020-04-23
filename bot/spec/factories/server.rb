@@ -21,7 +21,13 @@ FactoryBot.define do
     before :create do |server, _evaluator|
       next if server.server_id.present?
 
-      server.server_id = "#{server.community.community_id}_#{Faker::NatoPhoneticAlphabet.code_word.downcase}"
+      server_id =
+        loop do
+          server_id = "#{server.community.community_id}_#{Faker::NatoPhoneticAlphabet.code_word.downcase}"
+          break server_id if ESM::Server.find_by_server_id(server_id).nil?
+        end
+
+      server.server_id = server_id
     end
 
     after :create do |server, _evaluator|
