@@ -43,13 +43,7 @@ module ESM
           return reply(I18n.t("commands.broadcast.cancelation_reply")) if response.nil? || response.downcase == I18n.t("no").downcase
 
           # Get all of the users to broadcast to
-          users =
-            @servers.map do |server|
-              ESM::UserNotificationPreference.where(server_id: server.id, custom: true).map(&:user)
-            end
-
-          # Flatten and make sure we are only sending to each user once
-          users = users.flatten.uniq(&:discord_id)
+          users = load_users
           users.each { |user| ESM.bot.deliver(broadcast_embed(server_ids: @server_id_sentence), to: user.discord_id) }
 
           # Send the success message back
@@ -80,7 +74,7 @@ module ESM
             if @arguments.broadcast_to == "all"
               current_community.servers
             else
-              # Find the server, but check existance and if the server belongs to this community
+              # Find the server, but check existence and if the server belongs to this community
               server = ESM::Server.find_by_server_id(@arguments.broadcast_to)
 
               raise_invalid_server_id! if server.nil?
@@ -91,6 +85,20 @@ module ESM
 
           # For the broadcast message
           @server_id_sentence = @servers.map { |server| "`#{server.server_id}`" }.to_sentence
+        end
+
+        def load_users
+          users =
+            @servers.map do |server|
+              denied_user_ids = ESM::UserNotificationPreference.where(server_id: server.id, custom: false).pluck(:user_id)
+
+              # Get every user that has used a command for this server, but has explicitly denied custom
+              # This code will also inherently find users who have set the preference to true since that creates a cooldown
+              ESM::Cooldown.where(server_id: server.id).where.not(user_id: denied_user_ids).map(&:user)
+            end
+
+          # Flatten and make sure we are only sending to each user once
+          users.flatten.uniq(&:discord_id)
         end
 
         def check_for_message_length!

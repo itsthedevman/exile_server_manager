@@ -33,10 +33,10 @@ describe ESM::Command::Server::Broadcast, category: "command" do
     before :each do
       wait_for { wsc.connected? && second_wsc.connected? }.to be(true)
 
-      # Create preferences for the users
-      ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)
-      ESM::UserNotificationPreference.create!(user_id: user.id, server_id: second_server.id)
-      ESM::UserNotificationPreference.create!(user_id: second_user.id, server_id: second_server.id)
+      # Create cooldowns for the users
+      ESM::Cooldown.create!(user_id: user.id, community_id: community.id, server_id: server.id, command_name: "preferences")
+      ESM::Cooldown.create!(user_id: user.id, community_id: community.id, server_id: second_server.id, command_name: "preferences")
+      ESM::Cooldown.create!(user_id: second_user.id, community_id: community.id, server_id: second_server.id, command_name: "preferences")
 
       # Allow user to use this command
       community.command_configurations.where(command_name: "broadcast").update(whitelist_enabled: false)

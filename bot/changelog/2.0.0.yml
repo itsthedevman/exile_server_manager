@@ -63,7 +63,8 @@ changes:
         - "Added waiting message when fetching pictures"
       broadcast:
         - "You will now be shown a preview and prompted to confirm before the message is sent."
-        - "Users will now only receive the message once if they are on multiple servers."
+        - "Players will now only receive the message once if they are on multiple servers."
+        - "Players will now receive broadcast messages if they have ran a command for the server at least once. Players can still opt out via the `!preferences` command"
   website:
     core:
       - "Removed premium throughout the site. Previously locked content for premium is now available to every community"
