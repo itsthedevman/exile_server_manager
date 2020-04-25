@@ -95,16 +95,19 @@ module ESM
       return if self.notifications.present?
 
       ::ESM::Notification::DEFAULTS.each do |category, notifications|
-        notifications.each do |notification|
-          ::ESM::Notification.create!(
-            community_id: self.id,
-            notification_type: notification["type"],
-            notification_title: notification["title"],
-            notification_description: notification["description"],
-            notification_color: notification["color"],
-            notification_category: category
-          )
-        end
+        notifications =
+          notifications.map do |notification|
+            {
+              community_id: self.id,
+              notification_type: notification["type"],
+              notification_title: notification["title"],
+              notification_description: notification["description"],
+              notification_color: notification["color"],
+              notification_category: category
+            }
+          end
+
+        ::ESM::Notification.import(notifications)
       end
     end
   end

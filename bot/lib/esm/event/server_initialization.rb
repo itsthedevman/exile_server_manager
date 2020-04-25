@@ -51,20 +51,22 @@ module ESM
       end
 
       def store_territory_info!
-        # Start fresh
-        ESM::Territory.where(server_id: @server.id).destroy_all
+        ESM::Territory.all.in_batches(of: 10_000).delete_all
 
-        # Now re-create them
+        # All territory info is prefixed with `territory_level_`
         territory_info = @params.to_h.select { |key, _| key.to_s.starts_with?("territory_level_") }
-        territory_info.each do |_, info|
-          ESM::Territory.create!(
-            server_id: @server.id,
-            territory_level: info[:level],
-            territory_purchase_price: info[:purchase_price],
-            territory_radius: info[:radius],
-            territory_object_count: info[:object_count]
-          )
-        end
+        territories =
+          territory_info.map do |_, info|
+            {
+              server_id: @server.id,
+              territory_level: info[:level],
+              territory_purchase_price: info[:purchase_price],
+              territory_radius: info[:radius],
+              territory_object_count: info[:object_count]
+            }
+          end
+
+        ESM::Territory.import(territories)
       end
 
       def build_settings_packet

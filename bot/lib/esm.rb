@@ -3,6 +3,7 @@
 require "action_view"
 require "action_view/helpers"
 require "active_record"
+require "activerecord-import"
 require "active_support"
 require "active_support/all"
 require "base64"

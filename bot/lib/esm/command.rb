@@ -7,6 +7,7 @@ module ESM
     @all = []
     @by_category = nil
     @by_type = nil
+    @caches = []
 
     class << self
       attr_reader :all
@@ -21,9 +22,6 @@ module ESM
     end
 
     def self.load_commands
-      # Remove all the caches since this will recache
-      ESM::CommandCache.destroy_all
-
       path = File.expand_path("lib/esm/command")
       CATEGORIES.each do |category|
         Dir["#{path}/#{category}/*.rb"].each do |command_path|
@@ -33,6 +31,12 @@ module ESM
 
       # Lock it!
       @all = @all.freeze if !ESM.env.test?
+
+      # Remove all the caches since this will recache
+      ESM::CommandCache.in_batches(of: 10_000).delete_all
+
+      # Store the caches in the DB so the website can read this data
+      ESM::CommandCache.import(@caches)
     end
 
     def self.process_command(command_path, category)
@@ -78,8 +82,8 @@ module ESM
       # Don't cache development commands
       return if command.type == :development
 
-      # Store in the DB so the website can read this data
-      ESM::CommandCache.create!(
+      # To be written to the DB in bulk
+      @caches << {
         command_name: command.name,
         command_category: command.category,
         command_description: command.description,
@@ -88,7 +92,7 @@ module ESM
         command_arguments: command.arguments.to_s,
         command_aliases: command.aliases,
         command_defines: command.defines.to_h
-      )
+      }
     end
 
     def self.execute(event, command)
@@ -147,12 +151,12 @@ module ESM
     end
 
     def self.create_configurations_for_community(community)
-      @all.each do |command|
-        # Converts 2.seconds to [2, "seconds"]
-        cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
+      configurations =
+        @all.map do |command|
+          # Converts 2.seconds to [2, "seconds"]
+          cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
 
-        configuration =
-          ESM::CommandConfiguration.create!(
+          {
             community_id: community.id,
             command_name: command.name,
             enabled: command.defines.enabled.default,
@@ -161,10 +165,10 @@ module ESM
             allowed_in_text_channels: command.defines.allowed_in_text_channels.default,
             whitelist_enabled: command.defines.whitelist_enabled.default,
             whitelisted_role_ids: command.defines.whitelisted_role_ids.default
-          )
+          }
+        end
 
-        community.command_configurations << configuration
-      end
+      ESM::CommandConfiguration.import(configurations)
     end
   end
 end

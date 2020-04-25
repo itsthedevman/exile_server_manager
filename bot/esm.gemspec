@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
   # Release
   spec.add_dependency "actionview"
   spec.add_dependency "activerecord"
+  spec.add_dependency "activerecord-import"
   spec.add_dependency "activesupport"
   spec.add_dependency "discordrb"
   spec.add_dependency "dotiw"
@@ -47,7 +48,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "awesome_print"
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "bundler"
-  spec.add_development_dependency "byebug"
   spec.add_development_dependency "database_cleaner"
   spec.add_development_dependency "dotenv"
   # spec.add_development_dependency "debase"
@@ -56,6 +56,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "faye-websocket"
   spec.add_development_dependency "memory_profiler"
   spec.add_development_dependency "pry"
+  spec.add_development_dependency "pry-nav"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rerun"
   spec.add_development_dependency "rspec"

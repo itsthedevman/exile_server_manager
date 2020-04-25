@@ -33,10 +33,6 @@ FactoryBot.define do
     after :create do |server, _evaluator|
       server.server_reward = create(:server_reward, server_id: server.id)
       server.server_setting = create(:server_setting, server_id: server.id)
-
-      1..10.times.each do |i|
-        create(:territory, territory_level: i, server_id: server.id)
-      end
     end
 
     factory :esm_malden do
