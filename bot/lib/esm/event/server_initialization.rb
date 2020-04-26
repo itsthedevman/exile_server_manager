@@ -120,7 +120,7 @@ module ESM
           end.flatten
 
         # Pluck all the steam UIDs we have, including the guild owners
-        ESM::User.where("discord_id IN (?)", discord_ids + [@guild.owner.id.to_s]).pluck(:steam_uid)
+        ESM::User.where(discord_id: discord_ids + [@guild.owner.id.to_s]).pluck(:steam_uid)
       end
 
       def send_response
