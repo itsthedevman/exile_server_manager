@@ -270,6 +270,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.boolean "hack_started", default: true, null: false
     t.boolean "protection_money_due", default: true, null: false
     t.boolean "protection_money_paid", default: true, null: false
+    t.boolean "marxet_item_sold", default: true, null: false
     t.index ["server_id"], name: "index_user_notification_preferences_on_server_id"
     t.index ["user_id"], name: "index_user_notification_preferences_on_user_id"
   end

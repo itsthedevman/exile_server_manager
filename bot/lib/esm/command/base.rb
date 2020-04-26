@@ -443,14 +443,14 @@ module ESM
 
         config_present = config.present?
 
-        @enabled =
+        @command_enabled =
           if config_present
             config.enabled?
           else
             @defines.enabled.default
           end
 
-        @allowed =
+        @command_allowed =
           if config_present
             config.allowed_in_text_channels?
           else

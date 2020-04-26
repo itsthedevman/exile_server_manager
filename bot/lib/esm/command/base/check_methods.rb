@@ -40,9 +40,9 @@ module ESM
           # Load the permissions AFTER we have checked for invalid communities.
           load_permissions
 
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:command_not_enabled, prefix: prefix, user: current_user, command_name: self.name) if !enabled?
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_whitelisted, prefix: prefix, user: current_user, command_name: self.name) if !whitelisted?
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_allowed_in_text_channels, prefix: prefix, user: current_user, command_name: self.name) if !allowed?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:command_not_enabled, prefix: prefix, user: current_user, command_name: self.name) if !command_enabled?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_whitelisted, prefix: prefix, user: current_user, command_name: self.name) if !command_whitelisted?
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:not_allowed_in_text_channels, prefix: prefix, user: current_user, command_name: self.name) if !command_allowed?
         end
 
         def check_for_registered!

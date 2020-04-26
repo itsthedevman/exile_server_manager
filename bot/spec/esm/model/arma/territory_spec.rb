@@ -5,11 +5,20 @@ describe ESM::Arma::Territory do
   let!(:server) { ESM::Test.server }
   let!(:settings) { server.server_setting }
   let!(:territory_example) { TerritoryGenerator.generate.to_ostruct }
+  let!(:wsc) { WebsocketClient.new(server) }
 
   # Not loaded every time so we can change the values of our example
   let(:territory) { ESM::Arma::Territory.new(server: server, territory: territory_example) }
   let(:same_level_territory) { ESM::Territory.where(territory_level: territory_example.level, server_id: server.id).first }
   let(:next_level_territory) { ESM::Territory.where(territory_level: territory_example.level + 1, server_id: server.id).first }
+
+  before :each do
+    wait_for { wsc.connected? }.to be(true)
+  end
+
+  after :each do
+    wsc.disconnect!
+  end
 
   describe "#id" do
     it "should return" do

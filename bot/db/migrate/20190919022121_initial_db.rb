@@ -253,6 +253,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.boolean :hack_started, null: false, default: true
       t.boolean :protection_money_due, null: false, default: true
       t.boolean :protection_money_paid, null: false, default: true
+      t.boolean :marxet_item_sold, null: false, default: true
     end
 
     add_index :communities, :community_id, unique: true
