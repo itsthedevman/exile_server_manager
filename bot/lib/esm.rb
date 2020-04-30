@@ -40,7 +40,9 @@ module ESM
 
     initialize_steam
     initialize_logger
-    initialize_encryption
+
+    # Subscribe to notifications
+    ESM::Notifications.subscribe
 
     # Start the bot
     @bot = ESM::Bot.new
@@ -85,13 +87,42 @@ module ESM
     @logger = Logger.new("logs/#{env}.log")
 
     @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
-      message = "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
-      puts message if ENV["PRINT_LOG"] == "true"
-      message
-    end
-  end
+      header = "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})"
+      body = "\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
 
-  def self.initialize_encryption
-    SymmetricEncryption.load!('config/symmetric-encryption.yml', env)
+      if ENV["PRINT_LOG"] == "true"
+        header =
+          case severity
+          when "INFO"
+            header.colorize(:light_blue)
+          when "DEBUG"
+            header.colorize(:cyan)
+          when "WARN"
+            header.colorize(:yellow)
+          when "ERROR"
+            header.colorize(:red)
+          else
+            header
+          end
+
+        body =
+          case severity
+          when "INFO"
+            body.colorize(:light_black)
+          when "DEBUG"
+            body.colorize(:light_black)
+          when "WARN"
+            body.colorize(:yellow)
+          when "ERROR"
+            body.colorize(:red)
+          else
+            body
+          end
+
+        puts "#{header}#{body}"
+      end
+
+      "#{header}#{body}"
+    end
   end
 end

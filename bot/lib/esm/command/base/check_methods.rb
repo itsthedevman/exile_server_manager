@@ -148,6 +148,12 @@ module ESM
 
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:owned_server, user: current_user, community_id: current_community.community_id)
         end
+
+        def check_for_registered_target_user!
+          return if target_user.nil? || target_user.esm_user.registered?
+
+          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:target_not_registered, user: current_user, target_user: target_user)
+        end
       end
     end
   end

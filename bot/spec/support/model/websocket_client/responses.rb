@@ -16,7 +16,8 @@ class WebsocketClient
       gamble: { send_ignore_message: true, delay: 0..3 },
       setterritoryid: { delay: 0..1 },
       add: { send_ignore_message: true, delay: 0..3 },
-      allterritories: { send_ignore_message: true, delay: 0..3 }
+      allterritories: { send_ignore_message: true, delay: 0..3 },
+      exec: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -133,6 +134,24 @@ class WebsocketClient
       end
 
       send_response(parameters: territories)
+    end
+
+    # !sqf
+    def response_exec
+      message =
+        if @data.parameters.target == "server"
+          if @flags.WITH_RETURN
+            "Executed on server successfully. Returned: ```true```"
+          else
+            "Executed code on server"
+          end
+        elsif @flags.ERROR # For some reason, I decided not to use the error system
+          "Invalid target or target is not online"
+        else
+          "Executed code on target"
+        end
+
+      send_response(parameters: [{ message: message }])
     end
   end
 end

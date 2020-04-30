@@ -18,6 +18,7 @@ require "faker"
 require "awesome_print"
 require "pry"
 require "pry-nav"
+require "colorize"
 require "ruby-prof"
 require "rspec/expectations"
 

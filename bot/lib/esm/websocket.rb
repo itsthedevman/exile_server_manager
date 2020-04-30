@@ -75,9 +75,14 @@ module ESM
     end
 
     def deliver!(request)
-      # If the user is nil, there is no point in tracking the request
-      @requests << request if !request.user.nil?
-      @connection.send(request.to_s)
+      ActiveSupport::Notifications.instrument("websocket_deliver.esm", request: request) do
+        # If the user is nil, there is no point in tracking the request
+        @requests << request if !request.user.nil?
+
+        # Send the message
+        @connection.send(request.to_s)
+      end
+
       request
     end
 

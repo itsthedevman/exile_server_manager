@@ -25,6 +25,10 @@ module ESM
           end
         end
 
+        def self.target_not_registered(user:, target_user:)
+          ESM::Embed.build(:error, description: I18n.t("command_errors.target_not_registered", user: user.mention, target_user: target_user.mention))
+        end
+
         def self.invalid_server_id(user:, provided_server_id:)
           # Attempt to correct them
           corrections = ESM::Websocket.correct(provided_server_id)

@@ -3,7 +3,7 @@ en:
   "no": "No"
   invalid_response: "I'm sorry, I don't know how to reply to your response.\nI was expecting %{expected}"
   failure_to_communicate: "Looks like what we've got here is failure to communicate. I am unable to help you. Goodbye"
-  request_timed_out: "I'm sorry %{user}, `%{server_id}` never replied to your command\nPlease wait a few minutes and try again"
+  request_timed_out: "I'm sorry %{user}, `%{server_id}` never replied to your command\nHere was the command you ran: ```%{command_message}``` Please wait a few minutes and try again."
   default_arguments:
     community_id: "The community ID for the community that you want to run this command on. These are 3 to 4 letters long and can be found by sending me `%{prefix}id` on that community's discord"
     target: "A user that you want to run this command on. This argument accepts any of the following:\nA Discord mention, e.g. `@Bryan`\nA Discord ID, e.g. `137709767954137088`\nor a Steam 64 ID (Steam UID), e.g. `76561198037177305`"

@@ -4,8 +4,9 @@ en:
     text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
     dm_only: "Hey %{user}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there"
   command_errors:
-    target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid id, steam uid, or @user discord mention"
+    target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid Discord ID, steam uid, or @user discord mention"
     not_registered: "Hey %{user}, this command requires you to link your Steam account with me. Just head to https://www.esmbot.com/register to get started!"
+    target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
     invalid_server_id: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`."
     invalid_server_id_with_correction: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`.\nDid you mean: %{correction}?"
     invalid_community_id: "Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`."

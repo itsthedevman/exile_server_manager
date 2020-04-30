@@ -122,7 +122,8 @@ module ESM
       # Public Instance Methods
       #########################
       attr_reader :name, :category, :type, :arguments, :aliases, :limit_to,
-                  :defines, :requires, :executed_at, :response, :cooldown_time
+                  :defines, :requires, :executed_at, :response, :cooldown_time,
+                  :event
 
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
       attr_writer :current_community
@@ -363,17 +364,20 @@ module ESM
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
         @event.channel.start_typing if !ESM.env.test?
 
+        # Logging
+        log_from_discord_before_arguments
+
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)
+
+        # Logging
+        log_from_discord_after_arguments
 
         # Create the user in our DB if we have never seen them before
         create_user if current_user.esm_user.nil?
 
         # Run some checks
         check_for_all_of_the_checks!
-
-        # Logging
-        log_from_discord_event
 
         # Call the discord method
         response = discord

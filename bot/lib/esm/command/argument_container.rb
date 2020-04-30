@@ -79,13 +79,16 @@ module ESM
         regex = build_regex(argument)
         match = regex.match(@message)
 
+        ActiveSupport::Notifications.instrument("argument_parse.esm", argument: argument, regex: regex, match: match, message: @message)
+
+        # Nothing was parsed
         invalid_argument!(argument) if match.blank?
 
         # Store the match
         process_match(match[1], argument)
 
         # Now we need to return the message without our match
-        @message.sub!(match[0], "")
+        @message.sub!(match[0], "").strip!
       end
 
       def build_regex(argument)
@@ -95,9 +98,9 @@ module ESM
         # I'd rather duplicate a string than have a long concat or nasty interpolation
         regex =
           if argument.required?
-            "\\s+(#{argument.regex.source})"
+            "(#{argument.regex.source})"
           else
-            "\\s*(#{argument.regex.source})?"
+            "(#{argument.regex.source})?"
           end
 
         Regexp.new(regex, options)
@@ -127,7 +130,7 @@ module ESM
             !argument.default.blank? ? argument.default : nil
           else
             # If we don't want to preserve the case, convert it to lowercase
-            argument.preserve_case? ? match : match.downcase
+            argument.preserve_case? ? match.strip : match.downcase.strip
           end
 
         # Cast the value if we need to

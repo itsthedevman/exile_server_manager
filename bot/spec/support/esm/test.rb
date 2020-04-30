@@ -16,6 +16,10 @@ module ESM
       @community ||= FactoryBot.create(@community_type, :player_mode_disabled)
     end
 
+    def self.second_community
+      @second_community ||= FactoryBot.create(@second_community_type, :player_mode_disabled)
+    end
+
     # Attempt to simulate random users for tests
     #
     # @note The type of community controls what user type is selected
@@ -31,6 +35,10 @@ module ESM
 
     def self.server
       @server ||= FactoryBot.create(:server, community_id: community.id)
+    end
+
+    def self.second_server
+      @second_server ||= FactoryBot.create(:server, community_id: second_community.id)
     end
 
     def self.response=(value)
@@ -55,8 +63,11 @@ module ESM
       @user = nil
       @second_user = nil
 
-      @community_type = %i[esm_community secondary_community].sample
+      @communities = %i[esm_community secondary_community]
+      @community_type = @communities.sample
       @user_type = @community_type == :esm_community ? :user : :secondary_user
+      @second_community_type = @communities.find { |type| type != @community_type }
+
     end
 
     # I hate this code, it doesn't make me happy

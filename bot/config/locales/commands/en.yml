@@ -318,3 +318,19 @@ en:
       arguments:
         state: "Controls if the notification will be sent to you. Valid options are `allows` and `deny`"
         type: "The notification type. Valid options are:\n- `all`\n- `custom`\n- `base-raid`\n- `flag-stolen`\n- `flag-restored`\n- `flag-steal-started`\n- `protection-money-due`\n- `protection-money-paid`\n- `grind-started`\n- `hack-started`\n- `charge-plant-started`\n- `marxet-item-sold`"
+    sqf:
+      description: "Executes the given codes on a server or a target. If the code is executed on the server and has a return value, the value will be returned."
+      example: |-
+        **`%{prefix}sqf esm_malden isServer`**
+        Attempts to execute `isServer` on `esm_malden` and returns `true` back.
+
+        **`%{prefix}sqf esm_tanoa @Bryan player setDamage 1;`**
+        Attempts to execute `player setDamage 1` on @Bryan's player in game. If the player is not in game, an error will be returned.
+      arguments:
+        execution_target: "The target to execute the codes on. This can be any valid target (Discord ID, Steam UID, @mention) or leave blank to execute on the server."
+        code_to_execute: "The SQF code to execute. The given code can be all one line or span multi-lines.\n**Note:** This code needs to be valid or the server will not return a response."
+      responses:
+        server_success_with_return: "Hey %{user}, `%{server_id}` executed your code successfully and the code returned the following: ```%{response}```"
+        server_success: "Hey %{user}, `%{server_id}` executed your code successfully and the code returned nothing."
+        invalid_target: "I'm sorry %{user}, `%{server_id}` has informed me that `%{target_uid}` is not online or has not joined the server.\nEither way, your code was not executed."
+        target_success: "Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`"

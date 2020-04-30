@@ -70,7 +70,7 @@ module ESM
       # Break the steam_uid or discord tag down to a discord id
       discord_id =
         if ESM::Regex::DISCORD_TAG_ONLY =~ input
-          input.gsub(/[<@!>]/, "")
+          input.gsub(/[<@!&>]/, "")
         elsif ESM::Regex::STEAM_UID_ONLY =~ input
           db_user = self.find_by_steam_uid(input)
           db_user&.discord_id
@@ -95,7 +95,7 @@ module ESM
 
       # Save some data for later consumption
       discord_user.steam_uid = db_user.steam_uid
-      discord_user.esm_user = db_user
+      discord_user.instance_variable_set("@esm_user", db_user)
 
       # Return the discord user
       discord_user
