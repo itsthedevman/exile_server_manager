@@ -51,6 +51,7 @@ module ESM
             ESM::Embed.build do |e|
               e.description = I18n.t(
                 "request_timed_out",
+                command_message: request.command.event&.message&.content,
                 server_id: @connection.server.server_id,
                 user: request.user.mention
               )
@@ -59,7 +60,7 @@ module ESM
             end
 
           # Let the user know
-          ESM.bot.deliver(embed, to: request.user)
+          request.command.reply(embed)
         rescue StandardError => e
           ESM.logger.error("#{self.class}##{__method__}") { e.message }
         end
