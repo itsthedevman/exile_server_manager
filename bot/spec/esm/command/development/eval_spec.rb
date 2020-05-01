@@ -24,17 +24,20 @@ describe ESM::Command::Development::Eval, category: "command" do
 
   describe "#execute" do
     it "should return true" do
-      event = CommandEvent.create("!eval true", user: user)
+      command_statement = command.statement(code: "true")
+      event = CommandEvent.create(command_statement, user: user)
       expect(command.execute(event)).to eql("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
     end
 
     it "should return 'test'" do
-      event = CommandEvent.create("!eval 'test'", user: user)
+      command_statement = command.statement(code: "'test'")
+      event = CommandEvent.create(command_statement, user: user)
       expect(command.execute(event)).to eql("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\ntest\n```")
     end
 
     it "should return 5" do
-      event = CommandEvent.create("!eval 2 + 3", user: user)
+      command_statement = command.statement(code: "2 + 3")
+      event = CommandEvent.create(command_statement, user: user)
       expect(command.execute(event)).to eql("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
     end
   end

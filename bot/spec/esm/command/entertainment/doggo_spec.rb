@@ -25,7 +25,8 @@ describe ESM::Command::Entertainment::Doggo, category: "command" do
 
     it "should return" do
       request = nil
-      event = CommandEvent.create("!doggo", user: user, channel_type: :dm)
+      command_statement = command.statement
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil

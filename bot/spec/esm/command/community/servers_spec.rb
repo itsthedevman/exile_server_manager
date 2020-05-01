@@ -28,12 +28,14 @@ describe ESM::Command::Community::Servers, category: "command" do
     it "should return no servers" do
       community.servers.destroy_all
 
-      event = CommandEvent.create("!servers #{community.community_id}", user: user, channel_type: :text)
+      command_statement = command.statement(community_id: community.community_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /i was unable to find any registered servers/i)
     end
 
     it "should return one offline server" do
-      event = CommandEvent.create("!servers #{community.community_id}", user: user, channel_type: :text)
+      command_statement = command.statement(community_id: community.community_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 
       expect(ESM::Test.messages.size).to eql(1)
@@ -55,7 +57,8 @@ describe ESM::Command::Community::Servers, category: "command" do
 
       wait_for { connection.connected? }.to be(true)
 
-      event = CommandEvent.create("!servers #{community.community_id}", user: user, channel_type: :text)
+      command_statement = command.statement(community_id: community.community_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 
       expect(ESM::Test.messages.size).to eql(1)

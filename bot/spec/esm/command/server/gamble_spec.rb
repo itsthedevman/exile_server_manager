@@ -38,7 +38,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
     it "should execute (Number)" do
       request = nil
 
-      event = CommandEvent.create("!gamble #{server.server_id} 300", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "300")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
@@ -53,7 +54,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
     it "should execute (half)" do
       request = nil
-      event = CommandEvent.create("!gamble #{server.server_id} half", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "half")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
@@ -68,7 +70,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
     it "should execute (all)" do
       request = nil
-      event = CommandEvent.create("!gamble #{server.server_id} all", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "all")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
@@ -85,7 +88,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
       request = nil
       wsc.flags.NOT_ENOUGH_MONEY = true
 
-      event = CommandEvent.create("!gamble #{server.server_id} 100000000", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "100000000")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
@@ -97,18 +101,21 @@ describe ESM::Command::Server::Gamble, category: "command" do
     end
 
     it "should error when gambling 0" do
-      event = CommandEvent.create("!gamble #{server.server_id} 0", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "0")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /you simply cannot gamble nothing/)
     end
 
     it "should not allow negative numbers" do
-      event = CommandEvent.create("!gamble #{server.server_id} -1", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "-1")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
       expect { command.execute(event) }.to raise_error(ESM::Exception::FailedArgumentParse)
     end
 
     it "should return the stats" do
       embed = nil
-      event = CommandEvent.create("!gamble #{server.server_id} stats", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id, amount: "stats")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be(nil)

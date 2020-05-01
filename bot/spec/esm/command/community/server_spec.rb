@@ -35,13 +35,15 @@ describe ESM::Command::Community::Server, category: "command" do
     end
 
     it "should return invalid server" do
-      event = CommandEvent.create("!server esm_test", user: user, channel_type: :text)
+      command_statement = command.statement(server_id: "esm_test")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end
 
     it "should return an embed" do
       response = nil
-      event = CommandEvent.create("!server #{server.server_id}", user: user, channel_type: :text)
+      command_statement = command.statement(server_id: server.server_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { response = command.execute(event) }.not_to raise_error
 
       # Reload because the server updates when the WSC connects

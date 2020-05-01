@@ -57,7 +57,8 @@ describe ESM::Command::Server::Territories, category: "command" do
 
     it "should return" do
       request = nil
-      event = CommandEvent.create("!territories #{server.server_id}", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
@@ -122,7 +123,8 @@ describe ESM::Command::Server::Territories, category: "command" do
 
     it "should error (No territories)" do
       request = nil
-      event = CommandEvent.create("!territories #{server.server_id}", user: user, channel_type: :dm)
+      command_statement = command.statement(server_id: server.server_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
       wsc.flags.RETURN_NO_TERRITORIES = true
 
       expect { request = command.execute(event) }.not_to raise_error

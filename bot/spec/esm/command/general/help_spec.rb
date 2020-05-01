@@ -28,7 +28,8 @@ describe ESM::Command::General::Help, category: "command" do
       # So we can test the response
       embed = nil
 
-      event = CommandEvent.create("!help", user: user)
+      command_statement = command.statement
+      event = CommandEvent.create(command_statement, user: user)
       expect { embed = command.execute(event) }.not_to raise_error
 
       expect(embed.title).to match(/my name is exile server manager/i)
@@ -41,7 +42,8 @@ describe ESM::Command::General::Help, category: "command" do
     it "should return a valid embed (commands)" do
       embed = nil
 
-      event = CommandEvent.create("!help commands", user: user)
+      command_statement = command.statement(category: "commands")
+      event = CommandEvent.create(command_statement, user: user)
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be_nil
     end
@@ -49,7 +51,8 @@ describe ESM::Command::General::Help, category: "command" do
     it "should return a valid embed (command)" do
       embed = nil
 
-      event = CommandEvent.create("!help help", user: user)
+      command_statement = command.statement(category: "help")
+      event = CommandEvent.create(command_statement, user: user)
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be_nil
     end
@@ -58,7 +61,8 @@ describe ESM::Command::General::Help, category: "command" do
       community.update(player_mode_enabled: true)
       embed = nil
 
-      event = CommandEvent.create("!help commands", user: user)
+      command_statement = command.statement(category: "commands")
+      event = CommandEvent.create(command_statement, user: user)
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be_nil
 
@@ -70,7 +74,8 @@ describe ESM::Command::General::Help, category: "command" do
     it "should not show development commands" do
       embed = nil
 
-      event = CommandEvent.create("!help commands", user: user)
+      command_statement = command.statement(category: "commands")
+      event = CommandEvent.create(command_statement, user: user)
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be_nil
 

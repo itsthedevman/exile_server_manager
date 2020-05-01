@@ -28,7 +28,8 @@ describe ESM::Command::General::Mode, category: "command" do
       response = nil
       community.update(player_mode_enabled: true)
 
-      event = CommandEvent.create("!mode #{community.community_id} server", user: owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "server")
+      event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
       expect { response = command.execute(event) }.not_to raise_error
       expect(response).not_to be_nil
       community.reload
@@ -43,7 +44,8 @@ describe ESM::Command::General::Mode, category: "command" do
       response = nil
       community.update(player_mode_enabled: false)
 
-      event = CommandEvent.create("!mode #{community.community_id} player", user: owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "player")
+      event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
       expect { response = command.execute(event) }.not_to raise_error
       expect(response).not_to be_nil
       community.reload
@@ -56,7 +58,8 @@ describe ESM::Command::General::Mode, category: "command" do
 
     it "should raise same_mode error (server)" do
       community.update(player_mode_enabled: false)
-      event = CommandEvent.create("!mode #{community.community_id} server", user: owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "server")
+      event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
@@ -68,7 +71,8 @@ describe ESM::Command::General::Mode, category: "command" do
 
     it "should raise same_mode error (player)" do
       community.update(player_mode_enabled: true)
-      event = CommandEvent.create("!mode #{community.community_id} player", user: owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "player")
+      event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
@@ -82,7 +86,8 @@ describe ESM::Command::General::Mode, category: "command" do
       # We need to create a server
       ESM::Test.server
       community.update(player_mode_enabled: false)
-      event = CommandEvent.create("!mode #{community.community_id} player", user: owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "player")
+      event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data
@@ -94,7 +99,8 @@ describe ESM::Command::General::Mode, category: "command" do
 
     it "should not be allowed" do
       non_owner = ESM::Test.user
-      event = CommandEvent.create("!mode #{community.community_id} player", user: non_owner, channel_type: :dm)
+      command_statement = command.statement(community_id: community.community_id, mode: "player")
+      event = CommandEvent.create(command_statement, user: non_owner, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error do |error|
         embed = error.data

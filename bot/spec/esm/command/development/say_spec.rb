@@ -24,7 +24,8 @@ describe ESM::Command::Development::Say, category: "command" do
 
   describe "#execute" do
     it "should repeat back argument" do
-      event = CommandEvent.create("!say Hello World", user: user)
+      command_statement = command.statement(text: "Hello World")
+      event = CommandEvent.create(command_statement, user: user)
       expect(command.execute(event)).to eql("Hello World")
     end
   end

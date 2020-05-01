@@ -39,7 +39,8 @@ describe ESM::Command::System::Accept, category: "command" do
 
     it "should run (Valid UUID)" do
       embed = nil
-      event = CommandEvent.create("!accept #{request.uuid_short}", user: user_2, channel_type: :dm)
+      command_statement = command.statement(uuid: request.uuid_short)
+      event = CommandEvent.create(command_statement, user: user_2, channel_type: :dm)
 
       expect { embed = command.execute(event) }.not_to raise_error
       expect(embed).not_to be(nil)
@@ -48,7 +49,8 @@ describe ESM::Command::System::Accept, category: "command" do
 
     it "should run (Invalid UUID)" do
       # The uuid is valid, but the user_1 is not the who the request is for
-      event = CommandEvent.create("!accept #{request.uuid_short}", user: user_1, channel_type: :dm)
+      command_statement = command.statement(uuid: request.uuid_short)
+      event = CommandEvent.create(command_statement, user: user_1, channel_type: :dm)
 
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /unable to find a request/i)
     end
