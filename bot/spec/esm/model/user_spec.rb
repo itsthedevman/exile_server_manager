@@ -4,7 +4,7 @@ describe ESM::User do
   describe "#parse" do
     it "should parse steam_uid" do
       create(:esm_dev)
-      user = ESM::User.parse(ESM::User::Bryan::STEAM_UID)
+      user = ESM::User.parse(ESM::User::Bryan::STEAM_UID).discord_user
 
       expect(user).not_to be_nil
       expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
@@ -13,7 +13,7 @@ describe ESM::User do
 
     it "should parse discord_id" do
       create(:esm_dev)
-      user = ESM::User.parse(ESM::User::Bryan::ID)
+      user = ESM::User.parse(ESM::User::Bryan::ID).discord_user
 
       expect(user).not_to be_nil
       expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
@@ -22,7 +22,7 @@ describe ESM::User do
 
     it "should parse discord_tag" do
       create(:esm_dev)
-      user = ESM::User.parse("<@#{ESM::User::Bryan::ID}>")
+      user = ESM::User.parse("<@#{ESM::User::Bryan::ID}>").discord_user
 
       expect(user).not_to be_nil
       expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
@@ -31,7 +31,16 @@ describe ESM::User do
 
     it "should parse discord_tag (nickname)" do
       create(:esm_dev)
-      user = ESM::User.parse("<@!#{ESM::User::Bryan::ID}>")
+      user = ESM::User.parse("<@!#{ESM::User::Bryan::ID}>").discord_user
+
+      expect(user).not_to be_nil
+      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+    end
+
+    it "should parse discord_tag (bot?)" do
+      create(:esm_dev)
+      user = ESM::User.parse("<@&#{ESM::User::Bryan::ID}>").discord_user
 
       expect(user).not_to be_nil
       expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
@@ -46,7 +55,7 @@ describe ESM::User do
 
     it "should have no steam uid" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id.to_s)
+      user = ESM::User.parse(unregistered_user.discord_id.to_s).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil
@@ -55,7 +64,7 @@ describe ESM::User do
 
     it "should handle parsing an int" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id)
+      user = ESM::User.parse(unregistered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil
@@ -71,7 +80,7 @@ describe ESM::User do
 
     it "should be registered" do
       registered_user = create(:esm_dev)
-      user = ESM::User.parse(registered_user.discord_id)
+      user = ESM::User.parse(registered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to eql(registered_user.steam_uid)
@@ -80,7 +89,7 @@ describe ESM::User do
 
     it "should not be registered" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id)
+      user = ESM::User.parse(unregistered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil

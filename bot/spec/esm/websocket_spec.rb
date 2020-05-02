@@ -87,12 +87,24 @@ describe ESM::Websocket do
   describe "#on_message" do
     let!(:user) { create(:user) }
     let!(:ws_connection) { ESM::Websocket.connections[esm_malden.server_id] }
-    let!(:event) { CommandEvent.create(ESM::Command::Test::Base::COMMAND_FULL, user: user) }
     let!(:channel) { ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL) }
     let!(:discord_user) { user.discord_user }
 
     let!(:command) do
       command = ESM::Command::Test::Base.new
+
+      command_statement = command.statement(
+        community_id: esm_community.community_id,
+        server_id: esm_malden.server_id,
+        target: user.discord_id,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as",
+        _default: "default",
+        _multiline: "multi\nline"
+      )
+
+      event = CommandEvent.create(command_statement, user: user)
 
       # Execute the command to set up all of the required variables
       expect { command.execute(event) }.not_to raise_error

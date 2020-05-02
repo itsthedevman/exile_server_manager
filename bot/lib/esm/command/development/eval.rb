@@ -6,6 +6,7 @@ module ESM
       class Eval < ESM::Command::Base
         type :development
         requires :dev
+        aliases :e
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false

@@ -141,6 +141,10 @@ module ESM
       match[1]
     end
 
+    def update_community_prefix(community)
+      @prefixes[community.guild_id] = community.command_prefix
+    end
+
     private
 
     def load_community_prefixes

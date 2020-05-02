@@ -7,7 +7,6 @@ module ESM
     class Base
       include PermissionMethods
       include CheckMethods
-      include LoggingMethods
 
       class << self
         attr_reader :defines, :command_type, :category, :command_aliases
@@ -187,18 +186,26 @@ module ESM
 
       # The user that executed the command
       def current_user
-        return @current_user if defined?(@current_user)
+        return @current_user if defined?(@current_user) && @current_user.present?
         return nil if @event.user.nil?
 
-        @current_user ||= ESM::User.parse(@event.user.id)
+        user =
+          ESM::User.where(discord_id: @event.user.id).first_or_create do |new_user|
+            new_user.discord_id = @event.user.id
+            new_user.discord_username = @event.user.name
+            new_user.discord_discriminator = @event.user.discriminator
+          end
+
+        # Return back the modified discord user
+        @current_user = user.discord_user
       end
 
       # @returns [ESM::Community, nil] The community the command was executed from. Nil if sent from Direct Message
       def current_community
-        return @current_community if defined?(@current_community)
+        return @current_community if defined?(@current_community) && @current_community.present?
         return nil if @event&.server.nil?
 
-        @current_community ||= ESM::Community.find_by_guild_id(@event.server.id)
+        @current_community = ESM::Community.find_by_guild_id(@event.server.id)
       end
 
       # @returns [ESM::Cooldown] The cooldown for this command and user
@@ -229,7 +236,7 @@ module ESM
 
       # @returns [ESM::User, nil] The user that the command was executed against
       def target_user
-        @target_user ||= ESM::User.parse(@arguments.target)
+        @target_user ||= ESM::User.parse(@arguments.target)&.discord_user
       end
 
       # @returns [Boolean] If the current user is the target user.
@@ -301,8 +308,8 @@ module ESM
 
         # Initialize our command from the request
         @arguments.from_hash(request.command_arguments) if request.command_arguments.present?
-        @current_user = ESM::User.parse(request.requestor.discord_id)
-        @target_user = ESM::User.parse(request.requestee.discord_id)
+        @current_user = ESM::User.parse(request.requestor.discord_id)&.discord_user
+        @target_user = ESM::User.parse(request.requestee.discord_id)&.discord_user
         @current_channel = ESM.bot.channel(request.requested_from_channel_id)
 
         if @request.accepted
@@ -334,7 +341,7 @@ module ESM
       #   ESM::Command::ArgumentCommand.statement(argument_1: "foo", argument_2: "bar") -> !argumentcommand foo bar
       def statement(**flags)
         # Can't use distinct here - 2020-03-10
-        command_statement = "#{prefix}#{@name}"
+        command_statement = "#{prefix}#{flags[:_use_alias] || @name}"
 
         # !birb, !doggo, etc.
         return command_statement if @arguments.empty?
@@ -364,17 +371,11 @@ module ESM
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
         @event.channel.start_typing if !ESM.env.test?
 
-        # Logging
-        log_from_discord_before_arguments
-
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)
 
         # Logging
-        log_from_discord_after_arguments
-
-        # Create the user in our DB if we have never seen them before
-        create_user if current_user.esm_user.nil?
+        ActiveSupport::Notifications.instrument("command_from_discord.esm", command: self)
 
         # Run some checks
         check_for_all_of_the_checks!
@@ -395,21 +396,10 @@ module ESM
         @response = parameters.size == 1 ? parameters.first : parameters
 
         # Logging
-        log_from_server_event
+        ActiveSupport::Notifications.instrument("command_from_server.esm", command: self, response: @response)
 
         # Call the server method
         server
-      end
-
-      def create_user
-        user = ESM::User.create!(
-          discord_id: current_user.id,
-          discord_username: current_user.name,
-          discord_discriminator: current_user.discriminator
-        )
-
-        # Set the database ID since DiscordRB will cache this
-        current_user.esm_user = user
       end
 
       def create_or_update_cooldown

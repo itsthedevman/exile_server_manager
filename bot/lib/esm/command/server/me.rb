@@ -53,7 +53,8 @@ module ESM
           embed.add_field(
             name: "General",
             value: [
-              "**_#{I18n.t(:damage)}:_**\n#{(@response.damage * 100).round(2)}%",
+              # Arma stores the health as 0 (full) to 1 (dead)
+              "**_#{I18n.t(:damage)}:_**\n#{(100 - (@response.damage * 100)).round(2)}%",
               "**_#{I18n.t(:hunger)}:_**\n#{@response.hunger.round(2)}%",
               "**_#{I18n.t(:thirst)}:_**\n#{@response.thirst.round(2)}%"
             ].join("\n"),

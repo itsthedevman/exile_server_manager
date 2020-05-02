@@ -13,7 +13,7 @@ module ESM
         self.clear!
 
         # Remove the prefix and command name from the message
-        @message = extract_argument_string(event.message.content)
+        @message = extract_argument_string(@event.message.content)
 
         # Loop through each match
         self.each do |argument|

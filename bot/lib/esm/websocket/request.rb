@@ -34,14 +34,18 @@ module ESM
         @created_at = ::Time.now
       end
 
-      def to_s
-        # The DLL requires it to be this format
+      # The DLL requires it to be this format
+      def to_h
         {
           "command" => @command_name,
           "commandID" => @id,
           "authorInfo" => @user_info,
           "parameters" => @parameters
-        }.to_json
+        }
+      end
+
+      def to_s
+        to_h.to_json
       end
 
       def timed_out?

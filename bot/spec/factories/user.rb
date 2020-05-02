@@ -175,12 +175,12 @@ FactoryBot.define do
       GUILD_TYPE { :secondary }
     end
 
-    factory :bryan_v2 do
-      discord_id { ESM::User::BryanV2::ID }
-      discord_username { ESM::User::BryanV2::USERNAME }
-      discord_discriminator { ESM::User::BryanV2::DISCRIMINATOR }
-      steam_uid { ESM::User::BryanV2::STEAM_UID }
-      steam_username { ESM::User::BryanV2::STEAM_USERNAME }
+    factory :andrew do
+      discord_id { "102537804843593728" }
+      discord_username { "Andrew" }
+      discord_discriminator { "0693" }
+      steam_uid { "76561198025434405" }
+      steam_username { "Andrew_S90" }
       GUILD_TYPE { :primary }
     end
   end

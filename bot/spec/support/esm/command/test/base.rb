@@ -4,15 +4,7 @@ module ESM
   module Command
     module Test
       class Base < ESM::Command::Base
-        COMMAND_FULL = "~base esm esm_malden 137709767954137088 1 PRESERVE display_as default multi\nline"
-        COMMAND_MINIMAL = "~base esm esm_malden 137709767954137088 1 PRESERVE display_as"
-        COMMAND_MINIMAL_ALIAS = "~base1 esm esm_malden 137709767954137088 1 PRESERVE display_as"
-        COMMAND_INVALID_COMMUNITY = "~base es esm_malden 137709767954137088 1 PRESERVE display_as"
-        COMMAND_INVALID_SERVER = "~base esm esm_mal 137709767954137088 1 PRESERVE display_as"
-        COMMAND_INVALID_USER = "~base esm esm_malden 000000000000000000 1 PRESERVE display_as"
         ARGUMENT_COUNT = 8
-        USAGE_STRING = "~base <community_id> <server_id> <target> <_integer> <_preserve> <sa_yalpsid> <?_default> <?_multiline>"
-        MISSING_ARGUMENT_USAGE = "~base esm esm_malden 137709767954137088 1 <_preserve> <sa_yalpsid> <?_default> <?_multiline>"
         COMMAND_AS_STRING = "**`<community_id>`**\nThe community ID for the community that you want to run this command on. These are 3 to 4 letters long and can be found by sending me `~id` on that community's discord.\n\n**`<server_id>`**\nThe ID for the server that you want to run this command on. Server IDs are composed of a community ID and a name set by the server owner.\nFor example, `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`.\n\n**`<target>`**\nA user that you want to run this command on. This argument accepts any of the following:\nA Discord mention, e.g. `@Bryan`\nA Discord ID, e.g. `137709767954137088`\nor a Steam 64 ID (Steam UID), e.g. `76561198037177305`.\n\n**`<_integer>`**\none.\n\n**`<_preserve>`**\ntwo.\n\n**`<sa_yalpsid>`**\nthree.\n\n**`<?_default>`**\ndefault.\n**Note:** This argument is optional and it defaults to `not_default`. \n\n**`<?_multiline>`**\nwild.\n**Note:** This argument is optional. \n\n"
 
         type :player

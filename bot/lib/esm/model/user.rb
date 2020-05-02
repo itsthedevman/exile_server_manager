@@ -58,47 +58,24 @@ module ESM
     # Public Methods
     #########################
 
+    # Parses and finds a user based off of SteamUID, Discord ID, or Discord Mention
     def self.parse(input)
       return nil if input.nil?
 
       # In case of frozen strings
       input = input.dup if input.frozen?
 
-      # in case of ints
+      # Discordrb stores the Discord ID as an Integer.
       input = input.to_s if !input.is_a?(String)
 
-      # Break the steam_uid or discord tag down to a discord id
-      discord_id =
-        if ESM::Regex::DISCORD_TAG_ONLY =~ input
-          input.gsub(/[<@!&>]/, "")
-        elsif ESM::Regex::STEAM_UID_ONLY =~ input
-          db_user = self.find_by_steam_uid(input)
-          db_user&.discord_id
-        else
-          input
-        end
-
-      # Return the discord user
-      build(discord_id, db_user)
-    rescue StandardError
-      nil
-    end
-
-    def self.build(discord_id, db_user)
-      db_user = self.find_by_discord_id(discord_id) if db_user.nil?
-
-      # Get the user from discord and add our information
-      discord_user = ESM.bot.user(discord_id)
-
-      # We didn't find someone in the DB, just return what we have
-      return discord_user if db_user.nil?
-
-      # Save some data for later consumption
-      discord_user.steam_uid = db_user.steam_uid
-      discord_user.instance_variable_set("@esm_user", db_user)
-
-      # Return the discord user
-      discord_user
+      if ESM::Regex::DISCORD_TAG_ONLY.match(input)
+        # Remove the extra stuff from a mention
+        self.find_by_discord_id(input.gsub(/[<@!&>]/, ""))
+      elsif ESM::Regex::STEAM_UID_ONLY.match(input)
+        self.find_by_steam_uid(input)
+      else
+        self.find_by_discord_id(input)
+      end
     end
 
     def self.find_by_steam_uid(uid)
@@ -115,19 +92,33 @@ module ESM
     #########################
 
     def registered?
-      steam_uid.present?
+      self.steam_uid.present?
     end
 
     def developer?
-      [Bryan::ID, BryanV2::ID].include?(discord_id)
+      [Bryan::ID, BryanV2::ID].include?(self.discord_id)
     end
 
     def mention
-      "<@#{discord_id}>"
+      "<@#{self.discord_id}>"
     end
 
     def discord_user
-      @discord_user ||= ESM.bot.user(discord_id)
+      @discord_user ||= lambda do
+        discord_user = ESM.bot.user(self.discord_id)
+        return if discord_user.nil?
+
+        # Keep the user up-to-date
+        Thread.new do
+          self.update(discord_username: discord_user.username, discord_discriminator: discord_user.discriminator, discord_avatar: discord_user.avatar_url)
+        end
+
+        # Save some data for later consumption
+        discord_user.steam_uid = self.steam_uid
+        discord_user.instance_variable_set("@esm_user", self)
+
+        discord_user
+      end.call
     end
   end
 end

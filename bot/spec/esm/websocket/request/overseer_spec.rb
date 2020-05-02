@@ -3,7 +3,7 @@
 describe ESM::Websocket::Request::Overseer do
   let!(:community) { ESM::Test.community }
   let!(:server) { ESM::Test.server }
-  let!(:user) { ESM.bot.user(ESM::Test.user.discord_id) }
+  let!(:user) { ESM::Test.user }
   let!(:connection) { WebsocketClient.new(server) }
 
   before :each do
@@ -31,13 +31,17 @@ describe ESM::Websocket::Request::Overseer do
     end
 
     it "should remove the timed out request" do
-      server_connection.requests << ESM::Websocket::Request.new(user: user, channel: nil, command_name: "testing", parameters: nil, timeout: 0)
+      command = ESM::Command::Test::WebsocketRequestOverseerCommand.new
+      event = CommandEvent.create(command.statement, user: user)
+      command.event = event
+
+      server_connection.requests << ESM::Websocket::Request.new(user: user.discord_user, command: command, channel: nil, parameters: nil, timeout: 0)
 
       expect(server_connection.requests.size).to eql(iterations + 1)
       sleep(1)
       expect(server_connection.requests.size).to eql(iterations)
       expect(ESM::Test.messages.size).to eql(1)
-      expect(ESM::Test.messages.first[1].description).to eql(I18n.t("request_timed_out", server_id: server.server_id, user: user.mention))
+      expect(ESM::Test.messages.first[1].description).to match(/never replied to your command/i)
     end
   end
 end

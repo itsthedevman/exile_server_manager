@@ -67,7 +67,6 @@ module ESM
       @community_type = @communities.sample
       @user_type = @community_type == :esm_community ? :user : :secondary_user
       @second_community_type = @communities.find { |type| type != @community_type }
-
     end
 
     # I hate this code, it doesn't make me happy
