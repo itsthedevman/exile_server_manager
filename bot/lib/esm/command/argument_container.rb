@@ -197,7 +197,7 @@ module ESM
         # I can't use `alias` as a variable, so `alias_` is how it's going to be
         command_alias =
           command_aliases.find do |alias_|
-            content.match?(/^#{self.command.prefix}#{alias_}/i)
+            content.match?(/^#{self.command.prefix}#{alias_}\b/i)
           end
 
         # Remove the prefix and alias.
