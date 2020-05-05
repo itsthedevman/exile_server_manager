@@ -10,18 +10,20 @@ describe ESM::Command::Argument do
 
     it "should have regex" do
       expect(argument.regex).not_to be_nil
-      expect(argument.regex.source).to eql("foo")
+      expect(argument.regex.source).to eql("(foo)")
     end
   end
 
   describe "Invalid Argument (missing regex)" do
     it "should raise error" do
-      expect { ESM::Command::Argument.new(:foo) }.to raise_error("Missing regex for argument :foo", description: "Test")
+      expect { ESM::Command::Argument.new(:foo) }.to raise_error("Missing regex for argument :foo")
     end
   end
 
   describe "Invalid Argument (missing description)" do
-    it "should have tests"
+    it "should raise error" do
+      expect { ESM::Command::Argument.new(:foo, regex: /woot/) }.to raise_error("Missing description for argument :foo")
+    end
   end
 
   describe "Display Name Argument" do
@@ -131,7 +133,7 @@ describe ESM::Command::Argument do
   describe "Arugment with template name" do
     it "should get defaults" do
       argument = ESM::Command::Argument.new(:server_id)
-      expect(argument.regex).to eql(ESM::Regex::SERVER_ID)
+      expect(argument.regex).to eql(Regexp.new("(#{ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY.source})", Regexp::IGNORECASE))
       expect(argument.description).not_to be_blank
     end
   end
@@ -140,8 +142,39 @@ describe ESM::Command::Argument do
     it "should get defaults" do
       argument = ESM::Command::Argument.new(:some_other_argument, template: :server_id)
       expect(argument.name).to eql(:some_other_argument)
-      expect(argument.regex).to eql(ESM::Regex::SERVER_ID)
+      expect(argument.regex).to eql(Regexp.new("(#{ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY.source})", Regexp::IGNORECASE))
       expect(argument.description).not_to be_blank
+    end
+  end
+
+  describe "#parse" do
+    let!(:community) { ESM::Test.community }
+    let!(:server) { ESM::Test.server }
+    let!(:user) { ESM::Test.user }
+    let!(:command) { ESM::Command::Test::CommunityAndServerCommand.new }
+    let!(:command_statement) { command.statement }
+    let!(:event) { CommandEvent.create(command_statement, user: user, channel_type: :text) }
+
+    before :each do
+      command.event = event
+    end
+
+    it "should autofill (server_id)" do
+      argument = ESM::Command::Argument.new(:server_id)
+      # Using the server_name part of the server_id
+      argument.parse(command, server.server_id.split("_").second)
+
+      expect(argument.invalid?).to be(false)
+      expect(argument.value).to eql(server.server_id)
+    end
+
+    it "should autofill (community_id)" do
+      argument = ESM::Command::Argument.new(:community_id)
+      # You can omit the community ID
+      argument.parse(command, "")
+
+      expect(argument.invalid?).to be(false)
+      expect(argument.value).to eql(community.community_id)
     end
   end
 end

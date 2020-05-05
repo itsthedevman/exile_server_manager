@@ -4,10 +4,11 @@ module ESM
   module Command
     class Argument
       # argument :name, regex: /xxx/, preserve: true, type: :integer, display_as: "", multiline: true, default: nil
+      attr_reader :name, :parser
       attr_accessor :value
-      attr_reader :name
 
       def initialize(name, opts = {})
+        @valid = false
         @name = name
         @opts = load_options(opts)
 
@@ -17,7 +18,15 @@ module ESM
       end
 
       def regex
-        @opts[:regex]
+        @regex ||= lambda do
+          options = Regexp::IGNORECASE
+          options += Regexp::MULTILINE if self.multiline?
+
+          regex = "(#{@opts[:regex].source})"
+          regex += "?" if !self.required?
+
+          Regexp.new(regex, options)
+        end.call
       end
 
       def preserve_case?
@@ -48,6 +57,12 @@ module ESM
         !default.blank?
       end
 
+      # Only valid if argument has a value and no default.
+      # Allows value to be nil if not required
+      def invalid?
+        self.required? && self.value.nil?
+      end
+
       def description(prefix = ESM.config.prefix || "!")
         return "" if @opts[:description].blank?
 
@@ -69,21 +84,50 @@ module ESM
         string + ">"
       end
 
+      def parse(command, message)
+        @parser = ESM::Command::Argument::Parser.new(self, message)
+
+        # Allows modification of the match before storing it
+        before_store(command) if before_store?
+
+        # Logging
+        ActiveSupport::Notifications.instrument("argument_parse.esm", argument: self, regex: regex, parser: @parser, message: message)
+
+        # Save the value of the argument
+        @value = @parser.value
+      end
+
       private
 
       def defaults
         @defaults ||= {
           community_id: {
-            regex: ESM::Regex::COMMUNITY_ID,
-            description: "default_arguments.community_id"
+            regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
+            description: "default_arguments.community_id",
+            before_store: lambda do |command, parser|
+              return if parser.value.present?
+              return if !command.event&.channel&.text?
+
+              parser.value = command.current_community.community_id
+            end
           },
           target: {
             regex: ESM::Regex::TARGET,
             description: "default_arguments.target"
           },
           server_id: {
-            regex: ESM::Regex::SERVER_ID,
-            description: "default_arguments.server_id"
+            regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
+            description: "default_arguments.server_id",
+            before_store: lambda do |command, parser|
+              return if parser.value.blank?
+              return if !command.event&.channel&.text?
+
+              # If we start with a community ID, just accept the match
+              return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
+
+              # Add the community ID to the front of the match
+              parser.value = "#{command.current_community.community_id}_#{parser.value}"
+            end
           },
           territory_id: {
             regex: ESM::Regex::TERRITORY_ID,
@@ -114,6 +158,14 @@ module ESM
 
       def default_from_name(name)
         defaults[name]
+      end
+
+      def before_store?
+        @opts.key?(:before_store) && @opts[:before_store].respond_to?(:call)
+      end
+
+      def before_store(command)
+        @opts[:before_store].call(command, @parser)
       end
     end
   end

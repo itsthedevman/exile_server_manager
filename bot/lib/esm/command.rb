@@ -14,10 +14,14 @@ module ESM
     end
 
     def self.[](command_name)
+      return if command_name.blank?
+
       @all.find { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
     end
 
     def self.include?(command_name)
+      return false if command_name.blank?
+
       @all.any? { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
     end
 

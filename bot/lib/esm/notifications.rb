@@ -8,6 +8,7 @@ module ESM
       websocket_client_on_message
       command_from_discord
       command_from_server
+      bot_deliver
     ].freeze
 
     def self.subscribe
@@ -57,7 +58,7 @@ module ESM
           argument: payload[:argument],
           message: payload[:message],
           regex: payload[:regex],
-          match: payload[:match].inspect
+          match: payload[:parser].value
         )
       end
     end
@@ -71,6 +72,15 @@ module ESM
     def self.websocket_client_on_message(name, _start, _finish, _id, payload)
       ESM.logger.debug(name) do
         JSON.pretty_generate(JSON.parse(payload[:event].data))
+      end
+    end
+
+    def self.bot_deliver(name, _start, _finish, _id, payload)
+      ESM.logger.debug(name) do
+        JSON.pretty_generate(
+          channel: "#{payload[:channel].name} (#{payload[:channel].id})",
+          message: payload[:message].to_s
+        )
       end
     end
   end

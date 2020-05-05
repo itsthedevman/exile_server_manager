@@ -76,34 +76,19 @@ module ESM
       private
 
       def parse_and_remove!(argument)
-        regex = build_regex(argument)
-        match = regex.match(@message)
-
-        ActiveSupport::Notifications.instrument("argument_parse.esm", argument: argument, regex: regex, match: match, message: @message)
+        argument.parse(self.command, @message)
 
         # Nothing was parsed
-        invalid_argument!(argument) if match.blank?
+        invalid_argument!(argument) if argument.invalid?
 
         # Store the match
-        process_match(match[1], argument)
+        @matches << argument.value
+
+        # Create a getter on our container
+        create_getter(argument)
 
         # Now we need to return the message without our match
-        @message.sub!(match[0], "").strip!
-      end
-
-      def build_regex(argument)
-        options = Regexp::IGNORECASE
-        options += Regexp::MULTILINE if argument.multiline?
-
-        # I'd rather duplicate a string than have a long concat or nasty interpolation
-        regex =
-          if argument.required?
-            "(#{argument.regex.source})"
-          else
-            "(#{argument.regex.source})?"
-          end
-
-        Regexp.new(regex, options)
+        @message.sub!(argument.parser.original, "").strip!
       end
 
       def invalid_argument!(argument)
@@ -123,54 +108,10 @@ module ESM
         raise ESM::Exception::FailedArgumentParse, embed
       end
 
-      def process_match(match, argument)
-        value =
-          if match.nil?
-            # Use the default value if we have one
-            !argument.default.blank? ? argument.default : nil
-          else
-            # If we don't want to preserve the case, convert it to lowercase
-            argument.preserve_case? ? match.strip : match.downcase.strip
-          end
-
-        # Cast the value if we need to
-        value = cast_value_type(argument, value)
-
-        # Save the value of the argument
-        argument.value = value
-
-        # Store the raw matches
-        @matches << value
-
-        # Create a getter on our container
-        create_getter(argument)
-      end
-
       def create_getter(argument)
         # Creates a method on this instance that returns the value of the argument
         self.define_singleton_method(argument.name) do
           argument.value
-        end
-      end
-
-      def cast_value_type(argument, value)
-        return value if argument.type == :string
-
-        begin
-          case argument.type
-          when :integer
-            value.to_i
-          when :float
-            value.to_f
-          when :json
-            JSON.parse(value)
-          when :symbol
-            value.to_sym
-          else
-            value
-          end
-        rescue StandardError
-          value
         end
       end
 

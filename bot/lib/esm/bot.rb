@@ -89,7 +89,7 @@ module ESM
       # Format the message if it's an array
       message = message.join("\n") if message.is_a?(Array)
 
-      ESM.logger.info("#{self.class}##{__method__}") { message.to_s }
+      ActiveSupport::Notifications.instrument("bot_deliver.esm", message: message, channel: delivery_channel)
 
       # So we can test if it's working
       return ESM::Test.messages << [delivery_channel, message] if ESM.env.test?

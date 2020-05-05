@@ -2,6 +2,7 @@
 
 module ESM
   module Regex
+    COMMUNITY_ID_OPTIONAL = /[^\s]*/i.freeze
     COMMUNITY_ID = /[^\s]+/i.freeze
     DISCORD_TAG = /<@[&!]?\d+>/.freeze
     DISCORD_TAG_ONLY = /^#{DISCORD_TAG.source}$/.freeze
@@ -10,6 +11,7 @@ module ESM
     STEAM_UID = /\d{17}/.freeze
     STEAM_UID_ONLY = /^#{STEAM_UID.source}$/.freeze
     TARGET = /#{DISCORD_TAG.source}|#{DISCORD_ID.source}|#{STEAM_UID.source}/.freeze
+    SERVER_ID_OPTIONAL_COMMUNITY = /(?:[^\s]+_)*[^\s]+/.freeze
     SERVER_ID = /[^\s]+_[^\s]+/.freeze
     SERVER_ID_ONLY = /^#{SERVER_ID.source}$/.freeze
     TERRITORY_ID = /\w+/.freeze

@@ -127,4 +127,12 @@ describe ESM::Regex do
       expect(ESM::Regex::FLAG_NAME =~ "exile_assets\\texture\\flag\\flag_misc_knuckles_co.paa").not_to be_nil
     end
   end
+
+  describe "BROADCAST" do
+    it "should parse" do
+      expect(ESM::Regex::BROADCAST =~ "esm_malden").not_to be_nil
+      expect(ESM::Regex::BROADCAST =~ "all").not_to be_nil
+      expect(ESM::Regex::BROADCAST =~ "preview").not_to be_nil
+    end
+  end
 end
