@@ -5,6 +5,7 @@ module ESM
     module System
       class Accept < ESM::Command::Base
         type :player
+        limit_to :dm
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
