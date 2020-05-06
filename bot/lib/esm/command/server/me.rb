@@ -51,12 +51,12 @@ module ESM
 
         def add_general_field(embed)
           embed.add_field(
-            name: "General",
+            name: "__#{I18n.t(:general)}__",
             value: [
               # Arma stores the health as 0 (full) to 1 (dead)
-              "**_#{I18n.t(:damage)}:_**\n#{(100 - (@response.damage * 100)).round(2)}%",
-              "**_#{I18n.t(:hunger)}:_**\n#{@response.hunger.round(2)}%",
-              "**_#{I18n.t(:thirst)}:_**\n#{@response.thirst.round(2)}%"
+              "**#{I18n.t(:health)}:**\n#{(100 - (@response.damage * 100)).round(2)}%\n",
+              "**#{I18n.t(:hunger)}:**\n#{@response.hunger.round(2)}%\n",
+              "**#{I18n.t(:thirst)}:**\n#{@response.thirst.round(2)}%\n"
             ].join("\n"),
             inline: true
           )
@@ -64,11 +64,11 @@ module ESM
 
         def add_currency_field(embed)
           embed.add_field(
-            name: "Currency",
+            name: "__#{I18n.t(:currency)}__",
             value: [
-              "**_#{I18n.t(:money)}:_**\n#{@response.money.to_poptab}",
-              "**_#{I18n.t(:locker)}:_**\n#{@response.locker.to_poptab}",
-              "**_#{I18n.t(:respect)}:_**\n#{@response.score.to_readable}"
+              "**#{I18n.t(:money)}:**\n#{@response.money.to_poptab}\n",
+              "**#{I18n.t(:locker)}:**\n#{@response.locker.to_poptab}\n",
+              "**#{I18n.t(:respect)}:**\n#{@response.score.to_readable}\n"
             ].join("\n"),
             inline: true
           )
@@ -76,11 +76,11 @@ module ESM
 
         def add_scoreboard_field(embed)
           embed.add_field(
-            name: "Scoreboard",
+            name: "__#{I18n.t(:scoreboard)}__",
             value: [
-              "**_#{I18n.t(:kills)}:_**\n#{@response.kills.to_readable}",
-              "**_#{I18n.t(:deaths)}:_**\n#{@response.deaths.to_readable}",
-              "**_#{I18n.t(:kd_ratio)}:_**\n#{kd_ratio}"
+              "**#{I18n.t(:kills)}:**\n#{@response.kills.to_readable}\n",
+              "**#{I18n.t(:deaths)}:**\n#{@response.deaths.to_readable}\n",
+              "**#{I18n.t(:kd_ratio)}:**\n#{kd_ratio}\n"
             ].join("\n"),
             inline: true
           )
