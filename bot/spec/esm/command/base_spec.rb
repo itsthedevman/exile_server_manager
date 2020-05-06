@@ -230,7 +230,7 @@ describe ESM::Command::Base do
       )
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.data).to have_attributes(description: a_string_matching(/hey .+, i was unable to find a community with an ID of `.+`.\nDid you mean: `.+`\?/i))
+        expect(error.data).to have_attributes(description: a_string_matching(/hey .+, i was unable to find a community with an ID of `.+`./i))
       end
     end
   end
