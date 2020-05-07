@@ -52,6 +52,7 @@ module ESM
             ]
 
             e.add_field(value: "_Just reply back `yes` or `no` when you're ready_")
+            e.footer = "If I don't reply back to these messages, just reply back with `#{ESM.config.prefix}setup`"
           end
 
         response = ESM.bot.deliver_and_await!(embed, to: @owner, expected: %w[yes no])
@@ -66,23 +67,11 @@ module ESM
             e.title = "Welcome to the ESM Community!"
 
             # For the description
-            outro = "I highly suggest taking a look at our [wiki](https://www.esmbot.com/wiki) for information on getting started. It also contains my [commands](https://www.esmbot.com/wiki/commands), and information about [Player Mode](https://www.esmbot.com/wiki/player_mode)."
-
-            e.description =
-              if server_owner
-                "Awesome! I've disabled player mode for you. This means you can now manage your community and servers in the server portal on our website. But first, #{outro}"
-              else
-                "Excellent! I've left player mode enabled so you and your friends can use my player commands in your Discord server. But first, #{outro}"
-              end
-
-            e.add_field(
-              name: "Admin Commands and Player Commands",
-              value: "Every player command can be used in this channel freely, however, their usage in Discord servers may vary. Server admins can disable player commands from being ran in their Discord, but I will let you know when you can't use that command in that channel.\nAdmin Commands can **only** be used in a Discord server and they can only be used by roles specified by the Server admins."
-            )
+            e.description = "I went ahead and #{server_owner ? "disabled" : "enabled"} Player Mode for you. #{server_owner ? "Disabling" : "Enabling"} [Player Mode](https://www.esmbot.com/wiki/player_mode) means members of your Discord #{server_owner ? "cannot" : "can"} run commands, in your Discord, for other communities and their servers. This also affects Admin commands and your community's ability to link servers. For more information, I highly suggest checking out my [wiki](https://www.esmbot.com/wiki)."
 
             e.add_field(
               name: "Need help?",
-              value: "At any time, you can use the `#{ESM.config.prefix}help` command for quick information. If you don't find your question, or if you have an issue, please join our discord and let us know :smile:"
+              value: "At any time, you can use the `#{ESM.config.prefix}help` command for quick information. Having an issue? Please join our [discord](https://www.esmbot.com/join) and let us know :smile:"
             )
 
             e.add_field(
