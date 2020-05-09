@@ -5,7 +5,6 @@
 module ESM
   module Command
     class Base
-      include PermissionMethods
       include CheckMethods
 
       class << self
@@ -20,9 +19,9 @@ module ESM
 
       def self.error_message(name, **args)
         if args.blank?
-          ESM::Command::Base::ErrorMessage.send(name)
+          Base::ErrorMessage.send(name)
         else
-          ESM::Command::Base::ErrorMessage.send(name, args)
+          Base::ErrorMessage.send(name, args)
         end
       end
 
@@ -122,7 +121,7 @@ module ESM
       #########################
       attr_reader :name, :category, :type, :arguments, :aliases, :limit_to,
                   :defines, :requires, :executed_at, :response, :cooldown_time,
-                  :event
+                  :event, :permissions
 
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
       attr_writer :current_community
@@ -147,6 +146,9 @@ module ESM
 
         # Store the command on the arguments, so we can access for error reporting
         @arguments.command = self
+
+        # Pre-load the permissions class.
+        @permissions = Base::Permissions.new(self)
       end
 
       def execute(event)
@@ -356,55 +358,6 @@ module ESM
         end
 
         command_statement
-      end
-
-      def load_permissions
-        community = target_community || current_community
-        config =
-          if community.present?
-            CommandConfiguration.where(community_id: community.id, command_name: self.name).first
-          else
-            nil
-          end
-
-        config_present = config.present?
-
-        @command_enabled =
-          if config_present
-            config.enabled?
-          else
-            @defines.enabled.default
-          end
-
-        @command_allowed =
-          if config_present
-            config.allowed_in_text_channels?
-          else
-            @defines.allowed_in_text_channels.default
-          end
-
-        @whitelist_enabled =
-          if config_present
-            config.whitelist_enabled?
-          else
-            @defines.whitelist_enabled.default
-          end
-
-        @whitelisted_role_ids =
-          if config_present
-            config.whitelisted_role_ids
-          else
-            @defines.whitelisted_role_ids.default
-          end
-
-        @cooldown_time =
-          if config_present
-            # [2, "seconds"] -> 2 seconds
-            # Calls .seconds, .days, .months, etc
-            config.cooldown_quantity.send(config.cooldown_type)
-          else
-            @defines.cooldown_time.default
-          end
       end
 
       private
