@@ -506,7 +506,6 @@ describe ESM::Command::Base do
 
     it "should be valid" do
       time = DateTime.now
-      command.executed_at = time
       command_statement = command.statement(
         community_id: community.community_id,
         server_id: server.server_id,
@@ -520,8 +519,11 @@ describe ESM::Command::Base do
       # I don't care what happens
       command.execute(event) rescue nil # rubocop:disable Style/RescueModifier
 
+      # Override the execution_time
+      command.executed_at = time
+
       expect(command.executed_at.to_s).to eql(time.to_s)
-      expect(command.next_expiry.to_s).to eql((time + command.cooldown_time).to_s)
+      expect(command.next_expiry.to_s).to eql((time + command.permissions.cooldown_time).to_s)
     end
   end
 

@@ -4,8 +4,9 @@ module ESM
   module Command
     class Base
       class Checks
-        def initialize(command)
+        def initialize(command, skipped_checks)
           @command = command
+          @skipped_checks = skipped_checks
         end
 
         def different_communities?
@@ -26,7 +27,7 @@ module ESM
           cooldown!
 
           # Check for skip outside of the method so it can be called later if need be
-          connected_server! if !@command.skipped_checks.include?(:connected_server)
+          connected_server! if !@skipped_checks.include?(:connected_server)
         end
 
         def nil_targets!
@@ -140,7 +141,7 @@ module ESM
         # Used by calling in a command that uses the request system.
         # This will raise ESM::Exception::CheckFailure if there is a pending request for the target_user
         def pending_request!
-          return if request.nil?
+          return if @command.request.nil?
 
           raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:pending_request, user: @command.current_user)
         end

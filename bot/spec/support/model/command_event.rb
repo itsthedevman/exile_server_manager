@@ -15,7 +15,7 @@ class CommandEvent
   def self.create(content, user:, channel_type: :text)
     # This command is expensive in the terms of requests to Discord.
     # Forces tests to run a little bit slower so Discord doesn't ratelimit me
-    sleep(rand)
+    sleep(rand + 0.5)
 
     data = {
       "id" => nil,

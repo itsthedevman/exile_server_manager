@@ -21,7 +21,7 @@ module ESM
           # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
           return request_accepted if same_user?
 
-          check_for_pending_request!
+          @checks.pending_request!
           add_request
 
           send_request_message(

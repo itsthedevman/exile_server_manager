@@ -22,11 +22,11 @@ module ESM
         argument :code_to_execute, regex: /[\s\S]+/, description: "commands.sqf.arguments.code_to_execute", preserve: true, multiline: true
 
         def discord
-          check_for_owned_server!
+          @checks.owned_server!
 
           execute_on =
             if target_user
-              check_for_registered_target_user!
+              @checks.registered_target_user!
 
               # Return their steam uid
               target_user.steam_uid

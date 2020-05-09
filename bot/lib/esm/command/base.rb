@@ -119,11 +119,14 @@ module ESM
       #########################
       attr_reader :name, :category, :type, :arguments, :aliases, :limit_to,
                   :defines, :requires, :executed_at, :response, :cooldown_time,
-                  :event, :permissions, :skipped_checks
+                  :event, :permissions, :checks
 
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
       attr_writer :current_community
 
+
+      # YOOOOOOOOOOOO, I was working on refactoring checks.
+      # Also, try to figure out a way to clean up the whole "ErrorMessage" module
       def initialize
         attributes = self.class.attributes
 
@@ -136,17 +139,15 @@ module ESM
         @defines = attributes.defines
         @requires = attributes.requires
 
-        # Flags for skipping check_for_x! methods
-        @skipped_checks = attributes.skipped_checks
-
         # Flags for skipping anything else
         @skip_flags = Set.new
 
         # Store the command on the arguments, so we can access for error reporting
         @arguments.command = self
 
-        # Pre-load the permissions class.
+        # Pre load
         @permissions = Base::Permissions.new(self)
+        @checks = Base::Checks.new(self, attributes.skipped_checks)
       end
 
       def execute(event)
@@ -267,10 +268,9 @@ module ESM
       end
 
       def next_expiry
-        return @executed_at if @cooldown_time.nil?
-        return @next_expiry if @next_expiry
+        return @executed_at if @permissions.cooldown_time.nil?
 
-        @next_expiry ||= @executed_at + @cooldown_time
+        @next_expiry ||= @executed_at + @permissions.cooldown_time
       end
 
       def on_cooldown?
@@ -382,7 +382,7 @@ module ESM
         ActiveSupport::Notifications.instrument("command_from_discord.esm", command: self)
 
         # Run some checks
-        Base::Checks.new(self).run_all!
+        @checks.run_all!
 
         # Call the discord method
         response = discord

@@ -85,7 +85,7 @@ module ESM
           command.current_community = current_community
 
           # For whitelisted permission
-          command.load_permissions
+          command.permissions.load
 
           ESM::Embed.build do |embed|
             embed.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)

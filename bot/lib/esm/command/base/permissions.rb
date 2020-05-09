@@ -4,6 +4,8 @@ module ESM
   module Command
     class Base
       class Permissions
+        attr_reader :cooldown_time
+
         def initialize(command)
           @command = command
         end

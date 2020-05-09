@@ -20,7 +20,7 @@ module ESM
         def discord
           return send_stats if @arguments.amount == "stats"
 
-          check_for_connected_server!
+          @checks.connected_server!
           check_for_bad_amount!
           deliver!(function_name: "gamble", uid: current_user.esm_user.steam_uid, amount: @arguments.amount, id: current_user.id, name: current_user.name)
         end
