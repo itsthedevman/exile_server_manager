@@ -54,6 +54,9 @@ en:
         development_commands_title: "__Development Commands__"
       command:
         title: "`%{prefix}%{name}` Documentation"
+        note: "**Note:**"
+        limited_to: "This command is available only in a %{channel_type} channel with me."
+        whitelist_enabled: "This command may be available only to certain roles."
         usage: "**__Usage__**"
         aliases:
           name: "**__Aliases__**"
@@ -334,3 +337,10 @@ en:
         server_success: "Hey %{user}, `%{server_id}` executed your code successfully and the code returned nothing."
         invalid_target: "I'm sorry %{user}, `%{server_id}` has informed me that `%{target_uid}` is not online or has not joined the server.\nEither way, your code was not executed."
         target_success: "Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`"
+    setup:
+      description: "Restarts the community setup process. Only the owner of a community can use this command"
+      example: |-
+        **`%{prefix}setup esm`**
+        Restarts community setup process for ESM.
+      error_message:
+        no_permissions: "I'm sorry %{user}, only the owner of this community has access to this command"

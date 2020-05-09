@@ -62,6 +62,10 @@ module ESM
       find_by_community_id(community_id)
     end
 
+    def discord_server
+      ::ESM.bot.server(self.guild_id)
+    end
+
     private
 
     def generate_community_id

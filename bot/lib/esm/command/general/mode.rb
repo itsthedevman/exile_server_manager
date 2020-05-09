@@ -17,7 +17,7 @@ module ESM
         argument :mode, regex: /player|server/, description: "commands.mode.arguments.mode"
 
         def discord
-          check_for_permissions!
+          check_for_owner!
           check_for_same_mode!
 
           if @arguments.mode == "player"
@@ -59,7 +59,7 @@ module ESM
         # Command Methods
         #########################
 
-        def check_for_permissions!
+        def check_for_owner!
           server = ESM.bot.servers[target_community.guild_id.to_i]
           guild_member = current_user.on(server)
           raise ESM::Exception::CheckFailure, error_message(:no_permissions, user: current_user) if guild_member.nil?

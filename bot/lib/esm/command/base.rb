@@ -227,10 +227,10 @@ module ESM
       # @returns [ESM::Community, nil] The community that the command was executed for
       def target_community
         @target_community ||= lambda do
-          return ESM::Community.find_by_community_id(@arguments.community_id) if @arguments.community_id
+          return ESM::Community.find_by_community_id(@arguments.community_id) if @arguments.community_id.present?
 
           # If we have a server ID, we can extract the community ID from it
-          ESM::Community.find_by_server_id(@arguments.server_id) if @arguments.server_id
+          ESM::Community.find_by_server_id(@arguments.server_id) if @arguments.server_id.present?
         end.call
       end
 
@@ -260,6 +260,10 @@ module ESM
 
       def registration_required?
         @requires.include?(:registration)
+      end
+
+      def whitelist_enabled?
+        @whitelist_enabled || false
       end
 
       def next_expiry
@@ -354,6 +358,55 @@ module ESM
         command_statement
       end
 
+      def load_permissions
+        community = target_community || current_community
+        config =
+          if community.present?
+            CommandConfiguration.where(community_id: community.id, command_name: self.name).first
+          else
+            nil
+          end
+
+        config_present = config.present?
+
+        @command_enabled =
+          if config_present
+            config.enabled?
+          else
+            @defines.enabled.default
+          end
+
+        @command_allowed =
+          if config_present
+            config.allowed_in_text_channels?
+          else
+            @defines.allowed_in_text_channels.default
+          end
+
+        @whitelist_enabled =
+          if config_present
+            config.whitelist_enabled?
+          else
+            @defines.whitelist_enabled.default
+          end
+
+        @whitelisted_role_ids =
+          if config_present
+            config.whitelisted_role_ids
+          else
+            @defines.whitelisted_role_ids.default
+          end
+
+        @cooldown_time =
+          if config_present
+            # [2, "seconds"] -> 2 seconds
+            # Calls .seconds, .days, .months, etc
+            config.cooldown_quantity.send(config.cooldown_type)
+          else
+            @defines.cooldown_time.default
+          end
+      end
+
       private
 
       def discord; end
@@ -424,55 +477,6 @@ module ESM
 
         # Fire the query and return the first result
         query.first
-      end
-
-      def load_permissions
-        community = target_community || current_community
-        config =
-          if community.present?
-            CommandConfiguration.where(community_id: community.id, command_name: self.name).first
-          else
-            nil
-          end
-
-        config_present = config.present?
-
-        @command_enabled =
-          if config_present
-            config.enabled?
-          else
-            @defines.enabled.default
-          end
-
-        @command_allowed =
-          if config_present
-            config.allowed_in_text_channels?
-          else
-            @defines.allowed_in_text_channels.default
-          end
-
-        @whitelist_enabled =
-          if config_present
-            config.whitelist_enabled?
-          else
-            @defines.whitelist_enabled.default
-          end
-
-        @whitelisted_role_ids =
-          if config_present
-            config.whitelisted_role_ids
-          else
-            @defines.whitelisted_role_ids.default
-          end
-
-        @cooldown_time =
-          if config_present
-            # [2, "seconds"] -> 2 seconds
-            # Calls .seconds, .days, .months, etc
-            config.cooldown_quantity.send(config.cooldown_type)
-          else
-            @defines.cooldown_time.default
-          end
       end
 
       def skip(*flags)

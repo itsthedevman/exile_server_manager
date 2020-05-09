@@ -3,10 +3,9 @@
 module ESM
   module Event
     class ServerCreate
-      def initialize(event)
-        @event = event
-        @server = event.server
-        @owner = event.server.owner
+      def initialize(server)
+        @server = server
+        @owner = server.owner
 
         @community = find_or_initialize_community
         @user = find_or_initialize_user
@@ -47,37 +46,16 @@ module ESM
           ESM::Embed.build do |e|
             e.title = "**Hello #{@owner.name}, thank you for inviting me to your community!**"
             e.description = [
-              "I'm excited to get start, but first, I have a question to ask you.",
-              "It appears I was invited to and joined your Discord server, _#{@server.name}_. Does your community host Exile Servers?"
+              "_If you do not host Exile Servers, please skip down to the \"Getting Started\" section._",
+              "||In order for players to run commands on your servers, I've assigned you `#{@community.community_id}` as your community ID. This ID will be used in commands to let players distinguish which community they want run the command on.",
+              "Don't worry about memorizing it quite yet. You can always change it later via the [Server Dashboard](https://www.esmbot.com/login).||",
+              "",
+              "**Getting Started**",
+              "I highly suggest checking out my [wiki](https://www.esmbot.com/wiki) for information on how to get started.\nAlso, any time you need a refresher, just send me the `#{ESM.config.prefix}help` command.\nSince I'm not perfect, if you encounter a bug, please join my developer's [Discord Server](https://www.esmbot.com/join) and let him know :smile:",
+              "",
+              "**Before you go**",
+              "If you intend to have players use commands on your servers, please reply back to this message with `#{ESM.config.prefix}mode server` to disable [Player Mode](https://www.esmbot.com/wiki/player_mode)"
             ]
-
-            e.add_field(value: "_Just reply back `yes` or `no` when you're ready_")
-            e.footer = "If I don't reply back to these messages, just reply back with `#{ESM.config.prefix}setup`"
-          end
-
-        response = ESM.bot.deliver_and_await!(embed, to: @owner, expected: %w[yes no])
-
-        # This is a server community, turn off player mode
-        if (server_owner = (response.downcase == "yes"))
-          @community.update(player_mode_enabled: false)
-        end
-
-        embed =
-          ESM::Embed.build do |e|
-            e.title = "Welcome to the ESM Community!"
-
-            # For the description
-            e.description = "I went ahead and #{server_owner ? "disabled" : "enabled"} Player Mode for you. #{server_owner ? "Disabling" : "Enabling"} [Player Mode](https://www.esmbot.com/wiki/player_mode) means members of your Discord #{server_owner ? "cannot" : "can"} run commands, in your Discord, for other communities and their servers. This also affects Admin commands and your community's ability to link servers. For more information, I highly suggest checking out my [wiki](https://www.esmbot.com/wiki)."
-
-            e.add_field(
-              name: "Need help?",
-              value: "At any time, you can use the `#{ESM.config.prefix}help` command for quick information. Having an issue? Please join our [discord](https://www.esmbot.com/join) and let us know :smile:"
-            )
-
-            e.add_field(
-              name: "One final thing, just in case",
-              value: "If you meant to say _#{server_owner ? "no" : "yes"}_ to that question, you can #{server_owner ? "enable" : "disable"} player mode by sending me `#{ESM.config.prefix}mode #{server_owner ? "player" : "server"}`. I won't tell :wink:"
-            )
           end
 
         ESM.bot.deliver(embed, to: @owner)

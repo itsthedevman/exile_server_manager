@@ -80,11 +80,22 @@ module ESM
 
         def command
           command = ESM::Command[@arguments.category].new
+
+          # For prefix
           command.current_community = current_community
+
+          # For whitelisted permission
+          command.load_permissions
 
           ESM::Embed.build do |embed|
             embed.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)
-            embed.description = command.description
+            description = [command.description, ""]
+
+            # Adds a note about being limited to DM or Text
+            description << I18n.t("commands.help.command.note") if command.limit_to || command.whitelist_enabled?
+            description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limit_to)) if command.limit_to
+            description << I18n.t("commands.help.command.whitelist_enabled") if command.whitelist_enabled?
+            embed.description = description
 
             # Usage
             embed.add_field(

@@ -60,7 +60,7 @@ module ESM
 
     def esm_server_create(event)
       # This event is raised when a server is created respective to the bot
-      ESM::Event::ServerCreate.new(event).run!
+      ESM::Event::ServerCreate.new(event.server).run!
     end
 
     def esm_user_ban(event)
