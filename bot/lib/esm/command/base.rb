@@ -5,8 +5,6 @@
 module ESM
   module Command
     class Base
-      include CheckMethods
-
       class << self
         attr_reader :defines, :command_type, :category, :command_aliases
       end
@@ -121,7 +119,7 @@ module ESM
       #########################
       attr_reader :name, :category, :type, :arguments, :aliases, :limit_to,
                   :defines, :requires, :executed_at, :response, :cooldown_time,
-                  :event, :permissions
+                  :event, :permissions, :skipped_checks
 
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
       attr_writer :current_community
@@ -384,7 +382,7 @@ module ESM
         ActiveSupport::Notifications.instrument("command_from_discord.esm", command: self)
 
         # Run some checks
-        check_for_all_of_the_checks!
+        Base::Checks.new(self).run_all!
 
         # Call the discord method
         response = discord
