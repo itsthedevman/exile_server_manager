@@ -124,9 +124,6 @@ module ESM
       attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
       attr_writer :current_community
 
-
-      # YOOOOOOOOOOOO, I was working on refactoring checks.
-      # Also, try to figure out a way to clean up the whole "ErrorMessage" module
       def initialize
         attributes = self.class.attributes
 
