@@ -68,6 +68,10 @@ changes:
         - "`!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`."
         - "This command also has aliases, which can be viewed in the help documentation."
         - "Switched arguments `type` and `state`. Before: `!notif server_id type state`. Now: `!preferences server_id state type`"
+      reset_cooldown:
+        - "`!resetcooldown` has been deprecated in favor of `!reset_cooldown`. You can read more information by using `!help reset_cooldown`."
+        - "Admins can now either:\nReset all cooldowns for a user for every server in their community\nReset a single command cooldown on a user for every server in their community\nOr, reset a single command cooldown on a user for a single server in their community"
+        - "Added confirmation message before resetting"
   website:
     core:
       - "Removed premium throughout the site. Previously locked content for premium is now available to every community"

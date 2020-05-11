@@ -18,3 +18,6 @@ module Rails
     File.expand_path(__dir__)
   end
 end
+
+# Enable discordrb logging
+Discordrb::LOGGER.debug = true

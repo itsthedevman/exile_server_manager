@@ -344,3 +344,25 @@ en:
         Restarts community setup process for ESM.
       error_message:
         no_permissions: "I'm sorry %{user}, only the owner of this community has access to this command"
+    reset_cooldown:
+      description: "Resets"
+      example: |-
+        **`%{prefix}reset_cooldown`**
+      error_message:
+        valid_command: "I'm sorry %{user}, `%{command_name}` is not one of my commands."
+      confirmation_embed:
+        title: "Reset Confirmation"
+        description:
+          base: "Hey %{user}, just to confirm, I will be resetting %{target_user}'s"
+          all: " cooldowns for your community.\nThis means every command for all of your servers."
+          with_command_name: " `%{command_name}` cooldown for your community (including servers)."
+          with_name_and_server: " `%{command_name}` cooldowns for `%{server_id}`."
+        field_name: "**Proceed?**"
+        field_value: "Reply back `yes` or `no`"
+      cancelation_reply: ":thumbsup: I've cancelled your request."
+      success_embed:
+        description:
+          base: ":white_check_mark: Hey %{user}, I have reset %{target_user}'s"
+          all: " cooldowns for your community."
+          with_command_name: " `%{command_name}` cooldown for your community (including servers)."
+          with_name_and_server: " `%{command_name}` cooldowns for `%{server_id}`."
