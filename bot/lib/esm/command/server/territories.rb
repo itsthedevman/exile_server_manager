@@ -32,17 +32,11 @@ module ESM
           end
         end
 
-        module ErrorMessage
-          def self.no_territories(user:, server_id:)
-            I18n.t("commands.territories.no_territories", user: user, server_id: server_id)
-          end
-        end
-
         #########################
         # Command Methods
         #########################
         def check_for_no_territories!
-          raise ESM::Exception::CheckFailure, error_message(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
+          check_failed!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
         end
 
         def territory_embed(territory)

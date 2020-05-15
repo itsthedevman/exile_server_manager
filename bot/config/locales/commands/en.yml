@@ -73,16 +73,6 @@ en:
 
         **`%{prefix}mode esm player`**
         Enables player mode. Set this mode if you play on servers
-      error_messages:
-        servers_exist:
-          title: "I'm sorry, %{user}"
-          description: "In order to enable player mode, you must remove any servers you have added to me via my [Dashboard](https://www.esmbot.com/portal)"
-        same_mode:
-          title: "Looks like there's nothing to change"
-          description: "You already have player mode %{state} 👍"
-        no_permissions:
-          title: "I'm sorry, %{user}"
-          description: "Only the owner of this community has access to this command"
       enabled: "✅ Player mode has been enabled for **%{community_name}**. All of my player commands may now be used on its Discord server"
       disabled: "✅ Player mode has been disabled for **%{community_name}**. You may now manage your community and servers via my [Dashboard](https://www.esmbot.com/portal)"
     id:
@@ -143,19 +133,11 @@ en:
         Returns all registered servers for `esm`.
       offline: "❌ Offline"
       offline_for: "❌ Offline for %{time}"
-      embed:
-        error_messages:
-          no_servers:
-            description: "I was unable to find any registered servers for `%{community_id}`."
-            field_1:
-              name: "Are you the owner?"
-              value: "You can add new servers from your [community dashboard](https://www.esmbot.com/login)"
     territories:
       description: "Displays all territories that you own or have joined for the provided server ID"
       example: |-
         **`%{prefix}territories esm_malden`**
         Returns all owned or joined territories for server `esm_malden`
-      no_territories: "Hey %{user}, I was unable to find any territories for you on `%{server_id}`"
       current_territory_stats: "__Current Territory Stats__"
       next_territory_stats: "__Next Territory Stats__"
       territory_members: "__Territory Members__"
@@ -209,8 +191,6 @@ en:
         Displays gambling statistics for server `esm_namalsk`
       arguments:
         amount: "The amount of poptabs to gamble. Poptabs are withdrawled from your locker.\nThe following options can be provided instead of a number:\n- `all`: Gambles all of your poptabs in your locker.\n- `half`: Gambles half of your poptabs in your locker\n- `stats`: Returns win/loss statistics for the provided server"
-      error_message:
-        bad_amount: "I'm sorry %{user}, but you simply cannot gamble nothing."
       stats:
         title: "Gambling statistics for `%{server_id}`"
         user_stats: "**%{user}'s stats**"
@@ -237,26 +217,18 @@ en:
         Changes territory `fort_awesome` to be `tent_sadness`
       arguments:
         new_territory_id: "The new territory ID to use. This ID can be 3 to 20 characters long and can **only contain letters, numbers, and underscores**."
-      error_message:
-        minimum_characters: "I'm sorry %{user}, the new territory ID must be at least 3 characters long"
-        maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 20 characters"
-        access_denied: "I'm sorry %{user}, you are not allowed to do that."
       success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```%{prefix}pay %{server_id} %{new_territory_id}```"
     accept:
       description: "Accepts a request based off its UUID"
       example: |-
         **`%{prefix}accept c619`**
         Accepts request `c619` from your pending requests
-      error_message:
-        invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
       success_message: "The request has been accepted and I've notified the requestor"
     decline:
       description: "Declines a request based off its UUID"
       example: |-
         **`%{prefix}decline e09e`**
         Declines request `e09e` from your pending requests
-      error_message:
-        invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
       success_message: "The request has been declined. The requestor **has not** be notified"
     add:
       description: "Adds the target user as a builder in the provided territory"
@@ -281,8 +253,6 @@ en:
         Displays all territories for server `esm_tanoa`, but they are sorted the owner's name
       arguments:
         order_by: "Controls how the territories are sorted before they are displayed.\nValid options are: `id`, `territory_name`, `owner_uid`"
-      error_message:
-        no_territories: "I'm sorry %{user}, it doesn't appear to be any territories on this server"
     broadcast:
       description: "Sends the provided message to all servers or the provided server ID in your community.\nRegistered players on these servers will receive the message via Direct Message if they have `custom` notification allowed for the server."
       example: |-
@@ -297,9 +267,6 @@ en:
       arguments:
         broadcast_to: "This can be either a valid `server_id` to send to just that server, `all` to send to all of your community's servers, or `preview` to just preview the message without sending it"
         message: "The message to send or preview. This supports Discord Markdown and cannot be more than 2000 characters long"
-      error_message:
-        no_server_access: "%{user}, you do not access to that server. You may only run this command for servers that belong to `%{community_id}`"
-        message_length: "I'm sorry %{user}, the provided message is too long. It needs to be less than 2000 characters long."
       confirmation_embed:
         title: "Broadcast Confirmation"
         description: "I will be sending the above message to the players on %{server_ids}"
@@ -337,19 +304,10 @@ en:
         server_success: "Hey %{user}, `%{server_id}` executed your code successfully and the code returned nothing."
         invalid_target: "I'm sorry %{user}, `%{server_id}` has informed me that `%{target_uid}` is not online or has not joined the server.\nEither way, your code was not executed."
         target_success: "Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`"
-    setup:
-      description: "Restarts the community setup process. Only the owner of a community can use this command"
-      example: |-
-        **`%{prefix}setup esm`**
-        Restarts community setup process for ESM.
-      error_message:
-        no_permissions: "I'm sorry %{user}, only the owner of this community has access to this command"
     reset_cooldown:
       description: "Resets"
       example: |-
         **`%{prefix}reset_cooldown`**
-      error_message:
-        valid_command: "I'm sorry %{user}, `%{command_name}` is not one of my commands."
       confirmation_embed:
         title: "Reset Confirmation"
         description:

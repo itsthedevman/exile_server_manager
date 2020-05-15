@@ -50,16 +50,6 @@ module ESM
           reply(ESM::Embed.build(:success, description: I18n.t("commands.broadcast.success_message", user: current_user.mention)))
         end
 
-        module ErrorMessage
-          def self.message_length(user:)
-            ESM::Embed.build(:error, description: I18n.t("commands.broadcast.error_message.message_length", user: user.mention))
-          end
-
-          def self.no_server_access(user:, community_id:)
-            ESM::Embed.build(:error, description: I18n.t("commands.broadcast.error_message.no_server_access", user: user.mention, community_id: community_id))
-          end
-        end
-
         def broadcast_embed(server_ids: "server_id")
           ESM::Embed.build do |e|
             e.title = I18n.t("commands.broadcast.broadcast_embed.title", community_name: current_community.community_name, server_ids: server_ids)
@@ -102,15 +92,15 @@ module ESM
         end
 
         def check_for_message_length!
-          raise ESM::Exception::CheckFailure, error_message(:message_length, user: current_user) if @arguments.message.size > 2000
+          check_failed!(:message_length, user: current_user.mention) if @arguments.message.size > 2000
         end
 
         def raise_no_server_access!
-          raise ESM::Exception::CheckFailure, error_message(:no_server_access, user: current_user, community_id: current_community.community_id)
+          check_failed!(:no_server_access, user: current_user.mention, community_id: current_community.community_id)
         end
 
         def raise_invalid_server_id!
-          raise ESM::Exception::CheckFailure, ESM::Command::Base.error_message(:invalid_server_id, user: current_user, provided_server_id: @arguments.broadcast_to)
+          check_failed!(:invalid_server_id, user: current_user.mention, provided_server_id: @arguments.broadcast_to)
         end
       end
     end

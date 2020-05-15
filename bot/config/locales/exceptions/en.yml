@@ -1,24 +1,67 @@
 en:
   exceptions:
     system: "Well, this is awkward. Can you let my developer know that something bad happened?\nGive him this error:\n```%{message}```"
+  command_errors:
+    # base
     text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
     dm_only: "Hey %{user}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there"
-  command_errors:
-    target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid Discord ID, steam uid, or @user discord mention"
+    command_not_enabled: "Hey %{user}, `%{prefix}%{command_name}` is not enabled for this community"
+    not_whitelisted: "Hey %{user}, you do not have permission to use `%{prefix}%{command_name}`"
+    not_allowed_in_text_channels: "Hey %{user}, `%{prefix}%{command_name}` is not allowed in this Discord's channels.\nTry sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there"
+    on_cooldown: "Hey %{user}, you're on cooldown for `%{prefix}%{command_name}`.\nYou have **%{time_left}** left before you can use it again"
     not_registered: "Hey %{user}, this command requires you to link your Steam account with me. Just head to https://www.esmbot.com/register to get started!"
-    target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
+    server_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
     invalid_server_id: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`."
     invalid_server_id_with_correction: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`.\nDid you mean: %{correction}?"
     invalid_community_id: "Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`."
     invalid_community_id_with_correction: "Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`.\nDid you mean: %{correction}?"
-    server_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
-    on_cooldown: "Hey %{user}, you're on cooldown for `%{prefix}%{command_name}`.\nYou have **%{time_left}** left before you can use it again"
-    command_not_enabled: "Hey %{user}, `%{prefix}%{command_name}` is not enabled for this community"
-    not_whitelisted: "Hey %{user}, you do not have permission to use `%{prefix}%{command_name}`"
-    not_allowed_in_text_channels: "Hey %{user}, `%{prefix}%{command_name}` is not allowed in this Discord's channels.\nTry sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there"
-    birb_not_found: "Hey %{user}, it looks like all of the birbs flew away. Please wait a few moments before trying again"
-    doggo_not_found: "Hey %{user}, all of the doggos were asleep. Please wait a few moments before trying again"
+    target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid Discord ID, steam uid, or @user discord mention"
     player_mode_command_not_available: "I'm sorry %{user}, `%{prefix}%{command_name}` is not available in player mode."
     different_community_in_text: "I'm sorry %{user}, using commands for other communities is only allowed a **direct message** with me or with [Player Mode](https://www.esmbot.com/wiki/player_mode) turned on."
     pending_request: "I'm sorry %{current_user}, %{target_user} already has a request pending"
     owned_server: "Hey %{user}, you can only access servers belonging to `%{community_id}`. Please provide a different server ID."
+    target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
+
+    # servers
+    no_servers: "I was unable to find any registered servers for `%{community_id}`.\nIf you are the owner, you can them via the Server Dashboard"
+
+    # birb
+    birb_not_found: "Hey %{user}, it looks like all of the birbs flew away. Please wait a few moments before trying again"
+
+    # doggo
+    doggo_not_found: "Hey %{user}, all of the doggos were asleep. Please wait a few moments before trying again"
+
+    # meow
+    meow_not_found: "Hey %{user}, all of the cats were hiding. Please wait a few moments before trying again"
+
+    # snek
+    snek_not_found: "Hey %{user}, all of the sneks slithered away. Please wait a few moments before trying again"
+
+    # mode
+    servers_exist: "I'm sorry %{user}, in order to enable player mode, you must remove any servers you have added to me via my [Dashboard](https://www.esmbot.com/portal)"
+    same_mode: "Looks like there's nothing to change! You already have player mode %{state} 👍"
+    no_permissions: "I'm sorry %{user}, Only the owner of this community has access to this command"
+
+    # broadcast
+    no_server_access: "%{user}, you do not access to that server. You may only run this command for servers that belong to `%{community_id}`"
+    message_length: "I'm sorry %{user}, the provided message is too long. It needs to be less than 2000 characters long."
+
+    # gamble
+    bad_amount: "I'm sorry %{user}, but you simply cannot gamble nothing."
+
+    # server_territories
+    no_server_territories: "I'm sorry %{user}, it doesn't appear to be any territories on this server"
+
+    # set_id
+    minimum_characters: "I'm sorry %{user}, the new territory ID must be at least 3 characters long"
+    maximum_characters: "I'm sorry %{user}, the new territory ID cannot be longer than 20 characters"
+    access_denied: "I'm sorry %{user}, you are not allowed to do that."
+
+    # territories
+    no_territories: "Hey %{user}, I was unable to find any territories for you on `%{server_id}`"
+
+    # accept/decline
+    invalid_request_id: "I'm sorry %{user}, I was unable to find a request with that ID"
+
+    # reset_cooldown
+    invalid_command: "I'm sorry %{user}, `%{command_name}` is not one of my commands."

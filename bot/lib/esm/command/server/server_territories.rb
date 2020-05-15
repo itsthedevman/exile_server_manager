@@ -30,12 +30,6 @@ module ESM
           tables.each { |table| reply("```\n#{table}\n```") }
         end
 
-        module ErrorMessage
-          def self.no_territories(user:)
-            I18n.t("commands.server_territories.error_message.no_territories", user: user)
-          end
-        end
-
         def build_territory_tables
           tables = []
           rows = []
@@ -75,7 +69,7 @@ module ESM
         end
 
         def check_for_no_territories!
-          raise ESM::Exception::CheckFailure, error_message(:no_territories, user: current_user.mention) if @response.blank?
+          check_failed!(:no_server_territories, user: current_user.mention) if @response.blank?
         end
       end
     end

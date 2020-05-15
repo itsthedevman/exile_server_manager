@@ -30,19 +30,14 @@ module ESM
           send_results
         end
 
-        module ErrorMessage
-          def self.bad_amount(user:)
-            ESM::Embed.build(:error, description: I18n.t("commands.gamble.error_message.bad_amount", user: user.mention))
-          end
-        end
-
         #########################
         # Command Methods
         #########################
+
         def check_for_bad_amount!
           return if %w[half all].include?(@arguments.amount)
 
-          raise ESM::Exception::CheckFailure, error_message(:bad_amount, user: current_user) if @arguments.amount.to_i <= 0
+          check_failed!(:bad_amount, user: current_user.mention) if @arguments.amount.to_i <= 0
         end
 
         def gamble_stat

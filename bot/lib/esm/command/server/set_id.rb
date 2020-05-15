@@ -38,37 +38,18 @@ module ESM
           reply(success_message)
         end
 
-        module ErrorMessage
-          def self.minimum_characters(user:)
-            I18n.t("commands.set_id.error_message.minimum_characters", user: user)
-          end
-
-          def self.maximum_characters(user:)
-            I18n.t("commands.set_id.error_message.maximum_characters", user: user)
-          end
-
-          def self.access_denied(user:)
-            I18n.t("commands.set_id.error_message.access_denied", user: user)
-          end
-
-          # DLL error messages can't be localized
-          def self.dll_reason(user:, reason:)
-            "I'm sorry #{user}, #{reason}"
-          end
-        end
-
         private
 
         def check_for_minimum_characters!
           return if @arguments.new_territory_id.nil?
 
-          raise ESM::Exception::CheckFailure, error_message(:minimum_characters, user: current_user.mention) if @arguments.new_territory_id.size < 3
+          check_failed!(:minimum_characters, user: current_user.mention) if @arguments.new_territory_id.size < 3
         end
 
         def check_for_maximum_characters!
           return if @arguments.new_territory_id.nil?
 
-          raise ESM::Exception::CheckFailure, error_message(:maximum_characters, user: current_user.mention) if @arguments.new_territory_id.size > 20
+          check_failed!(:maximum_characters, user: current_user.mention) if @arguments.new_territory_id.size > 20
         end
 
         def check_for_failure!
@@ -77,10 +58,10 @@ module ESM
           # Don't set a cooldown if we errored.
           skip(:cooldown)
 
-          # DLL Reason
-          raise ESM::Exception::CheckFailure, error_message(:dll_reason, user: current_user.mention, reason: @response.reason) if @response.reason
+          # DLL Reason. This is a weird one since I can't localize the message
+          check_failed! { ESM::Embed.build(:error, description: "I'm sorry #{current_user.mention}, #{@response.reason}") } if @response.reason
 
-          raise ESM::Exception::CheckFailure, error_message(:access_denied, user: current_user.mention)
+          check_failed!(:access_denied, user: current_user.mention)
         end
 
         def success_message

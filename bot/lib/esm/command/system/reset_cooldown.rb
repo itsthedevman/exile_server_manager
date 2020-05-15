@@ -36,17 +36,11 @@ module ESM
           success_embed
         end
 
-        module ErrorMessage
-          def self.valid_command(user:, command_name:)
-            ESM::Embed.build(:error, description: I18n.t("commands.reset_cooldown.error_message.valid_command", user: user, command_name: command_name))
-          end
-        end
-
         def check_for_valid_command!
           return if @arguments.command_name.nil?
           return if ESM::Command.include?(@arguments.command_name)
 
-          raise ESM::Exception::CheckFailure, error_message(:valid_command, user: current_user.mention, command_name: @arguments.command_name)
+          check_failed!(:invalid_command, user: current_user.mention, command_name: @arguments.command_name)
         end
 
         def confirmation_embed

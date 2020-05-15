@@ -22,20 +22,11 @@ module ESM
           link
         end
 
-        module ErrorMessage
-          def self.meow_not_found(user:)
-            ESM::Embed.build do |e|
-              e.description = I18n.t("command_errors.meow_not_found", user: user)
-              e.color = :red
-            end
-          end
-        end
-
         def check_for_empty_link!
           return if link.present?
 
           remove_waiting_message
-          raise ESM::Exception::CheckFailure, error_message(:meow_not_found, user: current_user.mention)
+          check_failed!(:meow_not_found, user: current_user.mention)
         end
 
         def link

@@ -27,34 +27,6 @@ module ESM
           end
         end
 
-        module ErrorMessage
-          def self.servers_exist(user:)
-            ESM::Embed.build do |e|
-              e.title = I18n.t("commands.mode.error_messages.servers_exist.title", user: user.mention)
-              e.description = I18n.t("commands.mode.error_messages.servers_exist.description")
-              e.color = :red
-            end
-          end
-
-          def self.same_mode(mode:)
-            player_mode = mode == "player"
-
-            ESM::Embed.build do |e|
-              e.title = I18n.t("commands.mode.error_messages.same_mode.title")
-              e.description = I18n.t("commands.mode.error_messages.same_mode.description", state: player_mode ? "enabled" : "disabled")
-              e.color = :yellow
-            end
-          end
-
-          def self.no_permissions(user:)
-            ESM::Embed.build do |e|
-              e.title = I18n.t("commands.mode.error_messages.no_permissions.title", user: user.mention)
-              e.description = I18n.t("commands.mode.error_messages.no_permissions.description")
-              e.color = :red
-            end
-          end
-        end
-
         #########################
         # Command Methods
         #########################
@@ -62,19 +34,19 @@ module ESM
         def check_for_owner!
           server = ESM.bot.servers[target_community.guild_id.to_i]
           guild_member = current_user.on(server)
-          raise ESM::Exception::CheckFailure, error_message(:no_permissions, user: current_user) if guild_member.nil?
+          check_failed!(:no_permissions, user: current_user.mention) if guild_member.nil?
 
           return if guild_member.owner?
 
-          raise ESM::Exception::CheckFailure, error_message(:no_permissions, user: current_user)
+          check_failed!(:no_permissions, user: current_user.mention)
         end
 
         def check_for_same_mode!
-          raise ESM::Exception::CheckFailure, error_message(:same_mode, mode: @arguments.mode) if same_mode?
+          check_failed!(:same_mode, state: @arguments.mode == "player" ? "enabled" : "disabled") if same_mode?
         end
 
         def check_for_active_servers!
-          raise ESM::Exception::CheckFailure, error_message(:servers_exist, user: current_user) if target_community.servers.any?
+          check_failed!(:servers_exist, user: current_user.mention) if target_community.servers.any?
         end
 
         def same_mode?

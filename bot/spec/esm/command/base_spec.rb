@@ -230,7 +230,7 @@ describe ESM::Command::Base do
       )
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.data).to have_attributes(description: a_string_matching(/hey .+, i was unable to find a community with an ID of `.+`./i))
+        expect(error.data.description).to match(/hey .+, i was unable to find a community with an ID of `.+`./i)
       end
     end
   end
@@ -366,13 +366,19 @@ describe ESM::Command::Base do
     end
   end
 
-  describe "#error_message" do
-    it "should return a message" do
-      expect(command.error_message(:some_reason)).to eql("I crashed! HALP!")
+  describe "#check_failed!" do
+    it "should raise the translation" do
+      expect { command.check_failed!(:text_only, user: user.mention) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        embed = error.data
+
+        expect(embed.description).to match(/this command can only be used in a discord server's \*\*text channel\*\*/i)
+      end
     end
 
-    it "should raise error" do
-      expect { command.error_message(:some_invalid_reason) }.to raise_error(/undefined method `some_invalid_reason'/)
+    it "should raise the block" do
+      expect { command.check_failed! { "This will be the message" } }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        expect(error.data).to match(/this will be the message/i)
+      end
     end
   end
 
@@ -450,7 +456,10 @@ describe ESM::Command::Base do
         _display_as: "display_as"
       )
       event = CommandEvent.create(command_statement, channel_type: :text, user: user)
-      expect { command.execute(event) }.to raise_error(ESM::Exception::CommandDMOnly)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        embed = error.data
+        expect(embed.description).to match(/this command can only be used in a \*\*direct message\*\* with me/i)
+      end
 
       # Test dm channel
       command_statement = command.statement(
@@ -493,7 +502,10 @@ describe ESM::Command::Base do
         _display_as: "display_as"
       )
       event = CommandEvent.create(command_statement, channel_type: :dm, user: user)
-      expect { command.execute(event) }.to raise_error(ESM::Exception::CommandTextOnly)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        embed = error.data
+        expect(embed.description).to match(/this command can only be used in a discord server's \*\*text channel\*\*\./i)
+      end
 
       command.limit_to = nil
     end

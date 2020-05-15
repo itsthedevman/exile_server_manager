@@ -16,7 +16,7 @@ module ESM
 
         def discord
           servers = ESM::Server.where(community_id: target_community.id)
-          raise ESM::Exception::CheckFailure, error_message(:no_servers, community_id: @arguments.community_id) if servers.blank?
+          check_for_no_servers!(servers)
 
           servers.each do |server|
             @server = server
@@ -25,21 +25,16 @@ module ESM
           end
         end
 
-        module ErrorMessage
-          def self.no_servers(community_id:)
-            ESM::Embed.build do |e|
-              e.description = I18n.t("commands.servers.embed.error_messages.no_servers.description", community_id: community_id)
-              e.add_field(
-                name: I18n.t("commands.servers.embed.error_messages.no_servers.field_1.name"),
-                value: I18n.t("commands.servers.embed.error_messages.no_servers.field_1.value")
-              )
-            end
-          end
-        end
 
         #########################
         # Command Methods
         #########################
+
+        def check_for_no_servers!(servers)
+          return if servers.present?
+
+          check_failed!(:no_servers, community_id: @arguments.community_id)
+        end
 
         def build_server_embed
           ESM::Embed.build do |e|

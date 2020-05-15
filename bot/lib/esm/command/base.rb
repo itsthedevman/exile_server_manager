@@ -15,29 +15,7 @@ module ESM
         super
       end
 
-      def self.error_message(name, **args)
-        if args.blank?
-          Base::ErrorMessage.send(name)
-        else
-          Base::ErrorMessage.send(name, args)
-        end
-      end
-
-      # The lengths I had to go to get this to work. It's either that this was really hard, or I'm literally stupid.
-      # I **could not** find a way to get an inherited method to be able to call a method defined on an overridden module.
-      # This is so we can override module ErrorMessage in a command class and be
-      #   able to access it in that class by calling `error_message` (without having to define it in that class or include it. mwahaha)
       def self.inherited(child_class)
-        child_class.send(:define_method, :error_message) do |name, **args|
-          klass = "#{child_class}::ErrorMessage".constantize
-
-          if args.blank?
-            klass.send(name)
-          else
-            klass.send(name, args)
-          end
-        end
-
         child_class.reset_variables!
       end
 
@@ -353,6 +331,20 @@ module ESM
         end
 
         command_statement
+      end
+
+      # Raises an exception of the given class or ESM::Exception::CheckFailure.
+      # If a block is given, the return of that block will be message to raise
+      # Otherwise, it will build an error embed
+      def check_failed!(name = nil, **args, &block)
+        message =
+          if block_given?
+            yield
+          else
+            ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", args.except(:exception_class)))
+          end
+
+        raise args[:exception_class] || ESM::Exception::CheckFailure, message
       end
 
       private

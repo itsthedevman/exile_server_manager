@@ -23,17 +23,11 @@ module ESM
           ESM::Embed.build(:success, description: I18n.t("commands.decline.success_message"))
         end
 
-        module ErrorMessage
-          def self.invalid_request_id(user:)
-            I18n.t("commands.decline.error_message.invalid_request_id", user: user.mention)
-          end
-        end
-
         #########################
         # Command Methods
         #########################
         def check_for_request!(request)
-          raise ESM::Exception::CheckFailure, error_message(:invalid_request_id, user: current_user) if request.nil?
+          check_failed!(:invalid_request_id, user: current_user.mention) if request.nil?
         end
       end
     end

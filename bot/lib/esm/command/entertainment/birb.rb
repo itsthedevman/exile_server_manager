@@ -34,7 +34,7 @@ module ESM
           return if birb_link.present?
 
           remove_waiting_message
-          raise ESM::Exception::CheckFailure, error_message(:birb_not_found, user: current_user.mention)
+          check_failed!(:birb_not_found, user: current_user.mention)
         end
 
         def birb_link
