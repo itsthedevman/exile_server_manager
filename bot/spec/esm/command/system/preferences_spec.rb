@@ -34,7 +34,7 @@ describe ESM::Command::System::Preferences, category: "command" do
 
       expect { message = command.execute(event) }.not_to raise_error
       expect(message).not_to be_nil
-      expect(message.first.second.description).to match(/your preferences for `.+` have been updated/i)
+      expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
       types.each do |type|
         expect(preference.send(type.underscore)).to be(true)
@@ -48,7 +48,7 @@ describe ESM::Command::System::Preferences, category: "command" do
 
       expect { message = command.execute(event) }.not_to raise_error
       expect(message).not_to be_nil
-      expect(message.first.second.description).to match(/your preferences for `.+` have been updated/i)
+      expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
       expect(preference.send(type.underscore)).to be(true)
     end
@@ -60,7 +60,7 @@ describe ESM::Command::System::Preferences, category: "command" do
 
       expect { message = command.execute(event) }.not_to raise_error
       expect(message).not_to be_nil
-      expect(message.first.second.description).to match(/your preferences for `.+` have been updated/i)
+      expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
       types.each do |type|
         expect(preference.send(type.underscore)).to be(false)
@@ -74,7 +74,7 @@ describe ESM::Command::System::Preferences, category: "command" do
 
       expect { message = command.execute(event) }.not_to raise_error
       expect(message).not_to be_nil
-      expect(message.first.second.description).to match(/your preferences for `.+` have been updated/i)
+      expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
       expect(preference.send(type.underscore)).to be(false)
     end

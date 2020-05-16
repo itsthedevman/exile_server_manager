@@ -8,6 +8,10 @@ module ESM
       attr_accessor :skip_cooldown
     end
 
+    def self.messages
+      @messages ||= Messages.new
+    end
+
     # Attempt to simulate a random community for tests
     #
     # @note The type of community controls what user type is selected
@@ -51,13 +55,9 @@ module ESM
       }.to_ostruct
     end
 
-    def self.messages
-      @messages ||= []
-    end
-
     def self.reset!
       @response = nil
-      @messages = []
+      @messages = Messages.new
       @community = nil
       @server = nil
       @user = nil
@@ -67,6 +67,12 @@ module ESM
       @community_type = @communities.sample
       @user_type = @community_type == :esm_community ? :user : :secondary_user
       @second_community_type = @communities.find { |type| type != @community_type }
+
+      # Reset the bot's resend_queue
+      ESM.bot.resend_queue.reset
+
+      # Auto resume in case if was paused
+      ESM.bot.resend_queue.resume
     end
 
     # I hate this code, it doesn't make me happy

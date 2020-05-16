@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-return if ENV["ESM_ENV"] != "development"
+return if !ESM.env.development?
 
 require "active_record_query_trace"
 

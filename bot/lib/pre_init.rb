@@ -6,12 +6,6 @@
 Dir["#{__dir__}/esm/extension/**/*.rb"].each { |extension| require extension }
 
 #############################
-# Load Dotenv variables
-#############################
-Dotenv.load
-Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
-
-#############################
 # Autoload ESM
 #############################
 loader = Zeitwerk::Loader.for_gem

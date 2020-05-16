@@ -3,12 +3,6 @@
 # Set our env to test
 ENV["ESM_ENV"] = "test"
 
-# Start SimpleCov
-if ENV["TRAVIS"].nil?
-  require "simplecov"
-  SimpleCov.start
-end
-
 require "bundler/setup"
 require "esm"
 require "rspec/wait"

@@ -3,7 +3,7 @@
 module ESM
   module Event
     class ServerInitialization
-      attr_reader :packet if ENV["ESM_ENV"] == "test"
+      attr_reader :packet if ESM.env.test?
 
       def initialize(server_id, params)
         @server_id = server_id

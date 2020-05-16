@@ -9,6 +9,7 @@ module ESM
       command_from_discord
       command_from_server
       bot_deliver
+      bot_resend_queue
     ].freeze
 
     def self.subscribe
@@ -80,6 +81,19 @@ module ESM
         JSON.pretty_generate(
           channel: "#{payload[:channel].name} (#{payload[:channel].id})",
           message: payload[:message].to_s
+        )
+      end
+    end
+
+    def self.bot_resend_queue(name, _start, _finish, _id, payload)
+      ESM.logger.debug(name) do
+        exception = payload[:exception]
+
+        JSON.pretty_generate(
+          exception: exception.message,
+          backtrace: exception.backtrace[0..2],
+          message: payload[:message],
+          to: payload[:to]
         )
       end
     end

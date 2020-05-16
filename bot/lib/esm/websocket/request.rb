@@ -4,7 +4,7 @@ module ESM
   class Websocket
     class Request
       attr_reader :id, :user, :command, :channel
-      attr_reader :command_name, :user_info if ENV["ESM_ENV"] == "test"
+      attr_reader :command_name, :user_info if ESM.env.test?
       attr_accessor :response
 
       # command: nil, user: nil, channel: nil, parameters: nil, timeout: 30, command_name: nil

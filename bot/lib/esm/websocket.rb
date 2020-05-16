@@ -19,7 +19,7 @@ module ESM
       ESM::Websocket::Server.new
 
       # Watches over requests and removes them if the server is taking too long to respond
-      ESM::Websocket::Request::Overseer.start!
+      ESM::Websocket::Request::Overseer.watch!
     end
 
     # Delivers the message to the requested server_id
@@ -64,7 +64,7 @@ module ESM
     # Public Instance Methods
     ###########################
     attr_reader :server, :connection, :requests
-    attr_writer :requests if ENV["ESM_ENV"] == "test"
+    attr_writer :requests if ESM.env.test?
 
     def initialize(connection)
       @connection = connection
@@ -75,13 +75,13 @@ module ESM
     end
 
     def deliver!(request)
-      ActiveSupport::Notifications.instrument("websocket_server_deliver.esm", request: request) do
-        # If the user is nil, there is no point in tracking the request
-        @requests << request if !request.user.nil?
+      ActiveSupport::Notifications.instrument("websocket_server_deliver.esm", request: request)
 
-        # Send the message
-        @connection.send(request.to_s)
-      end
+      # If the user is nil, there is no point in tracking the request
+      @requests << request if !request.user.nil?
+
+      # Send the message
+      @connection.send(request.to_s)
 
       request
     end

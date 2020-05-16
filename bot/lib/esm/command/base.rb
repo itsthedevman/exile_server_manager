@@ -99,7 +99,7 @@ module ESM
                   :defines, :requires, :executed_at, :response, :cooldown_time,
                   :event, :permissions, :checks
 
-      attr_writer :limit_to, :event, :executed_at, :requires if ENV["ESM_ENV"] == "test"
+      attr_writer :limit_to, :event, :executed_at, :requires if ESM.env.test?
       attr_writer :current_community
 
       def initialize

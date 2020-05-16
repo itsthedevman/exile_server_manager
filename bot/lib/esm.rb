@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+# Welcome to Exile Server Manager!
+#   I hope you enjoy your stay.
+#
+# Just fyi, this file is laid out in a particular order so
+#   I can access ESM.env and ESM.config when all other files load
+
 require "action_view"
 require "action_view/helpers"
 require "active_record"
@@ -25,19 +31,17 @@ require "terminal-table"
 require "yaml"
 require "zeitwerk"
 
-# Run pre_init (Throwback to Exile)
-require_relative "pre_init"
-require_relative "pre_init_dev"
+# Load Dotenv variables
+Dotenv.load
+Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
 
 module ESM
   class << self
-    attr_reader :bot, :config, :logger
+    attr_reader :bot, :config, :logger, :env
   end
 
   def self.run!
-    load_config
     load_i18n
-
     initialize_steam
     initialize_logger
 
@@ -55,21 +59,9 @@ module ESM
     end
   end
 
-  # @private
   # Allow IRB to be not-blocked by ESM's main thread
   def self.console!
     @console = true
-  end
-
-  # Borrowed from Rails
-  # https://github.com/rails/rails/blob/master/railties/lib/rails.rb:72
-  def self.env
-    @env ||= ActiveSupport::StringInquirer.new(ENV["ESM_ENV"].presence || "development")
-  end
-
-  def self.load_config
-    config = YAML.safe_load(ERB.new(File.read(File.expand_path("config/config.yml"))).result, aliases: true)[env]
-    @config = JSON.parse(config.to_json, object_class: OpenStruct)
   end
 
   def self.load_i18n
@@ -125,4 +117,16 @@ module ESM
       "#{header}#{body}"
     end
   end
+
+  # Borrowed from Rails, load the ENV
+  # https://github.com/rails/rails/blob/master/railties/lib/rails.rb:72
+  @env ||= ActiveSupport::StringInquirer.new(ENV["ESM_ENV"].presence || "development")
+
+  # Load the config
+  config = YAML.safe_load(ERB.new(File.read(File.expand_path("config/config.yml"))).result, aliases: true)[self.env]
+  @config = JSON.parse(config.to_json, object_class: OpenStruct)
 end
+
+# Run pre_init (Throwback to Exile)
+require_relative "pre_init"
+require_relative "pre_init_dev"

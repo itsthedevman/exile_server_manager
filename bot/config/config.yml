@@ -1,16 +1,19 @@
 default: &default
   token: <%= ENV["DISCORD_TOKEN"] %>
   steam_api_key: <%= ENV["STEAM_TOKEN"] %>
-  overseers:
+  loops:
     # ESM::Request::Overseer
-    user_request:
-      # How often to check for expired requests in seconds
-      check_every: 3000
+    request_overseer:
+      check_every: 15
 
     # ESM::Websocket::Request::Overseer
-    # I have a lot of request models...
-    command_request:
-      check_every: 3000
+    websocket_request_overseer:
+      check_every: 15
+
+    # ESM::Bot::ResendQueue
+    bot_resend_queue:
+      check_every: 5
+      max_attempts: 5
 
 development:
   <<: *default

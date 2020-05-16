@@ -13,12 +13,15 @@ module ESM
     ].freeze
 
     attr_reader :config, :prefix
+    attr_reader :resend_queue if ESM.env.test?
 
     def initialize
       # Connect to the database
       ESM::Database.connect!
 
       load_community_prefixes
+
+      @resend_queue = ESM::Bot::ResendQueue.new(self)
 
       super(token: ESM.config.token, prefix: method(:determine_activation_prefix), help_command: false)
     end
@@ -63,6 +66,8 @@ module ESM
       # IDEA: Maybe send email?
       ESM::Request::Overseer.die
       ESM::Websocket::Overseer.die
+
+      @resend_queue.die if @resend_queue.present?
     end
 
     def esm_mention(_event)
@@ -113,13 +118,24 @@ module ESM
       ActiveSupport::Notifications.instrument("bot_deliver.esm", message: message, channel: delivery_channel)
 
       # So we can test if it's working
-      return ESM::Test.messages << [delivery_channel, message] if ESM.env.test?
+      return ESM::Test.messages.store(message, to, delivery_channel) if ESM.env.test?
 
-      # Send the embed
-      return delivery_channel.send_embed { |embed| message.transfer(embed) } if message.is_a?(ESM::Embed)
+      discord_message =
+        if message.is_a?(ESM::Embed)
+          # Send the embed
+          delivery_channel.send_embed { |embed| message.transfer(embed) }
+        else
+          # Send the text message
+          delivery_channel.send_message(message)
+        end
 
-      # Send the text message
-      delivery_channel.send_message(message)
+      # Dequeue the message if it was enqueued
+      @resend_queue.dequeue(message, to: to)
+
+      # Return the Discordrb::Message
+      discord_message
+    rescue StandardError => e
+      @resend_queue.enqueue(message, to: to, exception: e)
     end
 
     def deliver_and_await!(message, to:, owner: to, expected:, invalid_response: nil, timeout: nil, give_up_after: 99)
