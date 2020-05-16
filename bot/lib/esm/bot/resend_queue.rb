@@ -73,7 +73,7 @@ module ESM
       def process_queue
         @entries.each_with_index do |entry, index|
           if entry.attempt >= @max_attempts
-            ActiveSupport::Notifications.instrument("bot_resend_queue.esm", message: entry.message, to: entry.to, exception: entry.exception)
+            ESM::Notifications.trigger("bot_resend_queue", message: entry.message, to: entry.to, exception: entry.exception)
 
             @entries.delete_at(index)
           else

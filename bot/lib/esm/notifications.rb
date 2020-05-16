@@ -12,6 +12,10 @@ module ESM
       bot_resend_queue
     ].freeze
 
+    def self.trigger(name, **args)
+      ActiveSupport::Notifications.instrument("#{name}.esm", args)
+    end
+
     def self.subscribe
       EVENTS.each do |event|
         ActiveSupport::Notifications.subscribe("#{event}.esm", &method(event))

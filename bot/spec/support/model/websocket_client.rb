@@ -36,7 +36,7 @@ class WebsocketClient
   def on_message(event)
     @data = event.data.to_ostruct
 
-    ActiveSupport::Notifications.instrument("websocket_client_on_message.esm", event: event)
+    ESM::Notifications.trigger("websocket_client_on_message", event: event)
 
     command_config = WebsocketClient::Responses::CONFIG[@data.command.to_sym]
     raise "Missing command config for: #{@data.command}" if command_config.nil?

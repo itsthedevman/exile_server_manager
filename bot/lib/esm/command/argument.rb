@@ -91,7 +91,7 @@ module ESM
         before_store(command) if before_store?
 
         # Logging
-        ActiveSupport::Notifications.instrument("argument_parse.esm", argument: self, regex: regex, parser: @parser, message: message)
+        ESM::Notifications.trigger("argument_parse", argument: self, regex: regex, parser: @parser, message: message)
 
         # Save the value of the argument
         @value = @parser.value

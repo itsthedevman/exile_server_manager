@@ -75,7 +75,7 @@ module ESM
     end
 
     def deliver!(request)
-      ActiveSupport::Notifications.instrument("websocket_server_deliver.esm", request: request)
+      ESM::Notifications.trigger("websocket_server_deliver", request: request)
 
       # If the user is nil, there is no point in tracking the request
       @requests << request if !request.user.nil?

@@ -368,7 +368,7 @@ module ESM
         @arguments.parse!(@event)
 
         # Logging
-        ActiveSupport::Notifications.instrument("command_from_discord.esm", command: self)
+        ESM::Notifications.trigger("command_from_discord", command: self)
 
         # Run some checks
         @checks.run_all!
@@ -389,7 +389,7 @@ module ESM
         @response = parameters.size == 1 ? parameters.first : parameters
 
         # Logging
-        ActiveSupport::Notifications.instrument("command_from_server.esm", command: self, response: @response)
+        ESM::Notifications.trigger("command_from_server", command: self, response: @response)
 
         # Call the server method
         server
