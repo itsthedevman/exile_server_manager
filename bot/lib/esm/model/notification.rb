@@ -30,8 +30,8 @@ module ESM
 
     def build_embed(**templates)
       ESM::Embed.build do |e|
-        e.title = format(self.notification_title, templates)
-        e.description = format(self.notification_description, templates)
+        e.title = format(self.notification_title, templates) if self.notification_title.present?
+        e.description = format(self.notification_description, templates) if self.notification_description.present?
 
         e.color =
           if self.notification_color == "random"
@@ -40,6 +40,7 @@ module ESM
             self.notification_color
           end
       end
+
     end
 
     private

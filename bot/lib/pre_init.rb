@@ -9,7 +9,7 @@ Dir["#{__dir__}/esm/extension/**/*.rb"].each { |extension| require extension }
 # Autoload ESM
 #############################
 loader = Zeitwerk::Loader.for_gem
-loader.inflector.inflect("esm" => "ESM", "ostruct" => "OpenStruct")
+loader.inflector.inflect("esm" => "ESM", "ostruct" => "OpenStruct", "xm8" => "XM8")
 
 # Convert ESM::Model::Server -> ESM::Server
 loader.collapse("#{__dir__}/esm/model")

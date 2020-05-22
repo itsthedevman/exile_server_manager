@@ -30,7 +30,7 @@ community = ESM::Community.create!(
   community_website: "https://www.esmbot.com",
   guild_id: ESM::Community::ESM::ID,
   logging_channel_id: "624387002443497489",
-  command_prefix: "~",
+  command_prefix: "pls ",
   player_mode_enabled: false
 )
 
@@ -39,7 +39,7 @@ ESM::Community.create!(
   community_name: "Bryan's Test Server",
   community_website: "https://www.esmbot.com",
   guild_id: ESM::Community::Secondary::ID,
-  command_prefix: "pls "
+  command_prefix: "~"
 )
 
 ESM::Community.create!(

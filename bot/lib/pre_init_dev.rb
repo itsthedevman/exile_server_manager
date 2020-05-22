@@ -20,4 +20,4 @@ module Rails
 end
 
 # Enable discordrb logging
-Discordrb::LOGGER.debug = true
+Discordrb::LOGGER.debug = false

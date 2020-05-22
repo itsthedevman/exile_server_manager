@@ -11,7 +11,7 @@ changes:
       - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
       - "Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration."
       - "Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)"
-      - "Added a resend queue. If the bot runs into an issue with sending a message, it will attempt to resend the message every 5 seconds for 5 attempts."
+      - "Messages sent from the bot will now attempt to resend if they experience an issue"
     commands:
       accept:
         - "**New command**"
@@ -78,8 +78,8 @@ changes:
       - "Removed premium throughout the site. Previously locked content for premium is now available to every community"
     wiki:
       - "Removed outdated guides and pages"
-    server_dashboard:
-      - "Renamed server portal to server dashboard"
+    admin_dashboard:
+      - "Renamed server portal to Admin Dashboard"
       - "Improved logging channel selector by adding the channel categories as separators"
       - "Changed format of community selector. The format is now `[Community ID] Discord Server Name`"
       - "When a notification's color is set to random, the color on the preview will also be random"

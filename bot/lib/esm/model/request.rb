@@ -38,6 +38,8 @@ module ESM
       self.destroy
     end
 
+    def expire; end
+
     private
 
     def set_uuid

@@ -3,8 +3,8 @@
 module ESM
   class Server < ApplicationRecord
     before_create :generate_key
-    after_save :create_server_setting
-    after_save :create_server_reward
+    after_create :create_server_setting
+    after_create :create_server_reward
 
     attribute :server_id, :string
     attribute :community_id, :integer

@@ -79,7 +79,9 @@ class TerritoryGenerator
       id: Faker::Crypto.md5[0, 5],
       owner_uid: owner.second,
       owner_name: owner.first,
-      territory_name: Faker::Name.name,
+
+      # Sometimes the test data contains apostrophes
+      territory_name: Faker::Name.name.to_json,
       radius: level_info[:radius],
       level: level,
       flag_texture: FLAG_TEXTURES.sample(1).first,

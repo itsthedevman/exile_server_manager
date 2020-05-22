@@ -55,3 +55,54 @@ gambling:
     description: "They just won **{{ amountChanged }}** poptabs. **{{ userTag }}**, you have **{{ lockerAfter }}** poptabs now."
     title: "Looks like drinks are on **{{ userName }}**"
     type: "won"
+
+xm8:
+  - color: "random"
+    description: "Hop on quick, **{{ territoryName }}** (`{{ territoryID }}`) is being raided"
+    title: "Oh noes! {{ territoryName }} is being raided!"
+    type: "base-raid"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** flag has been stolen! Go get it back!"
+    title: "Flag Stolen `({{ territoryID }})`"
+    type: "flag-stolen"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** flag has been restored! Good job getting it back!"
+    title: "Flag Restored `({{ territoryID }})`"
+    type: "flag-restored"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** protection money is due today!\nUse `!pay {{ serverID }} {{ territoryID }}` to make a payment!"
+    title: "Protection Money Due `({{ territoryID }})`"
+    type: "protection-money-due"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** protection money has been paid"
+    title: "Protection Money Paid `({{ territoryID }})`"
+    type: "protection-money-paid"
+
+  - color: "random"
+    description: "Someone set us up the bomb. **{{ territoryName }}** is about to go BOOM!"
+    title: "Charge Planted `({{ territoryID }})`"
+    type: "charge-plant-started"
+
+  - color: "random"
+    description: "Some scalliwag is tryna grind yer locks! **{{ territoryName }}** is being raided!"
+    title: "Grinding Started `({{ territoryID }})`"
+    type: "grind-started"
+
+  - color: "random"
+    description: "H4x0rs are trying to get into your stuff! **{{ territoryName }}** is being robbed! "
+    title: "Hacking Started `({{ territoryID }})`"
+    type: "hack-started"
+
+  - color: "random"
+    description: "Someone is trying to steal **{{ territoryName }}'s** flag!"
+    title: "Flag Steal Started `({{ territoryID }})`"
+    type: "flag-steal-started"
+
+  - color: "random"
+    description: "You just sold **{{ item }}** for **{{ amount }}** poptabs"
+    title: "Item sold on MarXet"
+    type: "marxet-item-sold"

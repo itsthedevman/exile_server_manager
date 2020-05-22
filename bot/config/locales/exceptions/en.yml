@@ -23,7 +23,7 @@ en:
     target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
 
     # servers
-    no_servers: "I was unable to find any registered servers for `%{community_id}`.\nIf you are the owner, you can them via the Server Dashboard"
+    no_servers: "I was unable to find any registered servers for `%{community_id}`.\nIf you are the owner, you can them via the Admin Dashboard"
 
     # birb
     birb_not_found: "Hey %{user}, it looks like all of the birbs flew away. Please wait a few moments before trying again"

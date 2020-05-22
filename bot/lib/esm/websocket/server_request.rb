@@ -51,6 +51,8 @@ module ESM
         case @message.command
         when "server_initialization"
           ESM::Event::ServerInitialization.new(@connection.server.server_id, @message.parameters.first).run!
+        when "xm8_notification"
+          ESM::Event::Xm8Notification.new(@connection.server, @message.parameters.first).run!
         end
       end
 

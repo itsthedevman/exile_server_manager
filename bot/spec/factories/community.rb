@@ -7,11 +7,11 @@ FactoryBot.define do
     # attribute :community_website, :text
     # attribute :guild_id, :string
     # attribute :logging_channel_id, :string
-    # attribute :reconnect_notification_enabled, :boolean, default: false
-    # attribute :broadcast_notification_enabled, :boolean, default: false
+    # attribute :log_reconnect_event, :boolean, default: false
+    # attribute :log_xm8_event, :boolean, default: true
     # attribute :player_mode_enabled, :boolean, default: true
-    # attribute :log_xm8_notifications, :boolean, default: true
     # attribute :territory_admin_ids, :json, default: []
+    # attribute :command_prefix, :string, default: nil
     # attribute :created_at, :datetime
     # attribute :updated_at, :datetime
     # attribute :deleted_at, :datetime
@@ -28,6 +28,7 @@ FactoryBot.define do
     factory :secondary_community do
       community_name { Faker::Company.name }
       guild_id { ESM::Community::Secondary::ID }
+      logging_channel_id { ESM::Community::ESM::SPAM_CHANNEL }
       player_mode_enabled { false }
     end
 

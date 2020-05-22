@@ -207,6 +207,23 @@
 		],
 		"description": "Inserts an argument for an ESM command"
 	 },
-
-
+	"Embed": {
+		"scope": "ruby",
+		"prefix": "embed",
+		"body": [
+			"embed =",
+			"\tESM::Embed.build do |e|",
+			"\t\t# e.set_author(name:, url: nil, icon_url: nil)",
+			"\t\t# e.title=(text)",
+			"\t\t# e.description=(text)",
+			"\t\t# e.add_field(name: nil, value:, inline: false)",
+			"\t\t# e.thumbnail=(url)",
+			"\t\t# e.image=(url)",
+			"\t\t# e.color=(color)",
+			"\t\t# e.footer=(text)",
+			"\t\t# e.set_footer(text: nil, icon_url: nil)",
+			"\tend",
+		],
+		"description": "Inserts an embed with documentation"
+	}
 }

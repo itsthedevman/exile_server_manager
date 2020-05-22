@@ -11,10 +11,9 @@ module ESM
     attribute :community_website, :text
     attribute :guild_id, :string
     attribute :logging_channel_id, :string
-    attribute :reconnect_notification_enabled, :boolean, default: false
-    attribute :broadcast_notification_enabled, :boolean, default: false
+    attribute :log_reconnect_event, :boolean, default: false
+    attribute :log_xm8_event, :boolean, default: true
     attribute :player_mode_enabled, :boolean, default: true
-    attribute :log_xm8_notifications, :boolean, default: true
     attribute :territory_admin_ids, :json, default: []
     attribute :command_prefix, :string, default: nil
     attribute :created_at, :datetime
@@ -64,6 +63,21 @@ module ESM
 
     def discord_server
       ::ESM.bot.server(self.guild_id)
+    end
+
+    def log_event(event, message)
+      return if self.logging_channel_id.blank?
+
+      # Only allow logging events to logging channel if permission has been given
+      case event
+      when :xm8
+        return if !self.log_xm8_event
+      else
+        raise ::ESM::Exception::Error, "Attempted to log #{event} to #{self.guild_id} without explicit permission.\nMessage:\n#{message}"
+      end
+
+      # This will also handle resending
+      ::ESM.bot.deliver(message, to: self.logging_channel_id)
     end
 
     private

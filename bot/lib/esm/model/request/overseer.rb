@@ -4,9 +4,9 @@ module ESM
   class Request
     class Overseer
       def self.watch
-        @thread = Thread.new do
-          check_every = ESM.config.loops.request_overseer.check_every
+        check_every = ESM.config.loops.request_overseer.check_every
 
+        @thread = Thread.new do
           loop do
             ESM::Request.expired.each(&:expire)
             sleep(ESM.env.test? ? 0.5 : check_every)

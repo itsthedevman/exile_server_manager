@@ -21,10 +21,9 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :community_website
       t.string :guild_id, null: false # has unique index
       t.string :logging_channel_id
-      t.boolean :reconnect_notification_enabled, default: false
-      t.boolean :broadcast_notification_enabled, default: false
+      t.boolean :log_reconnect_event, default: false
+      t.boolean :log_xm8_event, default: true
       t.boolean :player_mode_enabled, default: true
-      t.boolean :log_xm8_notifications, default: true
       t.json :territory_admin_ids, default: []
       t.string :command_prefix, default: nil
       t.datetime :created_at

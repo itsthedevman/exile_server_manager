@@ -127,7 +127,7 @@ module ESM
           return if @command.arguments.server_id.nil?
           return if ESM::Websocket.connected?(@command.arguments.server_id)
 
-          check_failed!(:server_not_connected, user: current_user, server_id: @command.arguments.server_id)
+          check_failed!(:server_not_connected, user: current_user.mention, server_id: @command.arguments.server_id)
         end
 
         def nil_target_server!
@@ -222,7 +222,7 @@ module ESM
           # Only allow player commands
           return if @command.type == :player
 
-          check_failed!(:player_mode_command_not_available, prefix: @command.prefix, user: current_user, command_name: @command.name)
+          check_failed!(:player_mode_command_not_available, prefix: @command.prefix, user: current_user.mention, command_name: @command.name)
         end
 
         def different_community!

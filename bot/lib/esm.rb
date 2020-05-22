@@ -91,7 +91,7 @@ module ESM
             header.colorize(:cyan)
           when "WARN"
             header.colorize(:yellow)
-          when "ERROR"
+          when "ERROR", "FATAL"
             header.colorize(:red)
           else
             header
@@ -105,7 +105,7 @@ module ESM
             body.colorize(:light_black)
           when "WARN"
             body.colorize(:yellow)
-          when "ERROR"
+          when "ERROR", "FATAL"
             body.colorize(:red)
           else
             body

@@ -23,12 +23,13 @@ module ESM
     end
 
     # Delivers the message to the requested server_id
+    #
+    # @note Do not rescue. This will fall down to the calling class
     def self.deliver!(server_id, request)
       connection = @connections[server_id]
+      return request.command.check_failed!(:server_not_connected, user: request.user, server_id: server_id) if connection.nil?
+
       connection.deliver!(request)
-    rescue StandardError => e
-      ESM.logger.fatal("#{self.class}##{__method__}") { "Message:\n#{e.message}\n\nBacktrace:\n#{e.backtrace}" }
-      nil
     end
 
     # Adds a new connection to the connections
@@ -153,6 +154,9 @@ module ESM
     rescue ESM::Exception::CheckFailure
       # Exception supressed because #check_for_command_error! can respond via the request
       nil
+    rescue StandardError => e
+      ESM.logger.error("#{self.class}##{__method__}") { "Exception: #{e.message}\n#{e.backtrace[0..5].join("\n")}" }
+      raise e if ESM.env.test?
     end
 
     # @private

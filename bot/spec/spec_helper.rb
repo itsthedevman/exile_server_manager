@@ -29,6 +29,9 @@ loader.eager_load
 # Start the bot
 ESM.run!
 
+# Enable discordrb logging
+Discordrb::LOGGER.debug = false
+
 # Load all of our test commands
 Dir["#{__dir__}/support/esm/command/test/*.rb"].each do |file|
   ESM::Command.process_command(file, "test")

@@ -71,6 +71,22 @@ class WebsocketClient
     @ws.send(DiscordReturn.new(args).to_json)
   end
 
+  def send_xm8_notification(type:, recipients:, message:, **args)
+    notification = {
+      type: type,
+      recipients: { r: recipients }.to_json
+    }.merge(args)
+
+    notification[:message] =
+      if message.is_a?(Hash)
+        message.to_json
+      else
+        message
+      end
+
+    send_response(command: "xm8_notification", parameters: [notification])
+  end
+
   private
 
   def send_initialization_message

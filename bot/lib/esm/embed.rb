@@ -137,6 +137,21 @@ module ESM
       output
     end
 
+    def to_h
+      {
+        title: self.title,
+        description: self.description,
+        timestamp: self.timestamp,
+        color: self.color,
+        footer: self.footer&.text,
+        fields: self.fields.map { |f| { name: f.name, value: f.value } },
+        author: self.author,
+        thumbnail: self.thumbnail,
+        image: self.image,
+        url: self.url
+      }
+    end
+
     def build_from_template(type, **attributes)
       case type
       when :info
