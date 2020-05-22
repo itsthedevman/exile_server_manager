@@ -12,6 +12,13 @@ module ESM
       GUILD_EMOJIS_UPDATE
     ].freeze
 
+    # View Channels
+    # Send Messages
+    # Embed Links
+    # Attach Files
+    # Add Reactions
+    PERMISSION_BITS = 52_288
+
     attr_reader :config, :prefix
     attr_reader :resend_queue if ESM.env.test?
 
@@ -79,8 +86,8 @@ module ESM
       # This is to avoid servers connecting before the bot is ready
       ESM::Websocket.start!
       ESM::Request::Overseer.watch
+      ESM::Notifications.trigger("ready")
 
-      puts "Exile Server Manager has started\nInvite URL: #{self.invite_url}"
       @ready = true
     end
 

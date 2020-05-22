@@ -3,6 +3,7 @@
 module ESM
   class Notifications
     EVENTS = %w[
+      ready
       argument_parse
       websocket_server_deliver
       command_from_discord
@@ -24,6 +25,14 @@ module ESM
     def self.subscribe
       EVENTS.each do |event|
         ActiveSupport::Notifications.subscribe("#{event}.esm", &method(event))
+      end
+    end
+
+    def self.ready(name, _start, _finish, _id, _payload)
+      ESM.logger.info(name) do
+        JSON.pretty_generate(
+          invite_url: ESM.bot.invite_url(permission_bits: ESM::Bot::PERMISSION_BITS)
+        )
       end
     end
 
