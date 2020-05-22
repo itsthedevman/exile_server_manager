@@ -109,28 +109,20 @@ module ESM
       end
     end
 
-    # server, recipients, message, type
     def self.xm8_notification_invalid_type(_name, _start, _finish, _id, payload)
       server = payload[:server]
       recipients = payload[:recipients].join("\n")
 
       embed =
         ESM::Embed.build do |e|
-          e.title = "(Undeliverable) XM8 Notification for `#{server.server_id}`"
-          e.description = <<~MESSAGE
-            **Error:**
-            The provided notification type of `#{payload[:type]}` is not valid.
+          e.title = I18n.t("xm8_notifications.invalid_type.title", server: server.server_id)
+          e.description = I18n.t("xm8_notifications.invalid_type.description", type: payload[:type])
 
-            **Remedy:**
-            Please provide a valid type in your XM8 notification request.
-            You may find the valid XM8 notification types on my [wiki](https://www.esmbot.com/wiki)
-          MESSAGE
-
-          e.add_field(name: "Message", value: "```#{payload[:message]}```")
-          e.add_field(name: "Recipient Steam UIDs", value: "```#{recipients}```")
+          e.add_field(name: I18n.t(:message), value: "```#{payload[:message]}```")
+          e.add_field(name: I18n.t("xm8_notifications.invalid_type.recipient_steam_uids"), value: "```#{recipients}```")
 
           e.color = :red
-          e.footer = "These notifications can be configured via the Admin Dashboard"
+          e.footer = I18n.t("xm8_notifications.footer")
         end
 
       server.community.log_event(:xm8, embed)
@@ -145,33 +137,27 @@ module ESM
 
       case type
       when "custom"
-        error = "Missing `title` and/or `body` attributes in message field"
-        remedy = "Please provide a valid string for `title` and/or `body`. This string cannot be empty or whitespace."
+        error = I18n.t("xm8_notifications.invalid_attributes.custom.error")
+        remedy = I18n.t("xm8_notifications.invalid_attributes.custom.remedy")
       when "marxet-item-sold"
-        error = "Missing `item` and `amount` attributes in message field"
-        remedy = "Please provide a valid string for `item` and `amount`. This string cannot be empty or whitespace."
+        error = I18n.t("xm8_notifications.invalid_attributes.marxet_item_sold.error")
+        remedy = I18n.t("xm8_notifications.invalid_attributes.marxet_item_sold.remedy")
       end
 
       embed =
         ESM::Embed.build do |e|
-          e.title = "(Undeliverable) XM8 Notification for `#{server.server_id}`"
-          e.description = <<~MESSAGE
-            **Error:**
-            #{error}
+          e.title = I18n.t("xm8_notifications.invalid_attributes.title", server: server.server_id)
+          e.description = I18n.t("xm8_notifications.invalid_attributes.description", error: error, remedy: remedy)
 
-            **Remedy:**
-            #{remedy}
-          MESSAGE
+          log_message = I18n.t("xm8_notifications.invalid_attributes.log_message.base")
+          log_message += I18n.t("xm8_notifications.invalid_attributes.log_message.title", title: message.title) if message.title.present?
+          log_message += I18n.t("xm8_notifications.invalid_attributes.log_message.title", message: message.description) if message.description.present?
 
-          log_message = "The following message has been sent:\n"
-          log_message += "**Title:**\n#{message.title}" if message.title.present?
-          log_message += "**Message:**\n#{message.description}" if message.title.present?
-
-          e.add_field(name: "Message", value: log_message)
-          e.add_field(name: "Recipient Steam UIDs", value: "```#{recipients}```")
+          e.add_field(name: I18n.t(:message), value: log_message)
+          e.add_field(name: I18n.t("xm8_notifications.recipient_steam_uids"), value: "```#{recipients}```")
 
           e.color = :red
-          e.footer = "This notification can be disabled via the Admin Dashboard"
+          e.footer = I18n.t("xm8_notifications.footer")
         end
 
       server.community.log_event(:xm8, embed)
@@ -199,27 +185,21 @@ module ESM
       # Notify the community if they subscribe to this notification
       embed =
         ESM::Embed.build do |e|
-          e.title = "(Delivered) `#{type}` XM8 Notification for `#{server.server_id}`"
-          e.description = <<~MESSAGE
-            **Title:**
-            #{notification.title}
-
-            **Description:**
-            #{notification.description}
-          MESSAGE
+          e.title = I18n.t("xm8_notifications.log.title", type: type, server: server.server_id)
+          e.description = I18n.t("xm8_notifications.log.description", title: notification.title, description: notification.description)
 
           e.add_field(
-            name: "**Delivered To**",
+            name: I18n.t("xm8_notifications.log.delivered_to"),
             value: sent_to_users
           )
 
           e.add_field(
-            name: "**Unregistered Steam UIDs**",
+            name: I18n.t("xm8_notifications.log.unregistered_steam_uids"),
             value: unregistered_steam_uids
           )
 
           e.color = ESM::Color.random
-          e.footer = "This notification can be configured via the Admin Dashboard"
+          e.footer = I18n.t("xm8_notifications.footer")
         end
 
       server.community.log_event(:xm8, embed)

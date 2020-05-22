@@ -120,3 +120,45 @@ en:
   build_rights: "Build Rights"
   dm: "Direct Message"
   text: "Text"
+  message: "Message"
+  xm8_notifications:
+    log:
+      title: "(Delivered) `%{type}` XM8 Notification for `%{server}`"
+      description: |-
+        **Title:**
+        %{title}
+
+        **Description:**
+        %{description}
+      delivered_to: "**Delivered To**"
+      unregistered_steam_uids: "**Unregistered Steam UIDs**"
+
+    recipient_steam_uids: "Recipient Steam UIDs"
+    footer: "These notifications can be configured via the Admin Dashboard"
+    invalid_type:
+      title: "(Undeliverable) XM8 Notification for `%{server}`"
+      description: |-
+        **Error:**
+        The provided notification type of `%{type}` is not valid.
+
+        **Remedy:**
+        Please provide a valid type in your XM8 notification request.
+        You may find the valid XM8 notification types on my [wiki](https://www.esmbot.com/wiki)
+    invalid_attributes:
+      custom:
+        error: "Missing `title` and/or `body` attributes in message field"
+        remedy: "Please provide a valid string for `title` and/or `body`. This string cannot be empty or whitespace."
+      marxet_item_sold:
+        error: "Missing `item` and `amount` attributes in message field"
+        remedy: "Please provide a valid string for `item` and `amount`. This string cannot be empty or whitespace."
+      title: "(Undeliverable) XM8 Notification for `%{server}`"
+      description: |-
+        **Error:**
+        %{error}
+
+        **Remedy:**
+        %{remedy}
+      log_message:
+        base: "The following message has been sent:\n"
+        title: "**Title:**\n%{title}"
+        message: "Message:**\n%{message}"
