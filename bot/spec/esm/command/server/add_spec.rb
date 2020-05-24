@@ -36,6 +36,22 @@ describe ESM::Command::Server::Add, category: "command" do
       wsc.disconnect!
     end
 
+    it "should not allow an unregistered user" do
+      second_user.update(steam_uid: nil)
+      command_statement = command.statement(
+        server_id: server.server_id,
+        territory_id: Faker::Crypto.md5[0, 5],
+        target: second_user.mention
+      )
+
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        embed = error.data
+        expect(embed.description).to match(/has not registered with me yet. tell them to head over/i)
+      end
+    end
+
     it "should add (Different user)" do
       embed = nil
       command_statement = command.statement(
