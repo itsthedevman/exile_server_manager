@@ -75,7 +75,7 @@ module ESM
             check_failed!(
               :command_not_enabled,
               prefix: @command.prefix,
-              user: current_user,
+              user: current_user.mention,
               command_name: @command.name
             )
           end
@@ -84,7 +84,7 @@ module ESM
             check_failed!(
               :not_whitelisted,
               prefix: @command.prefix,
-              user: current_user,
+              user: current_user.mention,
               command_name: @command.name
             )
           end
@@ -93,7 +93,7 @@ module ESM
             check_failed!(
               :not_allowed_in_text_channels,
               prefix: @command.prefix,
-              user: current_user,
+              user: current_user.mention,
               command_name: @command.name
             )
           end
@@ -102,7 +102,7 @@ module ESM
         def registered!
           return if !@command.registration_required? || current_user.esm_user.registered?
 
-          check_failed!(:not_registered, user: current_user)
+          check_failed!(:not_registered, user: current_user.mention)
         end
 
         def cooldown!
@@ -112,7 +112,7 @@ module ESM
           check_failed!(
             :on_cooldown,
             prefix: @command.prefix,
-            user: current_user,
+            user: current_user.mention,
             time_left: current_cooldown.to_s,
             command_name: @command.name
           )
@@ -202,7 +202,10 @@ module ESM
           return if @command.arguments.target.nil?
           return if !target_user.nil?
 
-          check_failed!(:target_user_nil, user: current_user)
+          # Allows bypassing the nil check if the target argument is a steam_uid
+          return if target_user.nil? && @command.arguments.target.steam_uid?
+
+          check_failed!(:target_user_nil, user: current_user.mention)
         end
 
         # Order matters!
@@ -238,7 +241,7 @@ module ESM
           # Allow if the command is being ran for the same community
           return if current_community.id == @command.target_community.id
 
-          check_failed!(:different_community_in_text, user: current_user)
+          check_failed!(:different_community_in_text, user: current_user.mention)
         end
 
         # Used by calling in a command that uses the request system.
@@ -246,7 +249,7 @@ module ESM
         def pending_request!
           return if @command.request.nil?
 
-          check_failed!(:pending_request, user: current_user)
+          check_failed!(:pending_request, user: current_user.mention)
         end
 
         # Raises CheckFailure if the target_server does not belong to the current_community
@@ -254,13 +257,13 @@ module ESM
           return if target_server.nil?
           return if target_server.community_id == current_community.id
 
-          check_failed!(:owned_server, user: current_user, community_id: current_community.community_id)
+          check_failed!(:owned_server, user: current_user.mention, community_id: current_community.community_id)
         end
 
         def registered_target_user!
           return if target_user.nil? || target_user.esm_user.registered?
 
-          check_failed!(:target_not_registered, user: current_user, target_user: target_user)
+          check_failed!(:target_not_registered, user: current_user.mention, target_user: target_user.mention)
         end
       end
     end
