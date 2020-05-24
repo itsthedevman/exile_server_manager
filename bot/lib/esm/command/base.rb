@@ -218,38 +218,51 @@ module ESM
         return @target_user if defined?(@target_user) && @target_user.present?
         return if @arguments.target.nil?
 
+        # Store for later
         target = @arguments.target
 
-        # Attempt to parse first
+        # Attempt to parse first. Target could be steam_uid, discord id, or mention
         user = ESM::User.parse(target)
 
-        # Don't create a user from a steam UID
+        # No user was found. Don't create a user from a steam UID
         return if user.nil? && target.steam_uid?
 
-        # Target can only be a discord ID or tag at this point.
+        # Past this point:
+        #   target is a steam_uid WITH a db user -> Continue
+        #   target is a steam_uid WITHOUT a db user. -> Exit early. Don't create
+        #   target is a discord ID or discord mention WITH a db user -> Continue
+        #   target is a discord ID or discord mention WITHOUT a db user -> Continue, we'll create a user
+
         # Remove the tag bits if applicable
         target.gsub!(/[<@!&>]/, "") if ESM::Regex::DISCORD_TAG_ONLY.match(target)
 
-        # Get the discord user from the ID
-        discord_user = ESM.bot.user(target)
+        # Get the discord user from the ID or the previous db entry
+        discord_user = user.nil? ? ESM.bot.user(target) : user.discord_user
 
         # Nothing we can do if we don't have a discord user
         return if discord_user.nil?
 
         # Create the user if its nil
         user = ESM::User.new(discord_id: target) if user.nil?
-
-        # Keep these in sync
-        user.update(
-          discord_username: discord_user.name,
-          discord_discriminator: discord_user.discriminator
-        )
+        user.update(discord_username: discord_user.name, discord_discriminator: discord_user.discriminator)
 
         # Save some cycles
         discord_user.instance_variable_set("@esm_user", user)
 
         # Return back the modified discord user
         @target_user = discord_user
+      end
+
+      # Sometimes we're given a steamUID that may not be linked to a discord user
+      # But, the command can work without the registered part.
+      #
+      # @return [String, nil] The steam uid from given argument or the steam uid registered to the target_user (which may be nil)
+      def target_uid
+        return if @arguments.target.nil?
+
+        @target_uid ||= lambda do
+          @arguments.target.steam_uid? ? @arguments.target : target_user&.steam_uid
+        end.call
       end
 
       # @returns [Boolean] If the current user is the target user.

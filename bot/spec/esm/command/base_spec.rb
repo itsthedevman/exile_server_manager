@@ -91,6 +91,8 @@ describe ESM::Command::Base do
   end
 
   describe "#current_user" do
+    let!(:secondary_user) { create(:secondary_user) }
+
     before :each do
       wait_for { wsc.connected? }.to be(true)
     end
@@ -107,7 +109,7 @@ describe ESM::Command::Base do
       command_statement = command.statement(
         community_id: community.community_id,
         server_id: server.server_id,
-        target: user.discord_id,
+        target: secondary_user.discord_id,
         _integer: "1",
         _preserve: "PRESERVE",
         _display_as: "display_as"
@@ -118,7 +120,27 @@ describe ESM::Command::Base do
       expect(command.current_user.id).to eql(event.user.id)
     end
 
-    it "should create"
+    it "should create" do
+      discord_id = user.discord_id
+
+      # Remove the user, this should recreate
+      user.delete
+
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: secondary_user.discord_id,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
+      new_current_user = ESM::User.find_by_discord_id(discord_id)
+      expect(new_current_user).not_to be(nil)
+      expect(command.current_user.id.to_s).to eql(new_current_user.discord_id)
+    end
   end
 
   describe "#current_community" do
@@ -238,6 +260,8 @@ describe ESM::Command::Base do
   end
 
   describe "#target_user" do
+    let!(:secondary_user) { create(:secondary_user) }
+
     before :each do
       wait_for { wsc.connected? }.to be(true)
     end
@@ -254,7 +278,7 @@ describe ESM::Command::Base do
       command_statement = command.statement(
         community_id: community.community_id,
         server_id: server.server_id,
-        target: user.discord_id,
+        target: secondary_user.discord_id,
         _integer: "1",
         _preserve: "PRESERVE",
         _display_as: "display_as"
@@ -262,7 +286,7 @@ describe ESM::Command::Base do
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
       expect(command.target_user).not_to be_nil
-      expect(command.target_user.id.to_s).to eql(user.discord_id)
+      expect(command.target_user.id.to_s).to eql(secondary_user.discord_id)
     end
 
     it "should be invalid" do
@@ -278,7 +302,118 @@ describe ESM::Command::Base do
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end
 
-    it "should create"
+    it "should create" do
+      discord_id = secondary_user.discord_id
+
+      # Remove the user, this should recreate
+      secondary_user.delete
+
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: discord_id,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+
+      expect { command.execute(event) }.not_to raise_error
+      new_target_user = ESM::User.find_by_discord_id(discord_id)
+      expect(new_target_user).not_to be(nil)
+      expect(command.target_user.id.to_s).to eql(new_target_user.discord_id)
+    end
+  end
+
+  describe "#target_uid" do
+    let!(:secondary_user) { create(:secondary_user) }
+
+    before :each do
+      user.update(steam_uid: ESM::User::Bryan::STEAM_UID)
+      secondary_user.update(steam_uid: ESM::User::BryanV2::STEAM_UID)
+      wait_for { wsc.connected? }.to be(true)
+    end
+
+    after :each do
+      wsc.disconnect!
+    end
+
+    it "from Steam UID" do
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: secondary_user.steam_uid,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(command.target_uid).to eql(secondary_user.steam_uid)
+    end
+
+    it "from mention" do
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: secondary_user.mention,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(command.target_uid).to eql(secondary_user.steam_uid)
+    end
+
+    it "from discord ID" do
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: secondary_user.discord_id,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(command.target_uid).to eql(secondary_user.steam_uid)
+    end
+
+    it "from unregistered" do
+      secondary_user.update(steam_uid: nil)
+
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: secondary_user.mention,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(command.target_uid).to eql(nil)
+    end
+
+    it "from gibberish" do
+      command_statement = command.statement(
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: "000000000000000000",
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_as"
+      )
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
+
+      expect(command.target_uid).to eql(nil)
+    end
   end
 
   describe "#registration_required?" do
