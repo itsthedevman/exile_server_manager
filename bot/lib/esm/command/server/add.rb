@@ -18,6 +18,9 @@ module ESM
         argument :target
 
         def discord
+          # Checks for a registered target user
+          @checks.registered_target_user!
+
           # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
           return request_accepted if same_user?
 
