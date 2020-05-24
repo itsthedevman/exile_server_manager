@@ -18,7 +18,8 @@ class WebsocketClient
       add: { send_ignore_message: true, delay: 0..3 },
       allterritories: { send_ignore_message: true, delay: 0..3 },
       exec: { send_ignore_message: true, delay: 0..3 },
-      promote: { send_ignore_message: true, delay: 0..3 }
+      promote: { send_ignore_message: true, delay: 0..3 },
+      remove: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -156,6 +157,10 @@ class WebsocketClient
     end
 
     def response_promote
+      send_response
+    end
+
+    def response_remove
       send_response
     end
   end
