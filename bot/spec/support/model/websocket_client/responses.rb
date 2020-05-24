@@ -17,7 +17,8 @@ class WebsocketClient
       setterritoryid: { delay: 0..1 },
       add: { send_ignore_message: true, delay: 0..3 },
       allterritories: { send_ignore_message: true, delay: 0..3 },
-      exec: { send_ignore_message: true, delay: 0..3 }
+      exec: { send_ignore_message: true, delay: 0..3 },
+      promote: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -152,6 +153,10 @@ class WebsocketClient
         end
 
       send_response(parameters: [{ message: message }])
+    end
+
+    def response_promote
+      send_response
     end
   end
 end

@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class String
+  def steam_uid?
+    ESM::Regex::STEAM_UID_ONLY.match(self)
+  end
+
   def to_ostruct
     JSON.parse(self, object_class: OpenStruct)
   end
