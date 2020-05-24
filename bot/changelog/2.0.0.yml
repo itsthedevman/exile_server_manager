@@ -1,9 +1,9 @@
 header: |-
-  Over the last year, I've been rewriting ESM bot in its entirety with its users in mind. I've added support for translations, given more control to community admins, vastly improved the help documentation, and so much more.
+  Over the last year, I've been rewriting ESM bot in its entirety with focus on useability. I've added support for translations, given more control to community admins, vastly improved the help documentation, and so much more.
 
   Along with the changes to the bot, I've made a couple big changes to the core of ESM itself.
-  **-** From now on, ESM premium is no longer available. Every server, every community, and every player who uses ESM now has access to the previously locked commands and features. Have fun!
-  **-** I would consider the next change to be an un-expected one. Exile Server Manager has gone open-source! You can view the source code on Github via https://www.github.com/esm_bot. One request, please read the README and CONTRIBUTION documents before creating a Pull Request.
+  **-** From now on, ESM premium is no longer available. Every server, every community, and every player who uses ESM now has access to the previously locked commands and features. Knock yourselves out and have fun!
+  **-** I would consider the next change to be an un-expected one. Exile Server Manager has gone open-source! You can now view the source code, in its entirety (minus DLL/SQF, more on this later) on Github via https://www.github.com/esm_bot. One request, please read the README and CONTRIBUTION documents before creating issues or pull requests
 changelog:
   bot: |-
     **__Core Systems__**
@@ -22,57 +22,35 @@ changelog:
     **__Commands__**
     **!accept** :new:
       - Part of the new requests system, this command will accept a pending request by its UUID
-    **!decline** :new:
-      - Part of the new requests system, this command will decline a pending request by its UUID
-    **!whois**
-      - Added limited information about Community and VAC bans
-    **!help** :new:
-      - Replaces `!commands`. This command actually provides useful information! Shock!
-      - Added new help documentation, detailed information about commands and how to use them
-    **!mode**
-      - `!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`
-    **!me**
-      - Improved formatting of poptabs and numbers
-      - Categorized player information for better display
-    **!server**
-      - Updated embed design
-      - Added "Next restart in" and "Game Version" information
-    **!servers**
-      - Updated embed design
-      - When a server is listed as offline, the time since last connection is now displayed
-      - Added \"Next restart in\" information
-    **!territories**
-      - Updated embed design
-      - Added warning when there is 4 days or less before payment is due
-    **!gamble**
-      - The `info` argument has been renamed to `stats`
-      - Added server wide gambling stats
     **!add**
       - [Territory admins only] Requests are no longer sent when adding yourself to a territory
-    **!set_id** :new:
-      - `!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`.
-      - This command also has aliases, which can be viewed in the help documentation.
-    **!server_territories** :new:
-      - `!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`.
-      - This command also has aliases, which can be viewed in the help documentation.
-      - Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back
-      - Territories are now properly formatted in an ASCII table for ease of readability
     **!birb**
-      - Added waiting message when fetching pictures
-    **!doggo**
-      - Added waiting message when fetching pictures
-    **!snek**
-      - Added waiting message when fetching pictures
-    **!meow**
       - Added waiting message when fetching pictures
     **!broadcast**
       - You will now be shown a preview and prompted to confirm before the message is sent.
       - Players will now only receive the message once if they are on multiple servers.
       - Players will now receive broadcast messages if they have ran a command for the server at least once. Players can still opt out via the`!preferences` command
+    **!decline** :new:
+      - Part of the new requests system, this command will decline a pending request by its UUID
+    **!doggo**
+      - Added waiting message when fetching pictures
+    **!gamble**
+      - The `info` argument has been renamed to `stats`
+      - Added server wide gambling stats
+    **!help** :new:
+      - Replaces `!commands`. This command actually provides useful information! Shock!
+      - Added new help documentation, detailed information about commands and how to use them
+    **!me**
+      - Improved formatting of poptabs and numbers
+      - Categorized player information for better display
+    **!meow**
+      - Added waiting message when fetching pictures
+    **!mode**
+      - `!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`
     **!preferences**
       - `!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`.
       - This command also has aliases, which can be viewed in the help documentation.
-      - Switched arguments `type` and `state`. Before: `!notif server_id type state`. Now: `!preferences server_id state type`
+      - Switched arguments `type` and `state`. Before: `!notif server_id type state`. Now: `!preferences server_id state type`.
     **!reset_cooldown** :new:
       - `!resetcooldown` has been deprecated in favor of `!reset_cooldown`. You can read more information by using `!help reset_cooldown`.
       - Admins can now either:
@@ -80,6 +58,28 @@ changelog:
           Reset a single command cooldown on a user for every server in their community.
           Or, reset a single command cooldown on a user for a single server in their community.
       - Added confirmation message before resetting
+    **!snek**
+      - Added waiting message when fetching pictures
+    **!server**
+      - Updated embed design
+      - Added "Next restart in" and "Game Version" information
+    **!servers**
+      - Updated embed design
+      - When a server is listed as offline, the time since last connection is now displayed
+      - Added \"Next restart in\" information
+    **!server_territories** :new:
+      - `!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`.
+      - This command also has aliases, which can be viewed in the help documentation.
+      - Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back
+      - Territories are now properly formatted in an ASCII table for ease of readability
+    **!set_id** :new:
+      - `!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`.
+      - This command also has aliases, which can be viewed in the help documentation.
+    **!territories**
+      - Updated embed design
+      - Added warning when there is 4 days or less before payment is due
+    **!whois**
+      - Added limited information about Community and VAC bans
   website: |-
     **__Core Systems__**
       - Removed premium throughout the site. Previously locked content for premium is now available to every community
