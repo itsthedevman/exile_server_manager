@@ -117,6 +117,8 @@ describe ESM::Command::Base do
       expect(command.current_user).not_to be_nil
       expect(command.current_user.id).to eql(event.user.id)
     end
+
+    it "should create"
   end
 
   describe "#current_community" do
@@ -275,6 +277,8 @@ describe ESM::Command::Base do
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end
+
+    it "should create"
   end
 
   describe "#registration_required?" do

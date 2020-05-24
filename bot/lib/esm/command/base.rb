@@ -165,15 +165,18 @@ module ESM
         return @current_user if defined?(@current_user) && @current_user.present?
         return nil if @event.user.nil?
 
-        user =
-          ESM::User.where(discord_id: @event.user.id).first_or_create do |new_user|
-            new_user.discord_id = @event.user.id
-            new_user.discord_username = @event.user.name
-            new_user.discord_discriminator = @event.user.discriminator
-          end
+        user = ESM::User.where(discord_id: @event.user.id).first_or_initialize
+        user.update(
+          discord_username: @event.user.name,
+          discord_discriminator: @event.user.discriminator
+        )
+
+        # Save some cycles
+        discord_user = user.discord_user
+        discord_user.instance_variable_set("@esm_user", user)
 
         # Return back the modified discord user
-        @current_user = user.discord_user
+        @current_user = discord_user
       end
 
       # @returns [ESM::Community, nil] The community the command was executed from. Nil if sent from Direct Message
@@ -212,7 +215,41 @@ module ESM
 
       # @returns [ESM::User, nil] The user that the command was executed against
       def target_user
-        @target_user ||= ESM::User.parse(@arguments.target)&.discord_user
+        return @target_user if defined?(@target_user) && @target_user.present?
+        return if @arguments.target.nil?
+
+        target = @arguments.target
+
+        # Attempt to parse first
+        user = ESM::User.parse(target)
+
+        # Don't create a user from a steam UID
+        return if user.nil? && target.steam_uid?
+
+        # Target can only be a discord ID or tag at this point.
+        # Remove the tag bits if applicable
+        target.gsub!(/[<@!&>]/, "") if ESM::Regex::DISCORD_TAG_ONLY.match(target)
+
+        # Get the discord user from the ID
+        discord_user = ESM.bot.user(target)
+
+        # Nothing we can do if we don't have a discord user
+        return if discord_user.nil?
+
+        # Create the user if its nil
+        user = ESM::User.new(discord_id: target) if user.nil?
+
+        # Keep these in sync
+        user.update(
+          discord_username: discord_user.name,
+          discord_discriminator: discord_user.discriminator
+        )
+
+        # Save some cycles
+        discord_user.instance_variable_set("@esm_user", user)
+
+        # Return back the modified discord user
+        @target_user = discord_user
       end
 
       # @returns [Boolean] If the current user is the target user.
