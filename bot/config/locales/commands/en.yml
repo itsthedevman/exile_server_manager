@@ -292,10 +292,10 @@ en:
       description: "Executes the given codes on a server or a target. If the code is executed on the server and has a return value, the value will be returned."
       example: |-
         **`%{prefix}sqf esm_malden isServer`**
-        Attempts to execute `isServer` on `esm_malden` and returns `true` back.
+        Executes `isServer` on `esm_malden` and returns `true` back.
 
         **`%{prefix}sqf esm_tanoa @Bryan player setDamage 1;`**
-        Attempts to execute `player setDamage 1` on @Bryan's player in game. If the player is not in game, an error will be returned.
+        Executes `player setDamage 1` on @Bryan's player in game. If the player is not in game, an error will be returned.
       arguments:
         execution_target: "The target to execute the codes on. This can be any valid target (Discord ID, Steam UID, @mention) or leave blank to execute on the server."
         code_to_execute: "The SQF code to execute. The given code can be all one line or span multi-lines.\n**Note:** This code needs to be valid or the server will not return a response."
@@ -305,9 +305,22 @@ en:
         invalid_target: "I'm sorry %{user}, `%{server_id}` has informed me that `%{target_uid}` is not online or has not joined the server.\nEither way, your code was not executed."
         target_success: "Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`"
     reset_cooldown:
-      description: "Resets"
+      description: |-
+        Resets a cooldown for a player.
+        Admins can now either:
+          Reset all cooldowns for a user for every server in their community.
+          Reset a single command cooldown on a user for every server in their community.
+          Or, reset a single command cooldown on a user for a single server in their community.
+        See examples for more details
       example: |-
-        **`%{prefix}reset_cooldown`**
+        **`%{prefix}reset_cooldown @Bryan`**
+        Resets every command's cooldown for @Bryan on your community.
+
+        **`%{prefix}reset_cooldown @Bryan reward`**
+        Resets the `reward` cooldown for @Bryan on your community.
+
+        **`%{prefix}reset_cooldown @Bryan reward esm_malden`**
+        Resets the `reward` cooldown for @Bryan on `esm_malden` only
       confirmation_embed:
         title: "Reset Confirmation"
         description:
@@ -324,3 +337,8 @@ en:
           all: " cooldowns for your community."
           with_command_name: " `%{command_name}` cooldown for your community (including servers)."
           with_name_and_server: " `%{command_name}` cooldowns for `%{server_id}`."
+    changelog:
+      description: "Displays the changelog for the current version of ESM"
+      example: |-
+        **`%{prefix}changelog`**
+        Displays the current changelog

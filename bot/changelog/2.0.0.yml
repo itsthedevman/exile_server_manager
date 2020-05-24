@@ -1,86 +1,93 @@
-changes:
-  bot:
-    core:
-      - "Added support for internationalization. If you would like to provide translations, please check out the documentation here: LINK"
-      - "Improved the welcome experience when inviting ESM to a new server"
-      - "Improved message sent to user when they don't provide the correct arguments"
-      - "Improved error messages sent back to users"
-      - "If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user"
-      - "[Requested] Communities can now enable and set a whitelist on most commands."
-      - "[Requested] Communities now have full control of permissions on most commands"
-      - "Added new request system. Requests can be accepted/declined by clicking a link or using a simple command."
-      - "Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration."
-      - "Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)"
-      - "Messages sent from the bot will now attempt to resend if they experience an issue"
-    commands:
-      accept:
-        - "**New command**"
-        - "Part of the new requests system, this command will accept a pending request by its UUID"
-      decline:
-        - "**New command**"
-        - "Part of the new requests system, this command will decline a pending request by its UUID"
-      whois:
-        - "Added limited information about Community and VAC bans"
-      help:
-        - "**New Command**"
-        - "Replaces `!commands`, this command actually provides useful information! Shock!"
-        - "Added new help documentation, detailed information about commands and how to use them"
-      mode:
-        - "`!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`"
-      me:
-        - "Improved formatting of poptabs and numbers"
-        - "Categorized player information for better display"
-      server:
-        - "Updated embed design"
-        - "Added \"Next restart in\" and \"Game Version\" information"
-      servers:
-        - "Updated embed design"
-        - "When a server is listed as offline, the time since last connection is now displayed"
-        - "Added \"Next restart in\" information"
-      territories:
-        - "Updated embed design"
-        - "Added warning when there is 4 days or less before payment is due"
-      gamble:
-        - "The `info` argument has been renamed to `stats`"
-        - "Added server wide gambling stats"
-      add:
-        - "[Territory admins only] Requests are no longer sent when adding yourself to a territory"
-      set_id:
-        - "`!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`."
-        - "This command also has aliases, which can be viewed in the help documentation."
-      server_territories:
-        - "`!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`."
-        - "This command also has aliases, which can be viewed in the help documentation."
-        - "Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back"
-        - "Territories are now properly formatted in an ASCII table for ease of readability"
-      birb:
-        - "Added waiting message when fetching pictures"
-      doggo:
-        - "Added waiting message when fetching pictures"
-      snek:
-        - "Added waiting message when fetching pictures"
-      meow:
-        - "Added waiting message when fetching pictures"
-      broadcast:
-        - "You will now be shown a preview and prompted to confirm before the message is sent."
-        - "Players will now only receive the message once if they are on multiple servers."
-        - "Players will now receive broadcast messages if they have ran a command for the server at least once. Players can still opt out via the `!preferences` command"
-      preferences:
-        - "`!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`."
-        - "This command also has aliases, which can be viewed in the help documentation."
-        - "Switched arguments `type` and `state`. Before: `!notif server_id type state`. Now: `!preferences server_id state type`"
-      reset_cooldown:
-        - "`!resetcooldown` has been deprecated in favor of `!reset_cooldown`. You can read more information by using `!help reset_cooldown`."
-        - "Admins can now either:\nReset all cooldowns for a user for every server in their community\nReset a single command cooldown on a user for every server in their community\nOr, reset a single command cooldown on a user for a single server in their community"
-        - "Added confirmation message before resetting"
-  website:
-    core:
-      - "Removed premium throughout the site. Previously locked content for premium is now available to every community"
-    wiki:
-      - "Removed outdated guides and pages"
-    admin_dashboard:
-      - "Renamed server portal to Admin Dashboard"
-      - "Improved logging channel selector by adding the channel categories as separators"
-      - "Changed format of community selector. The format is now `[Community ID] Discord Server Name`"
-      - "When a notification's color is set to random, the color on the preview will also be random"
-      - "Improved the overall user experience with register/modify server"
+header: |-
+  Over the last year, I've been rewriting ESM bot in its entirety with its users in mind. I've added support for translations, given more control to community admins, vastly improved the help documentation, and so much more.
+
+  Along with the changes to the bot, I've made a couple big changes to the core of ESM itself.
+  **-** From now on, ESM premium is no longer available. Every server, every community, and every player who uses ESM now has access to the previously locked commands and features. Have fun!
+  **-** I would consider the next change to be an un-expected one. Exile Server Manager has gone open-source! You can view the source code on Github via https://www.github.com/esm_bot. One request, please read the README and CONTRIBUTION documents before creating a Pull Request.
+changelog:
+  bot: |-
+    **__Core Systems__**
+      - Added support for internationalization. If you would like to provide translations, please check out the Github (https://www.github.com/esm_bot) for more details.
+      - Improved the welcome experience when inviting ESM to a new server
+      - Improved message sent to user when they don't provide the correct arguments
+      - Improved error messages sent back to users
+      - If a server is taking too long (default 30 seconds), commands will now time out and provide a response to the user
+      - [Requested] Communities can now enable and set a whitelist on most commands.
+      - [Requested] Communities now have full control of permissions on most commands
+      - Added new request system. Requests can be accepted/declined by clicking a link or using a simple command.
+      - Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration.
+      - Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)
+      - Messages sent from the bot will now attempt to resend if they experience an issue
+
+    **__Commands__**
+    **!accept** :new:
+      - Part of the new requests system, this command will accept a pending request by its UUID
+    **!decline** :new:
+      - Part of the new requests system, this command will decline a pending request by its UUID
+    **!whois**
+      - Added limited information about Community and VAC bans
+    **!help** :new:
+      - Replaces `!commands`. This command actually provides useful information! Shock!
+      - Added new help documentation, detailed information about commands and how to use them
+    **!mode**
+      - `!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`
+    **!me**
+      - Improved formatting of poptabs and numbers
+      - Categorized player information for better display
+    **!server**
+      - Updated embed design
+      - Added "Next restart in" and "Game Version" information
+    **!servers**
+      - Updated embed design
+      - When a server is listed as offline, the time since last connection is now displayed
+      - Added \"Next restart in\" information
+    **!territories**
+      - Updated embed design
+      - Added warning when there is 4 days or less before payment is due
+    **!gamble**
+      - The `info` argument has been renamed to `stats`
+      - Added server wide gambling stats
+    **!add**
+      - [Territory admins only] Requests are no longer sent when adding yourself to a territory
+    **!set_id** :new:
+      - `!setterritoryid` has been deprecated in favor of `!set_id`. You can read more information by using `!help set_id`.
+      - This command also has aliases, which can be viewed in the help documentation.
+    **!server_territories** :new:
+      - `!allterritories` has been deprecated in favor of `!server_territories`. You can read more information by using `!help server_territories`.
+      - This command also has aliases, which can be viewed in the help documentation.
+      - Added new optional argument `<?order_by>`. This controls how the territories are sorted when being displayed back
+      - Territories are now properly formatted in an ASCII table for ease of readability
+    **!birb**
+      - Added waiting message when fetching pictures
+    **!doggo**
+      - Added waiting message when fetching pictures
+    **!snek**
+      - Added waiting message when fetching pictures
+    **!meow**
+      - Added waiting message when fetching pictures
+    **!broadcast**
+      - You will now be shown a preview and prompted to confirm before the message is sent.
+      - Players will now only receive the message once if they are on multiple servers.
+      - Players will now receive broadcast messages if they have ran a command for the server at least once. Players can still opt out via the`!preferences` command
+    **!preferences**
+      - `!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`.
+      - This command also has aliases, which can be viewed in the help documentation.
+      - Switched arguments `type` and `state`. Before: `!notif server_id type state`. Now: `!preferences server_id state type`
+    **!reset_cooldown** :new:
+      - `!resetcooldown` has been deprecated in favor of `!reset_cooldown`. You can read more information by using `!help reset_cooldown`.
+      - Admins can now either:
+          Reset all cooldowns for a user for every server in their community.
+          Reset a single command cooldown on a user for every server in their community.
+          Or, reset a single command cooldown on a user for a single server in their community.
+      - Added confirmation message before resetting
+  website: |-
+    **__Core Systems__**
+      - Removed premium throughout the site. Previously locked content for premium is now available to every community
+    **__Wiki__**
+      - Removed outdated guides and pages
+    **__Admin Dashboard__**
+      - Renamed server portal to Admin Dashboard
+      - Improved logging channel selector by adding the channel categories as separators
+      - Changed format of community selector. The format is now `[Community ID] Discord Server Name`
+      - When a notification's color is set to random, the color on the preview will also be random
+      - Improved the overall user experience with register/modify server
