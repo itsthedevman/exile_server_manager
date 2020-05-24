@@ -20,7 +20,8 @@ class WebsocketClient
       exec: { send_ignore_message: true, delay: 0..3 },
       promote: { send_ignore_message: true, delay: 0..3 },
       remove: { send_ignore_message: true, delay: 0..3 },
-      upgrade: { send_ignore_message: true, delay: 0..3 }
+      upgrade: { send_ignore_message: true, delay: 0..3 },
+      restore: { delay: 0..1 }
     }.freeze
 
     def response_server_success_command
@@ -174,6 +175,14 @@ class WebsocketClient
           level: territory[:level],
           range: territory[:radius],
           locker: Faker::Number.between(from: 0, to: 10_000_000)
+        }]
+      )
+    end
+
+    def response_restore
+      send_response(
+        parameters: [{
+          success: @flags.SUCCESS
         }]
       )
     end
