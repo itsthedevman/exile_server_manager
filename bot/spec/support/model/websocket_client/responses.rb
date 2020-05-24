@@ -19,7 +19,8 @@ class WebsocketClient
       allterritories: { send_ignore_message: true, delay: 0..3 },
       exec: { send_ignore_message: true, delay: 0..3 },
       promote: { send_ignore_message: true, delay: 0..3 },
-      remove: { send_ignore_message: true, delay: 0..3 }
+      remove: { send_ignore_message: true, delay: 0..3 },
+      upgrade: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -162,6 +163,19 @@ class WebsocketClient
 
     def response_remove
       send_response
+    end
+
+    def response_upgrade
+      territory = TerritoryGenerator.generate
+
+      send_response(
+        parameters: [{
+          cost: Faker::Number.between(from: 0, to: 10_000_000),
+          level: territory[:level],
+          range: territory[:radius],
+          locker: Faker::Number.between(from: 0, to: 10_000_000)
+        }]
+      )
     end
   end
 end
