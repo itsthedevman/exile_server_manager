@@ -88,7 +88,7 @@ module ESM
           when "INFO"
             header.colorize(:light_blue)
           when "DEBUG"
-            header.colorize(:cyan)
+            header.colorize(:magenta)
           when "WARN"
             header.colorize(:yellow)
           when "ERROR", "FATAL"
