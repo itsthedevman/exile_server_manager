@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class String
+  # NumberHelper contains instance methods, but you can't initialize a module. Create an anonymous object to store the methods
+  NUMBER_HELPER = Object.new.extend(ActionView::Helpers::NumberHelper).freeze
+
   def steam_uid?
     ESM::Regex::STEAM_UID_ONLY.match(self)
   end
@@ -14,9 +17,10 @@ class String
   end
 
   def to_poptab
-    # NumberHelper contains instance methods, but you can't initialize a module. Create an anonymous object to store the methods
-    helper = Object.new.extend(ActionView::Helpers::NumberHelper)
-    value = helper.number_to_currency(self, unit: I18n.t(:poptabs), format: "%n %u", precision: 0)
+    # Convert from Scientific notation.
+    # Arma automatically converts to scientific notation if the value is greater than 2mil
+    value = "%f" % self
+    value = NUMBER_HELPER.number_to_currency(value, unit: I18n.t(:poptabs), format: "%n %u", precision: 0)
 
     # 1 will convert to "1 poptabs", this makes it "1 poptab"
     if self == "1"
@@ -27,8 +31,7 @@ class String
   end
 
   def to_readable
-    helper = Object.new.extend(ActionView::Helpers::NumberHelper)
-    helper.number_with_delimiter(self)
+    NUMBER_HELPER.number_with_delimiter(self)
   end
 
   # Extending active support classify to allow leaving the s on the end

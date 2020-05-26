@@ -150,7 +150,7 @@ en:
         **`%{prefix}pay esm_malden fort_kickass`**
         Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
       embed:
-        description: "%{user}, `%{server_id}` has successfully received the payment of **%{cost} poptabs** for `%{territory_id}`.\nYou have **%{locker_amount} poptabs** left in your locker."
+        description: "%{user}, `%{server_id}` has successfully received the payment of **%{cost}** for `%{territory_id}`.\nYou have **%{locker_amount}** left in your locker."
     birb:
       description: "Who doesn't like some high quality birbs?"
       example: |-
@@ -206,7 +206,6 @@ en:
         longest_losing_streak: "Longest Losing Streak"
         longest_current_streak: "Longest Current Streak"
         user_with: "%{user} with %{value}"
-        user_with_poptabs: "%{user} with %{value} poptabs"
     set_id:
       description: "**Territory Owner Only.** Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
       example: |-
@@ -351,6 +350,15 @@ en:
         **`%{prefix}promote esm_malden fort_a 76561198037177305`**
         Promotes `76561198037177305` to moderator in territory `fort_a` on `esm_malden`
       success_message: "Hey %{user}, `%{target_uid}` has been promoted to moderator in territory `%{territory_id}` on `%{server}`"
+    demote:
+      description: "**Territory Owner Only.**\nDemotes a player from moderator to builder in a territory."
+      example: |-
+        **`%{prefix}demote esm_malden awesome @Bryan`**
+        Demote @Bryan to builder in territory `awesome` on `esm_malden`
+
+        **`%{prefix}promote esm_malden fort_a 76561198037177305`**
+        Demote `76561198037177305` to builder in territory `fort_a` on `esm_malden`
+      success_message: "Hey %{user}, `%{target_uid}` has been demoted to builder in territory `%{territory_id}` on `%{server}`"
     remove:
       description: "**Territory Owner or Moderator Only.**\nRemoves a player from a territory."
       example: |-

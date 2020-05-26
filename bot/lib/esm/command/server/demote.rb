@@ -4,7 +4,7 @@
 module ESM
   module Command
     module Server
-      class Promote < ESM::Command::Base
+      class Demote < ESM::Command::Base
         type :player
         requires :registration
 
@@ -23,7 +23,7 @@ module ESM
           @checks.registered_target_user!
 
           deliver!(
-            function_name: "promotePlayer",
+            function_name: "demotePlayer",
             territory_id: @arguments.territory_id,
             target_uid: target_uid,
             uid: current_user.steam_uid
@@ -32,7 +32,7 @@ module ESM
 
         def server
           message = I18n.t(
-            "commands.promote.success_message",
+            "commands.demote.success_message",
             user: current_user.mention,
             target_uid: target_uid,
             territory_id: @arguments.territory_id,

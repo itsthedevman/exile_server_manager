@@ -5,8 +5,6 @@ module ESM
     module Server
       class Territories < ESM::Command::Base
         type :player
-
-        limit_to :dm
         requires :registration
 
         define :enabled, modifiable: true, default: true

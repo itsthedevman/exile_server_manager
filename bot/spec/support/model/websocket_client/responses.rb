@@ -19,6 +19,7 @@ class WebsocketClient
       allterritories: { send_ignore_message: true, delay: 0..3 },
       exec: { send_ignore_message: true, delay: 0..3 },
       promote: { send_ignore_message: true, delay: 0..3 },
+      demote: { send_ignore_message: true, delay: 0..3 },
       remove: { send_ignore_message: true, delay: 0..3 },
       upgrade: { send_ignore_message: true, delay: 0..3 },
       restore: { delay: 0..1 }
@@ -159,6 +160,10 @@ class WebsocketClient
     end
 
     def response_promote
+      send_response
+    end
+
+    def response_demote
       send_response
     end
 

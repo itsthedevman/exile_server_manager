@@ -97,7 +97,7 @@ module ESM
           user_name = most_poptabs_won_stat.user.discord_user.username
           embed.add_field(
             name: I18n.t("commands.gamble.stats.most_poptabs_won"),
-            value: I18n.t("commands.gamble.stats.user_with_poptabs", user: user_name, value: most_poptabs_won_stat.total_poptabs_won),
+            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: most_poptabs_won_stat.total_poptabs_won.to_poptab),
             inline: true
           )
 
@@ -105,7 +105,7 @@ module ESM
           user_name = most_poptabs_lost_stat.user.discord_user.username
           embed.add_field(
             name: I18n.t("commands.gamble.stats.most_poptabs_lost"),
-            value: I18n.t("commands.gamble.stats.user_with_poptabs", user: user_name, value: most_poptabs_lost_stat.total_poptabs_loss),
+            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: most_poptabs_lost_stat.total_poptabs_loss.to_poptab),
             inline: true
           )
         end

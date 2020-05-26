@@ -5,8 +5,6 @@ module ESM
     module Server
       class Pay < ESM::Command::Base
         type :player
-
-        limit_to :dm
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -30,8 +28,8 @@ module ESM
                 user: current_user.mention,
                 server_id: target_server.server_id,
                 territory_id: @arguments.territory_id,
-                cost: @response.payment,
-                locker_amount: @response.locker
+                cost: @response.payment.to_poptab,
+                locker_amount: @response.locker.to_poptab
               )
 
               e.color = :green

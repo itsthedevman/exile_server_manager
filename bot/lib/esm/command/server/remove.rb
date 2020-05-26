@@ -25,8 +25,8 @@ module ESM
           deliver!(
             function_name: "removePlayerFromTerritory",
             territory_id: @arguments.territory_id,
-            uid: current_user.steam_uid,
-            target_uid: target_uid
+            target_uid: target_uid,
+            uid: current_user.steam_uid
           )
         end
 
