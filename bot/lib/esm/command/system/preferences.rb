@@ -54,7 +54,9 @@ module ESM
           preference = ESM::UserNotificationPreference.where(user_id: current_user.esm_user.id, server_id: target_server.id).first_or_create
           preference.update(query)
 
-          ESM::Embed.build(:success, description: ":white_check_mark: Your preferences for `#{target_server.server_id}` have been updated")
+          reply(
+            ESM::Embed.build(:success, description: ":white_check_mark: Your preferences for `#{target_server.server_id}` have been updated")
+          )
         end
 
         def allowed?

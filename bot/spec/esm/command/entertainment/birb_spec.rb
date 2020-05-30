@@ -24,13 +24,13 @@ describe ESM::Command::Entertainment::Birb, category: "command" do
     let!(:user) { ESM::Test.user }
 
     it "should return" do
-      request = nil
       command_statement = command.statement
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      expect(request).to match(/\.jpg$|\.png$|\.gif$|\.jpeg$/i)
+      expect { command.execute(event) }.not_to raise_error
+      response = ESM::Test.messages.second.second
+      expect(response).not_to be_nil
+      expect(response).to match(/\.jpg$|\.png$|\.gif$|\.jpeg$/i)
     end
   end
 end

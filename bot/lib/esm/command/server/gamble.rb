@@ -22,7 +22,14 @@ module ESM
 
           @checks.connected_server!
           check_for_bad_amount!
-          deliver!(function_name: "gamble", uid: current_user.esm_user.steam_uid, amount: @arguments.amount, id: current_user.id, name: current_user.name)
+
+          deliver!(
+            function_name: "gamble",
+            uid: current_user.esm_user.steam_uid,
+            amount: @arguments.amount,
+            id: current_user.id,
+            name: current_user.name
+          )
         end
 
         def server

@@ -20,7 +20,7 @@ module ESM
           check_for_request!(request)
           request.respond(false)
 
-          ESM::Embed.build(:success, description: I18n.t("commands.decline.success_message"))
+          reply(ESM::Embed.build(:success, description: I18n.t("commands.decline.success_message")))
         end
 
         #########################

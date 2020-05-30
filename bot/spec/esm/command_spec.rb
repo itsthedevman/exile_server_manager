@@ -7,27 +7,24 @@ describe ESM::Command do
     expect(ESM.bot.commands).not_to be_blank
   end
 
-  it "should format result (String)" do
-    expect(ESM::Command.send(:send_result, "Foobar", event)).to eql("Foobar")
-  end
 
   it "should format result (ESM Error 1)" do
-    result = ESM::Command.send(:send_result, ESM::Exception::Error.new("Something bad happened!"), event)
+    result = ESM::Command.send(:send_error, ESM::Exception::Error.new("Something bad happened!"), event)
 
-    expect(result).to eql("Something bad happened!")
+    expect(result.first.message).to eql("Something bad happened!")
   end
 
   it "should format result (ESM Error 2)" do
-    result = ESM::Command.send(:send_result, ESM::Exception::DuplicateCommand.new("Something bad happened!"), event)
+    result = ESM::Command.send(:send_error, ESM::Exception::DuplicateCommand.new("Something bad happened!"), event)
 
-    expect(result).to eql("Something bad happened!")
+    expect(result.first.message).to eql("Something bad happened!")
   end
 
   it "should format result (System Exception)" do
     expectation = I18n.t("exceptions.system", message: "Something bad happened!")
-    result = ESM::Command.send(:send_result, ::Exception.new("Something bad happened!"), event)
+    result = ESM::Command.send(:send_error, ::Exception.new("Something bad happened!"), event)
 
-    expect(result).to eql(expectation)
+    expect(result.first.message).to eql(expectation)
   end
 
   it "should have cached the commands" do

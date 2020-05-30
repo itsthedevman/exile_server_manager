@@ -18,7 +18,7 @@ module ESM
           remove_waiting_message
 
           # Send the link
-          birb_link
+          reply(birb_link)
         end
 
         module ErrorMessage

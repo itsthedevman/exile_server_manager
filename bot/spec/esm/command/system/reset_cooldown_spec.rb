@@ -40,19 +40,19 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
     end
 
     it "!reset_cooldown <target>" do
-      response = nil
       command_statement = command.statement(target: second_user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       ESM::Test.response = "yes"
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       # Check success message
+      response = ESM::Test.messages.first.second
       expect(response).not_to be(nil)
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for your community/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eql(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for your community/i)
@@ -64,19 +64,19 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
     end
 
     it "!reset_cooldown <target> <command_name>" do
-      response = nil
       command_statement = command.statement(target: second_user.mention, command_name: "me")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       ESM::Test.response = "yes"
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       # Check success message
+      response = ESM::Test.messages.first.second
       expect(response).not_to be(nil)
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s `me` cooldown for your community (including servers)/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eql(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s `me` cooldown for your community (including servers)/i)
@@ -88,19 +88,19 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
     end
 
     it "!reset_cooldown <target> <command_name> <server_id>" do
-      response = nil
       command_statement = command.statement(target: second_user.mention, command_name: "me", server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       ESM::Test.response = "yes"
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       # Check success message
+      response = ESM::Test.messages.first.second
       expect(response).not_to be(nil)
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s `me` cooldown for `#{server.server_id}`/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eql(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s `me` cooldown for `#{server.server_id}`/i)
@@ -113,30 +113,28 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
     # This should not be possible
     it "!reset_cooldown <target> <server_id>" do
-      response = nil
       command_statement = command.statement(target: second_user.mention, server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { response = command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not one of my commands/i)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not one of my commands/i)
     end
 
     it "should raise error (Invalid Command)" do
-      response = nil
       command_statement = command.statement(target: second_user.mention, command_name: "NOUP")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { response = command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not one of my commands/i)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not one of my commands/i)
     end
 
     it "should decline" do
-      response = nil
       command_statement = command.statement(target: second_user.mention, command_name: "me", server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       ESM::Test.response = "no"
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       # Check success message
+      response = ESM::Test.messages.second.second
       expect(response).not_to be(nil)
       expect(response).to match(/i've cancelled your request/i)
     end

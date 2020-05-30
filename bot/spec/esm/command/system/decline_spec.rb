@@ -38,11 +38,12 @@ describe ESM::Command::System::Decline, category: "command" do
     end
 
     it "should run (Valid UUID)" do
-      embed = nil
       command_statement = command.statement(uuid: request.uuid_short)
       event = CommandEvent.create(command_statement, user: user_2, channel_type: :dm)
 
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
       expect(ESM::Request.all.size).to eql(0)
     end

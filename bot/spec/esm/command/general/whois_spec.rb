@@ -28,42 +28,42 @@ describe ESM::Command::General::Whois, category: "command" do
     let!(:user) { ESM::Test.user }
 
     it "should run (mention)" do
-      response = nil
-
       command_statement = command.statement(target: user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { response = command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
     end
 
     it "should run (steam_uid)" do
-      response = nil
-
       command_statement = command.statement(target: user.steam_uid)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
     end
 
     it "should run (discord id)" do
-      response = nil
-
       command_statement = command.statement(target: user.discord_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
     end
 
     it "should run (not registered)" do
-      response = nil
-
       user.update(steam_uid: "")
       command_statement = command.statement(target: user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
     end

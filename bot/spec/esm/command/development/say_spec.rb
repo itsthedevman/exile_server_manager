@@ -26,7 +26,10 @@ describe ESM::Command::Development::Say, category: "command" do
     it "should repeat back argument" do
       command_statement = command.statement(text: "Hello World")
       event = CommandEvent.create(command_statement, user: user)
-      expect(command.execute(event)).to eql("Hello World")
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
+      expect(response).to eql("Hello World")
     end
   end
 end

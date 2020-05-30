@@ -25,6 +25,18 @@ module ESM
           else
             disable_player_mode
           end
+
+          # Reply back
+          embed =
+            ESM::Embed.build do |e|
+              e.description = I18n.t(
+                "commands.mode.#{@arguments.mode == "player" ? "enabled" : "disabled"}",
+                community_name: target_community.name
+              )
+              e.color = :green
+            end
+
+          reply(embed)
         end
 
         #########################
@@ -59,23 +71,11 @@ module ESM
 
           # Enable Player Mode
           target_community.update!(player_mode_enabled: true)
-
-          # Reply back
-          ESM::Embed.build do |e|
-            e.description = I18n.t("commands.mode.enabled", community_name: target_community.name)
-            e.color = :green
-          end
         end
 
         def disable_player_mode
           # Disable player mode
           target_community.update!(player_mode_enabled: false)
-
-          # Reply back
-          ESM::Embed.build do |e|
-            e.description = I18n.t("commands.mode.disabled", community_name: target_community.name)
-            e.color = :green
-          end
         end
       end
     end

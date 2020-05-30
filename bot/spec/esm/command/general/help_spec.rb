@@ -25,13 +25,11 @@ describe ESM::Command::General::Help, category: "command" do
     let!(:user) { ESM::Test.user }
 
     it "should execute with default getting started" do
-      # So we can test the response
-      embed = nil
-
       command_statement = command.statement
       event = CommandEvent.create(command_statement, user: user)
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
+      embed = ESM::Test.messages.first.second
       expect(embed.title).to match(/my name is exile server manager/i)
       expect(embed.description).to eql(I18n.t("commands.help.getting_started.description"))
       expect(embed.fields.size).to eql(1)
@@ -40,30 +38,31 @@ describe ESM::Command::General::Help, category: "command" do
     end
 
     it "should return a valid embed (commands)" do
-      embed = nil
-
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil
     end
 
     it "should return a valid embed (command)" do
-      embed = nil
-
       command_statement = command.statement(category: "help")
       event = CommandEvent.create(command_statement, user: user)
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil
     end
 
     it "should not show admin commands if in player mode (commands)" do
       community.update(player_mode_enabled: true)
-      embed = nil
 
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect {command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil
 
       embed.fields.each do |field|
@@ -72,11 +71,11 @@ describe ESM::Command::General::Help, category: "command" do
     end
 
     it "should not show development commands" do
-      embed = nil
-
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil
 
       embed.fields.each do |field|

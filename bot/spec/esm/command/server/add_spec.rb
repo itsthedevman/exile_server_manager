@@ -53,7 +53,6 @@ describe ESM::Command::Server::Add, category: "command" do
     end
 
     it "should add (Different user)" do
-      embed = nil
       command_statement = command.statement(
         server_id: server.server_id,
         territory_id: Faker::Crypto.md5[0, 5],
@@ -61,14 +60,15 @@ describe ESM::Command::Server::Add, category: "command" do
       )
 
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
+      expect { command.execute(event) }.not_to raise_error
 
-      expect { embed = command.execute(event) }.not_to raise_error
+      embed = ESM::Test.messages.first.second
 
       # Checks for requestors message
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eql(2)
 
       # Process the request
       request = command.request

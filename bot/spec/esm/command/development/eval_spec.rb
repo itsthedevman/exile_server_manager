@@ -26,19 +26,28 @@ describe ESM::Command::Development::Eval, category: "command" do
     it "should return true" do
       command_statement = command.statement(code: "true")
       event = CommandEvent.create(command_statement, user: user)
-      expect(command.execute(event)).to eql("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
+      expect { command.execute(event) }.not_to raise_error
+      response = ESM::Test.messages.first.second
+
+      expect(response).to eql("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
     end
 
     it "should return 'test'" do
       command_statement = command.statement(code: "'test'")
       event = CommandEvent.create(command_statement, user: user)
-      expect(command.execute(event)).to eql("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\ntest\n```")
+      expect { command.execute(event) }.not_to raise_error
+      response = ESM::Test.messages.first.second
+
+      expect(response).to eql("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\ntest\n```")
     end
 
     it "should return 5" do
       command_statement = command.statement(code: "2 + 3")
       event = CommandEvent.create(command_statement, user: user)
-      expect(command.execute(event)).to eql("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
+      expect { command.execute(event) }.not_to raise_error
+      response = ESM::Test.messages.first.second
+
+      expect(response).to eql("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
     end
   end
 end

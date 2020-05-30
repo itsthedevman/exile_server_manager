@@ -37,7 +37,12 @@ module ESM
             )
           )
 
-          ESM::Embed.build(:success, description: I18n.t("commands.request.sent", uuid: request.uuid_short, user: target_user.distinct))
+          embed = ESM::Embed.build(
+            :success,
+            description: I18n.t("commands.request.sent", uuid: request.uuid_short, user: target_user.distinct)
+          )
+
+          reply(embed)
         end
 
         def server

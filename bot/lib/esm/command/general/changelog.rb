@@ -25,8 +25,6 @@ module ESM
 
           # Return the message
           Discordrb.split_message(message).each(&method(:reply))
-
-          nil
         end
       end
     end

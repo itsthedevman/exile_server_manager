@@ -24,16 +24,17 @@ describe ESM::Command::General::Id, category: "command" do
     let!(:user) { ESM::Test.user }
 
     it "should return" do
-      request = nil
       command_statement = command.statement
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      expect(request.description).to match(/community id is/i)
-      expect(request.fields.size).to eql(1)
-      expect(request.fields.first.name).to eql("Want to list all registered servers for this community?")
-      expect(request.fields.first.value).to match(/~servers/i)
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
+      expect(response).not_to be_nil
+      expect(response.description).to match(/community id is/i)
+      expect(response.fields.size).to eql(1)
+      expect(response.fields.first.name).to eql("Want to list all registered servers for this community?")
+      expect(response.fields.first.value).to match(/~servers/i)
     end
   end
 end

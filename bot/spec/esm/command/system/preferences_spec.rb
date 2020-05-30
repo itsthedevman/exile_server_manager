@@ -28,11 +28,12 @@ describe ESM::Command::System::Preferences, category: "command" do
     let(:preference) { ESM::UserNotificationPreference.where(server_id: server.id, user_id: user.id).first }
 
     it "should set permissions (Allow/All)" do
-      message = nil
       command_statement = command.statement(server_id: server.server_id, state: "allow")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
       expect { message = command.execute(event) }.not_to raise_error
+
+      message = ESM::Test.messages.first.second
       expect(message).not_to be_nil
       expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -42,11 +43,12 @@ describe ESM::Command::System::Preferences, category: "command" do
     end
 
     it "should set permissions (Allow/Single)" do
-      message = nil
       command_statement = command.statement(server_id: server.server_id, type: type, state: "allow")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { message = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      message = ESM::Test.messages.first.second
       expect(message).not_to be_nil
       expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -54,11 +56,12 @@ describe ESM::Command::System::Preferences, category: "command" do
     end
 
     it "should set permissions (Deny/All)" do
-      message = nil
       command_statement = command.statement(server_id: server.server_id, state: "deny")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { message = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      message = ESM::Test.messages.first.second
       expect(message).not_to be_nil
       expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -68,11 +71,12 @@ describe ESM::Command::System::Preferences, category: "command" do
     end
 
     it "should set permissions (Deny/Single)" do
-      message = nil
       command_statement = command.statement(server_id: server.server_id, type: type, state: "deny")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { message = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      message = ESM::Test.messages.first.second
       expect(message).not_to be_nil
       expect(message.description).to match(/your preferences for `.+` have been updated/i)
 

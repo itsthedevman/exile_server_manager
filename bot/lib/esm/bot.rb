@@ -115,7 +115,6 @@ module ESM
     def deliver(message, to:)
       return if message.blank?
 
-
       delivery_channel = determine_delivery_channel(to)
 
       raise ESM::Exception::ChannelNotFound.new(message, to) if delivery_channel.nil?

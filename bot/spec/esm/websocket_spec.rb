@@ -145,7 +145,7 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      expect(ESM::Test.messages.size).to eql(1)
+      wait_for { ESM::Test.messages.size }.to eql(1)
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil
@@ -164,7 +164,7 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      expect(ESM::Test.messages.size).to eql(1)
+      wait_for { ESM::Test.messages.size }.to eql(1)
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil

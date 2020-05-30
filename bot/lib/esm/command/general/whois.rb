@@ -17,10 +17,13 @@ module ESM
         def discord
           load_steam_info
 
-          ESM::Embed.build do |e|
-            add_discord_info(e)
-            add_steam_info(e) if @steam_success
-          end
+          embed =
+            ESM::Embed.build do |e|
+              add_discord_info(e)
+              add_steam_info(e) if @steam_success
+            end
+
+          reply(embed)
         end
 
         #########################

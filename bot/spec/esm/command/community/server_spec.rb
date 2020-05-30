@@ -41,10 +41,10 @@ describe ESM::Command::Community::Server, category: "command" do
     end
 
     it "should return an embed" do
-      response = nil
       command_statement = command.statement(server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+      response = ESM::Test.messages.first.second
 
       # Reload because the server updates when the WSC connects
       server.reload

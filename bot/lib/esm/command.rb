@@ -72,7 +72,10 @@ module ESM
     def self.define(command)
       ESM.bot.command(command.name.to_sym, aliases: command.aliases) do |event|
         # Execute the command
-        execute(event, command)
+        Thread.new { execute(event, command) }
+
+        # Don't send anything back
+        nil
       end
     end
 
@@ -105,23 +108,23 @@ module ESM
 
       # Execute and handle any errors
       begin
-        result = command.execute(event)
+        command.execute(event)
       rescue ESM::Exception::DataError => e
-        result = e.data
+        error = e.data
       rescue StandardError => e
-        result =
-          if ESM.env.development?
-            "Exception:\n```#{e.message}```\nBacktrace\n```#{e.backtrace}```"
+        error =
+          if ESM.env.production?
+            I18n.t("exceptions.system", message: e.message)
           else
-            e.message
+            "Exception:\n```#{e.message}```\nBacktrace\n```#{e.backtrace}```"
           end
       end
 
       # Cleanup result and send
-      send_result(result, event)
+      send_error(error, event)
     end
 
-    def self.send_result(result, event)
+    def self.send_error(result, event)
       message = nil
 
       case result
@@ -131,19 +134,11 @@ module ESM
         message = result.data
       when ::Exception
         message = I18n.t("exceptions.system", message: result.message)
-      when String, ESM::Embed
-        message = result
       else
-        # This allows me to not have to explicitly return nil from my commands
-        return nil
+        return
       end
 
-      return message if ESM.env.test?
-
       ESM.bot.deliver(message, to: event.channel)
-
-      # Since this actually gets called by Discordrb, we want to return nil
-      nil
     end
 
     def self.by_category

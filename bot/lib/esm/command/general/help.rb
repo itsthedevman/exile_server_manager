@@ -16,13 +16,16 @@ module ESM
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
-          if @arguments.category == "commands"
-            commands
-          elsif ESM::Command.include?(@arguments.category)
-            command
-          else
-            getting_started
-          end
+          embed =
+            if @arguments.category == "commands"
+              commands
+            elsif ESM::Command.include?(@arguments.category)
+              command
+            else
+              getting_started
+            end
+
+          reply(embed)
         end
 
         #########################

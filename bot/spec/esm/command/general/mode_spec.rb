@@ -25,12 +25,13 @@ describe ESM::Command::General::Mode, category: "command" do
     let!(:owner) { create(:esm_dev) }
 
     it "should disable player mode and return an embed" do
-      response = nil
       community.update(player_mode_enabled: true)
 
       command_statement = command.statement(community_id: community.community_id, mode: "server")
       event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       community.reload
 
@@ -41,12 +42,13 @@ describe ESM::Command::General::Mode, category: "command" do
     end
 
     it "should enable player mode and return an embed" do
-      response = nil
       community.update(player_mode_enabled: false)
 
       command_statement = command.statement(community_id: community.community_id, mode: "player")
       event = CommandEvent.create(command_statement, user: owner, channel_type: :dm)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       community.reload
 

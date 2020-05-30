@@ -150,10 +150,12 @@ module ESM
       return if message.ignore || message.returned
 
       # Process the request
-      ESM::Websocket::ServerRequest.new(connection: self, message: message).process
-    rescue ESM::Exception::CheckFailure
-      # Exception supressed because #check_for_command_error! can respond via the request
-      nil
+      Thread.new do
+        ESM::Websocket::ServerRequest.new(connection: self, message: message).process
+      rescue ESM::Exception::CheckFailure
+        # Exception supressed because #check_for_command_error! can respond via the request
+        nil
+      end
     rescue StandardError => e
       ESM.logger.error("#{self.class}##{__method__}") { "Exception: #{e.message}\n#{e.backtrace[0..5].join("\n")}" }
       raise e if ESM.env.test?

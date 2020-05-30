@@ -19,7 +19,7 @@ module ESM
           remove_waiting_message
 
           # Send the link
-          link
+          reply(link)
         end
 
         def check_for_empty_link!

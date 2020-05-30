@@ -15,19 +15,22 @@ module ESM
         argument :server_id
 
         def discord
-          ESM::Embed.build do |e|
-            e.title = target_server.server_name
-            e.color = :green
+          embed =
+            ESM::Embed.build do |e|
+              e.title = target_server.server_name
+              e.color = :green
 
-            # Server ID, IP, port, status
-            add_connection_info(e)
+              # Server ID, IP, port, status
+              add_connection_info(e)
 
-            # Map, players, game version
-            add_server_info(e)
+              # Map, players, game version
+              add_server_info(e)
 
-            # Mods
-            add_server_mods(e)
-          end
+              # Mods
+              add_server_mods(e)
+            end
+
+          reply(embed)
         end
 
         #########################

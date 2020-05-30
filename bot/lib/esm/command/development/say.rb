@@ -17,7 +17,7 @@ module ESM
 
         def discord
           @event.message.delete if !ESM.env.test?
-          @arguments.text
+          reply(@arguments.text)
         end
       end
     end
