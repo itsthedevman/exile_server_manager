@@ -125,7 +125,8 @@ module ESM
       ESM::Notifications.trigger("bot_deliver", message: message, channel: delivery_channel)
 
       # So we can test if it's working
-      return ESM::Test.messages.store(message, to, delivery_channel) if ESM.env.test?
+      # env.error_testing? is to allow testing of errors without sending messages
+      return ESM::Test.messages.store(message, to, delivery_channel) if ESM.env.test? || ESM.env.error_testing?
 
       discord_message =
         if message.is_a?(ESM::Embed)

@@ -71,8 +71,9 @@ module ESM
 
     def self.define(command)
       ESM.bot.command(command.name.to_sym, aliases: command.aliases) do |event|
-        # Execute the command
-        Thread.new { execute(event, command) }
+        # Execute the command.
+        # Threaded since I handle everything in the commands
+        Thread.new { command.execute(event) }
 
         # Don't send anything back
         nil
@@ -100,45 +101,6 @@ module ESM
         command_aliases: command.aliases,
         command_defines: command.defines.to_h
       }
-    end
-
-    def self.execute(event, command)
-      # Create a new instance of the command so values are not shared across players
-      command = command.class.new
-
-      # Execute and handle any errors
-      begin
-        command.execute(event)
-      rescue ESM::Exception::DataError => e
-        error = e.data
-      rescue StandardError => e
-        error =
-          if ESM.env.production?
-            I18n.t("exceptions.system", message: e.message)
-          else
-            "Exception:\n```#{e.message}```\nBacktrace\n```#{e.backtrace}```"
-          end
-      end
-
-      # Cleanup result and send
-      send_error(error, event)
-    end
-
-    def self.send_error(result, event)
-      message = nil
-
-      case result
-      when ESM::Exception::Error
-        message = result.message
-      when ESM::Exception::DataError
-        message = result.data
-      when ::Exception
-        message = I18n.t("exceptions.system", message: result.message)
-      else
-        return
-      end
-
-      ESM.bot.deliver(message, to: event.channel)
     end
 
     def self.by_category

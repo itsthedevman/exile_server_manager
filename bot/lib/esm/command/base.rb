@@ -125,12 +125,16 @@ module ESM
         @checks = Base::Checks.new(self, attributes.skipped_checks)
       end
 
+      # The entry point for a command
+      # @note Do not handle exceptions anywhere in this commands lifecycle
       def execute(event)
         if event.is_a?(Discordrb::Commands::CommandEvent)
           from_discord(event)
         else
           from_server(event)
         end
+      rescue StandardError => e
+        handle_error(e, event)
       end
 
       def usage
@@ -412,7 +416,7 @@ module ESM
         @executed_at = DateTime.now
 
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
-        @event.channel.start_typing if !ESM.env.test?
+        @event.channel.start_typing if !ESM.env.test? || !ESM.env.error_testing?
 
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)
@@ -509,6 +513,24 @@ module ESM
           end
 
         ESM.bot.deliver(embed, to: target_user)
+      end
+
+      def handle_error(error, event)
+        message = nil
+
+        # For tests
+        raise error if ESM.env.test?
+
+        case error
+        when ESM::Exception::CheckFailure
+          message = error.data
+        when StandardError
+          message = I18n.t("exceptions.system", message: error.message)
+        else
+          return
+        end
+
+        ESM.bot.deliver(message, to: event.channel)
       end
     end
   end

@@ -503,6 +503,40 @@ describe ESM::Command::Base do
       expect(ESM::Test.messages.size).to eql(1)
       expect(server_command.current_cooldown.active?).to be(false)
     end
+
+    describe "Handle Error" do
+      before :all do
+        # Change the ENV for ESM so the error won't be raised
+        ESM.instance_variable_set("@env", ActiveSupport::StringInquirer.new("error_testing"))
+      end
+
+      after :all do
+        # Reset!
+        ESM.instance_variable_set("@env", ActiveSupport::StringInquirer.new("test"))
+      end
+
+      it "should send error (CheckFailure)" do
+        test_command = ESM::Command::Test::DirectMessageCommand.new
+        event = CommandEvent.create(test_command.statement, channel_type: :text, user: user)
+
+        expect { test_command.execute(event) }.not_to raise_error
+        expect(ESM::Test.messages.size).to eql(1)
+
+        error = ESM::Test.messages.first.second
+        expect(error.description).to eql("Hey #{user.mention}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there")
+      end
+
+      it "should send error (StandardError)" do
+        test_command = ESM::Command::Test::ErrorCommand.new
+        event = CommandEvent.create(test_command.statement, channel_type: :text, user: user)
+
+        expect { test_command.execute(event) }.not_to raise_error
+        expect(ESM::Test.messages.size).to eql(1)
+
+        error = ESM::Test.messages.first.second
+        expect(error).to eql("Well, this is awkward. Can you let my developer know that something bad happened?\nGive him this error:\n```Oops```")
+      end
+    end
   end
 
   describe "#check_failed!" do
