@@ -47,11 +47,15 @@ en:
         title: "Hi %{user}! My name is Exile Server Manager, or ESM for short!"
         description: "I have a bunch of useful commands for both players and server owners alike."
       commands:
-        title: "Commands"
-        description: "You can view more information about a command by with `%{prefix}help command_name`\nFor example: `%{prefix}help servers`"
-        player_commands_title: "__Player Commands__"
-        admin_commands_title: "__Admin Commands__"
-        development_commands_title: "__Development Commands__"
+        player:
+          title: "Player Commands"
+          description: "These commands are for players to interact with their character in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode Enabled.\nPlease note, communities have the ability to disable or whitelist commands for their servers, regardless of where the command is used.\nMore information about a particular command can be found by using the `%{prefix}help command_name` command. For example: `%{prefix}help servers`"
+        admin:
+          title: "Admin Commands"
+          description: "These commands are locked by default and may only be used by a community's admins and the whitelisted roles."
+        development:
+          title: "Development Commands"
+          description: "These commands are only available in development mode."
       command:
         title: "`%{prefix}%{name}` Documentation"
         note: "**Note:**"
@@ -207,7 +211,7 @@ en:
         longest_current_streak: "Longest Current Streak"
         user_with: "%{user} with %{value}"
     set_id:
-      description: "**Territory Owner Only.** Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
+      description: "**Territory Owner Only.**\nSets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
       example: |-
         **`%{prefix}setid esm_malden jqjoe no_u`**
         Sets territory `jqjoe` to be `no_u`

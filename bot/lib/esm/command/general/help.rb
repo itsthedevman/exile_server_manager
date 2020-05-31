@@ -16,16 +16,13 @@ module ESM
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
-          embed =
-            if @arguments.category == "commands"
-              commands
-            elsif ESM::Command.include?(@arguments.category)
-              command
-            else
-              getting_started
-            end
-
-          reply(embed)
+          if @arguments.category == "commands"
+            commands
+          elsif ESM::Command.include?(@arguments.category)
+            command
+          else
+            getting_started
+          end
         end
 
         #########################
@@ -44,28 +41,31 @@ module ESM
         end
 
         def commands
-          ESM::Embed.build do |embed|
-            embed.title = I18n.t("commands.help.commands.title")
-            embed.description = I18n.t("commands.help.commands.description", prefix: prefix)
+          types = %i[player admin]
+          types << :development if ESM.env.development?
 
-            types = %i[player admin]
-            types << :development if ESM.env.development?
+          # Remove :admin if player mode is enabled for this community
+          types.delete(:admin) if current_community&.player_mode_enabled?
 
-            # Remove :admin if player mode is enabled for this community
-            types.delete(:admin) if current_community&.player_mode_enabled?
+          # Now build the embed for each type
+          types.each do |type|
+            next if categories(type).blank?
 
-            # Now build the embed
-            types.each do |type|
-              next if categories(type).blank?
+            embed =
+              ESM::Embed.build do |e|
+                e.title = I18n.t("commands.help.commands.#{type}.title")
+                e.description = I18n.t("commands.help.commands.#{type}.description", prefix: prefix)
+                e.color = ESM::Color.random
 
-              embed.add_field(value: I18n.t("commands.help.commands.#{type}_commands_title"))
-              categories(type).each do |category, commands|
-                embed.add_field(
-                  name: "**__#{category.humanize}__**",
-                  value: format_commands(commands)
-                )
+                categories(type).each do |category, commands|
+                  e.add_field(
+                    name: "**__#{category.humanize}__**",
+                    value: format_commands(commands)
+                  )
+                end
               end
-            end
+
+            reply(embed)
           end
         end
 
@@ -75,9 +75,10 @@ module ESM
           ESM::Command.by_type[type].group_by(&:category)
         end
 
+        # Return an array so ESM::Embed field logic will handle overflow correctly
         def format_commands(commands)
-          commands.format do |command|
-            "**`#{prefix}#{command.name}`**\n#{command.description(prefix)}\n\n"
+          commands.map do |command|
+            "**`#{prefix}#{command.name}`**\n#{command.description(prefix)}\n"
           end
         end
 
@@ -90,48 +91,51 @@ module ESM
           # For whitelisted permission
           command.permissions.load
 
-          ESM::Embed.build do |embed|
-            embed.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)
-            description = [command.description, ""]
+          embed =
+            ESM::Embed.build do |e|
+              e.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)
+              description = [command.description, ""]
 
-            # Adds a note about being limited to DM or Text
-            description << I18n.t("commands.help.command.note") if command.limit_to || command.whitelist_enabled?
-            description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limit_to)) if command.limit_to
-            description << I18n.t("commands.help.command.whitelist_enabled") if command.whitelist_enabled?
-            embed.description = description
+              # Adds a note about being limited to DM or Text
+              description << I18n.t("commands.help.command.note") if command.limit_to || command.whitelist_enabled?
+              description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limit_to)) if command.limit_to
+              description << I18n.t("commands.help.command.whitelist_enabled") if command.whitelist_enabled?
+              embed.description = description
 
-            # Usage
-            embed.add_field(
-              name: I18n.t("commands.help.command.usage"),
-              value: "```#{command.usage}```"
-            )
-
-            # Arguments
-            if command.arguments.present?
-              embed.add_field(
-                name: I18n.t("commands.help.command.arguments"),
-                value: command.arguments.to_s
+              # Usage
+              e.add_field(
+                name: I18n.t("commands.help.command.usage"),
+                value: "```#{command.usage}```"
               )
+
+              # Arguments
+              if command.arguments.present?
+                e.add_field(
+                  name: I18n.t("commands.help.command.arguments"),
+                  value: command.arguments.to_s
+                )
+              end
+
+              # Examples
+              if command.example.present?
+                e.add_field(
+                  name: I18n.t("commands.help.command.examples"),
+                  value: command.example
+                )
+              end
+
+              # Aliases
+              if command.aliases.present?
+                aliases = "```\n#{command.aliases.map { |a| "#{prefix}#{a}" }.join("\n")}\n```"
+
+                e.add_field(
+                  name: I18n.t("commands.help.command.aliases.name"),
+                  value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
+                )
+              end
             end
 
-            # Examples
-            if command.example.present?
-              embed.add_field(
-                name: I18n.t("commands.help.command.examples"),
-                value: command.example
-              )
-            end
-
-            # Aliases
-            if command.aliases.present?
-              aliases = "```\n#{command.aliases.map { |a| "#{prefix}#{a}" }.join("\n")}\n```"
-
-              embed.add_field(
-                name: I18n.t("commands.help.command.aliases.name"),
-                value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
-              )
-            end
-          end
+          reply(embed)
         end
       end
     end
