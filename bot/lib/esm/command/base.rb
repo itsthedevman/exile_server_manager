@@ -428,13 +428,10 @@ module ESM
         @checks.run_all!
 
         # Call the discord method
-        response = discord
+        discord
 
         # Update the cooldown
         create_or_update_cooldown if !@skip_flags.include?(:cooldown)
-
-        # Return the response
-        response
       end
 
       def from_server(parameters)
