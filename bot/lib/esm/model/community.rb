@@ -26,7 +26,6 @@ module ESM
     has_many :servers
 
     alias_attribute :name, :community_name
-    alias_attribute :c_id, :community_id
 
     module ESM
       ID = "414643176947843073"
