@@ -55,6 +55,9 @@ module ESM
           ESM::Event::Xm8Notification.new(@connection.server, @message.parameters.first).run!
         when "discord_log"
           ESM::Event::DiscordLog.new(@connection.server, @message.parameters.first).run!
+        when "discord_message_channel"
+          # Deprecated event, attempt to warn them
+          @connection.server.community.log_event(:discord_log, "`ESM_fnc_sendToChannel` has been deprecated. Please utilize `ESM_fnc_logToDiscord` instead")
         end
       end
 
