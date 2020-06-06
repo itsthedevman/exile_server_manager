@@ -130,7 +130,7 @@ module ESM
       # Tell the server to store the connection for access later
       ESM::Websocket.add_connection(self)
 
-      ESM.logger.info("#{self.class}##{__method__}") { "#{@server.server_id} has connected" }
+      ESM::Notifications.trigger("websocket_server_on_connect", server: @server)
     rescue ESM::Exception::FailedAuthentication => e
       # Application code may only use codes from 1000, 3000-4999
       @connection.close(1000, e.message)
@@ -165,6 +165,8 @@ module ESM
     # Websocket event, executes when a A3 server or the WebServer disconnects the connection
     def on_close(_code)
       return if @server.nil?
+
+      ESM::Notifications.trigger("websocket_server_on_close", server: @server)
 
       ESM::Websocket.remove_connection(self)
     end

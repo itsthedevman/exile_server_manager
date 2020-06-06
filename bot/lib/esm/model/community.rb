@@ -74,8 +74,10 @@ module ESM
         return if !self.log_xm8_event
       when :discord_log
         return if !self.log_discord_log_event
+      when :reconnect
+        return if !self.log_reconnect_event
       else
-        raise ::ESM::Exception::Error, "Attempted to log #{event} to #{self.guild_id} without explicit permission.\nMessage:\n#{message}"
+        raise ::ESM::Exception::Error, "Attempted to log :#{event} to #{self.guild_id} without explicit permission.\nMessage:\n#{message}"
       end
 
       # This will also handle resending

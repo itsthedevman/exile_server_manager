@@ -19,6 +19,7 @@ changelog:
       - Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)
       - Messages sent from the bot will now attempt to resend if they experience an issue
       - `ESM_fnc_sendToChannel` has been deprecated. Please use `ESM_fnc_logToDiscord` instead.
+      - Updated server reconnect message's design and added uptime
 
     **__Commands__**
     **!accept** :new:

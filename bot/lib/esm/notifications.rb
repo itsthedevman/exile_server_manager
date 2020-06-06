@@ -5,6 +5,8 @@ module ESM
     EVENTS = %w[
       ready
       argument_parse
+      websocket_server_on_connect
+      websocket_server_on_close
       websocket_server_deliver
       command_from_discord
       command_from_server
@@ -212,6 +214,26 @@ module ESM
         end
 
       server.community.log_event(:xm8, embed)
+    end
+
+    def self.websocket_server_on_connect(name, _start, _finish, _id, payload)
+      server = payload[:server]
+
+      ESM.logger.debug(name) do
+        JSON.pretty_generate(server_id: server.server_id, uptime: server.uptime)
+      end
+
+      server.community.log_event(:reconnect, I18n.t("server_connected", server: server.server_id, uptime: server.uptime))
+    end
+
+    def self.websocket_server_on_close(name, _start, _finish, _id, payload)
+      server = payload[:server]
+
+      ESM.logger.debug(name) do
+        JSON.pretty_generate(server_id: server.server_id, uptime: server.uptime)
+      end
+
+      server.community.log_event(:reconnect, I18n.t("server_disconnected", server: server.server_id, uptime: server.uptime))
     end
   end
 end
