@@ -135,4 +135,12 @@ describe ESM::Regex do
       expect(ESM::Regex::BROADCAST =~ "preview").not_to be_nil
     end
   end
+
+  describe "HEX_COLOR" do
+    it "should parse" do
+      expect(ESM::Regex::HEX_COLOR =~ "#ffffff").not_to be_nil
+      expect(ESM::Regex::HEX_COLOR =~ ESM::Color::BLUE).not_to be_nil
+      expect(ESM::Regex::HEX_COLOR =~ "red").to be_nil
+    end
+  end
 end

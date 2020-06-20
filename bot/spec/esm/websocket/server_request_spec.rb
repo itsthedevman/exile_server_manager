@@ -74,7 +74,7 @@ describe ESM::Websocket::ServerRequest do
     it "should send the error (server error)" do
       message = OpenStruct.new(commandID: request.id, error: "This is an error")
 
-      expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.to raise_error(ESM::Exception::CheckFailure)
+      expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
       expect(ESM::Test.messages.size).to eql(1)
 
       embed = ESM::Test.messages.first.second
@@ -84,7 +84,7 @@ describe ESM::Websocket::ServerRequest do
     it "should send the error (server command error)" do
       message = { commandID: request.id, error: "", parameters: [{ error: "This is an error" }] }.to_ostruct
 
-      expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.to raise_error(ESM::Exception::CheckFailure)
+      expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
       expect(ESM::Test.messages.size).to eql(1)
 
       embed = ESM::Test.messages.first.second

@@ -67,6 +67,7 @@ module ESM
           @attributes[:territoryname] = @message
         end
 
+        # Determine with embed to send
         embed =
           if @xm8_type == "custom"
             custom_embed

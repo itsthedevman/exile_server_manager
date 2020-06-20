@@ -52,11 +52,12 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
     end
 
     it "should return (Sorted by territory name)" do
-      request = nil
       command_statement = command.statement(server_id: server.server_id, order_by: "territory_name")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { request = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+      request = connection.requests.first
+
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
       expect(ESM::Test.messages.size).to be > 3
@@ -64,11 +65,12 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
     end
 
     it "should return (Sorted by owner uid)" do
-      request = nil
       command_statement = command.statement(server_id: server.server_id, order_by: "owner_uid")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { request = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+      request = connection.requests.first
+
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
       expect(ESM::Test.messages.size).to be > 3

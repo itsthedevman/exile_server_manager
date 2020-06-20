@@ -8,6 +8,9 @@ describe ESM::Event::Xm8Notification do
   let!(:second_user) { ESM::Test.second_user }
   let!(:recipients) { [user.steam_uid, second_user.steam_uid] }
   let(:territory) { TerritoryGenerator.generate.to_ostruct }
+  let(:send_notification) do
+    expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
+  end
 
   before :each do
     wait_for { wsc.connected? }.to be(true)
@@ -33,12 +36,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -57,6 +57,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -81,12 +82,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -105,6 +103,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -129,12 +128,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -153,6 +149,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -177,12 +174,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -201,6 +195,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -225,12 +220,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -249,6 +241,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -273,12 +266,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -297,6 +287,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -321,12 +312,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -347,6 +335,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -371,12 +360,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -396,6 +382,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent
@@ -421,12 +408,9 @@ describe ESM::Event::Xm8Notification do
       }
     end
 
-    before :each do
-      expect { wsc.send_xm8_notification(attributes) }.not_to raise_error
-    end
-
     it "should send to all" do
       community.update(log_xm8_event: false)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(2)
 
       # To ensure all messages have been sent
@@ -446,6 +430,7 @@ describe ESM::Event::Xm8Notification do
 
     it "should log" do
       community.update(log_xm8_event: true)
+      send_notification
       wait_for { ESM::Test.messages.size }.to eql(3)
 
       # To ensure all messages have been sent

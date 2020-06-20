@@ -39,8 +39,9 @@ describe ESM::Command::Server::Me, category: "command" do
       command_statement = command.statement(server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
+      expect { command.execute(event) }.not_to raise_error
+      request = connection.requests.first
+
       wait_for { connection.requests }.to be_blank
       expect(ESM::Test.messages).not_to be_blank
 

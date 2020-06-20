@@ -3,6 +3,13 @@
 module ESM
   class Websocket
     class ServerRequest
+      WHITELISTED_SERVER_COMMANDS = %w[
+        server_initialization
+        xm8_notification
+        discord_log
+        discord_message_channel
+      ].freeze
+
       def initialize(connection:, message:)
         @connection = connection
         @message = message
@@ -43,22 +50,17 @@ module ESM
 
         # Remove the request now that we've processed it
         @connection.remove_request(@message.commandID)
+      rescue ESM::Exception::CheckFailure => e
+        on_command_error(e.data)
       end
 
       # @private
       # Processes server command that doesn't come from a request.
       def process_server_command
-        case @message.command
-        when "server_initialization"
-          ESM::Event::ServerInitialization.new(@connection.server.server_id, @message.parameters.first).run!
-        when "xm8_notification"
-          ESM::Event::Xm8Notification.new(@connection.server, @message.parameters.first).run!
-        when "discord_log"
-          ESM::Event::DiscordLog.new(@connection.server, @message.parameters.first).run!
-        when "discord_message_channel"
-          # Deprecated event, attempt to warn them
-          @connection.server.community.log_event(:discord_log, "`ESM_fnc_sendToChannel` has been deprecated. Please utilize `ESM_fnc_logToDiscord` instead")
-        end
+        return if !WHITELISTED_SERVER_COMMANDS.include?(@message.command)
+
+        # Build the class and call it
+        "ESM::Event::#{@message.command.classify}".constantize.new(@connection.server, @message.parameters.first).run!
       end
 
       # @private
@@ -82,8 +84,8 @@ module ESM
       #
       # @private
       def check_for_command_error!
-        raise ESM::Exception::CheckFailure, on_command_error(@message.error) if @message.error.present?
-        raise ESM::Exception::CheckFailure, on_command_error(@message.parameters.first.error) if @message.parameters&.first&.error&.present?
+        raise ESM::Exception::CheckFailure, @message.error if @message.error.present?
+        raise ESM::Exception::CheckFailure, @message.parameters.first.error if @message.parameters&.first&.error&.present?
       end
     end
   end

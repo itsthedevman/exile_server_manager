@@ -16,13 +16,16 @@ module ESM
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
-          if @arguments.category == "commands"
-            commands
-          elsif ESM::Command.include?(@arguments.category)
-            command
-          else
-            getting_started
-          end
+          embed =
+            if @arguments.category == "commands"
+              commands
+            elsif ESM::Command.include?(@arguments.category)
+              command
+            else
+              getting_started
+            end
+
+          reply(embed)
         end
 
         #########################
@@ -100,7 +103,7 @@ module ESM
               description << I18n.t("commands.help.command.note") if command.limit_to || command.whitelist_enabled?
               description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limit_to)) if command.limit_to
               description << I18n.t("commands.help.command.whitelist_enabled") if command.whitelist_enabled?
-              embed.description = description
+              e.description = description
 
               # Usage
               e.add_field(

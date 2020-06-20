@@ -5,8 +5,8 @@ module ESM
     class ServerInitialization
       attr_reader :packet if ESM.env.test?
 
-      def initialize(server_id, params)
-        @server_id = server_id
+      def initialize(server, params)
+        @server = server
         @params = params
       end
 
@@ -24,7 +24,6 @@ module ESM
       private
 
       def initialize_server!
-        @server = ESM::Server.find_by_server_id(@server_id)
         update_server!
         update_server_settings!
         store_territory_info!

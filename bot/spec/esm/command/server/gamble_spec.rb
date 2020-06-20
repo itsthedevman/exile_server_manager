@@ -113,11 +113,12 @@ describe ESM::Command::Server::Gamble, category: "command" do
     end
 
     it "should return the stats" do
-      embed = nil
       command_statement = command.statement(server_id: server.server_id, amount: "stats")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { embed = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
       expect(embed.fields.size).to eql(14)
     end

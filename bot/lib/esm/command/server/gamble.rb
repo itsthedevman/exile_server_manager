@@ -18,7 +18,7 @@ module ESM
         argument :amount, regex: /^(?!-\d+$)\d+|half|all|stats/, description: "commands.gamble.arguments.amount"
 
         def discord
-          return send_stats if @arguments.amount == "stats"
+          return reply(send_stats) if @arguments.amount == "stats"
 
           @checks.connected_server!
           check_for_bad_amount!

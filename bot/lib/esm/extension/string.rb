@@ -14,6 +14,8 @@ class String
 
   def to_h
     JSON.parse(self, symbolize_names: true)
+  rescue JSON::ParserError
+    nil
   end
 
   def to_poptab

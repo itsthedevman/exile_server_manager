@@ -28,7 +28,7 @@ describe ESM::Event::ServerInitialization do
     )
   end
 
-  let!(:event) { ESM::Event::ServerInitialization.new(server.server_id, packet) }
+  let!(:event) { ESM::Event::ServerInitialization.new(server, packet) }
 
   it "should valid" do
     expect(event).not_to be_nil

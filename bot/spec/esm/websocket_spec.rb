@@ -172,4 +172,12 @@ describe ESM::Websocket do
       expect(error_message.color).to eql("#C62551")
     end
   end
+
+  describe "#on_open" do
+    it "should send connect message"
+  end
+
+  describe "#on_close" do
+    it "should send disconnect message"
+  end
 end
