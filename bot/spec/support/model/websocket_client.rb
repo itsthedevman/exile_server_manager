@@ -97,7 +97,7 @@ class WebsocketClient
         price_per_object: 150,
         territory_lifetime: 7,
         server_restart: [3, 30],
-        server_start_time: DateTime.now.strftime("%Y-%m-%dT%H:%M:%S"),
+        server_start_time: DateTime.now.utc.strftime("%Y-%m-%dT%H:%M:%S"),
         server_version: "2.0.0",
         territory_level_1: { level: 1, purchase_price: 5000, radius: 15, object_count: 30 },
         territory_level_2: { level: 2, purchase_price: 10_000, radius: 30, object_count: 60 },

@@ -129,8 +129,6 @@ module ESM
 
       # Tell the server to store the connection for access later
       ESM::Websocket.add_connection(self)
-
-      ESM::Notifications.trigger("websocket_server_on_connect", server: @server)
     rescue ESM::Exception::FailedAuthentication => e
       # Application code may only use codes from 1000, 3000-4999
       @connection.close(1000, e.message)

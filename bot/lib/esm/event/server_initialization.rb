@@ -14,6 +14,9 @@ module ESM
         # Updates the database with information from the server
         initialize_server!
 
+        # Trigger a connect notification
+        ESM::Notifications.trigger("server_on_connect", server: @server)
+
         # We need to let the DLL know some stuff (namely a lot of stuff)
         build_settings_packet
 
@@ -35,7 +38,7 @@ module ESM
       def update_server!
         @server.update!(
           server_name: @params.server_name,
-          server_start_time: DateTime.parse(@params.server_start_time),
+          server_start_time: DateTime.parse(@params.server_start_time).utc,
           disconnected_at: nil
         )
       end

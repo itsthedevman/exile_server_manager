@@ -5,7 +5,7 @@ module ESM
     EVENTS = %w[
       ready
       argument_parse
-      websocket_server_on_connect
+      server_on_connect
       websocket_server_on_close
       websocket_server_deliver
       command_from_discord
@@ -216,7 +216,7 @@ module ESM
       server.community.log_event(:xm8, embed)
     end
 
-    def self.websocket_server_on_connect(name, _start, _finish, _id, payload)
+    def self.server_on_connect(name, _start, _finish, _id, payload)
       server = payload[:server]
 
       ESM.logger.debug(name) do

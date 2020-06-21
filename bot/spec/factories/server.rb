@@ -16,7 +16,6 @@ FactoryBot.define do
     server_name { Faker::FunnyName.name }
     server_ip { Faker::Internet.public_ip_v4_address }
     server_port { "2302" }
-    server_start_time { DateTime.now }
 
     before :create do |server, _evaluator|
       next if server.server_id.present?
@@ -40,7 +39,6 @@ FactoryBot.define do
       server_name { "Exile Server Manager Test" }
       server_ip { "127.0.0.1" }
       server_port { "2602" }
-      server_start_time { DateTime.now }
     end
   end
 end

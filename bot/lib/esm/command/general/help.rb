@@ -16,31 +16,31 @@ module ESM
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
-          embed =
-            if @arguments.category == "commands"
-              commands
-            elsif ESM::Command.include?(@arguments.category)
-              command
-            else
-              getting_started
-            end
-
-          reply(embed)
+          if @arguments.category == "commands"
+            commands
+          elsif ESM::Command.include?(@arguments.category)
+            command
+          else
+            getting_started
+          end
         end
 
         #########################
         # Command Methods
         #########################
         def getting_started
-          ESM::Embed.build do |embed|
-            embed.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
-            embed.description = I18n.t("commands.help.getting_started.description")
+          embed =
+            ESM::Embed.build do |embed|
+              embed.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
+              embed.description = I18n.t("commands.help.getting_started.description")
 
-            embed.add_field(
-              name: I18n.t("commands.help.categories.name"),
-              value: I18n.t("commands.help.categories.value", prefix: prefix)
-            )
-          end
+              embed.add_field(
+                name: I18n.t("commands.help.categories.name"),
+                value: I18n.t("commands.help.categories.value", prefix: prefix)
+              )
+            end
+
+          reply(embed)
         end
 
         def commands

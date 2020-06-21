@@ -400,3 +400,8 @@ en:
         When you get logged into my website, please make sure to **double check your Discord account information** to ensure that you will be registering with the correct account.
 
         Feel free to head over to https://www.esmbot.com/register when you are ready.
+    uptime:
+      description: "Displays how long the server has been online"
+      example: |-
+        **`%{prefix}uptime esm_malden`**
+      server_uptime: "`%{server}` has been online for %{time}"
