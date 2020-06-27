@@ -113,7 +113,24 @@ module ESM
     def create_command_configurations
       return if self.command_configurations.present?
 
-      ::ESM::Command.create_configurations_for_community(self)
+      configurations =
+        ::ESM::Command.all.map do |command|
+          # Converts 2.seconds to [2, "seconds"]
+          cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
+
+          {
+            community_id: self.id,
+            command_name: command.name,
+            enabled: command.defines.enabled.default,
+            cooldown_quantity: cooldown_quantity,
+            cooldown_type: cooldown_type,
+            allowed_in_text_channels: command.defines.allowed_in_text_channels.default,
+            whitelist_enabled: command.defines.whitelist_enabled.default,
+            whitelisted_role_ids: command.defines.whitelisted_role_ids.default
+          }
+        end
+
+      ::ESM::CommandConfiguration.import(configurations)
     end
 
     def create_notifications

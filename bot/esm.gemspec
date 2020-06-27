@@ -38,6 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "otr-activerecord"
   spec.add_dependency "pg"
   spec.add_dependency "puma"
+  spec.add_dependency "sucker_punch"
   spec.add_dependency "steam-condenser"
   spec.add_dependency "symmetric-encryption"
   spec.add_dependency "terminal-table"

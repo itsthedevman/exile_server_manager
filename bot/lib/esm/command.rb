@@ -7,7 +7,7 @@ module ESM
     @all = []
     @by_category = nil
     @by_type = nil
-    @caches = []
+    @cache = []
 
     class << self
       attr_reader :all
@@ -36,11 +36,15 @@ module ESM
       # Lock it!
       @all = @all.freeze if !ESM.env.test?
 
-      # Remove all the caches since this will recache
-      ESM::CommandCache.in_batches(of: 10_000).delete_all
+      # Rebuild the command_cache data
+      RebuildCommandCacheJob.perform_async(@cache)
 
-      # Store the caches in the DB so the website can read this data
-      ESM::CommandCache.import(@caches)
+      # Create any new command configurations for communities
+      # SuckerPunch failed to allow no parameters. It requires at least one
+      SyncCommandConfigurationsJob.perform_async(nil)
+
+      # Free up the memory
+      @cache = nil
     end
 
     def self.process_command(command_path, category)
@@ -91,7 +95,7 @@ module ESM
       return if command.type == :development
 
       # To be written to the DB in bulk
-      @caches << {
+      @cache << {
         command_name: command.name,
         command_category: command.category,
         command_description: command.description,
@@ -109,27 +113,6 @@ module ESM
 
     def self.by_type
       @by_type ||= OpenStruct.new(@all.group_by(&:command_type))
-    end
-
-    def self.create_configurations_for_community(community)
-      configurations =
-        @all.map do |command|
-          # Converts 2.seconds to [2, "seconds"]
-          cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
-
-          {
-            community_id: community.id,
-            command_name: command.name,
-            enabled: command.defines.enabled.default,
-            cooldown_quantity: cooldown_quantity,
-            cooldown_type: cooldown_type,
-            allowed_in_text_channels: command.defines.allowed_in_text_channels.default,
-            whitelist_enabled: command.defines.whitelist_enabled.default,
-            whitelisted_role_ids: command.defines.whitelisted_role_ids.default
-          }
-        end
-
-      ESM::CommandConfiguration.import(configurations)
     end
   end
 end

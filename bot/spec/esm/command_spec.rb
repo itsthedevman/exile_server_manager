@@ -44,19 +44,4 @@ describe ESM::Command do
       expect(ESM::Command["This command cannot exist"]).to be_nil
     end
   end
-
-  describe "#create_configurations_for_community" do
-    it "should create configurations based off commands" do
-      community = ESM::Test.community
-      ESM::CommandConfiguration.where(community_id: community.id).in_batches(of: 10_000).destroy_all
-
-      ESM::Command.create_configurations_for_community(community)
-      community.reload
-      expect(community.command_configurations.size).to eql(ESM::Command.all.size)
-
-      ESM::Command.all.each do |command|
-        expect(ESM::CommandConfiguration.where(community_id: community.id, command_name: command.name).any?).to be(true)
-      end
-    end
-  end
 end

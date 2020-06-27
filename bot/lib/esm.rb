@@ -6,6 +6,10 @@
 # Just fyi, this file is laid out in a particular order so
 #   I can access ESM.env and ESM.config when all other files load
 
+# This contains a check for the existence of the Rails class.
+# One of the action/active gems defines Rails, so this needs to be loaded first
+require "sucker_punch"
+
 require "action_view"
 require "action_view/helpers"
 require "active_record"

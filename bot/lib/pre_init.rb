@@ -14,6 +14,10 @@ loader.inflector.inflect("esm" => "ESM", "ostruct" => "OpenStruct", "xm8" => "XM
 # Convert ESM::Model::Server -> ESM::Server
 loader.collapse("#{__dir__}/esm/model")
 
+# Forces the jobs to be loaded on the Root path
+# ESM::Jobs::SomeJob -> SomeJob
+loader.push_dir("#{__dir__}/esm/jobs")
+
 # Don't load extensions, we do that above
 loader.ignore("#{__dir__}/esm/extension")
 
