@@ -17,6 +17,7 @@ module ESM
           match_object = @argument.regex.match(@message)
           return if match_object.nil?
 
+          ESM.logger.debug("#{self.class}##{__method__}") { match_object.to_a }
           @original = match_object[0]
           @match = match_object[1]
 
