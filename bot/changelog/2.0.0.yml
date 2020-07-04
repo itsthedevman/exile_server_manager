@@ -48,6 +48,7 @@ changelog:
       - Added waiting message when fetching pictures
     **!mode**
       - `!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`
+    **!player**
     **!preferences**
       - `!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`.
       - This command also has aliases, which can be viewed in the help documentation.

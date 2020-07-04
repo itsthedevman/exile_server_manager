@@ -2,6 +2,7 @@
 
 # Set our env to test
 ENV["ESM_ENV"] = "test"
+ENV["PRINT_LOG"] = "true"
 
 require "bundler/setup"
 require "esm"

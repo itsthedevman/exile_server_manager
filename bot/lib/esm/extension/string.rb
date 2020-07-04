@@ -32,8 +32,8 @@ class String
     end
   end
 
-  def to_readable
-    NUMBER_HELPER.number_with_delimiter(self)
+  def to_readable(precision: 0)
+    NUMBER_HELPER.number_to_currency("%f" % self, format: "%n", precision: precision)
   end
 
   # Extending active support classify to allow leaving the s on the end

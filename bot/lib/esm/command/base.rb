@@ -21,7 +21,7 @@ module ESM
 
       def self.reset_variables!
         @command_aliases = []
-        @arguments = ESM::Command::ArgumentContainer.new
+        @arguments = []
         @type = nil
         @limit_to = nil
         @defines = OpenStruct.new
@@ -108,7 +108,7 @@ module ESM
         @name = attributes.name
         @category = attributes.category
         @aliases = attributes.aliases
-        @arguments = attributes.arguments
+        @arguments = ESM::Command::ArgumentContainer.new(attributes.arguments)
         @type = attributes.type
         @limit_to = attributes.limit_to
         @defines = attributes.defines
@@ -519,7 +519,7 @@ module ESM
         raise error if ESM.env.test?
 
         case error
-        when ESM::Exception::CheckFailure
+        when ESM::Exception::CheckFailure, ESM::Exception::FailedArgumentParse
           message = error.data
         when StandardError
           message = I18n.t("exceptions.system", message: error.message)

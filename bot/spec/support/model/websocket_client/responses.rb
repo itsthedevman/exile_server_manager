@@ -22,7 +22,8 @@ class WebsocketClient
       demote: { send_ignore_message: true, delay: 0..3 },
       remove: { send_ignore_message: true, delay: 0..3 },
       upgrade: { send_ignore_message: true, delay: 0..3 },
-      restore: { delay: 0..1 }
+      restore: { delay: 0..1 },
+      player: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -190,6 +191,24 @@ class WebsocketClient
           success: @flags.SUCCESS
         }]
       )
+    end
+
+    def response_player
+      # This handles kill and heal
+      response = { type: @data.parameters.type }
+
+      if %w[money locker respect].include?(@data.parameters.type)
+        modified_amount = @data.parameters.value.to_i
+        previous_amount = Faker::Number.between(from: 5000, to: 5_000_000)
+
+        response = response.merge(
+          modified_amount: modified_amount,
+          previous_amount: previous_amount,
+          new_amount: previous_amount + modified_amount
+        )
+      end
+
+      send_response(parameters: [response])
     end
   end
 end

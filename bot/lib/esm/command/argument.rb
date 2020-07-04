@@ -7,6 +7,8 @@ module ESM
       attr_reader :name, :parser
       attr_accessor :value
 
+      delegate :value, to: :parser
+
       def initialize(name, opts = {})
         @valid = false
         @name = name
@@ -18,15 +20,13 @@ module ESM
       end
 
       def regex
-        @regex ||= lambda do
-          options = Regexp::IGNORECASE
-          options += Regexp::MULTILINE if self.multiline?
+        options = Regexp::IGNORECASE
+        options += Regexp::MULTILINE if self.multiline?
 
-          regex = "(#{@opts[:regex].source})"
-          regex += "?" if !self.required?
+        regex = "(#{@opts[:regex].source})"
+        regex += "?" if !self.required?
 
-          Regexp.new(regex, options)
-        end.call
+        Regexp.new(regex, options)
       end
 
       def preserve_case?
@@ -49,6 +49,10 @@ module ESM
         @opts[:multiline] ||= false
       end
 
+      def default=(value)
+        @opts[:default] = value
+      end
+
       def default
         @opts[:default]
       end
@@ -60,6 +64,7 @@ module ESM
       # Only valid if argument has a value and no default.
       # Allows value to be nil if not required
       def invalid?
+        ESM.logger.debug("#{self.class}##{__method__}") { "Argument: #{@name} | Required: #{self.required?} | Value: #{self.value.nil?}" }
         self.required? && self.value.nil?
       end
 
@@ -87,14 +92,16 @@ module ESM
       def parse(command, message)
         @parser = ESM::Command::Argument::Parser.new(self, message)
 
+        # Allows modifications of the argument before parsing
+        before_parse(command) if before_parse?
+
+        @parser.parse!
+
         # Allows modification of the match before storing it
         before_store(command) if before_store?
 
         # Logging
         ESM::Notifications.trigger("argument_parse", argument: self, regex: regex, parser: @parser, message: message)
-
-        # Save the value of the argument
-        @value = @parser.value
       end
 
       private
@@ -104,11 +111,11 @@ module ESM
           community_id: {
             regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
             description: "default_arguments.community_id",
-            before_store: lambda do |command, parser|
+            before_store: lambda do |parser|
               return if parser.value.present?
-              return if !command.event&.channel&.text?
+              return if !@event&.channel&.text?
 
-              parser.value = command.current_community.community_id
+              parser.value = current_community.community_id
             end
           },
           target: {
@@ -118,15 +125,15 @@ module ESM
           server_id: {
             regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
             description: "default_arguments.server_id",
-            before_store: lambda do |command, parser|
+            before_store: lambda do |parser|
               return if parser.value.blank?
-              return if !command.event&.channel&.text?
+              return if !@event&.channel&.text?
 
               # If we start with a community ID, just accept the match
               return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
 
               # Add the community ID to the front of the match
-              parser.value = "#{command.current_community.community_id}_#{parser.value}"
+              parser.value = "#{current_community.community_id}_#{parser.value}"
             end
           },
           territory_id: {
@@ -165,7 +172,15 @@ module ESM
       end
 
       def before_store(command)
-        @opts[:before_store].call(command, @parser)
+        command.instance_exec(@parser, &@opts[:before_store])
+      end
+
+      def before_parse?
+        @opts.key?(:before_parse) && @opts[:before_parse].respond_to?(:call)
+      end
+
+      def before_parse(command)
+        command.instance_exec(@parser, &@opts[:before_parse])
       end
     end
   end

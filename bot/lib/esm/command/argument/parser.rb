@@ -4,22 +4,17 @@ module ESM
   module Command
     class Argument
       class Parser
-        attr_reader :original
+        attr_reader :original, :argument
         attr_accessor :value
 
         def initialize(argument, message)
           @argument = argument
-          @message = message
-
-          # Parse out the argument value from the message or default
-          parse
+          @message = message.strip
         end
 
-        private
-
-        def parse
+        def parse!
           # Take in the message and try to match the regex to the message
-          match_object = @argument.regex.match(@message.strip)
+          match_object = @argument.regex.match(@message)
           return if match_object.nil?
 
           @original = match_object[0]
@@ -29,6 +24,8 @@ module ESM
 
           self
         end
+
+        private
 
         def cast_value_type(value)
           return value if @argument.type == :string
