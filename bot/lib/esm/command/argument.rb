@@ -49,6 +49,10 @@ module ESM
         @opts[:multiline] ||= false
       end
 
+      def default=(value)
+        @opts[:default] = value
+      end
+
       def default
         @opts[:default]
       end
@@ -104,11 +108,11 @@ module ESM
           community_id: {
             regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
             description: "default_arguments.community_id",
-            before_store: lambda do |command, parser|
+            before_store: lambda do |parser|
               return if parser.value.present?
-              return if !command.event&.channel&.text?
+              return if !@event&.channel&.text?
 
-              parser.value = command.current_community.community_id
+              parser.value = current_community.community_id
             end
           },
           target: {
@@ -118,15 +122,15 @@ module ESM
           server_id: {
             regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
             description: "default_arguments.server_id",
-            before_store: lambda do |command, parser|
+            before_store: lambda do |parser|
               return if parser.value.blank?
-              return if !command.event&.channel&.text?
+              return if !@event&.channel&.text?
 
               # If we start with a community ID, just accept the match
               return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
 
               # Add the community ID to the front of the match
-              parser.value = "#{command.current_community.community_id}_#{parser.value}"
+              parser.value = "#{current_community.community_id}_#{parser.value}"
             end
           },
           territory_id: {
@@ -165,7 +169,7 @@ module ESM
       end
 
       def before_store(command)
-        @opts[:before_store].call(command, @parser)
+        command.instance_exec(@parser, &@opts[:before_store])
       end
     end
   end

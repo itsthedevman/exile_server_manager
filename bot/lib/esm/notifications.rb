@@ -75,11 +75,16 @@ module ESM
 
     def self.argument_parse(name, _start, _finish, _id, payload)
       ESM.logger.debug(name) do
+        parser = payload[:parser]
+
         JSON.pretty_generate(
           argument: payload[:argument],
           message: payload[:message],
           regex: payload[:regex],
-          match: payload[:parser].value
+          parser: {
+            original: parser.original,
+            value: parser.value
+          }
         )
       end
     end

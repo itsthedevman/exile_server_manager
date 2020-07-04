@@ -73,6 +73,23 @@ module ESM
         true
       end
 
+      def invalid_argument!(argument)
+        embed =
+          ESM::Embed.build do |e|
+            e.title = "**Missing argument `#{argument}` for `#{self.command.distinct}`**"
+            e.description = "```#{self.command.distinct} #{build_error_description}```"
+
+            e.add_field(
+              name: "Arguments:",
+              value: self.to_s
+            )
+
+            e.footer = "For more information, send me `#{command.prefix}help #{self.command.name}`"
+          end
+
+        raise ESM::Exception::FailedArgumentParse, embed
+      end
+
       private
 
       def parse_and_remove!(argument)
@@ -89,23 +106,6 @@ module ESM
 
         # Now we need to return the message without our match
         @message.sub!(argument.parser.original, "").strip!
-      end
-
-      def invalid_argument!(argument)
-        embed =
-          ESM::Embed.build do |e|
-            e.title = "**Missing argument `#{argument}` for `#{self.command.distinct}`**"
-            e.description = "```#{self.command.distinct} #{build_error_description}```"
-
-            e.add_field(
-              name: "Arguments:",
-              value: self.to_s
-            )
-
-            e.footer = "For more information, send me `#{command.prefix}help #{self.command.name}`"
-          end
-
-        raise ESM::Exception::FailedArgumentParse, embed
       end
 
       def create_getter(argument)

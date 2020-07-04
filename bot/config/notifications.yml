@@ -106,3 +106,53 @@ xm8:
     description: "You just sold **{{ item }}** for **{{ amount }}** poptabs"
     title: "Item sold on MarXet"
     type: "marxet-item-sold"
+player:
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s money by {{ modifiedAmount }} poptabs. They used to have {{ previousAmount }} poptabs, they now have {{ newAmount }}."
+    title: ""
+    type: "money"
+
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s locker by {{ modifiedAmount }} poptabs. They used to have {{ previousAmount }} poptabs, they now have {{ newAmount }}."
+    title: ""
+    type: "locker"
+
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s respect by {{ modifiedAmount }} points. They used to have {{ previousAmount }}, they now have {{ newAmount }}."
+    title: ""
+    type: "respect"
+
+  - color: "random"
+    description: "Heros never die!"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "The doctor is in"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "Ze healing is not rewarding as ze hurting"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "Whoops... zat vas not medicine."
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "Side effects may include nausea, headaches... and death!"
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "Snake? SNAAAAAAAAKE!!!"
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "{{ this.params.name }} has died of dysentery"
+    title: ""
+    type: "kill"
