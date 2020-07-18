@@ -6,8 +6,9 @@ module ESM
       attr_accessor :command
       attr_reader :matches
 
-      def initialize(arguments)
-        super(arguments.map(&:dup))
+      def initialize(arguments = [])
+        super(arguments.map { |name, opts| ESM::Command::Argument.new(name, self, opts) })
+        @matches = []
       end
 
       def parse!(event)
@@ -42,7 +43,11 @@ module ESM
 
       def clear!
         @matches = []
-        self.each { |argument| argument.value = nil }
+        self.each do |argument|
+          next if argument.parser.nil?
+
+          argument.value = nil
+        end
       end
 
       def community_id?
@@ -63,6 +68,7 @@ module ESM
       def from_hash(hash)
         self.each do |argument|
           argument.value = hash[argument.name.to_s]
+          create_getter(argument)
         end
       end
 
@@ -92,6 +98,43 @@ module ESM
           end
 
         raise ESM::Exception::FailedArgumentParse, embed
+      end
+
+      def defaults
+        @defaults ||= {
+          community_id: {
+            regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
+            description: "default_arguments.community_id",
+            before_store: lambda do |parser|
+              return if parser.value.present?
+              return if !@event&.channel&.text?
+
+              parser.value = current_community.community_id
+            end
+          },
+          target: {
+            regex: ESM::Regex::TARGET,
+            description: "default_arguments.target"
+          },
+          server_id: {
+            regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
+            description: "default_arguments.server_id",
+            before_store: lambda do |parser|
+              return if parser.value.blank?
+              return if !@event&.channel&.text?
+
+              # If we start with a community ID, just accept the match
+              return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
+
+              # Add the community ID to the front of the match
+              parser.value = "#{current_community.community_id}_#{parser.value}"
+            end
+          },
+          territory_id: {
+            regex: ESM::Regex::TERRITORY_ID,
+            description: "default_arguments.territory_id"
+          }
+        }
       end
 
       private
@@ -124,11 +167,11 @@ module ESM
         # but replacing out arguments, already captured by the container, with their values
         # !test <foo> <bar>
         # !test foo <bar>
-        self.format do |a|
-          if a.value.nil?
-            "#{a} "
+        self.format do |argument|
+          if argument.parser.nil? || argument.value.nil?
+            "#{argument} "
           else
-            "#{a.value} "
+            "#{argument.value} "
           end
         end
       end

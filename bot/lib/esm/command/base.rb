@@ -36,7 +36,7 @@ module ESM
       end
 
       def self.argument(name, opts = {})
-        @arguments << ESM::Command::Argument.new(name, opts)
+        @arguments << [name, opts]
       end
 
       def self.example(prefix = ESM.config.prefix)

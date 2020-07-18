@@ -2,7 +2,10 @@
 
 describe ESM::Command::Argument do
   describe "Valid Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /foo/, description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /foo/, description: "Test" }]])
+      container.first
+    end
 
     it "should be a valid argument" do
       expect(argument).not_to be_nil
@@ -16,18 +19,21 @@ describe ESM::Command::Argument do
 
   describe "Invalid Argument (missing regex)" do
     it "should raise error" do
-      expect { ESM::Command::Argument.new(:foo) }.to raise_error("Missing regex for argument :foo")
+      expect { ESM::Command::ArgumentContainer.new([[:foo, {}]]) }.to raise_error("Missing regex for argument :foo")
     end
   end
 
   describe "Invalid Argument (missing description)" do
     it "should raise error" do
-      expect { ESM::Command::Argument.new(:foo, regex: /woot/) }.to raise_error("Missing description for argument :foo")
+      expect { ESM::Command::ArgumentContainer.new([[:foo, { regex: /woot/ }]]) }.to raise_error("Missing description for argument :foo")
     end
   end
 
   describe "Display Name Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /foo/, display_as: "FOOBAR", description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /foo/, display_as: "FOOBAR", description: "Test" }]])
+      container.first
+    end
 
     it "should have a different display name" do
       expect(argument.display_as).not_to be_nil
@@ -37,7 +43,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Type Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /12345/, type: :integer, description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /12345/, type: :integer, description: "Test" }]])
+      container.first
+    end
 
     it "should be a integer" do
       expect(argument.type).to eql(:integer)
@@ -45,7 +54,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Case Preserved Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /Foo/, preserve: true, description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /Foo/, preserve: true, description: "Test" }]])
+      container.first
+    end
 
     it "should preserve it's case" do
       expect(argument.preserve_case?).to be(true)
@@ -53,7 +65,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Mutliline Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /[\s\S]+/, multiline: true, description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /[\s\S]+/, multiline: true, description: "Test" }]])
+      container.first
+    end
 
     it "should be multiline" do
       expect(argument.multiline?).to be(true)
@@ -61,7 +76,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Default Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /hello/, default: "Hello World", description: "Test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /hello/, default: "Hello World", description: "Test" }]])
+      container.first
+    end
 
     it "should have a default value" do
       expect(argument.default?).to be(true)
@@ -74,7 +92,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Description Argument" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /hello/, description: "test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /hello/, description: "test" }]])
+      container.first
+    end
 
     it "should have a description" do
       expect(argument.description).to eql("This is a test")
@@ -82,7 +103,10 @@ describe ESM::Command::Argument do
   end
 
   describe "Argument with default values" do
-    let(:argument) { ESM::Command::Argument.new(:foo, regex: /.+/, description: "test") }
+    let(:argument) do
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /.+/, description: "test" }]])
+      container.first
+    end
 
     it "should not preserve case" do
       expect(argument.preserve_case?).to be(false)
@@ -115,24 +139,28 @@ describe ESM::Command::Argument do
 
   describe "#to_s" do
     it "should be a standard argument" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, description: "test")
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /.+/, description: "test" }]])
+      argument = container.first
       expect(argument.to_s).to eql("<foo>")
     end
 
     it "should be an optional argument" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, default: "foobar", description: "test")
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /.+/, default: "foobar", description: "test" }]])
+      argument = container.first
       expect(argument.to_s).to eql("<?foo>")
     end
 
     it "should use the display_as" do
-      argument = ESM::Command::Argument.new(:foo, regex: /.+/, display_as: "bar", description: "test")
+      container = ESM::Command::ArgumentContainer.new([[:foo, { regex: /.+/, display_as: "bar", description: "test" }]])
+      argument = container.first
       expect(argument.to_s).to eql("<bar>")
     end
   end
 
   describe "Arugment with template name" do
     it "should get defaults" do
-      argument = ESM::Command::Argument.new(:server_id)
+      container = ESM::Command::ArgumentContainer.new([[:server_id, {}]])
+      argument = container.first
       expect(argument.regex).to eql(Regexp.new("(#{ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY.source})", Regexp::IGNORECASE))
       expect(argument.description).not_to be_blank
     end
@@ -140,7 +168,8 @@ describe ESM::Command::Argument do
 
   describe "Argument with template keyword" do
     it "should get defaults" do
-      argument = ESM::Command::Argument.new(:some_other_argument, template: :server_id)
+      container = ESM::Command::ArgumentContainer.new([[:some_other_argument, { template: :server_id }]])
+      argument = container.first
       expect(argument.name).to eql(:some_other_argument)
       expect(argument.regex).to eql(Regexp.new("(#{ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY.source})", Regexp::IGNORECASE))
       expect(argument.description).not_to be_blank
@@ -160,7 +189,9 @@ describe ESM::Command::Argument do
     end
 
     it "should autofill (server_id)" do
-      argument = ESM::Command::Argument.new(:server_id)
+      container = ESM::Command::ArgumentContainer.new([[:server_id, {}]])
+      argument = container.first
+
       # Using the server_name part of the server_id
       argument.parse(command, server.server_id.split("_").second)
 
@@ -169,7 +200,9 @@ describe ESM::Command::Argument do
     end
 
     it "should autofill (community_id)" do
-      argument = ESM::Command::Argument.new(:community_id)
+      container = ESM::Command::ArgumentContainer.new([[:community_id, {}]])
+      argument = container.first
+
       # You can omit the community ID
       argument.parse(command, "")
 

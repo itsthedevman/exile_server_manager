@@ -7,12 +7,11 @@ module ESM
       attr_reader :name, :parser
       attr_accessor :value
 
-      delegate :value, to: :parser
-
-      def initialize(name, opts = {})
+      def initialize(name, container, opts = {})
         @valid = false
-        @name = name
-        @opts = load_options(opts)
+        @name = name.clone
+        @container = container
+        @opts = load_options(opts.clone)
 
         # Run some checks on the argument
         check_for_regex!
@@ -64,7 +63,6 @@ module ESM
       # Only valid if argument has a value and no default.
       # Allows value to be nil if not required
       def invalid?
-        ESM.logger.debug("#{self.class}##{__method__}") { "Argument: #{@name} | Required: #{self.required?} | Value: #{self.value.nil?}" }
         self.required? && self.value.nil?
       end
 
@@ -95,53 +93,20 @@ module ESM
         # Allows modifications of the argument before parsing
         before_parse(command) if before_parse?
 
+        # Parse the value from the message
         @parser.parse!
 
         # Allows modification of the match before storing it
         before_store(command) if before_store?
+
+        # Store the value parsed
+        @value = @parser.value
 
         # Logging
         ESM::Notifications.trigger("argument_parse", argument: self, regex: regex, parser: @parser, message: message)
       end
 
       private
-
-      def defaults
-        @defaults ||= {
-          community_id: {
-            regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
-            description: "default_arguments.community_id",
-            before_store: lambda do |parser|
-              return if parser.value.present?
-              return if !@event&.channel&.text?
-
-              parser.value = current_community.community_id
-            end
-          },
-          target: {
-            regex: ESM::Regex::TARGET,
-            description: "default_arguments.target"
-          },
-          server_id: {
-            regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
-            description: "default_arguments.server_id",
-            before_store: lambda do |parser|
-              return if parser.value.blank?
-              return if !@event&.channel&.text?
-
-              # If we start with a community ID, just accept the match
-              return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
-
-              # Add the community ID to the front of the match
-              parser.value = "#{current_community.community_id}_#{parser.value}"
-            end
-          },
-          territory_id: {
-            regex: ESM::Regex::TERRITORY_ID,
-            description: "default_arguments.territory_id"
-          }
-        }
-      end
 
       def check_for_regex!
         raise ESM::Exception::InvalidCommandArgument, "Missing regex for argument :#{@name}" if @opts[:regex].nil?
@@ -160,11 +125,11 @@ module ESM
       end
 
       def default_argument?(name)
-        defaults.key?(name)
+        @container.defaults.key?(name)
       end
 
       def default_from_name(name)
-        defaults[name]
+        @container.defaults[name]
       end
 
       def before_store?

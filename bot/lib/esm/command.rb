@@ -44,7 +44,7 @@ module ESM
       SyncCommandConfigurationsJob.perform_async(nil)
 
       # Free up the memory
-      # @cache = nil
+      @cache = nil
     end
 
     def self.process_command(command_path, category)

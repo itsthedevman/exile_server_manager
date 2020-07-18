@@ -9,29 +9,26 @@ describe ESM::Command::ArgumentContainer do
   let!(:container) { command.arguments }
   let(:event) { CommandEvent.create(command_statement, user: user) }
 
+  let!(:command_statement) do
+    command.statement(
+      community_id: community.community_id,
+      server_id: server.server_id,
+      target: user.discord_id,
+      _integer: "1",
+      _preserve: "PRESERVE",
+      _display_as: "display_as",
+      _default: "default",
+      _multiline: "multi\nline"
+    )
+  end
+
   it "should have #{ESM::Command::Test::Base::ARGUMENT_COUNT} arguments" do
     expect(container.size).to eql(ESM::Command::Test::Base::ARGUMENT_COUNT)
   end
 
   describe "Valid Argument Container (Preserve)" do
-    let!(:command_statement) do
-      command.statement(
-        community_id: community.community_id,
-        server_id: server.server_id,
-        target: user.discord_id,
-        _integer: "1",
-        _preserve: "PRESERVE",
-        _display_as: "display_as",
-        _default: "default",
-        _multiline: "multi\nline"
-      )
-    end
-
-    it "should have a valid event" do
+    before :each do
       expect(event).not_to be_nil
-    end
-
-    it "should parse" do
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -84,7 +81,8 @@ describe ESM::Command::ArgumentContainer do
       )
     end
 
-    it "should parse" do
+    before :each do
+      expect(event).not_to be_nil
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -112,6 +110,7 @@ describe ESM::Command::ArgumentContainer do
     end
 
     before :each do
+      expect(event).not_to be_nil
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -138,7 +137,8 @@ describe ESM::Command::ArgumentContainer do
       )
     end
 
-    it "should parse" do
+    before :each do
+      expect(event).not_to be_nil
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -169,7 +169,8 @@ describe ESM::Command::ArgumentContainer do
       )
     end
 
-    it "should parse" do
+    before :each do
+      expect(event).not_to be_nil
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -194,7 +195,8 @@ describe ESM::Command::ArgumentContainer do
       )
     end
 
-    it "should parse" do
+    before :each do
+      expect(event).not_to be_nil
       expect { container.parse!(event) }.not_to raise_error
     end
 
@@ -212,6 +214,11 @@ describe ESM::Command::ArgumentContainer do
   end
 
   describe "#clear!" do
+    before :each do
+      expect(event).not_to be_nil
+      expect { container.parse!(event) }.not_to raise_error
+    end
+
     it "should clear the values of all arguments" do
       expect(container.map(&:value).reject(&:nil?)).not_to be_empty
       container.clear!
@@ -220,6 +227,11 @@ describe ESM::Command::ArgumentContainer do
   end
 
   describe "#to_h" do
+    before :each do
+      expect(event).not_to be_nil
+      expect { container.parse!(event) }.not_to raise_error
+    end
+
     it "should have all attributes and values" do
       hash = container.to_h
       expect(hash.keys).to match_array(container.map(&:name))
