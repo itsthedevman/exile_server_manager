@@ -4,11 +4,6 @@ module ESM
   module Command
     CATEGORIES = %w[development general server community entertainment system].freeze
 
-    @all = []
-    @by_category = nil
-    @by_type = nil
-    @cache = []
-
     class << self
       attr_reader :all
     end
@@ -26,6 +21,11 @@ module ESM
     end
 
     def self.load_commands
+      @all = []
+      @by_category = nil
+      @by_type = nil
+      @cache = []
+
       path = File.expand_path("lib/esm/command")
       CATEGORIES.each do |category|
         Dir["#{path}/#{category}/*.rb"].each do |command_path|
