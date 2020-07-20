@@ -19,7 +19,15 @@ module ESM
     # Add Reactions
     PERMISSION_BITS = 52_288
 
+    STATUS_TYPES = {
+      "PLAYING": 0,
+      "STREAMING": 1,
+      "LISTENING": 2,
+      "WATCHING": 3
+    }.freeze
+
     attr_reader :config, :prefix
+
     attr_reader :resend_queue if ESM.env.test?
 
     def initialize
@@ -87,6 +95,11 @@ module ESM
       ESM::Websocket.start!
       ESM::Request::Overseer.watch
       ESM::Notifications.trigger("ready")
+
+      bot_attributes = ESM::BotAttribute.first
+
+      # status, activity, url, since = 0, afk = false, activity_type = 0
+      update_status("online", bot_attributes.status_message, nil, activity_type: STATUS_TYPES[bot_attributes.status_type]) if bot_attributes.present?
 
       @ready = true
     end
@@ -209,7 +222,7 @@ module ESM
       prefix = @prefixes[message.channel&.server&.id.to_s]
       return nil if !message.content.start_with?(prefix)
 
-      message.content[prefix.size..-1]
+      message.content[prefix.size..]
     end
 
     def format_invalid_response(expected)
@@ -222,13 +235,14 @@ module ESM
     def determine_delivery_channel(channel)
       return nil if channel.nil?
 
-      if channel.is_a?(Discordrb::Commands::CommandEvent)
+      case channel
+      when Discordrb::Commands::CommandEvent
         channel.channel
-      elsif channel.is_a?(Discordrb::Channel)
+      when Discordrb::Channel
         channel
-      elsif channel.is_a?(Discordrb::Member) || channel.is_a?(Discordrb::User)
+      when Discordrb::Member, Discordrb::User
         channel.pm
-      elsif channel.is_a?(String)
+      when String
         # Try checking if it's a text channel
         temp_channel = self.channel(channel)
 
