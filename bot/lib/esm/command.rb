@@ -36,12 +36,10 @@ module ESM
       # Lock it!
       @all = @all.freeze if !ESM.env.test?
 
-      # Rebuild the command_cache data
+      # Run some jobs for command
       RebuildCommandCacheJob.perform_async(@cache)
-
-      # Create any new command configurations for communities
-      # SuckerPunch failed to allow no parameters. It requires at least one
       SyncCommandConfigurationsJob.perform_async(nil)
+      SyncCommandCountsJob.perform_async(nil)
 
       # Free up the memory
       @cache = nil

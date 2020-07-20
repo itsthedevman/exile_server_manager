@@ -56,6 +56,12 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["deleted_at"], name: "index_command_configurations_on_deleted_at"
   end
 
+  create_table "command_counts", force: :cascade do |t|
+    t.string "command_name", null: false
+    t.integer "execution_count", default: 0, null: false
+    t.index ["command_name"], name: "index_command_counts_on_command_name"
+  end
+
   create_table "communities", force: :cascade do |t|
     t.string "community_id", null: false
     t.text "community_name"

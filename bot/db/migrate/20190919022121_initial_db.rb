@@ -47,6 +47,12 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.datetime :deleted_at, index: true
     end
 
+    # Command usage counts
+    create_table :command_counts do |t|
+      t.string :command_name, null: false, index: true
+      t.integer :execution_count, null: false, default: 0
+    end
+
     # Command Cache
     create_table :command_caches do |t|
       t.string :command_name, index: true

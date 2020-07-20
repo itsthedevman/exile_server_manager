@@ -432,6 +432,9 @@ module ESM
 
         # Update the cooldown
         create_or_update_cooldown if !@skip_flags.include?(:cooldown)
+
+        # Increment the counter
+        ESM::CommandCount.increment_execution_counter(self.name)
       end
 
       def from_server(parameters)
