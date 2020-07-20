@@ -65,6 +65,7 @@ module ESM
     # Public Instance Methods
     ###########################
     attr_reader :server, :connection, :requests
+
     attr_writer :requests if ESM.env.test?
 
     def initialize(connection)
@@ -111,6 +112,13 @@ module ESM
 
       @server = ESM::Server.where(server_key: key).first
       raise ESM::Exception::FailedAuthentication, "Invalid Key" if @server.nil?
+
+      # If the bot is no longer a member of the server, don't allow it to connect
+      discord_server = @server.community.discord_server
+      raise ESM::Exception::FailedAuthentication, "Unable to find Discord Server" if discord_server.nil?
+
+      # If the server is already connected, don't allow it to connect again
+      raise ESM::Exception::FailedAuthentication, "This server is already connected" if ESM::Websocket.connected?(@server.server_id)
     end
 
     # @private
