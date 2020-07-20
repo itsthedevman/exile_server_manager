@@ -101,5 +101,24 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 4: Cancel message
       expect(ESM::Test.messages.size).to eql(4)
     end
+
+    it "should accept a partial server_id" do
+      command_statement = command.statement(
+        broadcast_to: server.server_id[(community.community_id.size + 1)..],
+        message: "Hello world!"
+      )
+
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      ESM::Test.response = "yes"
+      expect { command.execute(event) }.not_to raise_error
+
+      # 1: Preview Message
+      # 2: Spacer
+      # 3: Confirmation
+      # 4: Success message
+      # 5: Message to first user
+      expect(ESM::Test.messages.size).to eql(5)
+    end
   end
 end

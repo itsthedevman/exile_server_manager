@@ -17,7 +17,7 @@ module ESM
     TERRITORY_ID = /\w+/.freeze
     TERRITORY_ID_ONLY = /^#{TERRITORY_ID.source}$/.freeze
     FLAG_NAME = /(flag_.*)\.paa/.freeze
-    BROADCAST = /#{SERVER_ID.source}|all|preview/.freeze
+    BROADCAST = /#{SERVER_ID_OPTIONAL_COMMUNITY.source}|all|preview/.freeze
     HEX_COLOR = /^\#[a-fA-F0-9]{6}$/.freeze
   end
 end
