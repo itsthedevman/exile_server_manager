@@ -52,7 +52,7 @@ module ESM
       command = build(command_name, category)
 
       # Tell the bot about our command
-      define(command)
+      define(command.class, command.name.to_sym, command.aliases)
 
       # Cache Command
       cache(command)
@@ -71,11 +71,11 @@ module ESM
       "ESM::Command::#{category}::#{command_name}".constantize.new
     end
 
-    def self.define(command)
-      ESM.bot.command(command.name.to_sym, aliases: command.aliases) do |event|
+    def self.define(command_class, name, aliases)
+      ESM.bot.command(name, aliases: aliases) do |event|
         # Execute the command.
         # Threaded since I handle everything in the commands
-        Thread.new { command.execute(event) }
+        Thread.new { command_class.new.execute(event) }
 
         # Don't send anything back
         nil
