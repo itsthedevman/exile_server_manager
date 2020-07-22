@@ -49,6 +49,8 @@ changelog:
     **!mode**
       - `!playermode` has been deprecated in favor of `!mode`. You can read more information by using `!help mode`
     **!player**
+      - Added shorthand variants for each type. For example, instead of `money`, you can use `m`. You can read more information by using `!help player`
+      - Success messages can now be customized via the Notifications section in the Server Dashboard.
     **!preferences**
       - `!notif` has been deprecated in favor of `!preferences`. You can read more information by using `!help preferences`.
       - This command also has aliases, which can be viewed in the help documentation.
