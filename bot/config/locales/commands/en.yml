@@ -432,3 +432,8 @@ en:
             - Negative numbers will remove the given amount of that type
           For types `heal` and `kill`:
             - This argument is optional
+    reward:
+      description: "Requests a reward on the given server. You must be logged in and alive on the server in order to claim the reward."
+      example: |-
+        **`%{prefix}reward esm_malden`**
+        Requests a reward on `esm_malden`
