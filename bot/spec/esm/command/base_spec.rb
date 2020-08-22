@@ -1279,8 +1279,10 @@ describe ESM::Command::Base do
 
       request = ESM::Request.first
       request.respond(true)
-      expect(ESM::Test.messages.size).to eql(1)
-      expect(ESM::Test.messages.first.second).to eql("accepted")
+
+      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
+      expect(ESM::Test.messages.second.second).to eql("accepted")
     end
 
     it "should be declined" do
@@ -1290,7 +1292,9 @@ describe ESM::Command::Base do
 
       request = ESM::Request.first
       request.respond(false)
-      expect(ESM::Test.messages.size).to eql(1)
+
+      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
       expect(ESM::Test.messages.first.second).to eql("declined")
     end
   end

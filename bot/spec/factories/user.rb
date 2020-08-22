@@ -21,13 +21,6 @@ FactoryBot.define do
             steam_username: "Beshire"
           },
           {
-            id: "126909638418366464",
-            name: "Bork/Gray",
-            discriminator: "#4835",
-            steam_uid: "76561198420214659",
-            steam_username: "[PE-ARMA.com] novagr94"
-          },
-          {
             id: "192933241416581120",
             name: "Sea𝗇",
             discriminator: "#0333",
@@ -40,13 +33,6 @@ FactoryBot.define do
             discriminator: "#6573",
             steam_uid: "76561198156367625",
             steam_username: "snipermunyshotz"
-          },
-          {
-            id: "233373237860368384",
-            name: "Monkeynutz",
-            discriminator: "#2010",
-            steam_uid: "76561198068913592",
-            steam_username: "[GADD] Monkeynutz"
           },
           {
             id: "156139464068956160",
@@ -68,13 +54,6 @@ FactoryBot.define do
             discriminator: "#5585",
             steam_uid: "76561198081382576",
             steam_username: "EnDoh420"
-          },
-          {
-            id: "283036855220305920",
-            name: "chaveezy",
-            discriminator: "#3822",
-            steam_uid: "76561198065529208",
-            steam_username: "ChavezArmy"
           },
           {
             id: "116703422295572484",
