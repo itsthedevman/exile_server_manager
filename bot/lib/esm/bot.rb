@@ -204,6 +204,28 @@ module ESM
       @prefixes[community.guild_id] = community.command_prefix
     end
 
+    # Channel can be any of the following: An CommandEvent, a Channel, a User/Member, or a String (Channel, or user)
+    def determine_delivery_channel(channel)
+      return nil if channel.nil?
+
+      case channel
+      when Discordrb::Commands::CommandEvent
+        channel.channel
+      when Discordrb::Channel
+        channel
+      when Discordrb::Member, Discordrb::User
+        channel.pm
+      when String
+        # Try checking if it's a text channel
+        temp_channel = self.channel(channel)
+
+        return temp_channel if temp_channel.present?
+
+        # Okay, it might be a PM channel, just go with it regardless (it returns nil)
+        self.pm_channel(channel)
+      end
+    end
+
     private
 
     def load_community_prefixes
@@ -228,29 +250,6 @@ module ESM
     def format_invalid_response(expected)
       expected_string = expected.map { |value| "`#{value}`" }.join(" or ")
       I18n.t("invalid_response", expected: expected_string)
-    end
-
-    # @private
-    # Channel can be any of the following: An CommandEvent, a Channel, a User/Member, or a String (Channel, or user)
-    def determine_delivery_channel(channel)
-      return nil if channel.nil?
-
-      case channel
-      when Discordrb::Commands::CommandEvent
-        channel.channel
-      when Discordrb::Channel
-        channel
-      when Discordrb::Member, Discordrb::User
-        channel.pm
-      when String
-        # Try checking if it's a text channel
-        temp_channel = self.channel(channel)
-
-        return temp_channel if temp_channel.present?
-
-        # Okay, it might be a PM channel, just go with it regardless (it returns nil)
-        self.pm_channel(channel)
-      end
     end
   end
 end

@@ -25,9 +25,7 @@ module ESM
           return request_accepted if same_user?
 
           @checks.pending_request!
-          add_request
-
-          send_request_message(
+          add_request(
             description: I18n.t(
               "commands.add.request_description",
               current_user: current_user.distinct,

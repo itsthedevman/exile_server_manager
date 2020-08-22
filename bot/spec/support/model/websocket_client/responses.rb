@@ -9,7 +9,7 @@ class WebsocketClient
     CONFIG = {
       server_success_command: {},
       server_error_command: {},
-      post_initialization: {},
+      post_initialization: { send_ignore_message: true },
       me: { delay: 0..1 },
       territories: { delay: 0..1 },
       pay: { send_ignore_message: true, delay: 0..3 },
@@ -23,7 +23,8 @@ class WebsocketClient
       remove: { send_ignore_message: true, delay: 0..3 },
       upgrade: { send_ignore_message: true, delay: 0..3 },
       restore: { delay: 0..1 },
-      player: { send_ignore_message: true, delay: 0..3 }
+      player: { send_ignore_message: true, delay: 0..3 },
+      reward: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -36,7 +37,9 @@ class WebsocketClient
 
     def response_post_initialization
       @connected = true
-      send_ignore_message
+
+      # The data the bot sends to the server to be stored
+      @server_data = @data.parameters
       @server_id = @data.parameters.server_id
     end
 
@@ -209,6 +212,15 @@ class WebsocketClient
       end
 
       send_response(parameters: [response])
+    end
+
+    def response_reward
+      receipt = @server_data.reward_items.to_h
+      receipt << ["Poptabs (Player)", @server_data.reward_player_poptabs] if @server_data.reward_player_poptabs.positive?
+      receipt << ["Poptabs (Locker)", @server_data.reward_locker_poptabs] if @server_data.reward_locker_poptabs.positive?
+      receipt << ["Respect", @server_data.reward_respect] if @server_data.reward_respect.positive?
+
+      send_response(parameters: [{ receipt: receipt }])
     end
   end
 end

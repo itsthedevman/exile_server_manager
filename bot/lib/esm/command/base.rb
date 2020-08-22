@@ -5,6 +5,9 @@
 module ESM
   module Command
     class Base
+      # Request related methods
+      include Request
+
       class << self
         attr_reader :defines, :command_type, :category, :command_aliases
       end
@@ -334,38 +337,6 @@ module ESM
         ESM.bot.deliver(message, to: current_channel)
       end
 
-      # @param request [ESM::Request] The request to build this command with
-      # @param accepted [Boolean] If the request was accepted (true) or denied (false)
-      def from_request(request)
-        @request = request
-
-        # Initialize our command from the request
-        @arguments.from_hash(request.command_arguments) if request.command_arguments.present?
-        @current_user = ESM::User.parse(request.requestor.discord_id)&.discord_user
-        @target_user = ESM::User.parse(request.requestee.discord_id)&.discord_user
-        @current_channel = ESM.bot.channel(request.requested_from_channel_id)
-
-        if @request.accepted
-          request_accepted
-        else
-          request_declined
-        end
-      end
-
-      def request
-        @request ||= lambda do
-          # Don't look for the requestor because multiple different people could attempt to invite them
-          # requestor_user_id: current_user.esm_user.id,
-          query = ESM::Request.where(requestee_user_id: target_user.esm_user.id, command_name: @name)
-
-          @arguments.to_h.each do |name, value|
-            query = query.where("command_arguments->>'#{name}' = ?", value)
-          end
-
-          query.first
-        end.call
-      end
-
       # Returns a valid command string for execution.
       #
       # @example No arguments
@@ -477,44 +448,6 @@ module ESM
         flags.each { |flag| @skip_flags << flag }
       end
 
-      def add_request
-        @request =
-          ESM::Request.create!(
-            requestor_user_id: current_user.esm_user.id,
-            requestee_user_id: target_user.esm_user.id,
-            requested_from_channel_id: current_channel.id.to_s,
-            command_name: @name.underscore,
-            command_arguments: @arguments.to_h
-          )
-      end
-
-      def request_url
-        return nil if @request.nil?
-
-        "#{ENV["REQUEST_URL"]}/#{@request.uuid}"
-      end
-
-      def accept_request_url
-        "#{request_url}/accept"
-      end
-
-      def decline_request_url
-        "#{request_url}/decline"
-      end
-
-      def send_request_message(description: "")
-        embed =
-          ESM::Embed.build do |e|
-            e.set_author(name: current_user.distinct, icon_url: current_user.avatar_url)
-            e.description = description
-            e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url), inline: true)
-            e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url), inline: true)
-            e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", prefix: prefix, uuid: request.uuid_short))
-          end
-
-        ESM.bot.deliver(embed, to: target_user)
-      end
-
       def handle_error(error, event)
         message = nil
 
@@ -525,6 +458,7 @@ module ESM
         when ESM::Exception::CheckFailure, ESM::Exception::FailedArgumentParse
           message = error.data
         when StandardError
+          ESM.logger.error("#{self.class}##{__method__}") { JSON.pretty_generate(message: error.message, backtrace: error.backtrace.reverse) }
           message = I18n.t("exceptions.system", message: error.message)
         else
           return

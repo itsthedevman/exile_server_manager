@@ -16,45 +16,51 @@ module ESM
 
         argument :server_id
 
-        # Check for pending requests
-        # Check for rewards
-        # Add request
-        # Send request message
-        #
-        # Accepted
-        # Send waiting message and request server for rewards
-        #
-        # Server
-        # @response.receipt <- JSON
-        # receipt [item, quantity]
         def discord
+          # Check for pending requests
           @checks.pending_request!
 
-          add_request
+          # Check to see if the server has any rewards for the user before even sending the request
+          check_for_reward_items!
 
-          send_request_message(
-            description: I18n.t(
-              "commands.add.request_description",
-              current_user: current_user.distinct,
-              target_user: target_user.mention,
-              territory_id: @arguments.territory_id,
-              server_id: target_server.server_id
-            )
+          # Add the request
+          add_request(
+            description: I18n.t("commands.reward.request_description", user: current_user.mention, server: target_server.server_id)
           )
+
+          # Remind them to check their PMs
+          embed = ESM::Embed.build(:success, description: I18n.t("commands.reward.check_pm", user: current_user.mention))
+          reply(embed)
+        end
+
+        def server
+          # Array<Array<item, quantity>>
+          receipt = @response.receipt.to_h
 
           embed = ESM::Embed.build(
             :success,
-            description: I18n.t("commands.request.sent", uuid: request.uuid_short, user: target_user.distinct)
+            description: I18n.t(
+              "commands.reward.receipt",
+              user: current_user.mention,
+              items: receipt.format { |item, quantity| "- #{quantity}x #{item}\n" }
+            )
           )
 
           reply(embed)
         end
 
-        def server; end
+        def request_accepted
+          deliver!(function_name: "rewardPlayer", target_uid: current_user.steam_uid)
+        end
 
-        def request_accepted(request); end
+        private
 
-        def request_declined(request); end
+        def check_for_reward_items!
+          reward = target_server.server_reward
+          return if reward.reward_items.present? || reward.locker_poptabs.positive? || reward.player_poptabs.positive? || reward.respect.positive?
+
+          check_failed!(:no_reward_items, user: current_user.mention)
+        end
       end
     end
   end

@@ -21,7 +21,8 @@ en:
     target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid Discord ID, steam uid, or @user discord mention"
     player_mode_command_not_available: "I'm sorry %{user}, `%{prefix}%{command_name}` is not available in player mode."
     different_community_in_text: "I'm sorry %{user}, using commands for other communities is only allowed a **direct message** with me or with [Player Mode](https://www.esmbot.com/wiki/player_mode) turned on."
-    pending_request: "I'm sorry %{current_user}, %{target_user} already has a request pending"
+    pending_request_same_user: "I'm sorry %{user}, it appears you already have a request pending"
+    pending_request_different_user: "I'm sorry %{user}, %{target_user} already has a request pending"
     owned_server: "Hey %{user}, you can only access servers belonging to `%{community_id}`. Please provide a different server ID."
     target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
 
@@ -68,3 +69,6 @@ en:
 
     # reset_cooldown
     invalid_command: "I'm sorry %{user}, `%{command_name}` is not one of my commands."
+
+    # reward
+    no_reward_items: "Hey %{user}, it looks like this server does not have any rewards for you to redeem."

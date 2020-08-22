@@ -83,4 +83,14 @@ ESM::ServerMod.create!(
   mod_required: false
 )
 
+ESM::ServerReward.create!(
+  server_id: server.id,
+  reward_items: {
+    "Exile_Item_EMRE": 1
+  },
+  player_poptabs: 500,
+  locker_poptabs: 1000,
+  respect: 250
+)
+
 ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)

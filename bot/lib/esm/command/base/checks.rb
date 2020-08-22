@@ -249,7 +249,11 @@ module ESM
         def pending_request!
           return if @command.request.nil?
 
-          check_failed!(:pending_request, user: current_user.mention)
+          if target_user.nil? || current_user == target_user
+            check_failed!(:pending_request_same_user, user: current_user.mention)
+          else
+            check_failed!(:pending_request_different_user, user: current_user.mention, target_user: target_user.mention)
+          end
         end
 
         # Raises CheckFailure if the target_server does not belong to the current_community
