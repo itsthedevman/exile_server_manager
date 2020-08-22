@@ -33,11 +33,6 @@ ESM.run!
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false
 
-# Load all of our test commands
-Dir["#{__dir__}/support/esm/command/test/*.rb"].each do |file|
-  ESM::Command.process_command(file, "test")
-end
-
 # Ignore debug messages when running tests
 ActiveRecord::Base.logger.level = Logger::INFO
 
