@@ -109,11 +109,14 @@ module ESM
           return if ESM.env.test? && ESM::Test.skip_cooldown
           return if !@command.on_cooldown?
 
+          cooldown = @command.current_cooldown
+          return check_failed!(:on_cooldown_useage, user: current_user.mention, prefix: @command.prefix, command_name: @command.name) if cooldown.cooldown_type == "times"
+
           check_failed!(
-            :on_cooldown,
+            :on_cooldown_time_left,
             prefix: @command.prefix,
             user: current_user.mention,
-            time_left: current_cooldown.to_s,
+            time_left: @command.current_cooldown.to_s,
             command_name: @command.name
           )
         end

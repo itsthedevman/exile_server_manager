@@ -36,13 +36,14 @@ module ESM
       # Load all of our test commands
       # Can't load in spec_helper because of race condition
       if ESM.env.test?
-        Dir["#{__dir__}/support/esm/command/test/*.rb"].each do |command_path|
+        path = File.expand_path("spec/support/esm/command/test")
+        Dir["#{path}/*.rb"].each do |command_path|
           process_command(command_path, "test")
         end
       end
 
       # Lock it!
-      @all = @all.freeze if !ESM.env.test?
+      @all.freeze
 
       # Run some jobs for command
       RebuildCommandCacheJob.perform_async(@cache)

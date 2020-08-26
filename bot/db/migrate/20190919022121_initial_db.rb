@@ -74,7 +74,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :steam_uid, index: true
       t.integer :cooldown_quantity
       t.string :cooldown_type
-      t.integer :cooldown_amount
+      t.integer :cooldown_amount, default: 0
       t.datetime :expires_at
       t.datetime :created_at
       t.datetime :updated_at

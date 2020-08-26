@@ -111,12 +111,18 @@ module ESM
     end
 
     def create_command_configurations
-      return if self.command_configurations.present?
-
       configurations =
         ::ESM::Command.all.map do |command|
-          # Converts 2.seconds to [2, "seconds"]
-          cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
+          cooldown_default = command.defines.cooldown_time.default
+
+          case cooldown_default
+          when Enumerator
+            cooldown_type = "times"
+            cooldown_quantity = cooldown_default.size
+          when ActiveSupport::Duration
+            # Converts 2.seconds to [:seconds, 2]
+            cooldown_type, cooldown_quantity = cooldown_default.parts.to_a.first
+          end
 
           {
             community_id: self.id,
@@ -134,8 +140,6 @@ module ESM
     end
 
     def create_notifications
-      return if self.notifications.present?
-
       ::ESM::Notification::DEFAULTS.each do |category, notifications|
         notifications =
           notifications.map do |notification|

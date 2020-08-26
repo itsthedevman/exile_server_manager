@@ -684,34 +684,6 @@ describe ESM::Command::Base do
     end
   end
 
-  describe "#next_expiry" do
-    it "should respond" do
-      expect(command.respond_to?(:next_expiry)).to be(true)
-    end
-
-    it "should be valid" do
-      time = DateTime.now
-      command_statement = command.statement(
-        community_id: community.community_id,
-        server_id: server.server_id,
-        target: user.discord_id,
-        _integer: "1",
-        _preserve: "PRESERVE",
-        _display_as: "display_as"
-      )
-      event = CommandEvent.create(command_statement, channel_type: :text, user: user)
-
-      # I don't care what happens
-      command.execute(event) rescue nil # rubocop:disable Style/RescueModifier
-
-      # Override the execution_time
-      command.executed_at = time
-
-      expect(command.executed_at.to_s).to eql(time.to_s)
-      expect(command.next_expiry.to_s).to eql((time + command.permissions.cooldown_time).to_s)
-    end
-  end
-
   describe "#create_or_update_cooldown" do
     before :each do
       wait_for { wsc.connected? }.to be(true)
@@ -1295,7 +1267,7 @@ describe ESM::Command::Base do
 
       expect(ESM::Test.messages.size).to eql(2)
       expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
-      expect(ESM::Test.messages.first.second).to eql("declined")
+      expect(ESM::Test.messages.second.second).to eql("declined")
     end
   end
 end

@@ -16,3 +16,4 @@
 *.code-workspace
 .DS_Store
 .env
+test_*.yml

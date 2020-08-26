@@ -299,12 +299,6 @@ module ESM
         @whitelist_enabled || false
       end
 
-      def next_expiry
-        return @executed_at if @permissions.cooldown_time.nil?
-
-        @next_expiry ||= @executed_at + @permissions.cooldown_time
-      end
-
       def on_cooldown?
         # We've never used this command with these arguments before
         return false if current_cooldown.nil?
@@ -421,24 +415,45 @@ module ESM
       end
 
       def create_or_update_cooldown
-        query = ESM::Cooldown.where(command_name: @name, user_id: current_user.esm_user.id)
-        query.where(community_id: target_community.id) if target_community
-        query.where(server_id: target_server.id) if target_server
+        query = ESM::Cooldown.where(command_name: @name)
+
+        # If the command requires a steam_uid, use it to track the cooldown.
+        query =
+          if registration_required?
+            query.where(steam_uid: current_user.steam_uid)
+          else
+            query.where(user_id: current_user.esm_user.id)
+          end
+
+        query = query.where(community_id: target_community.id) if target_community
+        query = query.where(community_id: current_community.id) if current_community && target_community.nil?
+        query = query.where(server_id: target_server.id) if target_server
 
         new_cooldown = query.first_or_create
-        new_cooldown.update!(expires_at: next_expiry)
+        new_cooldown.update_expiry!(@executed_at, @permissions.cooldown_time)
 
         @current_cooldown = new_cooldown
       end
 
       def load_current_cooldown
-        query = ESM::Cooldown.where(command_name: @name, user_id: current_user.esm_user.id)
+        query = ESM::Cooldown.where(command_name: @name)
 
-        # check for the community
-        query.where(community_id: target_community.id) if target_community
+        # If the command requires a steam_uid, use it to track the cooldown.
+        query =
+          if registration_required?
+            query.where(steam_uid: current_user.steam_uid)
+          else
+            query.where(user_id: current_user.esm_user.id)
+          end
+
+        # Check for the target_community
+        query = query.where(community_id: target_community.id) if target_community
+
+        # If we don't have a target_community, use the current_community (if applicable)
+        query = query.where(community_id: current_community.id) if current_community && target_community.nil?
 
         # Check for the individual server
-        query.where(server_id: target_server.id) if target_server
+        query = query.where(server_id: target_server.id) if target_server
 
         # Fire the query and return the first result
         query.first

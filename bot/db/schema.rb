@@ -90,7 +90,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "steam_uid"
     t.integer "cooldown_quantity"
     t.string "cooldown_type"
-    t.integer "cooldown_amount"
+    t.integer "cooldown_amount", default: 0
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"

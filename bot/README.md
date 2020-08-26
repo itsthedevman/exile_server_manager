@@ -11,9 +11,6 @@
   <a href="https://www.esmbot.com/releases">
     <img src="https://img.shields.io/badge/ESM-v2.0-blue.svg" alt="ruby version">
   </a>
-  <a href="https://codeclimate.com/github/thepracticaldev/dev.to/trends/technical_debt">
-    <img src="https://travis-ci.com/bsdingman/esm_bot.svg?token=JBqsHv37vGMC4FcoZdpb&branch=master" alt="TravisCI">
-  </a>
 </p>
 
 # What is Exile Server Manager?
@@ -29,4 +26,4 @@ Are you a server owner or player looking to use Exile Server Manager? If so, ple
 - Contributing
 
 ## Getting Started
-ESM is written in MRI Ruby 2.6.5 with DiscordRB 3.3.0 and PostgreSQL 12. I, personally, use <a href="https://rvm.io/">RVM</a> to manage Ruby, but ESM is not dependent on it. 
+ESM is written in MRI Ruby 2.6.5 with DiscordRB 3.3.0 and PostgreSQL 12. I, personally, use <a href="https://rvm.io/">RVM</a> to manage Ruby, but ESM is not dependent on it.

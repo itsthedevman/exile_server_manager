@@ -26,17 +26,42 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
     let(:second_community) { ESM::Test.second_community }
     let(:second_server) { ESM::Test.second_server }
     let(:second_user) { ESM::Test.second_user }
-    let(:cooldown_one) { ESM::Cooldown.create!(user_id: second_user.id, community_id: community.id, server_id: server.id, command_name: "me", expires_at: DateTime.now + 5.minutes) }
-    let(:cooldown_two) { ESM::Cooldown.create!(user_id: second_user.id, community_id: community.id, server_id: second_server.id, command_name: "me", expires_at: DateTime.now + 5.minutes) }
     let!(:target_regex) { ESM::Regex::TARGET.source }
+
+    let(:cooldown_one) do
+      ESM::Cooldown.create!(
+        user_id: second_user.id,
+        community_id: community.id,
+        server_id: server.id,
+        command_name: "me",
+        expires_at: Time.now + 5.minutes,
+        cooldown_type: "minutes",
+        cooldown_quantity: 5
+      )
+    end
+
+    let(:cooldown_two) do
+      ESM::Cooldown.create!(
+        user_id: second_user.id,
+        community_id: community.id,
+        server_id: second_server.id,
+        command_name: "me",
+        expires_at: Time.now + 5.minutes,
+        cooldown_type: "minutes",
+        cooldown_quantity: 5
+      )
+    end
 
     before :each do
       # Grant everyone access to use this command
       configuration = community.command_configurations.where(command_name: "reset_cooldown").first
       configuration.update(whitelist_enabled: false)
 
-      expect(cooldown_one.active?).to be(true)
-      expect(cooldown_two.active?).to be(true)
+      # Force the configuration to be correct
+      community.command_configurations.where(command_name: "me").update(cooldown_type: "minutes", cooldown_quantity: 5)
+
+      expect(cooldown_one.reload.active?).to be(true)
+      expect(cooldown_two.reload.active?).to be(true)
     end
 
     it "!reset_cooldown <target>" do

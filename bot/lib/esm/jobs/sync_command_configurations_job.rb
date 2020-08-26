@@ -7,8 +7,16 @@ class SyncCommandConfigurationsJob
     # Pre-cache the command configurations
     configurations =
       ESM::Command.all.map do |command|
-        # Converts 2.seconds to [2, "seconds"]
-        cooldown_quantity, cooldown_type = command.defines.cooldown_time.default.parts.map { |type, length| [length, type.to_s] }.first
+        cooldown_default = command.defines.cooldown_time.default
+
+        case cooldown_default
+        when Enumerator
+          cooldown_type = "times"
+          cooldown_quantity = cooldown_default.size
+        when ActiveSupport::Duration
+          # Converts 2.seconds to [:seconds, 2]
+          cooldown_type, cooldown_quantity = cooldown_default.parts.to_a.first
+        end
 
         {
           command_name: command.name,

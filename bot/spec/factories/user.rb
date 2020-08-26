@@ -4,73 +4,7 @@ FactoryBot.define do
   factory :user, class: "ESM::User" do
     transient do
       not_user {}
-      users do
-        [
-          {
-            id: "264594717939859457",
-            name: "[XIII]Bujinkan",
-            discriminator: "#3232",
-            steam_uid: "76561198016566903",
-            steam_username: "[XIII]Bujinkan"
-          },
-          {
-            id: "277499365105467392",
-            name: "Beshire",
-            discriminator: "#1438",
-            steam_uid: "76561198059584856",
-            steam_username: "Beshire"
-          },
-          {
-            id: "192933241416581120",
-            name: "Sea𝗇",
-            discriminator: "#0333",
-            steam_uid: "76561198133325593",
-            steam_username: "Sean"
-          },
-          {
-            id: "247920363025989662",
-            name: "SniperMuny",
-            discriminator: "#6573",
-            steam_uid: "76561198156367625",
-            steam_username: "snipermunyshotz"
-          },
-          {
-            id: "156139464068956160",
-            name: "SkellyKing",
-            discriminator: "#0001",
-            steam_uid: "76561198096031162",
-            steam_username: "Jack(ジャック)"
-          },
-          {
-            id: "473339637679652865",
-            name: "Thomas",
-            discriminator: "#6538",
-            steam_uid: "76561198040955934",
-            steam_username: "sobepunk"
-          },
-          {
-            id: "305297279110348801",
-            name: "[Z] EnDoh420",
-            discriminator: "#5585",
-            steam_uid: "76561198081382576",
-            steam_username: "EnDoh420"
-          },
-          {
-            id: "116703422295572484",
-            name: "ElmoBlatch",
-            discriminator: "#9546",
-            steam_uid: "76561197972688089",
-            steam_username: "ElmoBlatch"
-          },
-          {
-            id: "361146313905012738",
-            name: "Russ",
-            discriminator: "#6805",
-            steam_uid: "76561198310067286",
-            steam_username: "Russ"
-          }
-        ]
-      end
+      users { YAML.load_file("#{File.expand_path("./spec/support/config")}/test_users.yml").map(&:deep_symbolize_keys) }
       user { users.sample }
     end
 

@@ -5,17 +5,17 @@ require "esm/version"
 Gem::Specification.new do |spec|
   spec.name          = "esm_bot"
   spec.version       = ESM::VERSION
-  spec.authors       = ["Bryan Dingman"]
-  spec.email         = ["bsdingman@gmail.com"]
+  spec.authors       = ["Bryan (WolfkillArcadia)"]
+  spec.email         = ["wolfkillarcadia@gmail.com"]
 
   spec.summary       = %q{ Exile Server Manager }
-  spec.homepage      = "https://github.com/bsdingman/esm_bot"
+  spec.homepage      = "https://github.com/wolfkillarcadia/esm_bot"
 
   spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/bsdingman/esm_bot"
-  spec.metadata["changelog_uri"] = "https://github.com/bsdingman/esm_bot"
+  spec.metadata["source_code_uri"] = "https://github.com/wolfkillarcadia/esm_bot"
+  spec.metadata["changelog_uri"] = "https://github.com/wolfkillarcadia/esm_bot"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
