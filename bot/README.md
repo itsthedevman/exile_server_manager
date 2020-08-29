@@ -19,6 +19,8 @@ Exile Server Manager, or ESM for short, is a Discord Bot that facilitates intera
 ## Before continuing...
 Are you a server owner or player looking to use Exile Server Manager? If so, please visit my <a href="https://www.esmbot.com/wiki">Getting Started</a> section of the Wiki as this README is focused on the development side of ESM.
 
+<strong>Note: The code in this repository is the version 2.0 of the bot and does not represent the current public release.</strong>
+
 ## Table of Contents
 - Getting Started
 - Commands
