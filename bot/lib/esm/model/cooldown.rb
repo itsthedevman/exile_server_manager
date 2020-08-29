@@ -21,7 +21,7 @@ module ESM
 
     def active?
       if self.cooldown_type == "times"
-        self.cooldown_amount <= self.cooldown_quantity
+        self.cooldown_amount >= self.cooldown_quantity
       else
         expires_at >= DateTime.now
       end

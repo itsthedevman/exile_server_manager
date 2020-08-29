@@ -1,14 +1,29 @@
 # frozen_string_literal: true
 
 describe ESM::Cooldown do
-  it "should be active" do
-    cooldown = build(:cooldown, :active)
-    expect(cooldown.active?).to be(true)
-  end
+  describe "#active?" do
+    it "should be active (seconds)" do
+      cooldown = build(:cooldown, :active)
+      expect(cooldown.active?).to be(true)
+    end
 
-  it "should not be active" do
-    cooldown = build(:cooldown, :inactive)
-    expect(cooldown.active?).to be(false)
+    it "should not be active (seconds)" do
+      cooldown = build(:cooldown, :inactive)
+      expect(cooldown.active?).to be(false)
+    end
+
+    it "should be active (times)" do
+      cooldown = build(:cooldown, expires_at: nil, cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 2)
+      expect(cooldown.active?).to be(true)
+    end
+
+    it "should not be active (times)" do
+      cooldown = build(:cooldown, expires_at: nil, cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 0)
+      expect(cooldown.active?).to be(false)
+
+      cooldown = build(:cooldown, expires_at: nil, cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 1)
+      expect(cooldown.active?).to be(false)
+    end
   end
 
   it "should show time left" do

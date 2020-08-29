@@ -10,7 +10,7 @@ module ESM
         define :whitelist_enabled, modifiable: false, default: false
         define :whitelisted_role_ids, modifiable: false, default: []
         define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: false, default: 2.times
+        define :cooldown_time, modifiable: false, default: 5.seconds
 
         def discord
           send_waiting_message
