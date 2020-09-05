@@ -43,6 +43,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.integer "community_id", null: false
     t.string "command_name", null: false
     t.boolean "enabled", default: true
+    t.boolean "notify_when_disabled", default: true
     t.integer "cooldown_quantity", default: 2
     t.string "cooldown_type", default: "seconds"
     t.boolean "allowed_in_text_channels", default: true

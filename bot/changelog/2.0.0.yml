@@ -2,8 +2,7 @@ header: |-
   Over the last year, I've been rewriting ESM bot in its entirety with focus on useability. I've added support for translations, given more control to community admins, vastly improved the help documentation, and so much more.
 
   Along with the changes to the bot, I've made a couple big changes to the core of ESM itself.
-  **-** From now on, ESM premium is no longer available. Every server, every community, and every player who uses ESM now has access to the previously locked commands and features. Knock yourselves out and have fun!
-  **-** I would consider the next change to be an un-expected one. Exile Server Manager has gone open-source! You can now view the source code, in its entirety (minus DLL/SQF, more on this later) on Github via https://www.github.com/esm_bot. One request, please read the README and CONTRIBUTION documents before creating issues or pull requests
+  **-** I would consider the next change to be an un-expected one. Exile Server Manager has gone open-source! You can now view the source code, in its entirety (minus DLL/SQF, more on this later) on Github via https://www.github.com/wolfkillarcadia/esm_bot. One request, please read the README and CONTRIBUTION documents before creating issues or pull requests
 changelog:
   bot: |-
     **__Core Systems__**
@@ -17,8 +16,9 @@ changelog:
       - Added new request system. Requests can be accepted/declined by clicking a link or using a simple command.
       - Communities can now change the activation prefix (instead of `!`) for ESM. This is adjustable via the website under Community Configuration.
       - Added back typing indicator when the bot is processing a request. It will automatically stop typing once the bot replies or after 5 seconds, whichever comes first. (No need to tell the bot to shut up :wink:)
-      - Messages sent from the bot will now attempt to resend if they experience an issu
+      - Messages sent from the bot will now attempt to resend if they experience an issue
       - Updated server reconnect message's design and added uptime
+      - Added option to disable "This command is not enabled" message for specific commands when they are disabled.
 
     **__Commands__**
     **!accept** :new:

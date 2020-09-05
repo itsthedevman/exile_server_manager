@@ -359,7 +359,7 @@ module ESM
         message =
           if block_given?
             yield
-          else
+          elsif name.present?
             ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", args.except(:exception_class)))
           end
 
@@ -472,6 +472,8 @@ module ESM
         case error
         when ESM::Exception::CheckFailure, ESM::Exception::FailedArgumentParse
           message = error.data
+        when ESM::Exception::CheckFailureNoMessage
+          return
         when StandardError
           ESM.logger.error("#{self.class}##{__method__}") { JSON.pretty_generate(message: error.message, backtrace: error.backtrace.reverse) }
           message = I18n.t("exceptions.system", message: error.message)

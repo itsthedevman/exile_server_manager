@@ -37,6 +37,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.integer :community_id, null: false, index: true
       t.string :command_name, null: false, index: true
       t.boolean :enabled, default: true
+      t.boolean :notify_when_disabled, default: true
       t.integer :cooldown_quantity, default: 2
       t.string :cooldown_type, default: "seconds"
       t.boolean :allowed_in_text_channels, default: true

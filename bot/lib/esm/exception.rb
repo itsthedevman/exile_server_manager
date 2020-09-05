@@ -37,6 +37,13 @@ module ESM
     # Generic exception for any checks
     class CheckFailure < DataError; end
 
+    # Check failure, but no message is sent
+    class CheckFailureNoMessage < Error
+      def initialize(_message)
+        super("")
+      end
+    end
+
     # exception embed for when the user tries to run a Text only command in PM
     class CommandTextOnly < DataError
       def initialize(user)

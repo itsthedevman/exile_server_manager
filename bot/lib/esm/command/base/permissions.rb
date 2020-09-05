@@ -57,10 +57,21 @@ module ESM
             else
               @command.defines.cooldown_time.default
             end
+
+          @notify_when_disabled =
+            if config_present
+              config.notify_when_disabled?
+            else
+              true
+            end
         end
 
         def enabled?
           @enabled
+        end
+
+        def notify_when_disabled?
+          @notify_when_disabled
         end
 
         def whitelisted?

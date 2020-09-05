@@ -72,12 +72,17 @@ module ESM
           @command.permissions.load
 
           if !@command.permissions.enabled?
-            check_failed!(
-              :command_not_enabled,
-              prefix: @command.prefix,
-              user: current_user.mention,
-              command_name: @command.name
-            )
+            # If the community doesn't to send a message, don't send a message
+            if !@command.permissions.notify_when_disabled?
+              check_failed!(exception_class: ESM::Exception::CheckFailureNoMessage)
+            else
+              check_failed!(
+                :command_not_enabled,
+                prefix: @command.prefix,
+                user: current_user.mention,
+                command_name: @command.name
+              )
+            end
           end
 
           if !@command.permissions.whitelisted?
