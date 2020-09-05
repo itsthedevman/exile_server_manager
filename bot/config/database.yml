@@ -2,7 +2,7 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: 15
-  host: ''
+  host: 'localhost'
   username: esm
   password: password12345
 

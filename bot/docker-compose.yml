@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  postgres_db:
+    image: postgres
+    restart: always
+    container_name: ESM_DB_POSTGRES
+    environment:
+      POSTGRES_USER: esm
+      POSTGRES_PASSWORD: password12345
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+
+volumes:
+  postgres-data:
