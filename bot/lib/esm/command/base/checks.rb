@@ -228,10 +228,7 @@ module ESM
           return if @command.dm_only?
 
           # Allow using commands on other communities
-          return if @command.target_community && current_community.id != @command.target_community.id
-
-          # Only allow player commands
-          return if @command.type == :player
+          return if @command.target_community && (current_community.id != @command.target_community.id) && @command.type == :player
 
           check_failed!(:player_mode_command_not_available, prefix: @command.prefix, user: current_user.mention, command_name: @command.name)
         end
