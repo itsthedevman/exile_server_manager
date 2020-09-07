@@ -73,3 +73,6 @@ en:
 
     # reward
     no_reward_items: "Hey %{user}, it looks like this server does not have any rewards for you to redeem."
+
+    # info
+    no_target: "Hey %{user}, you must provide either a territory ID, Discord ID, steam uid, or @user discord mention."

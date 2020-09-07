@@ -441,3 +441,18 @@ en:
         Hey %{user}, you have requested a rewards on `%{server}`. In order to receive the rewards on the server, you must be spawned in and alive. Any items given will be added to your inventory automatically, and if you do not have space, **they will be dropped on the ground**.
       receipt: "Hi %{user}, the following goodies have been delivered to you!\n%{items}"
       check_pm: "Hi %{user}, you'll need to confirm this request. I've sent you a confirmation message in a direct message with you."
+    info:
+      description: "Displays information about a particular player or territory. This command is the admin equivalent to the `!territories` and `!me` commands."
+      example: |-
+        **`%{prefix}info esm_malden @Bryan`**
+        Using their mention, return their player stats on `esm_malden`
+
+        **`%{prefix}info esm_tanoa 76561198037177305`**
+        Using their steam uid, return their player stats on `esm_tanoa`
+
+        **`%{prefix}info esm_altis 137709767954137088`**
+        Using their Discord ID, return their player stats on `esm_altis`
+
+        **`%{prefix}info esm_namalsk jquee`**
+        Return the territory information for `jquee`
+      no_response: "I'm sorry %{user}, I didn't find any information related to your request."

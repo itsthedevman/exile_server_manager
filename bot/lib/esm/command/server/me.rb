@@ -21,82 +21,8 @@ module ESM
         end
 
         def server
-          # Apparently some databases had nil values...
-          normalize_response
-
-          # What if the player is dead?
-          embed =
-            ESM::Embed.build do |e|
-              e.title = I18n.t("commands.me.embed.title", server_id: target_server.server_id, user: @response.name)
-
-              add_general_field(e)
-              add_currency_field(e)
-              add_scoreboard_field(e)
-
-              e.add_field(name: I18n.t("territories"), value: build_territory_field) if !@response.territories.to_h.blank?
-            end
-
-          reply(embed)
-        end
-
-        #########################
-        # Command Methods
-        #########################
-        # @private
-        # Normalizes the response so we don't crash
-        def normalize_response
-          @response.kills ||= 0
-          @response.deaths ||= 0
-        end
-
-        def add_general_field(embed)
-          embed.add_field(
-            name: "__#{I18n.t(:general)}__",
-            value: [
-              # Arma stores the health as 0 (full) to 1 (dead)
-              "**#{I18n.t(:health)}:**\n#{(100 - (@response.damage * 100)).round(2)}%\n",
-              "**#{I18n.t(:hunger)}:**\n#{@response.hunger.round(2)}%\n",
-              "**#{I18n.t(:thirst)}:**\n#{@response.thirst.round(2)}%\n"
-            ].join("\n"),
-            inline: true
-          )
-        end
-
-        def add_currency_field(embed)
-          embed.add_field(
-            name: "__#{I18n.t(:currency)}__",
-            value: [
-              "**#{I18n.t(:money)}:**\n#{@response.money.to_poptab}\n",
-              "**#{I18n.t(:locker)}:**\n#{@response.locker.to_poptab}\n",
-              "**#{I18n.t(:respect)}:**\n#{@response.score.to_readable}\n"
-            ].join("\n"),
-            inline: true
-          )
-        end
-
-        def add_scoreboard_field(embed)
-          embed.add_field(
-            name: "__#{I18n.t(:scoreboard)}__",
-            value: [
-              "**#{I18n.t(:kills)}:**\n#{@response.kills.to_readable}\n",
-              "**#{I18n.t(:deaths)}:**\n#{@response.deaths.to_readable}\n",
-              "**#{I18n.t(:kd_ratio)}:**\n#{kd_ratio}\n"
-            ].join("\n"),
-            inline: true
-          )
-        end
-
-        def build_territory_field
-          @response.territories.to_h.format(join_with: "\n") do |name, id|
-            "**#{name}**: `#{id}`"
-          end
-        end
-
-        def kd_ratio
-          return 0 if @response.deaths.zero?
-
-          # These are returns as integers, cast to float
-          (@response.kills.to_f / @response.deaths).round(2)
+          player = ESM::Arma::Player.new(server: target_server, player: @response)
+          reply(player.to_embed)
         end
       end
     end

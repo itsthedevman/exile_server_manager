@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export RUBYOPT='-W:no-deprecated -W:no-experimental'
+
 # Set dev
 if [[ -z $1 ]]
 then

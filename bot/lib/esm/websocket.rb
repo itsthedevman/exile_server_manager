@@ -27,7 +27,7 @@ module ESM
     # @note Do not rescue. This will fall down to the calling class
     def self.deliver!(server_id, request)
       connection = @connections[server_id]
-      return request.command.check_failed!(:server_not_connected, user: request.user, server_id: server_id) if connection.nil?
+      return request.command.check_failed!(:server_not_connected, user: request.user.mention, server_id: server_id) if connection.nil?
 
       connection.deliver!(request)
     end

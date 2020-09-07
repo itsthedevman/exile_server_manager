@@ -150,6 +150,39 @@ module ESM
         end
       end
 
+      def to_embed
+        ESM::Embed.build do |e|
+          e.title = "#{I18n.t(:territory)} \"#{self.name}\""
+          e.thumbnail = self.flag_path
+          e.color = self.status_color
+          e.description = self.payment_reminder_message
+
+          e.add_field(name: I18n.t(:territory_id), value: "```#{self.id}```", inline: true)
+          e.add_field(name: I18n.t(:flag_status), value: "```#{self.flag_status}```", inline: true)
+          e.add_field(name: I18n.t(:next_due_date), value: "```#{self.next_due_date.strftime(ESM::Time::Format::TIME)}```")
+          e.add_field(name: I18n.t(:last_paid), value: "```#{self.last_paid_at.strftime(ESM::Time::Format::TIME)}```")
+          e.add_field(name: I18n.t(:price_to_renew_protection), value: self.renew_price, inline: true)
+
+          e.add_field(value: I18n.t("commands.territories.current_territory_stats"))
+          e.add_field(name: I18n.t(:level), value: self.level, inline: true)
+          e.add_field(name: I18n.t(:radius), value: "#{self.radius}m", inline: true)
+          e.add_field(name: "#{I18n.t(:current)} / #{I18n.t(:max_objects)}", value: "#{self.object_count}/#{self.max_object_count}", inline: true)
+
+          if self.upgradeable?
+            e.add_field(value: I18n.t("commands.territories.next_territory_stats"))
+            e.add_field(name: I18n.t(:level), value: self.upgrade_level, inline: true)
+            e.add_field(name: I18n.t(:radius), value: "#{self.upgrade_radius}m", inline: true)
+            e.add_field(name: I18n.t(:max_objects), value: self.upgrade_object_count, inline: true)
+            e.add_field(name: I18n.t(:price), value: self.upgrade_price, inline: true)
+          end
+
+          e.add_field(value: I18n.t("commands.territories.territory_members"))
+          e.add_field(name: I18n.t(:owner), value: self.owner)
+          e.add_field(name: I18n.t(:moderators), value: self.moderators)
+          e.add_field(name: I18n.t(:build_rights), value: self.builders)
+        end
+      end
+
       private
 
       def convert_flag_path(arma_path)

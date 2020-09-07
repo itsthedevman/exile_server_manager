@@ -19,6 +19,7 @@ module ESM
     FLAG_NAME = /(flag_.*)\.paa/.freeze
     BROADCAST = /#{SERVER_ID_OPTIONAL_COMMUNITY.source}|all|preview/.freeze
     HEX_COLOR = /^\#[a-fA-F0-9]{6}$/.freeze
+    TARGET_OR_TERRITORY_ID = /#{TARGET.source}|#{TERRITORY_ID.source}/.freeze
   end
 end
 

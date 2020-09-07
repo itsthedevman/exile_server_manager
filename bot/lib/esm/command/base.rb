@@ -137,7 +137,7 @@ module ESM
           from_server(event)
         end
       rescue StandardError => e
-        handle_error(e, event)
+        handle_error(e)
       end
 
       def usage
@@ -463,10 +463,10 @@ module ESM
         flags.each { |flag| @skip_flags << flag }
       end
 
-      def handle_error(error, event)
+      def handle_error(error)
         message = nil
 
-        # For tests
+        # So tests can check for errors
         raise error if ESM.env.test?
 
         case error
@@ -481,7 +481,7 @@ module ESM
           return
         end
 
-        ESM.bot.deliver(message, to: event.channel)
+        ESM.bot.deliver(message, to: @event.channel)
       end
     end
   end

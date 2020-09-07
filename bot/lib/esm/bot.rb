@@ -63,6 +63,16 @@ module ESM
       super(type, data) if !IGNORED_EVENTS.include?(type)
     end
 
+    # Overriding DiscordRB's variant to allow commands to be case-insensitive
+    #
+    # @override
+    def simple_execute(chain, event)
+      return nil if chain.empty?
+
+      args = chain.split(' ')
+      execute_command(args[0].downcase.to_sym, event, args[1..-1])
+    end
+
     ###########################
     # Discord Events!
     # These all have to have unique-to-ESM names since we are inheriting

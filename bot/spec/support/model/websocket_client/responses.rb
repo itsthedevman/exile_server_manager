@@ -24,7 +24,8 @@ class WebsocketClient
       upgrade: { send_ignore_message: true, delay: 0..3 },
       restore: { delay: 0..1 },
       player: { send_ignore_message: true, delay: 0..3 },
-      reward: { send_ignore_message: true, delay: 0..3 }
+      reward: { send_ignore_message: true, delay: 0..3 },
+      info: { send_ignore_message: true, delay: 0..3 }
     }.freeze
 
     def response_server_success_command
@@ -221,6 +222,43 @@ class WebsocketClient
       receipt << ["Respect", @server_data.reward_respect] if @server_data.reward_respect.positive?
 
       send_response(parameters: [{ receipt: receipt }])
+    end
+
+    def response_info
+      response = {}
+
+      case @data.parameters.query
+      when "territory_info"
+        response = TerritoryGenerator.generate
+      when "player_info"
+        territories = {}
+
+        if rand < 0.5
+          Faker::Number.within(range: 1..3).times do
+            territories[Faker::FunnyName.two_word_name] = Faker::Crypto.md5[0, 3]
+          end
+        end
+
+        response = {
+          locker: Faker::Number.within(range: 1..30_000),
+          score: Faker::Number.within(range: 1..30_000),
+          name: Faker::Internet.username,
+          kills: Faker::Number.within(range: 1..100),
+          deaths: Faker::Number.within(range: 1..100),
+          territories: territories
+        }
+
+        if @flags.PLAYER_ALIVE
+          response = response.merge(
+            money: Faker::Number.within(range: 1..30_000),
+            damage: Faker::Number.within(range: 0..0.9),
+            hunger: Faker::Number.within(range: 1..100),
+            thirst: Faker::Number.within(range: 1..100)
+          )
+        end
+      end
+
+      send_response(parameters: [response])
     end
   end
 end

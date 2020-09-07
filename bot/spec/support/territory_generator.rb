@@ -86,7 +86,7 @@ class TerritoryGenerator
       level: level,
       flag_texture: FLAG_TEXTURES.sample(1).first,
       flag_stolen: stolen,
-      last_paid_at: Faker::Time.between(from: 7.days.ago, to: Date.today).strftime(TIME_FORMAT),
+      last_paid_at: Faker::Time.between(from: 7.days.ago, to: Date.today).utc.strftime(TIME_FORMAT),
       build_rights: builders,
       moderators: moderators,
       object_count: Faker::Number.between(from: 0, to: level_info[:object_count]),
