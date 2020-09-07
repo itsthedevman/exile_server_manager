@@ -41,6 +41,8 @@ changelog:
     **!help** :new:
       - Replaces `!commands`. This command actually provides useful information! Shock!
       - Added new help documentation, detailed information about commands and how to use them
+    **!info**
+      - Brought responses up-to-date with territories and me commands
     **!me**
       - Improved formatting of poptabs and numbers
       - Categorized player information for better display
