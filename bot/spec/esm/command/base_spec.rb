@@ -1184,7 +1184,7 @@ describe ESM::Command::Base do
       expect { dm_only_command.execute(event) }.not_to raise_error
     end
 
-    it "should be able to run command for other communities in text channel" do
+    it "should be able to run player command for other communities in text channel" do
       community_command = ESM::Command::Test::CommunityCommand.new
       command_statement = community_command.statement(community_id: community.community_id)
       event = CommandEvent.create(command_statement, channel_type: :text, user: secondary_user)
@@ -1194,13 +1194,13 @@ describe ESM::Command::Base do
 
     it "should not allow admin commands in text channel" do
       admin_only_command = ESM::Command::Test::AdminCommand.new
-      command_statement = admin_only_command.statement(community_id: secondary_community.community_id)
+      command_statement = admin_only_command.statement(community_id: community.community_id)
       event = CommandEvent.create(command_statement, channel_type: :text, user: secondary_user)
 
       expect { admin_only_command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /is not available in player mode/i)
     end
 
-    it "should not allow running commands for other communities in text channels" do
+    it "should not allow running commands for other communities in text channels (Non-playermode community)" do
       community_command = ESM::Command::Test::CommunityCommand.new
       command_statement = community_command.statement(community_id: secondary_community.community_id)
 

@@ -227,8 +227,12 @@ module ESM
           # Allow commands with DM only
           return if @command.dm_only?
 
-          # Allow using commands on other communities
-          return if @command.target_community && (current_community.id != @command.target_community.id) && @command.type == :player
+          # Admin/Different - Disallow
+          # Admin/Same - Allow
+          # Player/Different - Allow
+          # Player/Same - Allow
+          # I don't use `unless` often, but in this case, it simplifies the logic.
+          return unless @command.type == :admin && @command.target_community && (current_community.id != @command.target_community.id)
 
           check_failed!(:player_mode_command_not_available, prefix: @command.prefix, user: current_user.mention, command_name: @command.name)
         end
