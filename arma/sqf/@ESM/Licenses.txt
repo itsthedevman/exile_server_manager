@@ -1,0 +1,17 @@
+﻿------------------------------------------------------------------------------------
+esm.dll / esm.so
+© 2018-2020 Exile Server Manager
+CC BY-NC-ND 4.0
+https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+------------------------------------------------------------------------------------
+esm_x64.dll / esm_x64.so
+© 2018-2020 Exile Server Manager
+CC BY-NC-ND 4.0
+https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+------------------------------------------------------------------------------------
+All exile_server_*.pbo are licensed under
+© 2018-2020 Exile Mod or © 2018-2020 Exile Server Manager
+CC BY-NC-ND 4.0
+https://creativecommons.org/licenses/by-nc-nd/4.0/
