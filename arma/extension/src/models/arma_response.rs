@@ -1,11 +1,9 @@
 pub struct ArmaResponse {
-    // Indicates to the 
-    success: bool,
-    values: Vec
+    values: Vec<String>
 }
 
 impl ArmaResponse {
-    pub fn new(success: bool, values: Vec) -> ArmaResponse {
-        ArmaResponse { success, values }
+    pub fn new(values: Vec<String>) -> ArmaResponse {
+        ArmaResponse { values }
     }
 }

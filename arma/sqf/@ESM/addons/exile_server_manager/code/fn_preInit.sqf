@@ -22,7 +22,7 @@ ESM_CommunityID = "";
 private _restart = getArray(configFile >> "CfgSettings" >> "RCON" >> "restartTimer");
 
 // Data to be sent to the server
-private _data = 
+private _data =
 [
 	["server_name", serverName],
 	["price_per_object", getNumber(missionConfigFile >> "CfgTerritories" >> "popTabAmountPerObject")],
@@ -45,15 +45,17 @@ private _return = ["initialize", _data] call ESM_fnc_callExtension;
 if (_return select 0) then
 {
 	["fn_preInit", (_return select 1) select 0] call ESM_fnc_log;
-	
-	// Create a temporary request checker
-	[] spawn 
-	{
-		waitUntil {PublicServerIsLoaded};
-		ESM_RequestThread = [0.1, ESM_fnc_checkForRequests, [], true] call ExileServer_system_thread_addTask;
-	};
+
+	// Add a MissionEventHandler to allow callbacks from the DLL
+	addMissionEventHandler ["ExtensionCallback", {
+		params ["_name", "_function", "_data"];
+
+		if (_name == "esm") then {
+			[_function, _data] call ESM_fnc_handleCallback;
+		};
+	}];
 }
-else 
+else
 {
 	["fn_preInit", format["Failed to initialize!!! Reason: %1", (_return select 1) select 0]] call ESM_fnc_log;
 };

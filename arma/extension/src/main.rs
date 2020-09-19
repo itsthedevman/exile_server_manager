@@ -1,14 +1,14 @@
-mod models;
+extern crate log;
 
-use std::collections::HashMap;
-use models::arma_request::ArmaRequest;
-use models::
+mod models;
+mod websocket_client;
+
+// use std::collections::HashMap;
+// use models::arma_request::ArmaRequest;
+use websocket_client::WebsocketClient;
 
 fn main() {
-    let mut parameters: HashMap<String, String> = HashMap::new();
-    parameters.insert(String::from("uid"), String::from("1234567890"));
+    env_logger::init();
 
-    let request = ArmaRequest::new("test".to_string(), parameters);
-    println!("{:?}", request);
-    println!("{}", serde_json::to_string(&request).unwrap());
+    WebsocketClient::connect_to_bot();
 }
