@@ -1,13 +1,12 @@
 use ws::{connect, Handler, Sender, Handshake, Result, Message, CloseCode, Request, Error};
 use url;
-use std::fs;
+use std::{env, fs};
 use base64;
-use log::debug;
-
-const TEST_KEY: &str = "ee3686ece9e84c9ba4ce86182dff487f87c0a2a5004145bfb3e256a3d96ab6f01d7c6ca0a48240c29f365e10eca3ee55edb333159c604dff815ec74cba72658a553461649c554e47ab20693a1079d1c6bf8718220d704366ab315b6b3a4cbbac6b82ac2c2f3c469f9a25e134baa0df9d";
+use log::*;
 
 pub struct WebsocketClient {
-    connection: Sender
+    connection: Sender,
+    ext_path: String
 }
 
 impl Handler for WebsocketClient {
@@ -22,7 +21,7 @@ impl Handler for WebsocketClient {
     fn on_open(&mut self, _: Handshake) -> Result<()> {
         debug!("Connected to Discord");
 
-        self.connection.send("Hello WebSocket")
+        Ok(())
     }
 
     // A message from the bot
@@ -44,20 +43,40 @@ impl Handler for WebsocketClient {
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot() {
-        connect("ws://127.0.0.1:3001", |out| WebsocketClient { connection: out } ).unwrap()
+    pub fn connect_to_bot(ext_path: &String) {
+        connect(
+            env::var("ESM_WS_URL").unwrap_or("ws://ws.esmbot.com".to_string()),
+            |out| {
+            WebsocketClient {
+                connection: out,
+                ext_path: ext_path.clone()
+            }
+        }).unwrap()
     }
 
     // Takes in a Request and adds the esm.key into the headers for authorization
     fn add_authorization_header(&self, request: &mut Request) {
         // Read in the esm.key file
-        // If file not found, Consider creating a ArmaServer struct that contains a log method to log to the A3 server
-        // rv_callback!("esm", "ESM_fnc_log", "Failed to find ESM.key")
+        let file = fs::read_to_string(format!("{}/esm.key", self.ext_path));
+
+        // Read the contents of the file result. If the file isn't found, panic!
+        let file_contents = match file {
+            Ok(contents) => contents,
+            Err(_) => {
+                panic!("esm.key not found. Please read the documentation");
+            }
+        };
 
         // Create the authorization header
+        // TODO: Remove the need to have the `arma_server` prefix
         let mut auth_header = vec![(
             "AUTHORIZATION".into(),
-            format!("basic {}", base64::encode(TEST_KEY.as_bytes())).as_bytes().to_vec()
+            format!(
+                "basic {}",
+                base64::encode(
+                    format!("arma_server:{}", file_contents).as_bytes()
+                )
+            ).as_bytes().to_vec()
         )];
 
         // Add the new header to the headers on the request
