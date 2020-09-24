@@ -25,11 +25,12 @@ module ESM
 
           # Add the request
           add_request(
+            to: current_user,
             description: I18n.t("commands.reward.request_description", user: current_user.mention, server: target_server.server_id)
           )
 
           # Remind them to check their PMs
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.reward.check_pm", user: current_user.mention))
+          embed = ESM::Embed.build(:success, description: I18n.t("commands.request.check_pm", user: current_user.mention))
           reply(embed)
         end
 

@@ -39,7 +39,7 @@ class WebsocketClient
     ESM::Notifications.trigger("websocket_client_on_message", event: event)
 
     command_config = WebsocketClient::Responses::CONFIG[@data.command.to_sym]
-    raise "Missing command config for: #{@data.command}" if command_config.nil?
+    return ESM.logger.error("#{self.class}##{__method__}") { "Missing command config for `#{@data.command}`" } if command_config.nil?
 
     send_ignore_message if command_config[:send_ignore_message]
     delay(command_config[:delay]) if command_config[:delay]

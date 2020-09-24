@@ -6,14 +6,14 @@ module ESM
       module Request
         # @param request [ESM::Request] The request to build this command with
         # @param accepted [Boolean] If the request was accepted (true) or denied (false)
+        # @note Don't load `target_user` from the request. If the arguments contain a target, it will handle it
         def from_request(request)
           @request = request
 
           # Initialize our command from the request
           @arguments.from_hash(request.command_arguments) if request.command_arguments.present?
-          @current_user = ESM::User.parse(request.requestor.discord_id)&.discord_user
-          @target_user = ESM::User.parse(request.requestee.discord_id)&.discord_user
           @current_channel = ESM.bot.channel(request.requested_from_channel_id)
+          @current_user = ESM::User.parse(request.requestor.discord_id)&.discord_user
 
           if @request.accepted
             request_accepted
@@ -38,19 +38,17 @@ module ESM
           end.call
         end
 
-        def add_request(description: "")
-          requestee = target_user || current_user
-
+        def add_request(to:, description: "")
           @request =
             ESM::Request.create!(
               requestor_user_id: current_user.esm_user.id,
-              requestee_user_id: requestee.esm_user.id,
+              requestee_user_id: to.esm_user.id,
               requested_from_channel_id: current_channel.id.to_s,
               command_name: @name.underscore,
               command_arguments: @arguments.to_h
             )
 
-          send_request_message(description: description, target: requestee)
+          send_request_message(description: description, target: to)
         end
 
         def request_url

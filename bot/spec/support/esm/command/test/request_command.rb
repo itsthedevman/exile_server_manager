@@ -15,7 +15,7 @@ module ESM
         argument :target
 
         def discord
-          add_request
+          add_request(to: target_user)
         end
 
         def request_accepted

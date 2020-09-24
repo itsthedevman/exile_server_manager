@@ -25,7 +25,9 @@ class WebsocketClient
       restore: { delay: 0..1 },
       player: { send_ignore_message: true, delay: 0..3 },
       reward: { send_ignore_message: true, delay: 0..3 },
-      info: { send_ignore_message: true, delay: 0..3 }
+      info: { send_ignore_message: true, delay: 0..3 },
+      stuck: { delay: 0..1 },
+      reset: { delay: 0..1 }
     }.freeze
 
     def response_server_success_command
@@ -259,6 +261,14 @@ class WebsocketClient
       end
 
       send_response(parameters: [response])
+    end
+
+    def response_stuck
+      send_response(parameters: [{ success: @flags.SUCCESS }])
+    end
+
+    def response_reset
+      send_response(parameters: [{ success: @flags.SUCCESS }])
     end
   end
 end

@@ -89,6 +89,10 @@ describe ESM::Cooldown do
     let!(:expires_at) { Time.now.utc + 1.day }
     let!(:cooldown_defaults) { { user_id: user.id, community_id: community.id, command_name: "base", expires_at: expires_at } }
 
+    it "should not crash (no community ID)" do
+      expect { create(:cooldown, cooldown_defaults.merge(community_id: nil, cooldown_type: configuration.cooldown_type, cooldown_quantity: configuration.cooldown_quantity)).reload }.not_to raise_error
+    end
+
     it "should not change (seconds, no changes)" do
       cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: configuration.cooldown_type, cooldown_quantity: configuration.cooldown_quantity)).reload
       expect(cooldown.expires_at.to_s).to eql(expires_at.to_s)

@@ -55,6 +55,9 @@ module ESM
     # The user shouldn't have to wait 24 hours when the new cooldown is 2 seconds
     # @note This method purposefully does not persist any values
     def adjust_for_community_changes
+      # Commands that have no community_id and are used in DMs will not be able to use this code
+      return if self.community.nil?
+
       configuration = self.community.command_configurations.where(command_name: self.command_name).first
       return if configuration.cooldown_type == self.cooldown_type && configuration.cooldown_quantity == self.cooldown_quantity
 

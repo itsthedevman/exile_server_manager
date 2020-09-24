@@ -8,6 +8,7 @@ en:
       decline_value: "[DECLINE](%{url})"
       command_usage_name: "Don't feel safe going to my website?"
       command_usage_value: "That's okay! You can accept or decline this request by using ```%{prefix}accept %{uuid}``` or ```%{prefix}decline %{uuid}```"
+      check_pm: "Hi %{user}, you'll need to confirm this request. I've sent you a confirmation message in a direct message with you."
     base:
       description: A test command
       example: |-
@@ -440,7 +441,6 @@ en:
       request_description: |-
         Hey %{user}, you have requested a rewards on `%{server}`. In order to receive the rewards on the server, you must be spawned in and alive. Any items given will be added to your inventory automatically, and if you do not have space, **they will be dropped on the ground**.
       receipt: "Hi %{user}, the following goodies have been delivered to you!\n%{items}"
-      check_pm: "Hi %{user}, you'll need to confirm this request. I've sent you a confirmation message in a direct message with you."
     info:
       description: "Displays information about a particular player or territory. This command is the admin equivalent to the `!territories` and `!me` commands."
       example: |-
@@ -456,3 +456,32 @@ en:
         **`%{prefix}info esm_namalsk jquee`**
         Return the territory information for `jquee`
       no_response: "I'm sorry %{user}, I didn't find any information related to your request."
+    stuck:
+      description: "Deletes your player on the provided server in an attempt to fix the spawning glitch. You will be required to confirm the request before any deletion takes place."
+      example: |-
+        **`%{prefix}stuck esm_malden`**
+        Deletes your player on `esm_malden`
+      request_description: |-
+        Hey %{user}, you have requested to have your player reset to get out of the "rabbit" or stuck state when spawning in. In order for the process to work, your player needs to have been spawned in at least once and you cannot be logged into the server when you confirm this.
+
+        **Warning, this process is destructive.**
+        If you confirm, your player on `%{server}` will be deleted and any items or poptabs on your player will be lost.
+      success_message: "%{user}, you've been reset successfully. Please join the server to spawn back in"
+      failure_message: "%{user}, I was not successful at resetting your player on `%{server}`. Please join the server again, and if you are still stuck, close Arma 3 and attempt this command again."
+    reset:
+      description: "Deletes a single player or all players on a server in an attempt to fix the spawning glitch. This command is the admin equivalent to the `!stuck` command"
+      example: |-
+        **`%{prefix}reset esm_malden`**
+        Deletes all players on `esm_malden`
+
+        **`%{prefix}reset esm_malden @Bryan`**
+        Deletes @Bryan's player on `esm_malden`
+      request_description: |-
+        Hey %{user}, you have requested to have one or all players reset on `%{server}`. In order for the process to work, the player(s) needs to have been spawned in at least once and they cannot be logged into the server when you confirm this.
+
+        **Warning, this process is destructive.**
+        If you confirm, one or all players on `%{server}` will be deleted and any items or poptabs on their players will be lost.
+      success_message_target: "%{user}, %{target} has been reset successfully. Please instruct them to join the server again to confirm."
+      success_message_all: "%{user}, I've reset all stuck players."
+      failure_message_target: "%{user}, %{target} is not stuck. Please have them join the server again, and if they are still stuck, instruct them to close Arma 3 and then attempt this command again."
+      failure_message_all: "%{user}, I was unable to find anyone who was stuck."

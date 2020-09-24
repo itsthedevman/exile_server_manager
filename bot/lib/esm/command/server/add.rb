@@ -26,6 +26,7 @@ module ESM
 
           @checks.pending_request!
           add_request(
+            to: target_user,
             description: I18n.t(
               "commands.add.request_description",
               current_user: current_user.distinct,
