@@ -4,6 +4,8 @@ use arma_rs::{rv, rv_handler, rv_callback};
 use log::*;
 use websocket_client::WebsocketClient;
 use lazy_static::lazy_static;
+use std::sync::Mutex;
+use crossbeam_channel::{Sender, bounded};
 
 lazy_static! {
     static ref A3_SERVER: ArmaServer = ArmaServer::new();
@@ -13,13 +15,9 @@ lazy_static! {
 // This is called when the Arma server requests the DLL version
 #[rv_handler]
 pub fn init() {
-    A3_SERVER.log("Extension Initialization");
-
     env_logger::init();
 
-    debug!("{:?}", A3_SERVER.ext_path);
-
-    A3_SERVER.connect_to_bot();
+    A3_SERVER.log("Extension Initialization");
 }
 
 // Required
@@ -30,7 +28,8 @@ fn is_arma3(version: u8) -> bool {
 }
 
 pub struct ArmaServer {
-    ext_path: String
+    ext_path: String,
+    sender: Mutex<Sender<String>>
 }
 
 impl ArmaServer {
@@ -44,11 +43,23 @@ impl ArmaServer {
             ext_path = ext_path.replace("/extension/target/debug/esm", "/sqf/@ESM");
         }
 
-        ArmaServer { ext_path: ext_path }
+        // Create a temp channel that will be replaced after connecting to the bot.
+        let (temp_sender, _receiver) = bounded(0);
+
+        let mut arma_server = ArmaServer {
+            ext_path: ext_path,
+            sender: Mutex::new(temp_sender)
+        };
+
+        // Connect to the bot
+        arma_server.connect_to_bot();
+
+        arma_server
     }
 
-    pub fn connect_to_bot(&self) {
-        WebsocketClient::connect_to_bot(&self.ext_path);
+    fn connect_to_bot(&mut self) {
+        let sender = WebsocketClient::connect_to_bot(&self.ext_path);
+        self.sender = Mutex::new(sender);
     }
 
     pub fn log(&self, message: &'static str) {
