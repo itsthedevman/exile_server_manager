@@ -1,0 +1,189 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'rubygems'
+require 'commander/import'
+require 'fileutils'
+require 'file'
+require 'pry'
+
+program :name, 'esm'
+program :version, '0.0.1'
+program :description, 'CLI utility to build @ESM'
+
+command :build do |c|
+  c.syntax = 'esm build [options]'
+  c.summary = ''
+  c.description = ''
+  c.example 'description', 'command example'
+  c.option '--use-x64', 'Build the x64 version of the extension'
+  c.action do |args, options|
+    bar = Commander::UI::ProgressBar.new(4, title: "Building ESM")
+
+    # Set some build flags
+    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, release: false)
+
+    # Kill Arma server
+    Utils.kill_arma_server
+
+    bar.increment
+
+    # Clean up the build and destination directories
+    Utils.clean_directories
+
+    bar.increment
+
+    # Compile and copy over the DLL into the @ESM mod locally
+    Utils.build_and_copy_extension
+
+    bar.increment
+
+    # Build the addons
+    Utils.build_addons
+
+    bar.increment
+  end
+end
+
+command :run do |c|
+  c.syntax = 'esm run [options]'
+  c.summary = ''
+  c.description = ''
+  c.example 'description', 'command example'
+  c.option '--use-x64', 'Build the x64 version of the extension and start the x64 version of the server'
+  c.action do |args, options|
+    # Check for required stuff
+    next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
+
+    bar = Commander::UI::ProgressBar.new(5, title: "Building ESM")
+
+    # Set some build flags
+    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, release: false)
+
+    # Kill Arma server
+    Utils.kill_arma_server
+
+    bar.increment
+
+    # Clean up the build and destination directories
+    Utils.clean_directories
+
+    bar.increment
+
+    # Compile and copy over the DLL into the @ESM mod locally
+    Utils.build_and_copy_extension
+
+    bar.increment
+
+    # Build and copy the mod to destination
+    Utils.build_and_copy_mod
+
+    bar.increment
+
+    # Start the server
+    Utils.start_server
+
+    bar.increment
+  end
+end
+
+class Utils
+  GIT_DIRECTORY = File.expand_path("../")
+  BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
+  SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
+  MIKERO_PATH = "C:/Program Files (x86)/Mikero/DePboTools/bin"
+  PBOS = [
+    "exile_server_manager",
+    "exile_server_overwrites",
+    "exile_server_xm8",
+    "exile_server_hacking",
+    "exile_server_grinding",
+    "exile_server_charge_plant_started",
+    "exile_server_flag_steal_started",
+    "exile_server_player_connected"
+  ]
+
+  TARGETS = {
+    windows: {
+      x86: "i686-pc-windows-msvc"
+      x64: "x86_64-pc-windows-msvc"
+    }
+  }
+
+  def self.flags(os:, arch:, release:)
+    @os = os
+    @arch = arch
+    @release = release
+  end
+
+  def self.target
+    @target ||= TARGETS[@os][@arch]
+  end
+
+  def self.kill_arma_server
+    `taskkill /IM "arma3server" /F`
+    `taskkill /IM "arma3server_x64" /F`
+  end
+
+  def self.clean_directories
+    # Remove the @ESM in target/arma
+    if File.directory?("#{BUILD_DIRECTORY}/@ESM")
+      FileUtils.remove_dir("#{BUILD_DIRECTORY}/@ESM")
+    end
+
+    # Recreate the directory
+    FileUtils.mkdir_p("#{GIT_DIRECTORY}/target/arma/@ESM")
+
+    # Copy the @ESM into target/arma (Except addons)
+    FileUtils.cp_r("#{GIT_DIRECTORY}/@ESM", "#{BUILD_DIRECTORY}/@ESM")
+    FileUtils.remove_dir("#{BUILD_DIRECTORY}/@ESM/addons")
+
+    # Create the addons folder in target/arma/@ESM
+    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@ESM/addons")
+  end
+
+  def self.build_and_copy_extension
+    build_extension
+    copy_extension
+  end
+
+  # This is Windows only for now...
+  def self.build_extension
+    command = "rustup run stable-#{target} cargo build --target #{target}"
+    command += " --release" if @release
+
+    `#{command}`
+  end
+
+  def self.copy_extension
+    path =
+      if @os == :windows
+        "#{GIT_DIRECTORY}/target/#{target}/esm.dll"
+      else
+        "#{GIT_DIRECTORY}/target/#{target}/esm.so"
+      end
+
+    FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM")
+  end
+
+  def self.build_and_copy_mod
+    build_addons
+    copy_mod
+  end
+
+  def self.build_addons
+    MODS.each do |mod|
+      `#{MIKERO_PATH}/MakePBO.exe -NUP -@=#{mod} #{BUILD_DIRECTORY}/@ESM/addons/#{mod}`
+    end
+  end
+
+  def self.copy_mod
+    # Remove the @ESM mod in the destination
+    FileUtils.remove_dir("#{SERVER_DIRECTORY}/@ESM")
+    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{SERVER_DIRECTORY}/@ESM")
+  end
+
+  def self.start_server
+    `cd #{SERVER_DIRECTORY} && ./Deploy_ESM.bat`
+  end
+end
