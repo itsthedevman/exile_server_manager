@@ -4,7 +4,6 @@
 require 'rubygems'
 require 'commander/import'
 require 'fileutils'
-require 'pry'
 
 program :name, 'esm'
 program :version, '0.0.1'
@@ -17,30 +16,20 @@ command :build do |c|
   c.example 'description', 'command example'
   c.option '--use-x64', 'Build the x64 version of the extension'
   c.action do |args, options|
-    bar = Commander::UI::ProgressBar.new(4, title: "Building ESM")
-
     # Set some build flags
-    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, release: false)
+    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, env: :debug)
 
     # Kill Arma server
     Utils.kill_arma_server
 
-    bar.increment
-
     # Clean up the build and destination directories
     Utils.clean_directories
-
-    bar.increment
 
     # Compile and copy over the DLL into the @ESM mod locally
     Utils.build_and_copy_extension
 
-    bar.increment
-
     # Build the addons
     Utils.build_addons
-
-    bar.increment
   end
 end
 
@@ -53,45 +42,34 @@ command :run do |c|
   c.action do |args, options|
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
-
-    bar = Commander::UI::ProgressBar.new(5, title: "Building ESM")
+    next say("Deployment path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::DEPLOYMENT_DIRECTORY.empty?
 
     # Set some build flags
-    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, release: false)
+    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, env: :debug)
 
     # Kill Arma server
     Utils.kill_arma_server
 
-    bar.increment
-
     # Clean up the build and destination directories
     Utils.clean_directories
-
-    bar.increment
 
     # Compile and copy over the DLL into the @ESM mod locally
     Utils.build_and_copy_extension
 
-    bar.increment
-
     # Build and copy the mod to destination
     Utils.build_and_copy_mod
 
-    bar.increment
-
     # Start the server
     Utils.start_server
-
-    bar.increment
   end
 end
 
 class Utils
-  GIT_DIRECTORY = File.expand_path("../")
+  GIT_DIRECTORY = File.expand_path("./")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
-  MIKERO_PATH = "C:/Program Files (x86)/Mikero/DePboTools/bin"
-  PBOS = [
+  DEPLOYMENT_DIRECTORY = ENV["ESM_DEPLOYMENT_PATH"] || ""
+  ADDONS = [
     "exile_server_manager",
     "exile_server_overwrites",
     "exile_server_xm8",
@@ -109,10 +87,10 @@ class Utils
     }
   }.freeze
 
-  def self.flags(os:, arch:, release:)
+  def self.flags(os:, arch:, env:)
     @os = os
     @arch = arch
-    @release = release
+    @env = env
   end
 
   def self.target
@@ -134,7 +112,7 @@ class Utils
     FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@ESM")
 
     # Copy the @ESM into target/arma (Except addons)
-    FileUtils.cp_r("#{GIT_DIRECTORY}/@ESM", "#{BUILD_DIRECTORY}/@ESM")
+    FileUtils.cp_r("#{GIT_DIRECTORY}/@ESM", BUILD_DIRECTORY)
     FileUtils.remove_dir("#{BUILD_DIRECTORY}/@ESM/addons")
 
     # Create the addons folder in target/arma/@ESM
@@ -149,7 +127,7 @@ class Utils
   # This is Windows only for now...
   def self.build_extension
     command = "rustup run stable-#{target} cargo build --target #{target}"
-    command += " --release" if @release
+    command += " --release" if @env == :release
 
     `#{command}`
   end
@@ -157,9 +135,9 @@ class Utils
   def self.copy_extension
     path =
       if @os == :windows
-        "#{GIT_DIRECTORY}/target/#{target}/esm.dll"
+        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.dll"
       else
-        "#{GIT_DIRECTORY}/target/#{target}/esm.so"
+        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.so"
       end
 
     FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM")
@@ -171,18 +149,18 @@ class Utils
   end
 
   def self.build_addons
-    MODS.each do |mod|
-      `#{MIKERO_PATH}/MakePBO.exe -NUP -@=#{mod} #{BUILD_DIRECTORY}/@ESM/addons/#{mod}`
+    ADDONS.each do |addon|
+      `MakePBO.exe -NUP -@=#{addon} "#{GIT_DIRECTORY}/@ESM/addons/#{addon}" "#{BUILD_DIRECTORY}/@ESM/addons/#{addon}"`
     end
   end
 
   def self.copy_mod
     # Remove the @ESM mod in the destination
-    FileUtils.remove_dir("#{SERVER_DIRECTORY}/@ESM")
-    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{SERVER_DIRECTORY}/@ESM")
+    FileUtils.remove_dir("#{DEPLOYMENT_DIRECTORY}/@ESM")
+    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{DEPLOYMENT_DIRECTORY}/@ESM")
   end
 
   def self.start_server
-    `cd #{SERVER_DIRECTORY} && ./Deploy_ESM.bat`
+    `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat`
   end
 end
