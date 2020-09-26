@@ -12,3 +12,6 @@ Cargo.lock
 
 # Ignore the keys
 esm.key
+
+# Logs
+log/
