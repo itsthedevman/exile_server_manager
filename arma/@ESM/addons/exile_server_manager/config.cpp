@@ -18,10 +18,10 @@ class CfgFunctions
 		class Functions
 		{
 			file = "exile_server_manager\code";
-			
+
 			// Initialization
 			class preInit { preInit = 1; };
-			
+
 			// Code
 			class payTerritory {};
 			class promotePlayer {};
@@ -40,7 +40,6 @@ class CfgFunctions
 			class log {};
 			class getFlagObject {};
 			class callExtension {};
-			class checkForRequests {};
 			class sendToChannel {};
 			class hasAccessToTerritory {};
 			class logToDiscord {};
@@ -51,6 +50,7 @@ class CfgFunctions
 			class ping {};
 			class incrementPaymentCounter {};
 			class resetPaymentCounter {};
+			class handleCallback {};
 		};
 	};
 };
@@ -59,7 +59,7 @@ class CfgESM
 {
 	// Setting variables retrieved from server settings
 	// Do not modify these as you will severely break ESM on your server!
-	globalVariables[] = 
+	globalVariables[] =
 	{
 		{ "ESM_ServerID", "STRING", },
 		{ "ESM_CommunityID", "STRING" },

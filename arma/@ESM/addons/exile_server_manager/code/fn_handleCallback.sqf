@@ -9,12 +9,18 @@
 		Handles a callback request from the DLL
 */
 
-params ["_function", "_parameters"];
+params ["_function", ["_parameters", []]];
 
 // Make sure the function is compiled
 if (missionNameSpace getVariable [_function, ""] isEqualTo "") exitWith
 {
 	["fn_handleCallback", format["Function %1 called by ESM but it wasn't compiled", _function]] call ESM_fnc_log;
+};
+
+// If multiple parameters are passed into the callback, they're stored as a string
+if (_parameters select [0, 1] == "[") then
+{
+    _parameters = parseSimpleArray(_parameters);
 };
 
 _parameters spawn (missionNamespace getVariable [_function, {}]);

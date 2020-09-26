@@ -1,16 +1,24 @@
 mod websocket_client;
 
-use arma_rs::{rv, rv_callback, rv_handler};
+#[macro_use]
+extern crate arma_rs;
+
+// Various Packages
+use arma_rs::{rv, rv_callback};
 use crossbeam_channel::{bounded, Sender};
 use lazy_static::lazy_static;
-use std::{env, sync::Mutex};
-use websocket_client::WebsocketClient;
+use std::{env, fs, sync::Mutex};
+use yaml_rust::{YamlLoader, Yaml};
 
+// Logging
 use log::*;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
+
+// ESM Packages
+use websocket_client::WebsocketClient;
 
 lazy_static! {
     static ref A3_SERVER: ArmaServer = ArmaServer::new();
@@ -19,6 +27,7 @@ lazy_static! {
 pub struct ArmaServer {
     ext_path: String,
     sender: Mutex<Sender<String>>,
+    config: Vec<Yaml>
 }
 
 impl ArmaServer {
@@ -34,6 +43,7 @@ impl ArmaServer {
         let mut arma_server = ArmaServer {
             ext_path: ext_path,
             sender: Mutex::new(temp_sender),
+            config: initialize_config()
         };
 
         // Connect to the bot
@@ -43,37 +53,14 @@ impl ArmaServer {
     }
 
     fn connect_to_bot(&mut self) {
-        let sender = WebsocketClient::connect_to_bot(&self.ext_path);
+        let sender = WebsocketClient::connect_to_bot(&self.ext_path, &self.config);
         self.sender = Mutex::new(sender);
     }
 
-    pub fn log(&self, message: &'static str) {
+    pub fn log(&self, message: String) {
         debug!("[ArmaServer::log] {}", message);
-        rv_callback!("esm", "ESM_fnc_log", message);
+        rv_callback!("esm", "ESM_fnc_log", "Extension", message);
     }
-}
-
-// Required
-// This is called when the Arma server requests the DLL version
-#[rv_handler]
-fn init() {
-    initialize_logger();
-}
-
-#[rv]
-#[allow(dead_code)]
-fn initialize(json: String) -> String {
-    A3_SERVER.log("Extension Initialization");
-    debug!("{}", json);
-
-    "[667]".to_string()
-}
-
-// Required
-#[rv]
-#[allow(dead_code)]
-fn is_arma3(version: u8) -> bool {
-    version == 3
 }
 
 fn initialize_logger() {
@@ -87,7 +74,7 @@ fn initialize_logger() {
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} {l} - {m}\n",
         )))
-        .build("log/esm.log")
+        .build("@ESM/log/esm.log")
         .unwrap();
 
     let config = Config::builder()
@@ -102,4 +89,43 @@ fn initialize_logger() {
         .unwrap();
 
     log4rs::init_config(config).unwrap();
+
+    info!(
+        "\n----------------------------------\nExile Server Manager v{}\n----------------------------------",
+        env!("CARGO_PKG_VERSION")
+    );
 }
+
+fn initialize_config() -> Vec<Yaml> {
+    let contents = match fs::read_to_string("@ESM/config.yml") {
+        Ok(file) => file,
+        Err(_) => {
+            "
+                ws_url: ws://ws.esmbot.com
+            ".to_string()
+        }
+    };
+
+    YamlLoader::load_from_str(&contents).unwrap()
+}
+
+///////////////////////////////////////////////////////////////////////
+// Below are the Arma Functions accessable from callExtension
+///////////////////////////////////////////////////////////////////////
+#[rv(thread=true)]
+fn pre_init(package: String) {
+    initialize_logger();
+    A3_SERVER.log(format!("Sending pre_init request to bot with package: {}", package));
+}
+
+// For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...
+#[rv]
+fn is_arma3(version: u8) -> bool {
+    version == 3
+}
+
+#[rv]
+fn initialize() {}
+
+#[rv_handler]
+fn main() {}

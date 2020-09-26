@@ -1,6 +1,7 @@
 use ws::{connect, Handler, Sender as WSSender, Handshake, Result as WSResult, Message, CloseCode, Request, Error as WSError};
 use url;
-use std::{env, fs};
+use yaml_rust::Yaml;
+use std::fs;
 use crossbeam_channel::{unbounded, Sender, Receiver};
 use base64;
 use log::*;
@@ -46,16 +47,17 @@ impl Handler for WebsocketClient {
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot(ext_path: &String) -> Sender<String> {
+    pub fn connect_to_bot(ext_path: &String, config: &Vec<Yaml>) -> Sender<String> {
         let ext_path = ext_path.clone();
 
         // The `connect` method is blocking and I haven't found a way to get access to the client instance
         // This channel will be telling the websocket client to send a message to the bot
         let (sender, receiver) = unbounded();
+        let ws_url = config[0]["ws_url"].as_str().unwrap().to_string();
 
         thread::spawn(move || {
             connect(
-                env::var("ESM_WS_URL").unwrap_or("ws://ws.esmbot.com".to_string()),
+                ws_url,
                 |out| {
                 WebsocketClient {
                     connection: out,
