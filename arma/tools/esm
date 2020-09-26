@@ -4,7 +4,6 @@
 require 'rubygems'
 require 'commander/import'
 require 'fileutils'
-require 'file'
 require 'pry'
 
 program :name, 'esm'
@@ -101,14 +100,14 @@ class Utils
     "exile_server_charge_plant_started",
     "exile_server_flag_steal_started",
     "exile_server_player_connected"
-  ]
+  ].freeze
 
   TARGETS = {
     windows: {
-      x86: "i686-pc-windows-msvc"
+      x86: "i686-pc-windows-msvc",
       x64: "x86_64-pc-windows-msvc"
     }
-  }
+  }.freeze
 
   def self.flags(os:, arch:, release:)
     @os = os
@@ -132,7 +131,7 @@ class Utils
     end
 
     # Recreate the directory
-    FileUtils.mkdir_p("#{GIT_DIRECTORY}/target/arma/@ESM")
+    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@ESM")
 
     # Copy the @ESM into target/arma (Except addons)
     FileUtils.cp_r("#{GIT_DIRECTORY}/@ESM", "#{BUILD_DIRECTORY}/@ESM")
