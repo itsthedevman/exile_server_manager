@@ -39,21 +39,21 @@ private _data =
 }
 forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));
 
+// Add a MissionEventHandler to allow callbacks from the DLL
+addMissionEventHandler ["ExtensionCallback", {
+	params ["_name", "_function", "_data"];
+
+	if (_name == "esm") then {
+		[_function, _data] call ESM_fnc_handleCallback;
+	};
+}];
+
 private _return = ["initialize", _data] call ESM_fnc_callExtension;
 
 // Init has been moved to fn_postServerInitialization
 if (_return select 0) then
 {
 	["fn_preInit", (_return select 1) select 0] call ESM_fnc_log;
-
-	// Add a MissionEventHandler to allow callbacks from the DLL
-	addMissionEventHandler ["ExtensionCallback", {
-		params ["_name", "_function", "_data"];
-
-		if (_name == "esm") then {
-			[_function, _data] call ESM_fnc_handleCallback;
-		};
-	}];
 }
 else
 {

@@ -58,15 +58,15 @@ impl ArmaServer {
 #[rv_handler]
 fn init() {
     initialize_logger();
-    A3_SERVER.log("Extension Initialization");
 }
 
 #[rv]
 #[allow(dead_code)]
 fn initialize(json: String) -> String {
+    A3_SERVER.log("Extension Initialization");
     debug!("{}", json);
 
-    "[]".to_string()
+    "[667]".to_string()
 }
 
 // Required

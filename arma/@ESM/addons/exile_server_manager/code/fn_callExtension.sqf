@@ -45,4 +45,4 @@ if (count(_this select 1) > 0) then
 
 _package = format['%1}', _package];
 
-parseSimpleArray("ESM" callExtension [_this select 0, [_package]])
+diag_log ("esm" callExtension [_this select 0, [_package]]);

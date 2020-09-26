@@ -4,6 +4,7 @@
 require 'rubygems'
 require 'commander/import'
 require 'fileutils'
+require 'pry'
 
 program :name, 'esm'
 program :version, '0.0.1'
@@ -40,12 +41,12 @@ command :run do |c|
   c.example 'description', 'command example'
   c.option '--use-x64', 'Build the x64 version of the extension and start the x64 version of the server'
   c.action do |args, options|
-    # Check for required stuff
-    next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
-    next say("Deployment path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::DEPLOYMENT_DIRECTORY.empty?
-
     # Set some build flags
     Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, env: :debug)
+
+    # Check for required stuff
+    next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
+    next say("Deployment path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils.deployment_directory.empty?
 
     # Kill Arma server
     Utils.kill_arma_server
@@ -68,7 +69,6 @@ class Utils
   GIT_DIRECTORY = File.expand_path("./")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
-  DEPLOYMENT_DIRECTORY = ENV["ESM_DEPLOYMENT_PATH"] || ""
   ADDONS = [
     "exile_server_manager",
     "exile_server_overwrites",
@@ -93,13 +93,26 @@ class Utils
     @env = env
   end
 
+  def self.deployment_directory
+    @deployment_directory ||= lambda do
+      path = ENV["ESM_DEPLOYMENT_PATH"] || ""
+      return "" if path.empty?
+
+      if @arch == :x64
+        path + "_x64"
+      else
+        path
+      end
+    end.call
+  end
+
   def self.target
     @target ||= TARGETS[@os][@arch]
   end
 
   def self.kill_arma_server
-    `taskkill /IM "arma3server" /F`
-    `taskkill /IM "arma3server_x64" /F`
+    `taskkill /IM "arma3server.exe" /F`
+    `taskkill /IM "arma3server_x64.exe" /F`
   end
 
   def self.clean_directories
@@ -140,7 +153,12 @@ class Utils
         "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.so"
       end
 
-    FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM")
+    if @arch == :x64 && @os == :windows
+      filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
+      FileUtils.move(path, "#{BUILD_DIRECTORY}/@ESM/#{filename}")
+    else
+      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM")
+    end
   end
 
   def self.build_and_copy_mod
@@ -156,11 +174,15 @@ class Utils
 
   def self.copy_mod
     # Remove the @ESM mod in the destination
-    FileUtils.remove_dir("#{DEPLOYMENT_DIRECTORY}/@ESM")
-    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{DEPLOYMENT_DIRECTORY}/@ESM")
+    FileUtils.remove_dir("#{deployment_directory}/@ESM")
+    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{deployment_directory}/@ESM")
   end
 
   def self.start_server
-    `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat`
+    if @arch == :x64
+      `cd #{SERVER_DIRECTORY} && Deploy_ESM_x64.bat`
+    else
+      `cd #{SERVER_DIRECTORY} && Deploy_ESM.bat`
+    end
   end
 end

@@ -15,3 +15,6 @@ esm.key
 
 # Logs
 log/
+
+# 32 bit compiling
+SymbolInfo.map
