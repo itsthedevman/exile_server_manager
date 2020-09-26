@@ -7,7 +7,7 @@
 #	 pboProject exececutables										  #
 #######################################################################
 
-DESTINATION_PATH = r"D:\ArmaServers\Deployment\ESM"
+DESTINATION_PATH = r"E:\ArmaServers\Deployment\ESM"
 MIKERO_PATH = r"C:\Program Files (x86)\Mikero\DePboTools\bin"
 PBOS = [
 	"exile_server_manager",
@@ -23,6 +23,7 @@ PBOS = [
 #######################################################################
 #######################################################################
 import os, subprocess, shutil, errno, psutil, sys, re, json, datetime
+from pathlib import Path
 #######################################################################
 def deleteDirectory(path):
 	if os.path.exists(path):
@@ -41,14 +42,21 @@ def copy(src, dst):
 #######################################################################
 def killProcess(process):
 	for proc in psutil.process_iter():
-		if proc.name() == process:
-			proc.kill()
+		try:
+			if proc.name().lower() == process.lower():
+				proc.kill()
+				return True
+		except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+			return False
+
 
 #######################################################################
 #######################################################################
 #######################################################################
 
-WORKING_DIR = os.path.dirname(os.path.realpath(__file__))
+GIT_DIR = Path(os.path.abspath(__file__)).parents[2]
+SQF_DIR = "{}\\sqf".format(GIT_DIR)
+EXTENSION_DIR = "{}\\extension".format(GIT_DIR)
 
 # Kill Arma
 killProcess("arma3server.exe")
@@ -57,10 +65,10 @@ killProcess("arma3server.exe")
 deleteDirectory("{}\\@ESM".format(DESTINATION_PATH))
 
 # Copy over the DLLs
-copy("{}\\ESM\\ESM\\bin\\Debug\\ESM.dll".format(WORKING_DIR), "{}\\@ESM".format(WORKING_DIR))
+copy("{}\\esm.dll".format(EXTENSION_DIR), "{}\\@ESM".format(SQF_DIR))
 
 # Copy over the directory
-shutil.copytree("{}\\@ESM".format(WORKING_DIR), "{}\\@ESM".format(DESTINATION_PATH))
+shutil.copytree("{}\\@ESM".format(SQF_DIR), "{}\\@ESM".format(DESTINATION_PATH))
 
 # PBO exile_server_manager
 try:
@@ -80,18 +88,18 @@ except:
 for mod in PBOS:
 	deleteDirectory("{}\\@ESM\\addons\\{}".format(DESTINATION_PATH, mod))
 
-# Copy over the fake logs
-now = datetime.datetime.now()
-year = now.year
-month = now.month
-day = now.day
+# # Copy over the fake logs
+# now = datetime.datetime.now()
+# year = now.year
+# month = now.month
+# day = now.day
 
-if not os.path.isdir(f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}"):
-	os.makedirs(f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
+# if not os.path.isdir(f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}"):
+# 	os.makedirs(f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
 
-copy(f"{WORKING_DIR}\\data\\Exile_DeathLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
-copy(f"{WORKING_DIR}\\data\\Exile_TerritoryLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
-copy(f"{WORKING_DIR}\\data\\Exile_TradingLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
+# copy(f"{SQF_DIR}\\tools\\data\\Exile_DeathLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
+# copy(f"{SQF_DIR}\\tools\\data\\Exile_TerritoryLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
+# copy(f"{SQF_DIR}\\tools\\data\\Exile_TradingLog.log", f"{DESTINATION_PATH}\\@ExileServer\\extDB\\logs\\{year}\\{month}\\{day}")
 
 # Run Batch files for auto start
 try:

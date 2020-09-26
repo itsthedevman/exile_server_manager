@@ -2,35 +2,35 @@
 	Exile Server Manager
 	www.esmbot.com
 	© 2018 Exile Server Manager Team
-	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. 
+	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
 
 	Description:
 		Calls the ESM DLL and returns the resulting array
 */
 
-// { "function": "FUNCTION", "parameters": { "KEY": VALUE, "KEY": VALUE } }
-private _package = format['{"function":"%1","parameters":{', _this select 0];
+// { "KEY": VALUE, "KEY": VALUE }
+private _package = "{";
 
-if (count(_this select 1) > 0) then 
+if (count(_this select 1) > 0) then
 {
 	// ["KEY", VALUE]
 	{
 		private _text = format['"%1":', _x select 0];
 
-		switch (typeName (_x select 1)) do 
+		switch (typeName (_x select 1)) do
 		{
-			case "STRING": 
+			case "STRING":
 			{
 				_text = format['%1"%2"', _text, _x select 1];
 			};
 
-			case "ARRAY": 
+			case "ARRAY":
 			{
 				_text = format['%1"%2"', _text, format["%1", _x select 1] call ExileClient_util_string_escapeJSON];
 			};
 
-			default 
+			default
 			{
 				_text = format['%1%2', _text, _x select 1];
 			};
@@ -43,6 +43,6 @@ if (count(_this select 1) > 0) then
 	_package = _package select [0, count(_package) - 1];
 };
 
-_package = format['%1}}', _package];
+_package = format['%1}', _package];
 
-parseSimpleArray("ESM" callExtension _package)
+parseSimpleArray("ESM" callExtension [_this select 0, [_package]])
