@@ -4,7 +4,6 @@ FactoryBot.define do
   factory :community, class: "ESM::Community" do
     # attribute :community_id, :string
     # attribute :community_name, :text
-    # attribute :community_website, :text
     # attribute :guild_id, :string
     # attribute :logging_channel_id, :string
     # attribute :log_reconnect_event, :boolean, default: false
@@ -19,7 +18,6 @@ FactoryBot.define do
     factory :esm_community do
       community_id { "esm" }
       community_name { "Exile Server Manager" }
-      community_website { "https://www.esmbot.com" }
       guild_id { ESM::Community::ESM::ID }
       logging_channel_id { ESM::Community::ESM::SPAM_CHANNEL }
       player_mode_enabled { false }

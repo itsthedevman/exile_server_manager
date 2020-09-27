@@ -66,7 +66,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   create_table "communities", force: :cascade do |t|
     t.string "community_id", null: false
     t.text "community_name"
-    t.text "community_website"
     t.string "guild_id", null: false
     t.string "logging_channel_id"
     t.boolean "log_reconnect_event", default: false

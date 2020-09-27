@@ -27,7 +27,6 @@ user = ESM::User.create!(
 community = ESM::Community.create!(
   community_id: "esm",
   community_name: "Exile Server Manager",
-  community_website: "https://www.esmbot.com",
   guild_id: ESM::Community::ESM::ID,
   logging_channel_id: "624387002443497489",
   command_prefix: "pls ",
@@ -37,7 +36,6 @@ community = ESM::Community.create!(
 ESM::Community.create!(
   community_id: "test",
   community_name: "Bryan's Test Server",
-  community_website: "https://www.esmbot.com",
   guild_id: ESM::Community::Secondary::ID,
   command_prefix: "~"
 )
@@ -45,7 +43,6 @@ ESM::Community.create!(
 ESM::Community.create!(
   community_id: "zdt",
   community_name: "ZDT",
-  community_website: "https://www.zdt.com",
   guild_id: "421111581267591168"
 )
 

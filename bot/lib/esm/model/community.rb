@@ -8,7 +8,6 @@ module ESM
 
     attribute :community_id, :string
     attribute :community_name, :text
-    attribute :community_website, :text
     attribute :guild_id, :string
     attribute :logging_channel_id, :string
     attribute :log_reconnect_event, :boolean, default: false

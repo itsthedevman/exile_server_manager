@@ -18,7 +18,6 @@ class InitialDb < ActiveRecord::Migration[5.2]
     create_table :communities do |t|
       t.string :community_id, null: false # has unique index
       t.text :community_name
-      t.text :community_website
       t.string :guild_id, null: false # has unique index
       t.string :logging_channel_id
       t.boolean :log_reconnect_event, default: false
