@@ -104,6 +104,7 @@ module ESM
       # To be written to the DB in bulk
       @cache << {
         command_name: command.name,
+        command_type: command.type,
         command_category: command.category,
         command_description: command.description,
         command_example: command.example,

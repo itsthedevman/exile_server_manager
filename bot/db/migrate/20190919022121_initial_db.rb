@@ -56,6 +56,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
     # Command Cache
     create_table :command_caches do |t|
       t.string :command_name, index: true
+      t.string :command_type
       t.string :command_category
       t.text :command_description
       t.text :command_example

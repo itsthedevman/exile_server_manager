@@ -29,6 +29,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
 
   create_table "command_caches", force: :cascade do |t|
     t.string "command_name"
+    t.string "command_type"
     t.string "command_category"
     t.text "command_description"
     t.text "command_example"
