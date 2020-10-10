@@ -86,6 +86,8 @@ changelog:
       - Added warning when there is 4 days or less before payment is due
     **!whois**
       - Added limited information about Community and VAC bans
+    **!ping**
+      - Unfortunately, this command has been removed for the meantime. It will be coming back next client update.
   website: |-
     **__Core Systems__**
       - Removed premium throughout the site. Previously locked content for premium is now available to every community
