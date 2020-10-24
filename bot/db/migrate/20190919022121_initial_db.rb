@@ -87,11 +87,17 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.integer :server_id, null: false, index: true
       t.text :search_text
       t.string :requestors_user_id
-      t.json :parsed_entries
       t.datetime :expires_at, index: true
       t.datetime :created_at
       t.datetime :updated_at
-      t.datetime :deleted_at, index: true
+    end
+
+    # log_entries
+    create_table :log_entries do |t|
+      t.integer :log_id, null: false, index: true
+      t.datetime :log_date, null: false
+      t.string :file_name, null: false
+      t.json :entries
     end
 
     # notifications
@@ -266,6 +272,8 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_index :communities, :community_id, unique: true
     add_index :communities, :guild_id, unique: true
     add_index :logs, :uuid, unique: true
+    add_index :log_entries, [:log_id, :log_date]
+    add_index :log_entries, [:log_id, :log_date, :file_name]
     add_index :servers, :server_id, unique: true
     add_index :servers, :server_key, unique: true
     add_index :users, :discord_id, unique: true
@@ -273,6 +281,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
 
     add_foreign_key :command_configurations, :communities
     add_foreign_key :logs, :servers
+    add_foreign_key :log_entries, :logs
     add_foreign_key :requests, :users, column: :requestor_user_id
     add_foreign_key :requests, :users, column: :requestee_user_id
     add_foreign_key :servers, :communities

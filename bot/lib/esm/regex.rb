@@ -20,53 +20,8 @@ module ESM
     BROADCAST = /#{SERVER_ID_OPTIONAL_COMMUNITY.source}|all|preview/.freeze
     HEX_COLOR = /^\#[a-fA-F0-9]{6}$/.freeze
     TARGET_OR_TERRITORY_ID = /#{TARGET.source}|#{TERRITORY_ID.source}/.freeze
+
+    # Log Parsing
+    LOG_TIMESTAMP = /\[(?<time>\d{2}:\d{2}:\d{2}):\d{6} (?<zone>[-+]?\d{2}:\d{2})\] \[thread \d+\] /i.freeze
   end
 end
-
-
-# this.regex = {
-#   serverID: {
-#     base: /[^\s]+_[^\s]+/i,
-#     only: /^[^\s]+_[^\s]+$/i
-#   },
-#   broadcast: {
-#     base: /(?:[^\s]+_[^\s]+)|all|test/i,
-#     only: /(?:^[^\s]+_[^\s]+$)|^all$|^test$/i
-#   },
-#   communityID: {
-#     base: /[^\s]+/i,
-#     only: /^[^\s]+$/i
-#   },
-#   steamUID: {
-#     base: /\d{17}/i,
-#     only: /^\d{17}$/i
-#   },
-#   target: {
-#     base: /\d{17}|<@!?\d+>/i,
-#     only: /^\d{17}$|^<@!?\d+>$/i
-#   },
-#   targetAcceptDeny: {
-#     base: /\d{17}|<@!?\d+>|accept|decline/i,
-#     only: /^\d{17}$|^<@!?\d+>$|^accept$|^decline$/i
-#   },
-#   territoryID: {
-#     base: /\w+/i,
-#     only: /^\w+$/i
-#   },
-#   discordTag: {
-#     base: /<@!?\d+>/i,
-#     only: /^<@!?\d+>$/i
-#   },
-#   discordID: {
-#     base: /\d{18}/i,
-#     only: /^\d{18}$/i
-#   },
-#   targetOrTerritory: {
-#     base: /\d{17}|<@!?\d+>|\w+/i,
-#     only: /^\d{17}|<@!?\d+>|\w+$/i
-#   },
-#   acceptDecline: {
-#     base: /accept|decline/i,
-#     only: /^accept$|^decline$/i
-#   }
-# };

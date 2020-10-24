@@ -10,7 +10,7 @@ ActiveRecordQueryTrace.level = :custom
 ActiveRecordQueryTrace.backtrace_cleaner = lambda do |trace|
   trace.select { |line| line.match?("esm") }
 end
-ActiveRecordQueryTrace.enabled = true
+ActiveRecordQueryTrace.enabled = false
 
 # ActiveRecordQueryTrace requires Rails.root to be defined
 module Rails
@@ -21,3 +21,7 @@ end
 
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false
+
+
+# ActiveRecord logging
+ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.present?

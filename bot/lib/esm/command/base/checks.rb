@@ -27,7 +27,7 @@ module ESM
           cooldown!
 
           # Check for skip outside of the method so it can be called later if need be
-          connected_server! if !@skipped_checks.include?(:connected_server)
+          connected_server!
         end
 
         def nil_targets!
@@ -132,6 +132,7 @@ module ESM
         end
 
         def connected_server!
+          return if @skipped_checks.include?(:connected_server)
           return if @command.arguments.server_id.nil?
           return if ESM::Websocket.connected?(@command.arguments.server_id)
 
@@ -207,6 +208,7 @@ module ESM
         end
 
         def nil_target_user!
+          return if @skipped_checks.include?(:nil_target_user)
           return if @command.arguments.target.nil?
           return if !target_user.nil?
 

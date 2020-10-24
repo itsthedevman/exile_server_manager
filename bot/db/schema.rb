@@ -118,17 +118,24 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["user_id"], name: "index_gamble_stats_on_user_id"
   end
 
+  create_table "log_entries", force: :cascade do |t|
+    t.integer "log_id", null: false
+    t.datetime "log_date", null: false
+    t.string "file_name", null: false
+    t.json "entries"
+    t.index ["log_id", "log_date", "file_name"], name: "index_log_entries_on_log_id_and_log_date_and_file_name"
+    t.index ["log_id", "log_date"], name: "index_log_entries_on_log_id_and_log_date"
+    t.index ["log_id"], name: "index_log_entries_on_log_id"
+  end
+
   create_table "logs", force: :cascade do |t|
     t.uuid "uuid", null: false
     t.integer "server_id", null: false
     t.text "search_text"
     t.string "requestors_user_id"
-    t.json "parsed_entries"
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.datetime "deleted_at"
-    t.index ["deleted_at"], name: "index_logs_on_deleted_at"
     t.index ["expires_at"], name: "index_logs_on_expires_at"
     t.index ["server_id"], name: "index_logs_on_server_id"
     t.index ["uuid"], name: "index_logs_on_uuid", unique: true
@@ -302,6 +309,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "command_configurations", "communities"
   add_foreign_key "gamble_stats", "servers"
   add_foreign_key "gamble_stats", "users"
+  add_foreign_key "log_entries", "logs"
   add_foreign_key "logs", "servers"
   add_foreign_key "requests", "users", column: "requestee_user_id"
   add_foreign_key "requests", "users", column: "requestor_user_id"

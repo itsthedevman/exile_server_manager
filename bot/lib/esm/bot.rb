@@ -100,16 +100,21 @@ module ESM
     end
 
     def esm_ready(_event)
-      # Wait until the bot has connected before starting the websocket.
-      # This is to avoid servers connecting before the bot is ready
-      ESM::Websocket.start!
-      ESM::Request::Overseer.watch
       ESM::Notifications.trigger("ready")
 
       bot_attributes = ESM::BotAttribute.first
 
       # status, activity, url, since = 0, afk = false, activity_type = 0
       update_status("online", bot_attributes.status_message, nil, activity_type: STATUS_TYPES[bot_attributes.status_type]) if bot_attributes.present?
+
+      # Sometimes the bot loses connection with Discord. Upon reconnect, the ready event will be triggered again.
+      # Don't restart the websocket server again.
+      return if self.ready?
+
+      # Wait until the bot has connected before starting the websocket.
+      # This is to avoid servers connecting before the bot is ready
+      ESM::Websocket.start!
+      ESM::Request::Overseer.watch
 
       @ready = true
     end

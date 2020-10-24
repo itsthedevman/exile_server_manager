@@ -40,13 +40,7 @@ module ESM
           @request.command.execute(@message.parameters)
         rescue ESM::Exception::CheckFailure => e
           # This catches any errors from the command.
-          embed =
-            ESM::Embed.build do |em|
-              em.description = e.message
-              em.color = :red
-            end
-
-          @request.command.reply(embed)
+          @request.command.reply(e.data)
         end
 
       # This catches the check_for_command_error

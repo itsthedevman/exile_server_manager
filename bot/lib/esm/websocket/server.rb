@@ -3,7 +3,7 @@
 module ESM
   class Websocket
     class Server
-      def initialize
+      def self.run
         # Load Faye support for puma
         Faye::WebSocket.load_adapter("puma")
 
@@ -12,7 +12,7 @@ module ESM
         @server.run
       end
 
-      def call(env)
+      def self.call(env)
         return if !Faye::WebSocket.websocket?(env)
 
         # Create a new websocket client
@@ -25,11 +25,11 @@ module ESM
         ws.rack_response
       end
 
-      def log(*args)
+      def self.log(*args)
         ESM.logger.info("#{self.class}##{__method__}") { "Websocket server is running on #{args.first}" }
       end
 
-      def stop
+      def self.stop
         ESM::Websocket::Request::Overseer.stop!
         @server.stop(true)
       end

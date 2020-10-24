@@ -54,7 +54,7 @@ module ESM
         def check_for_response!
           return if @response.present?
 
-          check_failed! { ESM::Embed.build(:error, description: I18n.t("commands.info.no_response")) }
+          check_failed!(:no_response, user: current_user.mention)
         end
       end
     end

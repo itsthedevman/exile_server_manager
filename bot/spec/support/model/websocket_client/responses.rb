@@ -27,7 +27,8 @@ class WebsocketClient
       reward: { send_ignore_message: true, delay: 0..3 },
       info: { send_ignore_message: true, delay: 0..3 },
       stuck: { delay: 0..1 },
-      reset: { delay: 0..1 }
+      reset: { delay: 0..1 },
+      logs: { delay: 0..1 }
     }.freeze
 
     def response_server_success_command
@@ -269,6 +270,31 @@ class WebsocketClient
 
     def response_reset
       send_response(parameters: [{ success: @flags.SUCCESS }])
+    end
+
+    # 0: The search parameters
+    # 1..-1: The parsed logs
+    #   date: <String> October 11 2020
+    #   file_name (Exile_TradingLog.log): <Array>
+    #     line: <Integer>
+    #     entry: <String>
+    #     date: <String 2020-10-11>
+    def response_logs
+      return send_response(parameters: [{}]) if @flags.NO_LOGS
+
+      # The first object is not used, but is required
+      logs = [{}]
+
+      Faker::Number.between(from: 1, to: 4).times do
+        logs << {
+          date: Faker::Date.in_date_period,
+          "ExileTradingLog.log" => LogGenerator.generate_trading_log,
+          "ExileTerritoryLog.log" => LogGenerator.generate_territory_log,
+          "ExileDeathLog.log" => LogGenerator.generate_death_log
+        }
+      end
+
+      send_response(parameters: logs)
     end
   end
 end

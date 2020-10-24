@@ -1,6 +1,6 @@
 en:
   exceptions:
-    system: "Well, this is awkward. Can you let my developer know that something bad happened?\nGive him this error:\n```%{message}```"
+    system: "Well, this is awkward.\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this code:\n```%{error_code}```"
     invalid_discord_log: "**[`ESM_fnc_logToDiscord`]**\n**Uh oh, I ran into an issue parsing your discord log message from `%{server}`**\nPlease fix any issues in your JSON and confirm its validity using https://jsonlint.com\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to parse: ```%{message}```"
     invalid_channel_access: "**[`ESM_fnc_sendToChannel`]**\nYour Discord Server does not have a channel with ID `%{channel_id}`. Please provide `ESM_fnc_sendToChannel` a channel ID that belongs to your Discord Server."
     malformed_message: "**[`ESM_fnc_sendToChannel`]**\nThe provided message is malformed and unable to be delivered.\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to send: ```%{message}```"
@@ -76,3 +76,7 @@ en:
 
     # info
     no_target: "Hey %{user}, you must provide either a territory ID, Discord ID, steam uid, or @user discord mention."
+    no_response: "I'm sorry %{user}, I didn't find any information related to your request."
+
+    # logs
+    no_logs: "Hey %{user}, I was unable to find any logs that match your query."

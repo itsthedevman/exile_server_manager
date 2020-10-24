@@ -534,7 +534,7 @@ describe ESM::Command::Base do
         expect(ESM::Test.messages.size).to eql(1)
 
         error = ESM::Test.messages.first.second
-        expect(error).to eql("Well, this is awkward. Can you let my developer know that something bad happened?\nGive him this error:\n```Oops```")
+        expect(error.description).to include("Well, this is awkward.\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this code:\n```")
       end
     end
   end

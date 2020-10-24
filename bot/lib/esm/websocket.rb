@@ -16,7 +16,7 @@ module ESM
       @server_ids = ESM::Server.all.pluck(:server_id)
 
       # Start the websocket server
-      ESM::Websocket::Server.new
+      ESM::Websocket::Server.run
 
       # Watches over requests and removes them if the server is taking too long to respond
       ESM::Websocket::Request::Overseer.watch!

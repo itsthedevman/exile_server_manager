@@ -34,7 +34,7 @@ module ESM
         end
 
         def server
-          raise ESM::Exception::CheckFailure, "This failed a check" if @defines.FLAG_RAISE_ERROR
+          raise ESM::Exception::CheckFailure, ESM::Embed.build(:error, description: "This failed a check") if @defines.FLAG_RAISE_ERROR
 
           "server"
         end

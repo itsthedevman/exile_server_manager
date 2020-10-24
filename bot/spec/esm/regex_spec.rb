@@ -143,4 +143,12 @@ describe ESM::Regex do
       expect(ESM::Regex::HEX_COLOR =~ "red").to be_nil
     end
   end
+
+  describe "TARGET_OR_TERRITORY_ID" do
+    it "should parse"
+  end
+
+  describe "LOG_TIMESTAMP" do
+    it "should parse"
+  end
 end

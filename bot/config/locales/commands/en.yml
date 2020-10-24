@@ -455,7 +455,6 @@ en:
 
         **`%{prefix}info esm_namalsk jquee`**
         Return the territory information for `jquee`
-      no_response: "I'm sorry %{user}, I didn't find any information related to your request."
     stuck:
       description: "Deletes your player on the provided server in an attempt to fix the spawning glitch. You will be required to confirm the request before any deletion takes place."
       example: |-
@@ -485,3 +484,13 @@ en:
       success_message_all: "%{user}, I've reset all stuck players."
       failure_message_target: "%{user}, %{target} is not stuck. Please have them join the server again, and if they are still stuck, instruct them to close Arma 3 and then attempt this command again."
       failure_message_all: "%{user}, I was unable to find anyone who was stuck."
+    logs:
+      description: "Parses the last 14 days worth of Trading, Territory, and Death logs for the given query and returns those lines."
+      example: |-
+        **`%{prefix}logs esm_malden @Bryan`**
+        Parses the logs on `esm_malden` for @Bryan's Steam UID and returns any matched lines
+
+        **`%{prefix}logs esm_altis Exile_Chopper_Hummingbird_Green`**
+        Parses the logs on `esm_altis` for `Exile_Chopper_Hummingbird_Green` and returns any matched lines
+      arguments:
+        query: "Can be a target (Discord Mention, Discord ID, or Steam UID) which will be automatically converted to a Steam UID. Otherwise, interpreted as a search term."
