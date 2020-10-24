@@ -232,11 +232,11 @@ module ESM
         user = ESM::User.parse(target)
 
         # No user was found. Don't create a user from a steam UID
-        return if user.nil? && target.steam_uid?
+        #   target is a steam_uid WITHOUT a db user. -> Exit early. Use a placeholder user
+        return @target_user = ESM::TargetUser.new(target) if user.nil? && target.steam_uid?
 
         # Past this point:
         #   target is a steam_uid WITH a db user -> Continue
-        #   target is a steam_uid WITHOUT a db user. -> Exit early. Don't create
         #   target is a discord ID or discord mention WITH a db user -> Continue
         #   target is a discord ID or discord mention WITHOUT a db user -> Continue, we'll create a user
 
@@ -276,7 +276,7 @@ module ESM
       def same_user?
         return false if target_user.nil?
 
-        current_user.id == target_user.id
+        current_user.steam_uid == target_user.steam_uid
       end
 
       def dm_only?

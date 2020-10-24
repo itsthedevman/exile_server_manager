@@ -27,7 +27,7 @@ module ESM
 
           # If the target was given, check to make sure they're registered and then set the steam_uid
           if target_user
-            @checks.registered_target_user!
+            @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
             query = target_user.steam_uid
           else
             # Escape any regex in the "query"

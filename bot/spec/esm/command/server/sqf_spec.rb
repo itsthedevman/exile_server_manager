@@ -112,5 +112,20 @@ describe ESM::Command::Server::Sqf, category: "command" do
         expect(error.data).to have_attributes(description: a_string_matching(/has not registered with me yet/i))
       end
     end
+
+    it "should support a non-registered steam uid" do
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: "")
+
+      command_statement = command.statement(server_id: server.server_id, target: steam_uid, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.not_to raise_error
+      wait_for { connection.requests }.to be_blank
+      expect(ESM::Test.messages.size).to eql(1)
+
+      embed = ESM::Test.messages.first.second
+      expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully on `#{steam_uid}`/i))
+    end
   end
 end

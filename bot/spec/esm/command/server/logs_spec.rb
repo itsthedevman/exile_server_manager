@@ -94,5 +94,28 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
     end
+
+    it "should work with a non-registered steam uid" do
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: "")
+
+      command_statement = command.statement(server_id: server.server_id, target: steam_uid)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.not_to raise_error
+      wait_for { connection.requests }.to be_blank
+      expect(ESM::Test.messages.size).to eql(1)
+      embed = ESM::Test.messages.first.second
+
+      expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
+
+      expect(ESM::Log.all.size).to eql(1)
+      expect(ESM::Log.all.first.search_text).to eql(steam_uid)
+      expect(ESM::LogEntry.all.size).not_to eql(0)
+
+      ESM::LogEntry.all.each do |entry|
+        expect(entry.entries).not_to be_empty
+      end
+    end
   end
 end

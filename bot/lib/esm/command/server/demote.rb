@@ -19,8 +19,8 @@ module ESM
         argument :target
 
         def discord
-          # Check for registered target_user
-          @checks.registered_target_user!
+          # Check for registered target_user. A steam_uid is valid here
+          @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
           deliver!(
             function_name: "demotePlayer",

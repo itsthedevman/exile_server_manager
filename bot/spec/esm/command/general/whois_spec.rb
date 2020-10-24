@@ -67,5 +67,15 @@ describe ESM::Command::General::Whois, category: "command" do
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
     end
+
+    it "should run (steam_uid/not registered)" do
+      command_statement = command.statement(target: ESM::User::BryanV2::STEAM_UID)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      expect { command.execute(event) }.not_to raise_error
+
+      response = ESM::Test.messages.first.second
+      expect(response).not_to be_nil
+      expect(response.fields).not_to be_empty
+    end
   end
 end

@@ -163,5 +163,15 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response).not_to be(nil)
       expect(response).to match(/i've cancelled your request/i)
     end
+
+    it "should not allow an un-registered steam uid" do
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: "")
+
+      command_statement = command.statement(target: steam_uid, command_name: "me")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not registered/i)
+    end
   end
 end

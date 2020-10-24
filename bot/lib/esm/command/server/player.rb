@@ -30,12 +30,12 @@ module ESM
           }
 
         def discord
-          @checks.registered_target_user!
+          @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
           deliver!(
             function_name: "modifyPlayer",
             discord_tag: current_user.mention,
-            target_uid: target_user.steam_uid,
+            target_uid: target_uid,
             type: expand_type,
             value: @arguments.value
           )
@@ -53,7 +53,7 @@ module ESM
             usertag: current_user.mention,
             targetusername: target_user.username,
             targetusertag: target_user.mention,
-            targetuid: target_user.steam_uid,
+            targetuid: target_uid,
             modifiedamount: @response.modified_amount&.to_readable,
             previousamount: @response.previous_amount&.to_readable,
             newamount: @response.new_amount&.to_readable

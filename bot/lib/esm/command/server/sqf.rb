@@ -26,10 +26,10 @@ module ESM
 
           execute_on =
             if target_user
-              @checks.registered_target_user!
+              @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
               # Return their steam uid
-              target_user.steam_uid
+              target_uid
             else
               "server"
             end

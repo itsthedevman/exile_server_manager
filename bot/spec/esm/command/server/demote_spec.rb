@@ -41,7 +41,7 @@ describe ESM::Command::Server::Demote, category: "command" do
       wsc.disconnect!
     end
 
-    it "!promote" do
+    it "!demote" do
       command_statement = command.statement(
         server_id: server.server_id,
         territory_id: territory_id,
@@ -61,7 +61,7 @@ describe ESM::Command::Server::Demote, category: "command" do
       )
     end
 
-    it "!promote (Unregistered discord target)" do
+    it "!demote (Unregistered discord target)" do
       second_user.update(steam_uid: "")
 
       command_statement = command.statement(
@@ -77,7 +77,7 @@ describe ESM::Command::Server::Demote, category: "command" do
       end
     end
 
-    it "!promote (Unlinked steam uid)" do
+    it "!demote (Unlinked steam uid)" do
       steam_uid = second_user.steam_uid
       second_user.update(steam_uid: "")
 

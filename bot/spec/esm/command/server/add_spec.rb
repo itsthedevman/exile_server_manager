@@ -104,5 +104,17 @@ describe ESM::Command::Server::Add, category: "command" do
 
       expect(ESM::Test.messages.size).to eql(1)
     end
+
+    it "should not allow adding by non-registered steam uid" do
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: "")
+
+      command_statement = command.statement(server_id: server.server_id, territory_id: Faker::Crypto.md5[0, 5], target: steam_uid)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
+
+      expect { command.execute(event) }.to raise_error do |error|
+        expect(error.data.description).to match(/hey .+, .+ has not registered with me yet/i)
+      end
+    end
   end
 end

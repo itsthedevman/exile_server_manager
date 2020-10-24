@@ -24,6 +24,7 @@ module ESM
         def discord
           @checks.owned_server! if @arguments.server_id
           check_for_valid_command!
+          @checks.registered_target_user!
 
           # Send the confirmation request
           response = ESM.bot.deliver_and_await!(confirmation_embed, to: current_channel, owner: current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)

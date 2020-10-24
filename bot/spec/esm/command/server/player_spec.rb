@@ -163,5 +163,20 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.to raise_error(ESM::Exception::FailedArgumentParse)
     end
+
+    it "should work with a non-registered steam uid" do
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: "")
+
+      command_statement = command.statement(server_id: server.server_id, target: steam_uid, type: "h")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.not_to raise_error
+      wait_for { connection.requests }.to be_blank
+      expect(ESM::Test.messages.size).to eql(1)
+      embed = ESM::Test.messages.first.second
+
+      expect(embed.description).not_to be_blank
+    end
   end
 end

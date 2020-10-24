@@ -19,7 +19,7 @@ module ESM
 
           embed =
             ESM::Embed.build do |e|
-              add_discord_info(e)
+              add_discord_info(e) if target_user.is_a?(Discordrb::User)
               add_steam_info(e) if @steam_success
             end
 
