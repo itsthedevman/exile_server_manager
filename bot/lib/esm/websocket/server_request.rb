@@ -57,7 +57,11 @@ module ESM
         return if !WHITELISTED_SERVER_COMMANDS.include?(@message.command)
 
         # Build the class and call it
-        "ESM::Event::#{@message.command.classify}".constantize.new(@connection.server, @message.parameters.first).run!
+        "ESM::Event::#{@message.command.classify}".constantize.new(
+          connection: @connection,
+          server: @connection.server,
+          parameters: @message.parameters.first
+        ).run!
       end
 
       # @private

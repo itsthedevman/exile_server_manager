@@ -4,10 +4,10 @@ module ESM
   module Event
     class DiscordMessageChannel
       # Unfortunately, this class is bound by the code I wrote 2 years ago. It's very implicit.
-      def initialize(server, params)
+      def initialize(connection:, server:, parameters:)
         @server = server
-        @message = params.message
-        @channel_id = params.channelID
+        @message = parameters.message
+        @channel_id = parameters.channelID
       end
 
       def run!

@@ -27,7 +27,8 @@ module ESM
     # @note Do not rescue. This will fall down to the calling class
     def self.deliver!(server_id, request)
       connection = @connections[server_id]
-      return request.command.check_failed!(:server_not_connected, user: request.user.mention, server_id: server_id) if connection.nil?
+      request.command.check_failed!(:server_not_connected, user: request.user.mention, server_id: server_id) if connection.nil?
+      request.command.check_failed!(:server_not_initialized, user: request.user.mention, server_id: server_id) if !connection.ready?
 
       connection.deliver!(request)
     end
@@ -69,6 +70,7 @@ module ESM
     attr_writer :requests if ESM.env.test?
 
     def initialize(connection)
+      @ready = false
       @connection = connection
       @requests = ESM::Websocket::Queue.new
       bind_events
@@ -92,6 +94,17 @@ module ESM
     # @returns [ESM::Websocket::Request, nil]
     def remove_request(command_id)
       @requests.remove(command_id)
+    end
+
+    # Returns if the server has been sent the post_init package
+    # @return boolean
+    def ready?
+      @ready
+    end
+
+    # Sets if the server has been sent the post_init package
+    def ready=(boolean)
+      @ready = boolean
     end
 
     ###########################

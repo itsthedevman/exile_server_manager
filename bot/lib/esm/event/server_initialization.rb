@@ -5,9 +5,10 @@ module ESM
     class ServerInitialization
       attr_reader :packet if ESM.env.test?
 
-      def initialize(server, params)
+      def initialize(connection:, server:, parameters:)
+        @connection = connection
         @server = server
-        @params = params
+        @params = parameters
       end
 
       def run!
@@ -22,6 +23,9 @@ module ESM
 
         # Send packet to server
         send_response
+
+        # Set the connection to be available for commands
+        @connection.ready = true
       end
 
       private

@@ -3,10 +3,10 @@
 module ESM
   module Event
     class DiscordLog
-      def initialize(server, params)
+      def initialize(connection:, server:, parameters:)
         @server = server
         @community = server.community
-        @params = params.log_info
+        @params = parameters.log_info
       end
 
       # params
@@ -34,6 +34,7 @@ module ESM
 
         # Build an embed from the values
         ESM::Embed.build do |e|
+          e.set_author(@server.server_id)
           e.title = title.to_s
           e.description = description.to_s
 

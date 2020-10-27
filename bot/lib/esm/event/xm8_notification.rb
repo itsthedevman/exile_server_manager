@@ -15,22 +15,22 @@ module ESM
         marxet-item-sold
       ].freeze
 
-      # @param params [OpenStruct] The message from the server
+      # @param parameters [OpenStruct] The message from the server
       # @option id [String] The territory ID. Not available in `marxet-item-sold`, or `custom`
       # @option message [String, JSON] The name of the territory, not available in `marxet-item-sold`, or `custom`.
       #                                This value will be JSON for `marxet-item-sold` (`item`, `amount`), and `custom` (`title`, `body`)
       # @option type [String] The type of XM8 notification
-      def initialize(server, params)
+      def initialize(connection:, server:, parameters:)
         @server = server
         @community = server.community
 
         # SteamUIDs
-        @recipients = params.recipients.to_ostruct.r
+        @recipients = parameters.recipients.to_ostruct.r
 
         # Could be a string (territory_name) or JSON (item, amount, title, body)
-        @message = params.message
-        @xm8_type = params.type
-        @territory_id = params.id
+        @message = parameters.message
+        @xm8_type = parameters.type
+        @territory_id = parameters.id
 
         # For generating notifications
         @attributes = {
