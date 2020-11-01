@@ -19,7 +19,7 @@ module ESM
 
         message =
           if data.nil?
-            @message
+            "**Message from #{@server.server_id}**\n#{@message}"
           else
             build_embed(data)
           end
@@ -49,6 +49,7 @@ module ESM
 
         # Build the Embed
         ESM::Embed.build do |e|
+          e.set_author(name: "Message from #{@server.server_id}")
           e.title = title
           e.description = description
           e.color =

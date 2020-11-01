@@ -18,7 +18,7 @@ module ESM
         message =
           case @params.template
           when "message"
-            @params.message
+            "**Log from #{@server.server_id}**\n#{@params.message}"
           when "embed"
             build_embed
           end
@@ -34,7 +34,7 @@ module ESM
 
         # Build an embed from the values
         ESM::Embed.build do |e|
-          e.set_author(@server.server_id)
+          e.set_author(name: "Log from #{@server.server_id}")
           e.title = title.to_s
           e.description = description.to_s
 
@@ -56,7 +56,14 @@ module ESM
               ESM::Color.random
             end
         end
-      rescue StandardError
+      rescue StandardError => e
+        ESM.logger.error("#{self.class}##{__method__}") do
+          JSON.pretty_generate(
+            exception: e.message,
+            backtrace: e.backtrace[0..2]
+          )
+        end
+
         I18n.t("exceptions.invalid_discord_log", server: @server.server_id, message: @params.embed)
       end
     end
