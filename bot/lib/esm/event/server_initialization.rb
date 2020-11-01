@@ -133,8 +133,8 @@ module ESM
         # Build the request
         request = ESM::Websocket::Request.new(command_name: "post_initialization", parameters: @packet.to_h)
 
-        # Send it to the dll
-        ESM::Websocket.deliver!(@server.server_id, request)
+        # Send it to the dll, don't use `Websocket#deliver` for this since it will raise on the connection not being ready.
+        @connection.deliver!(request)
       end
     end
   end
