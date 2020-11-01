@@ -4,6 +4,16 @@ en:
     invalid_discord_log: "**[`ESM_fnc_logToDiscord`]**\n**Uh oh, I ran into an issue parsing your discord log message from `%{server}`**\nPlease fix any issues in your JSON and confirm its validity using https://jsonlint.com\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to parse: ```%{message}```"
     invalid_channel_access: "**[`ESM_fnc_sendToChannel`]**\nYour Discord Server does not have a channel with ID `%{channel_id}`. Please provide `ESM_fnc_sendToChannel` a channel ID that belongs to your Discord Server."
     malformed_message: "**[`ESM_fnc_sendToChannel`]**\nThe provided message is malformed and unable to be delivered.\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to send: ```%{message}```"
+    deliver_failure: |-
+      Hi there!
+      Sorry for bothering you. I ran into an issue with sending a message to one of your channels. Since this is more than likely a permission issue, will you please ensure I have the correct permissions to `READ MESSAGES`, `SEND MESSAGES`, and `EMBED LINKS` to this channel?
+      If you continue to receive this message, please join my Discord (https://esmbot.com/join), post in the Support Channel and my developer will get back to you as soon as he can.
+      **Failure Reason:**
+      ```%{exception}```
+      **Channel Name:**
+      ```%{channel_name}```
+      **Message:**
+      ```%{message}```
   command_errors:
     # base
     text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
