@@ -19,8 +19,6 @@ module ESM
           request = current_user.esm_user.pending_requests.where(uuid_short: @arguments.uuid).first
           check_for_request!(request)
           request.respond(true)
-
-          reply(ESM::Embed.build(:success, description: I18n.t("commands.accept.success_message")))
         end
 
         #########################

@@ -76,12 +76,12 @@ module ESM
             uid: current_user.steam_uid
           )
 
-          # Don't send the request accepted message if the requestor is the requestee
-          return if same_user?
+          # # Don't send the request accepted message if the requestor is the requestee
+          # return if same_user?
 
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.add.requestor_accepted", uuid: @request.uuid_short, target_user: target_user.distinct, territory_id: @arguments.territory_id, server_id: target_server.server_id))
+          # embed = ESM::Embed.build(:success, description: I18n.t("commands.add.requestor_accepted", uuid: @request.uuid_short, target_user: target_user.distinct, territory_id: @arguments.territory_id, server_id: target_server.server_id))
 
-          ESM.bot.deliver(embed, to: target_user)
+          # reply(embed)
         end
       end
     end
