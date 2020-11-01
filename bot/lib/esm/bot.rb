@@ -84,6 +84,7 @@ module ESM
       self.server_create(&method(:esm_server_create))
       self.user_ban(&method(:esm_user_ban))
       self.user_unban(&method(:esm_user_unban))
+      self.member_join(&method(:esm_member_join))
     end
 
     def esm_disconnected(_event)
@@ -131,6 +132,13 @@ module ESM
 
     def esm_user_unban(event)
       # This event is raised when a user is unbanned from a server.
+    end
+
+    # Fires when a member joins a Discord server
+    def esm_member_join(event)
+      return if ESM.env.development? && event.user.id.to_s != ESM::User::BryanV2::ID
+
+      ESM::Event::MemberJoin.new(event).run!
     end
 
     ###########################

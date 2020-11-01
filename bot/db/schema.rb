@@ -75,6 +75,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.boolean "player_mode_enabled", default: true
     t.json "territory_admin_ids", default: []
     t.string "command_prefix"
+    t.text "welcome_message", default: ""
     t.datetime "created_at"
     t.datetime "updated_at"
     t.datetime "deleted_at"
