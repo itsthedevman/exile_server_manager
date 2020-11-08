@@ -82,6 +82,15 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.datetime :updated_at
     end
 
+    # Downloads
+    create_table :downloads do |t|
+      t.uuid :uuid, unique: true, null: false
+      t.string :version, unique: true, null: false
+      t.string :file
+      t.boolean :current_release
+      t.timestamps
+    end
+
     # logs
     create_table :logs do |t|
       t.uuid :uuid, null: false

@@ -102,6 +102,15 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["user_id"], name: "index_cooldowns_on_user_id"
   end
 
+  create_table "downloads", force: :cascade do |t|
+    t.uuid "uuid", null: false
+    t.string "version", null: false
+    t.string "file"
+    t.boolean "current_release"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "gamble_stats", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "server_id", null: false
