@@ -123,7 +123,7 @@ player:
     type: "respect"
 
   - color: "random"
-    description: "Heros never die!"
+    description: "Heroes never die!"
     title: ""
     type: "heal"
 
@@ -153,6 +153,6 @@ player:
     type: "kill"
 
   - color: "random"
-    description: "{{ this.params.name }} has died of dysentery"
+    description: "{{ targetUID }} has died of dysentery"
     title: ""
     type: "kill"
