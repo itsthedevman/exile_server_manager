@@ -87,11 +87,13 @@ module ESM
       self.member_join(&method(:esm_member_join))
     end
 
+    # This event is raised when the bot has disconnected from the WebSocket, due to the Bot#stop method or external causes.
     def esm_disconnected(_event)
-      # This event is raised when the bot has disconnected from the WebSocket, due to the Bot#stop method or external causes.
+      ESM.logger.info("#{self.class}##{__method__}") { "Disconnected event called!" }
+
       # IDEA: Maybe send email?
       ESM::Request::Overseer.die
-      ESM::Websocket::Overseer.die
+      ESM::Websocket::Server.stop
 
       @resend_queue.die if @resend_queue.present?
     end
@@ -114,6 +116,7 @@ module ESM
 
       # Wait until the bot has connected before starting the websocket.
       # This is to avoid servers connecting before the bot is ready
+      ESM::API.run!
       ESM::Websocket.start!
       ESM::Request::Overseer.watch
 
