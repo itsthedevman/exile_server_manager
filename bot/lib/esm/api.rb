@@ -15,15 +15,17 @@ module ESM
       ESM.bot.stop
     end
 
-    # Sinatra server configuration below
+    ######################################
     set(:port, ENV["API_PORT"])
 
+    # Every request must be authorized
     before do
       halt(401) if request.env["HTTP_AUTHORIZATION"] != "Bearer #{ENV["API_AUTH_KEY"]}"
     end
 
+    # Accepts a request and triggers any logic that is required by the command
     put("/requests/:id/accept") do
-      ESM.logger.debug("#{self.class}##{__method__}") { params }
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       request = ESM::Request.where(id: params[:id]).first
       return halt(404) if request.nil?
@@ -32,8 +34,9 @@ module ESM
       request.respond(true)
     end
 
+    # Declines a request and triggers any logic that is required by the command
     put("/requests/:id/decline") do
-      ESM.logger.debug("#{self.class}##{__method__}") { params }
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       request = ESM::Request.where(id: params[:id]).first
       return halt(404) if request.nil?
@@ -42,8 +45,9 @@ module ESM
       request.respond(false)
     end
 
-    put("/servers/:id/reconnect") do
-      ESM.logger.debug("#{self.class}##{__method__}") { params }
+    # Updates a server by sending it the initialization package again
+    put("/servers/:id/update") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       server = ESM::Server.where(id: params[:id]).first
       return halt(404) if server.nil?
