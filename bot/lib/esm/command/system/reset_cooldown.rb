@@ -65,7 +65,7 @@ module ESM
         end
 
         def cooldown_query
-          query = ESM::Cooldown.where(user_id: target_user.esm_user.id, community_id: current_community.id)
+          query = ESM::Cooldown.where(community_id: current_community.id).or(ESM::Cooldown.where(user_id: target_user.esm_user.id, steam_uid: target_user.steam_uid))
 
           # Check for command_name and/or server_id if we've been given one
           query = query.where(command_name: @arguments.command_name) if !@arguments.command_name.nil?
