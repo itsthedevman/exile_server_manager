@@ -62,6 +62,14 @@ module ESM
       !@connections[server_id].nil?
     end
 
+    # Retrieves the WS connection based on a server_id
+    #
+    # @param server_id [String] The ESM set ID, not the DB ID
+    # @returns [WebsocketConnection, nil]
+    def self.connection(server_id)
+      @connections[server_id]
+    end
+
     ###########################
     # Public Instance Methods
     ###########################

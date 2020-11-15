@@ -9,6 +9,8 @@ module ESM
         @connection = connection
         @server = server
         @params = parameters
+        @community = @server.community
+        @guild = ESM.bot.server(@community.guild_id)
       end
 
       def run!
@@ -28,15 +30,21 @@ module ESM
         @connection.ready = true
       end
 
+      # Called when an admin updates some settings.
+      def update
+        # We need to let the DLL know some stuff (namely a lot of stuff)
+        build_settings_packet
+
+        # Send packet to server
+        send_response
+      end
+
       private
 
       def initialize_server!
         update_server!
         update_server_settings!
         store_territory_info!
-
-        @community = @server.community
-        @guild = ESM.bot.server(@community.guild_id)
       end
 
       def update_server!
