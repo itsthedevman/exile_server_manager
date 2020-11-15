@@ -26,6 +26,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.boolean :player_mode_enabled, default: true
       t.json :territory_admin_ids, default: []
       t.string :command_prefix, default: nil
+      t.boolean :welcome_message_enabled, default: true
       t.text :welcome_message, default: ""
       t.datetime :created_at
       t.datetime :updated_at

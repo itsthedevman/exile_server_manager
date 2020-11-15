@@ -10,6 +10,8 @@ module ESM
       end
 
       def run!
+        return if !@community.welcome_message_enabled?
+
         thread = Thread.new do
           if @community.guild_id == ESM::Community::ESM::ID
             send_esm_welcome_message

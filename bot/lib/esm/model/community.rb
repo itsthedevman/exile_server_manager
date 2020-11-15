@@ -17,6 +17,7 @@ module ESM
     attribute :player_mode_enabled, :boolean, default: true
     attribute :territory_admin_ids, :json, default: []
     attribute :command_prefix, :string, default: nil
+    attribute :welcome_message_enabled, :boolean, default: true
     attribute :welcome_message, :string, default: ""
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
