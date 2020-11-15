@@ -20,7 +20,7 @@ module ESM
         argument :target, regex: /.+/, description: "commands.logs.arguments.query", multiline: true, display_as: :query
 
         # Since the argument is a modified target, the logic for nil_target_user will trigger
-        skip_check :nil_target_user, :connected_server
+        skip_check :nil_target_user
 
         def discord
           query = ""
