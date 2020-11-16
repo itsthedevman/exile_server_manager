@@ -282,6 +282,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
 
     add_index :communities, :community_id, unique: true
     add_index :communities, :guild_id, unique: true
+    add_index :downloads, :current_release
     add_index :logs, :uuid, unique: true
     add_index :log_entries, [:log_id, :log_date]
     add_index :log_entries, [:log_id, :log_date, :file_name]

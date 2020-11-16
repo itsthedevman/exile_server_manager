@@ -110,6 +110,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.boolean "current_release"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["current_release"], name: "index_downloads_on_current_release"
   end
 
   create_table "gamble_stats", force: :cascade do |t|
