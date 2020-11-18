@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class GambleStat < ApplicationRecord
+  class UserGambleStat < ApplicationRecord
     attribute :user_id, :integer
     attribute :server_id, :integer
     attribute :current_streak, :integer, default: 0

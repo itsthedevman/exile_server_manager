@@ -48,7 +48,7 @@ module ESM
         end
 
         def gamble_stat
-          @gamble_stat ||= ESM::GambleStat.where(server_id: target_server.id, user_id: current_user.esm_user.id).first_or_create
+          @gamble_stat ||= ESM::UserGambleStat.where(server_id: target_server.id, user_id: current_user.esm_user.id).first_or_create
         end
 
         def send_stats
