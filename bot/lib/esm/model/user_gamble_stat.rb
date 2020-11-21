@@ -7,8 +7,8 @@ module ESM
     attribute :current_streak, :integer, default: 0
     attribute :total_wins, :integer, default: 0
     attribute :longest_win_streak, :integer, default: 0
-    attribute :total_poptabs_won, :integer, default: 0
-    attribute :total_poptabs_loss, :integer, default: 0
+    attribute :total_poptabs_won, :integer, limit: 8, default: 0
+    attribute :total_poptabs_loss, :integer, limit: 8, default: 0
     attribute :longest_loss_streak, :integer, default: 0
     attribute :total_losses, :integer, default: 0
     attribute :last_action, :string, default: nil

@@ -81,6 +81,8 @@ module ESM
     end
 
     def self.define(command_class, name, aliases)
+      return if ESM.bot.nil?
+
       ESM.bot.command(name, aliases: aliases) do |event|
         # Execute the command.
         # Threaded since I handle everything in the commands

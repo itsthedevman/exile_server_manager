@@ -71,10 +71,10 @@ class InitialDb < ActiveRecord::Migration[5.2]
     # cooldowns
     create_table :cooldowns do |t|
       t.string :command_name
-      t.integer :community_id, index: true
-      t.integer :server_id, index: true
-      t.integer :user_id, index: true
-      t.string :steam_uid, index: true
+      t.integer :community_id
+      t.integer :server_id
+      t.integer :user_id
+      t.string :steam_uid
       t.integer :cooldown_quantity
       t.string :cooldown_type
       t.integer :cooldown_amount, default: 0
@@ -168,9 +168,9 @@ class InitialDb < ActiveRecord::Migration[5.2]
     create_table :server_rewards do |t|
       t.integer :server_id, index: true, null: false
       t.json :reward_items, default: {}
-      t.integer :player_poptabs, default: 0
-      t.integer :locker_poptabs, default: 0
-      t.integer :respect, default: 0
+      t.bigint :player_poptabs, default: 0
+      t.bigint :locker_poptabs, default: 0
+      t.bigint :respect, default: 0
       t.datetime :deleted_at, index: true
     end
 
@@ -212,7 +212,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
     create_table :territories do |t|
       t.integer :server_id, null: false, index: true
       t.integer :territory_level, null: false, index: true
-      t.integer :territory_purchase_price, null: false
+      t.bigint :territory_purchase_price, null: false
       t.integer :territory_radius, null: false
       t.integer :territory_object_count, null: false
       t.datetime :created_at
@@ -247,15 +247,15 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.datetime :updated_at
     end
 
-    # gambling_stats
-    create_table :gamble_stats do |t|
+    # user_gambling_stats
+    create_table :user_gamble_stats do |t|
       t.integer :user_id, null: false, index: true
       t.integer :server_id, null: false, index: true
       t.integer :current_streak, null: false, default: 0
       t.integer :total_wins, null: false, default: 0
       t.integer :longest_win_streak, null: false, default: 0
-      t.integer :total_poptabs_won, null: false, default: 0
-      t.integer :total_poptabs_loss, null: false, default: 0
+      t.bigint :total_poptabs_won, null: false, default: 0
+      t.bigint :total_poptabs_loss, null: false, default: 0
       t.integer :longest_loss_streak, null: false, default: 0
       t.integer :total_losses, null: false, default: 0
       t.string :last_action, default: nil
@@ -282,6 +282,8 @@ class InitialDb < ActiveRecord::Migration[5.2]
 
     add_index :communities, :community_id, unique: true
     add_index :communities, :guild_id, unique: true
+    add_index :cooldowns, %i[command_name user_id community_id]
+    add_index :cooldowns, %i[command_name steam_uid community_id]
     add_index :downloads, :current_release
     add_index :logs, :uuid, unique: true
     add_index :log_entries, [:log_id, :log_date]
@@ -301,8 +303,8 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_foreign_key :server_rewards, :servers
     add_foreign_key :server_settings, :servers
     add_foreign_key :territories, :servers
-    add_foreign_key :gamble_stats, :users
-    add_foreign_key :gamble_stats, :servers
+    add_foreign_key :user_gamble_stats, :users
+    add_foreign_key :user_gamble_stats, :servers
     add_foreign_key :user_notification_preferences, :users
     add_foreign_key :user_notification_preferences, :servers
   end

@@ -38,6 +38,12 @@ Gem::Specification.new do |spec|
   spec.add_dependency "otr-activerecord"
   spec.add_dependency "pg"
   spec.add_dependency "puma"
+  spec.add_dependency "rake"
+
+  # REMOVE AFTER LAUNCH
+  spec.add_dependency "rethinkdb"
+  # REMOVE AFTER LAUNCH
+
   spec.add_dependency "sinatra"
   spec.add_dependency "sucker_punch"
   spec.add_dependency "steam-condenser"
@@ -59,13 +65,13 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "memory_profiler"
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-nav"
-  spec.add_development_dependency "rake"
   spec.add_development_dependency "rerun"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "rspec-wait"
   spec.add_development_dependency "rubocop"
   spec.add_development_dependency "ruby-prof"
   spec.add_development_dependency "simplecov"
+  spec.add_development_dependency "solargraph"
   spec.add_development_dependency "steam_web_api"
   spec.add_development_dependency "yard"
 end

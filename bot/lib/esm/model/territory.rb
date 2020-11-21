@@ -4,7 +4,7 @@ module ESM
   class Territory < ApplicationRecord
     attribute :server_id, :integer
     attribute :territory_level, :integer
-    attribute :territory_purchase_price, :integer
+    attribute :territory_purchase_price, :integer, limit: 8
     attribute :territory_radius, :integer
     attribute :territory_object_count, :integer
     attribute :created_at, :datetime

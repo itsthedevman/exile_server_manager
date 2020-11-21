@@ -2,10 +2,10 @@
 
 module ESM
   class Cooldown < ApplicationRecord
-    attribute :command_name, :string
     attribute :community_id, :integer
     attribute :server_id, :integer
     attribute :user_id, :integer
+    attribute :command_name, :string
     attribute :cooldown_quantity, :integer
     attribute :cooldown_type, :string
     attribute :cooldown_amount, :integer, default: 0

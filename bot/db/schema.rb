@@ -97,10 +97,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.index ["community_id"], name: "index_cooldowns_on_community_id"
-    t.index ["server_id"], name: "index_cooldowns_on_server_id"
-    t.index ["steam_uid"], name: "index_cooldowns_on_steam_uid"
-    t.index ["user_id"], name: "index_cooldowns_on_user_id"
+    t.index ["command_name", "steam_uid", "community_id"], name: "index_cooldowns_on_command_name_and_steam_uid_and_community_id"
+    t.index ["command_name", "user_id", "community_id"], name: "index_cooldowns_on_command_name_and_user_id_and_community_id"
   end
 
   create_table "downloads", force: :cascade do |t|
@@ -111,23 +109,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["current_release"], name: "index_downloads_on_current_release"
-  end
-
-  create_table "gamble_stats", force: :cascade do |t|
-    t.integer "user_id", null: false
-    t.integer "server_id", null: false
-    t.integer "current_streak", default: 0, null: false
-    t.integer "total_wins", default: 0, null: false
-    t.integer "longest_win_streak", default: 0, null: false
-    t.integer "total_poptabs_won", default: 0, null: false
-    t.integer "total_poptabs_loss", default: 0, null: false
-    t.integer "longest_loss_streak", default: 0, null: false
-    t.integer "total_losses", default: 0, null: false
-    t.string "last_action"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.index ["server_id"], name: "index_gamble_stats_on_server_id"
-    t.index ["user_id"], name: "index_gamble_stats_on_user_id"
   end
 
   create_table "log_entries", force: :cascade do |t|
@@ -197,9 +178,9 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   create_table "server_rewards", force: :cascade do |t|
     t.integer "server_id", null: false
     t.json "reward_items", default: {}
-    t.integer "player_poptabs", default: 0
-    t.integer "locker_poptabs", default: 0
-    t.integer "respect", default: 0
+    t.bigint "player_poptabs", default: 0
+    t.bigint "locker_poptabs", default: 0
+    t.bigint "respect", default: 0
     t.datetime "deleted_at"
     t.index ["deleted_at"], name: "index_server_rewards_on_deleted_at"
     t.index ["server_id"], name: "index_server_rewards_on_server_id"
@@ -261,7 +242,7 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   create_table "territories", force: :cascade do |t|
     t.integer "server_id", null: false
     t.integer "territory_level", null: false
-    t.integer "territory_purchase_price", null: false
+    t.bigint "territory_purchase_price", null: false
     t.integer "territory_radius", null: false
     t.integer "territory_object_count", null: false
     t.datetime "created_at"
@@ -281,6 +262,23 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.index ["uuid"], name: "index_uploads_on_uuid"
+  end
+
+  create_table "user_gamble_stats", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "server_id", null: false
+    t.integer "current_streak", default: 0, null: false
+    t.integer "total_wins", default: 0, null: false
+    t.integer "longest_win_streak", default: 0, null: false
+    t.bigint "total_poptabs_won", default: 0, null: false
+    t.bigint "total_poptabs_loss", default: 0, null: false
+    t.integer "longest_loss_streak", default: 0, null: false
+    t.integer "total_losses", default: 0, null: false
+    t.string "last_action"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.index ["server_id"], name: "index_user_gamble_stats_on_server_id"
+    t.index ["user_id"], name: "index_user_gamble_stats_on_user_id"
   end
 
   create_table "user_notification_preferences", force: :cascade do |t|
@@ -319,8 +317,6 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   end
 
   add_foreign_key "command_configurations", "communities"
-  add_foreign_key "gamble_stats", "servers"
-  add_foreign_key "gamble_stats", "users"
   add_foreign_key "log_entries", "logs"
   add_foreign_key "logs", "servers"
   add_foreign_key "requests", "users", column: "requestee_user_id"
@@ -330,6 +326,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "server_settings", "servers"
   add_foreign_key "servers", "communities"
   add_foreign_key "territories", "servers"
+  add_foreign_key "user_gamble_stats", "servers"
+  add_foreign_key "user_gamble_stats", "users"
   add_foreign_key "user_notification_preferences", "servers"
   add_foreign_key "user_notification_preferences", "users"
 end
