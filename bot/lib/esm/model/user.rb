@@ -15,7 +15,7 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
-    has_many :gamble_stats
+    has_many :user_gamble_stats
     has_many :user_notification_preferences
     has_many :cooldowns
     has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request"
