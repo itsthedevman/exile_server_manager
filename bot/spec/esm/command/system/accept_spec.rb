@@ -43,8 +43,7 @@ describe ESM::Command::System::Accept, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be(nil)
+      expect(ESM::Test.messages).to be_empty
       expect(ESM::Request.all.size).to eql(0)
     end
 

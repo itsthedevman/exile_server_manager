@@ -5,7 +5,7 @@ describe ESM::Event::DiscordMessageChannel do
   let!(:server) { create(:server, community_id: community.id) }
 
   def event(params)
-    ESM::Event::DiscordMessageChannel.new(server, params)
+    ESM::Event::DiscordMessageChannel.new(server: server, parameters: params, connection: nil)
   end
 
   describe "Errors" do
@@ -39,7 +39,7 @@ describe ESM::Event::DiscordMessageChannel do
       channel, message = ESM::Test.messages.first
 
       expect(channel.id.to_s).to eql(params.channelID)
-      expect(message).to eql(params.message)
+      expect(message).to eql("**Message from #{server.server_id}**\n#{params.message}")
     end
   end
 

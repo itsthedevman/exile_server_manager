@@ -19,7 +19,7 @@ module ESM
             request_accepted
           else
             # Reset the cooldown since the request was declined.
-            current_cooldown.reset!
+            current_cooldown.reset! if current_cooldown.present?
 
             request_declined
           end

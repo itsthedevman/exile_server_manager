@@ -28,22 +28,22 @@ describe ESM::Event::ServerInitialization do
     )
   end
 
-  let!(:event) { ESM::Event::ServerInitialization.new(server, packet) }
-
-  it "should valid" do
-    expect(event).not_to be_nil
-  end
-
   describe "#run!" do
-    let!(:connection) { WebsocketClient.new(server) }
+    let!(:wsc) { WebsocketClient.new(server) }
+    let(:connection) { ESM::Websocket.connections[server.server_id] }
+    let(:event) { ESM::Event::ServerInitialization.new(server: server, parameters: packet, connection: connection) }
 
     before :each do
-      wait_for { connection.connected? }.to eql(true)
+      wait_for { wsc.connected? }.to eql(true)
       expect { event.run! }.not_to raise_error
     end
 
     after :each do
-      connection.disconnect!
+      wsc.disconnect!
+    end
+
+    it "should valid" do
+      expect(event).not_to be_nil
     end
 
     describe "#initialize_server!" do
