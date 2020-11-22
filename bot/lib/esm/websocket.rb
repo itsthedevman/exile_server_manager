@@ -129,7 +129,7 @@ module ESM
       raise ESM::Exception::FailedAuthentication, "Missing authorization key" if authorization.blank?
 
       # Once decoded, it becomes "arma_server:esm_key"
-      key = Base64.strict_decode64(authorization)[12..-1]
+      key = Base64.strict_decode64(authorization)[12..-1].strip
 
       @server = ESM::Server.where(server_key: key).first
       raise ESM::Exception::FailedAuthentication, "Invalid Key" if @server.nil?
@@ -160,7 +160,7 @@ module ESM
       ESM::Websocket.add_connection(self)
     rescue ESM::Exception::FailedAuthentication => e
       # Application code may only use codes from 1000, 3000-4999
-      @connection.close(1000, e.message)
+      @connection.close(1002, e.message)
     rescue StandardError => e
       ESM.logger.fatal("#{self.class}##{__method__}") { "Message:\n#{e.message}\n\nBacktrace:\n#{e.backtrace}" }
     end
