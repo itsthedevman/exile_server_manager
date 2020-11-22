@@ -65,7 +65,7 @@ module ESM
       end
 
       def store_territory_info!
-        ESM::Territory.all.in_batches(of: 10_000).delete_all
+        @server.territories.delete_all
 
         # All territory info is prefixed with `territory_level_`
         territory_info = @params.to_h.select { |key, _| key.to_s.starts_with?("territory_level_") }
