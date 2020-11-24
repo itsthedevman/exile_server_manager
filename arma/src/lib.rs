@@ -50,7 +50,7 @@ impl ArmaServer {
         let (sender, receiver) = unbounded();
 
         // The one, the only.
-        let mut arma_server = ArmaServer {
+        let arma_server = ArmaServer {
             ext_path: ext_path,
             wsc_queue: sender,
             config: bot_config,
@@ -63,7 +63,7 @@ impl ArmaServer {
         arma_server
     }
 
-    fn connect_to_bot(&mut self, receiver: Receiver<String>) {
+    fn connect_to_bot(&self, receiver: Receiver<String>) {
         let ws_url = self.config[0]["ws_url"].as_str().unwrap().to_string();
 
         WebsocketClient::connect_to_bot(ws_url, self.esm_key_path(), receiver);
