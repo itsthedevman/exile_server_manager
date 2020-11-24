@@ -3,7 +3,10 @@ class CfgPatches
 	class ESM
 	{
 		requiredVersion = 0.1;
-		requiredAddons[] = {};
+		requiredAddons[] = {
+			"exile_server",
+			"exile_client"
+		};
 		units[] = {};
 		weapons[] = {};
 		magazines[] = {};

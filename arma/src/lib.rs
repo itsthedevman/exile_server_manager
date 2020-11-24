@@ -1,13 +1,15 @@
 mod websocket_client;
+mod models;
+mod util;
 
 #[macro_use]
 extern crate arma_rs;
 
 // Various Packages
 use arma_rs::{rv, rv_callback};
-use crossbeam_channel::{bounded, Sender};
+use crossbeam_channel::{unbounded, Sender, Receiver};
 use lazy_static::lazy_static;
-use std::{env, fs, sync::Mutex};
+use std::{env, fs, path::PathBuf};
 use yaml_rust::{YamlLoader, Yaml};
 
 // Logging
@@ -19,48 +21,86 @@ use log4rs::encode::pattern::PatternEncoder;
 
 // ESM Packages
 use websocket_client::WebsocketClient;
+use models::discord_command::DiscordCommand;
 
 lazy_static! {
     static ref A3_SERVER: ArmaServer = ArmaServer::new();
 }
 
 pub struct ArmaServer {
-    ext_path: String,
-    sender: Mutex<Sender<String>>,
-    config: Vec<Yaml>
+    ext_path: PathBuf,
+    wsc_queue: Sender<String>,
+    config: Vec<Yaml>,
+    ready: bool
 }
 
 impl ArmaServer {
     pub fn new() -> ArmaServer {
-        let ext_path = match std::env::current_exe() {
-            Ok(path) => path.to_string_lossy().to_string(),
+        // Start the logger
+        initialize_logger();
+
+        let ext_path = match std::env::current_dir() {
+            Ok(path) => path,
             Err(e) => panic!(format!("Failed to find current executable path: {}", e)),
         };
 
-        // Create a temp channel that will be replaced after connecting to the bot.
-        let (temp_sender, _receiver) = bounded(0);
+        let bot_config = initialize_config();
 
+        // Any commands to be sent to the bot will use this channel set. These are Multiple Sender, Multiple Receiver channels
+        let (sender, receiver) = unbounded();
+
+        // The one, the only.
         let mut arma_server = ArmaServer {
             ext_path: ext_path,
-            sender: Mutex::new(temp_sender),
-            config: initialize_config()
+            wsc_queue: sender,
+            config: bot_config,
+            ready: false
         };
 
         // Connect to the bot
-        arma_server.connect_to_bot();
+        arma_server.connect_to_bot(receiver);
 
         arma_server
     }
 
-    fn connect_to_bot(&mut self) {
-        let sender = WebsocketClient::connect_to_bot(&self.ext_path, &self.config);
-        self.sender = Mutex::new(sender);
+    fn connect_to_bot(&mut self, receiver: Receiver<String>) {
+        let ws_url = self.config[0]["ws_url"].as_str().unwrap().to_string();
+
+        WebsocketClient::connect_to_bot(ws_url, self.esm_key_path(), receiver);
+    }
+
+    fn esm_key_path(&self) -> String {
+        let mut key_path = self.ext_path.clone();
+        key_path.push("@ESM");
+        key_path.push("esm.key");
+
+        match key_path.into_os_string().into_string() {
+            Ok(val) => val,
+            Err(os_string) => {
+                error!("Failed to build path for esm.key. Attempting lossy string conversion");
+                os_string.to_string_lossy().to_string()
+            }
+        }
     }
 
     pub fn log(&self, message: String) {
-        debug!("[ArmaServer::log] {}", message);
         rv_callback!("esm", "ESM_fnc_log", "Extension", message);
     }
+
+    pub fn send_to_bot(&self, caller: &str, package: DiscordCommand) {
+        let channel = self.wsc_queue.clone();
+
+        let package = match package.into_json() {
+            Ok(val) => val,
+            Err(err) => return error!("[{}] Failed to convert message into JSON: {}", caller, err)
+        };
+
+        match channel.send(package) {
+            Ok(_) => (),
+            Err(err) => error!("[{}] Failed to send message to bot: {}", caller, err)
+        }
+    }
+
 }
 
 fn initialize_logger() {
@@ -110,12 +150,19 @@ fn initialize_config() -> Vec<Yaml> {
 }
 
 ///////////////////////////////////////////////////////////////////////
-// Below are the Arma Functions accessable from callExtension
+// Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv(thread=true)]
 fn pre_init(package: String) {
-    initialize_logger();
-    A3_SERVER.log(format!("Sending pre_init request to bot with package: {}", package));
+    if A3_SERVER.ready {
+        return A3_SERVER.log(String::from("ESM has already been marked as ready. Is the server boot looping?"));
+    }
+
+    debug!("Sending pre_init request to bot with package: {}", package);
+
+    // Send the bot the package
+    let package = DiscordCommand::new("server_initialization", package);
+    A3_SERVER.send_to_bot("pre_init", package);
 }
 
 // For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...

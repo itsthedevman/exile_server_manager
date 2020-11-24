@@ -19,25 +19,24 @@ ESM_Initialized = false;
 ESM_ServerID = "";
 ESM_CommunityID = "";
 
-private _restart = getArray(configFile >> "CfgSettings" >> "RCON" >> "restartTimer");
 
 // Data to be sent to the server
-private _data =
+private _package =
 [
 	["server_name", serverName],
 	["price_per_object", getNumber(missionConfigFile >> "CfgTerritories" >> "popTabAmountPerObject")],
-	["territory_lifetime", getNumber(configFile >> "CfgSettings" >> "GarbageCollector" >> "Database" >> "territoryLifeTime")],
-	["server_restart_hour", _restart select 0],
-	["server_restart_min", _restart select 1]
+	["territory_lifetime", getNumber(configFile >> "CfgSettings" >> "GarbageCollector" >> "Database" >> "territoryLifeTime")]
 ];
 
-// Get all the prices and send them as a flat string
+// Get all the prices and build an array of objects
+private _territory_data = [];
 {
-	_data pushBack [format["purchase_price_%1", _forEachIndex + 1], (_x select 0)];
-	_data pushBack [format["radius_%1", _forEachIndex + 1], (_x select 1)];
-	_data pushBack [format["object_count_%1", _forEachIndex + 1], (_x select 2)];
+	_territory_data pushBack [["purchase_price", _x select 0], ["radius", _x select 1], ["object_count", _x select 2]];
 }
 forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));
+
+// Add the territory data to our package
+_package pushBack ["territory_data", _territory_data];
 
 // Add a MissionEventHandler to allow callbacks from the DLL
 addMissionEventHandler ["ExtensionCallback", {
@@ -49,6 +48,6 @@ addMissionEventHandler ["ExtensionCallback", {
 	};
 }];
 
-["pre_init", _data] call ESM_fnc_callExtension;
+["pre_init", _package] call ESM_fnc_callExtension;
 
 true

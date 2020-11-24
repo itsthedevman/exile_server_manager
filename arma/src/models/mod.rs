@@ -1,2 +1,1 @@
-pub mod arma_request;
-pub mod arma_response;
+pub mod discord_command;

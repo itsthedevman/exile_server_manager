@@ -1,15 +1,14 @@
 use ws::{connect, Handler, Sender as WSSender, Handshake, Result as WSResult, Message, CloseCode, Request, Error as WSError};
 use url;
-use yaml_rust::Yaml;
-use std::fs;
-use crossbeam_channel::{unbounded, Sender, Receiver};
+use std::{fs, thread, time};
+use crossbeam_channel::Receiver;
 use base64;
 use log::*;
-use std::thread;
 
 pub struct WebsocketClient {
+    url: String,
     connection: WSSender,
-    ext_path: String,
+    key_path: String,
     receiver: Receiver<String>
 }
 
@@ -23,7 +22,7 @@ impl Handler for WebsocketClient {
 
     // `on_open` will be called only after the WebSocket handshake is successful
     fn on_open(&mut self, _: Handshake) -> WSResult<()> {
-        debug!("Connected to Discord");
+        debug!("[on_open] Connected to Discord");
         self.listen();
         Ok(())
     }
@@ -31,55 +30,58 @@ impl Handler for WebsocketClient {
     // A message from the bot
     fn on_message(&mut self, msg: Message) -> WSResult<()> {
         // Close the connection when we get a response from the server
-        println!("Got message: {}", msg);
+        println!("[on_message] Got message: {}", msg);
         self.connection.close(CloseCode::Normal)
     }
 
     // Whenever an error occurs, this method will be called
     fn on_error(&mut self, err: WSError) {
-        debug!("[on_error] {:?}", err);
+        info!("[on_error] {:?}", err);
         // No connection: <Io(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })>
+        // Key denied: WS Error <Protocol>: Handshake failed.
+
+        let sleep_time = time::Duration::from_secs(5);
+        thread::sleep(sleep_time);
+
+        info!("Attempting reconnect...");
 
         // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
-        // WebsocketClient::connect_to_bot();
+        WebsocketClient::connect_to_bot(self.url.clone(), self.key_path.clone(), self.receiver.clone());
+    }
+
+    // Whenever the connection closes
+    fn on_close(&mut self, code: CloseCode, reason: &str) {
+        debug!("[on_close] Connection closing due to ({:?}) {}", code, reason);
     }
 }
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot(ext_path: &String, config: &Vec<Yaml>) -> Sender<String> {
-        let ext_path = ext_path.clone();
-
-        // The `connect` method is blocking and I haven't found a way to get access to the client instance
-        // This channel will be telling the websocket client to send a message to the bot
-        let (sender, receiver) = unbounded();
-        let ws_url = config[0]["ws_url"].as_str().unwrap().to_string();
-
+    pub fn connect_to_bot(connection_url: String, key_path: String, receiver_channel: Receiver<String>) {
         thread::spawn(move || {
             connect(
-                ws_url,
+                connection_url.clone(),
                 |out| {
                 WebsocketClient {
+                    url: connection_url.clone(),
                     connection: out,
-                    ext_path: ext_path.clone(),
-                    receiver: receiver.clone()
+                    key_path: key_path.clone(),
+                    receiver: receiver_channel.clone()
                 }
             }).unwrap();
         });
-
-        sender
     }
 
     // Takes in a Request and adds the esm.key into the headers for authorization
     fn add_authorization_header(&self, request: &mut Request) {
         // Read in the esm.key file
-        let file = fs::read_to_string(format!("{}/esm.key", self.ext_path));
+        let file = fs::read_to_string(self.key_path.clone());
 
         // Read the contents of the file result. If the file isn't found, panic!
         let file_contents = match file {
             Ok(contents) => contents,
             Err(_) => {
-                panic!("esm.key not found. Please read the documentation");
+                return error!("Failed to find esm.key");
             }
         };
 

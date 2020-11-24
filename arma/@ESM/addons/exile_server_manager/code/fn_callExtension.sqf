@@ -1,7 +1,7 @@
 /*
 	Exile Server Manager
 	www.esmbot.com
-	© 2018 Exile Server Manager Team
+	© 2018-2020 Exile Server Manager Team
 	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
 
@@ -9,40 +9,46 @@
 		Calls the ESM DLL and returns the resulting array
 */
 
-// { "KEY": VALUE, "KEY": VALUE }
-private _package = "{";
+params ["_function", "_packageToSanitize"];
 
-if (count(_this select 1) > 0) then
-{
-	// ["KEY", VALUE]
-	{
-		private _text = format['"%1":', _x select 0];
-
-		switch (typeName (_x select 1)) do
-		{
-			case "STRING":
-			{
-				_text = format['%1"%2"', _text, _x select 1];
-			};
-
-			case "ARRAY":
-			{
-				_text = format['%1"%2"', _text, format["%1", _x select 1] call ExileClient_util_string_escapeJSON];
-			};
-
-			default
-			{
-				_text = format['%1%2', _text, _x select 1];
-			};
-		};
-
-		_package = format['%1%2,',_package, _text];
-	}
-	foreach (_this select 1);
-
-	_package = _package select [0, count(_package) - 1];
+// Could use the params to do this, but the custom message is nice
+if !(typeName(_packageToSanitize) isEqualTo "ARRAY") exitWith {
+	["fn_callExtension", format["Invalid parameters, given %1, expected Array pairs ([[""Key"", value]])", _packageToSanitize]] call ESM_fnc_log;
 };
 
-_package = format['%1}', _package];
+["debug", ExileClient_util_string_escapeJson] call ESM_fnc_log;
+private _sanitizedPackage = [];
 
-"esm" callExtension [_this select 0, [_package]];
+private _sanitizer = {
+	private _package = _this select 0;
+	private _item = _this select 1;
+
+	switch (typeName(_item)) do
+	{
+		case "ARRAY":
+		{
+			private _tempPackage = [];
+
+			{
+				[_tempPackage, _x] call _sanitizer;
+			}
+			forEach _item;
+
+			_package pushBack _tempPackage;
+		};
+
+		case "STRING":
+		{
+			_package pushBack (_item call ExileClient_util_string_escapeJson);
+		};
+
+		default
+		{
+			_package pushBack _item;
+		};
+	};
+};
+
+[_sanitizedPackage, _packageToSanitize] call _sanitizer;
+
+"esm" callExtension [_function, [str(_sanitizedPackage)]];
