@@ -16,7 +16,6 @@ if !(typeName(_packageToSanitize) isEqualTo "ARRAY") exitWith {
 	["fn_callExtension", format["Invalid parameters, given %1, expected Array pairs ([[""Key"", value]])", _packageToSanitize]] call ESM_fnc_log;
 };
 
-["debug", ExileClient_util_string_escapeJson] call ESM_fnc_log;
 private _sanitizedPackage = [];
 
 private _sanitizer = {
