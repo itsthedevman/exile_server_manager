@@ -1,16 +1,16 @@
-mod websocket_client;
 mod models;
 mod util;
+mod websocket_client;
 
 #[macro_use]
 extern crate arma_rs;
 
 // Various Packages
 use arma_rs::{rv, rv_callback};
-use crossbeam_channel::{unbounded, Sender, Receiver};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use lazy_static::lazy_static;
 use std::{env, fs, path::PathBuf};
-use yaml_rust::{YamlLoader, Yaml};
+use yaml_rust::{Yaml, YamlLoader};
 
 // Logging
 use log::*;
@@ -20,8 +20,8 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 // ESM Packages
-use websocket_client::WebsocketClient;
 use models::discord_command::DiscordCommand;
+use websocket_client::WebsocketClient;
 
 lazy_static! {
     static ref A3_SERVER: ArmaServer = ArmaServer::new();
@@ -31,7 +31,7 @@ pub struct ArmaServer {
     ext_path: PathBuf,
     wsc_queue: Sender<String>,
     config: Vec<Yaml>,
-    ready: bool
+    ready: bool,
 }
 
 impl ArmaServer {
@@ -54,7 +54,7 @@ impl ArmaServer {
             ext_path: ext_path,
             wsc_queue: sender,
             config: bot_config,
-            ready: false
+            ready: false,
         };
 
         // Connect to the bot
@@ -92,15 +92,14 @@ impl ArmaServer {
 
         let package = match package.into_json() {
             Ok(val) => val,
-            Err(err) => return error!("[{}] Failed to convert message into JSON: {}", caller, err)
+            Err(err) => return error!("[{}] Failed to convert message into JSON: {}", caller, err),
         };
 
         match channel.send(package) {
             Ok(_) => (),
-            Err(err) => error!("[{}] Failed to send message to bot: {}", caller, err)
+            Err(err) => error!("[{}] Failed to send message to bot: {}", caller, err),
         }
     }
-
 }
 
 fn initialize_logger() {
@@ -139,11 +138,11 @@ fn initialize_logger() {
 fn initialize_config() -> Vec<Yaml> {
     let contents = match fs::read_to_string("@ESM/config.yml") {
         Ok(file) => file,
-        Err(_) => {
+        Err(_) => String::from(
             "
                 ws_url: ws://ws.esmbot.com
-            ".to_string()
-        }
+            ",
+        ),
     };
 
     YamlLoader::load_from_str(&contents).unwrap()
@@ -152,10 +151,12 @@ fn initialize_config() -> Vec<Yaml> {
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
-#[rv(thread=true)]
+#[rv(thread = true)]
 fn pre_init(package: String) {
     if A3_SERVER.ready {
-        return A3_SERVER.log(String::from("ESM has already been marked as ready. Is the server boot looping?"));
+        return A3_SERVER.log(String::from(
+            "ESM has already been marked as ready. Is the server boot looping?",
+        ));
     }
 
     debug!("Sending pre_init request to bot with package: {}", package);

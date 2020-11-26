@@ -1,15 +1,18 @@
-use ws::{connect, Handler, Sender as WSSender, Handshake, Result as WSResult, Message, CloseCode, Request, Error as WSError};
-use url;
-use std::{fs, thread, time};
-use crossbeam_channel::Receiver;
 use base64;
+use crossbeam_channel::Receiver;
 use log::*;
+use std::{fs, thread, time};
+use url;
+use ws::{
+    connect, CloseCode, Error as WSError, Handler, Handshake, Message, Request, Result as WSResult,
+    Sender as WSSender,
+};
 
 pub struct WebsocketClient {
     url: String,
     connection: WSSender,
     key_path: String,
-    receiver: Receiver<String>
+    receiver: Receiver<String>,
 }
 
 impl Handler for WebsocketClient {
@@ -46,29 +49,37 @@ impl Handler for WebsocketClient {
         info!("Attempting reconnect...");
 
         // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
-        WebsocketClient::connect_to_bot(self.url.clone(), self.key_path.clone(), self.receiver.clone());
+        WebsocketClient::connect_to_bot(
+            self.url.clone(),
+            self.key_path.clone(),
+            self.receiver.clone(),
+        );
     }
 
     // Whenever the connection closes
     fn on_close(&mut self, code: CloseCode, reason: &str) {
-        debug!("[on_close] Connection closing due to ({:?}) {}", code, reason);
+        debug!(
+            "[on_close] Connection closing due to ({:?}) {}",
+            code, reason
+        );
     }
 }
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot(connection_url: String, key_path: String, receiver_channel: Receiver<String>) {
+    pub fn connect_to_bot(
+        connection_url: String,
+        key_path: String,
+        receiver_channel: Receiver<String>,
+    ) {
         thread::spawn(move || {
-            connect(
-                connection_url.clone(),
-                |out| {
-                WebsocketClient {
-                    url: connection_url.clone(),
-                    connection: out,
-                    key_path: key_path.clone(),
-                    receiver: receiver_channel.clone()
-                }
-            }).unwrap();
+            connect(connection_url.clone(), |out| WebsocketClient {
+                url: connection_url.clone(),
+                connection: out,
+                key_path: key_path.clone(),
+                receiver: receiver_channel.clone(),
+            })
+            .unwrap();
         });
     }
 
@@ -91,10 +102,10 @@ impl WebsocketClient {
             "AUTHORIZATION".into(),
             format!(
                 "basic {}",
-                base64::encode(
-                    format!("arma_server:{}", file_contents).as_bytes()
-                )
-            ).as_bytes().to_vec()
+                base64::encode(format!("arma_server:{}", file_contents).as_bytes())
+            )
+            .as_bytes()
+            .to_vec(),
         )];
 
         // Add the new header to the headers on the request
@@ -106,14 +117,12 @@ impl WebsocketClient {
         let receiver = self.receiver.clone();
         let connection = self.connection.clone();
 
-        thread::spawn(move || {
-            loop {
-                let message = receiver.recv();
+        thread::spawn(move || loop {
+            let message = receiver.recv();
 
-                match message {
-                    Ok(message) => connection.send(message).unwrap_or_default(),
-                    Err(e) => debug!("{:?}", e),
-                }
+            match message {
+                Ok(message) => connection.send(message).unwrap_or_default(),
+                Err(e) => debug!("{:?}", e),
             }
         });
     }
