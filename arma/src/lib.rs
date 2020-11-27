@@ -9,8 +9,9 @@ extern crate arma_rs;
 use arma_rs::{rv, rv_callback};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use lazy_static::lazy_static;
-use std::{env, fs, path::PathBuf};
+use std::{env, fs, path::PathBuf, sync::Mutex, collections::HashMap};
 use yaml_rust::{Yaml, YamlLoader};
+use once_cell::sync::Lazy;
 
 // Logging
 use log::*;
@@ -20,8 +21,12 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 // ESM Packages
-use models::discord_command::DiscordCommand;
+pub use models::bot_command::BotCommand;
 use websocket_client::WebsocketClient;
+
+static METADATA: Lazy<Mutex<HashMap<&str, String>>> = Lazy::new(|| {
+    Mutex::new(HashMap::new())
+});
 
 lazy_static! {
     static ref A3_SERVER: ArmaServer = ArmaServer::new();
@@ -87,17 +92,17 @@ impl ArmaServer {
         rv_callback!("esm", "ESM_fnc_log", "Extension", message);
     }
 
-    pub fn send_to_bot(&self, caller: &str, package: DiscordCommand) {
+    pub fn send_to_bot(&self, package: BotCommand) {
         let channel = self.wsc_queue.clone();
 
         let package = match package.into_json() {
             Ok(val) => val,
-            Err(err) => return error!("[{}] Failed to convert message into JSON: {}", caller, err),
+            Err(err) => return error!("Failed to convert message into JSON: {}", err),
         };
 
         match channel.send(package) {
             Ok(_) => (),
-            Err(err) => error!("[{}] Failed to send message to bot: {}", caller, err),
+            Err(err) => error!("Failed to send message to bot: {}", err),
         }
     }
 }
@@ -159,11 +164,13 @@ fn pre_init(package: String) {
         ));
     }
 
+    METADATA.lock().unwrap().insert("server_initalization", package.clone());
+
     debug!("Sending pre_init request to bot with package: {}", package);
 
     // Send the bot the package
-    let package = DiscordCommand::new("server_initialization", package);
-    A3_SERVER.send_to_bot("pre_init", package);
+    let package = BotCommand::new("server_initialization", package);
+    A3_SERVER.send_to_bot(package);
 }
 
 // For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...

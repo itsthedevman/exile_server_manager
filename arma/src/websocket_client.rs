@@ -7,12 +7,13 @@ use ws::{
     connect, CloseCode, Error as WSError, Handler, Handshake, Message, Request, Result as WSResult,
     Sender as WSSender,
 };
+use crate::BotCommand;
 
 pub struct WebsocketClient {
     url: String,
     connection: WSSender,
     key_path: String,
-    receiver: Receiver<String>,
+    receiver: Receiver<String>
 }
 
 impl Handler for WebsocketClient {
@@ -34,7 +35,7 @@ impl Handler for WebsocketClient {
     fn on_message(&mut self, msg: Message) -> WSResult<()> {
         // Close the connection when we get a response from the server
         println!("[on_message] Got message: {}", msg);
-        self.connection.close(CloseCode::Normal)
+        Ok(())
     }
 
     // Whenever an error occurs, this method will be called
@@ -43,17 +44,7 @@ impl Handler for WebsocketClient {
         // No connection: <Io(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })>
         // Key denied: WS Error <Protocol>: Handshake failed.
 
-        let sleep_time = time::Duration::from_secs(5);
-        thread::sleep(sleep_time);
-
-        info!("Attempting reconnect...");
-
-        // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
-        WebsocketClient::connect_to_bot(
-            self.url.clone(),
-            self.key_path.clone(),
-            self.receiver.clone(),
-        );
+        self.reconnect();
     }
 
     // Whenever the connection closes
@@ -62,6 +53,8 @@ impl Handler for WebsocketClient {
             "[on_close] Connection closing due to ({:?}) {}",
             code, reason
         );
+
+        self.reconnect();
     }
 }
 
@@ -77,7 +70,7 @@ impl WebsocketClient {
                 url: connection_url.clone(),
                 connection: out,
                 key_path: key_path.clone(),
-                receiver: receiver_channel.clone(),
+                receiver: receiver_channel.clone()
             })
             .unwrap();
         });
@@ -121,9 +114,36 @@ impl WebsocketClient {
             let message = receiver.recv();
 
             match message {
-                Ok(message) => connection.send(message).unwrap_or_default(),
+                Ok(message) => {
+                    debug!("[websocket_client::listen] Sending {}", message);
+                    connection.send(message).unwrap_or_default()
+                },
                 Err(e) => debug!("{:?}", e),
             }
         });
+    }
+
+    fn reconnect(&self) {
+        let sleep_time = time::Duration::from_secs(5);
+        thread::sleep(sleep_time);
+
+        info!("Attempting reconnect...");
+
+        // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
+        WebsocketClient::connect_to_bot(
+            self.url.clone(),
+            self.key_path.clone(),
+            self.receiver.clone(),
+        );
+
+        let metadata = crate::METADATA.lock().unwrap();
+        let package = metadata.get("server_initialization");
+        match package {
+            Some(val) => {
+                let command = BotCommand::new("server_initialization", val.clone());
+                crate::A3_SERVER.send_to_bot(command);
+            },
+            _ => ()
+        };
     }
 }
