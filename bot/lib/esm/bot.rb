@@ -78,24 +78,12 @@ module ESM
     # These all have to have unique-to-ESM names since we are inheriting
     ###########################
     def bind_events!
-      self.disconnected(&method(:esm_disconnected))
       self.mention(&method(:esm_mention))
       self.ready(&method(:esm_ready))
       self.server_create(&method(:esm_server_create))
       self.user_ban(&method(:esm_user_ban))
       self.user_unban(&method(:esm_user_unban))
       self.member_join(&method(:esm_member_join))
-    end
-
-    # This event is raised when the bot has disconnected from the WebSocket, due to the Bot#stop method or external causes.
-    def esm_disconnected(_event)
-      ESM.logger.info("#{self.class}##{__method__}") { "Disconnected event called!" }
-
-      # IDEA: Maybe send email?
-      ESM::Request::Overseer.die
-      ESM::Websocket::Server.stop
-
-      @resend_queue.die if @resend_queue.present?
     end
 
     def esm_mention(_event)
