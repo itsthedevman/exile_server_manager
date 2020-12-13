@@ -3,6 +3,7 @@
 module ESM
   class Community < ApplicationRecord
     before_create :generate_community_id
+    before_create :set_command_prefix
     after_create :create_command_configurations
     after_create :create_notifications
 
@@ -89,6 +90,10 @@ module ESM
     end
 
     private
+
+    def set_command_prefix
+      self.command_prefix = ESM.config.prefix
+    end
 
     def generate_community_id
       return if self.community_id.present?
