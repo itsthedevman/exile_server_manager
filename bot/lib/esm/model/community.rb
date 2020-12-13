@@ -92,7 +92,7 @@ module ESM
     private
 
     def set_command_prefix
-      self.command_prefix = ESM.config.prefix
+      self.command_prefix = ::ESM.config.prefix
     end
 
     def generate_community_id
