@@ -58,5 +58,24 @@ module ESM
       # Tell ESM to update the server with the new details
       ESM::Event::ServerInitialization.new(connection: connection, server: server, parameters: {}).update
     end
+
+    # If a community changes their ID, their servers need to disconnect and reconnect
+    # params[:id] => New ID
+    # params[:old_id] => Old ID
+    put("/servers/:id/reconnect") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      server = ESM::Server.where(id: params[:id]).first
+      return halt(404) if server.nil?
+      return halt(404) if params[:old_id].blank?
+
+      # Grab the old server connection
+      connection = ESM::Websocket.connection(params[:old_id])
+      return halt(200) if connection.nil?
+
+      # Disconnect the old server. The DLL will automatically reconnect in 30 seconds
+      # ESM::Websocket.remove_connection(connection)
+      connection.connection.close(1000, "Server ID changed, reconnecting")
+    end
   end
 end
