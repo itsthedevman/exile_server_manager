@@ -30,7 +30,7 @@ module ESM
       end
 
       def self.stop
-        ESM::Websocket::Request::Overseer.stop!
+        ESM::Websocket::Request::Overseer.die
         @server.stop(true)
       end
     end
