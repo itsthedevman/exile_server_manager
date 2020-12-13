@@ -34,7 +34,7 @@ module ESM
 
         def registration_message
           ESM::Embed.build do |e|
-            e.description = I18n.t("commands.register.registration", user: current_user.mention, prefix: prefix)
+            e.description = I18n.t("command_errors.not_registered", user: current_user.mention, full_username: current_user.distinct)
           end
         end
       end

@@ -23,7 +23,11 @@ en:
     not_allowed_in_text_channels: "Hey %{user}, `%{prefix}%{command_name}` is not allowed in this Discord's channels.\nTry sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there"
     on_cooldown_time_left: "Hey %{user}, you're on cooldown for `%{prefix}%{command_name}`.\nYou have **%{time_left}** left before you can use it again"
     on_cooldown_useage: "Hey %{user}, you've exceeded the amount of times you may use `%{prefix}%{command_name}`."
-    not_registered: "Hey %{user}, this command requires you to link your Steam account with me. Just head to https://www.esmbot.com/register to get started!"
+    not_registered: |-
+      Greetings %{user}! My name is Exile Server Manager and I'm here to help make interacting with your character on a Exile server easier.
+      In order to use my commands, I'll need you to link your Steam account with your Discord account on my website. This will require you to authenticate your Discord and Steam accounts with the me, so **please double check you are signing in with %{full_username}** before you sign into your Steam account. 
+
+      Once you're ready, please head over to https://www.esmbot.com/register to get started.
     server_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
     server_not_initialized: "Hey %{user}, `%{server_id}` is in the process of connection. Please wait a few minutes before trying again."
     invalid_server_id: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`."

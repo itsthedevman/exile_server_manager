@@ -107,7 +107,7 @@ module ESM
         def registered!
           return if !@command.registration_required? || current_user.esm_user.registered?
 
-          check_failed!(:not_registered, user: current_user.mention)
+          check_failed!(:not_registered, user: current_user.mention, full_username: current_user.distinct)
         end
 
         def cooldown!
