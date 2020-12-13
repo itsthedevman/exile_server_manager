@@ -15,12 +15,10 @@ module ESM
         argument :target
 
         def discord
-          load_steam_info
-
           embed =
             ESM::Embed.build do |e|
               add_discord_info(e) if target_user.is_a?(Discordrb::User)
-              add_steam_info(e) if @steam_success
+              add_steam_info(e) if target_user.esm_user.registered?
             end
 
           reply(embed)
@@ -29,13 +27,6 @@ module ESM
         #########################
         # Command Methods
         #########################
-        def load_steam_info
-          @steam = ESM::Service::Steam.new(target_user.steam_uid)
-          @player_info = @steam.player_info
-          @player_bans = @steam.player_bans
-          @steam_success = @player_info.present? || @player_bans.present?
-        end
-
         # Argument e is an embed
         def add_discord_info(e)
           e.add_field(value: I18n.t("commands.whois.discord.header"))
@@ -48,38 +39,42 @@ module ESM
 
         # Argument e is an embed
         def add_steam_info(e)
+          @steam_data = target_user.esm_user.steam_data
+
           e.add_field(value: I18n.t("commands.whois.steam.header"))
 
-          if @player_info.present?
-            e.thumbnail = @player_info.avatarfull
-            e.add_field(name: I18n.t("commands.whois.steam.id"), value: @player_info.steamid, inline: true)
+          e.thumbnail = @steam_data.avatar if @steam_data.avatar
+          e.add_field(name: I18n.t("commands.whois.steam.id"), value: target_user.steam_uid, inline: true)
+
+          if @steam_data.username && @steam_data.profile_url
             e.add_field(
               name: I18n.t("commands.whois.steam.username"),
-              value: "[#{@player_info.personaname}](#{@player_info.profileurl})",
+              value: "[#{@steam_data.username}](#{@steam_data.profile_url})",
               inline: true
             )
-            e.add_field(name: I18n.t("commands.whois.steam.visibility"), value: @steam.profile_visibility, inline: true)
-            e.add_field(name: I18n.t("commands.whois.steam.created_at"), value: @steam.profile_created_at.strftime("%c"), inline: true) if @steam.profile_created_at.present?
           end
 
-          return if @player_bans.blank?
+          e.add_field(name: I18n.t("commands.whois.steam.visibility"), value: @steam_data.profile_visibility, inline: true) if @steam_data.profile_visibility
+          e.add_field(name: I18n.t("commands.whois.steam.created_at"), value: @steam_data.profile_created_at.strftime("%c"), inline: true) if @steam_data.profile_created_at
 
-          e.add_field(
-            name: I18n.t("commands.whois.steam.community_banned"),
-            value: @player_bans.CommunityBanned ? I18n.t("yes") : I18n.t("no"),
-            inline: true
-          )
+          if @steam_data.community_banned?
+            e.add_field(
+              name: I18n.t("commands.whois.steam.community_banned"),
+              value: @steam_data.community_banned? ? I18n.t("yes") : I18n.t("no"),
+              inline: true
+            )
+          end
+
+          return if !@steam_data.vac_banned?
 
           e.add_field(
             name: I18n.t("commands.whois.steam.vac_banned"),
-            value: @player_bans.VACBanned ? I18n.t("yes") : I18n.t("no"),
+            value: @steam_data.vac_banned? ? I18n.t("yes") : I18n.t("no"),
             inline: true
           )
 
-          return if !@player_bans.VACBanned
-
-          e.add_field(name: I18n.t("commands.whois.steam.number_of_vac_bans"), value: @player_bans.NumberOfVACBans, inline: true)
-          e.add_field(name: I18n.t("commands.whois.steam.days_since_vac_ban"), value: @player_bans.DaysSinceLastBan, inline: true)
+          e.add_field(name: I18n.t("commands.whois.steam.number_of_vac_bans"), value: @steam_data.number_of_vac_bans, inline: true)
+          e.add_field(name: I18n.t("commands.whois.steam.days_since_vac_ban"), value: @steam_data.days_since_vac_ban, inline: true)
         end
       end
     end

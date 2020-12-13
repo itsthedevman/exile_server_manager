@@ -46,6 +46,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "sinatra"
   spec.add_dependency "sucker_punch"
+  spec.add_dependency "steam_web_api"
   spec.add_dependency "steam-condenser"
   spec.add_dependency "symmetric-encryption"
   spec.add_dependency "terminal-table"
@@ -72,6 +73,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "ruby-prof"
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "solargraph"
-  spec.add_development_dependency "steam_web_api"
   spec.add_development_dependency "yard"
 end

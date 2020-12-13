@@ -17,6 +17,7 @@ PATH
       rethinkdb
       sinatra
       steam-condenser
+      steam_web_api
       sucker_punch
       symmetric-encryption
       terminal-table
@@ -288,7 +289,6 @@ DEPENDENCIES
   ruby-prof
   simplecov
   solargraph
-  steam_web_api
   yard
 
 BUNDLED WITH

@@ -28,8 +28,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :command_prefix, default: nil
       t.boolean :welcome_message_enabled, default: true
       t.text :welcome_message, default: ""
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
       t.datetime :deleted_at, index: true
     end
 
@@ -44,8 +43,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.boolean :allowed_in_text_channels, default: true
       t.boolean :whitelist_enabled, default: false
       t.json :whitelisted_role_ids, default: []
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
       t.datetime :deleted_at, index: true
     end
 
@@ -79,8 +77,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :cooldown_type
       t.integer :cooldown_amount, default: 0
       t.datetime :expires_at
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # Downloads
@@ -99,8 +96,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :search_text
       t.string :requestors_user_id
       t.datetime :expires_at, index: true
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # log_entries
@@ -119,8 +115,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :notification_description
       t.string :notification_color
       t.string :notification_category
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # requests
@@ -133,8 +128,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :command_name, null: false
       t.json :command_arguments, default: nil
       t.datetime :expires_at, index: true
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # servers
@@ -147,8 +141,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :server_port
       t.datetime :server_start_time
       t.datetime :disconnected_at
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
       t.datetime :deleted_at, index: true
     end
 
@@ -159,8 +152,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.text :mod_link, default: nil
       t.string :mod_version, default: nil
       t.boolean :mod_required, null: false, default: false
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
       t.datetime :deleted_at, index: true
     end
 
@@ -215,8 +207,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.bigint :territory_purchase_price, null: false
       t.integer :territory_radius, null: false
       t.integer :territory_object_count, null: false
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
       t.datetime :deleted_at, index: true
     end
 
@@ -227,8 +218,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :file_name, null: false
       t.string :file_type, null: false
       t.integer :file_size, null: false
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # users
@@ -240,11 +230,22 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.string :discord_access_token, default: nil
       t.string :discord_refresh_token, default: nil
       t.string :steam_uid, default: nil, index: true
-      t.string :steam_username, default: nil
-      t.text :steam_avatar, default: nil
-      t.text :steam_profile_url, default: nil
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
+    end
+
+    # user_steam_data
+    create_table :user_steam_data do |t|
+      t.integer :user_id
+      t.string :username, default: nil
+      t.text :avatar, default: nil
+      t.text :profile_url, default: nil
+      t.string :profile_visibility, default: nil
+      t.datetime :profile_created_at, default: nil
+      t.boolean :community_banned, default: false
+      t.boolean :vac_banned, default: false
+      t.integer :number_of_vac_bans, default: 0
+      t.integer :days_since_last_ban, default: 0
+      t.timestamps
     end
 
     # user_gambling_stats
@@ -259,8 +260,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
       t.integer :longest_loss_streak, null: false, default: 0
       t.integer :total_losses, null: false, default: 0
       t.string :last_action, default: nil
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps
     end
 
     # user_notification_preferences
@@ -303,6 +303,7 @@ class InitialDb < ActiveRecord::Migration[5.2]
     add_foreign_key :server_rewards, :servers
     add_foreign_key :server_settings, :servers
     add_foreign_key :territories, :servers
+    add_foreign_key :user_steam_data, :users
     add_foreign_key :user_gamble_stats, :users
     add_foreign_key :user_gamble_stats, :servers
     add_foreign_key :user_notification_preferences, :users

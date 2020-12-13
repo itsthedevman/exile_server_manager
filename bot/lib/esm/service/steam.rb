@@ -9,6 +9,53 @@ module ESM
         @player = SteamWebApi::Player.new(steam_uid)
       end
 
+      def username
+        player_info.personaname
+      end
+
+      def avatar
+        player_info.avatarfull
+      end
+
+      def profile_url
+        player_info.profileurl
+      end
+
+      def profile_visibility
+        {
+          1 => "Private",
+          2 => "Friends Only",
+          3 => "Public"
+        }[player_info.communityvisibilitystate]
+      end
+
+      def profile_created_at
+        @profile_created_at ||= lambda do
+          # Apparently steam doesn't always give that information
+          return if player_info.timecreated.nil?
+
+          ::Time.at(player_info.timecreated)
+        end.call
+      end
+
+      def community_banned?
+        player_bans.CommunityBanned
+      end
+
+      def vac_banned?
+        player_bans.VACBanned
+      end
+
+      def number_of_vac_bans
+        player_bans.NumberOfVACBans
+      end
+
+      def days_since_last_ban
+        player_bans.DaysSinceLastBan
+      end
+
+      private
+
       #          "SteamId" => "76561198037177305",
       #  "CommunityBanned" => false,
       #        "VACBanned" => false,
@@ -38,29 +85,10 @@ module ESM
       #              "timecreated" => 1295748172,
       #        "personastateflags" => 0
       def player_info
-        return @player_info if @player_info
-
-        data = @player.summary
-        @player_info ||= data.profile.to_ostruct if data.success
-      end
-
-      def profile_visibility
-        player_info if @player_info.nil?
-
-        {
-          1 => "Private",
-          2 => "Friends Only",
-          3 => "Public"
-        }[@player_info.communityvisibilitystate]
-      end
-
-      def profile_created_at
-        player_info if @player_info.nil?
-
-        # Apparently steam doesn't always give that information
-        return if @player_info.timecreated.nil?
-
-        @profile_created_at ||= ::Time.at(@player_info.timecreated)
+        @player_info ||= lambda do
+          data = @player.summary
+          data.profile.to_ostruct if data.success
+        end.call
       end
     end
   end

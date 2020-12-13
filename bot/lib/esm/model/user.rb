@@ -2,6 +2,8 @@
 
 module ESM
   class User < ApplicationRecord
+    after_create :create_user_steam_data
+
     attribute :discord_id, :string
     attribute :discord_username, :string
     attribute :discord_discriminator, :string
@@ -15,6 +17,7 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
+    has_one :user_steam_data
     has_many :user_gamble_stats
     has_many :user_notification_preferences
     has_many :cooldowns
@@ -90,6 +93,14 @@ module ESM
     #########################
     # Instance Methods
     #########################
+
+    def steam_data
+      @steam_data ||= lambda do
+        # If the data is stale, it will automatically refresh
+        self.user_steam_data.refresh
+        self.user_steam_data
+      end.call
+    end
 
     def registered?
       self.steam_uid.present?

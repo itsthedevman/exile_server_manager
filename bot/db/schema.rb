@@ -50,8 +50,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.boolean "allowed_in_text_channels", default: true
     t.boolean "whitelist_enabled", default: false
     t.json "whitelisted_role_ids", default: []
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["command_name"], name: "index_command_configurations_on_command_name"
     t.index ["community_id"], name: "index_command_configurations_on_community_id"
@@ -77,8 +77,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "command_prefix"
     t.boolean "welcome_message_enabled", default: true
     t.text "welcome_message", default: ""
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["deleted_at"], name: "index_communities_on_deleted_at"
@@ -95,8 +95,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "cooldown_type"
     t.integer "cooldown_amount", default: 0
     t.datetime "expires_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["command_name", "steam_uid", "community_id"], name: "index_cooldowns_on_command_name_and_steam_uid_and_community_id"
     t.index ["command_name", "user_id", "community_id"], name: "index_cooldowns_on_command_name_and_user_id_and_community_id"
   end
@@ -127,8 +127,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.text "search_text"
     t.string "requestors_user_id"
     t.datetime "expires_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["expires_at"], name: "index_logs_on_expires_at"
     t.index ["server_id"], name: "index_logs_on_server_id"
     t.index ["uuid"], name: "index_logs_on_uuid", unique: true
@@ -141,8 +141,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.text "notification_description"
     t.string "notification_color"
     t.string "notification_category"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["community_id"], name: "index_notifications_on_community_id"
   end
 
@@ -155,8 +155,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "command_name", null: false
     t.json "command_arguments"
     t.datetime "expires_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["expires_at"], name: "index_requests_on_expires_at"
     t.index ["requestee_user_id", "uuid_short"], name: "index_requests_on_requestee_user_id_and_uuid_short", unique: true
     t.index ["uuid"], name: "index_requests_on_uuid"
@@ -168,8 +168,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.text "mod_link"
     t.string "mod_version"
     t.boolean "mod_required", default: false, null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["deleted_at"], name: "index_server_mods_on_deleted_at"
     t.index ["server_id"], name: "index_server_mods_on_server_id"
@@ -230,8 +230,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "server_port"
     t.datetime "server_start_time"
     t.datetime "disconnected_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["community_id"], name: "index_servers_on_community_id"
     t.index ["deleted_at"], name: "index_servers_on_deleted_at"
@@ -245,8 +245,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.bigint "territory_purchase_price", null: false
     t.integer "territory_radius", null: false
     t.integer "territory_object_count", null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.index ["deleted_at"], name: "index_territories_on_deleted_at"
     t.index ["server_id"], name: "index_territories_on_server_id"
@@ -259,8 +259,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "file_name", null: false
     t.string "file_type", null: false
     t.integer "file_size", null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["uuid"], name: "index_uploads_on_uuid"
   end
 
@@ -275,8 +275,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.integer "longest_loss_streak", default: 0, null: false
     t.integer "total_losses", default: 0, null: false
     t.string "last_action"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["server_id"], name: "index_user_gamble_stats_on_server_id"
     t.index ["user_id"], name: "index_user_gamble_stats_on_user_id"
   end
@@ -299,6 +299,21 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.index ["user_id"], name: "index_user_notification_preferences_on_user_id"
   end
 
+  create_table "user_steam_data", force: :cascade do |t|
+    t.integer "user_id"
+    t.string "username"
+    t.text "avatar"
+    t.text "profile_url"
+    t.string "profile_visibility"
+    t.datetime "profile_created_at"
+    t.boolean "community_banned", default: false
+    t.boolean "vac_banned", default: false
+    t.integer "number_of_vac_bans", default: 0
+    t.integer "days_since_last_ban", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "discord_id", null: false
     t.string "discord_username", null: false
@@ -307,11 +322,8 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
     t.string "discord_access_token"
     t.string "discord_refresh_token"
     t.string "steam_uid"
-    t.string "steam_username"
-    t.text "steam_avatar"
-    t.text "steam_profile_url"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["discord_id"], name: "index_users_on_discord_id", unique: true
     t.index ["steam_uid"], name: "index_users_on_steam_uid"
   end
@@ -330,4 +342,5 @@ ActiveRecord::Schema.define(version: 2019_09_19_022121) do
   add_foreign_key "user_gamble_stats", "users"
   add_foreign_key "user_notification_preferences", "servers"
   add_foreign_key "user_notification_preferences", "users"
+  add_foreign_key "user_steam_data", "users"
 end
