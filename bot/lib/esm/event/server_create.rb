@@ -50,8 +50,8 @@ module ESM
               "",
               "**If you host Exile Servers, please read the following message**",
               "||In order for players to run commands on your servers, I've assigned you `#{@community.community_id}` as your community ID. This ID will be used in commands to let players distinguish which community they want run the command on.",
-              "Don't worry about memorizing it quite yet. You can always change it later via the [Admin Dashboard](https://www.esmbot.com/login).",
-              "One more thing, before you can link your servers with me, I'll need you to disable [Player Mode](https://www.esmbot.com/wiki/player_mode). Please reply back to this message with `#{ESM.config.prefix}mode server`||"
+              "Don't worry about memorizing it quite yet. You can always change it later via the [Admin Dashboard](https://www.esmbot.com/dashboard).",
+              "One more thing, before you can link your servers with me, I'll need you to disable [Player Mode](https://www.esmbot.com/wiki/player_mode). Please reply back to this message with `#{ESM.config.prefix}mode #{@community.community_id} server`||"
             ]
           end
 
