@@ -147,7 +147,7 @@ en:
       next_territory_stats: "__Next Territory Stats__"
       territory_members: "__Territory Members__"
     pay:
-      description: "Pay the territory protection for a territory using poptabs from your locker.\nYou can see your territories by using `%{prefix}territories`"
+      description: "Pay the territory protection for a territory using poptabs from your locker.\nSome servers may implement a tax for paying using ESM. You can see how much your territory's protection cost is by using `%{prefix}territories`"
       example: |-
         **`%{prefix}pay esm_malden qqoej`**
         Pay the territory protection for `qqoej` on server `esm_malden`
@@ -214,10 +214,10 @@ en:
     set_id:
       description: "**Territory Owner Only.**\nSets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument."
       example: |-
-        **`%{prefix}setid esm_malden jqjoe no_u`**
+        **`%{prefix}set_id esm_malden jqjoe no_u`**
         Sets territory `jqjoe` to be `no_u`
 
-        **`%{prefix}setid esm_altis fort_awesome tent_sadness`**
+        **`%{prefix}set_id esm_altis fort_awesome tent_sadness`**
         Changes territory `fort_awesome` to be `tent_sadness`
       arguments:
         new_territory_id: "The new territory ID to use. This ID can be 3 to 20 characters long and can **only contain letters, numbers, and underscores**."
@@ -228,12 +228,16 @@ en:
         **`%{prefix}accept c619`**
         Accepts request `c619` from your pending requests
       success_message: "The request has been accepted and I've notified the requestor"
+      arguments:
+        uuid: "The request's UUID that provided in the original request"
     decline:
       description: "Declines a request based off its UUID"
       example: |-
         **`%{prefix}decline e09e`**
         Declines request `e09e` from your pending requests
       success_message: "The request has been declined. The requestor **has not** be notified"
+      arguments:
+        uuid: "The request's UUID that provided in the original request"
     add:
       description: "Adds the target user as a builder in the provided territory"
       example: |-
@@ -325,6 +329,8 @@ en:
 
         **`%{prefix}reset_cooldown @Bryan reward esm_malden`**
         Resets the `reward` cooldown for @Bryan on `esm_malden` only
+      arguments:
+        command_name: "The name of the command to reset the cooldown for"
       confirmation_embed:
         title: "Reset Confirmation"
         description:
@@ -383,7 +389,7 @@ en:
         Your territory has reached level **%{level}** and now has a radius of **%{range}** meters.
         After this transaction, you have **%{locker}** left in your locker.
     restore:
-      description: "Restores a territory if marked for deletion for missing a territory payment."
+      description: "Restores a territory if marked for deletion for missing a territory payment. This will not restore a territory if it has been deleted from the database"
       example: |-
         **`%{prefix}restore esm_malden jquee`**
         Restores territory `jquee` on esm_malden
@@ -462,7 +468,7 @@ en:
       success_message: "%{user}, you've been reset successfully. Please join the server to spawn back in"
       failure_message: "%{user}, I was not successful at resetting your player on `%{server}`. Please join the server again, and if you are still stuck, close Arma 3 and attempt this command again."
     reset:
-      description: "Deletes a single player or all players on a server in an attempt to fix the spawning glitch. This command is the admin equivalent to the `!stuck` command"
+      description: "Deletes a single player or all players on a server in an attempt to fix the spawning glitch. This command is the admin equivalent to the `%{prefix}stuck` command"
       example: |-
         **`%{prefix}reset esm_malden`**
         Deletes all players on `esm_malden`
