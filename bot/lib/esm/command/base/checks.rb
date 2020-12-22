@@ -37,7 +37,7 @@ module ESM
         end
 
         def check_failed!(name = nil, **args, &block)
-          @command.check_failed!(name, args, &block)
+          @command.check_failed!(name, **args, &block)
         end
 
         def current_user

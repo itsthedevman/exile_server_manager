@@ -19,7 +19,7 @@ module ESM
       if block_given?
         yield(embed)
       else
-        embed.build_from_template(type, attributes)
+        embed.build_from_template(type, **attributes)
       end
 
       embed

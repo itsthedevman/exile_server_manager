@@ -360,7 +360,7 @@ module ESM
           if block_given?
             yield
           elsif name.present?
-            ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", args.except(:exception_class)))
+            ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", **args.except(:exception_class)))
           end
 
         raise args[:exception_class] || ESM::Exception::CheckFailure, message
