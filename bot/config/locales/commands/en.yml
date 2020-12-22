@@ -334,19 +334,25 @@ en:
       confirmation_embed:
         title: "Reset Confirmation"
         description:
-          base: "Hey %{user}, just to confirm, I will be resetting %{target_user}'s"
-          all: " cooldowns for your community.\nThis means every command for all of your servers."
-          with_command_name: " `%{command_name}` cooldown for your community (including servers)."
-          with_name_and_server: " `%{command_name}` cooldowns for `%{server_id}`."
+          base: "Hey %{user}, just to confirm, I will be resetting "
+          one_user: "%{target_user}'s cooldowns for "
+          all_users: "everyone's cooldowns for "
+          one_command: "`%{command_name}`. "
+          all_commands: "all commands. "
+          one_server: "This change will only be applied to `%{server_id}`."
+          all_servers: "This change will be applied to every server your community has registered with me."
         field_name: "**Proceed?**"
         field_value: "Reply back `yes` or `no`"
-      cancelation_reply: ":thumbsup: I've cancelled your request."
+      cancellation_reply: ":thumbsup: I've cancelled your request."
       success_embed:
         description:
-          base: ":white_check_mark: Hey %{user}, I have reset %{target_user}'s"
-          all: " cooldowns for your community."
-          with_command_name: " `%{command_name}` cooldown for your community (including servers)."
-          with_name_and_server: " `%{command_name}` cooldowns for `%{server_id}`."
+          base: ":white_check_mark: Hey %{user}, I have reset "
+          one_user: "%{target_user}'s cooldowns for "
+          all_users: "everyone's cooldowns for "
+          one_command: "`%{command_name}` on "
+          all_commands: "all commands on "
+          one_server: "`%{server_id}`."
+          all_servers: "every server your community has registered with me."
     changelog:
       description: "Displays the changelog for the current version of ESM"
       example: |-

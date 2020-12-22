@@ -56,6 +56,16 @@ module ESM
         @opts[:default]
       end
 
+      # Setting this to true will allow the ArgumentContainer to skip removing the matched contents of the message
+      # so they can be matched by the next argument.
+      def skip_removal=(value)
+        @opts[:skip_removal] = value
+      end
+
+      def skip_removal?
+        @opts[:skip_removal] ||= false
+      end
+
       def default?
         !default.blank?
       end

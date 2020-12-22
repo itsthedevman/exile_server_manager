@@ -152,7 +152,7 @@ module ESM
         create_getter(argument)
 
         # Now we need to return the message without our match
-        @message.sub!(argument.parser.original, "").strip!
+        @message.sub!(argument.parser.original, "").strip! if !argument.skip_removal?
       end
 
       def create_getter(argument)
