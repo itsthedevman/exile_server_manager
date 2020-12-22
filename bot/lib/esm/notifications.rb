@@ -152,7 +152,7 @@ module ESM
           e.description = I18n.t("xm8_notifications.invalid_type.description", type: payload[:type])
 
           e.add_field(name: I18n.t(:message), value: "```#{payload[:message]}```")
-          e.add_field(name: I18n.t("xm8_notifications.invalid_type.recipient_steam_uids"), value: "```#{recipients}```")
+          e.add_field(name: I18n.t("xm8_notifications.recipient_steam_uids"), value: "```#{recipients}```")
 
           e.color = :red
           e.footer = I18n.t("xm8_notifications.footer")
