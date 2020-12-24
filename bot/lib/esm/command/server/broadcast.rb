@@ -63,12 +63,18 @@ module ESM
           reply(ESM::Embed.build(:success, description: I18n.t("commands.broadcast.success_message", user: current_user.mention)))
         end
 
-        def broadcast_embed(server_ids: "server_id")
+        def broadcast_embed(server_ids: nil)
+          # For the preview
+          if server_ids.blank?
+            server = current_community.servers.first
+            server_ids = server&.server_id || "<server_id_here>"
+          end
+
           ESM::Embed.build do |e|
             e.title = I18n.t("commands.broadcast.broadcast_embed.title", community_name: current_community.community_name, server_ids: server_ids)
             e.description = @arguments.message
             e.color = :orange
-            e.footer = I18n.t("commands.broadcast.broadcast_embed.footer")
+            e.footer = I18n.t("commands.broadcast.broadcast_embed.footer", prefix: prefix)
           end
         end
 
@@ -94,14 +100,25 @@ module ESM
           users =
             @servers.map do |server|
               denied_user_ids = ESM::UserNotificationPreference.where(server_id: server.id, custom: false).pluck(:user_id)
+              denied_steam_uids = ESM::User.where(id: denied_user_ids).pluck(:steam_uid).reject(&:nil?)
 
-              # Get every user that has used a command for this server, but has explicitly denied custom
+              # Get every user that has used a command for this server, but has not explicitly denied custom
               # This code will also inherently find users who have set the preference to true since that creates a cooldown
-              ESM::Cooldown.where(server_id: server.id).where.not(user_id: denied_user_ids).map(&:user)
+              # This query is complex to avoid querying and loading a lot of data.
+              user_data = ESM::Cooldown
+                .where(server_id: server.id)
+                .where.not(user_id: denied_user_ids, steam_uid: denied_steam_uids)
+                .uniq { |cooldown| [cooldown.user_id, cooldown.steam_uid] }
+                .map { |cooldown| [cooldown.user_id, cooldown.steam_uid] }
+
+              user_ids = user_data.map(&:first).reject(&:nil?).uniq
+              steam_uids = user_data.map(&:second).reject(&:nil?).uniq
+
+              ESM::User.where(id: user_ids).or(ESM::User.where(steam_uid: steam_uids))
             end
 
           # Flatten and make sure we are only sending to each user once
-          users.flatten.uniq(&:discord_id)
+          users.flatten.reject(&:nil?).uniq(&:discord_id)
         end
 
         def check_for_message_length!
