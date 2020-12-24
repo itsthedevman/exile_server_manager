@@ -221,15 +221,19 @@ module ESM
           e.title = I18n.t("xm8_notifications.log.title", type: type, server: server.server_id)
           e.description = I18n.t("xm8_notifications.log.description", title: notification.title, description: notification.description)
 
-          e.add_field(
-            name: I18n.t("xm8_notifications.log.delivered_to"),
-            value: sent_to_users
-          )
+          if sent_to_users
+            e.add_field(
+              name: I18n.t("xm8_notifications.log.delivered_to"),
+              value: sent_to_users
+            )
+          end
 
-          e.add_field(
-            name: I18n.t("xm8_notifications.log.unregistered_steam_uids"),
-            value: unregistered_steam_uids
-          )
+          if unregistered_steam_uids.present?
+            e.add_field(
+              name: I18n.t("xm8_notifications.log.unregistered_steam_uids"),
+              value: unregistered_steam_uids
+            )
+          end
 
           e.color = ESM::Color.random
           e.footer = I18n.t("xm8_notifications.footer")

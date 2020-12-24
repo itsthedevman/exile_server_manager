@@ -129,7 +129,6 @@ en:
       description: |-
         **Title:**
         %{title}
-
         **Description:**
         %{description}
       delivered_to: "**Delivered To**"
