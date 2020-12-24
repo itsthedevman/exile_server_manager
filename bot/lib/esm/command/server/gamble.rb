@@ -77,43 +77,38 @@ module ESM
           embed.add_field(value: I18n.t("commands.gamble.stats.server_stats"))
 
           longest_current_streak_stat = target_server.longest_current_streak
-          user_name = longest_current_streak_stat.user.discord_user.username
+          user_name = longest_current_streak_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.longest_current_streak"),
             value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_current_streak_stat.current_streak),
-            inline: true
           )
 
           longest_win_streak_stat = target_server.longest_win_streak
-          user_name = longest_win_streak_stat.user.discord_user.username
+          user_name = longest_win_streak_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.longest_win_streak"),
             value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_win_streak_stat.longest_loss_streak),
-            inline: true
           )
 
           longest_losing_streak_stat = target_server.longest_losing_streak
-          user_name = longest_losing_streak_stat.user.discord_user.username
+          user_name = longest_losing_streak_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.longest_losing_streak"),
             value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_win_streak_stat.longest_loss_streak),
-            inline: true
           )
 
           most_poptabs_won_stat = target_server.most_poptabs_won
-          user_name = most_poptabs_won_stat.user.discord_user.username
+          user_name = most_poptabs_won_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.most_poptabs_won"),
             value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: most_poptabs_won_stat.total_poptabs_won.to_poptab),
-            inline: true
           )
 
           most_poptabs_lost_stat = target_server.most_poptabs_lost
-          user_name = most_poptabs_lost_stat.user.discord_user.username
+          user_name = most_poptabs_lost_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.most_poptabs_lost"),
             value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: most_poptabs_lost_stat.total_poptabs_loss.to_poptab),
-            inline: true
           )
         end
 
