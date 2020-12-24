@@ -5,6 +5,7 @@ module ESM
     attribute :community_id, :integer
     attribute :server_id, :integer
     attribute :user_id, :integer
+    attribute :steam_uid, :string
     attribute :command_name, :string
     attribute :cooldown_quantity, :integer
     attribute :cooldown_type, :string
@@ -18,6 +19,13 @@ module ESM
     belongs_to :community
 
     after_find :adjust_for_community_changes
+
+    def user
+      return ESM::User.where(id: self.user_id).first if self.user_id.present?
+      return ESM::User.find_by_steam_uid(self.steam_uid) if self.steam_uid.present?
+
+      nil
+    end
 
     def active?
       if self.cooldown_type == "times"
