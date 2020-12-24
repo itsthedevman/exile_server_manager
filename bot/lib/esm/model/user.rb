@@ -11,9 +11,6 @@ module ESM
     attribute :discord_access_token, :string, default: nil
     attribute :discord_refresh_token, :string, default: nil
     attribute :steam_uid, :string, default: nil
-    attribute :steam_username, :string, default: nil
-    attribute :steam_avatar, :text, default: nil
-    attribute :steam_profile_url, :text, default: nil
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
