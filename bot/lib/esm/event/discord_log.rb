@@ -18,7 +18,7 @@ module ESM
         message =
           case @params.template
           when "message"
-            "**Log from #{@server.server_id}**\n#{@params.message}"
+            "**Log from `#{@server.server_id}`**\n#{@params.message}"
           when "embed"
             build_embed
           end
