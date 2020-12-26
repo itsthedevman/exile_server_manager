@@ -8,6 +8,9 @@ module ESM
         limit_to :text
         requires :registration
 
+        # Since the argument is a modified target, the logic for nil_target_user will trigger
+        skip_check :nil_target_user
+
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: true
         define :whitelisted_role_ids, modifiable: true, default: []
@@ -18,9 +21,6 @@ module ESM
 
         # In order to utilize the `#target_user` logic, the argument must have a name as target.
         argument :target, regex: /.+/, description: "commands.logs.arguments.query", multiline: true, display_as: :query
-
-        # Since the argument is a modified target, the logic for nil_target_user will trigger
-        skip_check :nil_target_user
 
         def discord
           query = ""

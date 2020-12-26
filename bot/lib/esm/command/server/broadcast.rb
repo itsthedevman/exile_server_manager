@@ -5,7 +5,7 @@ module ESM
   module Command
     module Server
       class Broadcast < ESM::Command::Base
-        type :player
+        type :admin
         limit_to :text
         requires :registration
 

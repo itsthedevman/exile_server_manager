@@ -6,6 +6,8 @@ module ESM
       class Gamble < ESM::Command::Base
         type :player
         requires :registration
+
+        # Skipped because of `stats` argument. This is manually checked in `#discord`
         skip_check :connected_server
 
         define :enabled, modifiable: true, default: true

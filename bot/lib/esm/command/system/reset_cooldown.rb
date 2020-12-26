@@ -9,6 +9,8 @@ module ESM
         aliases :resetcooldown
         limit_to :text
         requires :registration
+
+        # Skip checking for the server since this is not dependent on the server being online.
         skip_check :connected_server
 
         define :enabled, modifiable: true, default: true
@@ -23,12 +25,10 @@ module ESM
           description: "commands.reset_cooldown.arguments.command_name",
           default: nil,
           before_store: lambda { |parser|
-            # I need to make it so I can skip the value from being removed
-            # Server IDs and commands can match the same.
-            # If the command_name does not match a command, skip it so it can be parsed by the next argument (maybe)
             return if parser.value.nil?
             return if ESM::Command.include?(parser.value)
 
+            # This allows "passing" the value for the command_name argument onto the server_id argument.
             parser.argument.skip_removal = true
             parser.value = nil
           }

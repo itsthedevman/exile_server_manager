@@ -7,7 +7,7 @@ module ESM
         type :admin
 
         define :enabled, modifiable: false, default: true
-        define :whitelist_enabled, modifiable: false, default: false
+        define :whitelist_enabled, modifiable: false, default: true
         define :whitelisted_role_ids, modifiable: false, default: []
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
