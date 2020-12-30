@@ -363,6 +363,9 @@ module ESM
             ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", **args.except(:exception_class)))
           end
 
+        # Logging
+        ESM::Notifications.trigger("command_check_failed", command: self, reason: message)
+
         raise args[:exception_class] || ESM::Exception::CheckFailure, message
       end
 
@@ -380,16 +383,22 @@ module ESM
         @event = event
         @executed_at = DateTime.now
 
+        # If I'm working in a text channel, I have access to the community no matter what. I can directly check for the enabled here.
+        # If I'm in a text channel, I will have to go through the hoops. Check arguments, check permissions. If the command is disabled, it should always send the disabled message
+        @checks.permissions! if event.channel.text?
+
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
         @event.channel.start_typing if !ESM.env.test? || !ESM.env.error_testing?
 
         # Parse arguments or raises FailedArgumentParse
+        # WORKING: This is where the command will fail with missing argument
         @arguments.parse!(@event)
 
         # Logging
         ESM::Notifications.trigger("command_from_discord", command: self)
 
         # Run some checks
+        # WORKING: This is where the argument will send or not the disabled message
         @checks.run_all!
 
         # Call the discord method

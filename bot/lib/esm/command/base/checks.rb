@@ -72,8 +72,9 @@ module ESM
           @command.permissions.load
 
           if !@command.permissions.enabled?
-            # If the community doesn't to send a message, don't send a message
-            if !@command.permissions.notify_when_disabled?
+            # If the community doesn't to send a message, don't send a message.
+            # This only applies to text channels. The user needs to know why the bot is not replying to their message
+            if @command.event.channel.text? && !@command.permissions.notify_when_disabled?
               check_failed!(exception_class: ESM::Exception::CheckFailureNoMessage)
             else
               check_failed!(

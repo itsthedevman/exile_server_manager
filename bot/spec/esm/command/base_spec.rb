@@ -867,6 +867,43 @@ describe ESM::Command::Base do
           expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not enabled/i)
         end
 
+        it "enabled: false, notify_when_disabled: true" do
+          command_statement = command.statement(
+            community_id: community.community_id,
+            server_id: server.server_id,
+            target: user.discord_id,
+            _integer: "1",
+            _preserve: "PRESERVE",
+            _display_as: "display_as",
+            _default: "default",
+            _multiline: "multi\nline"
+          )
+          event = CommandEvent.create(command_statement, user: user)
+          configuration.update(enabled: false, notify_when_disabled: true)
+
+          expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not enabled/i)
+        end
+
+        it "enabled: false, notify_when_disabled: false" do
+          command_statement = command.statement(
+            community_id: community.community_id,
+            server_id: server.server_id,
+            target: user.discord_id,
+            _integer: "1",
+            _preserve: "PRESERVE",
+            _display_as: "display_as",
+            _default: "default",
+            _multiline: "multi\nline"
+          )
+          event = CommandEvent.create(command_statement, user: user)
+          configuration.update(enabled: false, notify_when_disabled: false)
+
+          expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailureNoMessage)
+
+          # It should not send a message
+          expect(ESM::Test.messages.size).to eql(0)
+        end
+
         it "enabled: false, whitelist_enabled: false, whitelisted: false, allowed: true" do
           command_statement = command.statement(
             community_id: community.community_id,
@@ -1060,6 +1097,40 @@ describe ESM::Command::Base do
       end
 
       describe "Denied" do
+        it "enabled: false, notify_when_disabled: true" do
+          command_statement = command.statement(
+            community_id: community.community_id,
+            server_id: server.server_id,
+            target: user.discord_id,
+            _integer: "1",
+            _preserve: "PRESERVE",
+            _display_as: "display_as",
+            _default: "default",
+            _multiline: "multi\nline"
+          )
+          event = CommandEvent.create(command_statement, channel_type: :pm, user: user)
+          configuration.update(enabled: false, notify_when_disabled: true)
+
+          expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not enabled/i)
+        end
+
+        it "enabled: false, notify_when_disabled: false" do
+          command_statement = command.statement(
+            community_id: community.community_id,
+            server_id: server.server_id,
+            target: user.discord_id,
+            _integer: "1",
+            _preserve: "PRESERVE",
+            _display_as: "display_as",
+            _default: "default",
+            _multiline: "multi\nline"
+          )
+          event = CommandEvent.create(command_statement, channel_type: :pm, user: user)
+          configuration.update(enabled: false, notify_when_disabled: false)
+
+          expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /not enabled/i)
+        end
+
         it "enabled: false, whitelist_enabled: false, whitelisted: false, allowed: false" do
           command_statement = command.statement(
             community_id: community.community_id,
