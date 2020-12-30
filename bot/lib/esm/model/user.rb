@@ -73,7 +73,7 @@ module ESM
     end
 
     def developer?
-      ESM.config.dev_user_whitelist
+      ESM.config.dev_user_whitelist.include?(self.discord_id)
     end
 
     def mention
