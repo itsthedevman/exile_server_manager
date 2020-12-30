@@ -77,5 +77,17 @@ module ESM
       # ESM::Websocket.remove_connection(connection)
       connection.connection.close(1000, "Server ID changed, reconnecting")
     end
+
+    # If a community changes their prefix, update the bot
+    # params[:id] => ID of community
+    put("/community/:id/update_command_prefix") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.where(id: params[:id]).first
+      return halt(404) if community.nil?
+
+      # Update the prefix for this community
+      ESM.bot.update_prefix(community)
+    end
   end
 end

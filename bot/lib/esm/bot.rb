@@ -248,6 +248,10 @@ module ESM
       end
     end
 
+    def update_prefix(community)
+      @prefixes[community.guild_id] = community.command_prefix || ESM.config.prefix
+    end
+
     private
 
     def load_community_prefixes
