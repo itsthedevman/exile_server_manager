@@ -294,7 +294,7 @@ en:
         **`%{prefix}preferences esm_altis deny protection-money-paid`**
         Blocks `esm_altis` from sending you the `protection-money-paid` XM8 notification
       arguments:
-        state: "Controls if the notification will be sent to you. Valid options are `allows` and `deny`"
+        state: "Controls if the notification will be sent to you. Valid options are `allow` and `deny`"
         type: "The notification type. Valid options are:\n- `all`\n- `custom`\n- `base-raid`\n- `flag-stolen`\n- `flag-restored`\n- `flag-steal-started`\n- `protection-money-due`\n- `protection-money-paid`\n- `grind-started`\n- `hack-started`\n- `charge-plant-started`\n- `marxet-item-sold`"
     sqf:
       description: "Executes the given codes on a server or a target. If the code is executed on the server and has a return value, the value will be returned."
