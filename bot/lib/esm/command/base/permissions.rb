@@ -8,9 +8,12 @@ module ESM
 
         def initialize(command)
           @command = command
+          @loaded = false
         end
 
         def load
+          return if @loaded
+
           community = @command.target_community || @command.current_community
           config =
             if community.present?
@@ -64,6 +67,8 @@ module ESM
             else
               true
             end
+
+          @loaded = true
         end
 
         def enabled?
