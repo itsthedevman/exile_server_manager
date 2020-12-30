@@ -1,3 +1,6 @@
+AllCops:
+  NewCops: enable
+
 # I dislike unless because it requires me to think way more than I need to
 Style/NegatedIf:
   Enabled: false
