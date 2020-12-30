@@ -15,16 +15,12 @@ FactoryBot.define do
     # attribute :discord_access_token, :string, default: nil
     # attribute :discord_refresh_token, :string, default: nil
     # attribute :steam_uid, :string, default: nil
-    # attribute :steam_username, :string, default: nil
-    # attribute :steam_avatar, :text, default: nil
-    # attribute :steam_profile_url, :text, default: nil
     # attribute :created_at, :datetime
     # attribute :updated_at, :datetime
     discord_id { user[:id] }
     discord_username { user[:name] }
     discord_discriminator { user[:discriminator] }
     steam_uid { user[:steam_uid] }
-    steam_username { user[:steam_username] }
 
     # Tracks the type of guild the user has joined
     # :primary for Exile Server Manager, :secondary for my test server
@@ -39,12 +35,11 @@ FactoryBot.define do
       user.discord_username = new_user[:name]
       user.discord_discriminator = new_user[:discriminator]
       user.steam_uid = new_user[:steam_uid]
-      user.steam_username = new_user[:steam_username]
+      # user.steam_username = new_user[:steam_username]
     end
 
     trait :unregistered do
       steam_uid { nil }
-      steam_username { nil }
     end
 
     factory :esm_dev do
@@ -52,7 +47,7 @@ FactoryBot.define do
       discord_username { ESM::User::Bryan::USERNAME }
       discord_discriminator { ESM::User::Bryan::DISCRIMINATOR }
       steam_uid { ESM::User::Bryan::STEAM_UID }
-      steam_username { ESM::User::Bryan::STEAM_USERNAME }
+      # steam_username { ESM::User::Bryan::STEAM_USERNAME }
       GUILD_TYPE { :primary }
     end
 
@@ -84,7 +79,7 @@ FactoryBot.define do
       discord_username { secondary_user[:name] }
       discord_discriminator { secondary_user[:discriminator] }
       steam_uid { secondary_user[:steam_uid] }
-      steam_username { secondary_user[:steam_username] }
+      # steam_username { secondary_user[:steam_username] }
       GUILD_TYPE { :secondary }
     end
 
@@ -93,7 +88,7 @@ FactoryBot.define do
       discord_username { "Andrew" }
       discord_discriminator { "0693" }
       steam_uid { "76561198025434405" }
-      steam_username { "Andrew_S90" }
+      # steam_username { "Andrew_S90" }
       GUILD_TYPE { :primary }
     end
   end

@@ -52,6 +52,14 @@ module ESM
       super
     end
 
+    def stop
+      ESM::Websocket::Server.stop
+      ESM::Request::Overseer.die
+      @resend_queue.die
+
+      super
+    end
+
     # Allows me to not load PRESENCE_UPDATES and such.
     # Discordrb::Gateway
     #                   .handle_message ->

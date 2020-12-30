@@ -31,8 +31,7 @@ describe ESM::Command::Server::Reset, category: "command" do
     let(:response) { command.response }
 
     before :each do
-      # Allow user to use this command
-      community.command_configurations.where(command_name: "reset").update(whitelist_enabled: false)
+      grant_command_access!(community, "reset")
 
       wait_for { wsc.connected? }.to be(true)
     end

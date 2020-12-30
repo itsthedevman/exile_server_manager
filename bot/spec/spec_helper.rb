@@ -84,5 +84,10 @@ def create_request(**params)
   )
 end
 
+# Disables the whitelist on admin commands so the tests can use them
+def grant_command_access!(community, command)
+  community.command_configurations.where(command_name: command).update(whitelist_enabled: false)
+end
+
 # Wait until the bot has fully connected
 ESM::Test.wait_until { ESM.bot.ready? }

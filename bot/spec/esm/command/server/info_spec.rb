@@ -46,8 +46,7 @@ describe ESM::Command::Server::Info, category: "command" do
     end
 
     before :each do
-      # Allow user to use this command
-      community.command_configurations.where(command_name: "info").update(whitelist_enabled: false)
+      grant_command_access!(community, "info")
 
       wait_for { wsc.connected? }.to be(true)
 

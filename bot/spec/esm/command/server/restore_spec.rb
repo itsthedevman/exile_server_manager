@@ -34,6 +34,8 @@ describe ESM::Command::Server::Restore, category: "command" do
 
     before :each do
       wait_for { wsc.connected? }.to be(true)
+
+      grant_command_access!(community, "restore")
     end
 
     after :each do

@@ -33,8 +33,7 @@ describe ESM::Command::Server::Logs, category: "command" do
     before :each do
       wait_for { wsc.connected? }.to be(true)
 
-      # Allow user to use this command
-      community.command_configurations.where(command_name: "logs").update(whitelist_enabled: false)
+      grant_command_access!(community, "logs")
     end
 
     after :each do

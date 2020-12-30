@@ -38,8 +38,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       ESM::Cooldown.create!(user_id: user.id, community_id: community.id, server_id: second_server.id, command_name: "preferences", cooldown_type: "seconds", cooldown_quantity: 2)
       ESM::Cooldown.create!(user_id: second_user.id, community_id: community.id, server_id: second_server.id, command_name: "preferences", cooldown_type: "seconds", cooldown_quantity: 2)
 
-      # Allow user to use this command
-      community.command_configurations.where(command_name: "broadcast").update(whitelist_enabled: false)
+      grant_command_access!(community, "broadcast")
     end
 
     after :each do

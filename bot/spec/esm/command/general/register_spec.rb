@@ -34,7 +34,20 @@ describe ESM::Command::General::Register, category: "command" do
       expect(ESM::Test.messages.size).to eql(1)
 
       embed = ESM::Test.messages.first.second
-      expect(embed.description).to eql("Greetings #{user.mention}! My name is Exile Server Manager and I'm here to help make interacting with your character on a Exile server easier.\nIn order to use my commands, I'll need you to link your Steam account with your Discord account on my website.\nWhen you get logged into my website, please make sure to **double check your Discord account information** to ensure that you will be registering with the correct account.\n\nFeel free to head over to https://www.esmbot.com/register when you are ready.")
+
+      # Docstring adds a newline to the end of the string. Rspec will fail the test but won't say why
+      expectation = <<~STRING.chomp
+        Greetings #{user.mention}!
+
+        My name is Exile Server Manager and I'm here to help make interacting with your character on a Exile server easier. In order to use my commands, I'll need you to link your Steam account with your Discord account on my website; this will require you to authenticate with your Discord and Steam accounts.
+
+        Before you sign into your Steam account, please double check the Discord account you are signed into as you may be signed into another account in your browser.
+        **This Discord account is #{user.distinct}.**
+
+        Once you're ready, please head over to https://www.esmbot.com/register to get started.
+      STRING
+
+      expect(embed.description).to match(expectation)
     end
 
     it "!register (Registered)" do

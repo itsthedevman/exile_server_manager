@@ -124,7 +124,7 @@ describe ESM::Command::Base do
       discord_id = user.discord_id
 
       # Remove the user, this should recreate
-      user.delete
+      user.destroy
 
       command_statement = command.statement(
         community_id: community.community_id,
@@ -306,7 +306,7 @@ describe ESM::Command::Base do
       discord_id = secondary_user.discord_id
 
       # Remove the user, this should recreate
-      secondary_user.delete
+      secondary_user.destroy
 
       command_statement = command.statement(
         community_id: community.community_id,

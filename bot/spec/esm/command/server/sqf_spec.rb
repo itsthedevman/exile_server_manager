@@ -29,8 +29,7 @@ describe ESM::Command::Server::Sqf, category: "command" do
     let(:response) { command.response }
 
     before :each do
-      # Allow user to use this command
-      community.command_configurations.where(command_name: "sqf").update(whitelist_enabled: false)
+      grant_command_access!(community, "sqf")
 
       wait_for { wsc.connected? }.to be(true)
     end

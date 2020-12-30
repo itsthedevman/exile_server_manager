@@ -31,6 +31,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
     before :each do
       wait_for { wsc.connected? }.to be(true)
+
+      grant_command_access!(community, "player")
     end
 
     after :each do

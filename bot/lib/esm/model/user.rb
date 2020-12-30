@@ -14,9 +14,9 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
-    has_one :user_steam_data
-    has_many :user_gamble_stats
-    has_many :user_notification_preferences
+    has_one :user_steam_data, dependent: :destroy
+    has_many :user_gamble_stats, dependent: :destroy
+    has_many :user_notification_preferences, dependent: :destroy
     has_many :cooldowns
     has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request"
     has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request"
@@ -44,7 +44,7 @@ module ESM
     end
 
     module BryanV3
-      ID = "477847544521687040"
+      ID = "683476391664156700"
       USERNAME = "Bryan v3"
       DISCRIMINATOR = "2369"
       MENTION = "<@#{ID}>"
@@ -109,6 +109,10 @@ module ESM
 
     def mention
       "<@#{self.discord_id}>"
+    end
+
+    def distinct
+      "#{self.discord_username}\##{self.discord_discriminator}"
     end
 
     def discord_user

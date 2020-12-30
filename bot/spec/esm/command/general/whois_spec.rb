@@ -27,6 +27,10 @@ describe ESM::Command::General::Whois, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:user) { ESM::Test.user }
 
+    before :each do
+      grant_command_access!(community, "whois")
+    end
+
     it "should run (mention)" do
       command_statement = command.statement(target: user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)

@@ -67,7 +67,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nOh noes! #{attributes[:message]} is being raided!\n\n**Description:**\nHop on quick, **#{attributes[:message]}** (`#{attributes[:id]}`) is being raided")
+      expect(embed.description).to eql("**Title:**\nOh noes! #{attributes[:message]} is being raided!\n**Description:**\nHop on quick, **#{attributes[:message]}** (`#{attributes[:id]}`) is being raided")
     end
   end
 
@@ -113,7 +113,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nFlag Restored `(#{attributes[:id]})`\n\n**Description:**\n**#{attributes[:message]}'s** flag has been restored! Good job getting it back!")
+      expect(embed.description).to eql("**Title:**\nFlag Restored `(#{attributes[:id]})`\n**Description:**\n**#{attributes[:message]}'s** flag has been restored! Good job getting it back!")
     end
   end
 
@@ -159,7 +159,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nFlag Steal Started `(#{attributes[:id]})`\n\n**Description:**\nSomeone is trying to steal **#{attributes[:message]}'s** flag!")
+      expect(embed.description).to eql("**Title:**\nFlag Steal Started `(#{attributes[:id]})`\n**Description:**\nSomeone is trying to steal **#{attributes[:message]}'s** flag!")
     end
   end
 
@@ -205,7 +205,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nFlag Stolen `(#{attributes[:id]})`\n\n**Description:**\n**#{attributes[:message]}'s** flag has been stolen! Go get it back!")
+      expect(embed.description).to eql("**Title:**\nFlag Stolen `(#{attributes[:id]})`\n**Description:**\n**#{attributes[:message]}'s** flag has been stolen! Go get it back!")
     end
   end
 
@@ -251,7 +251,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nGrinding Started `(#{attributes[:id]})`\n\n**Description:**\nSome scalliwag is tryna grind yer locks! **#{attributes[:message]}** is being raided!")
+      expect(embed.description).to eql("**Title:**\nGrinding Started `(#{attributes[:id]})`\n**Description:**\nSome scalliwag is tryna grind yer locks! **#{attributes[:message]}** is being raided!")
     end
   end
 
@@ -297,7 +297,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nHacking Started `(#{attributes[:id]})`\n\n**Description:**\nH4x0rs are trying to get into your stuff! **#{attributes[:message]}** is being robbed! ")
+      expect(embed.description).to eql("**Title:**\nHacking Started `(#{attributes[:id]})`\n**Description:**\nH4x0rs are trying to get into your stuff! **#{attributes[:message]}** is being robbed! ")
     end
   end
 
@@ -345,7 +345,7 @@ describe ESM::Event::Xm8Notification do
       # Check the embed
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nProtection Money Paid `(#{attributes[:id]})`\n\n**Description:**\n**#{attributes[:message]}'s** protection money has been paid")
+      expect(embed.description).to eql("**Title:**\nProtection Money Paid `(#{attributes[:id]})`\n**Description:**\n**#{attributes[:message]}'s** protection money has been paid")
     end
   end
 
@@ -393,7 +393,7 @@ describe ESM::Event::Xm8Notification do
       values = attributes[:message].to_ostruct
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\nItem sold on MarXet\n\n**Description:**\nYou just sold **#{values.item}** for **#{values.amount}** poptabs")
+      expect(embed.description).to eql("**Title:**\nItem sold on MarXet\n**Description:**\nYou just sold **#{values.item}** for **#{values.amount}** poptabs")
     end
   end
 
@@ -441,7 +441,7 @@ describe ESM::Event::Xm8Notification do
       values = attributes[:message].to_ostruct
       embed = ESM::Test.messages.third.second
       expect(embed.title).to eql("(Delivered) `#{attributes[:type]}` XM8 Notification for `#{server.server_id}`")
-      expect(embed.description).to eql("**Title:**\n#{values[:title]}\n\n**Description:**\n#{values[:body]}")
+      expect(embed.description).to eql("**Title:**\n#{values[:title]}\n**Description:**\n#{values[:body]}")
     end
   end
 end

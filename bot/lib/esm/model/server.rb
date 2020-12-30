@@ -88,13 +88,13 @@ module ESM
     end
 
     def create_server_setting
-      return if self.server_setting.present? || ESM.env.test?
+      return if self.server_setting.present?
 
       self.server_setting = ESM::ServerSetting.create!(server_id: self.id)
     end
 
     def create_server_reward
-      return if self.server_reward.present? || ESM.env.test?
+      return if self.server_reward.present?
 
       self.server_reward = ESM::ServerReward.create!(server_id: self.id)
     end

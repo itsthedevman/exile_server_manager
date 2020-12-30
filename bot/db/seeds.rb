@@ -20,8 +20,7 @@ user = ESM::User.create!(
   discord_id: "137709767954137088",
   discord_username: "Bryan",
   discord_discriminator: "9876",
-  steam_uid: "76561198037177305",
-  steam_username: "Wolfkillarcadia"
+  steam_uid: "76561198037177305"
 )
 
 community = ESM::Community.create!(
