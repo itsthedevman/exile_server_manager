@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe ESM::Service::Steam do
-  let!(:steam) { ESM::Service::Steam.new(ESM::User::Bryan::STEAM_UID) }
+  let!(:steam) { ESM::Service::Steam.new(TestUser::User1::STEAM_UID) }
 
   it "should be valid" do
     expect(steam).not_to be_nil

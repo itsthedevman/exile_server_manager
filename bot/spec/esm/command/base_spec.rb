@@ -329,8 +329,8 @@ describe ESM::Command::Base do
     let!(:secondary_user) { create(:secondary_user) }
 
     before :each do
-      user.update(steam_uid: ESM::User::Bryan::STEAM_UID)
-      secondary_user.update(steam_uid: ESM::User::BryanV2::STEAM_UID)
+      user.update(steam_uid: TestUser::User1::STEAM_UID)
+      secondary_user.update(steam_uid: TestUser::User2::STEAM_UID)
       wait_for { wsc.connected? }.to be(true)
     end
 
@@ -801,8 +801,8 @@ describe ESM::Command::Base do
 
   # Truth table: https://docs.google.com/spreadsheets/d/1BDHVwhyvgbFPlXnAtFKzOcPtGhZ1zG5H-_1km3VXKr8/edit#gid=0
   describe "Command Permissions" do
-    let(:user_with_role) { create(:andrew) }
-    let(:whitelisted_role_ids) { ["424348476827238402"] }
+    let(:user_with_role) { create(:user_with_role) }
+    let(:whitelisted_role_ids) { [ENV["ROLE_USER_ROLE_ID"]] }
 
     before :each do
       wait_for { wsc.connected? }.to be(true)

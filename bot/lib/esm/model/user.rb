@@ -23,37 +23,6 @@ module ESM
 
     attr_accessor :GUILD_TYPE if ESM.env.test?
 
-    module Bryan
-      ID = "137709767954137088"
-      USERNAME = "Bryan"
-      DISCRIMINATOR = "9876"
-      MENTION = "<@#{ID}>"
-      STEAM_UID = "76561198037177305"
-      STEAM_USERNAME = "WolfkillArcadia"
-    end
-
-    module BryanV2
-      ID = "477847544521687040"
-      USERNAME = "Bryan v2"
-      DISCRIMINATOR = "2145"
-      MENTION = "<@#{ID}>"
-
-      # Tks Andrew
-      STEAM_UID = "76561198025434405"
-      STEAM_USERNAME = "Andrew_S90"
-    end
-
-    module BryanV3
-      ID = "683476391664156700"
-      USERNAME = "Bryan v3"
-      DISCRIMINATOR = "2369"
-      MENTION = "<@#{ID}>"
-
-      # Tks Adam
-      STEAM_UID = "76561198073495490"
-      STEAM_USERNAME = "Adam Kadmon"
-    end
-
     #########################
     # Public Methods
     #########################
@@ -104,7 +73,7 @@ module ESM
     end
 
     def developer?
-      [Bryan::ID, BryanV2::ID].include?(self.discord_id)
+      ESM.config.dev_user_whitelist
     end
 
     def mention

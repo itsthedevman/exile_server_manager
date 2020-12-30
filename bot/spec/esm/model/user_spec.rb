@@ -4,53 +4,53 @@ describe ESM::User do
   describe "#parse" do
     it "should parse steam_uid" do
       create(:esm_dev)
-      user = ESM::User.parse(ESM::User::Bryan::STEAM_UID).discord_user
+      user = ESM::User.parse(TestUser::User1::STEAM_UID).discord_user
 
       expect(user).not_to be_nil
-      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
-      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+      expect(user.esm_user.steam_uid).to eql(TestUser::User1::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(TestUser::User1::ID)
     end
 
     it "should parse discord_id" do
       create(:esm_dev)
-      user = ESM::User.parse(ESM::User::Bryan::ID).discord_user
+      user = ESM::User.parse(TestUser::User1::ID).discord_user
 
       expect(user).not_to be_nil
-      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
-      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+      expect(user.esm_user.steam_uid).to eql(TestUser::User1::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(TestUser::User1::ID)
     end
 
     it "should parse discord_tag" do
       create(:esm_dev)
-      user = ESM::User.parse("<@#{ESM::User::Bryan::ID}>").discord_user
+      user = ESM::User.parse("<@#{TestUser::User1::ID}>").discord_user
 
       expect(user).not_to be_nil
-      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
-      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+      expect(user.esm_user.steam_uid).to eql(TestUser::User1::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(TestUser::User1::ID)
     end
 
     it "should parse discord_tag (nickname)" do
       create(:esm_dev)
-      user = ESM::User.parse("<@!#{ESM::User::Bryan::ID}>").discord_user
+      user = ESM::User.parse("<@!#{TestUser::User1::ID}>").discord_user
 
       expect(user).not_to be_nil
-      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
-      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+      expect(user.esm_user.steam_uid).to eql(TestUser::User1::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(TestUser::User1::ID)
     end
 
     it "should parse discord_tag (bot?)" do
       create(:esm_dev)
-      user = ESM::User.parse("<@&#{ESM::User::Bryan::ID}>").discord_user
+      user = ESM::User.parse("<@&#{TestUser::User1::ID}>").discord_user
 
       expect(user).not_to be_nil
-      expect(user.esm_user.steam_uid).to eql(ESM::User::Bryan::STEAM_UID)
-      expect(user.esm_user.discord_id).to eql(ESM::User::Bryan::ID)
+      expect(user.esm_user.steam_uid).to eql(TestUser::User1::STEAM_UID)
+      expect(user.esm_user.discord_id).to eql(TestUser::User1::ID)
     end
 
     it "should fail parse and return nil" do
       create(:esm_dev)
       expect(ESM::User.parse("test")).to be_nil
-      expect(ESM::User.parse(ESM::User::Bryan::STEAM_UID[1..-1])).to be_nil
+      expect(ESM::User.parse(TestUser::User1::STEAM_UID[1..-1])).to be_nil
     end
 
     it "should have no steam uid" do

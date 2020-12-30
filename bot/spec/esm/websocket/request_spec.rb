@@ -39,7 +39,7 @@ describe ESM::Websocket::Request do
   end
 
   it "should accept a valid user" do
-    user = ESM.bot.user(ESM::User::Bryan::ID)
+    user = ESM.bot.user(TestUser::User1::ID)
     request = ESM::Websocket::Request.new(
       command_name: "testing",
       user: user,

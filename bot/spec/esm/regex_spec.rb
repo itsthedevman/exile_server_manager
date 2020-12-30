@@ -23,27 +23,27 @@ describe ESM::Regex do
 
   describe "DISCORD_ID" do
     it "should parse" do
-      expect(ESM::Regex::DISCORD_ID =~ ESM::User::Bryan::ID).not_to be_nil
+      expect(ESM::Regex::DISCORD_ID =~ TestUser::User1::ID).not_to be_nil
       expect(ESM::Regex::DISCORD_ID =~ "477847544521687040").not_to be_nil
     end
   end
 
   describe "STEAM_UID" do
     it "should parse" do
-      expect(ESM::Regex::STEAM_UID =~ ESM::User::Bryan::STEAM_UID).not_to be_nil
+      expect(ESM::Regex::STEAM_UID =~ TestUser::User1::STEAM_UID).not_to be_nil
     end
   end
 
   describe "DISCORD_TAG_ONLY" do
     it "should parse" do
-      expect(ESM::Regex::DISCORD_TAG_ONLY =~ "<@#{ESM::User::Bryan::ID}>").not_to be_nil
+      expect(ESM::Regex::DISCORD_TAG_ONLY =~ "<@#{TestUser::User1::ID}>").not_to be_nil
 
       # With a custom name
       expect(ESM::Regex::DISCORD_TAG_ONLY =~ "<@!477847544521687040>").not_to be_nil
     end
 
     it "should not parse" do
-      expect(ESM::Regex::DISCORD_TAG_ONLY =~ "Hello <@#{ESM::User::Bryan::ID}>!").to be_nil
+      expect(ESM::Regex::DISCORD_TAG_ONLY =~ "Hello <@#{TestUser::User1::ID}>!").to be_nil
 
       # With a custom name
       expect(ESM::Regex::DISCORD_TAG_ONLY =~ "Hello <@!477847544521687040>!").to be_nil
@@ -52,32 +52,32 @@ describe ESM::Regex do
 
   describe "DISCORD_ID_ONLY" do
     it "should parse" do
-      expect(ESM::Regex::DISCORD_ID_ONLY =~ ESM::User::Bryan::ID).not_to be_nil
+      expect(ESM::Regex::DISCORD_ID_ONLY =~ TestUser::User1::ID).not_to be_nil
       expect(ESM::Regex::DISCORD_ID_ONLY =~ "477847544521687040").not_to be_nil
     end
 
     it "should not parse" do
-      expect(ESM::Regex::DISCORD_ID_ONLY =~ "<@#{ESM::User::Bryan::ID}>").to be_nil
+      expect(ESM::Regex::DISCORD_ID_ONLY =~ "<@#{TestUser::User1::ID}>").to be_nil
       expect(ESM::Regex::DISCORD_ID_ONLY =~ "<@!477847544521687040>").to be_nil
     end
   end
 
   describe "STEAM_UID_ONLY" do
     it "should parse" do
-      expect(ESM::Regex::STEAM_UID_ONLY =~ ESM::User::Bryan::STEAM_UID).not_to be_nil
+      expect(ESM::Regex::STEAM_UID_ONLY =~ TestUser::User1::STEAM_UID).not_to be_nil
     end
 
     it "should not parse" do
-      expect(ESM::Regex::STEAM_UID_ONLY =~ "Steam UID: #{ESM::User::Bryan::STEAM_UID}").to be_nil
+      expect(ESM::Regex::STEAM_UID_ONLY =~ "Steam UID: #{TestUser::User1::STEAM_UID}").to be_nil
     end
   end
 
   describe "TARGET" do
     it "should parse" do
-      expect(ESM::Regex::TARGET =~ ESM::User::Bryan::ID).not_to be_nil
+      expect(ESM::Regex::TARGET =~ TestUser::User1::ID).not_to be_nil
       expect(ESM::Regex::TARGET =~ "<@477847544521687040>").not_to be_nil
       expect(ESM::Regex::TARGET =~ "<@!477847544521687040>").not_to be_nil
-      expect(ESM::Regex::TARGET =~ ESM::User::Bryan::STEAM_UID).not_to be_nil
+      expect(ESM::Regex::TARGET =~ TestUser::User1::STEAM_UID).not_to be_nil
     end
   end
 

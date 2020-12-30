@@ -73,7 +73,7 @@ RSpec.configure do |config|
 end
 
 def create_request(**params)
-  user = ESM.bot.user(ESM::User::Bryan::ID)
+  user = ESM.bot.user(TestUser::User1::ID)
   command = ESM::Command::Test::Base.new
 
   ESM::Websocket::Request.new(

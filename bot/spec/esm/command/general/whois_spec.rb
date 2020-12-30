@@ -73,7 +73,7 @@ describe ESM::Command::General::Whois, category: "command" do
     end
 
     it "should run (steam_uid/not registered)" do
-      command_statement = command.statement(target: ESM::User::BryanV2::STEAM_UID)
+      command_statement = command.statement(target: TestUser::User2::STEAM_UID)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 

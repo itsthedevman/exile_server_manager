@@ -43,11 +43,11 @@ FactoryBot.define do
     end
 
     factory :esm_dev do
-      discord_id { ESM::User::Bryan::ID }
-      discord_username { ESM::User::Bryan::USERNAME }
-      discord_discriminator { ESM::User::Bryan::DISCRIMINATOR }
-      steam_uid { ESM::User::Bryan::STEAM_UID }
-      # steam_username { ESM::User::Bryan::STEAM_USERNAME }
+      discord_id { TestUser::User1::ID }
+      discord_username { TestUser::User1::USERNAME }
+      discord_discriminator { TestUser::User1::DISCRIMINATOR }
+      steam_uid { TestUser::User1::STEAM_UID }
+      # steam_username { TestUser::User1::STEAM_USERNAME }
       GUILD_TYPE { :primary }
     end
 
@@ -58,18 +58,18 @@ FactoryBot.define do
         secondary_user do
           [
             {
-              id: ESM::User::BryanV2::ID,
-              name: ESM::User::BryanV2::USERNAME,
-              discriminator: ESM::User::BryanV2::DISCRIMINATOR,
-              steam_uid: ESM::User::BryanV2::STEAM_UID,
-              steam_username: ESM::User::BryanV2::STEAM_USERNAME
+              id: TestUser::User2::ID,
+              name: TestUser::User2::USERNAME,
+              discriminator: TestUser::User2::DISCRIMINATOR,
+              steam_uid: TestUser::User2::STEAM_UID,
+              steam_username: TestUser::User2::STEAM_USERNAME
             },
             {
-              id: ESM::User::BryanV3::ID,
-              name: ESM::User::BryanV3::USERNAME,
-              discriminator: ESM::User::BryanV3::DISCRIMINATOR,
-              steam_uid: ESM::User::BryanV3::STEAM_UID,
-              steam_username: ESM::User::BryanV3::STEAM_USERNAME
+              id: TestUser::User3::ID,
+              name: TestUser::User3::USERNAME,
+              discriminator: TestUser::User3::DISCRIMINATOR,
+              steam_uid: TestUser::User3::STEAM_UID,
+              steam_username: TestUser::User3::STEAM_USERNAME
             }
           ].sample
         end
@@ -83,12 +83,11 @@ FactoryBot.define do
       GUILD_TYPE { :secondary }
     end
 
-    factory :andrew do
-      discord_id { "102537804843593728" }
-      discord_username { "Andrew" }
-      discord_discriminator { "0693" }
-      steam_uid { "76561198025434405" }
-      # steam_username { "Andrew_S90" }
+    factory :user_with_role do
+      discord_id { ENV["ROLE_USER_ID"] }
+      discord_username { ENV["ROLE_USER_USERNAME"]}
+      discord_discriminator { ENV["ROLE_USER_DISCRIMINATOR"] }
+      steam_uid { ENV["ROLE_USER_STEAM_UID"] }
       GUILD_TYPE { :primary }
     end
   end
