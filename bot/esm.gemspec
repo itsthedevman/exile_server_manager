@@ -48,7 +48,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "sucker_punch"
   spec.add_dependency "steam_web_api"
   spec.add_dependency "steam-condenser"
-  spec.add_dependency "symmetric-encryption"
   spec.add_dependency "terminal-table"
   spec.add_dependency "zeitwerk"
 
