@@ -33,6 +33,17 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /i was unable to find any registered servers/i)
     end
 
+    it "should not crash on empty server name" do
+      command_statement = command.statement(community_id: community.community_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      server.server_name = nil
+      expect { command.execute(event) }.not_to raise_error
+
+      server.server_name = nil
+      command.current_cooldown.reset!
+      expect { command.execute(event) }.not_to raise_error
+    end
+
     it "should return one offline server" do
       command_statement = command.statement(community_id: community.community_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)

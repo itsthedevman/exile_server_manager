@@ -38,7 +38,7 @@ module ESM
 
         def build_server_embed
           ESM::Embed.build do |e|
-            e.title = @server.server_name
+            e.title = @server.server_name.presence || ""
             e.color = @server.online? ? :green : :red
 
             # Server_id, ip, port
