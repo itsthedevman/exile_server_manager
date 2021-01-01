@@ -286,8 +286,11 @@ en:
         title: "Broadcast message from %{community_name} regarding `%{server_ids}`"
         footer: "You may opt out of these messages by using `%{prefix}preferences`"
     preferences:
-      description: "Allow or deny notifications on a per server basis. All notifications are enabled by default, this command allows for fine grained tuning."
+      description: "View, allow, or deny notifications on a per server basis. All notifications are enabled by default, this command allows for fine grained tuning."
       example: |-
+        **`%{prefix}preferences esm_malden`**
+        Displays your notification preferences for `esm_malden`
+
         **`%{prefix}preferences esm_malden allow`**
         Allows `esm_malden` to send you all notification types
 

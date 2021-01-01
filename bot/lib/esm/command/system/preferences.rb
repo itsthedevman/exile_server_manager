@@ -34,10 +34,12 @@ module ESM
         define :cooldown_time, modifiable: false, default: 2.seconds
 
         argument :server_id
-        argument :state, regex: /allow|deny/, description: "commands.preferences.arguments.state"
+        argument :state, regex: /allow|deny/, description: "commands.preferences.arguments.state", default: nil
         argument :type, regex: /#{TYPES.join("|")}/, description: "commands.preferences.arguments.type", default: "all"
 
         def discord
+          return send_preferences if @arguments.state.nil?
+
           # Creates an array of ["custom"] or ["base-raid", "flag-stolen", "flag-restored", etc...]
           types =
             if @arguments.type == "all"
@@ -50,8 +52,7 @@ module ESM
           # Converts the array of types to { custom: true }, or { "base-raid": false, "flag-stolen": false, "flag-restored": false, etc... }
           query = Hash[types.map { |type| [type.underscore, allowed?] }]
 
-          # Either create or update the preference
-          preference = ESM::UserNotificationPreference.where(user_id: current_user.esm_user.id, server_id: target_server.id).first_or_create
+          # Update the preference
           preference.update(query)
 
           reply(
@@ -59,8 +60,27 @@ module ESM
           )
         end
 
+        def preference
+          @preference ||= ESM::UserNotificationPreference.where(user_id: current_user.esm_user.id, server_id: target_server.id).first_or_create
+        end
+
         def allowed?
           @arguments.state == "allow"
+        end
+
+        def send_preferences
+          embed =
+            ESM::Embed.build do |e|
+              e.title = "Notification preferences for `#{target_server.server_id}`"
+              e.description =
+                preference.attributes.format(join_with: "\n") do |key, value|
+                  next if %w[id user_id server_id created_at updated_at deleted_at].include?(key)
+
+                  "#{value ? ":white_check_mark:" : ":x:"} **#{key.humanize}**"
+                end
+            end
+
+          reply(embed)
         end
       end
     end
