@@ -60,23 +60,23 @@ module ESM
     end
 
     def longest_current_streak
-      user_gamble_stats.order(current_streak: :asc).first
+      user_gamble_stats.order(current_streak: :desc).first
     end
 
     def longest_win_streak
-      user_gamble_stats.order(current_streak: :asc).first
+      user_gamble_stats.order(longest_win_streak: :desc).first
     end
 
     def longest_losing_streak
-      user_gamble_stats.order(longest_loss_streak: :asc).first
+      user_gamble_stats.order(longest_loss_streak: :desc).first
     end
 
     def most_poptabs_won
-      user_gamble_stats.order(total_poptabs_won: :asc).first
+      user_gamble_stats.order(total_poptabs_won: :desc).first
     end
 
     def most_poptabs_lost
-      user_gamble_stats.order(total_poptabs_loss: :asc).first
+      user_gamble_stats.order(total_poptabs_loss: :desc).first
     end
 
     private

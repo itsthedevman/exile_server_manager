@@ -89,14 +89,14 @@ module ESM
           user_name = longest_win_streak_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.longest_win_streak"),
-            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_win_streak_stat.longest_loss_streak),
+            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_win_streak_stat.longest_win_streak),
           )
 
           longest_losing_streak_stat = target_server.longest_losing_streak
           user_name = longest_losing_streak_stat.user.discord_user.distinct
           embed.add_field(
             name: I18n.t("commands.gamble.stats.longest_losing_streak"),
-            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_win_streak_stat.longest_loss_streak),
+            value: I18n.t("commands.gamble.stats.user_with", user: user_name, value: longest_losing_streak_stat.longest_loss_streak),
           )
 
           most_poptabs_won_stat = target_server.most_poptabs_won
