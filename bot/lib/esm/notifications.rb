@@ -220,8 +220,15 @@ module ESM
       server = payload[:server]
       notification = payload[:embed]
       type = payload[:type]
-      sent_to_users = payload[:sent_to_users].map { |user| "#{user.discord_username}##{user.discord_discriminator} (`#{user.steam_uid}`)" }
+      sent_to_users = payload[:delivered].map { |user| "#{user.discord_username}##{user.discord_discriminator} (`#{user.steam_uid}`)" }
       unregistered_steam_uids = payload[:unregistered_steam_uids]
+
+      failed_to_send = payload[:undeliverable].map do |hash|
+        user = hash[:user]
+        reason= hash[:reason]
+
+        "#{user.discord_username}##{user.discord_discriminator} (`#{user.steam_uid}`) - #{reason}"
+      end
 
       # For debugging
       ESM.logger.info(name) do
@@ -230,6 +237,7 @@ module ESM
           server: server.server_id,
           embed: notification.to_h,
           sent_to_users: sent_to_users,
+          failed_to_send: failed_to_send,
           unregistered_steam_uids: unregistered_steam_uids,
           log: server.community.log_xm8_event?
         )
@@ -241,10 +249,17 @@ module ESM
           e.title = I18n.t("xm8_notifications.log.title", type: type, server: server.server_id)
           e.description = I18n.t("xm8_notifications.log.description", title: notification.title, description: notification.description)
 
-          if sent_to_users
+          if sent_to_users.present?
             e.add_field(
               name: I18n.t("xm8_notifications.log.delivered_to"),
               value: sent_to_users
+            )
+          end
+
+          if failed_to_send.present?
+            e.add_field(
+              name: I18n.t("xm8_notifications.log.undeliverable"),
+              value: failed_to_send
             )
           end
 

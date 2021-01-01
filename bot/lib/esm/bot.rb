@@ -180,6 +180,8 @@ module ESM
     rescue StandardError => e
       ESM.logger.warn("#{self.class}##{__method__}") { "Send failed!\n#{e.message}" }
       @resend_queue.enqueue(message, to: to, exception: e)
+
+      nil
     end
 
     def deliver_and_await!(message, to:, owner: to, expected:, invalid_response: nil, timeout: nil, give_up_after: 99)

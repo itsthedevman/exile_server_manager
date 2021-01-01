@@ -44,6 +44,10 @@ module ESM
           item: "",
           amount: ""
         }
+
+        # For the log
+        @delivered = []
+        @undeliverable = []
       end
 
       def run!
@@ -77,8 +81,25 @@ module ESM
 
         # Convert the steam_uids in @recipients to users and send the notification
         @users = ESM::User.where(steam_uid: @recipients)
+
+        # Get the preferences for all the users we're supposed to send to
+        preferences = ESM::UserNotificationPreference.where(user_id: @users.pluck(:id)).pluck(:user_id, @xm8_type.underscore).to_h
+
+        # Default the preference to allow. This is used for if the user hasn't ran the preference command before
+        preferences.default = true
+
         @users.each do |user|
-          ESM.bot.deliver(embed, to: user.discord_user)
+          # Check to see if the user allows this notification type
+          allowed = preferences[user.id]
+          next @undeliverable << { user: user, reason: "Denied via preferences" } if !allowed
+
+          message = ESM.bot.deliver(embed, to: user.discord_user)
+
+          if message.nil?
+            @undeliverable << { user: user, reason: "Direct message blocked, ESM blocked, or Discord Error" }
+          else
+            @delivered << user
+          end
 
           # Anti-ratelimit
           sleep(0.5)
@@ -90,7 +111,8 @@ module ESM
           type: @xm8_type,
           server: @server,
           embed: embed,
-          sent_to_users: @users,
+          delivered: @delivered,
+          undeliverable: @undeliverable,
           unregistered_steam_uids: unregistered_steam_uids
         )
       rescue ESM::Exception::CheckFailure => e

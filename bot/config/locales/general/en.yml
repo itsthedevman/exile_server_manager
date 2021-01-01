@@ -131,7 +131,8 @@ en:
         %{title}
         **Description:**
         %{description}
-      delivered_to: "**Delivered To**"
+      delivered_to: "**Delivered to**"
+      undeliverable: "**Unable to deliver to**"
       unregistered_steam_uids: "**Unregistered Steam UIDs**"
     recipient_steam_uids: "Recipient Steam UIDs"
     footer: "These notifications can be configured via the Admin Dashboard"
