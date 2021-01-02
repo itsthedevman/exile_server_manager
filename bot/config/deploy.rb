@@ -2,7 +2,7 @@
 lock "~> 3.14.1"
 
 set :application, "esm_bot"
-set :repo_url, "git@github.com:WolfkillArcadia/esm_bot.git"
+set :repo_url, "esm_bot:WolfkillArcadia/esm_bot.git"
 set :deploy_to, "/home/wolf/esm_bot"
 
 append :linked_dirs, ".bundle", "tmp"
