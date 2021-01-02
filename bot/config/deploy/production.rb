@@ -1,4 +1,4 @@
-append :linked_files, ".env", ".env.prod"
+append :linked_files, ".env.prod"
 
 role :app, %w{wolf@esmbot.com}
 set :default_env, {
