@@ -61,7 +61,7 @@ module ESM
       command = build(command_name, category)
 
       # Tell the bot about our command
-      define(command.class, command.name.to_sym, command.aliases)
+      # define(command.class, command.name.to_sym, command.aliases)
 
       # Cache Command
       cache(command)
