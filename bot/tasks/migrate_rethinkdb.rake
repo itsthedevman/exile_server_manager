@@ -16,36 +16,34 @@ class MigrateDatabase
       # uploads
       # requests
       # downloads
-      ActiveRecord::Base.transaction do
-        ### ORDER MATTERS
-        # bots
-        move_bots
+      ### ORDER MATTERS
+      # bots
+      move_bots
 
-        # communities
-        # pledges (communities)
-        # command_configuration (communities)
-        move_communities
+      # communities
+      # pledges (communities)
+      # command_configuration (communities)
+      move_communities
 
-        # servers (communities)
-        # server_mods (servers)
-        # server_rewards (servers)
-        # server_settings (servers)
-        # territories (servers)
-        move_servers
+      # servers (communities)
+      # server_mods (servers)
+      # server_rewards (servers)
+      # server_settings (servers)
+      # territories (servers)
+      move_servers
 
-        # users
-        # user_gambling (servers, users)
-        # user_notification_preferences (servers, users)
-        move_users
+      # users
+      # user_gambling (servers, users)
+      # user_notification_preferences (servers, users)
+      move_users
 
-        # cooldowns (communities, servers, users)
-        # downloads
-        # requests
-        move_cooldowns
+      # cooldowns (communities, servers, users)
+      # downloads
+      # requests
+      move_cooldowns
 
-        # notifications (communities)
-        move_notifications
-      end
+      # notifications (communities)
+      move_notifications
 
       puts "Migration Finished"
       nil
