@@ -81,7 +81,7 @@ module ESM
   end
 
   def self.initialize_logger
-    @logger = Logger.new("logs/#{env}.log")
+    @logger = Logger.new("log/#{env}.log")
 
     @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
       header = "#{severity} [#{datetime.strftime("%F %H:%M:%S:%L")}] (#{progname})"

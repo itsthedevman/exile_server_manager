@@ -56,6 +56,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "awesome_print"
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "capistrano"
+  spec.add_development_dependency "capistrano-rbenv"
+  spec.add_development_dependency "capistrano-bundler"
   spec.add_development_dependency "colorize"
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "database_cleaner"
