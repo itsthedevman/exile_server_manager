@@ -11,6 +11,10 @@ namespace :deploy do
       # Pull any updates
       execute("cd #{admin_repo} && git pull")
 
+      if !test "[ -d /home/wolf/esm_bot/shared ]"
+        execute("mkdir -p /home/wolf/esm_bot/shared")
+      end
+
       # Copy the files to shared
       execute("ln -sf #{admin_repo}/env.prod /home/wolf/esm_bot/shared/.env.prod")
     end

@@ -14,6 +14,8 @@ PATH
       i18n
       otr-activerecord
       pg
+      pry
+      pry-nav
       puma
       rake
       rethinkdb
@@ -317,8 +319,6 @@ DEPENDENCIES
   factory_bot
   faker
   memory_profiler
-  pry
-  pry-nav
   rerun
   rspec
   rspec-wait
