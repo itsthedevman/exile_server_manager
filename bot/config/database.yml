@@ -13,3 +13,12 @@ development:
 test: &test
   <<: *default
   database: esm_test
+
+production:
+  <<: *default
+  host: <%= ENV["POSTGRES_HOST"] %>
+  port: <%= ENV["POSTGRES_PORT"] %>
+  database: <%= ENV["POSTGRES_DATABASE"] %>
+  username: <%= ENV["POSTGRES_USERNAME"] %>
+  password: <%= ENV["POSTGRES_PASSWORD"] %>
+  sslrootcert: <%= ENV["POSTGRES_SSL_CERT"] %>
