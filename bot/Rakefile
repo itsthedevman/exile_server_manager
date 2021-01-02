@@ -20,9 +20,9 @@ end
 Rake.add_rakelib('tasks')
 
 # Some db tasks require your app code to be loaded; they'll expect to find it here
-task :environment do
-  require_relative "lib/esm"
+# task :environment do
+#   require_relative "lib/esm"
 
-  ESM.console!
-  ESM.run!
-end
+#   ESM.console!
+#   ESM.run!
+# end
