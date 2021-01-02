@@ -59,6 +59,7 @@ class MigrateDatabase
       ESM::ServerSetting.all.delete_all
       ESM::Territory.all.delete_all
       ESM::Cooldown.all.delete_all
+      ESM::UserSteamData.all.delete_all
       ESM::UserGambleStat.all.delete_all
       ESM::UserNotificationPreference.all.delete_all
       ESM::Notification.all.delete_all
@@ -250,12 +251,11 @@ class MigrateDatabase
           discord_access_token: user.token,
           discord_refresh_token: user.refresh_token,
           steam_uid: user.steam_uid.presence || nil,
-          steam_username: user.steam_username,
-          steam_avatar: user.steam_avatar,
-          steam_profile_url: user.steam_profile_url,
           created_at: user.created_at
         )
 
+        # Refresh the steam data for this user
+        new_user.steam_data
 
         # user_gambling
         move_user_gambling(user, new_user)
