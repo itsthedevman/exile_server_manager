@@ -12,7 +12,6 @@ namespace :deploy do
       execute("cd #{admin_repo} && git pull")
 
       # Copy the files to shared
-      execute("ln -sf #{admin_repo}/env /home/wolf/esm_bot/shared/.env")
       execute("ln -sf #{admin_repo}/env.prod /home/wolf/esm_bot/shared/.env.prod")
     end
   end
