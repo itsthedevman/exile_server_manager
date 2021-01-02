@@ -18,7 +18,6 @@ PATH
       pry-nav
       puma
       rake
-      rethinkdb
       sinatra
       standalone_migrations
       steam-condenser
@@ -207,7 +206,6 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rethinkdb (2.4.0.0)
     reverse_markdown (2.0.0)
       nokogiri
     rexml (3.2.4)
