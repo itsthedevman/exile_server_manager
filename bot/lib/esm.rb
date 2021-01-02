@@ -35,7 +35,6 @@ require "yaml"
 require "zeitwerk"
 
 if ENV["ESM_ENV"] != "production"
-
   require "otr-activerecord"
 end
 

@@ -39,6 +39,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "i18n"
   spec.add_dependency "otr-activerecord"
   spec.add_dependency "pg"
+  spec.add_dependency "pry"
+  spec.add_dependency "pry-nav"
   spec.add_dependency "puma"
   spec.add_dependency "rake"
 
@@ -67,8 +69,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "factory_bot"
   spec.add_development_dependency "faker"
   spec.add_development_dependency "memory_profiler"
-  spec.add_development_dependency "pry"
-  spec.add_development_dependency "pry-nav"
   spec.add_development_dependency "rerun"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "rspec-wait"
