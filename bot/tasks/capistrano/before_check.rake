@@ -15,4 +15,6 @@ namespace :deploy do
       execute("ln -sf #{admin_repo}/env.prod /home/wolf/esm_bot/shared/.env.prod")
     end
   end
+
+  before :check, :
 end

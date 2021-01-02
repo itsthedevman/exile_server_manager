@@ -24,7 +24,6 @@ require "eventmachine"
 require "faye/websocket"
 require "httparty"
 require "i18n"
-require "otr-activerecord"
 require "puma"
 require "puma/events"
 require "securerandom"
@@ -34,6 +33,11 @@ require "steam-condenser"
 require "terminal-table"
 require "yaml"
 require "zeitwerk"
+
+if ENV["ESM_ENV"] != "production"
+
+  require "otr-activerecord"
+end
 
 # Load Dotenv variables
 Dotenv.load
