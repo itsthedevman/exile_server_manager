@@ -1,5 +1,5 @@
 namespace :deploy do
-  before :started, :update_env do
+  before :check, :update_env do
     on roles(:app) do |host|
       admin_directory = "/home/wolf/esm_bot_admin"
 
