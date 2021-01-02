@@ -43,11 +43,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pry-nav"
   spec.add_dependency "puma"
   spec.add_dependency "rake"
-
-  # REMOVE AFTER LAUNCH
-  spec.add_dependency "rethinkdb"
-  # REMOVE AFTER LAUNCH
-
   spec.add_dependency "sinatra"
   spec.add_dependency "sucker_punch"
   spec.add_dependency "standalone_migrations"

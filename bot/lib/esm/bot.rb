@@ -43,7 +43,7 @@ module ESM
 
     def run
       # Binds the Discord Events
-      # bind_events!
+      bind_events!
 
       # Register all of ESM's commands
       ESM::Command.load_commands
