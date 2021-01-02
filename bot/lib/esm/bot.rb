@@ -31,6 +31,9 @@ module ESM
     attr_reader :resend_queue if ESM.env.test?
 
     def initialize
+      @prefixes = {}
+      @prefixes.default = ESM.config.prefix
+
       # Connect to the database
       ESM::Database.connect!
 
@@ -257,9 +260,6 @@ module ESM
     private
 
     def load_community_prefixes
-      @prefixes = {}
-      @prefixes.default = ESM.config.prefix
-
       ESM::Community.all.each do |community|
         next if community.command_prefix.nil?
 
