@@ -234,7 +234,7 @@ class MigrateDatabase
           territory_object_count: territory.object_count
         )
       rescue StandardError => e
-        binding.pry
+        puts e
       end
     end
 
@@ -255,7 +255,10 @@ class MigrateDatabase
         )
 
         # Refresh the steam data for this user
-        new_user.steam_data
+        begin
+          new_user.steam_data
+        rescue StandardError
+        end
 
         # user_gambling
         move_user_gambling(user, new_user)
