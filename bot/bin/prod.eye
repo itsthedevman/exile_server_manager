@@ -4,7 +4,7 @@ Eye.config do
   logger "/home/wolf/esm_bot/current/log/eye.log"
 end
 
-Eye.application "ESM" do
+Eye.application "esm" do
   working_dir "/home/wolf/esm_bot/current"
   trigger :flapping, times: 10, within: 1.minute, retry_in: 10.minutes
   check :cpu, every: 10.seconds, below: 100, times: 3
