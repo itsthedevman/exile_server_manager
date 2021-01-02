@@ -1,0 +1,4 @@
+#!/bin/bash
+
+source ../.env.prod
+bundle exec ruby start_prod.rb

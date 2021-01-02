@@ -1,8 +1,8 @@
 module.exports = {
   apps : [{
     name: "ESM",
-    script: 'bin/start_prod.rb',
-    exec_interpreter: "/home/wolf/.rbenv/shims/ruby",
+    script: 'bin/prod',
+    exec_interpreter: "bash",
     exec_mode: "fork_mode",
     instances: -1,
     autorestart: true,
