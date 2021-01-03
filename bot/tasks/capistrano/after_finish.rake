@@ -1,7 +1,9 @@
 namespace :deploy do
   after :finished, :restart_bot do
     on roles(:app) do |host|
-      execute("cd /home/wolf/esm_bot/current && source .env.prod && /home/wolf/.rbenv/shims/eye load bin/prod.eye && /home/wolf/.rbenv/shims/eye restart esm")
+      eye_executable = "/home/wolf/.rbenv/shims/eye"
+
+      execute("cd /home/wolf/esm_bot/current && source .env.prod && #{eye_executable} stop esm && #{eye_executable} load bin/prod.eye && #{eye_executable} start esm")
       info("Restarted ESM")
     end
   end
