@@ -46,7 +46,7 @@ module ESM
 
     def run
       # Binds the Discord Events
-      # bind_events!
+      bind_events!
 
       # Register all of ESM's commands
       ESM::Command.load_commands
@@ -89,12 +89,12 @@ module ESM
     # These all have to have unique-to-ESM names since we are inheriting
     ###########################
     def bind_events!
-      self.mention(&method(:esm_mention))
+      # self.mention(&method(:esm_mention))
       self.ready(&method(:esm_ready))
-      self.server_create(&method(:esm_server_create))
-      self.user_ban(&method(:esm_user_ban))
-      self.user_unban(&method(:esm_user_unban))
-      self.member_join(&method(:esm_member_join))
+      # self.server_create(&method(:esm_server_create))
+      # self.user_ban(&method(:esm_user_ban))
+      # self.user_unban(&method(:esm_user_unban))
+      # self.member_join(&method(:esm_member_join))
     end
 
     def esm_mention(_event)
