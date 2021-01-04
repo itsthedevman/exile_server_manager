@@ -2,16 +2,6 @@
 
 module ESM
   class Bot < Discordrb::Commands::CommandBot
-    IGNORED_EVENTS = %i[
-      MESSAGE_REACTION_ADD
-      MESSAGE_REACTION_REMOVE
-      MESSAGE_REACTION_REMOVE_ALL
-      PRESENCE_UPDATE
-      VOICE_SERVER_UPDATE
-      GUILD_ROLE_DELETE
-      GUILD_EMOJIS_UPDATE
-    ].freeze
-
     # View Channels
     # Send Messages
     # Embed Links
@@ -61,17 +51,6 @@ module ESM
       @resend_queue.die
 
       super
-    end
-
-    # Allows me to not load PRESENCE_UPDATES and such.
-    # Discordrb::Gateway
-    #                   .handle_message ->
-    #                   .handle_dispatch ->
-    # Discordrb::Bot
-    #                   .dispatch ->
-    #                   .handle_dispatch
-    def handle_dispatch(type, data)
-      super(type, data) if !IGNORED_EVENTS.include?(type)
     end
 
     # Overriding DiscordRB's variant to allow commands to be case-insensitive
