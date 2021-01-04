@@ -119,5 +119,12 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 5: Message to first user
       expect(ESM::Test.messages.size).to eql(5)
     end
+
+    it "should not error when executed in a text channel" do
+      command_statement = command.statement(broadcast_to: "all", message: "Hello world!")
+      event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /this command can only be used in a discord server's \*\*text channel/i)
+    end
   end
 end
