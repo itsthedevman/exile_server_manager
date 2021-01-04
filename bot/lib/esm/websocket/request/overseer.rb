@@ -63,7 +63,15 @@ module ESM
           # Let the user know
           request.command.reply(embed)
         rescue StandardError => e
-          ESM.logger.error("overseer#check_request") { e.message }
+          ESM.logger.error("#{self.class}##{__method__}") do
+            JSON.pretty_generate(
+              server_id: @connection&.server&.server_id,
+              command_name: request&.command&.name,
+              request: request&.to_h,
+              message: e.message,
+              backtrace: e.backtrace
+            )
+          end
         end
       end
     end
