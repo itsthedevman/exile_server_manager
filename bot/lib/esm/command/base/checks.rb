@@ -253,6 +253,9 @@ module ESM
           # Allow if the command is being ran for the same community
           return if current_community.id == @command.target_community.id
 
+          # Allow if current_community is ESM, for debugging and support
+          return if current_community.guild_id == ESM::Community::ESM::ID
+
           check_failed!(:different_community_in_text, user: current_user.mention)
         end
 
