@@ -16,7 +16,7 @@ module ESM
         return if !Faye::WebSocket.websocket?(env)
 
         # Create a new websocket client
-        ws = Faye::WebSocket.new(env)
+        ws = Faye::WebSocket.new(env, nil, ping: 30)
 
         # Bind it with ESM
         ESM::Websocket.new(ws)
