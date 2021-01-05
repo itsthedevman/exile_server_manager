@@ -5,12 +5,13 @@ module ESM
     module General
       class Whois < ESM::Command::Base
         type :admin
+        limit_to :text
 
-        define :enabled, modifiable: false, default: true
-        define :whitelist_enabled, modifiable: false, default: true
-        define :whitelisted_role_ids, modifiable: false, default: []
-        define :allowed_in_text_channels, modifiable: false, default: true
-        define :cooldown_time, modifiable: false, default: 2.seconds
+        define :enabled, modifiable: true, default: true
+        define :whitelist_enabled, modifiable: true, default: true
+        define :whitelisted_role_ids, modifiable: true, default: []
+        define :allowed_in_text_channels, modifiable: true, default: true
+        define :cooldown_time, modifiable: true, default: 2.seconds
 
         argument :target
 
