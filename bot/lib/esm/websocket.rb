@@ -81,8 +81,8 @@ module ESM
       @ready = false
       @connection = connection
       @requests = ESM::Websocket::Queue.new
+      @ping_timer = EventMachine.add_periodic_timer(15) { ping }
       bind_events
-
       on_open
     end
 
@@ -113,6 +113,11 @@ module ESM
     # Sets if the server has been sent the post_init package
     def ready=(boolean)
       @ready = boolean
+    end
+
+    # Sends a ping to the WS client.
+    def ping
+      @connection.ping
     end
 
     ###########################
@@ -191,8 +196,8 @@ module ESM
     def on_close(_code)
       return if @server.nil?
 
+      EventMachine.cancel_timer(@ping_timer) if @ping_timer
       ESM::Notifications.trigger("websocket_server_on_close", server: @server)
-
       ESM::Websocket.remove_connection(self)
     end
 
