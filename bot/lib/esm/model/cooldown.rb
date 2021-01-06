@@ -67,6 +67,7 @@ module ESM
       return if self.community.nil?
 
       configuration = self.community.command_configurations.where(command_name: self.command_name).first
+      return if configuration.nil?
       return if configuration.cooldown_type == self.cooldown_type && configuration.cooldown_quantity == self.cooldown_quantity
 
       # They have changed to times, just reset the cooldown_amount to 0
