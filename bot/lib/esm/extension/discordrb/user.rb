@@ -3,6 +3,7 @@
 module Discordrb
   class User
     attr_accessor :steam_uid
+    attr_writer :esm_user
 
     def esm_user
       @esm_user ||= lambda do

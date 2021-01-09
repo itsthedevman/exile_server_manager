@@ -1,6 +1,25 @@
 # frozen_string_literal: true
 
 describe ESM::User do
+  describe "#discord_user" do
+    it "should return the discord user" do
+      user = create(:esm_dev)
+      user = ESM::User.find_by_discord_id(user.discord_id).discord_user
+
+      expect(user).not_to be_nil
+    end
+
+    it "should cache data" do
+      user = create(:esm_dev)
+      user = ESM::User.find_by_discord_id(user.discord_id)
+      discord_user = user.discord_user
+
+      expect(discord_user).not_to be_nil
+      expect(discord_user.instance_variable_get("@esm_user")).to eql(user)
+      expect(discord_user.instance_variable_get("@steam_uid")).to eql(user.steam_uid)
+    end
+  end
+
   describe "#parse" do
     it "should parse steam_uid" do
       create(:esm_dev)
@@ -55,7 +74,7 @@ describe ESM::User do
 
     it "should have no steam uid" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id.to_s).discord_user
+      user = ESM::User.find_by_discord_id(unregistered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil
@@ -64,7 +83,7 @@ describe ESM::User do
 
     it "should handle parsing an int" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id).discord_user
+      user = ESM::User.find_by_discord_id(unregistered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil
@@ -80,7 +99,7 @@ describe ESM::User do
 
     it "should be registered" do
       registered_user = create(:esm_dev)
-      user = ESM::User.parse(registered_user.discord_id).discord_user
+      user = ESM::User.find_by_discord_id(registered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to eql(registered_user.steam_uid)
@@ -89,7 +108,7 @@ describe ESM::User do
 
     it "should not be registered" do
       unregistered_user = create(:esm_dev, :unregistered)
-      user = ESM::User.parse(unregistered_user.discord_id).discord_user
+      user = ESM::User.find_by_discord_id(unregistered_user.discord_id).discord_user
 
       expect(user).not_to be_nil
       expect(user.steam_uid).to be_nil

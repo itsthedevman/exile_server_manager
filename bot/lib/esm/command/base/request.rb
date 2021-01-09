@@ -13,7 +13,7 @@ module ESM
           # Initialize our command from the request
           @arguments.from_hash(request.command_arguments) if request.command_arguments.present?
           @current_channel = ESM.bot.channel(request.requested_from_channel_id)
-          @current_user = ESM::User.parse(request.requestor.discord_id)&.discord_user
+          @current_user = request.requestor.discord_user
 
           if @request.accepted
             request_accepted
