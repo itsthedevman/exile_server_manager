@@ -16,8 +16,8 @@ module ESM
     #
     # @note The type of community controls what user type is selected
     # @see #reset!
-    def self.community
-      @community ||= FactoryBot.create(@community_type, :player_mode_disabled)
+    def self.community(type: @community_type)
+      @community ||= FactoryBot.create(type, :player_mode_disabled)
     end
 
     def self.second_community
@@ -28,8 +28,8 @@ module ESM
     #
     # @note The type of community controls what user type is selected
     # @see #reset!
-    def self.user
-      @user ||= FactoryBot.create(@user_type)
+    def self.user(type: @user_type)
+      @user ||= FactoryBot.create(type)
     end
 
     # Creates a second user that isn't #user

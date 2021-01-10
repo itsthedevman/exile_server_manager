@@ -24,8 +24,8 @@ describe ESM::Command::General::Whois, category: "command" do
   end
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:user) { ESM::Test.user }
+    let!(:community) { ESM::Test.community(type: :esm_community) }
+    let!(:user) { ESM::Test.user(type: :user) }
 
     before :each do
       grant_command_access!(community, "whois")
@@ -80,6 +80,12 @@ describe ESM::Command::General::Whois, category: "command" do
       response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.fields).not_to be_empty
+    end
+
+    it "should error (user not in discord server)" do
+      command_statement = command.statement(target: TestUser::User2::ID)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end
   end
 end

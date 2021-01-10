@@ -16,6 +16,8 @@ module ESM
         argument :target
 
         def discord
+          check_for_user_access!
+
           embed =
             ESM::Embed.build do |e|
               add_discord_info(e) if target_user.is_a?(Discordrb::User)
@@ -75,7 +77,19 @@ module ESM
           )
 
           e.add_field(name: I18n.t("commands.whois.steam.number_of_vac_bans"), value: @steam_data.number_of_vac_bans, inline: true)
-          e.add_field(name: I18n.t("commands.whois.steam.days_since_vac_ban"), value: @steam_data.days_since_vac_ban, inline: true)
+          e.add_field(name: I18n.t("commands.whois.steam.days_since_vac_ban"), value: @steam_data.days_since_last_ban, inline: true)
+        end
+
+        def check_for_user_access!
+          return if current_user.esm_user.developer?
+
+          # This is just a steam uid, go ahead and allow it.
+          return if !target_user.is_a?(Discordrb::User)
+
+          # Ensure the user in question is a member of the current Discord. This keeps players from inviting ESM and abusing the command to find admins of other servers.
+          return if current_community.discord_server.member(target_user.id).present?
+
+          check_failed!(:access_denied, user: current_user.mention)
         end
       end
     end
