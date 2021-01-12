@@ -19,7 +19,6 @@ PATH
       pry-nav
       puma
       rake
-      rethinkdb
       sinatra
       standalone_migrations
       steam-condenser
@@ -122,6 +121,7 @@ GEM
     erubi (1.10.0)
     event_emitter (0.2.6)
     eventmachine (1.2.7)
+    eventmachine (1.2.7-x64-mingw32)
     eye (0.10.0)
       celluloid (~> 0.17.3)
       celluloid-io (~> 0.17.0)
@@ -192,6 +192,7 @@ GEM
     parser (2.7.2.0)
       ast (~> 2.4.1)
     pg (1.2.3)
+    pg (1.2.3-x64-mingw32)
     pry (0.12.2)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -228,7 +229,12 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rethinkdb (2.4.0.0)
+    rest-client (2.1.0-x64-mingw32)
+      ffi (~> 1.9)
+      http-accept (>= 1.7.0, < 2.0)
+      http-cookie (>= 1.0.2, < 2.0)
+      mime-types (>= 1.16, < 4.0)
+      netrc (~> 0.8)
     reverse_markdown (2.0.0)
       nokogiri
     rexml (3.2.4)

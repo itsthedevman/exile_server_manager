@@ -52,10 +52,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "terminal-table"
   spec.add_dependency "zeitwerk"
 
-  # REMOVE AFTER LAUNCH
-  spec.add_dependency "rethinkdb"
-  # REMOVE AFTER LAUNCH
-
   # Development Only
   spec.add_development_dependency "active_record_query_trace"
   spec.add_development_dependency "awesome_print"
