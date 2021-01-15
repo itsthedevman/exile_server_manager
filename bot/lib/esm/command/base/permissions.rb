@@ -86,7 +86,7 @@ module ESM
           community = @command.target_community || @command.current_community
           return false if community.nil?
 
-          server = ESM.bot.servers[community.guild_id.to_i]
+          server = ESM.bot.server(community.guild_id.to_i)
           guild_member = @command.current_user.on(server)
           return false if guild_member.nil?
 
