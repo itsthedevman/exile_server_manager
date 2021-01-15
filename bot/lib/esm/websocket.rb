@@ -81,16 +81,17 @@ module ESM
       @ready = false
       @connection = connection
       @requests = ESM::Websocket::Queue.new
-      @ping_timer = EventMachine.add_periodic_timer(15) { ping }
+
+      # In dev, for whatever reason, this ping causes all messages to be delayed 15 seconds.
+      @ping_timer = EventMachine.add_periodic_timer(15) { ping } if ESM.env.production?
+
       bind_events
       on_open
     end
 
     def deliver!(request)
       ESM::Notifications.trigger("websocket_server_deliver", request: request)
-
-      # If the user is nil, there is no point in tracking the request
-      @requests << request if !request.user.nil?
+      @requests << request
 
       # Send the message
       @connection.send(request.to_s)
@@ -176,16 +177,20 @@ module ESM
       # Messages with commandID are requests from the Bot
       # Messages without are DLL generated requests
       message = event.data.to_ostruct
+      server_request = ESM::Websocket::ServerRequest.new(connection: self, message: message)
 
-      # These are normally empty responses
-      # message.returned is legacy
-      return if message.ignore || message.returned
+      # Checks if the request should be processed
+      return if server_request.invalid?
 
       # Reload the server so our data is fresh
       @server.reload
 
       # Process the request
-      Thread.new { ESM::Websocket::ServerRequest.new(connection: self, message: message).process }
+      Thread.new do
+        server_request.process
+      rescue StandardError => e
+        ESM.logger.error("#{self.class}##{__method__}") { "Exception: #{e.message}\n#{e.backtrace[0..5].join("\n")}" }
+      end
     rescue StandardError => e
       ESM.logger.error("#{self.class}##{__method__}") { "Exception: #{e.message}\n#{e.backtrace[0..5].join("\n")}" }
       raise e if ESM.env.test?
