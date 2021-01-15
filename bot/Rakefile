@@ -24,5 +24,5 @@ task :environment do
   require_relative "lib/esm"
 
   ESM.console!
-  ESM.run!
+  # ESM.run!
 end
