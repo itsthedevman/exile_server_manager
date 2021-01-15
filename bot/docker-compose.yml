@@ -1,6 +1,18 @@
-version: '3.1'
+version: '3.9'
 
 services:
+  # app:
+  #   container_name: ESM_BOT
+  #   build: .
+  #   command: bash -c "bin/dev true"
+  #   volumes:
+  #     - .:/esm_bot
+  #   ports:
+  #     - "3001:3001"
+  #     - "3002:3002"
+  #   depends_on:
+  #     - postgres_db
+  #   network_mode: host
   postgres_db:
     image: postgres
     container_name: ESM_DB_POSTGRES
@@ -12,6 +24,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data/
+    network_mode: host
   mysql_db:
     image: mysql:5.7
     container_name: ESM_DB_MYSQL
@@ -23,7 +36,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-
+    network_mode: host
 volumes:
   postgres-data: {}
   mysql-data: {}
