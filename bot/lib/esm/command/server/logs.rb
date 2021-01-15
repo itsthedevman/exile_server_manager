@@ -4,6 +4,30 @@ module ESM
   module Command
     module Server
       class Logs < ESM::Command::Base
+        # Handles German, Italian, Spanish, and French
+        TRANSLATED_MONTHS = {
+          "gen" => "jan",
+          "ene" => "jan",
+          "fév" => "feb",
+          "mär" => "mar",
+          "abr" => "apr",
+          "avr" => "apr",
+          "mai" => "may",
+          "mag" => "may",
+          "juin" => "jun",
+          "giu" => "jun",
+          "lug" => "jul",
+          "juil" => "jul",
+          "aoû" => "aug",
+          "ago" => "aug",
+          "set" => "sep",
+          "ott" => "oct",
+          "okt" => "oct",
+          "dic" => "dec",
+          "dez" => "dec",
+          "déc" => "dec"
+        }.freeze
+
         type :admin
         limit_to :text
         requires :registration
@@ -69,7 +93,7 @@ module ESM
 
         def parse_logs
           @response[1..].each do |entry|
-            log_date = entry.date
+            log_date = parse_log_entry_date(entry)
 
             # Convert the entry into a hash to drop the date field
             entry = entry.to_h.with_indifferent_access.without(:date)
@@ -103,6 +127,20 @@ module ESM
 
           # Persist the entries to the database
           log_entry.update!(entries: entries)
+        end
+
+        # The DLL sends over this date as Month Day Year
+        # Problem is, Ruby parses dates by checking the first 3 letters of the month and only supports English.
+        # This method converts the date by translating the first 3 letters to an English month
+        def parse_log_entry_date(entry)
+          date = entry.date
+
+          # Scan the date for the translations. Replacing the first three letters
+          TRANSLATED_MONTHS.each do |key, value|
+            break date = date.sub(/#{key}/i, value) if date.match?(/^(#{key}).*\b/i)
+          end
+
+          Date.parse(date)
         end
       end
     end

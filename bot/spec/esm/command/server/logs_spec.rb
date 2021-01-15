@@ -117,4 +117,36 @@ describe ESM::Command::Server::Logs, category: "command" do
       end
     end
   end
+
+  describe "#parse_log_entry_date" do
+    let(:german_months) { %w[Januar Februar März April Mai Juni Juli August September Oktober November Dezember] }
+    let(:italian_months) { %w[Gennaio Febbraio Marzo Aprile Maggio Giugno Luglio Agosto Settembre Ottobre Novembre Dicembre] }
+    let(:spanish_months) { %w[Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre] }
+    let(:french_months) { %w[Janvier Février Mars Avril Mai Juin Juillet Août Septembre Octobre Novembre Décembre] }
+
+    def checker(months)
+      months.each_with_index do |month, index|
+        entry = OpenStruct.new(date: "#{month} #{Faker::Number.between(from: 1, to: 20)} #{Faker::Number.between(from: 2000, to: 2100)}")
+        date = nil
+        expect { date = command.send(:parse_log_entry_date, entry) }.not_to raise_error
+        expect(date.month).to eql(index + 1)
+      end
+    end
+
+    it "should parse German months" do
+      checker(german_months)
+    end
+
+    it "should parse Italian months" do
+      checker(italian_months)
+    end
+
+    it "should parse Spanish months" do
+      checker(spanish_months)
+    end
+
+    it "should parse French months" do
+      checker(french_months)
+    end
+  end
 end
