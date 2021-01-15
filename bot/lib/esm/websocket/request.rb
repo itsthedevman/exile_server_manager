@@ -51,6 +51,14 @@ module ESM
       def timed_out?
         (::Time.now - @created_at) >= @timeout
       end
+
+      def on_reply=(callback)
+        @on_reply_callback = callback
+      end
+
+      def on_reply(connection)
+        @on_reply_callback.call(connection) if defined?(@on_reply_callback)
+      end
     end
   end
 end

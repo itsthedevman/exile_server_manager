@@ -14,6 +14,13 @@ module ESM
         @connection = connection
         @message = message
         @request = @connection.requests[message.commandID]
+        @request.on_reply(connection) if @request.present?
+      end
+
+      # These are normally empty responses
+      # message.returned is legacy
+      def invalid?
+        @message.ignore || @message.returned
       end
 
       def process
