@@ -17,17 +17,11 @@ module ESM
         # Updates the database with information from the server
         initialize_server!
 
-        # Trigger a connect notification
-        ESM::Notifications.trigger("server_on_connect", server: @server)
-
         # We need to let the DLL know some stuff (namely a lot of stuff)
         build_settings_packet
 
         # Send packet to server
         send_response
-
-        # Set the connection to be available for commands
-        @connection.ready = true
       end
 
       # Called when an admin updates some settings.
@@ -140,6 +134,15 @@ module ESM
       def send_response
         # Build the request
         request = ESM::Websocket::Request.new(command_name: "post_initialization", parameters: @packet.to_h)
+
+        # After the server has replied to this request, notify the community and allow commands.
+        request.on_reply = lambda do |connection|
+          # Trigger a connect notification
+          ESM::Notifications.trigger("server_on_connect", server: connection.server)
+
+          # Set the connection to be available for commands
+          connection.ready = true
+        end
 
         # Send it to the dll, don't use `Websocket#deliver` for this since it will raise on the connection not being ready.
         @connection.deliver!(request)
