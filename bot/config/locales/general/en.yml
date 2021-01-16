@@ -123,6 +123,7 @@ en:
   message: "Message"
   server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`"
   server_disconnected: ":red_circle: **`%{server}` disconnected.** Uptime: `%{uptime}`"
+  server_disconnected_esm_stopping: ":red_circle: Exile Server Manager is rebooting, `%{server}` will reconnect shortly. Uptime: `%{uptime}`"
   xm8_notifications:
     log:
       title: "(Delivered) `%{type}` XM8 Notification for `%{server}`"

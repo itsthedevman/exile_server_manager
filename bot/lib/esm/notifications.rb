@@ -23,6 +23,8 @@ module ESM
       raise ESM::Exception::Error, "#{name} is not a whitelisted notification event" if !EVENTS.include?(name)
 
       ActiveSupport::Notifications.instrument("#{name}.esm", args)
+    rescue StandardError => e
+      ESM.logger.error("#{self.class}##{__method__}") { JSON.pretty_generate(uuid: SecureRandom.uuid, message: e.message, backtrace: e.backtrace) }
     end
 
     def self.subscribe
@@ -291,10 +293,17 @@ module ESM
       server = payload[:server]
 
       ESM.logger.debug(name) do
-        JSON.pretty_generate(server_id: server.server_id, uptime: server.uptime)
+        JSON.pretty_generate(bot_stopping: ESM.bot.stopping?, server_id: server.server_id, uptime: server.uptime)
       end
 
-      server.community.log_event(:reconnect, I18n.t("server_disconnected", server: server.server_id, uptime: server.uptime))
+      message =
+        if ESM.bot.stopping?
+          I18n.t("server_disconnected_esm_stopping", server: server.server_id, uptime: server.uptime)
+        else
+          I18n.t("server_disconnected", server: server.server_id, uptime: server.uptime)
+        end
+
+      server.community.log_event(:reconnect, message)
     end
   end
 end

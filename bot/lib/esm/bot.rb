@@ -46,6 +46,9 @@ module ESM
     end
 
     def stop
+      return if stopping?
+
+      @esm_status = :stopping
       ESM::Websocket::Server.stop
       ESM::Request::Overseer.die
       @resend_queue.die
@@ -98,7 +101,7 @@ module ESM
       ESM::Websocket.start!
       ESM::Request::Overseer.watch
 
-      @ready = true
+      @esm_status = :ready
     end
 
     def esm_server_create(event)
@@ -125,8 +128,12 @@ module ESM
     ###########################
     # Public Methods
     ###########################
+    def stopping?
+      @esm_status == :stopping
+    end
+
     def ready?
-      @ready == true
+      @esm_status == :ready
     end
 
     def deliver(message, to:)
