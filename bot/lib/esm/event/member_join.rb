@@ -6,7 +6,7 @@ module ESM
       def initialize(event)
         @user = event.user
         @server = event.server
-        @community = ESM::Community.find_by_guild_id(@server.id)
+        @community = ESM::Community.where(guild_id: @server.id).first_or_create!
       end
 
       def run!
