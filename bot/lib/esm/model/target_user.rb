@@ -12,6 +12,10 @@ module ESM
       def registered?
         false
       end
+
+      def id
+        @steam_uid
+      end
     end
 
     attr_reader :steam_uid, :esm_user
