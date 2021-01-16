@@ -74,6 +74,8 @@ module ESM
       # @private
       # Reports the error back to the user so they know the command failed
       def on_command_error(error)
+        return if @request.user.nil?
+
         # Reset the current cooldown
         @request.command.current_cooldown.reset!
 
