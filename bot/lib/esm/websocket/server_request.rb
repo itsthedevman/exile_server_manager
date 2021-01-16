@@ -31,6 +31,11 @@ module ESM
         end
       end
 
+      # Removes the request from the queue if present
+      def remove_request
+        @connection.remove_request(@message.commandID) if @request
+      end
+
       private
 
       # @private
@@ -55,7 +60,7 @@ module ESM
         on_command_error(e.data)
       ensure
         # Make sure to remove the request no matter what
-        @connection.remove_request(@message.commandID)
+        remove_request
       end
 
       # @private

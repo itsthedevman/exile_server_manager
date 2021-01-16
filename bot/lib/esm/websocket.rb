@@ -180,7 +180,7 @@ module ESM
       server_request = ESM::Websocket::ServerRequest.new(connection: self, message: message)
 
       # Checks if the request should be processed
-      return if server_request.invalid?
+      return server_request.remove_request if server_request.invalid?
 
       # Reload the server so our data is fresh
       @server.reload
