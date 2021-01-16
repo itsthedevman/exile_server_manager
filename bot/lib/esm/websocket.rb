@@ -176,11 +176,13 @@ module ESM
     def on_message(event)
       # Messages with commandID are requests from the Bot
       # Messages without are DLL generated requests
-      message = event.data.to_ostruct
-      server_request = ESM::Websocket::ServerRequest.new(connection: self, message: message)
+      server_request = ESM::Websocket::ServerRequest.new(connection: self, message: event.data.to_ostruct)
 
       # Checks if the request should be processed
-      return server_request.remove_request if server_request.invalid?
+      if server_request.invalid?
+        server_request.remove_request if server_request.remove_on_ignore?
+        return
+      end
 
       # Reload the server so our data is fresh
       @server.reload

@@ -133,7 +133,7 @@ module ESM
 
       def send_response
         # Build the request
-        request = ESM::Websocket::Request.new(command_name: "post_initialization", parameters: @packet.to_h)
+        request = ESM::Websocket::Request.new(command_name: "post_initialization", parameters: @packet.to_h, remove_on_ignore: true)
 
         # After the server has replied to this request, notify the community and allow commands.
         request.on_reply = lambda do |connection|

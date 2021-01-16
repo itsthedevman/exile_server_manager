@@ -3,7 +3,7 @@
 module ESM
   class Websocket
     class Request
-      attr_reader :id, :user, :command, :channel
+      attr_reader :id, :user, :command, :channel, :remove_on_ignore
       attr_reader :command_name, :user_info if ESM.env.test?
       attr_accessor :response
 
@@ -32,6 +32,9 @@ module ESM
         @id = SecureRandom.uuid
         @timeout = args[:timeout] || 30
         @created_at = ::Time.now
+
+        # This controls if the request should be removed on the first reply back from Arma.
+        @remove_on_ignore = args[:remove_on_ignore] || false
       end
 
       # The DLL requires it to be this format

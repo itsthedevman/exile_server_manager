@@ -23,6 +23,11 @@ module ESM
         @message.ignore || @message.returned
       end
 
+      # Checks if the request should be removed on the first ignore
+      def remove_on_ignore?
+        @request ? @request.remove_on_ignore : false
+      end
+
       def process
         if @request.present?
           process_command_response
