@@ -142,6 +142,43 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
     end
 
+    it "!reset <server_id> <target> (Success/No attached user SteamUID)" do
+      wsc.flags.SUCCESS = true
+      command_statement = command.statement(server_id: server.server_id, target: second_user.steam_uid)
+
+      second_user.destroy
+
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      # If the command is for a server
+      expect { command.execute(event) }.not_to raise_error
+
+      embed = ESM::Test.messages.first.second
+
+      # Checks for requestors message
+      expect(embed).not_to be_nil
+
+      # Checks for requestees message
+      expect(ESM::Test.messages.size).to eql(2)
+
+      # Process the request
+      request = command.request
+      expect(request).not_to be_nil
+
+      # Reset so we can track the response
+      ESM::Test.reset!
+
+      # Respond to the request
+      request.respond(true)
+
+      wait_for { connection.requests }.to be_blank
+
+      expect(ESM::Test.messages.size).to eql(1)
+      embed = ESM::Test.messages.first.second
+
+      expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
+    end
+
     it "!reset <server_id> <target> (Failure)" do
       wsc.flags.SUCCESS = false
       command_statement = command.statement(server_id: server.server_id, target: second_user.mention)
