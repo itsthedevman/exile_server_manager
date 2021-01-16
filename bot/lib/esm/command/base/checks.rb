@@ -279,8 +279,12 @@ module ESM
           check_failed!(:owned_server, user: current_user.mention, community_id: current_community.community_id)
         end
 
+        # Checks if the target_user is registered
+        # This will always raise if the target_user is an instance of TargetUser.
+        #
+        # @raises ESM::Exception::CheckFailure
         def registered_target_user!
-          return if target_user.nil? || target_user.esm_user.registered?
+          return if target_user.nil? || target_user.is_a?(Discordrb) && target_user.esm_user.registered?
 
           check_failed!(:target_not_registered, user: current_user.mention, target_user: target_user.mention)
         end
