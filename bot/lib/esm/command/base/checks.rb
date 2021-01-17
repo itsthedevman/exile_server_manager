@@ -13,6 +13,26 @@ module ESM
           current_community&.id != @command.target_community&.id
         end
 
+        def check_failed!(name = nil, **args, &block)
+          @command.check_failed!(name, **args, &block)
+        end
+
+        def current_user
+          @command.current_user
+        end
+
+        def current_community
+          @command.current_community
+        end
+
+        def target_user
+          @command.target_user
+        end
+
+        def target_server
+          @command.target_server
+        end
+
         # Order matters!
         def run_all!
           dev_only!
@@ -34,26 +54,6 @@ module ESM
           nil_target_server!
           nil_target_community!
           nil_target_user!
-        end
-
-        def check_failed!(name = nil, **args, &block)
-          @command.check_failed!(name, **args, &block)
-        end
-
-        def current_user
-          @command.current_user
-        end
-
-        def current_community
-          @command.current_community
-        end
-
-        def target_user
-          @command.target_user
-        end
-
-        def target_server
-          @command.target_server
         end
 
         def text_only!
