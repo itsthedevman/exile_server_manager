@@ -31,7 +31,7 @@ describe ESM::Websocket::Request::Overseer do
     end
 
     it "should remove the timed out request" do
-      command = ESM::Command::Test::WebsocketRequestOverseerCommand.new
+      command = ESM::Command::Test::PlayerCommand.new
       event = CommandEvent.create(command.statement, user: user)
       command.event = event
 

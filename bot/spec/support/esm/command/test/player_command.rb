@@ -3,7 +3,7 @@
 module ESM
   module Command
     module Test
-      class WebsocketRequestOverseerCommand < ESM::Command::Base
+      class PlayerCommand < ESM::Command::Base
         type :player
 
         define :enabled, modifiable: true, default: true
