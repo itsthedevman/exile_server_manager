@@ -5,7 +5,7 @@ class String
   NUMBER_HELPER = Object.new.extend(ActionView::Helpers::NumberHelper).freeze
 
   def steam_uid?
-    ESM::Regex::STEAM_UID_ONLY.match(self)
+    ESM::Regex::STEAM_UID_ONLY.match?(self)
   end
 
   def to_ostruct

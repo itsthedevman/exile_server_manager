@@ -68,4 +68,14 @@ describe String do
       expect("1983434552".to_readable).to eql("1,983,434,552")
     end
   end
+
+  describe "#steam_uid?" do
+    it "should return true" do
+      expect(TestUser::User1::STEAM_UID.steam_uid?).to be(true)
+    end
+
+    it "should return false" do
+      expect(TestUser::User1::ID.steam_uid?).to be(false)
+    end
+  end
 end
