@@ -57,6 +57,10 @@ module ESM
     def add_field(name: nil, value:, inline: false)
       # This will make the name appear empty
       name = "\u200B" if name.nil?
+
+      # Discord won't send messages that have an empty field. This forces the value to be appear empty, and Discord will accept it.
+      value = "\u200B" if value.blank?
+
       return add_field_array(name: name, values: value, inline: inline) if value.is_a?(Array)
 
       store_field(name: name, value: value, inline: inline)
