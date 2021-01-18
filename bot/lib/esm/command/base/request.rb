@@ -57,7 +57,15 @@ module ESM
         def request_url
           return nil if @request.nil?
 
-          "#{ENV["REQUEST_URL"]}/#{@request.uuid}"
+          # I have no idea why the ENV won't apply for this _one_ key.
+          url =
+            if ESM.env.production?
+              "https://www.esmbot.com/requests"
+            else
+              ENV["REQUEST_URL"]
+            end
+
+          "#{url}/#{@request.uuid}"
         end
 
         def accept_request_url
