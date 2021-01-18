@@ -59,9 +59,13 @@ module ESM
     end
 
     def self.find_by_server_id(id)
+      return if id.blank?
+
       # esm_malden -> esm
-      community_id = id.match(/([^\s]+)_[^\s]+/i)[1]
-      find_by_community_id(community_id)
+      community_id = id.match(/([^\s]+)_[^\s]+/i)
+      return if community_id.nil?
+
+      find_by_community_id(community_id[1])
     end
 
     def discord_server
