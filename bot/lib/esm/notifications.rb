@@ -82,6 +82,7 @@ module ESM
       command = payload[:command]
 
       # This is triggered by system commands as well
+      return if command.nil?
       return if command.event.nil?
 
       ESM.logger.info(name) do
