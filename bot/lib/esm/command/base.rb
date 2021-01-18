@@ -417,9 +417,6 @@ module ESM
         # This just makes typing a little easier when writing commands
         @response = parameters.size == 1 ? parameters.first : parameters
 
-        # Logging
-        ESM::Notifications.trigger("command_from_server", command: self, response: @response)
-
         # Call the server method
         server
       end

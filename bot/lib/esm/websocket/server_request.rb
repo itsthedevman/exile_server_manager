@@ -30,6 +30,7 @@ module ESM
 
       def process
         if @request.present?
+          ESM::Notifications.trigger("command_from_server", command: @request.command, response: @message)
           process_command_response
         else
           process_server_command

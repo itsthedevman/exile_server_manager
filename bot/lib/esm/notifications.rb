@@ -53,7 +53,8 @@ module ESM
           channel: "#{Discordrb::Channel::TYPE_NAMES[command.event.channel.type]} (#{command.event.channel.id})",
           command: command.name,
           message: command.event.message.content,
-          arguments: command.arguments.to_h
+          arguments: command.arguments.to_h,
+          cooldown: command.current_cooldown&.attributes
         )
       end
     end
@@ -90,12 +91,15 @@ module ESM
           command: command.name,
           message: command.event.message.content,
           arguments: command.arguments.to_h,
+          cooldown: command.current_cooldown&.attributes,
           response: payload[:response]
         )
       end
     end
 
     def self.argument_parse(name, _start, _finish, _id, payload)
+      return if ESM.env.production?
+
       ESM.logger.debug(name) do
         parser = payload[:parser]
 
