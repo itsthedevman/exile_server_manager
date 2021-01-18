@@ -30,7 +30,6 @@ module ESM
 
       def process
         if @request.present?
-          ESM::Notifications.trigger("command_from_server", command: @request.command, response: @message)
           process_command_response
         else
           process_server_command
@@ -49,6 +48,9 @@ module ESM
       def process_command_response
         # Save this response on the request
         @request.response = @message.parameters
+
+        # Logging
+        ESM::Notifications.trigger("command_from_server", command: @request.command, response: @message)
 
         # We have an error from the DLL
         check_for_command_error!
