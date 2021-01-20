@@ -20,7 +20,7 @@ class CfgFunctions
 	{
 		class Functions
 		{
-			file = "exile_server_manager\code";
+			file = "\exile_server_manager\code";
 
 			// Initialization
 			class preInit { preInit = 1; };

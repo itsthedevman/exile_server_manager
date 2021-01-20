@@ -4,4 +4,4 @@
 # ESM_WS_URL=ws://127.0.0.1:3001 \
 # cargo run
 
-ESM_SERVER_PATH="E:\ArmaServers\Deployment\ESM" ./tools/esm run "$@"
+source tools/run.env && ./tools/esm run "$@"

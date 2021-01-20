@@ -18,3 +18,5 @@ log/
 
 # 32 bit compiling
 SymbolInfo.map
+
+tools/run.env

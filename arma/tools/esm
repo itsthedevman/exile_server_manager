@@ -40,9 +40,17 @@ command :run do |c|
   c.description = ''
   c.example 'description', 'command example'
   c.option '--use-x64', 'Build the x64 version of the extension and start the x64 version of the server'
+  c.option '--target=TARGET', String, 'The target OS to build to. Valid options: linux, windows'
   c.action do |args, options|
+    build_target =
+      if options.target == "linux"
+        :linux
+      else
+        :windows
+      end
+
     # Set some build flags
-    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, env: :debug)
+    Utils.flags(os: build_target, arch: options.use_x64 ? :x64 : :x86, env: :debug)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -69,6 +77,7 @@ class Utils
   GIT_DIRECTORY = File.expand_path("./")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
+  REMOTE_HOST = ENV["ESM_REMOTE_HOST"] || ""
   ADDONS = [
     "exile_server_manager",
     "exile_server_overwrites",
@@ -84,6 +93,10 @@ class Utils
     windows: {
       x86: "i686-pc-windows-msvc",
       x64: "x86_64-pc-windows-msvc"
+    },
+    linux: {
+      x86: "i686-unknown-linux-gnu",
+      x64: "x86_64-unknown-linux-gnu"
     }
   }.freeze
 
@@ -110,9 +123,24 @@ class Utils
     @target ||= TARGETS[@os][@arch]
   end
 
+  def self.local_deployment?
+    REMOTE_HOST.empty?
+  end
+
   def self.kill_arma_server
-    `taskkill /IM "arma3server.exe" /F`
-    `taskkill /IM "arma3server_x64.exe" /F`
+    if @os == :windows
+      if @arch == :x64
+        `taskkill /IM "arma3server_x64.exe" /F`
+      else
+        `taskkill /IM "arma3server.exe" /F`
+      end
+    else
+      if @arch == :x64
+        `ssh #{REMOTE_HOST} "killall arma3server_x64"`
+      else
+        `ssh #{REMOTE_HOST} "killall arma3server"`
+      end
+    end
   end
 
   def self.clean_directories
@@ -139,7 +167,13 @@ class Utils
 
   # This is Windows only for now...
   def self.build_extension
-    command = "rustup run stable-#{target} cargo build --target #{target}"
+    command =
+      if @os == :windows
+        "rustup run stable-#{target} cargo build --target #{target}"
+      else
+        "cargo build --target #{target}"
+      end
+
     command += " --release" if @env == :release
 
     `#{command}`
@@ -150,14 +184,14 @@ class Utils
       if @os == :windows
         "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.dll"
       else
-        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.so"
+        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm.so"
       end
 
     if @arch == :x64 && @os == :windows
       filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
       FileUtils.move(path, "#{BUILD_DIRECTORY}/@ESM/#{filename}")
     else
-      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM")
+      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM/esm.so")
     end
   end
 
@@ -168,21 +202,55 @@ class Utils
 
   def self.build_addons
     ADDONS.each do |addon|
-      `MakePBO.exe -NUP -@=#{addon} "#{GIT_DIRECTORY}/@ESM/addons/#{addon}" "#{BUILD_DIRECTORY}/@ESM/addons/#{addon}"`
+      executable = @os == :windows ? "MakePBO.exe" : "makepbo"
+
+      `#{executable} -PW -@=#{addon} "#{GIT_DIRECTORY}/@ESM/addons/#{addon}" "#{BUILD_DIRECTORY}/@ESM/addons/#{addon}"`
     end
   end
 
   def self.copy_mod
     # Remove the @ESM mod in the destination
-    FileUtils.remove_dir("#{deployment_directory}/@ESM")
-    FileUtils.cp_r("#{BUILD_DIRECTORY}/@ESM", "#{deployment_directory}/@ESM")
+    remove_dir("#{deployment_directory}/@ESM")
+    copy_dir("#{BUILD_DIRECTORY}/@ESM", "#{deployment_directory}/@ESM")
   end
 
   def self.start_server
-    if @arch == :x64
-      `cd #{SERVER_DIRECTORY} && Deploy_ESM_x64.bat`
+    if @os == :windows
+      if @arch == :x64
+        `cd #{SERVER_DIRECTORY} && Deploy_ESM_x64.bat`
+      else
+        `cd #{SERVER_DIRECTORY} && Deploy_ESM.bat`
+      end
     else
-      `cd #{SERVER_DIRECTORY} && Deploy_ESM.bat`
+      script = @arch == :x64 ? "esm_arma_x64.sh" : "esm_arma.sh"
+
+      command = <<~STRING
+        cd ~/arma_server && \
+        rm -rf @ESM && \
+        rm -rf @Exile && \
+        rm -rf @ExileServer && \
+        rm -rf mpmissions && \
+        cp -r #{deployment_directory}/* ~/arma_server/ && \
+        cd ~/ && ./#{script}
+      STRING
+
+      `ssh #{REMOTE_HOST} "#{command}"`
+    end
+  end
+
+  def self.remove_dir(path)
+    if local_deployment?
+      FileUtils.remove_dir(path)
+    else
+      `ssh #{REMOTE_HOST} "rm -rf #{path}"`
+    end
+  end
+
+  def self.copy_dir(source_path, destination_path)
+    if local_deployment?
+      FileUtils.cp_r(source_path, destination_path)
+    else
+      `scp -r #{source_path} #{REMOTE_HOST}:#{destination_path}`
     end
   end
 end
