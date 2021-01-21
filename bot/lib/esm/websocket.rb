@@ -83,7 +83,7 @@ module ESM
       @requests = ESM::Websocket::Queue.new
 
       # In dev, for whatever reason, this ping causes all messages to be delayed 15 seconds.
-      # @ping_timer = EventMachine.add_periodic_timer(15) { ping } if ESM.env.production?
+      @ping_timer = EventMachine.add_periodic_timer(10) { ping } if ESM.env.production?
 
       bind_events
       on_open
