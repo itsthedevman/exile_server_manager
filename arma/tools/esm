@@ -62,6 +62,9 @@ command :run do |c|
 
     # Start the server
     Utils.start_server
+
+    # Pull up the logs
+    Utils.open_logs
   end
 end
 
@@ -184,5 +187,16 @@ class Utils
     else
       `cd #{SERVER_DIRECTORY} && Deploy_ESM.bat`
     end
+  end
+
+  def self.open_logs
+    path = "#{SERVER_DIRECTORY}/ArmAServer/@ESM/log/esm.log"
+    25.times do
+      next sleep(1) if !File.exist?(path)
+
+      return `code #{path}`
+    end
+
+    puts "Failed to open ESM.log"
   end
 end
