@@ -1,6 +1,5 @@
-mod models;
-mod util;
 mod websocket_client;
+mod bot_command;
 
 #[macro_use]
 extern crate arma_rs;
@@ -9,9 +8,9 @@ extern crate arma_rs;
 use arma_rs::{rv, rv_callback};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use lazy_static::lazy_static;
-use std::{env, fs, path::PathBuf, sync::Mutex, collections::HashMap};
+use std::{env, fs, sync::RwLock, collections::HashMap};
 use yaml_rust::{Yaml, YamlLoader};
-use once_cell::sync::Lazy;
+use serde_json::{json, Value};
 
 // Logging
 use log::*;
@@ -21,84 +20,57 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 // ESM Packages
-pub use models::bot_command::BotCommand;
+pub use bot_command::BotCommand;
 use websocket_client::WebsocketClient;
 
-static METADATA: Lazy<Mutex<HashMap<&str, String>>> = Lazy::new(|| {
-    Mutex::new(HashMap::new())
-});
-
 lazy_static! {
-    static ref A3_SERVER: ArmaServer = ArmaServer::new();
+    // Any metadata I need to have stored across threads
+    pub static ref METADATA: RwLock<HashMap<&'static str, String>> = RwLock::new(HashMap::new());
+
+    // Config data
+    pub static ref CONFIG: Vec<Yaml> = initialize_config();
+
+    // The connection to the bot
+    pub static ref BOT: Bot = Bot::new();
+
+    // // The path to the arma3server executable
+    // pub static ref EXE_PATH: PathBuf = {
+    //     let path = match std::env::current_dir() {
+    //         Ok(path) => path,
+    //         Err(e) => panic!(format!("Failed to find current executable path: {}", e)),
+    //     };
+
+    //     path
+    // };
 }
 
-pub struct ArmaServer {
-    ext_path: PathBuf,
-    wsc_queue: Sender<String>,
-    config: Vec<Yaml>,
+pub struct Bot {
+    send_queue: Sender<String>,
     ready: bool,
 }
 
-impl ArmaServer {
-    pub fn new() -> ArmaServer {
-        // Start the logger
-        initialize_logger();
-
-        let ext_path = match std::env::current_dir() {
-            Ok(path) => path,
-            Err(e) => panic!(format!("Failed to find current executable path: {}", e)),
-        };
-
-        let bot_config = initialize_config();
-
+impl Bot {
+    pub fn new() -> Bot {
         // Any commands to be sent to the bot will use this channel set. These are Multiple Sender, Multiple Receiver channels
         let (sender, receiver) = unbounded();
 
         // The one, the only.
-        let arma_server = ArmaServer {
-            ext_path: ext_path,
-            wsc_queue: sender,
-            config: bot_config,
-            ready: false,
-        };
+        let esm_bot = Bot { send_queue: sender, ready: false, };
 
         // Connect to the bot
-        arma_server.connect_to_bot(receiver);
+        esm_bot.connect(receiver);
 
-        arma_server
+        esm_bot
     }
 
-    fn connect_to_bot(&self, receiver: Receiver<String>) {
-        let ws_url = self.config[0]["ws_url"].as_str().unwrap().to_string();
+    fn connect(&self, receiver: Receiver<String>) {
+        let ws_url = CONFIG[0]["ws_url"].as_str().unwrap().to_string();
 
-        WebsocketClient::connect_to_bot(ws_url, self.esm_key_path(), receiver);
+        WebsocketClient::connect(ws_url, receiver);
     }
 
-    fn esm_key_path(&self) -> String {
-        let mut key_path = self.ext_path.clone();
-        key_path.push("@ESM");
-        key_path.push("esm.key");
-
-        match key_path.into_os_string().into_string() {
-            Ok(val) => val,
-            Err(os_string) => {
-                error!("Failed to build path for esm.key. Attempting lossy string conversion");
-                os_string.to_string_lossy().to_string()
-            }
-        }
-    }
-
-    pub fn log(&self, message: String) {
-        rv_callback!("esm", "ESM_fnc_log", "Extension", message);
-    }
-
-    pub fn send_to_bot(&self, package: BotCommand) {
-        let channel = self.wsc_queue.clone();
-
-        let package = match package.into_json() {
-            Ok(val) => val,
-            Err(err) => return error!("Failed to convert message into JSON: {}", err),
-        };
+    pub fn send(&self, package: String) {
+        let channel = self.send_queue.clone();
 
         match channel.send(package) {
             Ok(_) => (),
@@ -157,20 +129,29 @@ fn initialize_config() -> Vec<Yaml> {
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv(thread = true)]
-fn pre_init(package: String) {
-    if A3_SERVER.ready {
-        return A3_SERVER.log(String::from(
-            "ESM has already been marked as ready. Is the server boot looping?",
-        ));
+fn pre_init(server_name: String, price_per_object: f32, territory_lifetime: f32, territory_data: String) {
+    if BOT.ready {
+        return error!("ESM has already been initialized. Is the server boot looping?");
     }
 
-    METADATA.lock().unwrap().insert("server_initalization", package.clone());
+    let territory_data: Vec<Value> = match serde_json::from_str(&territory_data) {
+        Ok(data) => data,
+        Err(e) => return error!("Unable to parse territory data: {}", e)
+    };
 
-    debug!("Sending pre_init request to bot with package: {}", package);
+    let package = json!({
+        "server_name": server_name,
+        "price_per_object": price_per_object,
+        "territory_lifetime": territory_lifetime,
+        "territory_data": territory_data
+    });
 
-    // Send the bot the package
-    let package = BotCommand::new("server_initialization", package);
-    A3_SERVER.send_to_bot(package);
+    let package = package.to_string();
+
+    METADATA.write().unwrap().insert("server_initialization", package.clone());
+    debug!("[pre_init] Request to bot with package: {}", &package);
+
+    BOT.send(package);
 }
 
 // For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...
@@ -179,8 +160,8 @@ fn is_arma3(version: u8) -> bool {
     version == 3
 }
 
-#[rv]
-fn initialize() {}
-
 #[rv_handler]
-fn main() {}
+fn init() {
+    // Start the logger
+    initialize_logger();
+}

@@ -9,15 +9,12 @@
 		Calls the ESM DLL and returns the resulting array
 */
 
-params ["_function", "_packageToSanitize"];
+private _function = _this select 0;
 
-// Could use the params to do this, but the custom message is nice
-if !(typeName(_packageToSanitize) isEqualTo "ARRAY") exitWith {
-	["fn_callExtension", format["Invalid parameters, given %1, expected Array pairs ([[""Key"", value]])", _packageToSanitize]] call ESM_fnc_log;
-};
+// Select all items from index 1 to the end of the array
+private _arguments = _this select [1, 999999999];
 
 private _sanitizedPackage = [];
-
 private _sanitizer = {
 	private _package = _this select 0;
 	private _item = _this select 1;
@@ -48,6 +45,9 @@ private _sanitizer = {
 	};
 };
 
-[_sanitizedPackage, _packageToSanitize] call _sanitizer;
+{
+	[_sanitizedPackage, _x] call _sanitizer;
+}
+forEach _arguments;
 
-"esm" callExtension [_function, [str(_sanitizedPackage)]];
+"esm" callExtension [_function, _sanitizedPackage];

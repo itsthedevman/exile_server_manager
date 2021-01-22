@@ -60,16 +60,15 @@ impl Handler for WebsocketClient {
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot(
+    pub fn connect(
         connection_url: String,
-        key_path: String,
         receiver_channel: Receiver<String>,
     ) {
         thread::spawn(move || {
             connect(connection_url.clone(), |out| WebsocketClient {
                 url: connection_url.clone(),
                 connection: out,
-                key_path: key_path.clone(),
+                key_path: String::from("@ESM/esm.key"),
                 receiver: receiver_channel.clone()
             })
             .unwrap();
@@ -130,18 +129,16 @@ impl WebsocketClient {
         info!("Attempting reconnect...");
 
         // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
-        WebsocketClient::connect_to_bot(
+        WebsocketClient::connect(
             self.url.clone(),
-            self.key_path.clone(),
             self.receiver.clone(),
         );
 
-        let metadata = crate::METADATA.lock().unwrap();
+        let metadata = crate::METADATA.read().unwrap();
         let package = metadata.get("server_initialization");
         match package {
             Some(val) => {
-                let command = BotCommand::new("server_initialization", val.clone());
-                crate::A3_SERVER.send_to_bot(command);
+                crate::BOT.send(val.clone());
             },
             _ => ()
         };
