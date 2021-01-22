@@ -154,7 +154,6 @@ fn pre_init(server_name: String, price_per_object: f32, territory_lifetime: f32,
     BOT.send(package);
 }
 
-// For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...
 #[rv]
 fn is_arma3(version: u8) -> bool {
     version == 3
