@@ -22,6 +22,7 @@ crossbeam-channel = "0.4.4"
 log4rs = "0.13.0"
 yaml-rust = "0.4"
 anyhow = "1.0"
+chrono = "0.4"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

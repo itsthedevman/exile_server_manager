@@ -68,8 +68,6 @@ class CfgESM
 		{ "ESM_CommunityID", "STRING" },
 		{ "ESM_UseExtDB3", "BOOL" },
 		{ "ESM_TerritoryManagementUIDs", "ARRAY" },
-		{ "ESM_UseExileThreading", "BOOL" },
-		{ "ESM_ThreadDelay", "SCALAR" },
 		{ "ESM_Logging_AddPlayerToTerritory", "BOOL" },
 		{ "ESM_Logging_PayTerritory", "BOOL" },
 		{ "ESM_Logging_PromotePlayer", "BOOL" },

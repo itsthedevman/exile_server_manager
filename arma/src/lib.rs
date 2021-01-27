@@ -1,16 +1,24 @@
-mod websocket_client;
+mod arma_server;
+mod bot;
 mod bot_command;
+mod command;
+mod websocket_client;
+
+// ESM Packages
+use arma_server::ArmaServer;
+use bot::Bot;
+use command::Command;
 
 #[macro_use]
 extern crate arma_rs;
 
 // Various Packages
 use arma_rs::{rv, rv_callback};
-use crossbeam_channel::{unbounded, Receiver, Sender};
 use lazy_static::lazy_static;
 use std::{env, fs, sync::RwLock, collections::HashMap};
 use yaml_rust::{Yaml, YamlLoader};
 use serde_json::{json, Value};
+use chrono::prelude::*;
 
 // Logging
 use log::*;
@@ -19,64 +27,29 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-// ESM Packages
-pub use bot_command::BotCommand;
-use websocket_client::WebsocketClient;
-
 lazy_static! {
     // Any metadata I need to have stored across threads
     pub static ref METADATA: RwLock<HashMap<&'static str, String>> = RwLock::new(HashMap::new());
 
     // Config data
-    pub static ref CONFIG: Vec<Yaml> = initialize_config();
+    pub static ref CONFIG: Vec<Yaml> = {
+        let contents = match fs::read_to_string("@ESM/config.yml") {
+            Ok(file) => file,
+            Err(_) => String::from(
+                "
+                    ws_url: ws://ws.esmbot.com
+                ",
+            ),
+        };
 
-    // The connection to the bot
+        YamlLoader::load_from_str(&contents).unwrap()
+    };
+
+    // Contains a connection to the Discord bot and various methods involving it
     pub static ref BOT: Bot = Bot::new();
 
-    // // The path to the arma3server executable
-    // pub static ref EXE_PATH: PathBuf = {
-    //     let path = match std::env::current_dir() {
-    //         Ok(path) => path,
-    //         Err(e) => panic!(format!("Failed to find current executable path: {}", e)),
-    //     };
-
-    //     path
-    // };
-}
-
-pub struct Bot {
-    send_queue: Sender<String>,
-    ready: bool,
-}
-
-impl Bot {
-    pub fn new() -> Bot {
-        // Any commands to be sent to the bot will use this channel set. These are Multiple Sender, Multiple Receiver channels
-        let (sender, receiver) = unbounded();
-
-        // The one, the only.
-        let esm_bot = Bot { send_queue: sender, ready: false, };
-
-        // Connect to the bot
-        esm_bot.connect(receiver);
-
-        esm_bot
-    }
-
-    fn connect(&self, receiver: Receiver<String>) {
-        let ws_url = CONFIG[0]["ws_url"].as_str().unwrap().to_string();
-
-        WebsocketClient::connect(ws_url, receiver);
-    }
-
-    pub fn send(&self, package: String) {
-        let channel = self.send_queue.clone();
-
-        match channel.send(package) {
-            Ok(_) => (),
-            Err(err) => error!("Failed to send message to bot: {}", err),
-        }
-    }
+    // Data and methods regarding the Arma server
+    pub static ref A3_SERVER: ArmaServer = ArmaServer::new();
 }
 
 fn initialize_logger() {
@@ -112,46 +85,31 @@ fn initialize_logger() {
     );
 }
 
-fn initialize_config() -> Vec<Yaml> {
-    let contents = match fs::read_to_string("@ESM/config.yml") {
-        Ok(file) => file,
-        Err(_) => String::from(
-            "
-                ws_url: ws://ws.esmbot.com
-            ",
-        ),
-    };
-
-    YamlLoader::load_from_str(&contents).unwrap()
-}
-
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv(thread = true)]
 fn pre_init(server_name: String, price_per_object: f32, territory_lifetime: f32, territory_data: String) {
     if BOT.ready {
-        return error!("ESM has already been initialized. Is the server boot looping?");
+        return error!("[pre_init] ESM has already been initialized. Is the server boot looping?");
     }
 
     let territory_data: Vec<Value> = match serde_json::from_str(&territory_data) {
         Ok(data) => data,
-        Err(e) => return error!("Unable to parse territory data: {}", e)
+        Err(e) => return error!("[pre_init] Unable to parse territory data: {}", e)
     };
 
     let package = json!({
         "server_name": server_name,
         "price_per_object": price_per_object,
         "territory_lifetime": territory_lifetime,
-        "territory_data": territory_data
+        "territory_data": territory_data,
+        "server_start_time": Utc::now().to_rfc3339()
     });
 
     let package = package.to_string();
-
     METADATA.write().unwrap().insert("server_initialization", package.clone());
-    debug!("[pre_init] Request to bot with package: {}", &package);
-
-    BOT.send(package);
+    info!("[pre_init] Done");
 }
 
 #[rv]
