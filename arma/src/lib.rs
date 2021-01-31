@@ -7,18 +7,18 @@ mod websocket_client;
 // ESM Packages
 use arma_server::ArmaServer;
 use bot::Bot;
-use command::Command;
+use command::{Command, ServerPostInitialization};
 
 #[macro_use]
 extern crate arma_rs;
 
 // Various Packages
-use arma_rs::{rv, rv_callback};
-use lazy_static::lazy_static;
-use std::{env, fs, sync::RwLock, collections::HashMap};
-use yaml_rust::{Yaml, YamlLoader};
-use serde_json::{json, Value};
+use arma_rs::{rv, rv_callback, ToArma};
 use chrono::prelude::*;
+use lazy_static::lazy_static;
+use serde_json::{json, Value};
+use std::{collections::HashMap, env, fs, sync::RwLock};
+use yaml_rust::{Yaml, YamlLoader};
 
 // Logging
 use log::*;
@@ -85,18 +85,57 @@ fn initialize_logger() {
     );
 }
 
+pub fn a3_post_server_initialization(_command: &Command, parameters: &ServerPostInitialization) {
+    let community_id: Vec<String> = parameters.server_id.split("_").map(String::from).collect();
+    let community_id = community_id[0].clone();
+
+    // TODO: Actually check for extdb version
+    rv_callback!(
+        "esm",
+        "ESM_fnc_postServerInitialization",
+        community_id,                                    // ESM_CommunityID
+        3,                                               // ESM_ExtDBVersion
+        parameters.gambling_modifier,                    // ESM_Gambling_Modifier
+        parameters.gambling_payout,                      // ESM_Gambling_PayoutBase
+        parameters.gambling_randomizer_max,              // ESM_Gambling_PayoutRandomizerMax
+        parameters.gambling_randomizer_mid,              // ESM_Gambling_PayoutRandomizerMid
+        parameters.gambling_randomizer_min,              // ESM_Gambling_PayoutRandomizerMin
+        parameters.gambling_win_chance,                  // ESM_Gambling_WinPercentage
+        parameters.logging_add_player_to_territory,      // ESM_Logging_AddPlayerToTerritory
+        parameters.logging_demote_player,                // ESM_Logging_DemotePlayer
+        parameters.logging_exec,                         // ESM_Logging_Exec
+        parameters.logging_gamble,                       // ESM_Logging_Gamble
+        parameters.logging_modify_player,                // ESM_Logging_ModifyPlayer
+        parameters.logging_pay_territory,                // ESM_Logging_PayTerritory
+        parameters.logging_promote_player,               // ESM_Logging_PromotePlayer
+        parameters.logging_remove_player_from_territory, // ESM_Logging_RemovePlayerFromTerritory
+        parameters.logging_reward,                       // ESM_Logging_RewardPlayer
+        parameters.logging_transfer,                     // ESM_Logging_TransferPoptabs
+        parameters.logging_upgrade_territory,            // ESM_Logging_UpgradeTerritory
+        parameters.reward_items.to_arma(),               // ESM_RewardItems
+        parameters.reward_locker_poptabs,                // ESM_RewardLockerPoptabs
+        parameters.reward_player_poptabs,                // ESM_RewardPlayerPoptabs
+        parameters.reward_respect,                       // ESM_RewardRespect
+        parameters.server_id.to_arma(),                  // ESM_ServerID
+        parameters.taxes_territory_payment,              // ESM_Taxes_TerritoryPayment
+        parameters.taxes_territory_upgrade,              // ESM_Taxes_TerritoryPayment
+        parameters.territory_admins.to_arma()            // ESM_TerritoryAdminUIDs
+    );
+}
+
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv(thread = true)]
-fn pre_init(server_name: String, price_per_object: f32, territory_lifetime: f32, territory_data: String) {
-    if BOT.ready {
-        return error!("[pre_init] ESM has already been initialized. Is the server boot looping?");
-    }
-
+fn pre_init(
+    server_name: String,
+    price_per_object: f32,
+    territory_lifetime: f32,
+    territory_data: String,
+) {
     let territory_data: Vec<Value> = match serde_json::from_str(&territory_data) {
         Ok(data) => data,
-        Err(e) => return error!("[pre_init] Unable to parse territory data: {}", e)
+        Err(e) => return error!("[pre_init] Unable to parse territory data: {}", e),
     };
 
     let package = json!({
@@ -108,17 +147,20 @@ fn pre_init(server_name: String, price_per_object: f32, territory_lifetime: f32,
     });
 
     let package = package.to_string();
-    METADATA.write().unwrap().insert("server_initialization", package.clone());
-    info!("[pre_init] Done");
-}
-
-#[rv]
-fn is_arma3(version: u8) -> bool {
-    version == 3
+    METADATA
+        .write()
+        .unwrap()
+        .insert("server_initialization", package.clone());
 }
 
 #[rv_handler]
 fn init() {
+    // Initialize the static instances to start everything
+    lazy_static::initialize(&METADATA);
+    lazy_static::initialize(&CONFIG);
+    lazy_static::initialize(&BOT);
+    lazy_static::initialize(&A3_SERVER);
+
     // Start the logger
     initialize_logger();
 }

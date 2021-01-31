@@ -1,7 +1,7 @@
-use crate::websocket_client::WebsocketClient;
 use crate::bot_command::BotCommand;
-use log::*;
+use crate::websocket_client::WebsocketClient;
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use log::*;
 
 pub struct Bot {
     pub ready: bool,
@@ -14,7 +14,10 @@ impl Bot {
         let (sender, receiver) = unbounded();
 
         // The one, the only.
-        let esm_bot = Bot { send_queue: sender, ready: false, };
+        let esm_bot = Bot {
+            send_queue: sender,
+            ready: false,
+        };
 
         // Connect to the bot
         esm_bot.connect(receiver);

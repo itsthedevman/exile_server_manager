@@ -10,9 +10,7 @@
 */
 
 private _function = _this select 0;
-
-// Select all items from index 1 to the end of the array
-private _arguments = _this select [1, 999999999];
+private _arguments = _this select [1, count(_this) - 1];
 
 private _sanitizedPackage = [];
 private _sanitizer = {

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use log::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BotCommand {
@@ -10,7 +10,11 @@ pub struct BotCommand {
 
 impl BotCommand {
     pub fn new(id: Option<String>, command_name: String, parameters: String) -> BotCommand {
-        BotCommand { id, command_name, parameters }
+        BotCommand {
+            id,
+            command_name,
+            parameters,
+        }
     }
 
     pub fn into_json(&self) -> String {

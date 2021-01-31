@@ -1,14 +1,21 @@
-use crate::command::Command;
-use std::{sync::RwLock};
+use crate::a3_post_server_initialization;
+use crate::command::*;
 use log::*;
+use serde_json::json;
+use std::sync::RwLock;
 
 pub struct ArmaServer {
-    id: RwLock<String>
+    id: RwLock<String>,
+    max_payment_count: RwLock<i64>,
 }
 
 impl ArmaServer {
     pub fn new() -> ArmaServer {
-        ArmaServer { id: RwLock::new(String::from("")) }
+        info!("New");
+        ArmaServer {
+            id: RwLock::new(String::from("")),
+            max_payment_count: RwLock::new(0),
+        }
     }
 
     pub fn server_initialization(&self, command: Command) {
@@ -17,34 +24,46 @@ impl ArmaServer {
         match package {
             Some(val) => {
                 crate::BOT.send(Some(command.id), command.command_name, val.clone());
-            },
-            _ => ()
+            }
+            _ => (),
         };
     }
 
     pub fn post_initialization(&self, command: Command) {
+        let parameters: &ServerPostInitialization = match command.parameters {
+            Parameters::ServerPostInitialization(ref val) => val,
+            _ => {
+                debug!("Failed. {:?}", command.parameters);
+                return;
+            }
+        };
+
         // Stores the server_id
-        // Attempt to gain write access to ID
         match self.id.try_write() {
             Ok(mut id) => {
-                // Attempt to retrieve the server_id attribute
-                match command.parameters.get("server_id") {
-                    Some(server_id) => {
-                        // Attempt to load that attribute as a &str
-                        match server_id.as_str() {
-                            Some(val) => {
-                                // Finally, set the value
-                                *id = String::from(val)
-                            },
-                            None => warn!("[ArmaServer::post_initialization] Unable to retrieve String from parameter: server_id")
-                        }
-                    },
-                    None => warn!("[ArmaServer::post_initialization] Missing parameter: server_id")
-                }
-            },
+                *id = parameters.server_id.clone();
+            }
             Err(e) => {
                 warn!("[ArmaServer::post_initialization] Failed to gain write lock for id attribute. Reason: {:?}", e);
             }
         }
+
+        // Stores the max_payment_count
+        match self.max_payment_count.try_write() {
+            Ok(mut count) => {
+                *count = parameters.max_payment_count;
+            }
+            Err(e) => {
+                warn!("[ArmaServer::post_initialization] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
+            }
+        }
+
+        a3_post_server_initialization(&command, parameters);
+
+        crate::BOT.send(
+            Some(command.id.clone()),
+            command.command_name.clone(),
+            json!({ "_event": "after_execute", "_event_parameters": "" }).to_string(),
+        );
     }
 }
