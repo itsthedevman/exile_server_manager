@@ -1,6 +1,6 @@
 use crate::Command;
 use base64;
-use chrono::{Utc,TimeZone};
+use chrono::Utc;
 use crossbeam_channel::{Receiver, RecvTimeoutError};
 use log::*;
 use serde_json::json;
@@ -94,7 +94,7 @@ impl Handler for WebsocketClient {
         crate::BOT.send(
             Some(command.id.clone()),
             command.command_name.clone(),
-            json!({ "_event": "before_execute", "_event_parameters": { "time": Utc::now().timestamp() } }).to_string(),
+            json!({ "_event": "before_execute", "_event_parameters": { "timestamp": Utc::now().timestamp() } }).to_string(),
         );
 
         self.execute_command(command);

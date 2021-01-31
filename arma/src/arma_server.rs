@@ -1,5 +1,6 @@
 use crate::a3_post_server_initialization;
 use crate::command::*;
+use chrono::Utc;
 use log::*;
 use serde_json::json;
 use std::sync::RwLock;
@@ -11,7 +12,6 @@ pub struct ArmaServer {
 
 impl ArmaServer {
     pub fn new() -> ArmaServer {
-        info!("New");
         ArmaServer {
             id: RwLock::new(String::from("")),
             max_payment_count: RwLock::new(0),
@@ -33,7 +33,7 @@ impl ArmaServer {
         let parameters: &ServerPostInitialization = match command.parameters {
             Parameters::ServerPostInitialization(ref val) => val,
             _ => {
-                debug!("Failed. {:?}", command.parameters);
+                error!("[arma_server::post_initialization] Failed to retrieve parameters. Parameters was parsed as {:?}", command.parameters);
                 return;
             }
         };
@@ -63,7 +63,7 @@ impl ArmaServer {
         crate::BOT.send(
             Some(command.id.clone()),
             command.command_name.clone(),
-            json!({ "_event": "after_execute", "_event_parameters": "" }).to_string(),
+            json!({ "_event": "after_execute", "_event_parameters": json!({ "timestamp": Utc::now().timestamp() }).to_string() }).to_string(),
         );
     }
 }
