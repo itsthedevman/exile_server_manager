@@ -4,25 +4,24 @@ use chrono::Utc;
 
 use log::*;
 use serde_json::json;
-use std::{sync::RwLock};
 
 pub struct ArmaServer {
-    pub id: RwLock<String>,
-    pub max_payment_count: RwLock<i64>,
+    pub id: String,
+    pub max_payment_count: i64,
     database: Database,
 }
 
 impl ArmaServer {
     pub fn new() -> ArmaServer {
         ArmaServer {
-            id: RwLock::new(String::from("")),
-            max_payment_count: RwLock::new(0),
+            id: String::from(""),
+            max_payment_count: 0,
             database: Database::new(),
         }
     }
 
     pub fn extdb_version(&self) -> u8 {
-        *self.database.extdb_version.read().unwrap()
+        self.database.extdb_version
     }
 
     pub fn server_initialization(&self, command: Command) {
@@ -36,7 +35,7 @@ impl ArmaServer {
         };
     }
 
-    pub fn post_initialization(&self, command: Command) {
+    pub fn post_initialization(&mut self, command: Command) {
         let parameters: &ServerPostInitialization = match command.parameters {
             Parameters::ServerPostInitialization(ref val) => val,
             _ => {
@@ -46,24 +45,10 @@ impl ArmaServer {
         };
 
         // Stores the server_id
-        match self.id.try_write() {
-            Ok(mut id) => {
-                *id = parameters.server_id.clone();
-            }
-            Err(e) => {
-                warn!("[arma_server::post_initialization] Failed to gain write lock for id attribute. Reason: {:?}", e);
-            }
-        }
+        self.id = parameters.server_id.clone();
 
         // Stores the max_payment_count
-        match self.max_payment_count.try_write() {
-            Ok(mut count) => {
-                *count = parameters.max_payment_count;
-            }
-            Err(e) => {
-                warn!("[arma_server::post_initialization] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
-            }
-        }
+        self.max_payment_count = parameters.max_payment_count;
 
         // Get the base path to figure out where to look for the ini
         let base_ini_path = if parameters.extdb_path.is_empty() { String::from("@ExileServer") } else { parameters.extdb_path.clone() };

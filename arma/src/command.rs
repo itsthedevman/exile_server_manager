@@ -4,6 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
+// #[serde(tag="type")]
 #[serde(untagged)]
 pub enum Parameters {
     ServerPostInitialization(ServerPostInitialization),
@@ -29,7 +30,6 @@ pub struct ServerPostInitialization {
     pub logging_exec: bool,
     pub logging_gamble: bool,
     pub logging_modify_player: bool,
-    pub logging_path: String,
     pub logging_pay_territory: bool,
     pub logging_promote_player: bool,
     pub logging_remove_player_from_territory: bool,

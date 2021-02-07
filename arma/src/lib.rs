@@ -50,10 +50,15 @@ lazy_static! {
     pub static ref BOT: Bot = Bot::new();
 
     // Data and methods regarding the Arma server
-    pub static ref A3_SERVER: ArmaServer = ArmaServer::new();
+    pub static ref A3_SERVER: RwLock<ArmaServer> = RwLock::new(ArmaServer::new());
 }
 
 fn initialize_logger() {
+    let logging_path = match crate::CONFIG[0]["logging_path"].as_str() {
+        Some(name) => name,
+        None => "@ESM/log/esm.log",
+    };
+
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} {l} - {m}\n",
@@ -64,7 +69,7 @@ fn initialize_logger() {
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} {l} - {m}\n",
         )))
-        .build("@ESM/log/esm.log")
+        .build(logging_path)
         .unwrap();
 
     let config = Config::builder()
@@ -90,11 +95,12 @@ pub fn a3_post_server_initialization(_command: &Command, parameters: &ServerPost
     let community_id: Vec<String> = parameters.server_id.split("_").map(String::from).collect();
     let community_id = community_id[0].clone();
 
+    debug!("[a3_post_server_initialization] Sending");
     rv_callback!(
         "esm",
         "ESM_fnc_postServerInitialization",
         community_id,                                       // ESM_CommunityID
-        A3_SERVER.extdb_version(),                          // ESM_ExtDBVersion
+        A3_SERVER.read().unwrap().extdb_version(),          // ESM_ExtDBVersion
         parameters.gambling_modifier,                       // ESM_Gambling_Modifier
         parameters.gambling_payout,                         // ESM_Gambling_PayoutBase
         parameters.gambling_randomizer_max,                 // ESM_Gambling_PayoutRandomizerMax

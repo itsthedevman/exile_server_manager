@@ -218,9 +218,16 @@ impl WebsocketClient {
     fn execute_command(&self, command: Command) {
         debug!("Executing command: {:?}", &command);
 
+        let mut a3_server = match crate::A3_SERVER.try_write() {
+            Ok(server) => server,
+            Err(e) => {
+                return error!("[websocket_client::execute_command] Failed to gain write access to A3 server. Reason: {}", e);
+            }
+        };
+
         match command.command_name.as_str() {
-            "server_initialization" => crate::A3_SERVER.server_initialization(command),
-            "post_initialization" => crate::A3_SERVER.post_initialization(command),
+            "server_initialization" => a3_server.server_initialization(command),
+            "post_initialization" => a3_server.post_initialization(command),
             _ => error!(
                 "[websocket_client::execute_command] Invalid command received: {}",
                 command.command_name

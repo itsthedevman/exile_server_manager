@@ -2,21 +2,21 @@
 
 use ini::Ini;
 use log::*;
-use std::{path::Path, sync::RwLock};
+use std::{path::Path};
 use diesel::{MysqlConnection, r2d2::{self, ConnectionManager}};
 
 pub type Pool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 
 pub struct Database {
-    pub extdb_version: RwLock<u8>,
-    connection_pool: RwLock<Option<Pool>>,
+    pub extdb_version: u8,
+    connection_pool: Option<Pool>,
 }
 
 impl Database {
     pub fn new() -> Database {
         Database {
-            extdb_version: RwLock::new(2),
-            connection_pool: RwLock::new(None),
+            extdb_version: 2,
+            connection_pool: None,
         }
     }
 
@@ -49,14 +49,7 @@ impl Database {
         };
 
         // Stores the extdb_version
-        match self.extdb_version.try_write() {
-            Ok(mut version) => {
-                *version = db_version;
-            }
-            Err(e) => {
-                warn!("[database::connect] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
-            }
-        }
+        self.extdb_version = db_version;
 
         let database_url =
             match self.connection_string(db_ini, db_version) {
@@ -67,22 +60,12 @@ impl Database {
             };
 
         let manager = ConnectionManager::<MysqlConnection>::new(&database_url);
-        let pool = match r2d2::Pool::builder().build(manager) {
-            Ok(pool) => pool,
+        self.connection_pool = match r2d2::Pool::builder().build(manager) {
+            Ok(pool) => Some(pool),
             Err(e) => {
                 return error!("[database::connect] Failed to build connection pool for MySQL. Reason: {}", e);
             }
         };
-
-        // Stores the connection object for later use
-        match self.connection_pool.try_write() {
-            Ok(mut p) => {
-                *p = Some(pool);
-            }
-            Err(e) => {
-                warn!("[database::connect] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
-            }
-        }
     }
 
     /*
