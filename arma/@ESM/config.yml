@@ -1,1 +1,4 @@
 ws_url: "ws://esm.mshome.net:3001"
+
+# Also supported variables
+# extdb_file_path: The full path plus filename for the extDB config

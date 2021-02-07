@@ -1,13 +1,15 @@
-use crate::a3_post_server_initialization;
+use crate::{a3_post_server_initialization, database::Database};
 use crate::command::*;
 use chrono::Utc;
+
 use log::*;
 use serde_json::json;
-use std::sync::RwLock;
+use std::{sync::RwLock};
 
 pub struct ArmaServer {
-    id: RwLock<String>,
-    max_payment_count: RwLock<i64>,
+    pub id: RwLock<String>,
+    pub max_payment_count: RwLock<i64>,
+    database: Database,
 }
 
 impl ArmaServer {
@@ -15,7 +17,12 @@ impl ArmaServer {
         ArmaServer {
             id: RwLock::new(String::from("")),
             max_payment_count: RwLock::new(0),
+            database: Database::new(),
         }
+    }
+
+    pub fn extdb_version(&self) -> u8 {
+        *self.database.extdb_version.read().unwrap()
     }
 
     pub fn server_initialization(&self, command: Command) {
@@ -44,7 +51,7 @@ impl ArmaServer {
                 *id = parameters.server_id.clone();
             }
             Err(e) => {
-                warn!("[ArmaServer::post_initialization] Failed to gain write lock for id attribute. Reason: {:?}", e);
+                warn!("[arma_server::post_initialization] Failed to gain write lock for id attribute. Reason: {:?}", e);
             }
         }
 
@@ -54,9 +61,15 @@ impl ArmaServer {
                 *count = parameters.max_payment_count;
             }
             Err(e) => {
-                warn!("[ArmaServer::post_initialization] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
+                warn!("[arma_server::post_initialization] Failed to gain write lock for max_payment_count attribute. Reason: {:?}", e);
             }
         }
+
+        // Get the base path to figure out where to look for the ini
+        let base_ini_path = if parameters.extdb_path.is_empty() { String::from("@ExileServer") } else { parameters.extdb_path.clone() };
+
+        // Connect to the database
+        self.database.connect(base_ini_path);
 
         a3_post_server_initialization(&command, parameters);
 
