@@ -31,7 +31,7 @@ forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));
 addMissionEventHandler ["ExtensionCallback", {
 	params ["_name", "_function", "_data"];
 
-	if (_name isEqualTo "esm") then
+	if (_name isEqualTo "exile_server_manager") then
 	{
 		[_function, _data] call ESM_fnc_handleCallback;
 	};

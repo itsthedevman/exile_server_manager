@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 // #[serde(tag="type")]
 #[serde(untagged)]
 pub enum Parameters {
@@ -13,10 +13,10 @@ pub enum Parameters {
     ServerInitialization(ServerInitialization),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerInitialization {}
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerPostInitialization {
     pub extdb_path: String,
     pub gambling_modifier: i64,
@@ -47,7 +47,7 @@ pub struct ServerPostInitialization {
     pub territory_admins: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Command {
     pub id: String,
     pub command_name: String,
@@ -55,7 +55,7 @@ pub struct Command {
     pub metadata: HashMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Item {
     class_name: String,
     quantity: i64,

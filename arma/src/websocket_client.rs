@@ -54,11 +54,6 @@ impl Handler for WebsocketClient {
 
     // A message from the bot
     fn on_message(&mut self, message: Message) -> WSResult<()> {
-        info!(
-            "[websocket_client::on_message] Received message: {}",
-            message
-        );
-
         // Convert the message to text. This should be a stringified JSON
         let message = match message.as_text() {
             Ok(text) => text,
@@ -97,9 +92,9 @@ impl Handler for WebsocketClient {
             json!({ "_event": "before_execute", "_event_parameters": { "timestamp": Utc::now().timestamp() } }).to_string(),
         );
 
+        // Finally, execute the command
         self.execute_command(command);
 
-        // Required response
         Ok(())
     }
 
@@ -150,7 +145,7 @@ impl WebsocketClient {
             Ok(contents) => contents,
             Err(_) => {
                 return error!(
-                    "websocket_client::add_authorization_header] Failed to find esm.key"
+                    "[websocket_client::add_authorization_header] Failed to find esm.key"
                 );
             }
         };
@@ -216,9 +211,9 @@ impl WebsocketClient {
     }
 
     fn execute_command(&self, command: Command) {
-        debug!("Executing command: {:?}", &command);
+        info!("[websocket_client::execute_command] {:#?}", &command);
 
-        let mut a3_server = match crate::A3_SERVER.try_write() {
+        let a3_server = match crate::A3_SERVER.try_read() {
             Ok(server) => server,
             Err(e) => {
                 return error!("[websocket_client::execute_command] Failed to gain write access to A3 server. Reason: {}", e);
@@ -227,7 +222,19 @@ impl WebsocketClient {
 
         match command.command_name.as_str() {
             "server_initialization" => a3_server.server_initialization(command),
-            "post_initialization" => a3_server.post_initialization(command),
+            "post_initialization" => {
+                // Important! Release the read lock in order to gain the write lock
+                drop(a3_server);
+
+                let mut a3_server = match crate::A3_SERVER.try_write() {
+                    Ok(server) => server,
+                    Err(e) => {
+                        return error!("[websocket_client::execute_command] Failed to gain write access to A3 server. Reason: {}", e);
+                    }
+                };
+
+                a3_server.post_initialization(command)
+            },
             _ => error!(
                 "[websocket_client::execute_command] Invalid command received: {}",
                 command.command_name

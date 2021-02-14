@@ -1,4 +1,4 @@
-use crate::{a3_post_server_initialization, database::Database};
+use crate::{database::Database};
 use crate::command::*;
 use chrono::Utc;
 
@@ -56,7 +56,7 @@ impl ArmaServer {
         // Connect to the database
         self.database.connect(base_ini_path);
 
-        a3_post_server_initialization(&command, parameters);
+        crate::a3_post_server_initialization(&command, parameters, self.extdb_version());
 
         crate::BOT.send(
             Some(command.id.clone()),
