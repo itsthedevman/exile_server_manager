@@ -1,9 +1,14 @@
+#[macro_use]
+extern crate diesel;
+
 mod arma_server;
 mod bot;
 mod bot_command;
 mod command;
 mod database;
 mod websocket_client;
+pub mod schema;
+pub mod models;
 
 // ESM Packages
 use arma_server::ArmaServer;

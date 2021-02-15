@@ -1,11 +1,13 @@
 
 
+use anyhow::{Error, bail};
 use ini::Ini;
 use log::*;
 use std::{path::Path};
-use diesel::{MysqlConnection, r2d2::{self, ConnectionManager}};
+use diesel::{MysqlConnection, r2d2::{self, ConnectionManager, PooledConnection}};
 
 pub type Pool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
+pub type Connection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
 pub struct Database {
     pub extdb_version: u8,
@@ -17,6 +19,20 @@ impl Database {
         Database {
             extdb_version: 2,
             connection_pool: None,
+        }
+    }
+
+    ///    let connection = self.database.connection(); // Result<Connection, Error>
+    ///    let results = territory.load::<Territory>(&*connection); // QueryResult<Vec<Territory>>
+    pub fn connection(&self) -> Result<Connection, Error> {
+        match &self.connection_pool {
+            Some(c) => match c.clone().get() {
+                Ok(c) => Ok(c),
+                Err(e) => bail!("[database::connection] {}", e)
+            },
+            None => {
+                bail!("[database::connection] Attempted to retrieve a connection from the pool before the pool was open for swimming.");
+            }
         }
     }
 
