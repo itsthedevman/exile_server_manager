@@ -31,9 +31,6 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 lazy_static! {
-    // Any metadata I need to have stored across threads
-    pub static ref METADATA: RwLock<HashMap<&'static str, String>> = RwLock::new(HashMap::new());
-
     // Config data
     pub static ref CONFIG: Vec<Yaml> = {
         let contents = match fs::read_to_string("@ESM/config.yml") {
@@ -157,17 +154,19 @@ fn pre_init(
         "server_start_time": Utc::now().to_rfc3339()
     });
 
-    let package = package.to_string();
-    METADATA
-        .write()
-        .unwrap()
-        .insert("server_initialization", package.clone());
+    match A3_SERVER.try_write() {
+        Ok(mut server) => {
+            server.server_initialization_package = Some(package.to_string());
+        },
+        Err(e) => {
+            error!("[pre_init] Failed to gain write access to store the server initialization package. Reason: {}", e);
+        }
+    }
 }
 
 #[rv_handler]
 fn init() {
     // Initialize the static instances to start everything
-    lazy_static::initialize(&METADATA);
     lazy_static::initialize(&CONFIG);
     lazy_static::initialize(&BOT);
     lazy_static::initialize(&A3_SERVER);

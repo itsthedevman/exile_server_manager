@@ -8,6 +8,7 @@ use serde_json::json;
 pub struct ArmaServer {
     pub id: String,
     pub max_payment_count: i64,
+    pub server_initialization_package: Option<String>,
     database: Database,
 }
 
@@ -17,6 +18,7 @@ impl ArmaServer {
             id: String::from(""),
             max_payment_count: 0,
             database: Database::new(),
+            server_initialization_package: None
         }
     }
 
@@ -25,13 +27,13 @@ impl ArmaServer {
     }
 
     pub fn server_initialization(&self, command: Command) {
-        let metadata = crate::METADATA.read().unwrap();
-        let package = metadata.get("server_initialization");
-        match package {
+        match &self.server_initialization_package {
             Some(val) => {
                 crate::BOT.send(Some(command.id), command.command_name, val.clone());
             }
-            _ => (),
+            _ => {
+                error!("[arma_server::server_initialization] Requested server initialization before anything has been stored. ESM_fnc_preInit must be called first.");
+            },
         };
     }
 
