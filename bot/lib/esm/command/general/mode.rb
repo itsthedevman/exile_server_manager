@@ -44,7 +44,7 @@ module ESM
         #########################
 
         def check_for_owner!
-          server = ESM.bot.servers[target_community.guild_id.to_i]
+          server = ESM.bot.server(target_community.guild_id.to_i)
           guild_member = current_user.on(server)
           check_failed!(:no_permissions, user: current_user.mention) if guild_member.nil?
 
