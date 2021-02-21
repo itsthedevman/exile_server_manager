@@ -1,10 +1,14 @@
-
-
-use anyhow::{Error, bail};
+use crate::models::*;
+use anyhow::{bail, Error};
+use diesel::{
+    expression::dsl::exists,
+    prelude::*,
+    r2d2::{self, ConnectionManager, PooledConnection},
+    select, MysqlConnection,
+};
 use ini::Ini;
 use log::*;
-use std::{path::Path};
-use diesel::{MysqlConnection, r2d2::{self, ConnectionManager, PooledConnection}};
+use std::path::Path;
 
 pub type Pool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 pub type Connection = PooledConnection<ConnectionManager<MysqlConnection>>;
@@ -28,7 +32,7 @@ impl Database {
         match &self.connection_pool {
             Some(c) => match c.clone().get() {
                 Ok(c) => Ok(c),
-                Err(e) => bail!("[database::connection] {}", e)
+                Err(e) => bail!("[database::connection] {}", e),
             },
             None => {
                 bail!("[database::connection] Attempted to retrieve a connection from the pool before the pool was open for swimming.");
@@ -67,21 +71,42 @@ impl Database {
         // Stores the extdb_version
         self.extdb_version = db_version;
 
-        let database_url =
-            match self.connection_string(db_ini, db_version) {
-                Ok(url) => url,
-                Err(e) => {
-                    return error!("[database::connection_string] {}", e);
-                }
-            };
+        let database_url = match self.connection_string(db_ini, db_version) {
+            Ok(url) => url,
+            Err(e) => {
+                return error!("[database::connection_string] {}", e);
+            }
+        };
 
         let manager = ConnectionManager::<MysqlConnection>::new(&database_url);
         self.connection_pool = match r2d2::Pool::builder().build(manager) {
             Ok(pool) => Some(pool),
             Err(e) => {
-                return error!("[database::connect] Failed to build connection pool for MySQL. Reason: {}", e);
+                return error!(
+                    "[database::connect] Failed to build connection pool for MySQL. Reason: {}",
+                    e
+                );
             }
         };
+    }
+
+    pub fn account_exists(&self, player_uid: &String) -> bool {
+        use crate::schema::account::dsl::*;
+
+        let connection = match self.connection() {
+            Ok(connection) => connection,
+            Err(e) => {
+                error!(
+                    "[database::account_exists] Unable to obtain a open connection to the database. Reason: {}",
+                    e
+                );
+                return false;
+            }
+        };
+
+        select(exists(account.filter(uid.eq(player_uid))))
+            .get_result::<bool>(&*connection)
+            .unwrap_or(false)
     }
 
     /*
@@ -172,6 +197,9 @@ impl Database {
         };
 
         // mysql://[[user]:[password]@]host[:port][/database][?unix_socket=socket-path]
-        Ok(format!("mysql://{}:{}@{}:{}/{}", username, password, ip, port, database_name))
+        Ok(format!(
+            "mysql://{}:{}@{}:{}/{}",
+            username, password, ip, port, database_name
+        ))
     }
 }
