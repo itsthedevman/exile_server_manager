@@ -36,7 +36,7 @@ class CfgFunctions
 			class modifyPlayer {};
 			class postServerInitialization {};
 			class exec{};
-			class rewardPlayer{};
+			class reward{};
 			class transferPoptabs{};
 
 			// Utils
