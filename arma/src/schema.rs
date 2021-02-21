@@ -16,16 +16,16 @@ table! {
   }
 }
 
-table! {
-  use diesel::sql_types::*;
+// table! {
+//   use diesel::sql_types::*;
 
-  clan (id) {
-      id -> Unsigned<Integer>,
-      name -> Varchar,
-      leader_uid -> Varchar,
-      created_at -> Datetime,
-  }
-}
+//   clan (id) {
+//       id -> Unsigned<Integer>,
+//       name -> Varchar,
+//       leader_uid -> Varchar,
+//       created_at -> Datetime,
+//   }
+// }
 
 // table! {
 //   use diesel::sql_types::*;
@@ -43,62 +43,62 @@ table! {
 //   }
 // }
 
-table! {
-  use diesel::sql_types::*;
+// table! {
+//   use diesel::sql_types::*;
 
-  construction (id) {
-      id -> Unsigned<Integer>,
-      class -> Varchar,
-      account_uid -> Varchar,
-      spawned_at -> Datetime,
-      position_x -> Double,
-      position_y -> Double,
-      position_z -> Double,
-      direction_x -> Double,
-      direction_y -> Double,
-      direction_z -> Double,
-      up_x -> Double,
-      up_y -> Double,
-      up_z -> Double,
-      is_locked -> Bool,
-      pin_code -> Varchar,
-      damage -> Nullable<Unsigned<Tinyint>>,
-      territory_id -> Nullable<Unsigned<Integer>>,
-      last_updated_at -> Datetime,
-      deleted_at -> Nullable<Datetime>,
-  }
-}
+//   construction (id) {
+//       id -> Unsigned<Integer>,
+//       class -> Varchar,
+//       account_uid -> Varchar,
+//       spawned_at -> Datetime,
+//       position_x -> Double,
+//       position_y -> Double,
+//       position_z -> Double,
+//       direction_x -> Double,
+//       direction_y -> Double,
+//       direction_z -> Double,
+//       up_x -> Double,
+//       up_y -> Double,
+//       up_z -> Double,
+//       is_locked -> Bool,
+//       pin_code -> Varchar,
+//       damage -> Nullable<Unsigned<Tinyint>>,
+//       territory_id -> Nullable<Unsigned<Integer>>,
+//       last_updated_at -> Datetime,
+//       deleted_at -> Nullable<Datetime>,
+//   }
+// }
 
-table! {
-  use diesel::sql_types::*;
+// table! {
+//   use diesel::sql_types::*;
 
-  container (id) {
-      id -> Unsigned<Integer>,
-      class -> Varchar,
-      spawned_at -> Datetime,
-      account_uid -> Nullable<Varchar>,
-      is_locked -> Bool,
-      position_x -> Double,
-      position_y -> Double,
-      position_z -> Double,
-      direction_x -> Double,
-      direction_y -> Double,
-      direction_z -> Double,
-      up_x -> Double,
-      up_y -> Double,
-      up_z -> Double,
-      cargo_items -> Text,
-      cargo_magazines -> Text,
-      cargo_weapons -> Text,
-      cargo_container -> Text,
-      last_updated_at -> Datetime,
-      pin_code -> Varchar,
-      territory_id -> Nullable<Unsigned<Integer>>,
-      deleted_at -> Nullable<Datetime>,
-      money -> Unsigned<Integer>,
-      abandoned -> Nullable<Datetime>,
-  }
-}
+//   container (id) {
+//       id -> Unsigned<Integer>,
+//       class -> Varchar,
+//       spawned_at -> Datetime,
+//       account_uid -> Nullable<Varchar>,
+//       is_locked -> Bool,
+//       position_x -> Double,
+//       position_y -> Double,
+//       position_z -> Double,
+//       direction_x -> Double,
+//       direction_y -> Double,
+//       direction_z -> Double,
+//       up_x -> Double,
+//       up_y -> Double,
+//       up_z -> Double,
+//       cargo_items -> Text,
+//       cargo_magazines -> Text,
+//       cargo_weapons -> Text,
+//       cargo_container -> Text,
+//       last_updated_at -> Datetime,
+//       pin_code -> Varchar,
+//       territory_id -> Nullable<Unsigned<Integer>>,
+//       deleted_at -> Nullable<Datetime>,
+//       money -> Unsigned<Integer>,
+//       abandoned -> Nullable<Datetime>,
+//   }
+// }
 
 // table! {
 //   use diesel::sql_types::*;
@@ -150,19 +150,19 @@ table! {
 //   }
 // }
 
-table! {
-  use diesel::sql_types::*;
+// table! {
+//   use diesel::sql_types::*;
 
-  player_history (id) {
-      id -> Unsigned<Integer>,
-      account_uid -> Varchar,
-      name -> Varchar,
-      died_at -> Datetime,
-      position_x -> Double,
-      position_y -> Double,
-      position_z -> Double,
-  }
-}
+//   player_history (id) {
+//       id -> Unsigned<Integer>,
+//       account_uid -> Varchar,
+//       name -> Varchar,
+//       died_at -> Datetime,
+//       position_x -> Double,
+//       position_y -> Double,
+//       position_z -> Double,
+//   }
+// }
 
 table! {
   use diesel::sql_types::*;
@@ -191,40 +191,40 @@ table! {
   }
 }
 
-table! {
-  use diesel::sql_types::*;
+// table! {
+//   use diesel::sql_types::*;
 
-  vehicle (id) {
-      id -> Unsigned<Integer>,
-      class -> Varchar,
-      spawned_at -> Datetime,
-      account_uid -> Nullable<Varchar>,
-      is_locked -> Bool,
-      fuel -> Unsigned<Double>,
-      damage -> Unsigned<Double>,
-      hitpoints -> Text,
-      position_x -> Double,
-      position_y -> Double,
-      position_z -> Double,
-      direction_x -> Double,
-      direction_y -> Double,
-      direction_z -> Double,
-      up_x -> Double,
-      up_y -> Double,
-      up_z -> Double,
-      cargo_items -> Text,
-      cargo_magazines -> Text,
-      cargo_weapons -> Text,
-      cargo_container -> Text,
-      last_updated_at -> Datetime,
-      pin_code -> Varchar,
-      deleted_at -> Nullable<Datetime>,
-      money -> Unsigned<Integer>,
-      vehicle_texture -> Text,
-      territory_id -> Nullable<Unsigned<Integer>>,
-      nickname -> Varchar,
-  }
-}
+//   vehicle (id) {
+//       id -> Unsigned<Integer>,
+//       class -> Varchar,
+//       spawned_at -> Datetime,
+//       account_uid -> Nullable<Varchar>,
+//       is_locked -> Bool,
+//       fuel -> Unsigned<Double>,
+//       damage -> Unsigned<Double>,
+//       hitpoints -> Text,
+//       position_x -> Double,
+//       position_y -> Double,
+//       position_z -> Double,
+//       direction_x -> Double,
+//       direction_y -> Double,
+//       direction_z -> Double,
+//       up_x -> Double,
+//       up_y -> Double,
+//       up_z -> Double,
+//       cargo_items -> Text,
+//       cargo_magazines -> Text,
+//       cargo_weapons -> Text,
+//       cargo_container -> Text,
+//       last_updated_at -> Datetime,
+//       pin_code -> Varchar,
+//       deleted_at -> Nullable<Datetime>,
+//       money -> Unsigned<Integer>,
+//       vehicle_texture -> Text,
+//       territory_id -> Nullable<Unsigned<Integer>>,
+//       nickname -> Varchar,
+//   }
+// }
 
 // joinable!(clan_map_marker -> clan (clan_id));
 // joinable!(construction -> account (account_uid));

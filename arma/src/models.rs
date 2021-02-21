@@ -1,6 +1,22 @@
 use chrono::NaiveDateTime;
 
 #[derive(Queryable, Debug)]
+pub struct Account {
+    uid: String,
+    clan_id: Option<u32>,
+    name: String,
+    score: i32,
+    kills: u32,
+    deaths: u32,
+    locker: i32,
+    first_connect_at: NaiveDateTime,
+    last_connect_at: NaiveDateTime,
+    last_disconnect_at: Option<NaiveDateTime>,
+    total_connections: u32,
+}
+
+
+#[derive(Queryable, Debug)]
 pub struct Territory {
     pub id: u32,
     pub esm_custom_id: Option<String>,
