@@ -1,16 +1,69 @@
 use arma_rs::{ArmaValue, ToArma};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::HashMap;
+use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag="type")]
-#[serde(untagged)]
-pub enum Parameters {
-    ServerPostInitialization(ServerPostInitialization),
+pub struct Command {
+    pub id: String,
+    pub command_name: String,
+    pub parameters: Parameters,
+    pub metadata: Metadata,
+}
 
-    // The empty structs need to stay at the bottom because they'll deserialize no matter what
+impl Command {
+    pub fn reply_with_error(&self, message: String) {
+        crate::BOT.send(
+            Some(self.id.clone()),
+            self.command_name.clone(),
+            json!({ "error_message": message }).to_string(),
+        )
+    }
+
+    pub fn reply_with_error_code<'a>(&self, code: &'a str) {
+        crate::BOT.send(
+            Some(self.id.clone()),
+            self.command_name.clone(),
+            json!({ "error_code": code }).to_string(),
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Item {
+    class_name: String,
+    quantity: i64,
+}
+
+impl ToArma for Item {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::Array(vec![self.class_name.to_arma(), self.quantity.to_arma()])
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum Metadata {
+    Default(Default),
+    Empty(Empty)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Default {
+    pub user_id: String,
+    pub user_name: String,
+    pub user_mention: String,
+    pub user_steam_uid: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Empty {}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", content = "content")]
+pub enum Parameters {
     ServerInitialization(ServerInitialization),
+    ServerPostInitialization(ServerPostInitialization),
+    Reward(Reward),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,21 +101,6 @@ pub struct ServerPostInitialization {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Command {
-    pub id: String,
-    pub command_name: String,
-    pub parameters: Parameters,
-    pub metadata: HashMap<String, Value>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Item {
-    class_name: String,
-    quantity: i64,
-}
-
-impl ToArma for Item {
-    fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(vec![self.class_name.to_arma(), self.quantity.to_arma()])
-    }
+pub struct Reward {
+    pub target_uid: String,
 }
