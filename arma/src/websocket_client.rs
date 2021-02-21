@@ -221,8 +221,8 @@ impl WebsocketClient {
         };
 
         match command.command_name.as_str() {
-            "server_initialization" => a3_server.server_initialization(command),
-            "post_initialization" => {
+            "server_initialization" => a3_server.server_initialization(&command),
+            "server_post_initialization" => {
                 // Important! Release the read lock in order to gain the write lock
                 drop(a3_server);
 
@@ -233,12 +233,18 @@ impl WebsocketClient {
                     }
                 };
 
-                a3_server.post_initialization(command)
+                a3_server.post_initialization(&command);
             },
-            _ => error!(
-                "[websocket_client::execute_command] Invalid command received: {}",
-                command.command_name
-            ),
+            "reward" => {
+                a3_server.reward(&command);
+            },
+            _ => return error!("[websocket_client::execute_command] Invalid command received"),
         }
+
+        crate::BOT.send(
+            Some(command.id.clone()),
+            command.command_name.clone(),
+            json!({ "_event": "after_execute", "_event_parameters": json!({ "timestamp": Utc::now().timestamp() }) }).to_string(),
+        );
     }
 }
