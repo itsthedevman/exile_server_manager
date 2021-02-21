@@ -9,8 +9,6 @@
 		Retrieves variables from the server to be used here
 */
 
-["DEBUG", typeName(_this)] call ESM_fnc_log;
-
 {
 	private _variableName = _x;
 	private _value = _this select _forEachIndex;
