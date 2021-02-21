@@ -1,30 +1,32 @@
 #[macro_use]
 extern crate diesel;
 
+#[macro_use]
+extern crate log;
+
 mod arma_server;
 mod bot;
 mod bot_command;
 mod command;
 mod database;
-mod websocket_client;
-pub mod schema;
 pub mod models;
+pub mod schema;
+mod websocket_client;
 
 // ESM Packages
 use arma_server::ArmaServer;
 use bot::Bot;
-use command::{Command, ServerPostInitialization};
+use command::{Command, Reward, ServerPostInitialization, DefaultMetadata};
 
 // Various Packages
 use arma_rs::{rv, rv_callback, rv_handler};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
 use serde_json::{json, Value};
-use std::{collections::HashMap, env, fs, sync::RwLock};
+use std::{env, fs, sync::RwLock};
 use yaml_rust::{Yaml, YamlLoader};
 
 // Logging
-use log::*;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
@@ -78,7 +80,7 @@ fn initialize_logger() {
             Root::builder()
                 .appender("logfile")
                 .appender("stdout")
-                .build(LevelFilter::Debug),
+                .build(log::LevelFilter::Debug),
         )
         .unwrap();
 
@@ -131,6 +133,16 @@ pub fn a3_post_server_initialization(
     );
 }
 
+pub fn a3_reward(command: &Command, parameters: &Reward, metadata: &DefaultMetadata) {
+    rv_callback!(
+        "exile_server_manager",
+        "ESM_fnc_reward",
+        command.id.clone(),
+        parameters.clone(),
+        metadata.clone()
+    )
+}
+
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
@@ -157,7 +169,7 @@ fn pre_init(
     match A3_SERVER.try_write() {
         Ok(mut server) => {
             server.server_initialization_package = Some(package.to_string());
-        },
+        }
         Err(e) => {
             error!("[pre_init] Failed to gain write access to store the server initialization package. Reason: {}", e);
         }

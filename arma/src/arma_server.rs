@@ -1,9 +1,5 @@
 use crate::{database::Database};
 use crate::command::*;
-use chrono::Utc;
-
-use log::*;
-use serde_json::json;
 
 pub struct ArmaServer {
     pub id: String,
@@ -62,11 +58,17 @@ impl ArmaServer {
     }
 
     pub fn reward(&self, command: &Command) {
-        let parameters: &Reward = match command.parameters {
+        let parameters = match command.parameters {
             Parameters::Reward(ref val) => val,
             _ => {
-                error!("[arma_server::reward] Failed to retrieve parameters. Parameters was parsed as {:?}", command.parameters);
-                return;
+                return error!("[arma_server::reward] Failed to retrieve parameters. Parameters was parsed as {:?}", command.parameters);
+            }
+        };
+
+        let metadata = match command.metadata {
+            Metadata::Default(ref val) => val,
+            _ => {
+                return error!("[arma_server::reward] Failed to retrieve metadata. Metadata was parsed as {:?}", command.metadata);
             }
         };
 
@@ -74,5 +76,7 @@ impl ArmaServer {
         if !self.database.account_exists(&parameters.target_uid) {
             return command.reply_with_error_code("account_does_not_exist");
         }
+
+        crate::a3_reward(&command, &parameters, &metadata);
     }
 }

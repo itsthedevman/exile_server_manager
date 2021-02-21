@@ -40,24 +40,32 @@ impl ToArma for Item {
     }
 }
 
+/* METADATA */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Metadata {
-    Default(Default),
-    Empty(Empty)
+    Default(DefaultMetadata),
+    Empty(EmptyMetadata)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Default {
+pub struct DefaultMetadata {
     pub user_id: String,
     pub user_name: String,
     pub user_mention: String,
     pub user_steam_uid: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Empty {}
+impl ToArma for DefaultMetadata {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::Array(vec![self.user_id.to_arma(), self.user_name.to_arma(), self.user_mention.to_arma(), self.user_steam_uid.to_arma()])
+    }
+}
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct EmptyMetadata {}
+
+/* PARAMETERS */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "content")]
 pub enum Parameters {
@@ -103,4 +111,10 @@ pub struct ServerPostInitialization {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Reward {
     pub target_uid: String,
+}
+
+impl ToArma for Reward {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::Array(vec![self.target_uid.to_arma()])
+    }
 }

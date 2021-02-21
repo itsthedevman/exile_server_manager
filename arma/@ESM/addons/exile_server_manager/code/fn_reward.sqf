@@ -8,19 +8,13 @@
 	Description:
 		Rewards the player with preconfigured poptabs, respect, and items
 */
-params ["_commandID", "_authorInfo", "_playerUID"];
-(parseSimpleArray(_authorInfo)) params ["_authorTag", "_authorID"];
+params ["_commandID", "_parameters", "_metadata"];
+_parameters params ["_playerUID"];
+// _metadata params ["_userID", "_userName", "_userMention", "userSteamUID"];
 
 try
 {
-	// Don't allow adding people who aren't part of this server (also catches discord id mistakes. ;))
-	if !(format["isKnownAccount:%1", _playerUID] call ExileServer_system_database_query_selectSingleField) then
-	{
-		throw ["", format["%1, you have not joined this server yet", _authorTag]];
-	};
-
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
-
 
 	if (isNull _playerObject) then
 	{
