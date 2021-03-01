@@ -54,6 +54,8 @@ class CfgFunctions
 			class incrementPaymentCounter {};
 			class resetPaymentCounter {};
 			class handleCallback {};
+			class respondWithErrorCode {};
+			class respondWithError {};
 		};
 	};
 };
@@ -65,6 +67,7 @@ class CfgESM
 	globalVariables[] =
 	{
 		"ESM_CommunityID",
+		"ESM_ServerID",
 		"ESM_ExtDBVersion",
 		"ESM_Gambling_Modifier",
 		"ESM_Gambling_PayoutBase",
@@ -83,11 +86,6 @@ class CfgESM
 		"ESM_Logging_RewardPlayer",
 		"ESM_Logging_TransferPoptabs",
 		"ESM_Logging_UpgradeTerritory",
-		"ESM_RewardItems",
-		"ESM_RewardLockerPoptabs",
-		"ESM_RewardPlayerPoptabs",
-		"ESM_RewardRespect",
-		"ESM_ServerID",
 		"ESM_Taxes_TerritoryPayment",
 		"ESM_Taxes_TerritoryPayment",
 		"ESM_TerritoryAdminUIDs"

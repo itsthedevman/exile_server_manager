@@ -104,8 +104,10 @@ impl Handler for WebsocketClient {
         // No connection: <Io(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })>
         // Key denied: WS Error <Protocol>: Handshake failed.
 
-        self.connection.shutdown().unwrap();
-        self.reconnect();
+        // if let Ok(()) = self.connection.close(CloseCode::Normal) {
+        //     // self.connection.shutdown().unwrap();
+        //     self.reconnect();
+        // }
     }
 
     // Whenever the connection closes

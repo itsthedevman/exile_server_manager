@@ -28,18 +28,6 @@ impl Command {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Item {
-    class_name: String,
-    quantity: i64,
-}
-
-impl ToArma for Item {
-    fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(vec![self.class_name.to_arma(), self.quantity.to_arma()])
-    }
-}
-
 /* METADATA */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
@@ -98,10 +86,6 @@ pub struct ServerPostInitialization {
     pub logging_transfer: bool,
     pub logging_upgrade_territory: bool,
     pub max_payment_count: i64,
-    pub reward_items: Vec<Item>,
-    pub reward_locker_poptabs: i64,
-    pub reward_player_poptabs: i64,
-    pub reward_respect: i64,
     pub server_id: String,
     pub taxes_territory_payment: i64,
     pub taxes_territory_upgrade: i64,
@@ -111,10 +95,36 @@ pub struct ServerPostInitialization {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Reward {
     pub target_uid: String,
+    pub reward_items: Vec<Item>,
+    pub reward_vehicles: Vec<Item>,
+    pub locker_poptabs: i32,
+    pub player_poptabs: i32,
+    pub respect: i32,
 }
 
 impl ToArma for Reward {
     fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(vec![self.target_uid.to_arma()])
+        ArmaValue::Array(
+            vec![
+                self.target_uid.to_arma(),
+                self.reward_items.to_arma(),
+                self.reward_vehicles.to_arma(),
+                self.locker_poptabs.to_arma(),
+                self.player_poptabs.to_arma(),
+                self.respect.to_arma(),
+            ]
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Item {
+    class_name: String,
+    quantity: i64,
+}
+
+impl ToArma for Item {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::Array(vec![self.class_name.to_arma(), self.quantity.to_arma()])
     }
 }

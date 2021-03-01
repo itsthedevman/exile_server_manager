@@ -23,7 +23,16 @@ if (_parameters select [0, 1] == "[") then
     _parameters = parseSimpleArray(_parameters);
 };
 
-["fn_handleCallback", format["Calling function %1 with %2", _function, _parameters]] call ESM_fnc_log;
+[
+	"fn_handleCallback",
+	format[
+		"Function: %1 | ID: %2 | Parameters: %3 | Metadata: %4",
+		_function,
+		_parameters select 0,
+		_parameters select 1,
+		_parameters select 2
+	]
+] call ESM_fnc_log;
 
 _parameters spawn (missionNamespace getVariable [_function, {}]);
 

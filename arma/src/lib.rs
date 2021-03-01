@@ -104,6 +104,7 @@ pub fn a3_post_server_initialization(
         "exile_server_manager",
         "ESM_fnc_postServerInitialization",
         community_id,                                    // ESM_CommunityID
+        parameters.server_id.clone(),                    // ESM_ServerID
         extdb_version,                                   // ESM_ExtDBVersion
         parameters.gambling_modifier,                    // ESM_Gambling_Modifier
         parameters.gambling_payout,                      // ESM_Gambling_PayoutBase
@@ -122,11 +123,6 @@ pub fn a3_post_server_initialization(
         parameters.logging_reward,                       // ESM_Logging_RewardPlayer
         parameters.logging_transfer,                     // ESM_Logging_TransferPoptabs
         parameters.logging_upgrade_territory,            // ESM_Logging_UpgradeTerritory
-        parameters.reward_items.clone(),                 // ESM_RewardItems
-        parameters.reward_locker_poptabs,                // ESM_RewardLockerPoptabs
-        parameters.reward_player_poptabs,                // ESM_RewardPlayerPoptabs
-        parameters.reward_respect,                       // ESM_RewardRespect
-        parameters.server_id.clone(),                    // ESM_ServerID
         parameters.taxes_territory_payment,              // ESM_Taxes_TerritoryPayment
         parameters.taxes_territory_upgrade,              // ESM_Taxes_TerritoryPayment
         parameters.territory_admins.clone()              // ESM_TerritoryAdminUIDs
