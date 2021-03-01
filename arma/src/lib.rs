@@ -1,108 +1,65 @@
-mod models;
-mod util;
-mod websocket_client;
+#[macro_use]
+extern crate diesel;
 
 #[macro_use]
-extern crate arma_rs;
+extern crate log;
+
+mod arma_server;
+mod bot;
+mod bot_command;
+mod command;
+mod database;
+pub mod models;
+pub mod schema;
+mod websocket_client;
+
+// ESM Packages
+use arma_server::ArmaServer;
+use bot::Bot;
+use command::{Command, Reward, ServerPostInitialization, DefaultMetadata};
 
 // Various Packages
-use arma_rs::{rv, rv_callback};
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use arma_rs::{rv, rv_callback, rv_handler};
+use chrono::prelude::*;
 use lazy_static::lazy_static;
-use std::{env, fs, path::PathBuf};
+use serde_json::{json, Value};
+use std::{env, fs, sync::RwLock};
 use yaml_rust::{Yaml, YamlLoader};
 
 // Logging
-use log::*;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-// ESM Packages
-use models::discord_command::DiscordCommand;
-use websocket_client::WebsocketClient;
-
 lazy_static! {
-    static ref A3_SERVER: ArmaServer = ArmaServer::new();
-}
-
-pub struct ArmaServer {
-    ext_path: PathBuf,
-    wsc_queue: Sender<String>,
-    config: Vec<Yaml>,
-    ready: bool,
-}
-
-impl ArmaServer {
-    pub fn new() -> ArmaServer {
-        // Start the logger
-        initialize_logger();
-
-        let ext_path = match std::env::current_dir() {
-            Ok(path) => path,
-            Err(e) => panic!(format!("Failed to find current executable path: {}", e)),
+    // Config data
+    pub static ref CONFIG: Vec<Yaml> = {
+        let contents = match fs::read_to_string("@ESM/config.yml") {
+            Ok(file) => file,
+            Err(_) => String::from(
+                "
+                    ws_url: ws://ws.esmbot.com
+                ",
+            ),
         };
 
-        let bot_config = initialize_config();
+        YamlLoader::load_from_str(&contents).unwrap()
+    };
 
-        // Any commands to be sent to the bot will use this channel set. These are Multiple Sender, Multiple Receiver channels
-        let (sender, receiver) = unbounded();
+    // Contains a connection to the Discord bot and various methods involving it
+    pub static ref BOT: Bot = Bot::new();
 
-        // The one, the only.
-        let arma_server = ArmaServer {
-            ext_path: ext_path,
-            wsc_queue: sender,
-            config: bot_config,
-            ready: false,
-        };
-
-        // Connect to the bot
-        arma_server.connect_to_bot(receiver);
-
-        arma_server
-    }
-
-    fn connect_to_bot(&self, receiver: Receiver<String>) {
-        let ws_url = self.config[0]["ws_url"].as_str().unwrap().to_string();
-
-        WebsocketClient::connect_to_bot(ws_url, self.esm_key_path(), receiver);
-    }
-
-    fn esm_key_path(&self) -> String {
-        let mut key_path = self.ext_path.clone();
-        key_path.push("@ESM");
-        key_path.push("esm.key");
-
-        match key_path.into_os_string().into_string() {
-            Ok(val) => val,
-            Err(os_string) => {
-                error!("Failed to build path for esm.key. Attempting lossy string conversion");
-                os_string.to_string_lossy().to_string()
-            }
-        }
-    }
-
-    pub fn log(&self, message: String) {
-        rv_callback!("esm", "ESM_fnc_log", "Extension", message);
-    }
-
-    pub fn send_to_bot(&self, caller: &str, package: DiscordCommand) {
-        let channel = self.wsc_queue.clone();
-
-        let package = match package.into_json() {
-            Ok(val) => val,
-            Err(err) => return error!("[{}] Failed to convert message into JSON: {}", caller, err),
-        };
-
-        match channel.send(package) {
-            Ok(_) => (),
-            Err(err) => error!("[{}] Failed to send message to bot: {}", caller, err),
-        }
-    }
+    // Data and methods regarding the Arma server
+    pub static ref A3_SERVER: RwLock<ArmaServer> = RwLock::new(ArmaServer::new());
 }
 
 fn initialize_logger() {
+    let logging_path = match crate::CONFIG[0]["logging_path"].as_str() {
+        Some(name) => name,
+        None => "@ESM/log/esm.log",
+    };
+
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} {l} - {m}\n",
@@ -113,7 +70,7 @@ fn initialize_logger() {
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} {l} - {m}\n",
         )))
-        .build("@ESM/log/esm.log")
+        .build(logging_path)
         .unwrap();
 
     let config = Config::builder()
@@ -123,7 +80,7 @@ fn initialize_logger() {
             Root::builder()
                 .appender("logfile")
                 .appender("stdout")
-                .build(LevelFilter::Debug),
+                .build(log::LevelFilter::Debug),
         )
         .unwrap();
 
@@ -135,45 +92,93 @@ fn initialize_logger() {
     );
 }
 
-fn initialize_config() -> Vec<Yaml> {
-    let contents = match fs::read_to_string("@ESM/config.yml") {
-        Ok(file) => file,
-        Err(_) => String::from(
-            "
-                ws_url: ws://ws.esmbot.com
-            ",
-        ),
-    };
+pub fn a3_post_server_initialization(
+    _command: &Command,
+    parameters: &ServerPostInitialization,
+    extdb_version: u8,
+) {
+    let community_id: Vec<String> = parameters.server_id.split("_").map(String::from).collect();
+    let community_id = community_id[0].clone();
 
-    YamlLoader::load_from_str(&contents).unwrap()
+    rv_callback!(
+        "exile_server_manager",
+        "ESM_fnc_postServerInitialization",
+        community_id,                                    // ESM_CommunityID
+        parameters.server_id.clone(),                    // ESM_ServerID
+        extdb_version,                                   // ESM_ExtDBVersion
+        parameters.gambling_modifier,                    // ESM_Gambling_Modifier
+        parameters.gambling_payout,                      // ESM_Gambling_PayoutBase
+        parameters.gambling_randomizer_max,              // ESM_Gambling_PayoutRandomizerMax
+        parameters.gambling_randomizer_mid,              // ESM_Gambling_PayoutRandomizerMid
+        parameters.gambling_randomizer_min,              // ESM_Gambling_PayoutRandomizerMin
+        parameters.gambling_win_chance,                  // ESM_Gambling_WinPercentage
+        parameters.logging_add_player_to_territory,      // ESM_Logging_AddPlayerToTerritory
+        parameters.logging_demote_player,                // ESM_Logging_DemotePlayer
+        parameters.logging_exec,                         // ESM_Logging_Exec
+        parameters.logging_gamble,                       // ESM_Logging_Gamble
+        parameters.logging_modify_player,                // ESM_Logging_ModifyPlayer
+        parameters.logging_pay_territory,                // ESM_Logging_PayTerritory
+        parameters.logging_promote_player,               // ESM_Logging_PromotePlayer
+        parameters.logging_remove_player_from_territory, // ESM_Logging_RemovePlayerFromTerritory
+        parameters.logging_reward,                       // ESM_Logging_RewardPlayer
+        parameters.logging_transfer,                     // ESM_Logging_TransferPoptabs
+        parameters.logging_upgrade_territory,            // ESM_Logging_UpgradeTerritory
+        parameters.taxes_territory_payment,              // ESM_Taxes_TerritoryPayment
+        parameters.taxes_territory_upgrade,              // ESM_Taxes_TerritoryPayment
+        parameters.territory_admins.clone()              // ESM_TerritoryAdminUIDs
+    );
+}
+
+pub fn a3_reward(command: &Command, parameters: &Reward, metadata: &DefaultMetadata) {
+    rv_callback!(
+        "exile_server_manager",
+        "ESM_fnc_reward",
+        command.id.clone(),
+        parameters.clone(),
+        metadata.clone()
+    )
 }
 
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv(thread = true)]
-fn pre_init(package: String) {
-    if A3_SERVER.ready {
-        return A3_SERVER.log(String::from(
-            "ESM has already been marked as ready. Is the server boot looping?",
-        ));
+fn pre_init(
+    server_name: String,
+    price_per_object: f32,
+    territory_lifetime: f32,
+    territory_data: String,
+) {
+    let territory_data: Vec<Value> = match serde_json::from_str(&territory_data) {
+        Ok(data) => data,
+        Err(e) => return error!("[pre_init] Unable to parse territory data: {}", e),
+    };
+
+    let package = json!({
+        "server_name": server_name,
+        "price_per_object": price_per_object,
+        "territory_lifetime": territory_lifetime,
+        "territory_data": territory_data,
+        "server_start_time": Utc::now().to_rfc3339()
+    });
+
+    match A3_SERVER.try_write() {
+        Ok(mut server) => {
+            server.server_initialization_package = Some(package.to_string());
+        }
+        Err(e) => {
+            error!("[pre_init] Failed to gain write access to store the server initialization package. Reason: {}", e);
+        }
     }
-
-    debug!("Sending pre_init request to bot with package: {}", package);
-
-    // Send the bot the package
-    let package = DiscordCommand::new("server_initialization", package);
-    A3_SERVER.send_to_bot("pre_init", package);
 }
-
-// For some reason, rv_handler requires `#is_arma3` and `#initialize` to be defined...
-#[rv]
-fn is_arma3(version: u8) -> bool {
-    version == 3
-}
-
-#[rv]
-fn initialize() {}
 
 #[rv_handler]
-fn main() {}
+fn init() {
+    // Initialize the static instances to start everything
+    lazy_static::initialize(&CONFIG);
+    lazy_static::initialize(&BOT);
+    lazy_static::initialize(&A3_SERVER);
+
+    // Start the logger
+    initialize_logger();
+}

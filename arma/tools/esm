@@ -5,6 +5,7 @@ require 'rubygems'
 require 'commander/import'
 require 'fileutils'
 require 'pry'
+require 'file-tail'
 
 program :name, 'esm'
 program :version, '0.0.1'
@@ -15,10 +16,10 @@ command :build do |c|
   c.summary = ''
   c.description = ''
   c.example 'description', 'command example'
-  c.option '--use-x64', 'Build the x64 version of the extension'
+  c.option '--use-x32', 'Build the x32 version of the extension'
   c.action do |args, options|
     # Set some build flags
-    Utils.flags(os: :windows, arch: options.use_x64 ? :x64 : :x86, env: :debug)
+    Utils.flags(os: :windows, arch: options.use_x32 ? :x86 : :x64, env: :debug)
 
     # Kill Arma server
     Utils.kill_arma_server
@@ -39,8 +40,8 @@ command :run do |c|
   c.summary = ''
   c.description = ''
   c.example 'description', 'command example'
-  c.option '--use-x64', 'Build the x64 version of the extension and start the x64 version of the server'
-  c.option '--target=TARGET', String, 'The target OS to build to. Valid options: linux, windows'
+  c.option '--use-x32', 'Build the x32 version of the extension and start the x32 version of the server'
+  c.option '--target=TARGET', String, 'The target OS to build to. Valid options: linux, windows. Defaults to: windows'
   c.action do |args, options|
     build_target =
       if options.target == "linux"
@@ -50,7 +51,7 @@ command :run do |c|
       end
 
     # Set some build flags
-    Utils.flags(os: build_target, arch: options.use_x64 ? :x64 : :x86, env: :debug)
+    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :debug)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -70,6 +71,9 @@ command :run do |c|
 
     # Start the server
     Utils.start_server
+
+    # Pull up the logs
+    Utils.open_logs
   end
 end
 
@@ -252,5 +256,24 @@ class Utils
     else
       `scp -r #{source_path} #{REMOTE_HOST}:#{destination_path}`
     end
+  end
+
+  def self.open_logs
+    path = "#{SERVER_DIRECTORY}/ArmAServer/@ESM/log/esm.log"
+    25.times do
+      next sleep(1) if !File.exist?(path)
+
+      File.open(path) do |log|
+        log.extend(File::Tail)
+        log.interval = 1
+        log.backward(100)
+        log.tail { |line| puts line }
+      end
+    end
+
+    puts "Failed to open ESM.log"
+  rescue SystemExit, Interrupt
+    kill_arma_server
+    exit
   end
 end

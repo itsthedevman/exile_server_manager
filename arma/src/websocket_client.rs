@@ -1,7 +1,18 @@
+use crate::Command;
 use base64;
-use crossbeam_channel::Receiver;
+use chrono::Utc;
+use crossbeam_channel::{Receiver, RecvTimeoutError};
 use log::*;
-use std::{fs, thread, time};
+use serde_json::json;
+use std::{
+    fs,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::{self, Duration},
+};
 use url;
 use ws::{
     connect, CloseCode, Error as WSError, Handler, Handshake, Message, Request, Result as WSResult,
@@ -9,10 +20,20 @@ use ws::{
 };
 
 pub struct WebsocketClient {
+    // The URL of the bot
     url: String,
+
+    // The connection to the bot
     connection: WSSender,
+
+    // The path of where the esm.key is located
     key_path: String,
+
+    // The channel containing messages to send to the bot
     receiver: Receiver<String>,
+
+    // Controls if the connection should stop processing messages and exit
+    close_connection: Arc<AtomicBool>,
 }
 
 impl Handler for WebsocketClient {
@@ -20,64 +41,97 @@ impl Handler for WebsocketClient {
     fn build_request(&mut self, url: &url::Url) -> WSResult<Request> {
         let mut request = Request::from_url(url)?;
         self.add_authorization_header(&mut request);
+        self.add_version_header(&mut request);
         Ok(request)
     }
 
     // `on_open` will be called only after the WebSocket handshake is successful
     fn on_open(&mut self, _: Handshake) -> WSResult<()> {
-        debug!("[on_open] Connected to Discord");
+        debug!("[websocket_client::on_open] Connected to Discord");
         self.listen();
         Ok(())
     }
 
     // A message from the bot
-    fn on_message(&mut self, msg: Message) -> WSResult<()> {
-        // Close the connection when we get a response from the server
-        println!("[on_message] Got message: {}", msg);
-        self.connection.close(CloseCode::Normal)
+    fn on_message(&mut self, message: Message) -> WSResult<()> {
+        // Convert the message to text. This should be a stringified JSON
+        let message = match message.as_text() {
+            Ok(text) => text,
+            Err(e) => {
+                error!(
+                    "[websocket_client::on_message] Failed to convert message into text: {}",
+                    e
+                );
+                return Err(e);
+            }
+        };
+
+        // Convert into JSON
+        let command: Command = match serde_json::from_str(&message) {
+            Ok(json) => json,
+            Err(e) => {
+                // Since Box::new takes ownership of e, it has to be converted to a string first
+                let error_string = e.to_string();
+                error!(
+                    "[websocket_client::on_message] Failed to convert message into json: {}",
+                    e
+                );
+
+                // Because Rust.
+                return Err(WSError::new(
+                    ws::ErrorKind::Custom(Box::new(e)),
+                    std::borrow::Cow::from(error_string),
+                ));
+            }
+        };
+
+        // Acknowledge the message before processing
+        crate::BOT.send(
+            Some(command.id.clone()),
+            command.command_name.clone(),
+            json!({ "_event": "before_execute", "_event_parameters": { "timestamp": Utc::now().timestamp() } }).to_string(),
+        );
+
+        // Finally, execute the command
+        self.execute_command(command);
+
+        Ok(())
     }
 
     // Whenever an error occurs, this method will be called
     fn on_error(&mut self, err: WSError) {
-        info!("[on_error] {:?}", err);
+        info!("[websocket_client::on_error] {:?}", err);
         // No connection: <Io(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })>
         // Key denied: WS Error <Protocol>: Handshake failed.
 
-        let sleep_time = time::Duration::from_secs(5);
-        thread::sleep(sleep_time);
-
-        info!("Attempting reconnect...");
-
-        // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
-        WebsocketClient::connect_to_bot(
-            self.url.clone(),
-            self.key_path.clone(),
-            self.receiver.clone(),
-        );
+        // if let Ok(()) = self.connection.close(CloseCode::Normal) {
+        //     // self.connection.shutdown().unwrap();
+        //     self.reconnect();
+        // }
     }
 
     // Whenever the connection closes
     fn on_close(&mut self, code: CloseCode, reason: &str) {
         debug!(
-            "[on_close] Connection closing due to ({:?}) {}",
+            "[websocket_client::on_close] Connection closing due to ({:?}) {}",
             code, reason
         );
+
+        self.connection.shutdown().unwrap();
+        self.reconnect();
     }
 }
 
 impl WebsocketClient {
     // Attempt to connect to the bot
-    pub fn connect_to_bot(
-        connection_url: String,
-        key_path: String,
-        receiver_channel: Receiver<String>,
-    ) {
+    pub fn connect(connection_url: String, receiver_channel: Receiver<String>) {
         thread::spawn(move || {
             connect(connection_url.clone(), |out| WebsocketClient {
                 url: connection_url.clone(),
                 connection: out,
-                key_path: key_path.clone(),
-                receiver: receiver_channel.clone(),
+                key_path: String::from("@ESM/esm.key"),
+                receiver: receiver_channel.to_owned(),
+                close_connection: Arc::new(AtomicBool::new(false)),
             })
             .unwrap();
         });
@@ -92,38 +146,107 @@ impl WebsocketClient {
         let file_contents = match file {
             Ok(contents) => contents,
             Err(_) => {
-                return error!("Failed to find esm.key");
+                return error!(
+                    "[websocket_client::add_authorization_header] Failed to find esm.key"
+                );
             }
         };
 
         // Create the authorization header
-        // TODO: Remove the need to have the `arma_server` prefix
         let mut auth_header = vec![(
             "AUTHORIZATION".into(),
-            format!(
-                "basic {}",
-                base64::encode(format!("arma_server:{}", file_contents).as_bytes())
-            )
-            .as_bytes()
-            .to_vec(),
+            format!("basic {}", base64::encode(file_contents.as_bytes()))
+                .as_bytes()
+                .to_vec(),
         )];
 
         // Add the new header to the headers on the request
         request.headers_mut().append(&mut auth_header);
     }
 
+    fn add_version_header(&self, request: &mut Request) {
+        let mut version_header = vec![(
+            String::from("EXTENSION_VERSION"),
+            env!("CARGO_PKG_VERSION").as_bytes().to_vec(),
+        )];
+
+        // Add the new header to the headers on the request
+        request.headers_mut().append(&mut version_header);
+    }
+
     // Creates a thread that listens to the receiver channel to send messages across the wire
-    fn listen(&self) {
-        let receiver = self.receiver.clone();
-        let connection = self.connection.clone();
+    fn listen(&mut self) {
+        let receiver = self.receiver.to_owned();
+        let connection = self.connection.to_owned();
+        let close_connection = Arc::clone(&self.close_connection);
 
         thread::spawn(move || loop {
-            let message = receiver.recv();
+            if close_connection.load(Ordering::SeqCst) {
+                break;
+            }
+
+            let message = receiver.recv_timeout(Duration::from_millis(500));
 
             match message {
-                Ok(message) => connection.send(message).unwrap_or_default(),
-                Err(e) => debug!("{:?}", e),
+                Ok(message) => {
+                    info!(
+                        "[websocket_client::listen] Sending message to ESM: {}",
+                        message
+                    );
+                    connection.send(message).unwrap_or_default()
+                }
+                Err(e) => match e {
+                    RecvTimeoutError::Timeout => {}
+                    e => warn!("{:?}", e),
+                },
             }
         });
+    }
+
+    fn reconnect(&mut self) {
+        self.close_connection.store(true, Ordering::SeqCst);
+        let sleep_time = time::Duration::from_secs(5);
+        thread::sleep(sleep_time);
+
+        // Attempt to reconnect every 5 seconds in dev and 30 seconds in release. No max attempts
+        WebsocketClient::connect(self.url.to_owned(), self.receiver.to_owned());
+    }
+
+    fn execute_command(&self, command: Command) {
+        info!("[websocket_client::execute_command] {:#?}", &command);
+
+        let a3_server = match crate::A3_SERVER.try_read() {
+            Ok(server) => server,
+            Err(e) => {
+                return error!("[websocket_client::execute_command] Failed to gain write access to A3 server. Reason: {}", e);
+            }
+        };
+
+        match command.command_name.as_str() {
+            "server_initialization" => a3_server.server_initialization(&command),
+            "server_post_initialization" => {
+                // Important! Release the read lock in order to gain the write lock
+                drop(a3_server);
+
+                let mut a3_server = match crate::A3_SERVER.try_write() {
+                    Ok(server) => server,
+                    Err(e) => {
+                        return error!("[websocket_client::execute_command] Failed to gain write access to A3 server. Reason: {}", e);
+                    }
+                };
+
+                a3_server.post_initialization(&command);
+            },
+            "reward" => {
+                a3_server.reward(&command);
+            },
+            _ => return error!("[websocket_client::execute_command] Invalid command received"),
+        }
+
+        crate::BOT.send(
+            Some(command.id.clone()),
+            command.command_name.clone(),
+            json!({ "_event": "after_execute", "_event_parameters": json!({ "timestamp": Utc::now().timestamp() }) }).to_string(),
+        );
     }
 }
