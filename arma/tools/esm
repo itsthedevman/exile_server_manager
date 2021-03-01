@@ -9,7 +9,7 @@ require 'file-tail'
 
 program :name, 'esm'
 program :version, '0.0.1'
-program :description, 'CLI utility to build @ESM'
+program :description, 'CLI utility to build @esm'
 
 command :build do |c|
   c.syntax = 'esm build [options]'
@@ -27,7 +27,7 @@ command :build do |c|
     # Clean up the build and destination directories
     Utils.clean_directories
 
-    # Compile and copy over the DLL into the @ESM mod locally
+    # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
 
     # Build the addons
@@ -63,7 +63,7 @@ command :run do |c|
     # Clean up the build and destination directories
     Utils.clean_directories
 
-    # Compile and copy over the DLL into the @ESM mod locally
+    # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
 
     # Build and copy the mod to destination
@@ -81,6 +81,7 @@ class Utils
   GIT_DIRECTORY = File.expand_path("./")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
+  SERVER_DIRECTORY_NAME = ENV["ESM_SERVER_DIRECTORY_NAME"] || ""
   REMOTE_HOST = ENV["ESM_REMOTE_HOST"] || ""
   ADDONS = [
     "exile_server_manager",
@@ -148,20 +149,20 @@ class Utils
   end
 
   def self.clean_directories
-    # Remove the @ESM in target/arma
-    if File.directory?("#{BUILD_DIRECTORY}/@ESM")
-      FileUtils.remove_dir("#{BUILD_DIRECTORY}/@ESM")
+    # Remove the @esm in target/arma
+    if File.directory?("#{BUILD_DIRECTORY}/@esm")
+      FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm")
     end
 
     # Recreate the directory
-    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@ESM")
+    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm")
 
-    # Copy the @ESM into target/arma (Except addons)
-    FileUtils.cp_r("#{GIT_DIRECTORY}/@ESM", BUILD_DIRECTORY)
-    FileUtils.remove_dir("#{BUILD_DIRECTORY}/@ESM/addons")
+    # Copy the @esm into target/arma (Except addons)
+    FileUtils.cp_r("#{GIT_DIRECTORY}/@esm", BUILD_DIRECTORY)
+    FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm/addons")
 
-    # Create the addons folder in target/arma/@ESM
-    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@ESM/addons")
+    # Create the addons folder in target/arma/@esm
+    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm/addons")
   end
 
   def self.build_and_copy_extension
@@ -193,9 +194,9 @@ class Utils
 
     if @arch == :x64 && @os == :windows
       filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
-      FileUtils.move(path, "#{BUILD_DIRECTORY}/@ESM/#{filename}")
+      FileUtils.move(path, "#{BUILD_DIRECTORY}/@esm/#{filename}")
     else
-      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@ESM/esm.so")
+      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@esm/esm.so")
     end
   end
 
@@ -208,14 +209,14 @@ class Utils
     ADDONS.each do |addon|
       executable = @os == :windows ? "MakePBO.exe" : "makepbo"
 
-      `#{executable} -PW -@=#{addon} "#{GIT_DIRECTORY}/@ESM/addons/#{addon}" "#{BUILD_DIRECTORY}/@ESM/addons/#{addon}"`
+      `#{executable} -PW -@=#{addon} "#{GIT_DIRECTORY}/@esm/addons/#{addon}" "#{BUILD_DIRECTORY}/@esm/addons/#{addon}"`
     end
   end
 
   def self.copy_mod
-    # Remove the @ESM mod in the destination
-    remove_dir("#{deployment_directory}/@ESM")
-    copy_dir("#{BUILD_DIRECTORY}/@ESM", "#{deployment_directory}/@ESM")
+    # Remove the @esm mod in the destination
+    remove_dir("#{deployment_directory}/@esm")
+    copy_dir("#{BUILD_DIRECTORY}/@esm", "#{deployment_directory}/@esm")
   end
 
   def self.start_server
@@ -230,9 +231,9 @@ class Utils
 
       command = <<~STRING
         cd ~/arma_server && \
-        rm -rf @ESM && \
-        rm -rf @Exile && \
-        rm -rf @ExileServer && \
+        rm -rf @esm && \
+        rm -rf @exile && \
+        rm -rf @exileserver && \
         rm -rf mpmissions && \
         cp -r #{deployment_directory}/* ~/arma_server/ && \
         cd ~/ && ./#{script}
@@ -240,6 +241,8 @@ class Utils
 
       `ssh #{REMOTE_HOST} "#{command}"`
     end
+
+    open_logs
   end
 
   def self.remove_dir(path)
@@ -259,7 +262,7 @@ class Utils
   end
 
   def self.open_logs
-    path = "#{SERVER_DIRECTORY}/ArmAServer/@ESM/log/esm.log"
+    path = "#{SERVER_DIRECTORY}/#{SERVER_DIRECTORY_NAME}/@esm/log/esm.log"
     25.times do
       next sleep(1) if !File.exist?(path)
 
@@ -271,7 +274,7 @@ class Utils
       end
     end
 
-    puts "Failed to open ESM.log"
+    puts "Failed to open esm.log"
   rescue SystemExit, Interrupt
     kill_arma_server
     exit
