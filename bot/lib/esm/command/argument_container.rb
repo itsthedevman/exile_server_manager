@@ -105,6 +105,7 @@ module ESM
           community_id: {
             regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
             description: "default_arguments.community_id",
+            preserve: true,
             before_store: lambda do |parser|
               return if parser.value.present?
               return if !@event&.channel&.text?
@@ -119,6 +120,7 @@ module ESM
           server_id: {
             regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
             description: "default_arguments.server_id",
+            preserve: true,
             before_store: lambda do |parser|
               return if parser.value.blank?
               return if !@event&.channel&.text?
