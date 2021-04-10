@@ -41,7 +41,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "otr-activerecord"
   spec.add_dependency "pg"
   spec.add_dependency "pry"
-  spec.add_dependency "pry-nav"
   spec.add_dependency "puma"
   spec.add_dependency "rake"
   spec.add_dependency "sinatra"
