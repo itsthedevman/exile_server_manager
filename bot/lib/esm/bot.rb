@@ -27,7 +27,7 @@ module ESM
       # Connect to the database
       ESM::Database.connect!
 
-      # load_community_prefixes
+      load_community_prefixes
 
       @resend_queue = ESM::Bot::ResendQueue.new(self)
 
