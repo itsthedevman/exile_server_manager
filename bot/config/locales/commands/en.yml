@@ -25,7 +25,7 @@ en:
         The bot will reply hello
     help:
       arguments:
-        category: "The categories can be found by just using `%{prefix}help`"
+        category: "The category to display. Valid options: `commands`"
       description: "A helpful command. An unhelpful description"
       example: |-
         **`%{prefix}help`**
@@ -70,7 +70,7 @@ en:
         examples: "**__Examples__**"
     mode:
       arguments:
-        mode: "Sets which mode, valid options are `server` or `player`"
+        mode: "Which mode ESM should be in. Valid options: `server` or `player`"
       description: "Changes which mode ESM is in"
       example: |-
         **`%{prefix}mode esm server`**
@@ -81,7 +81,7 @@ en:
       enabled: "✅ Player mode has been enabled for **%{community_name}**. All of my player commands may now be used on its Discord server"
       disabled: "✅ Player mode has been disabled for **%{community_name}**. You may now manage your community and servers via my [Dashboard](https://www.esmbot.com/portal)"
     id:
-      description: "Displays the current Community's community ID for ESM"
+      description: "Displays the current community's community ID for ESM."
       example: |-
         `%{prefix}id`
         Returns the Community's ID
@@ -97,7 +97,7 @@ en:
         Using their mention, get all available information about this player
 
         **`%{prefix}whois 76561198037177305`**
-        Using their steam uid, get all available information about this player
+        Using their Steam UID, get all available information about this player
 
         **`%{prefix}whois 137709767954137088`**
         Using their Discord ID, get all available information about this player
@@ -132,10 +132,10 @@ en:
       online_for: "✅ Online for"
       restart_in: "⏰ Next restart in"
     servers:
-      description: "Displays all registered servers for a given community ID, regardless if they are online or not"
+      description: "Displays all registered servers for a given community ID"
       example: |-
         **`%{prefix}servers esm`**
-        Returns all registered servers for `esm`.
+        Returns all registered servers for community `esm`.
       offline: "❌ Offline"
       offline_for: "❌ Offline for %{time}"
     territories:
@@ -147,7 +147,7 @@ en:
       next_territory_stats: "__Next Territory Stats__"
       territory_members: "__Territory Members__"
     pay:
-      description: "Pay the territory protection for a territory using poptabs from your locker.\nSome servers may implement a tax for paying using ESM. You can see how much your territory's protection cost is by using `%{prefix}territories`"
+      description: "Pays the territory protection for a territory using poptabs from your locker.\nSome servers may implement a tax for paying using ESM. You can see how much your territory's protection cost is by using `%{prefix}territories`"
       example: |-
         **`%{prefix}pay esm_malden qqoej`**
         Pay the territory protection for `qqoej` on server `esm_malden`
@@ -195,7 +195,7 @@ en:
         **`%{prefix}gamble esm_namalsk stats`**
         Displays gambling statistics for server `esm_namalsk`
       arguments:
-        amount: "The amount of poptabs to gamble. Poptabs are withdrawled from your locker.\nThe following options can be provided instead of a number:\n- `all`: Gambles all of your poptabs in your locker.\n- `half`: Gambles half of your poptabs in your locker\n- `stats`: Returns win/loss statistics for the provided server"
+        amount: "The amount of poptabs to gamble. Poptabs are withdrawn from your locker.\nThe following options can be provided instead of a number:\n- `all`: Gambles all of your poptabs in your locker.\n- `half`: Gambles half of your poptabs in your locker\n- `stats`: Returns win/loss statistics for the provided server"
       stats:
         title: "Gambling statistics for `%{server_id}`"
         user_stats: "**%{user}'s stats**"
@@ -268,7 +268,7 @@ en:
         Broadcasts `This is an emergency announcement` to every registered player on `esm_malden`.
 
         **`%{prefix}broadcast all Admin event going on right meow. More information on our Discord!`**
-        Brodcasts `Admin event going on right meow. More information on our Discord!` to registered player on every server for this community.
+        Broadcasts `Admin event going on right meow. More information on our Discord!` to registered player on every server for this community.
 
         **`%{prefix}broadcast preview Testing`**
         Provides a preview of the message without sending it.
@@ -317,38 +317,25 @@ en:
         target_success: "Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`"
     reset_cooldown:
       description: |-
-        Resets a player's cooldowns.
-
-        Admins can preform any of the following:
-          Resets a cooldown for a player.
-          Reset all cooldowns for one server.
-          Reset all cooldowns for every server in their community.
-          Reset all cooldowns for a user on every server in their community.
-          Reset all cooldowns for a user on one server in their community.
-          Reset a single command cooldown for one server.
-          Reset a single command cooldown for every server in their community.
-          Reset a single command cooldown for a user on every server in their community.
-          Or, reset a single command cooldown for a user on one server in their community.
-
-        See examples for more details
+        An all in one command to reset cooldowns. See examples for more details
       example: |-
         **`%{prefix}reset_cooldown`**
-        Resets every command's cooldowns for your community.
+        Resets every command cooldown for your community.
 
         **`%{prefix}reset_cooldown @Bryan`**
-        Resets every command's cooldown for @Bryan on your community.
+        Resets every command cooldown for @Bryan for your community.
 
         **`%{prefix}reset_cooldown @Bryan reward`**
-        Resets the `reward` cooldown for @Bryan on your community.
+        Resets the `reward` cooldown for @Bryan for your community.
 
         **`%{prefix}reset_cooldown @Bryan reward esm_malden`**
-        Resets the `reward` cooldown for @Bryan on `esm_malden` only
+        Resets the `reward` cooldown for @Bryan for `esm_malden` only
 
         **`%{prefix}reset_cooldown reward esm_malden`**
         Resets the `reward` cooldown for `esm_malden` only
 
         **`%{prefix}reset_cooldown reward`**
-        Resets the `reward` cooldown every server your community has registered
+        Resets the `reward` cooldown for your community.
       arguments:
         command_name: "The name of the command to reset the cooldown for"
       confirmation_embed:
@@ -439,7 +426,7 @@ en:
         Displays the registered Steam UID for your account
       response: "Hey %{user}, your Steam UID is `%{steam_uid}`."
     player:
-      description: "Modifies a player on a server, regardless of them being online or not."
+      description: "Modifies a player on a server."
       example: |-
         **`%{prefix}player esm_malden @Bryan money 1500`**
         Gives @Bryan's player on `esm_malden` 1500 poptabs
