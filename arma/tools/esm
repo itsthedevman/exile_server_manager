@@ -187,16 +187,16 @@ class Utils
   def self.copy_extension
     path =
       if @os == :windows
-        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm.dll"
+        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm_client.dll"
       else
         "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm.so"
       end
 
     if @arch == :x64 && @os == :windows
-      filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
+      filename = @arch == :x64 ? "esm_client_x64.dll" : "esm_client.dll"
       FileUtils.move(path, "#{BUILD_DIRECTORY}/@esm/#{filename}")
     else
-      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@esm/esm.so")
+      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@esm/esm_client.so")
     end
   end
 

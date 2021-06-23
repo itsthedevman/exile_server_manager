@@ -1,4 +1,5 @@
-ws_url: "ws://esm.mshome.net:3001"
+connection_url: "esm.mshome.net:3003"
+log_level: "debug"
 
 # Also supported variables
 # extdb_file_path: The full path plus filename for the extDB config

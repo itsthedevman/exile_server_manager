@@ -11,6 +11,7 @@ GEM
       method_source (~> 1.0)
 
 PLATFORMS
+  x64-mingw32
   x86_64-linux
 
 DEPENDENCIES
@@ -18,4 +19,4 @@ DEPENDENCIES
   pry
 
 BUNDLED WITH
-   2.2.5
+   2.2.15

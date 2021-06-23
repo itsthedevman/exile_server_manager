@@ -10,23 +10,23 @@ pub struct Command {
     pub metadata: Metadata,
 }
 
-impl Command {
-    pub fn reply_with_error(&self, message: String) {
-        crate::BOT.send(
-            Some(self.id.clone()),
-            self.command_name.clone(),
-            json!({ "error_message": message }).to_string(),
-        )
-    }
+// impl Command {
+//     pub fn reply_with_error(&self, message: String) {
+//         crate::BOT.send(
+//             Some(self.id.clone()),
+//             self.command_name.clone(),
+//             json!({ "error_message": message }).to_string(),
+//         )
+//     }
 
-    pub fn reply_with_error_code<'a>(&self, code: &'a str) {
-        crate::BOT.send(
-            Some(self.id.clone()),
-            self.command_name.clone(),
-            json!({ "error_code": code }).to_string(),
-        )
-    }
-}
+//     pub fn reply_with_error_code<'a>(&self, code: &'a str) {
+//         crate::BOT.send(
+//             Some(self.id.clone()),
+//             self.command_name.clone(),
+//             json!({ "error_code": code }).to_string(),
+//         )
+//     }
+// }
 
 /* METADATA */
 #[derive(Serialize, Deserialize, Debug, Clone)]
