@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI16, Ordering};
 use std::thread;
+use std::time::Duration;
 
 use esm_message::{Data, Message, Type};
 use log::*;
@@ -12,6 +14,8 @@ use serde_json::Value;
 
 use crate::arma::data::Token;
 
+const MAX_RECONNECT: i16 = 15;
+
 #[derive(Clone)]
 pub struct Client {
     token: Arc<Token>,
@@ -19,27 +23,142 @@ pub struct Client {
     handler: Arc<RwLock<NodeHandler<()>>>,
     listener: Arc<RwLock<Option<NodeListener<()>>>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
+    reconnection_counter: Arc<AtomicI16>
 }
 
 impl Client {
     pub fn new(token: Token, initialization_data: Data) -> Self {
         let (handler, listener) = node::split::<()>();
-        let token = Arc::new(token);
-        let initialization_data = Arc::new(RwLock::new(initialization_data));
-        let handler = Arc::new(RwLock::new(handler));
-        let listener = Arc::new(RwLock::new(Some(listener)));
-        let endpoint = Arc::new(RwLock::new(None));
 
         Client {
-            token,
-            initialization_data,
-            handler,
-            listener,
-            endpoint,
+            token: Arc::new(token),
+            initialization_data: Arc::new(RwLock::new(initialization_data)),
+            handler: Arc::new(RwLock::new(handler)),
+            listener: Arc::new(RwLock::new(Some(listener))),
+            endpoint: Arc::new(RwLock::new(None)),
+            reconnection_counter: Arc::new(AtomicI16::new(0)),
         }
     }
 
     pub fn connect(&self) {
+        self.load_endpoint();
+
+        let listener = match self.listener.write().take() {
+            Some(listener) => listener,
+            None => {
+                error!("[Client#connect] (BUG) Failed to take NodeListener");
+                return;
+            }
+        };
+
+        let client = self.clone();
+        thread::spawn(|| {
+            listener.for_each(move |event| match event.network() {
+                NetEvent::Connected(_, connected) => {
+                    if !connected {
+                        return;
+                    };
+
+                    debug!("[Client#connect] Connected to server - Sending connection message");
+
+                    // Reset the reconnect counter.
+                    client.reconnection_counter.store(0, Ordering::SeqCst);
+
+                    let mut message = Message::new(Type::Connect);
+                    message.set_data(client.initialization_data.read().clone());
+
+                    client.send_to_bot(message);
+                }
+                NetEvent::Accepted(_, _) => unreachable!(),
+                NetEvent::Message(_, data) => {
+                    // debug!("[Client#connect] Data: {:?}", data);
+                }
+                NetEvent::Disconnected(_) => {
+                    client.reconnect();
+                }
+            });
+
+            warn!("DONE");
+        });
+    }
+
+    pub fn reconnect(&self) {
+        self.handler.read().stop();
+
+        // Get the current reconnection count and check
+        let current_count = self.reconnection_counter.load(Ordering::SeqCst);
+        if current_count >= MAX_RECONNECT {
+            warn!("[Client#reconnect] Lost connection to server - No more reconnect attempts will be made this restart");
+            return;
+        }
+
+        warn!("[Client#reconnect] Lost connection to server - Attempting reconnect {} of {}", current_count + 1, MAX_RECONNECT);
+
+        thread::sleep(Duration::from_secs(1));
+
+        // Increase the reconnect counter by 1
+        self.reconnection_counter.store(current_count + 1, Ordering::SeqCst);
+
+        let (handler, listener) = node::split::<()>();
+        *self.handler.write() = handler;
+        *self.listener.write() = Some(listener);
+
+        self.connect();
+    }
+
+    pub fn send_to_bot(&self, mut message: Message) {
+        let endpoint = match *self.endpoint.read() {
+            Some(e) => e.to_owned(),
+            None => {
+                error!("[Client#send_to_bot] (BUG) Failed to find the server endpoint. Was #connect not called?");
+                return;
+            }
+        };
+
+        let handler = self.handler.read();
+        let network = handler.network();
+
+        match network.is_ready(endpoint.resource_id()) {
+            Some(false) | None => {
+                error!("[Client#send_to_bot] Failed to send, server not connected");
+                return;
+            },
+            _ => {}
+        }
+
+        // Add the server ID if there is none
+        if message.server_id.is_none() {
+            message.server_id = Some(self.token.id.clone());
+        }
+
+        match message.as_bytes(|_| Some(self.token.key.clone())) {
+            Ok(bytes) => {
+                trace!(
+                    "[Client#send_to_bot] id: {:?}, message: {:?}, message: {:?}",
+                    self.token.id,
+                    message,
+                    &bytes
+                );
+
+                network.send(endpoint, &bytes);
+            }
+            Err(error) => {
+                error!("{}", error);
+            }
+        }
+    }
+
+    fn ping_server(&self) {
+        let client = self.clone();
+        thread::spawn(move || {
+            loop {
+                // Check to see if the endpoint is connected. If it's not, sleep
+                //
+            }
+        });
+    }
+
+    fn load_endpoint(&self) {
         let server_address = match crate::CONFIG.connection_url.to_socket_addrs() {
             Ok(mut addr) => match addr.next() {
                 Some(socket_addr) => socket_addr,
@@ -60,81 +179,14 @@ impl Client {
             .network()
             .connect(Transport::FramedTcp, server_address)
         {
-            Ok((endpoint, _)) => {
-                debug!("[Client#connect] Connected to server - Joining lobby");
-                endpoint
-            }
+            Ok((endpoint, _)) => endpoint,
             Err(_) => {
                 // Attempt reconnect
-                trace!("[Client#connect] Failed to connect");
+                error!("[Client#connect] Failed to connect");
                 return;
             }
         };
 
         *self.endpoint.write() = Some(endpoint);
-
-        let client = self.clone();
-        let listener = match self.listener.write().take() {
-            Some(listener) => listener,
-            None => {
-                error!("[Client#connect] (BUG) Failed to take NodeListener");
-                return;
-            }
-        };
-
-        thread::spawn(|| {
-            listener.for_each(move |event| match event.network() {
-                NetEvent::Connected(_, connected) => {
-                    if !connected {
-                        return;
-                    };
-
-                    let mut message = Message::new(Type::Connect);
-                    message.set_data(client.initialization_data.read().clone());
-
-                    client.send_to_bot(message);
-                }
-                NetEvent::Accepted(_, _) => unreachable!(),
-                NetEvent::Message(_, data) => {
-                    debug!("[Client#connect] Data: {:?}", data);
-                }
-                NetEvent::Disconnected(_) => {
-                    // Attempt Reconnect
-                    trace!("[Client#connect] Disconnected");
-                }
-            });
-        });
-    }
-
-    pub fn send_to_bot(&self, mut message: Message) {
-        if let None = message.server_id {
-            message.server_id = Some(self.token.id.clone());
-        }
-
-        let endpoint = match *self.endpoint.read() {
-            Some(e) => e,
-            None => {
-                error!("[Client#send_to_bot] (BUG) Failed to find the server endpoint. Was #connect not called?");
-                return;
-            }
-        };
-
-        match message.as_bytes(|_| Some(self.token.key.clone())) {
-            Ok(bytes) => {
-                trace!(
-                    "[Client#send_to_bot] id: {:?}, message: {:?}, message: {:?}",
-                    self.token.id,
-                    message,
-                    &bytes
-                );
-                self.handler
-                    .read()
-                    .network()
-                    .send(endpoint.to_owned(), &bytes);
-            }
-            Err(error) => {
-                error!("{}", error);
-            }
-        }
     }
 }
