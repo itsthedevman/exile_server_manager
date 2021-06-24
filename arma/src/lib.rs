@@ -18,8 +18,8 @@ use chrono::prelude::*;
 use esm_message::Data;
 use esm_message::data::ServerInitialization;
 use lazy_static::lazy_static;
-use serde_json::{json, Value};
-use std::collections::HashMap;
+
+
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -203,10 +203,10 @@ pub fn pre_init(
 
     // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
     let data = ServerInitialization {
-        server_name: server_name,
-        price_per_object: price_per_object,
-        territory_lifetime: territory_lifetime,
-        territory_data: territory_data,
+        server_name,
+        price_per_object,
+        territory_lifetime,
+        territory_data,
         server_start_time: Utc::now()
     };
 

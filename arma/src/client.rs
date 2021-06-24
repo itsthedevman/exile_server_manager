@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI16, Ordering};
@@ -7,10 +7,10 @@ use std::time::Duration;
 
 use esm_message::{Data, Message, Type};
 use log::*;
-use message_io::network::{Endpoint, NetEvent, RemoteAddr, ToRemoteAddr, Transport};
-use message_io::node::{self, NodeEvent, NodeHandler, NodeListener, NodeTask};
+use message_io::network::{Endpoint, NetEvent, Transport};
+use message_io::node::{self, NodeHandler, NodeListener};
 use parking_lot::RwLock;
-use serde_json::Value;
+
 
 use crate::arma::data::Token;
 
@@ -70,7 +70,7 @@ impl Client {
                     client.send_to_bot(message);
                 }
                 NetEvent::Accepted(_, _) => unreachable!(),
-                NetEvent::Message(_, data) => {
+                NetEvent::Message(_, _data) => {
                     // debug!("[Client#connect] Data: {:?}", data);
                 }
                 NetEvent::Disconnected(_) => {
@@ -146,16 +146,6 @@ impl Client {
                 error!("{}", error);
             }
         }
-    }
-
-    fn ping_server(&self) {
-        let client = self.clone();
-        thread::spawn(move || {
-            loop {
-                // Check to see if the endpoint is connected. If it's not, sleep
-                //
-            }
-        });
     }
 
     fn load_endpoint(&self) {
