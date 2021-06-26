@@ -1,8 +1,8 @@
 
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI16, Ordering};
-use std::thread;
+use std::sync::atomic::{AtomicBool, AtomicI16, Ordering};
+use std::thread::{self, sleep};
 use std::time::Duration;
 
 use esm_message::{Data, Message, Type};
@@ -23,7 +23,8 @@ pub struct Client {
     handler: Arc<RwLock<NodeHandler<()>>>,
     listener: Arc<RwLock<Option<NodeListener<()>>>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
-    reconnection_counter: Arc<AtomicI16>
+    reconnection_counter: Arc<AtomicI16>,
+    bot_pong_received: Arc<AtomicBool>
 }
 
 impl Client {
@@ -37,6 +38,7 @@ impl Client {
             listener: Arc::new(RwLock::new(Some(listener))),
             endpoint: Arc::new(RwLock::new(None)),
             reconnection_counter: Arc::new(AtomicI16::new(0)),
+            bot_pong_received: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -55,23 +57,13 @@ impl Client {
         thread::spawn(|| {
             listener.for_each(move |event| match event.network() {
                 NetEvent::Connected(_, connected) => {
-                    if !connected {
-                        return;
-                    };
+                    if !connected { return };
 
-                    debug!("[Client#connect] Connected to server - Sending connection message");
-
-                    // Reset the reconnect counter.
-                    client.reconnection_counter.store(0, Ordering::SeqCst);
-
-                    let mut message = Message::new(Type::Connect);
-                    message.set_data(client.initialization_data.read().clone());
-
-                    client.send_to_bot(message);
+                    client.on_connect();
                 }
                 NetEvent::Accepted(_, _) => unreachable!(),
-                NetEvent::Message(_, _data) => {
-                    // debug!("[Client#connect] Data: {:?}", data);
+                NetEvent::Message(_, incoming_data) => {
+                    client.on_message(incoming_data.into());
                 }
                 NetEvent::Disconnected(_) => {
                     client.reconnect();
@@ -106,13 +98,10 @@ impl Client {
         self.connect();
     }
 
-    pub fn send_to_bot(&self, mut message: Message) {
-        let endpoint = match *self.endpoint.read() {
-            Some(e) => e.to_owned(),
-            None => {
-                error!("[Client#send_to_bot] (BUG) Failed to find the server endpoint. Was #connect not called?");
-                return;
-            }
+    pub fn send_to_server(&self, mut message: Message) {
+        let endpoint = match self.endpoint() {
+            Some(e) => e,
+            None => return
         };
 
         let handler = self.handler.read();
@@ -120,7 +109,7 @@ impl Client {
 
         match network.is_ready(endpoint.resource_id()) {
             Some(false) | None => {
-                error!("[Client#send_to_bot] Failed to send, server not connected");
+                error!("[Client#send_to_server] Failed to send, server not connected");
                 return;
             },
             _ => {}
@@ -131,10 +120,11 @@ impl Client {
             message.server_id = Some(self.token.id.clone());
         }
 
+        // Convert the message to bytes so it can be sent
         match message.as_bytes(|_| Some(self.token.key.clone())) {
             Ok(bytes) => {
                 trace!(
-                    "[Client#send_to_bot] id: {:?}, message: {:?}, message: {:?}",
+                    "[Client#send_to_server] id: {:?}, message: {:?}, message: {:?}",
                     self.token.id,
                     message,
                     &bytes
@@ -178,5 +168,54 @@ impl Client {
         };
 
         *self.endpoint.write() = Some(endpoint);
+    }
+
+    fn endpoint(&self) -> Option<Endpoint> {
+        let endpoint = *self.endpoint.read();
+
+        if endpoint.is_none() {
+            error!("[Client#endpoint] ");
+            return None;
+        }
+
+        endpoint
+    }
+
+    fn on_connect(&self) {
+        debug!("[Client#connect] Connected to server - Sending connection message");
+
+        // Reset the reconnect counter.
+        self.reconnection_counter.store(0, Ordering::SeqCst);
+
+        let mut message = Message::new(Type::Connect);
+        message.set_data(self.initialization_data.read().clone());
+
+        self.send_to_server(message);
+    }
+
+    fn on_message(&self, incoming_data: Vec<u8>) {
+        let endpoint = match self.endpoint() {
+            Some(e) => e,
+            None => return
+        };
+
+        let message = Message::from_bytes(incoming_data, |_| Some(self.token.key.clone()));
+
+        let message = match message {
+            Ok(mut message) => {
+                message.set_resource(endpoint.resource_id());
+                message
+            },
+            Err(e) => {
+                error!("#on_message - {}", e);
+                return;
+            }
+        };
+
+        info!("#on_message - {:#?}", message);
+
+        match message.message_type {
+            _ => {}
+        };
     }
 }
