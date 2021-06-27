@@ -13,8 +13,7 @@ use parking_lot::RwLock;
 
 
 use crate::arma::data::Token;
-
-const MAX_RECONNECT: i16 = 15;
+use crate::config::Env;
 
 #[derive(Clone)]
 pub struct Client {
@@ -37,7 +36,7 @@ impl Client {
             handler: Arc::new(RwLock::new(handler)),
             listener: Arc::new(RwLock::new(Some(listener))),
             endpoint: Arc::new(RwLock::new(None)),
-            reconnection_counter: Arc::new(AtomicI16::new(0)),
+            reconnection_counter: Arc::new(AtomicI16::new(1)),
             bot_pong_received: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -57,7 +56,10 @@ impl Client {
         thread::spawn(|| {
             listener.for_each(move |event| match event.network() {
                 NetEvent::Connected(_, connected) => {
-                    if !connected { return };
+                    if !connected {
+                        client.reconnect();
+                        return
+                    };
 
                     client.on_connect();
                 }
@@ -66,30 +68,36 @@ impl Client {
                     client.on_message(incoming_data.into());
                 }
                 NetEvent::Disconnected(_) => {
-                    client.reconnect();
+                    client.on_disconnect();
                 }
             });
-
-            warn!("DONE");
         });
     }
 
+    /// Attempts to reconnect to the bot with no max attempts.
+    /// Each time it attempts to reconnect, it will wait +15sec longer than the last attempt; waiting no longer than 5 minutes between attempts
+    /// When env is set to "development", it will attempt roughly every second.
     pub fn reconnect(&self) {
         self.handler.read().stop();
 
-        // Get the current reconnection count and check
+        // Get the current reconnection count and calculate the wait time
         let current_count = self.reconnection_counter.load(Ordering::SeqCst);
-        if current_count >= MAX_RECONNECT {
-            warn!("[Client#reconnect] Lost connection to server - No more reconnect attempts will be made this restart");
-            return;
+        let time_to_wait = if crate::CONFIG.env.development() {
+            1
+        } else {
+            15 * (current_count as u64)
+        };
+
+        let time_to_wait = Duration::from_secs(time_to_wait);
+        warn!("[Client#reconnect] Lost connection to server - Attempting reconnect in {:?}", time_to_wait);
+
+        thread::sleep(time_to_wait);
+
+        // Sleep a max of 5 minutes
+        if current_count <= 20 {
+            // Increase the reconnect counter by 1
+            self.reconnection_counter.store(current_count + 1, Ordering::SeqCst);
         }
-
-        warn!("[Client#reconnect] Lost connection to server - Attempting reconnect {} of {}", current_count + 1, MAX_RECONNECT);
-
-        thread::sleep(Duration::from_secs(1));
-
-        // Increase the reconnect counter by 1
-        self.reconnection_counter.store(current_count + 1, Ordering::SeqCst);
 
         let (handler, listener) = node::split::<()>();
         *self.handler.write() = handler;
@@ -182,13 +190,15 @@ impl Client {
     }
 
     fn on_connect(&self) {
-        debug!("[Client#connect] Connected to server - Sending connection message");
+        info!("[Client#on_connect] Connected to server");
 
         // Reset the reconnect counter.
         self.reconnection_counter.store(0, Ordering::SeqCst);
 
         let mut message = Message::new(Type::Connect);
         message.set_data(self.initialization_data.read().clone());
+
+        debug!("[Client#on_connect] Initialization {:#?}", message);
 
         self.send_to_server(message);
     }
@@ -217,5 +227,9 @@ impl Client {
         match message.message_type {
             _ => {}
         };
+    }
+
+    fn on_disconnect(&self) {
+        self.reconnect();
     }
 }

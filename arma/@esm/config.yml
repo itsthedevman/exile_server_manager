@@ -1,6 +1,11 @@
+# esm_client's configuration file
+# You can override any of the following options:
+#   connection_url:       The URL that esm_server is running on
+#   log_level:            The verbosity level of the internal logger. Valid options: trace, debug, info, warn, error
+#   extdb_file_path:      The full path plus filename for the extDB config
+#   logging_path:         The full path plus filename for the extension to log to
+#   env:                  The ENV that the code should run in. Valid options: production, test, development
+
 connection_url: "esm.mshome.net:3003"
 log_level: "debug"
-
-# Also supported variables
-# extdb_file_path: The full path plus filename for the extDB config
-# logging_path: The full path plus filename for the extension to log to
+env: "development"

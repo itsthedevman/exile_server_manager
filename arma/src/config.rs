@@ -11,6 +11,31 @@ pub struct Config {
 
     #[serde(default = "default_log_level")]
     pub log_level: String,
+
+    #[serde(default = "default_env")]
+    pub env: Env,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Env {
+    Production,
+    Test,
+    Development
+}
+
+impl Env {
+    pub fn production(&self) -> bool {
+        matches!(self, Env::Production)
+    }
+
+    pub fn test(&self) -> bool {
+        matches!(self, Env::Test)
+    }
+
+    pub fn development(&self) -> bool {
+        matches!(self, Env::Development)
+    }
 }
 
 fn default_connection_url() -> String {
@@ -25,12 +50,17 @@ fn default_log_level() -> String {
     "info".into()
 }
 
+fn default_env() -> Env {
+    Env::Production
+}
+
 impl Config {
     pub fn new() -> Self {
         Config {
             connection_url: default_connection_url(),
             logging_path: default_logging_path(),
             log_level: default_log_level(),
+            env: default_env()
         }
     }
 
@@ -42,5 +72,11 @@ impl Config {
         hash.insert("log_level", self.log_level.clone());
 
         hash
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config::new()
     }
 }
