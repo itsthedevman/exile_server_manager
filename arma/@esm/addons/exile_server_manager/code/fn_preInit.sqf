@@ -21,8 +21,10 @@ ESM_CommunityID = "";
 private _territory_data = [];
 {
 	_territory_data pushBack [
-		format["%1", _forEachIndex + 1],
-		[["purchase_price", _x select 0], ["radius", _x select 1], ["object_count", _x select 2]]
+		["level", _forEachIndex + 1],
+		["purchase_price", _x select 0],
+		["radius", _x select 1],
+		["object_count", _x select 2]
 	];
 }
 forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));

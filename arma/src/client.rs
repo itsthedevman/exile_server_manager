@@ -83,7 +83,7 @@ impl Client {
         // Get the current reconnection count and calculate the wait time
         let current_count = self.reconnection_counter.load(Ordering::SeqCst);
         let time_to_wait = if crate::CONFIG.env.development() {
-            1
+            3
         } else {
             15 * (current_count as u64)
         };

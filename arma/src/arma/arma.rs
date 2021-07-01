@@ -20,7 +20,7 @@ impl Arma {
         let client = Client::new(token, initialization_data);
         let database = Database::new();
 
-        Arma { database, client }
+        Arma { client, database }
     }
 
     pub fn connect(&self) {
