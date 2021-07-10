@@ -59,35 +59,3 @@ class CfgFunctions
 		};
 	};
 };
-
-class CfgESM
-{
-	// Setting variables retrieved from server settings
-	// Do not modify these as you will severely break ESM on your server!
-	globalVariables[] =
-	{
-		"ESM_CommunityID",
-		"ESM_ServerID",
-		"ESM_ExtDBVersion",
-		"ESM_Gambling_Modifier",
-		"ESM_Gambling_PayoutBase",
-		"ESM_Gambling_PayoutRandomizerMax",
-		"ESM_Gambling_PayoutRandomizerMid",
-		"ESM_Gambling_PayoutRandomizerMin",
-		"ESM_Gambling_WinPercentage",
-		"ESM_Logging_AddPlayerToTerritory",
-		"ESM_Logging_DemotePlayer",
-		"ESM_Logging_Exec",
-		"ESM_Logging_Gamble",
-		"ESM_Logging_ModifyPlayer",
-		"ESM_Logging_PayTerritory",
-		"ESM_Logging_PromotePlayer",
-		"ESM_Logging_RemovePlayerFromTerritory",
-		"ESM_Logging_RewardPlayer",
-		"ESM_Logging_TransferPoptabs",
-		"ESM_Logging_UpgradeTerritory",
-		"ESM_Taxes_TerritoryPayment",
-		"ESM_Taxes_TerritoryPayment",
-		"ESM_TerritoryAdminUIDs"
-	};
-};

@@ -1,7 +1,6 @@
 pub mod data;
 
 use data::Token;
-use esm_message::data::PostInit;
 use esm_message::{Data, Message, retrieve_data};
 
 use crate::client::Client;
@@ -10,8 +9,8 @@ use crate::{database::Database};
 type EmptyResult = Result<(), ()>;
 
 pub struct Arma {
-    client: Client,
-    database: Database,
+    pub client: Client,
+    pub database: Database,
 }
 
 impl Arma {
@@ -20,10 +19,6 @@ impl Arma {
         let database = Database::new();
 
         Arma { client, database }
-    }
-
-    pub fn connect(&self) {
-        self.client.connect()
     }
 
     pub fn extdb_version(&self) -> u8 {
@@ -45,7 +40,7 @@ impl Arma {
             return Err(());
         }
 
-        crate::a3_post_server_initialization(message, self.extdb_version());
+        crate::a3_post_server_initialization(self, message);
 
         Ok(())
     }

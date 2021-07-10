@@ -12,10 +12,10 @@ pub mod models;
 pub mod schema;
 
 // Various Packages
-use arma_rs::{rv, rv_callback, rv_handler};
+use arma_rs::{ToArma, arma_value, rv, rv_callback, rv_handler};
 use chrono::prelude::*;
 use esm_message::data::Init;
-use esm_message::{Data, Message};
+use esm_message::{Data, Message, retrieve_data};
 use lazy_static::lazy_static;
 
 use std::fs::File;
@@ -34,6 +34,16 @@ use log4rs::encode::pattern::PatternEncoder;
 use crate::arma::data::Token;
 use crate::arma::Arma;
 use crate::config::Config;
+
+macro_rules! send_to_arma {
+    ($function:literal, $data:expr) => {
+        if let Ok(_) = env::var("ESM_IS_TERMINAL") {
+            info!("[{}] Data sent: {:#?}", $function, $data);
+        } else {
+            rv_callback!("exile_server_manager", $function, $data);
+        }
+    };
+}
 
 lazy_static! {
     // Config data
@@ -101,38 +111,37 @@ fn initialize_logger() {
     );
 }
 
-pub fn a3_post_server_initialization(message: &Message, extdb_version: u8) {
-    debug!("a3_post_server_initialization");
-    // let community_id: Vec<String> = parameters.server_id.split("_").map(String::from).collect();
-    // let community_id = community_id[0].clone();
+pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
+    let data = retrieve_data!(&message, PostInit);
 
-    // rv_callback!(
-    //     "exile_server_manager",
-    //     "ESM_fnc_postServerInitialization",
-    //     community_id,                                    // ESM_CommunityID
-    //     parameters.server_id.clone(),                    // ESM_ServerID
-    //     extdb_version,                                   // ESM_ExtDBVersion
-    //     parameters.gambling_modifier,                    // ESM_Gambling_Modifier
-    //     parameters.gambling_payout,                      // ESM_Gambling_PayoutBase
-    //     parameters.gambling_randomizer_max,              // ESM_Gambling_PayoutRandomizerMax
-    //     parameters.gambling_randomizer_mid,              // ESM_Gambling_PayoutRandomizerMid
-    //     parameters.gambling_randomizer_min,              // ESM_Gambling_PayoutRandomizerMin
-    //     parameters.gambling_win_chance,                  // ESM_Gambling_WinPercentage
-    //     parameters.logging_add_player_to_territory,      // ESM_Logging_AddPlayerToTerritory
-    //     parameters.logging_demote_player,                // ESM_Logging_DemotePlayer
-    //     parameters.logging_exec,                         // ESM_Logging_Exec
-    //     parameters.logging_gamble,                       // ESM_Logging_Gamble
-    //     parameters.logging_modify_player,                // ESM_Logging_ModifyPlayer
-    //     parameters.logging_pay_territory,                // ESM_Logging_PayTerritory
-    //     parameters.logging_promote_player,               // ESM_Logging_PromotePlayer
-    //     parameters.logging_remove_player_from_territory, // ESM_Logging_RemovePlayerFromTerritory
-    //     parameters.logging_reward,                       // ESM_Logging_RewardPlayer
-    //     parameters.logging_transfer,                     // ESM_Logging_TransferPoptabs
-    //     parameters.logging_upgrade_territory,            // ESM_Logging_UpgradeTerritory
-    //     parameters.taxes_territory_payment,              // ESM_Taxes_TerritoryPayment
-    //     parameters.taxes_territory_upgrade,              // ESM_Taxes_TerritoryPayment
-    //     parameters.territory_admins.clone()              // ESM_TerritoryAdminUIDs
-    // );
+    send_to_arma!(
+        "ESM_fnc_postServerInitialization",
+        arma_value!({
+            "ESM_ServerID": arma.client.token().server_id(),
+            "ESM_CommunityID": arma.client.token().community_id(),
+            "ESM_ExtDBVersion": arma.database.extdb_version,
+            "ESM_Gambling_Modifier": data.gambling_modifier,
+            "ESM_Gambling_PayoutBase": data.gambling_payout,
+            "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
+            "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
+            "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
+            "ESM_Gambling_WinPercentage": data.gambling_win_chance,
+            "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
+            "ESM_Logging_DemotePlayer": data.logging_demote_player,
+            "ESM_Logging_Exec": data.logging_exec,
+            "ESM_Logging_Gamble": data.logging_gamble,
+            "ESM_Logging_ModifyPlayer": data.logging_modify_player,
+            "ESM_Logging_PayTerritory": data.logging_pay_territory,
+            "ESM_Logging_PromotePlayer": data.logging_promote_player,
+            "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
+            "ESM_Logging_RewardPlayer": data.logging_reward,
+            "ESM_Logging_TransferPoptabs": data.logging_transfer,
+            "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
+            "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
+            "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
+            "ESM_TerritoryAdminUIDs": data.territory_admins
+        })
+    );
 }
 
 // pub fn a3_reward(command: &Command, parameters: &Reward, metadata: &DefaultMetadata) {
@@ -208,7 +217,7 @@ pub fn pre_init(
     trace!("[#pre_init] Initialization Data - {:?}", data);
 
     let arma = Arma::new(token, Data::Init(data));
-    arma.connect();
+    arma.client.connect();
 
     *ARMA.write() = arma;
 

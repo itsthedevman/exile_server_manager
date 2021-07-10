@@ -39,6 +39,10 @@ impl Client {
         }
     }
 
+    pub fn token(&self) -> &Token {
+        &self.token
+    }
+
     pub fn connect(&self) {
         self.load_endpoint();
 

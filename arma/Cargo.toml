@@ -17,7 +17,7 @@ path = "src/bin/bin.rs"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-arma-rs = { path = "../arma-rs/core" }
+arma-rs = { path = "../arma-rs/core", features = ["chrono_datetime"] }
 ws = "*"
 url = "2.0.0"
 base64 = "0.12.3"
