@@ -14,6 +14,15 @@ pub struct Config {
 
     #[serde(default = "default_env")]
     pub env: Env,
+
+    #[serde(default = "default_extdb_conf_path")]
+    pub extdb_conf_path: String,
+
+    #[serde(default = "default_extdb_conf_header_name")]
+    pub extdb_conf_header_name: String,
+
+    #[serde(default = "default_extdb_version")]
+    pub extdb_version: u8
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,13 +63,28 @@ fn default_env() -> Env {
     Env::Production
 }
 
+fn default_extdb_conf_path() -> String {
+    "".into()
+}
+
+fn default_extdb_conf_header_name() -> String {
+    "exile".into()
+}
+
+fn default_extdb_version() -> u8 {
+    0
+}
+
 impl Config {
     pub fn new() -> Self {
         Config {
             connection_url: default_connection_url(),
             logging_path: default_logging_path(),
             log_level: default_log_level(),
-            env: default_env()
+            env: default_env(),
+            extdb_conf_path: default_extdb_conf_path(),
+            extdb_conf_header_name: default_extdb_conf_header_name(),
+            extdb_version: default_extdb_version(),
         }
     }
 

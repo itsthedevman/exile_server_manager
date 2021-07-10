@@ -1,6 +1,4 @@
 use std::thread;
-
-use esm_client;
 use serde_json::json;
 
 fn main() {

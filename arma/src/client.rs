@@ -2,7 +2,7 @@
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI16, Ordering};
-use std::thread::{self, sleep};
+use std::thread::{self};
 use std::time::Duration;
 
 use esm_message::{Data, Message, Type};
@@ -11,9 +11,7 @@ use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeListener};
 use parking_lot::RwLock;
 
-
 use crate::arma::data::Token;
-use crate::config::Env;
 
 #[derive(Clone)]
 pub struct Client {
@@ -47,7 +45,7 @@ impl Client {
         let listener = match self.listener.write().take() {
             Some(listener) => listener,
             None => {
-                error!("[Client#connect] (BUG) Failed to take NodeListener");
+                error!("[client#connect] (BUG) Failed to take NodeListener");
                 return;
             }
         };
@@ -89,7 +87,7 @@ impl Client {
         };
 
         let time_to_wait = Duration::from_secs(time_to_wait);
-        warn!("[Client#reconnect] Lost connection to server - Attempting reconnect in {:?}", time_to_wait);
+        warn!("[client#reconnect] Lost connection to server - Attempting reconnect in {:?}", time_to_wait);
 
         thread::sleep(time_to_wait);
 
@@ -117,7 +115,7 @@ impl Client {
 
         match network.is_ready(endpoint.resource_id()) {
             Some(false) | None => {
-                error!("[Client#send_to_server] Failed to send, server not connected");
+                error!("[client#send_to_server] Failed to send, server not connected");
                 return;
             },
             _ => {}
@@ -131,12 +129,7 @@ impl Client {
         // Convert the message to bytes so it can be sent
         match message.as_bytes(|_| Some(self.token.key.clone())) {
             Ok(bytes) => {
-                trace!(
-                    "[Client#send_to_server] id: {:?}, message: {:?}, message: {:?}",
-                    self.token.id,
-                    message,
-                    &bytes
-                );
+                debug!("[client#send_to_server] {:#?}", message);
 
                 network.send(endpoint, &bytes);
             }
@@ -151,12 +144,12 @@ impl Client {
             Ok(mut addr) => match addr.next() {
                 Some(socket_addr) => socket_addr,
                 None => {
-                    error!("[Client#connect] Failed to socket addr");
+                    error!("[client#connect] Failed to socket addr");
                     return;
                 }
             },
             Err(e) => {
-                error!("[Client#connect] Failed to convert. Reason: {}", e);
+                error!("[client#connect] Failed to convert. Reason: {}", e);
                 return;
             }
         };
@@ -170,7 +163,7 @@ impl Client {
             Ok((endpoint, _)) => endpoint,
             Err(_) => {
                 // Attempt reconnect
-                error!("[Client#connect] Failed to connect");
+                error!("[client#connect] Failed to connect");
                 return;
             }
         };
@@ -182,7 +175,7 @@ impl Client {
         let endpoint = *self.endpoint.read();
 
         if endpoint.is_none() {
-            error!("[Client#endpoint] ");
+            error!("[client#endpoint] ");
             return None;
         }
 
@@ -190,15 +183,15 @@ impl Client {
     }
 
     fn on_connect(&self) {
-        info!("[Client#on_connect] Connected to server");
+        info!("[client#on_connect] Connected to server");
 
         // Reset the reconnect counter.
         self.reconnection_counter.store(0, Ordering::SeqCst);
 
-        let mut message = Message::new(Type::Connect);
+        let mut message = Message::new(Type::Init);
         message.set_data(self.initialization_data.read().clone());
 
-        debug!("[Client#on_connect] Initialization {:#?}", message);
+        debug!("[client#on_connect] Initialization {:#?}", message);
 
         self.send_to_server(message);
     }
@@ -211,22 +204,35 @@ impl Client {
 
         let message = Message::from_bytes(incoming_data, |_| Some(self.token.key.clone()));
 
-        let message = match message {
+        let mut message = match message {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
             },
             Err(e) => {
-                error!("#on_message - {}", e);
+                error!("[client#on_message] {}", e);
                 return;
             }
         };
 
-        info!("#on_message - {:#?}", message);
+        info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
+        debug!("[client#on_message] {:#?}", message);
 
-        match message.message_type {
-            _ => {}
+        let arma = crate::ARMA.read();
+        let result = match message.message_type {
+            Type::PostInit => {
+                drop(arma); // Release the read so a write can be established
+
+                let mut writer_arma = crate::ARMA.write();
+                writer_arma.post_initialization(&mut message)
+            },
+            _ => unreachable!("Message type \"{:?}\" has not been implemented yet", message.message_type),
         };
+
+        if result.is_ok() { return; }
+
+        // There was a issue. Send the message back with the errors.
+        self.send_to_server(message);
     }
 
     fn on_disconnect(&self) {
