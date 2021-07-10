@@ -12,12 +12,13 @@ pub mod models;
 pub mod schema;
 
 // Various Packages
-use arma_rs::{ToArma, arma_value, rv, rv_callback, rv_handler};
+use arma_rs::{arma_value, rv, rv_callback, rv_handler, ToArma};
 use chrono::prelude::*;
 use esm_message::data::Init;
-use esm_message::{Data, Message, retrieve_data};
+use esm_message::{retrieve_data, Data, Message};
 use lazy_static::lazy_static;
 
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -34,16 +35,6 @@ use log4rs::encode::pattern::PatternEncoder;
 use crate::arma::data::Token;
 use crate::arma::Arma;
 use crate::config::Config;
-
-macro_rules! send_to_arma {
-    ($function:literal, $id:expr, $data:expr, $metadata:expr) => {
-        if let Ok(_) = env::var("ESM_IS_TERMINAL") {
-            info!("[{}]\nFunction: {}\nData: {:#?}\nMetadata: {:#?}", $id, $function, $data, $metadata);
-        } else {
-            rv_callback!("exile_server_manager", $function, $data);
-        }
-    };
-}
 
 lazy_static! {
     // Config data
@@ -111,12 +102,28 @@ fn initialize_logger() {
     );
 }
 
+fn send_to_arma<I, D, M>(function: &'static str, id: I, data: D, metadata: M)
+where
+    I: ToArma + Debug,
+    D: ToArma + Debug,
+    M: ToArma + Debug,
+{
+    if env::var("ESM_IS_TERMINAL").is_ok() {
+        info!(
+            "[{:?}]\nFunction: {}\nData: {:#?}\nMetadata: {:#?}",
+            id, function, data, metadata
+        );
+    } else {
+        rv_callback!("exile_server_manager", function, id, data, metadata);
+    }
+}
+
 pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
     let data = retrieve_data!(&message, PostInit);
 
-    send_to_arma!(
+    send_to_arma(
         "ESM_fnc_postServerInitialization",
-        message.id,
+        message.id.to_arma(),
         arma_value!({
             "ESM_ServerID": arma.client.token().server_id(),
             "ESM_CommunityID": arma.client.token().community_id(),
@@ -142,7 +149,7 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
             "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
             "ESM_TerritoryAdminUIDs": data.territory_admins
         }),
-        message.metadata
+        message.metadata.to_arma(),
     );
 }
 
