@@ -36,9 +36,9 @@ use crate::arma::Arma;
 use crate::config::Config;
 
 macro_rules! send_to_arma {
-    ($function:literal, $data:expr) => {
+    ($function:literal, $id:expr, $data:expr, $metadata:expr) => {
         if let Ok(_) = env::var("ESM_IS_TERMINAL") {
-            info!("[{}] Data sent: {:#?}", $function, $data);
+            info!("[{}]\nFunction: {}\nData: {:#?}\nMetadata: {:#?}", $id, $function, $data, $metadata);
         } else {
             rv_callback!("exile_server_manager", $function, $data);
         }
@@ -116,6 +116,7 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
 
     send_to_arma!(
         "ESM_fnc_postServerInitialization",
+        message.id,
         arma_value!({
             "ESM_ServerID": arma.client.token().server_id(),
             "ESM_CommunityID": arma.client.token().community_id(),
@@ -140,7 +141,8 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
             "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
             "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
             "ESM_TerritoryAdminUIDs": data.territory_admins
-        })
+        }),
+        message.metadata
     );
 }
 
