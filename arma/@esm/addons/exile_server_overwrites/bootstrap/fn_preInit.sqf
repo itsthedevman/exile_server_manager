@@ -1,11 +1,11 @@
 {
-    if (isClass(configFile >> "CfgPatches" >> _x select 1)) then 
+    if (isClass(configFile >> "CfgPatches" >> _x select 1)) then
     {
-        diag_log format["[ESM Overwrites] %1 has been overwritten", _x select 0];
+        diag_log format["[Exile Server Manager] Patched %1", _x select 0];
         missionNamespace setVariable [_x select 0, compileFinal preprocessFileLineNumbers format["%1\code\%2.sqf", _x select 1, _x select 0]];
     };
 }
-forEach 
+forEach
 [
     // XM8
 	['ExileServer_system_xm8_send', 'exile_server_xm8'],

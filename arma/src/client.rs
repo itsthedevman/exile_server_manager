@@ -133,7 +133,7 @@ impl Client {
         // Convert the message to bytes so it can be sent
         match message.as_bytes(|_| Some(self.token.key.clone())) {
             Ok(bytes) => {
-                debug!("[client#send_to_server] {:#?}", message);
+                // debug!("[client#send_to_server] {:#?}", message);
 
                 network.send(endpoint, &bytes);
             }
@@ -195,7 +195,7 @@ impl Client {
         let mut message = Message::new(Type::Init);
         message.set_data(self.initialization_data.read().clone());
 
-        debug!("[client#on_connect] Initialization {:#?}", message);
+        // debug!("[client#on_connect] Initialization {:#?}", message);
 
         self.send_to_server(message);
     }
@@ -220,7 +220,7 @@ impl Client {
         };
 
         info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
-        debug!("[client#on_message] {:#?}", message);
+        // debug!("[client#on_message] {:#?}", message);
 
         let arma = crate::ARMA.read();
         let result = match message.message_type {

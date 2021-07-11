@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{collections::HashMap, fmt};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +31,12 @@ pub enum Env {
     Production,
     Test,
     Development
+}
+
+impl fmt::Display for Env {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", serde_json::to_string(self).unwrap())
+    }
 }
 
 impl Env {

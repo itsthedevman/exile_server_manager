@@ -102,54 +102,47 @@ fn initialize_logger() {
     );
 }
 
-fn send_to_arma<I, D, M>(function: &'static str, id: I, data: D, metadata: M)
-where
-    I: ToArma + Debug,
-    D: ToArma + Debug,
-    M: ToArma + Debug,
-{
-    if env::var("ESM_IS_TERMINAL").is_ok() {
-        info!(
-            "[{:?}]\nFunction: {}\nData: {:#?}\nMetadata: {:#?}",
-            id, function, data, metadata
-        );
-    } else {
-        rv_callback!("exile_server_manager", function, id, data, metadata);
+fn send_to_arma<D: ToArma + Debug>(function: &'static str, data: D) {
+    // info!("Function: {}\nData: {:#?}", function, data);
+
+    if env::var("ESM_IS_TERMINAL").is_err() {
+        rv_callback!("exile_server_manager", function, data);
     }
 }
 
 pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
     let data = retrieve_data!(&message, PostInit);
-
     send_to_arma(
-        "ESM_fnc_postServerInitialization",
-        message.id.to_arma(),
+        "ESMs_system_process_postInit",
         arma_value!({
-            "ESM_ServerID": arma.client.token().server_id(),
-            "ESM_CommunityID": arma.client.token().community_id(),
-            "ESM_ExtDBVersion": arma.database.extdb_version,
-            "ESM_Gambling_Modifier": data.gambling_modifier,
-            "ESM_Gambling_PayoutBase": data.gambling_payout,
-            "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
-            "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
-            "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
-            "ESM_Gambling_WinPercentage": data.gambling_win_chance,
-            "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
-            "ESM_Logging_DemotePlayer": data.logging_demote_player,
-            "ESM_Logging_Exec": data.logging_exec,
-            "ESM_Logging_Gamble": data.logging_gamble,
-            "ESM_Logging_ModifyPlayer": data.logging_modify_player,
-            "ESM_Logging_PayTerritory": data.logging_pay_territory,
-            "ESM_Logging_PromotePlayer": data.logging_promote_player,
-            "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
-            "ESM_Logging_RewardPlayer": data.logging_reward,
-            "ESM_Logging_TransferPoptabs": data.logging_transfer,
-            "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
-            "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
-            "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
-            "ESM_TerritoryAdminUIDs": data.territory_admins
-        }),
-        message.metadata.to_arma(),
+            "id": message.id,
+            "data": arma_value!({
+                "ESM_ServerID": arma.client.token().server_id(),
+                "ESM_CommunityID": arma.client.token().community_id(),
+                "ESM_ExtDBVersion": arma.database.extdb_version,
+                "ESM_Gambling_Modifier": data.gambling_modifier,
+                "ESM_Gambling_PayoutBase": data.gambling_payout,
+                "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
+                "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
+                "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
+                "ESM_Gambling_WinPercentage": data.gambling_win_chance,
+                "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
+                "ESM_Logging_DemotePlayer": data.logging_demote_player,
+                "ESM_Logging_Exec": data.logging_exec,
+                "ESM_Logging_Gamble": data.logging_gamble,
+                "ESM_Logging_ModifyPlayer": data.logging_modify_player,
+                "ESM_Logging_PayTerritory": data.logging_pay_territory,
+                "ESM_Logging_PromotePlayer": data.logging_promote_player,
+                "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
+                "ESM_Logging_RewardPlayer": data.logging_reward,
+                "ESM_Logging_TransferPoptabs": data.logging_transfer,
+                "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
+                "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
+                "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
+                "ESM_TerritoryAdminUIDs": data.territory_admins
+            }),
+            "metadata": message.metadata
+        })
     );
 }
 
@@ -166,6 +159,11 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
+#[rv]
+pub fn environment() -> String {
+    CONFIG.env.to_string()
+}
+
 #[rv(thread = true)]
 pub fn pre_init(
     server_name: String,

@@ -21,6 +21,9 @@ command :build do |c|
     # Set some build flags
     Utils.flags(os: :windows, arch: options.use_x32 ? :x86 : :x64, env: :debug)
 
+    # Log to the terminal
+    Utils.print_info
+
     # Kill Arma server
     Utils.kill_arma_server
 
@@ -57,6 +60,9 @@ command :run do |c|
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
     next say("Deployment path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils.deployment_directory.empty?
 
+    # Log to the terminal
+    Utils.print_info
+
     # Kill Arma server
     Utils.kill_arma_server
 
@@ -81,7 +87,6 @@ class Utils
   GIT_DIRECTORY = File.expand_path("./")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
-  SERVER_DIRECTORY_NAME = ENV["ESM_SERVER_DIRECTORY_NAME"] || ""
   REMOTE_HOST = ENV["ESM_REMOTE_HOST"] || ""
   ADDONS = [
     "exile_server_manager",
@@ -104,6 +109,19 @@ class Utils
       x64: "x86_64-unknown-linux-gnu"
     }
   }.freeze
+
+  def self.print_info
+    puts <<~STRING
+      | ESM Build Tool
+      |   OS: #{@os}
+      |   ARCH: #{@arch}
+      |   ENV: #{@env}
+      |   GIT_DIRECTORY: #{GIT_DIRECTORY}
+      |   BUILD_DIRECTORY: #{BUILD_DIRECTORY}
+      |   SERVER_DIRECTORY: #{SERVER_DIRECTORY}
+      |   REMOTE_HOST: #{REMOTE_HOST}
+    STRING
+  end
 
   def self.flags(os:, arch:, env:)
     @os = os
@@ -133,36 +151,43 @@ class Utils
   end
 
   def self.kill_arma_server
-    if @os == :windows
-      if @arch == :x64
-        `taskkill /IM "arma3server_x64.exe" /F`
+    log("Killing Arma Server... ") do
+      if @os == :windows
+        if @arch == :x64
+          `taskkill /IM "arma3server_x64.exe" /F`
+        else
+          `taskkill /IM "arma3server.exe" /F`
+        end
       else
-        `taskkill /IM "arma3server.exe" /F`
-      end
-    else
-      if @arch == :x64
-        `ssh #{REMOTE_HOST} "killall arma3server_x64"`
-      else
-        `ssh #{REMOTE_HOST} "killall arma3server"`
+        if @arch == :x64
+          `ssh #{REMOTE_HOST} "killall arma3server_x64"`
+        else
+          `ssh #{REMOTE_HOST} "killall arma3server"`
+        end
       end
     end
   end
 
   def self.clean_directories
-    # Remove the @esm in target/arma
-    if File.directory?("#{BUILD_DIRECTORY}/@esm")
-      FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm")
+    log("Cleaning directories... ") do
+      # Remove the @esm in target/arma
+      if File.directory?("#{BUILD_DIRECTORY}/@esm")
+        FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm")
+      end
+
+      # Recreate the directory
+      FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm")
+
+      # Copy the @esm into target/arma (Except addons)
+      FileUtils.cp_r("#{GIT_DIRECTORY}/@esm", BUILD_DIRECTORY)
+      FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm/addons")
+
+      # Create the addons folder in target/arma/@esm
+      FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm/addons")
+
+      # Delete the esm.log if it exists
+      FileUtils.rm("#{BUILD_DIRECTORY}/@esm/log/esm.log")
     end
-
-    # Recreate the directory
-    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm")
-
-    # Copy the @esm into target/arma (Except addons)
-    FileUtils.cp_r("#{GIT_DIRECTORY}/@esm", BUILD_DIRECTORY)
-    FileUtils.remove_dir("#{BUILD_DIRECTORY}/@esm/addons")
-
-    # Create the addons folder in target/arma/@esm
-    FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm/addons")
   end
 
   def self.build_and_copy_extension
@@ -172,31 +197,35 @@ class Utils
 
   # This is Windows only for now...
   def self.build_extension
-    command =
-      if @os == :windows
-        "rustup run stable-#{target} cargo build --target #{target}"
-      else
-        "cargo build --target #{target}"
-      end
+    log("Compiling client... ") do
+      command =
+        if @os == :windows
+          "rustup run stable-#{target} cargo build --target #{target}"
+        else
+          "cargo build --target #{target}"
+        end
 
-    command += " --release" if @env == :release
+      command += " --release" if @env == :release
 
-    `#{command}`
+      `#{command}`
+    end
   end
 
   def self.copy_extension
-    path =
-      if @os == :windows
-        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm_client.dll"
-      else
-        "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm.so"
-      end
+    log("Copying client to @esm... ") do
+      path =
+        if @os == :windows
+          "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm_client.dll"
+        else
+          "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm_client.so"
+        end
 
-    if @arch == :x64 && @os == :windows
-      filename = @arch == :x64 ? "esm_client_x64.dll" : "esm_client.dll"
-      FileUtils.move(path, "#{BUILD_DIRECTORY}/@esm/#{filename}")
-    else
-      FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@esm/esm_client.so")
+      if @arch == :x64 && @os == :windows
+        filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
+        FileUtils.move(path, "#{BUILD_DIRECTORY}/@esm/#{filename}")
+      else
+        FileUtils.cp_r(path, "#{BUILD_DIRECTORY}/@esm/esm.so")
+      end
     end
   end
 
@@ -206,43 +235,52 @@ class Utils
   end
 
   def self.build_addons
-    ADDONS.each do |addon|
-      executable = @os == :windows ? "MakePBO.exe" : "makepbo"
+    log("Building addons... ") do
+      ADDONS.each do |addon|
+        source = "#{GIT_DIRECTORY}/@esm/addons/#{addon}"
+        destination = "#{BUILD_DIRECTORY}/@esm/addons/#{addon}"
 
-      `#{executable} -PW -@=#{addon} "#{GIT_DIRECTORY}/@esm/addons/#{addon}" "#{BUILD_DIRECTORY}/@esm/addons/#{addon}"`
+        if @os == :windows
+          `"C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe" -pack "#{source}" "#{destination}.pbo"`
+        else
+          `makepbo -P -@=#{addon} "#{source}" "#{destination}"`
+        end
+      end
     end
   end
 
   def self.copy_mod
-    # Remove the @esm mod in the destination
-    remove_dir("#{deployment_directory}/@esm")
-    copy_dir("#{BUILD_DIRECTORY}/@esm", "#{deployment_directory}/@esm")
+    log("Copying @esm to server... ") do
+      # Remove the @esm mod in the destination
+      remove_dir("#{deployment_directory}/@esm")
+      copy_dir("#{BUILD_DIRECTORY}/@esm", "#{deployment_directory}/@esm")
+    end
   end
 
   def self.start_server
-    if @os == :windows
-      if @arch == :x64
-        `cd #{SERVER_DIRECTORY} && Deploy_ESM_x64.bat`
+    log("Starting Arma 3... ") do
+      if @os == :windows
+        if @arch == :x64
+          `cd #{SERVER_DIRECTORY} && START Deploy_ESM_x64.bat && EXIT`
+        else
+          `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat`
+        end
       else
-        `cd #{SERVER_DIRECTORY} && Deploy_ESM.bat`
+        script = @arch == :x64 ? "esm_arma_x64.sh" : "esm_arma.sh"
+
+        command = <<~STRING
+          cd ~/arma_server && \
+          rm -rf @esm && \
+          rm -rf @exile && \
+          rm -rf @exileserver && \
+          rm -rf mpmissions && \
+          cp -r #{deployment_directory}/* ~/arma_server/ && \
+          cd ~/ && ./#{script}
+        STRING
+
+        `ssh #{REMOTE_HOST} "#{command}"`
       end
-    else
-      script = @arch == :x64 ? "esm_arma_x64.sh" : "esm_arma.sh"
-
-      command = <<~STRING
-        cd ~/arma_server && \
-        rm -rf @esm && \
-        rm -rf @exile && \
-        rm -rf @exileserver && \
-        rm -rf mpmissions && \
-        cp -r #{deployment_directory}/* ~/arma_server/ && \
-        cd ~/ && ./#{script}
-      STRING
-
-      `ssh #{REMOTE_HOST} "#{command}"`
     end
-
-    open_logs
   end
 
   def self.remove_dir(path)
@@ -262,21 +300,31 @@ class Utils
   end
 
   def self.open_logs
-    path = "#{SERVER_DIRECTORY}/#{SERVER_DIRECTORY_NAME}/@esm/log/esm.log"
-    25.times do
-      next sleep(1) if !File.exist?(path)
+    log("Opening esm.log... ") do
+      path = "#{SERVER_DIRECTORY}/ArmAServer/@esm/log/esm.log"
+      50.times do
+        next sleep(0.5) if !File.exist?(path)
 
-      File.open(path) do |log|
-        log.extend(File::Tail)
-        log.interval = 1
-        log.backward(100)
-        log.tail { |line| puts line }
+        File.open(path) do |log|
+          log.extend(File::Tail)
+          log.interval = 1
+          log.backward(1000)
+          log.tail { |line| puts line }
+        end
       end
     end
 
-    puts "Failed to open esm.log"
+    puts "<esm_bt> Failed to open esm.log"
   rescue SystemExit, Interrupt
+    puts "cancelled"
     kill_arma_server
     exit
+  end
+
+  def self.log(message, &block)
+    print "<esm_bt> - #{message}"
+    result = yield
+    puts "done"
+    result
   end
 end

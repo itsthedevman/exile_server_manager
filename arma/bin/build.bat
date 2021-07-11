@@ -1,3 +1,3 @@
 @echo off
 
-ruby.exe .\tools\esm build %*
+ruby.exe .\tools\esm_build_tool build %*
