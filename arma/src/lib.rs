@@ -12,12 +12,14 @@ pub mod models;
 pub mod schema;
 
 // Various Packages
-use arma_rs::{arma_value, rv, rv_callback, rv_handler, ToArma};
+use arma_rs::{ArmaValue, ToArma, arma_value, rv, rv_callback, rv_handler};
 use chrono::prelude::*;
 use esm_message::data::Init;
 use esm_message::{retrieve_data, Data, Message};
 use lazy_static::lazy_static;
+use uuid::Uuid;
 
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
@@ -32,12 +34,14 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use crate::arma::data::Token;
+use crate::arma::data::{RVOutput, Token};
 use crate::arma::Arma;
 use crate::config::Config;
 
+const CHUNK_SIZE: usize = 8_000;
+
 lazy_static! {
-    // Config data
+    /// Config data
     pub static ref CONFIG: Config = {
         let contents = match fs::read_to_string("@esm/config.yml") {
             Ok(file) => file,
@@ -52,10 +56,10 @@ lazy_static! {
         config
     };
 
-    // Controls if the extension can function or not.
+    /// Controls if the extension can function or not.
     pub static ref READY: RwLock<bool> = RwLock::new(false);
 
-    // A representation of the arma server. This is the driver for the extension so it needs to be kept in memory
+    /// A representation of the arma server. This is the driver for the extension so it needs to be kept in memory
     pub static ref ARMA: RwLock<Arma> = {
         // Placeholder data. This will be replaced in pre_init
         let token = Token::new(Vec::new(), Vec::new());
@@ -63,6 +67,9 @@ lazy_static! {
 
         RwLock::new(arma)
     };
+
+    /// When sending large messages to Arma, the messages need to be chunked in order to avoid being "cut off"
+    pub static ref CHUNKS: RwLock<HashMap<String, Vec<String>>> = RwLock::new(HashMap::new());
 }
 
 fn initialize_logger() {
@@ -102,12 +109,59 @@ fn initialize_logger() {
     );
 }
 
-fn send_to_arma<D: ToArma + Debug>(function: &'static str, data: D) {
-    // info!("Function: {}\nData: {:#?}", function, data);
-
-    if env::var("ESM_IS_TERMINAL").is_err() {
-        rv_callback!("exile_server_manager", function, data);
+/// Facilitates sending a message to Arma only if this is using a A3 server. When in terminal mode, it just logs.
+/// When sending a message to arma, the outbound message's size is checked and if it's larger than 9kb, it's split into <9kb chunks and associated to a ID
+///     ESMs_system_extension_call will detect if it needs to make subsequent calls to the extension and perform any chunk rebuilding if needed
+///
+/// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
+fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
+    if env::var("ESM_IS_TERMINAL").is_ok() {
+        info!("Function: {}\nData: {:#?}", function, data);
+        return;
     }
+
+    /*
+        Convert the Arma value to a string and check its size.
+        If the size is less than 10kb, build the [0, data] array and use RV callback to send it
+        If the size is greater than 10kb, split the data into chunks and send the first chuck with the ID [1, id, data_chunk]
+            Use ["next_chunk", "ID"] call ESMs_system_extension_call;
+    */
+    let data_string = data.to_string();
+    let data_bytes = data_string.as_bytes().to_vec();
+    let data_size = std::mem::size_of_val(&data_bytes);
+
+    // The size is sufficient for sending, do it.
+    if data_size < CHUNK_SIZE {
+        rv_callback!(
+            "exile_server_manager",
+            function,
+            RVOutput::new(None, 0, data.to_arma()).to_string()
+        );
+        return;
+    }
+
+    // Create a ID for this chunk
+    let id = Uuid::new_v4();
+
+    // The data size is too big, chunk it. Also, flip it around so pop will give us the next in the queue
+    let mut chunks: Vec<String> = data_bytes.chunks(CHUNK_SIZE).map(|x| String::from_utf8(x.to_vec()).unwrap()).collect();
+    chunks.reverse();
+
+    // Retrieve the first chunk, the rest will be written to the chunks
+    let first_chunk = chunks.pop();
+
+    let mut chunk_writer = CHUNKS.write();
+    chunk_writer.insert(id.to_string(), chunks);
+
+    // Release our write access immediately.
+    drop(chunk_writer);
+
+    // Send the first chunk to Arma
+    rv_callback!(
+        "exile_server_manager",
+        function,
+        RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string()
+    )
 }
 
 pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
@@ -160,8 +214,54 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 #[rv]
+pub fn next_chunk(string_id: String) -> String {
+    // Convert the ID to a UUID to ensure it's valid
+    let id = match Uuid::from_str(&string_id) {
+        Ok(id) => id,
+        Err(e) => {
+            return RVOutput::new(
+                None,
+                -1,
+                arma_value!(format!("The provided UUID (\"{}\") is invalid. Reason: {}", string_id, e))
+            ).to_string()
+        }
+    };
+
+    // Attempt to find the chunks associated to that ID
+    let mut chunk_writer = CHUNKS.write();
+    let chunks = match chunk_writer.get_mut(&string_id) {
+        Some(chunks) => chunks,
+        None => return RVOutput::new(
+            None,
+            -1,
+            arma_value!(format!("The provided UUID (\"{}\") does not exist.", id))
+        ).to_string()
+    };
+
+    // Ensure there is data to pull
+    let next_chunk = match chunks.pop() {
+        Some(chunk) => chunk,
+        None => return RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string()
+    };
+
+    // Check to see if there are any chunks left and remove the ID if needed
+    let chunks_left = chunks.len();
+    let code = if chunks_left > 0 {
+        1
+    } else {
+        // It's the last chunk, remove it and let Arma know.
+        chunk_writer.remove(&string_id);
+
+        0
+    };
+
+    // Provide the chunk to Arma
+    RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string()
+}
+
+#[rv]
 pub fn environment() -> String {
-    CONFIG.env.to_string()
+    RVOutput::new(None, 0, arma_value!([CONFIG.env.to_string()])).to_string()
 }
 
 #[rv(thread = true)]
