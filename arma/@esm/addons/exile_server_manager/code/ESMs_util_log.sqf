@@ -10,4 +10,4 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
  */
 
-diag_log format["[Exile Server Manager] <%1> - %2", _this select 0, _this select 1];
+diag_log format["Exile Server Manager: [%1] %2", _this select 0, _this select 1];

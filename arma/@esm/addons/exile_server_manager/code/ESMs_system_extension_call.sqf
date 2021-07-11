@@ -10,6 +10,10 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
  */
 
+// If the argument is a string, we're trying to directly call a function with no arguments
+if (_this isEqualType "") exitWith { "esm" callExtension _this };
+
+// The argument is an array
 private _function = _this select 0;
 private _arguments = _this select [1, count(_this) - 1];
 private _sanitizedPackage = [];
@@ -52,9 +56,4 @@ private _sanitizer = {
 forEach _arguments;
 
 // Call the extension and return the result
-// If the package is empty, don't use it. Arma treats functions with or without arguments differently.
-if (_sanitizedPackage isEqualTo []) then {
-	parseSimpleArray("esm" callExtension _function)
-} else {
-	parseSimpleArray("esm" callExtension [_function, _sanitizedPackage])
-};
+"esm" callExtension [_function, _sanitizedPackage]

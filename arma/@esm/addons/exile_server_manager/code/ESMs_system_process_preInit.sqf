@@ -10,7 +10,7 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
  */
 
-ESM_env = ["environment"] call ESMs_system_extension_call;
+ESM_env = "environment" call ESMs_system_extension_call;
 ["preInit", format["Starting with env - %1. %2", ESM_env, ESM_env isEqualTo "development"]] call ESMs_util_log;
 
 // Cache the territory prices to make calculating upgrade costs faster

@@ -177,7 +177,7 @@ pub fn pre_init(
         return;
     }
 
-    debug!("[#pre_init] ESM is booting");
+    info!("[#pre_init] ESM is booting");
 
     // Load and convert the esm.key file into a token
     let path = Path::new("@esm/esm.key");
