@@ -40,7 +40,12 @@ impl RVOutput {
 
 impl std::fmt::Display for RVOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", arma_value!([self.code, self.id, self.content]))
+        // let id = match self.id {
+        //     Some(id) => id.to_string(),
+        //     None => String::new()
+        // };
+
+        write!(f, "{}", arma_value!([self.id, self.code, self.content]))
     }
 }
 

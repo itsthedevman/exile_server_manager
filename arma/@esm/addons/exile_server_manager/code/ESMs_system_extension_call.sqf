@@ -11,7 +11,14 @@
  */
 
 // If the argument is a string, we're trying to directly call a function with no arguments
-if (_this isEqualType "") exitWith { "esm" callExtension _this };
+if (_this isEqualType "") exitWith {
+	["call", format["Calling extension with: %1", _this], "debug"] call ESMs_util_log;
+
+	private _result = ("esm" callExtension _this) call ESMs_system_extension_processResult;
+	["call", format["Extension returned: %1", _result], "debug"] call ESMs_util_log;
+
+	_result
+};
 
 // The argument is an array
 private _function = _this select 0;
@@ -55,5 +62,28 @@ private _sanitizer = {
 }
 forEach _arguments;
 
+["call", format["Calling extension with: %1", _this], "debug"] call ESMs_util_log;
+
 // Call the extension and return the result
-"esm" callExtension [_function, _sanitizedPackage]
+// Calls to callExtension without arguments returns a string.
+// Calls to callExtension with arguments returns an array.
+// I forgot how _inconsistent_ Arma is.
+private _result = "esm" callExtension [_function, _sanitizedPackage];
+
+["call", format["Extension returned: %1", _result], "debug"] call ESMs_util_log;
+
+if (_result isEqualType "") then {
+	_result = parseSimpleArray(_result);
+};
+
+// If there is an issue, Arma will barf an error code here.
+// Possible error codes:
+//     101: SYNTAX_ERROR_WRONG_PARAMS_SIZE
+//     102: SYNTAX_ERROR_WRONG_PARAMS_TYPE
+//     201: PARAMS_ERROR_TOO_MANY_ARGS
+//     301: EXECUTION_WARNING_TAKES_TOO_LONG
+if ((_result select 2) > 0) exitWith {
+	["call", format["ERROR - Arma barfed. Error code: %1", _result select 2]] call ESMs_util_log;
+};
+
+(_result select 0) call ESMs_system_extension_processResult

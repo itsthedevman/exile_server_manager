@@ -132,10 +132,12 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
 
     // The size is sufficient for sending, do it.
     if data_size < CHUNK_SIZE {
+        let output = RVOutput::new(None, 0, data.to_arma()).to_string();
+        debug!("[send_to_arma] No chunks: {}", output);
         rv_callback!(
             "exile_server_manager",
             function,
-            RVOutput::new(None, 0, data.to_arma()).to_string()
+            output
         );
         return;
     }
@@ -156,11 +158,15 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
     // Release our write access immediately.
     drop(chunk_writer);
 
+    let output = RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string();
+
+    debug!("[send_to_arma] First Chunk: {}", output);
+
     // Send the first chunk to Arma
     rv_callback!(
         "exile_server_manager",
         function,
-        RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string()
+        output
     )
 }
 
@@ -192,7 +198,7 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
                 "ESM_Logging_TransferPoptabs": data.logging_transfer,
                 "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
                 "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
-                "ESM_Taxes_TerritoryPayment": data.territory_upgrade_tax,
+                "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
                 "ESM_TerritoryAdminUIDs": data.territory_admins
             }),
             "metadata": message.metadata
@@ -219,11 +225,14 @@ pub fn next_chunk(string_id: String) -> String {
     let id = match Uuid::from_str(&string_id) {
         Ok(id) => id,
         Err(e) => {
-            return RVOutput::new(
+            let output = RVOutput::new(
                 None,
                 -1,
                 arma_value!(format!("The provided UUID (\"{}\") is invalid. Reason: {}", string_id, e))
-            ).to_string()
+            ).to_string();
+
+            debug!("[next_chunk] {:?}", output);
+            return output;
         }
     };
 
@@ -231,17 +240,26 @@ pub fn next_chunk(string_id: String) -> String {
     let mut chunk_writer = CHUNKS.write();
     let chunks = match chunk_writer.get_mut(&string_id) {
         Some(chunks) => chunks,
-        None => return RVOutput::new(
+        None => {
+            let output =  RVOutput::new(
             None,
             -1,
             arma_value!(format!("The provided UUID (\"{}\") does not exist.", id))
-        ).to_string()
+            ).to_string();
+
+            debug!("[next_chunk] {:?}", output);
+            return output;
+        }
     };
 
     // Ensure there is data to pull
     let next_chunk = match chunks.pop() {
         Some(chunk) => chunk,
-        None => return RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string()
+        None => {
+            let output = RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string();
+            debug!("[next_chunk] {:?}", output);
+            return output;
+        }
     };
 
     // Check to see if there are any chunks left and remove the ID if needed
@@ -256,12 +274,14 @@ pub fn next_chunk(string_id: String) -> String {
     };
 
     // Provide the chunk to Arma
-    RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string()
+    let output = RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string();
+    debug!("[next_chunk] {}", output);
+    return output;
 }
 
 #[rv]
-pub fn environment() -> String {
-    RVOutput::new(None, 0, arma_value!([CONFIG.env.to_string()])).to_string()
+pub fn log_level() -> String {
+    RVOutput::new(None, 0, arma_value!(CONFIG.log_level.to_lowercase())).to_string()
 }
 
 #[rv(thread = true)]

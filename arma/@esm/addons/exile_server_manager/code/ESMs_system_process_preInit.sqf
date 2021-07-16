@@ -10,8 +10,8 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
  */
 
-ESM_env = "environment" call ESMs_system_extension_call;
-["preInit", format["Starting with env - %1. %2", ESM_env, ESM_env isEqualTo "development"]] call ESMs_util_log;
+// For controlling which calls log
+ESM_LogLevel = "log_level" call ESMs_system_extension_call;
 
 // Cache the territory prices to make calculating upgrade costs faster
 private _territory_data = [];
@@ -31,7 +31,6 @@ addMissionEventHandler ["ExtensionCallback", {
 
 	if (_name isEqualTo "exile_server_manager") then
 	{
-		[_function, _data] call ESMs_util_log;
 		[_function, _data] spawn ESMs_system_extension_callback;
 	};
 }];

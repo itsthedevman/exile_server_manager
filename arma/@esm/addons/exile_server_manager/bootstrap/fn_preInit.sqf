@@ -33,9 +33,10 @@ private ['_code', '_function', '_file', '_fileContent'];
 }
 forEach
 [
-	// ["ESMs_", "exile_server_manager\code\", false],
+	// ["ESMs_", "exile_server_manager\code\ESMs_"],
     ["ESMs_system_extension_call", "exile_server_manager\code\ESMs_system_extension_call.sqf"],
     ["ESMs_system_extension_callback", "exile_server_manager\code\ESMs_system_extension_callback.sqf"],
+    ["ESMs_system_extension_processResult", "exile_server_manager\code\ESMs_system_extension_processResult.sqf"],
 	["ESMs_system_process_preInit", "exile_server_manager\code\ESMs_system_process_preInit.sqf"],
     ["ESMs_system_process_postInit", "exile_server_manager\code\ESMs_system_process_postInit.sqf"],
     ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]

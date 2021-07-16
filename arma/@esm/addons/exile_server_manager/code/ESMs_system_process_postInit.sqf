@@ -11,17 +11,16 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
  */
 
-["postInit", _this] call ESMs_util_log;
 {
 	private _variableName = _x select 0;
 	private _value = _x select 1;
 
-	["postInit", format["Binding value %1 (%2) to %3", _value, typeName(_value), _variableName]] call ESMs_util_log;
+	["postInit", format["Binding %1 (%2) to %3", _value, typeName(_value), _variableName]] call ESMs_util_log;
 	missionNameSpace setVariable [_variableName, _value];
 }
-forEach _this;
+forEach (_this get "data");
 
-ESM_DatabaseVersion = format["extDB%1", ESM_ExtDBVersion];
+ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;
 
-["postInit", "Initialized and connected to the bot"] call ESMs_util_log;
+["postInit", format["Initialization finished. Detected extDB version: %1", ESM_DatabaseExtension]] call ESMs_util_log;

@@ -263,7 +263,7 @@ class Utils
         if @arch == :x64
           `cd #{SERVER_DIRECTORY} && START Deploy_ESM_x64.bat && EXIT`
         else
-          `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat`
+          `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat && EXIT`
         end
       else
         script = @arch == :x64 ? "esm_arma_x64.sh" : "esm_arma.sh"

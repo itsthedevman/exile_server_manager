@@ -19,7 +19,8 @@ if (_function isEqualTo "") exitWith
 {
 	[
 		"callback",
-		format["Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data]
+		format["Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data],
+		"error"
 	] call ESMs_util_log;
 };
 
@@ -42,22 +43,8 @@ if (_function isEqualTo "") exitWith
 							"user_mention" 		- The user's Discord mention (for tagging)
 							"user_steam_uid" 	- The user's Steam UID
 */
-_data = parseSimpleArray _data;
-["DEBUG", format["Data is: %1", _data]] call ESMs_util_log;
-
-private _message = createHashMapFromArray _data;
-
-// TODO: Only in dev
-[
-	"callback",
-	format[
-		"Function: %1 | ID: %2 | Data: %3 | Metadata: %4",
-		_function,
-		_message select 0,
-		_message select 1,
-		_message select 2
-	]
-] call ESMs_util_log;
+private _message = createHashMapFromArray(_data call ESMs_system_extension_processResult);
+["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
 
 _message call _function;
 

@@ -35,7 +35,7 @@ pub enum Env {
 
 impl fmt::Display for Env {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", serde_json::to_string(self).unwrap())
+        fmt::Debug::fmt(self, f)
     }
 }
 
