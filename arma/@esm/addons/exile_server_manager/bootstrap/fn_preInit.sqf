@@ -42,4 +42,4 @@ forEach
     ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
 ];
 
-call ESMs_system_process_preInit;
+[] call ESMs_system_process_preInit;

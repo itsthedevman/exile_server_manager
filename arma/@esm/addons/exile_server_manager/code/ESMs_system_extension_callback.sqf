@@ -1,14 +1,28 @@
 /**
- * ESM_system_extension_callback
- * 	Facilitates processing a message's content and calling the resulting function
+ *
+ * Function:
+ *      ESMs_system_extension_callback
+ *
+ * Description:
+ *      Facilitates a SQF function call from the extension
+ *
+ * Arguments:
+ *      _functionName	-	The name of the function to be called as a string.
+ *		_data			-	The data to be passed to the function
+ *
+ * Examples:
+ *      ["ESMs_util_log", ["extension", "This is how the extension calls functions"]] call ESMs_system_extension_callback;
+ *
+ * * *
  *
  * Exile Server Manager
  * www.esmbot.com
- * © 2018-2021 WolfkillArcadia
+ * © 2018-2021 Bryan "WolfkillArcadia"
  *
  * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- */
+ *
+ **/
 
 private _functionName = _this select 0;
 private _data = _this select 1;

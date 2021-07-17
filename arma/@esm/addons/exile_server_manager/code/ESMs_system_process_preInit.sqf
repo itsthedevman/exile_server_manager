@@ -1,17 +1,31 @@
 /**
- * ESM_system_process_preInit
- * 	Builds the required information for the bot and starts the client
+ *
+ * Function:
+ *      ESMs_system_process_preInit
+ *
+ * Description:
+ *      Preps required variables and starts the client
+ *
+ * Arguments:
+ *      None
+ *
+ * Examples:
+ *      [] call ESMs_system_process_preInit;
+ *
+ * * *
  *
  * Exile Server Manager
  * www.esmbot.com
- * © 2018-2021 WolfkillArcadia
+ * © 2018-2021 Bryan "WolfkillArcadia"
  *
  * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- */
+ *
+ **/
 
 // For controlling which calls log
 ESM_LogLevel = "log_level" call ESMs_system_extension_call;
+ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
 
 // Cache the territory prices to make calculating upgrade costs faster
 private _territory_data = [];
