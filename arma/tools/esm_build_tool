@@ -146,6 +146,10 @@ class Utils
     @target ||= TARGETS[@os][@arch]
   end
 
+  def self.server_directory
+    @server_directory ||= SERVER_DIRECTORY.gsub("\\", "/")
+  end
+
   def self.local_deployment?
     REMOTE_HOST.empty?
   end
@@ -261,9 +265,9 @@ class Utils
     log("Starting Arma 3... ") do
       if @os == :windows
         if @arch == :x64
-          `cd #{SERVER_DIRECTORY} && START Deploy_ESM_x64.bat && EXIT`
+          `cd #{server_directory} && START Deploy_ESM_x64.bat && EXIT`
         else
-          `cd #{SERVER_DIRECTORY} && START Deploy_ESM.bat && EXIT`
+          `cd #{server_directory} && START Deploy_ESM.bat && EXIT`
         end
       else
         script = @arch == :x64 ? "esm_arma_x64.sh" : "esm_arma.sh"
@@ -300,8 +304,18 @@ class Utils
   end
 
   def self.open_logs
+    log("Opening server.rpt... ") do
+      path = "#{server_directory}/ArmAServer/ArmAServer/*.rpt"
+      50.times do
+        rpt = Dir.glob(path).first
+        next sleep(0.5) if rpt.nil?
+
+        break system("code #{rpt}")
+      end
+    end
+
     log("Opening esm.log... ") do
-      path = "#{SERVER_DIRECTORY}/ArmAServer/@esm/log/esm.log"
+      path = "#{server_directory}/ArmAServer/@esm/log/esm.log"
       50.times do
         next sleep(0.5) if !File.exist?(path)
 
