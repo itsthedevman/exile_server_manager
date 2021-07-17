@@ -1,10 +1,37 @@
 /**
- * Pre-Initialization
- *	Compiles all the required functions and calls the preInit. Functions can be overwriten by using CfgExileCustomCode.
  *
- * 	ESM's functions are broken into two categories, ESMs and ESMc for server and client respectfully.
- *	The reason why this doesn't follow Exile's format of Server and Client is because ESMServer and ESMClient look weird to me. That's all.
- */
+ * Function:
+ *      ESM_fnc_preInit
+ *
+ * Description:
+ *	    Compiles all the required functions and calls the preInit. Functions can be overwriten by using CfgExileCustomCode.
+ *
+ * 	    ESM's functions are broken into two categories, ESMs and ESMc for server and client respectfully.
+ *	    The reason why this doesn't follow Exile's format of Server and Client is because ESMServer and ESMClient look weird to me. That's all.
+ *
+ * Arguments:
+ *      None
+ *
+ * Examples:
+ *      [] call ESM_fnc_preInit;
+ *
+ * * *
+ *
+ * Exile Server Manager
+ * www.esmbot.com
+ * © 2018-2021 Bryan "WolfkillArcadia"
+ *
+ * *
+ *
+ * Exile Mod
+ * www.exilemod.com
+ * © 2015-2021 Exile Mod Team
+ *
+ * This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+ * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
+ *
+ **/
+
 
 private ['_code', '_function', '_file', '_fileContent'];
 
