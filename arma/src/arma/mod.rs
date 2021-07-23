@@ -40,7 +40,7 @@ impl Arma {
             return Err(());
         }
 
-        crate::a3_post_server_initialization(self, message);
+        crate::a3_post_init(self, message);
 
         Ok(())
     }

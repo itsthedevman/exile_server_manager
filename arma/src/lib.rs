@@ -14,10 +14,10 @@ pub mod schema;
 // Various Packages
 use arma_rs::{ArmaValue, ToArma, arma_value, rv, rv_callback, rv_handler};
 use chrono::prelude::*;
-use esm_message::data::Init;
-use esm_message::{retrieve_data, Data, Message};
+use esm_message::{Data, Message, Type, retrieve_data};
 use lazy_static::lazy_static;
 use uuid::Uuid;
+use esm_message::data::*;
 
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -130,47 +130,53 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
     let data_bytes = data_string.as_bytes().to_vec();
     let data_size = std::mem::size_of_val(&data_bytes);
 
-    // The size is sufficient for sending, do it.
-    if data_size < CHUNK_SIZE {
-        let output = RVOutput::new(None, 0, data.to_arma()).to_string();
-        debug!("[send_to_arma] No chunks: {}", output);
-        rv_callback!(
-            "exile_server_manager",
-            function,
-            output
-        );
-        return;
-    }
+    // Arma has a size limit. I'm not sure I'll ever hit it.
+    if data_size > CHUNK_SIZE { panic!("Data is too large! Uncomment the chunking code."); }
 
-    // Create a ID for this chunk
-    let id = Uuid::new_v4();
-
-    // The data size is too big, chunk it. Also, flip it around so pop will give us the next in the queue
-    let mut chunks: Vec<String> = data_bytes.chunks(CHUNK_SIZE).map(|x| String::from_utf8(x.to_vec()).unwrap()).collect();
-    chunks.reverse();
-
-    // Retrieve the first chunk, the rest will be written to the chunks
-    let first_chunk = chunks.pop();
-
-    let mut chunk_writer = CHUNKS.write();
-    chunk_writer.insert(id.to_string(), chunks);
-
-    // Release our write access immediately.
-    drop(chunk_writer);
-
-    let output = RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string();
-
-    debug!("[send_to_arma] First Chunk: {}", output);
-
-    // Send the first chunk to Arma
+    let output = RVOutput::new(None, 0, data.to_arma()).to_string();
     rv_callback!(
         "exile_server_manager",
         function,
         output
-    )
+    );
+
+    // UNCOMMENT THIS AND next_chunk IF NEEDED.
+    // I wrote this in an attempt to fix a bug. But it didn't work
+    // // Create a ID for this chunk
+    // let id = Uuid::new_v4();
+
+    // // The data size is too big, chunk it. Also, flip it around so pop will give us the next in the queue
+    // let mut chunks: Vec<String> = data_bytes.chunks(CHUNK_SIZE).map(|x| String::from_utf8(x.to_vec()).unwrap()).collect();
+    // chunks.reverse();
+
+    // // Retrieve the first chunk, the rest will be written to the chunks
+    // let first_chunk = chunks.pop();
+
+    // let mut chunk_writer = CHUNKS.write();
+    // chunk_writer.insert(id.to_string(), chunks);
+
+    // // Release our write access immediately.
+    // drop(chunk_writer);
+
+    // let output = RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string();
+
+    // debug!("[send_to_arma] First Chunk: {}", output);
+
+    // // Send the first chunk to Arma
+    // rv_callback!(
+    //     "exile_server_manager",
+    //     function,
+    //     output
+    // )
 }
 
-pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
+/// Logs a message to the server's RPT using ESMs_util_log
+pub fn a3_log(message: String) {
+    send_to_arma("ESMs_util_log", arma_value!(["extension", message]))
+}
+
+/// Sends the post initialization data to the server
+pub fn a3_post_init(arma: &mut Arma, message: &Message) {
     let data = retrieve_data!(&message, PostInit);
     send_to_arma(
         "ESMs_system_process_postInit",
@@ -219,69 +225,75 @@ pub fn a3_post_server_initialization(arma: &mut Arma, message: &Message) {
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
+// #[rv]
+// pub fn next_chunk(string_id: String) -> String {
+//     // Convert the ID to a UUID to ensure it's valid
+//     let id = match Uuid::from_str(&string_id) {
+//         Ok(id) => id,
+//         Err(e) => {
+//             let output = RVOutput::new(
+//                 None,
+//                 -1,
+//                 arma_value!(format!("The provided UUID (\"{}\") is invalid. Reason: {}", string_id, e))
+//             ).to_string();
+
+//             debug!("[next_chunk] {:?}", output);
+//             return output;
+//         }
+//     };
+
+//     // Attempt to find the chunks associated to that ID
+//     let mut chunk_writer = CHUNKS.write();
+//     let chunks = match chunk_writer.get_mut(&string_id) {
+//         Some(chunks) => chunks,
+//         None => {
+//             let output =  RVOutput::new(
+//             None,
+//             -1,
+//             arma_value!(format!("The provided UUID (\"{}\") does not exist.", id))
+//             ).to_string();
+
+//             debug!("[next_chunk] {:?}", output);
+//             return output;
+//         }
+//     };
+
+//     // Ensure there is data to pull
+//     let next_chunk = match chunks.pop() {
+//         Some(chunk) => chunk,
+//         None => {
+//             let output = RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string();
+//             debug!("[next_chunk] {:?}", output);
+//             return output;
+//         }
+//     };
+
+//     // Check to see if there are any chunks left and remove the ID if needed
+//     let chunks_left = chunks.len();
+//     let code = if chunks_left > 0 {
+//         1
+//     } else {
+//         // It's the last chunk, remove it and let Arma know.
+//         chunk_writer.remove(&string_id);
+
+//         0
+//     };
+
+//     // Provide the chunk to Arma
+//     let output = RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string();
+//     debug!("[next_chunk] {}", output);
+//     output
+// }
+
+/// Returns a UTC timestamp as a string.
 #[rv]
-pub fn next_chunk(string_id: String) -> String {
-    // Convert the ID to a UUID to ensure it's valid
-    let id = match Uuid::from_str(&string_id) {
-        Ok(id) => id,
-        Err(e) => {
-            let output = RVOutput::new(
-                None,
-                -1,
-                arma_value!(format!("The provided UUID (\"{}\") is invalid. Reason: {}", string_id, e))
-            ).to_string();
-
-            debug!("[next_chunk] {:?}", output);
-            return output;
-        }
-    };
-
-    // Attempt to find the chunks associated to that ID
-    let mut chunk_writer = CHUNKS.write();
-    let chunks = match chunk_writer.get_mut(&string_id) {
-        Some(chunks) => chunks,
-        None => {
-            let output =  RVOutput::new(
-            None,
-            -1,
-            arma_value!(format!("The provided UUID (\"{}\") does not exist.", id))
-            ).to_string();
-
-            debug!("[next_chunk] {:?}", output);
-            return output;
-        }
-    };
-
-    // Ensure there is data to pull
-    let next_chunk = match chunks.pop() {
-        Some(chunk) => chunk,
-        None => {
-            let output = RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string();
-            debug!("[next_chunk] {:?}", output);
-            return output;
-        }
-    };
-
-    // Check to see if there are any chunks left and remove the ID if needed
-    let chunks_left = chunks.len();
-    let code = if chunks_left > 0 {
-        1
-    } else {
-        // It's the last chunk, remove it and let Arma know.
-        chunk_writer.remove(&string_id);
-
-        0
-    };
-
-    // Provide the chunk to Arma
-    let output = RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string();
-    debug!("[next_chunk] {}", output);
-    return output;
+pub fn utc_timestamp() -> String {
+    RVOutput::new(None, 0, Utc::now().to_arma()).to_string()
 }
 
 #[rv]
 pub fn log_level() -> String {
-    RVOutput::new(None, 0, arma_value!(CONFIG.log_level.to_lowercase())).to_string()
+    RVOutput::new(None, 0, CONFIG.log_level.to_lowercase().to_arma()).to_string()
 }
 
 #[rv(thread = true)]
@@ -351,6 +363,23 @@ pub fn pre_init(
     info!("[#pre_init] Boot completed");
 }
 
+#[rv(thread = true)]
+pub fn event(id: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) {
+    // debug!("[#event] ID: {:?}\nDATA: {:#?}\nMETADATA: {:#?}\nERRORS: {:#?}", id, data, metadata, errors);
+
+    let message = match Message::from_arma(Type::Event, id, data, metadata, errors) {
+        Ok(m) => m,
+        Err(e) => return error!("[#event] {}", e)
+    };
+
+    let arma = crate::ARMA.read();
+    arma.client.send_to_server(message);
+}
+
+////////////////////////////////////////////////////////////
+// DO NOT DEFINE ARMA ENDPOINTS BELOW
+// rv_handler HAS TO BE THE LAST FUNCTION DEFINED
+////////////////////////////////////////////////////////////
 #[rv_handler]
 pub fn init() {
     // Initialize the static instances to start everything
@@ -360,4 +389,32 @@ pub fn init() {
 
     // Start the logger
     initialize_logger();
+}
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+    use regex::Regex;
+
+    use super::*;
+
+    #[test]
+    fn it_returns_current_timestamp() {
+        let result = utc_timestamp();
+
+        // [null, 0, "2021-01-01T00:00:00.000000000+00:00"]
+        let re = Regex::new(
+            r#"^\[null, 0, "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}\+\d{2}:\d{2}"\]$"#,
+        ).unwrap();
+
+        assert!(re.is_match(&result));
+    }
+
+    #[test]
+    fn it_returns_log_level() {
+        let result = log_level();
+        assert_eq!(result, "[null, 0, \"debug\"]");
+    }
 }
