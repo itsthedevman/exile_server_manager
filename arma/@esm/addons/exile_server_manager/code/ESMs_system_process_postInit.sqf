@@ -23,8 +23,9 @@
  *
  **/
 
+private _id = _this getOrDefault ["id", nil];
 private _data = _this getOrDefault ["data", nil];
-if (isNil "_data") exitWith { nil };
+if (isNil "_id" || { isNil "_data" }) exitWith { nil };
 
 // createHashMapFromArray is not recursive
 _data = createHashMapFromArray(_data);
@@ -45,3 +46,5 @@ ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;
 
 ["postInit", format["Initialization finished. Detected %1.", ESM_DatabaseExtension]] call ESMs_util_log;
+
+[_id] call ESMs_object_message_respond;

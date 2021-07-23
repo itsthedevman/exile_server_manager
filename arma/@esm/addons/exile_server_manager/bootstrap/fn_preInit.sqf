@@ -4,10 +4,10 @@
  *      ESM_fnc_preInit
  *
  * Description:
- *	    Compiles all the required functions and calls the preInit. Functions can be overwriten by using CfgExileCustomCode.
+ *	    Compiles all the required functions and calls the preInit. Functions can be overwritten by using CfgExileCustomCode.
  *
  * 	    ESM's functions are broken into two categories, ESMs and ESMc for server and client respectfully.
- *	    The reason why this doesn't follow Exile's format of Server and Client is because ESMServer and ESMClient look weird to me. That's all.
+ *	    The reason why this doesn't follow Exile's format of <thing>Server and <thing>Client is because ESMServer and ESMClient look weird to me. That's all.
  *
  * Arguments:
  *      None
@@ -61,6 +61,7 @@ private ['_code', '_function', '_file', '_fileContent'];
 forEach
 [
 	// ["ESMs_", "exile_server_manager\code\ESMs_"],
+    ["ESMs_object_message_respond", "exile_server_manager\code\ESMs_object_message_respond.sqf"],
     ["ESMs_system_extension_call", "exile_server_manager\code\ESMs_system_extension_call.sqf"],
     ["ESMs_system_extension_callback", "exile_server_manager\code\ESMs_system_extension_callback.sqf"],
     ["ESMs_system_extension_processResult", "exile_server_manager\code\ESMs_system_extension_processResult.sqf"],
