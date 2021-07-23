@@ -193,7 +193,7 @@ impl Client {
         self.reconnection_counter.store(0, Ordering::SeqCst);
 
         let mut message = Message::new(Type::Init);
-        message.set_data(self.initialization_data.read().clone());
+        message.data = self.initialization_data.read().clone();
 
         // debug!("[client#on_connect] Initialization {:#?}", message);
 

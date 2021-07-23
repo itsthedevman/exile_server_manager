@@ -37,6 +37,7 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
+regex = "1"
 
 # [patch."https://github.com/WolfkillArcadia/esm_message"]
 # esm_message = { path = "../esm_message" }
