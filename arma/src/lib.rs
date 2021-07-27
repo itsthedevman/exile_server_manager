@@ -63,7 +63,7 @@ lazy_static! {
     pub static ref ARMA: RwLock<Arma> = {
         // Placeholder data. This will be replaced in pre_init
         let token = Token::new(Vec::new(), Vec::new());
-        let arma = Arma::new(token, Data::Empty(esm_message::Empty::new()));
+        let arma = Arma::new(token, Data::Empty);
 
         RwLock::new(arma)
     };
