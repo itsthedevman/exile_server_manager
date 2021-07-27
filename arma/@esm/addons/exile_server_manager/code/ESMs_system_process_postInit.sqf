@@ -48,3 +48,5 @@ ESM_Initialized = true;
 ["postInit", format["Initialization finished. Detected %1.", ESM_DatabaseExtension]] call ESMs_util_log;
 
 [_id] call ESMs_object_message_respond;
+
+true

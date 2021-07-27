@@ -44,7 +44,7 @@
  **/
 
 private _id = _this select 0;
-private _data = _this param [1, ["empty", []]];
+private _data = _this param [1, ["empty", []]]; // Default to an acknowledge event
 private _metadata = _this param [2, ["empty", []]];
 private _errors = _this param [3, []];
 
@@ -74,3 +74,5 @@ forEach _errors;
 
 // Send it!
 ["event", _id, _data, _metadata, _errorsWrapper] call ESMs_system_extension_call;
+
+true
