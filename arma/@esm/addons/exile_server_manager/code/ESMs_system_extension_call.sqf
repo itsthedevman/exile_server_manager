@@ -4,13 +4,16 @@
  *      ESMs_system_extension_call
  *
  * Description:
- *
+ *		Calls ESM's extension with the provided function and data.
  *
  * Arguments:
- *      _
+ *      _this 		- 	If _this is a string, it will be treated as the name of the endpoint.
+ *						If _this is an array, the first element will be treated as the name of the endpoint and any other elements as arguments
  *
  * Examples:
- *      [] call ESMs_system_extension_call;
+ *      "ext_function" call ESMs_system_extension_call;
+ *
+ *		["ext_function", "arg 1", true, 55] call ESMs_system_extension_call;
  *
  * * *
  *
@@ -27,7 +30,7 @@ private _id = floor(random 100);
 
 // If the argument is a string, we're trying to call a function with no arguments
 if (_this isEqualType "") exitWith {
-	["call", format["[%1] Calling extension with: %2", _id, _this], "debug"] call ESMs_util_log;
+	["call", format["[%1] Calling extension endpoint ""%2""", _id, _this], "debug"] call ESMs_util_log;
 
 	// Surprisingly, this actually just returns a string
 	private _result = ("esm" callExtension _this) call ESMs_system_extension_processResult;
@@ -78,7 +81,7 @@ private _sanitizer = {
 }
 forEach _arguments;
 
-["call", format["[%1] Calling extension with: %2", _id, _sanitizedPackage], "debug"] call ESMs_util_log;
+["call", format["[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedPackage], "debug"] call ESMs_util_log;
 
 // Call the extension and process the result
 // Calls to callExtension without arguments returns a string.
