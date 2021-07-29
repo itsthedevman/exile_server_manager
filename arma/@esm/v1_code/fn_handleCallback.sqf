@@ -26,7 +26,7 @@ if (_parameters select [0, 1] == "[") then
 [
 	"fn_handleCallback",
 	format[
-		"Function: %1 | ID: %2 | Parameters: %3 | Metadata: %4",
+		"Function: %1 | ID: %2 | Data: %3 | Metadata: %4",
 		_function,
 		_parameters select 0,
 		_parameters select 1,

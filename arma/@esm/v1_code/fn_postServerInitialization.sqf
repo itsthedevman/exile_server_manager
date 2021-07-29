@@ -10,13 +10,13 @@
 */
 
 {
-	private _variableName = _x;
-	private _value = _this select _forEachIndex;
+	private _variableName = _x select 0;
+	private _value = _x select 1;
 
 	["fn_postServerInitialization", format["Binding value %1 (%2) to %3", _value, typeName(_value), _variableName]] call ESM_fnc_log;
 	missionNameSpace setVariable [_variableName, _value];
 }
-forEach (getArray(configFile >> "CfgESM" >> "globalVariables"));
+forEach _this;
 
 ESM_DatabaseVersion = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;

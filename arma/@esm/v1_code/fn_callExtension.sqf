@@ -48,4 +48,4 @@ private _sanitizer = {
 }
 forEach _arguments;
 
-"esm" callExtension [_function, _sanitizedPackage];
+"esm_client" callExtension [_function, _sanitizedPackage];

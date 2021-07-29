@@ -1,6 +1,6 @@
 class CfgPatches
 {
-	class ESM
+	class ExileServerManager
 	{
 		requiredVersion = 0.1;
 		requiredAddons[] = {
@@ -16,58 +16,25 @@ class CfgPatches
 
 class CfgFunctions
 {
-	class ESM
+	class ExileServerManager
 	{
-		class Functions
+		class Bootstrap
 		{
-			file = "\exile_server_manager\code";
+			file = "\exile_server_manager\bootstrap";
 
-			// Initialization
 			class preInit { preInit = 1; };
-
-			// Code
-			class payTerritory {};
-			class promotePlayer {};
-			class demotePlayer {};
-			class addPlayerToTerritory {};
-			class removePlayerFromTerritory {};
-			class upgradeTerritory {};
-			class gamble{};
-			class modifyPlayer {};
-			class postServerInitialization {};
-			class exec{};
-			class reward{};
-			class transferPoptabs{};
-
-			// Utils
-			class log {};
-			class getFlagObject {};
-			class callExtension {};
-			class sendToChannel {};
-			class hasAccessToTerritory {};
-			class logToDiscord {};
-			class scalarToString {};
-			class logToDLL {};
-			class attemptReconnect {};
-			class respond {};
-			class ping {};
-			class incrementPaymentCounter {};
-			class resetPaymentCounter {};
-			class handleCallback {};
-			class respondWithErrorCode {};
-			class respondWithError {};
 		};
 	};
 };
 
 class CfgESM
 {
-	// Setting variables retrieved from server settings
-	// Do not modify these as you will severely break ESM on your server!
+	// A safelist of variables to be extracted from the provided data on postInit.
+	// Do not modify these! You will break ESM.
 	globalVariables[] =
 	{
-		"ESM_CommunityID",
 		"ESM_ServerID",
+		"ESM_CommunityID",
 		"ESM_ExtDBVersion",
 		"ESM_Gambling_Modifier",
 		"ESM_Gambling_PayoutBase",
@@ -87,7 +54,7 @@ class CfgESM
 		"ESM_Logging_TransferPoptabs",
 		"ESM_Logging_UpgradeTerritory",
 		"ESM_Taxes_TerritoryPayment",
-		"ESM_Taxes_TerritoryPayment",
+		"ESM_Taxes_TerritoryUpgrade",
 		"ESM_TerritoryAdminUIDs"
 	};
 };
