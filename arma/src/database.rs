@@ -17,8 +17,8 @@ pub struct Database {
     connection_pool: Option<Pool>,
 }
 
-impl Database {
-    pub fn new() -> Database {
+impl Default for Database {
+    fn default() -> Database {
         let extdb_version = if crate::CONFIG.extdb_version != 0 {
             crate::CONFIG.extdb_version
         } else if Path::new("@ExileServer/extDB3_x64.dll").exists() {
@@ -28,6 +28,12 @@ impl Database {
         };
 
         Database { extdb_version, connection_pool: None, }
+    }
+}
+
+impl Database {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     ///    let connection = self.database.connection(); // Result<Connection, String>
