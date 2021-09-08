@@ -103,8 +103,9 @@ fn initialize_logger() {
     log4rs::init_config(config).unwrap();
 
     info!(
-        "\n----------------------------------\nWelcome to Exile Server Manager v{}\nLoaded config {:#?}\n----------------------------------",
+        "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {:#?}\n----------------------------------",
         env!("CARGO_PKG_VERSION"),
+        env!("VERGEN_GIT_SHA_SHORT"),
         crate::CONFIG.to_hashmap()
     );
 }
@@ -351,6 +352,7 @@ pub fn pre_init(
         territory_lifetime,
         territory_data,
         server_start_time: Utc::now(),
+        extension_version: format!("{}+{}", env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA_SHORT")),
     };
 
     trace!("[#pre_init] Initialization Data - {:?}", data);
