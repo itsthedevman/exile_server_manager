@@ -26,7 +26,6 @@ lazy_static = "1.4.0"
 crossbeam-channel = "0.4.4"
 log4rs = "0.13.0"
 chrono = { version = "0.4", features = ["serde"] }
-diesel = { version = "1.4.4", features = ["chrono", "mysql", "r2d2"] }
 rust-ini = "0.16.1"
 esm_message = { git = "https://github.com/WolfkillArcadia/esm_message.git", branch = "main" }
 message-io = { version = "0.14", default-features = false, features = ["tcp"] }
@@ -34,6 +33,7 @@ parking_lot = "0.10"
 bincode = "1.3.1"
 serde_yaml = "0.8"
 uuid = { version = "0.8", features = ["serde", "v4"] }
+mysql = "*"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

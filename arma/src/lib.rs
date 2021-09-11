@@ -1,7 +1,4 @@
 #[macro_use]
-extern crate diesel;
-
-#[macro_use]
 extern crate log;
 
 mod arma;
@@ -9,7 +6,6 @@ mod client;
 mod config;
 mod database;
 pub mod models;
-pub mod schema;
 
 // Various Packages
 use arma_rs::{ArmaValue, ToArma, arma_value, rv, rv_callback, rv_handler};

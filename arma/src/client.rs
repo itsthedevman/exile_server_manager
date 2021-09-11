@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, AtomicI16, Ordering};
 use std::thread::{self};
 use std::time::Duration;
 
-use esm_message::{Data, Message, Type};
+use esm_message::{Data, Message, Type, retrieve_data};
 use log::*;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeListener};
@@ -229,6 +229,17 @@ impl Client {
 
                 let mut writer_arma = crate::ARMA.write();
                 writer_arma.post_initialization(&mut message)
+            },
+            Type::Query => {
+                let data = retrieve_data!(&message, Query);
+
+                match arma.database.query(&data.name, &data.arguments) {
+                    Ok(()) => Ok(()),
+                    Err(e) => {
+                        message.add_error(esm_message::ErrorType::Message, e);
+                        Err(())
+                    }
+                }
             },
             _ => unreachable!("Message type \"{:?}\" has not been implemented yet", message.message_type),
         };

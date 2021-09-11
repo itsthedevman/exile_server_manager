@@ -1,16 +1,10 @@
-use crate::models::*;
-use diesel::{
-    expression::dsl::exists,
-    prelude::*,
-    r2d2::{self, ConnectionManager, PooledConnection},
-    select, MysqlConnection,
-};
+use mysql::{Opts, Pool, PooledConn, params, prelude::Queryable, Result as QueryResult};
 use ini::Ini;
 use log::*;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
-pub type Pool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
-pub type Connection = PooledConnection<ConnectionManager<MysqlConnection>>;
+use crate::models::*;
+pub type EmptyResult = Result<(), ()>;
 
 pub struct Database {
     pub extdb_version: u8,
@@ -31,16 +25,15 @@ impl Default for Database {
     }
 }
 
+// Unfortunately, due to the limitation with message-io, this cannot use an async ORM.
 impl Database {
     pub fn new() -> Self {
         Self::default()
     }
 
-    ///    let connection = self.database.connection(); // Result<Connection, String>
-    ///    let results = territory.load::<Territory>(&*connection); // QueryResult<Vec<Territory>>
-    pub fn connection(&self) -> Result<Connection, String> {
+    pub fn connection(&self) -> Result<PooledConn, String> {
         match &self.connection_pool {
-            Some(c) => match c.clone().get() {
+            Some(pool) => match pool.get_conn() {
                 Ok(c) => Ok(c),
                 Err(e) => Err(format!("[database::connection] {}", e)),
             },
@@ -50,7 +43,7 @@ impl Database {
         }
     }
 
-    pub fn connect(&mut self, base_ini_path: &String) -> Result<(), ()> {
+    pub fn connect(&mut self, base_ini_path: String) -> EmptyResult {
         // Get the path and load the ini file
         let ini_path = self.extdb_conf_path(base_ini_path);
         let db_ini = match Ini::load_from_file(&ini_path) {
@@ -72,9 +65,17 @@ impl Database {
             }
         };
 
+        // Convert it to options
+        let database_opts = match Opts::from_url(&database_url) {
+            Ok(opts) => opts,
+            Err(e) => {
+                error!("[database::connection_string] {}", e);
+                return Err(());
+            }
+        };
+
         // Connect to the database!
-        let manager = ConnectionManager::<MysqlConnection>::new(&database_url);
-        self.connection_pool = match r2d2::Pool::builder().build(manager) {
+        self.connection_pool = match Pool::new(database_opts) {
             Ok(pool) => Some(pool),
             Err(e) => {
                 error!("[database::connect] Failed to connect to MySQL.");
@@ -86,10 +87,23 @@ impl Database {
         Ok(())
     }
 
-    pub fn account_exists(&self, player_uid: &String) -> bool {
-        use crate::schema::account::dsl::*;
+    pub fn query(&self, name: &str, arguments: &HashMap<String, String>) -> Result<(), String> {
+        match name {
+            "territory" => {
+                Ok(())
+            },
+            "territories" => {
+                Ok(())
+            },
+            _ => {
+                error!("[database::query] Unexpected query \"{}\" with arguments {:?}", name, arguments);
+                Err(format!("Unexpected query \"{}\" with arguments {:?}", name, arguments))
+            }
+        }
+    }
 
-        let connection = match self.connection() {
+    pub fn account_exists(&self, player_uid: &str) -> bool {
+        let mut connection = match self.connection() {
             Ok(connection) => connection,
             Err(e) => {
                 error!(
@@ -100,9 +114,59 @@ impl Database {
             }
         };
 
-        select(exists(account.filter(uid.eq(player_uid))))
-            .get_result::<bool>(&*connection)
-            .unwrap_or(false)
+        let result: QueryResult<Option<String>> = connection.exec_first(
+            "SELECT CASE WHEN EXISTS(SELECT uid FROM account WHERE uid = :uid) THEN 'true' ELSE 'false' END",
+            params! { "uid" => player_uid }
+        );
+
+        match result {
+            Ok(r) => match r {
+                Some(v) => v == "true",
+                None => false
+            },
+            Err(e) => {
+                error!("[database::account_exists] {}", e);
+                false
+            }
+        }
+    }
+
+    pub fn territories(&self, arguments: &HashMap<String, String>) -> Vec<Territory> {
+        let connection = match self.connection() {
+            Ok(connection) => connection,
+            Err(e) => {
+                error!(
+                    "[database::account_exists] Unable to obtain a open connection to the database. Reason: {}",
+                    e
+                );
+                return Vec::new();
+            }
+        };
+
+        // r#"
+        //         SELECT
+        //             t.id as id,
+        //             owner_uid,
+        //             (SELECT name FROM account WHERE uid = owner_uid) as owner_name,
+        //             name as territory_name,
+        //             radius,
+        //             level,
+        //             flag_texture,
+        //             flag_stolen,
+        //             CONVERT_TZ(`last_paid_at`, @@session.time_zone, '+00:00') AS `last_paid_at`,
+        //             build_rights,
+        //             moderators,
+        //             (SELECT COUNT(*) FROM construction WHERE territory_id = t.id) as object_count,
+        //             esm_custom_id
+        //         FROM
+        //             territory t
+        //         WHERE
+        //             deleted_at IS NULL
+        //         AND
+
+        //     "#
+
+        Vec::new()
     }
 
     /*
@@ -191,7 +255,7 @@ impl Database {
         ))
     }
 
-    fn extdb_conf_path(&self, base_ini_path: &String) -> String {
+    fn extdb_conf_path(&self, base_ini_path: String) -> String {
         if !crate::CONFIG.extdb_conf_path.is_empty() { return crate::CONFIG.extdb_conf_path.clone(); }
 
         let file_path = format!("{}/extdb3-conf.ini", base_ini_path);

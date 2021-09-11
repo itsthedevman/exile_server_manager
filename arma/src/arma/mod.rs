@@ -32,7 +32,7 @@ impl Arma {
         let base_ini_path = if data.extdb_path.is_empty() { String::from("@ExileServer") } else { data.extdb_path.clone() };
 
         // Connect to the database
-        if self.database.connect(&base_ini_path).is_err() {
+        if self.database.connect(base_ini_path).is_err() {
             // This will tell the bot to log the error to the community's logging channel.
             message.add_error(esm_message::ErrorType::Code, "fail_database_connect");
 
