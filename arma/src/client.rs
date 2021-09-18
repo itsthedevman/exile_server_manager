@@ -133,7 +133,7 @@ impl Client {
         // Convert the message to bytes so it can be sent
         match message.as_bytes(|_| Some(self.token.key.clone())) {
             Ok(bytes) => {
-                // debug!("[client#send_to_server] {:#?}", message);
+                debug!("[client#send_to_server] {:#?}", message);
 
                 network.send(endpoint, &bytes);
             }
@@ -208,7 +208,7 @@ impl Client {
 
         let message = Message::from_bytes(incoming_data, |_| Some(self.token.key.clone()));
 
-        let mut message = match message {
+        let message = match message {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
@@ -223,31 +223,25 @@ impl Client {
         // debug!("[client#on_message] {:#?}", message);
 
         let arma = crate::ARMA.read();
-        let result = match message.message_type {
+        let result: Option<Message> = match message.message_type {
             Type::PostInit => {
                 drop(arma); // Release the read so a write can be established
 
                 let mut writer_arma = crate::ARMA.write();
-                writer_arma.post_initialization(&mut message)
+                writer_arma.post_initialization(message)
             },
             Type::Query => {
-                let data = retrieve_data!(&message, Query);
-
-                match arma.database.query(&data.name, &data.arguments) {
-                    Ok(()) => Ok(()),
-                    Err(e) => {
-                        message.add_error(esm_message::ErrorType::Message, e);
-                        Err(())
-                    }
-                }
+                arma.database.query(message)
             },
             _ => unreachable!("Message type \"{:?}\" has not been implemented yet", message.message_type),
         };
 
-        if result.is_ok() { return; }
+        debug!("[client#on_message] Result: {:?}", result);
 
-        // There was a issue. Send the message back with the errors.
-        self.send_to_server(message);
+        // If a message is returned, send it back
+        if let Some(m) = result {
+            self.send_to_server(m);
+        }
     }
 
     fn on_disconnect(&self) {

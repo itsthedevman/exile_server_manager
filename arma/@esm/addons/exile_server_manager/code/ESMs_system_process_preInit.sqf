@@ -64,7 +64,13 @@ addMissionEventHandler ["ExtensionCallback", {
 	getNumber(configFile >> "CfgSettings" >> "GarbageCollector" >> "Database" >> "territoryLifeTime"),
 
 	// territory_data
-	_territory_data
+	_territory_data,
+
+	// vg_enabled
+	getNumber(missionConfigFile >> "CfgVirtualGarage" >> "enableVirtualGarage") isEqualTo 0,
+
+	// vg_max_sizes
+	getArray(missionConfigFile >> "CfgVirtualGarage" >> "numberOfVehicles")
 ] call ESMs_system_extension_call;
 
 true

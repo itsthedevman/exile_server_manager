@@ -1,10 +1,11 @@
+use arma_rs::{arma_value, ToArma};
+use esm_message::{Data, ErrorType, Message, data, retrieve_data};
 use mysql::{Opts, Pool, PooledConn, params, prelude::Queryable, Result as QueryResult};
 use ini::Ini;
 use log::*;
 use std::{collections::HashMap, path::Path};
 
 use crate::models::*;
-pub type EmptyResult = Result<(), ()>;
 
 pub struct Database {
     pub extdb_version: u8,
@@ -43,7 +44,7 @@ impl Database {
         }
     }
 
-    pub fn connect(&mut self, base_ini_path: String) -> EmptyResult {
+    pub fn connect(&mut self, base_ini_path: String) -> Result<(), ()> {
         // Get the path and load the ini file
         let ini_path = self.extdb_conf_path(base_ini_path);
         let db_ini = match Ini::load_from_file(&ini_path) {
@@ -87,19 +88,25 @@ impl Database {
         Ok(())
     }
 
-    pub fn query(&self, name: &str, arguments: &HashMap<String, String>) -> Result<(), String> {
-        match name {
-            "territory" => {
-                Ok(())
-            },
-            "territories" => {
-                Ok(())
-            },
+    pub fn query(&self, mut message: Message) -> Option<Message> {
+        let data = retrieve_data!(message, Query);
+        let name = data.name;
+        let arguments = data.arguments;
+
+        let message = match name.as_str() {
+            "reward_territories" => self.reward_territories(message, arguments),
             _ => {
                 error!("[database::query] Unexpected query \"{}\" with arguments {:?}", name, arguments);
-                Err(format!("Unexpected query \"{}\" with arguments {:?}", name, arguments))
+                message.add_error(
+                    esm_message::ErrorType::Message,
+                    format!("Unexpected query \"{}\" with arguments {:?}", name, arguments)
+                );
+
+                message
             }
-        }
+        };
+
+        Some(message)
     }
 
     pub fn account_exists(&self, player_uid: &str) -> bool {
@@ -131,42 +138,76 @@ impl Database {
         }
     }
 
-    pub fn territories(&self, arguments: &HashMap<String, String>) -> Vec<Territory> {
-        let connection = match self.connection() {
+    pub fn reward_territories(&self, mut message: Message, arguments: HashMap<String, String>) -> Message {
+        let mut connection = match self.connection() {
             Ok(connection) => connection,
             Err(e) => {
                 error!(
-                    "[database::account_exists] Unable to obtain a open connection to the database. Reason: {}",
+                    "[database::reward_territories] Unable to obtain a open connection to the database. Reason: {}",
                     e
                 );
-                return Vec::new();
+
+                message.add_error(ErrorType::Code, "client_exception");
+                return message;
             }
         };
 
-        // r#"
-        //         SELECT
-        //             t.id as id,
-        //             owner_uid,
-        //             (SELECT name FROM account WHERE uid = owner_uid) as owner_name,
-        //             name as territory_name,
-        //             radius,
-        //             level,
-        //             flag_texture,
-        //             flag_stolen,
-        //             CONVERT_TZ(`last_paid_at`, @@session.time_zone, '+00:00') AS `last_paid_at`,
-        //             build_rights,
-        //             moderators,
-        //             (SELECT COUNT(*) FROM construction WHERE territory_id = t.id) as object_count,
-        //             esm_custom_id
-        //         FROM
-        //             territory t
-        //         WHERE
-        //             deleted_at IS NULL
-        //         AND
+        let player_uid = match arguments.get("uid") {
+            Some(uid) => uid,
+            None => {
+                error!("[database::reward_territories] Missing key :uid in data arguments");
+                message.add_error(ErrorType::Code, "client_exception");
+                return message;
+            }
+        };
 
-        //     "#
+        #[derive(Debug, serde::Serialize)]
+        struct TerritoryResult {
+            pub id: i32,
+            pub custom_id: Option<String>,
+            pub name: String,
+            pub level: i32,
+            pub vehicle_count: i32,
+        }
 
-        Vec::new()
+        let result = connection.exec_map(
+            r#"
+                SELECT
+                    t.id,
+                    esm_custom_id,
+                    name,
+                    level,
+                    (SELECT COUNT(*) FROM vehicle WHERE territory_id = t.id) as vehicle_count
+                FROM
+                    territory t
+                WHERE
+                    deleted_at IS NULL
+                AND
+                    (owner_uid = :uid
+                        OR build_rights LIKE :uid_wildcard
+                        OR moderators LIKE :uid_wildcard)
+            "#,
+            params! { "uid" => player_uid, "uid_wildcard" => format!("%{}%", player_uid) },
+            |(id, custom_id, name, level, vehicle_count)| {
+                TerritoryResult { id, custom_id, name, level, vehicle_count, }
+            }
+        );
+
+        match result {
+            Ok(territories) => {
+                let results: Vec<String> = territories.into_iter().map(|t| {
+                    serde_json::to_string(&t).unwrap()
+                }).collect();
+
+                message.data = Data::QueryResult(data::QueryResult { results });
+            },
+            Err(e) => {
+                error!("[database::reward_territories] {}", e);
+                message.add_error(ErrorType::Code, "client_exception");
+            }
+        }
+
+        message
     }
 
     /*

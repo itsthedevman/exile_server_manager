@@ -6,8 +6,6 @@ use esm_message::{Data, Message, retrieve_data};
 use crate::client::Client;
 use crate::{database::Database};
 
-type EmptyResult = Result<(), ()>;
-
 pub struct Arma {
     pub client: Client,
     pub database: Database,
@@ -25,8 +23,8 @@ impl Arma {
         self.database.extdb_version
     }
 
-    pub fn post_initialization(&mut self, message: &mut Message) -> EmptyResult {
-        let data = retrieve_data!(&message, PostInit);
+    pub fn post_initialization(&mut self, mut message: Message) -> Option<Message> {
+        let data = retrieve_data!(message, PostInit);
 
         // Get the base path to figure out where to look for the ini
         let base_ini_path = if data.extdb_path.is_empty() { String::from("@ExileServer") } else { data.extdb_path.clone() };
@@ -34,15 +32,15 @@ impl Arma {
         // Connect to the database
         if self.database.connect(base_ini_path).is_err() {
             // This will tell the bot to log the error to the community's logging channel.
-            message.add_error(esm_message::ErrorType::Code, "fail_database_connect");
+            message.add_error(esm_message::ErrorType::Code, String::from("fail_database_connect"));
 
-            // Tell the caller that we had an uh-oh
-            return Err(());
+            return Some(message);
         }
 
-        crate::a3_post_init(self, message);
+        // Call arma
+        crate::a3_post_init(self, &message);
 
-        Ok(())
+        None
     }
 
     // pub fn reward(&self, command: &Command) {

@@ -299,6 +299,8 @@ pub fn pre_init(
     price_per_object: f32,
     territory_lifetime: f32,
     territory_data: String,
+    vg_enabled: bool,
+    vg_max_sizes: String,
 ) {
     // Only allow this method to be called properly once
     if *READY.read() {
@@ -347,6 +349,8 @@ pub fn pre_init(
         price_per_object,
         territory_lifetime,
         territory_data,
+        vg_enabled,
+        vg_max_sizes,
         server_start_time: Utc::now(),
         extension_version: format!("{}+{}", env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA_SHORT")),
     };

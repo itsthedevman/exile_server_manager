@@ -23,7 +23,7 @@ fn main() {
         ]
     ).to_string();
 
-    esm_client::pre_init(server_name, price_per_object, territory_lifetime, territory_data);
+    esm_client::pre_init(server_name, price_per_object, territory_lifetime, territory_data, true, "[-1,5,8,11,13,15,18,21,25,28]".into());
 
     loop { thread::sleep(std::time::Duration::from_secs(1)) }
 }
