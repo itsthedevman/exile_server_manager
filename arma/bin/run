@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# RUST_LOG=debug \
-# ESM_WS_URL=ws://127.0.0.1:3001 \
-# cargo run
-
-source tools/run.env && ./tools/esm_build_tool run "$@"

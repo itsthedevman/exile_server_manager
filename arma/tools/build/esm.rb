@@ -1,11 +1,14 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require 'rubygems'
 require 'commander/import'
+require 'dotenv'
 require 'fileutils'
-require 'pry'
 require 'file-tail'
+require 'pry'
+
+# Load the ENV
+Dotenv.load("../run.env")
 
 program :name, 'esm'
 program :version, '0.0.1'
@@ -84,7 +87,7 @@ command :run do |c|
 end
 
 class Utils
-  GIT_DIRECTORY = File.expand_path("./")
+  GIT_DIRECTORY = File.expand_path("../../")
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
   REMOTE_HOST = ENV["ESM_REMOTE_HOST"] || ""
@@ -224,7 +227,7 @@ class Utils
           "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm_client.so"
         end
 
-      if @arch == :x64 && @os == :windows
+      if @os == :windows
         filename = @arch == :x64 ? "esm_x64.dll" : "esm.dll"
         FileUtils.move(path, "#{BUILD_DIRECTORY}/@esm/#{filename}")
       else
