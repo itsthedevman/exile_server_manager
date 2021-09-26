@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, AtomicI16, Ordering};
 use std::thread::{self};
 use std::time::Duration;
 
-use esm_message::{Data, Message, Type, retrieve_data};
+use esm_message::{Data, Message, Type};
 use log::*;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeListener};
@@ -224,19 +224,16 @@ impl Client {
 
         let arma = crate::ARMA.read();
         let result: Option<Message> = match message.message_type {
-            Type::PostInit => {
+            Type::Init => {
                 drop(arma); // Release the read so a write can be established
 
                 let mut writer_arma = crate::ARMA.write();
                 writer_arma.post_initialization(message)
             },
-            Type::Query => {
-                arma.database.query(message)
-            },
-            _ => unreachable!("Message type \"{:?}\" has not been implemented yet", message.message_type),
+            Type::Query => arma.database.query(message),
+            Type::Arma => arma.call_function(message),
+            _ => unreachable!("[client::on_message] This is a bug. Message type \"{:?}\" has not been implemented yet", message.message_type),
         };
-
-        debug!("[client#on_message] Result: {:?}", result);
 
         // If a message is returned, send it back
         if let Some(m) = result {
