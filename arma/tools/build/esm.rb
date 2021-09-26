@@ -32,7 +32,7 @@ command :build do |c|
     Utils.print_info
 
     # Kill Arma server
-    Utils.kill_arma_server
+    Utils.kill_arma
 
     # Clean up the build and destination directories
     Utils.clean_directories
@@ -71,7 +71,7 @@ command :run do |c|
     Utils.print_info
 
     # Kill Arma server
-    Utils.kill_arma_server
+    Utils.kill_arma
 
     # Clean the database
     Utils.clean_database
@@ -164,13 +164,14 @@ class Utils
     REMOTE_HOST.empty?
   end
 
-  def self.kill_arma_server
-    log("Killing Arma Server... ") do
+  def self.kill_arma
+    log("Killing Arma... ") do
       if @os == :windows
-        if @arch == :x64
-          `taskkill /IM "arma3server_x64.exe" /F`
-        else
-          `taskkill /IM "arma3server.exe" /F`
+        [
+          "arma3server.exe", "arma3server_x64.exe",
+          "arma3_x64.exe", "arma3.exe", "arma3battleye.exe"
+        ].each do |exe|
+          `taskkill /IM "#{exe}" /F /T >nul 2>&1`
         end
       else
         if @arch == :x64
@@ -347,7 +348,7 @@ class Utils
     puts "<esm_bt> Failed to open esm.log"
   rescue SystemExit, Interrupt
     puts "cancelled"
-    kill_arma_server
+    kill_arma
     exit
   end
 
