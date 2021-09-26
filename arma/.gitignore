@@ -19,4 +19,8 @@ log/
 # 32 bit compiling
 SymbolInfo.map
 
-tools/run.env
+run.env
+test_users.yml
+
+node_modules
+reset.sql
