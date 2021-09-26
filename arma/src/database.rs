@@ -4,8 +4,7 @@ use mysql::{Opts, Pool, PooledConn, params, prelude::Queryable, Result as QueryR
 use ini::Ini;
 use log::*;
 use std::{collections::HashMap, path::Path};
-
-use crate::models::*;
+use serde::Serialize;
 
 pub struct Database {
     pub extdb_version: u8,
@@ -89,7 +88,7 @@ impl Database {
     }
 
     pub fn query(&self, mut message: Message) -> Option<Message> {
-        let data = retrieve_data!(message, Query);
+        let data = retrieve_data!(message.data, Data::Query);
         let name = data.name;
         let arguments = data.arguments;
 
@@ -161,7 +160,7 @@ impl Database {
             }
         };
 
-        #[derive(Debug, serde::Serialize)]
+        #[derive(Debug, Serialize)]
         struct TerritoryResult {
             pub id: i32,
             pub custom_id: Option<String>,
