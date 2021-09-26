@@ -5,7 +5,6 @@ mod arma;
 mod client;
 mod config;
 mod database;
-pub mod models;
 
 // Various Packages
 use arma_rs::{ArmaValue, ToArma, arma_value, rv, rv_callback, rv_handler};
@@ -111,9 +110,9 @@ fn initialize_logger() {
 ///     ESMs_system_extension_call will detect if it needs to make subsequent calls to the extension and perform any chunk rebuilding if needed
 ///
 /// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
-fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
+fn send_to_arma<D: ToArma + Debug + ToString>(function: &str, data: D) {
     if env::var("ESM_IS_TERMINAL").is_ok() {
-        info!("Function: {}\nData: {:#?}", function, data);
+        info!("\nFunction: {}\nData: {:#?}", function, data);
         return;
     }
 
@@ -131,11 +130,7 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &'static str, data: D) {
     if data_size > CHUNK_SIZE { panic!("Data is too large! Uncomment the chunking code."); }
 
     let output = RVOutput::new(None, 0, data.to_arma()).to_string();
-    rv_callback!(
-        "exile_server_manager",
-        function,
-        output
-    );
+    rv_callback!("exile_server_manager", function, output);
 
     // UNCOMMENT THIS AND next_chunk IF NEEDED.
     // I wrote this in an attempt to fix a bug. But it didn't work
@@ -174,7 +169,7 @@ pub fn a3_log(message: String) {
 
 /// Sends the post initialization data to the server
 pub fn a3_post_init(arma: &mut Arma, message: &Message) {
-    let data = retrieve_data!(&message, PostInit);
+    let data = retrieve_data!(message.data, Data::PostInit);
     send_to_arma(
         "ESMs_system_process_postInit",
         arma_value!({
@@ -209,15 +204,16 @@ pub fn a3_post_init(arma: &mut Arma, message: &Message) {
     );
 }
 
-// pub fn a3_reward(command: &Command, parameters: &Reward, metadata: &DefaultMetadata) {
-//     rv_callback!(
-//         "exile_server_manager",
-//         "ESM_fnc_reward",
-//         command.id.clone(),
-//         parameters.clone(),
-//         metadata.clone()
-//     )
-// }
+pub fn a3_call_function(function_name: &str, message: &Message) {
+    send_to_arma(
+        function_name,
+        arma_value!({
+            "id": message.id,
+            "data": message.data,
+            "metadata": message.metadata
+        })
+    );
+}
 
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
@@ -296,8 +292,8 @@ pub fn log_level() -> String {
 #[rv(thread = true)]
 pub fn pre_init(
     server_name: String,
-    price_per_object: f32,
-    territory_lifetime: f32,
+    price_per_object: f64,
+    territory_lifetime: f64,
     territory_data: String,
     vg_enabled: bool,
     vg_max_sizes: String,
