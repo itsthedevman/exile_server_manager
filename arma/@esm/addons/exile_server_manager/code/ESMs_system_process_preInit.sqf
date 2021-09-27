@@ -23,6 +23,32 @@
  *
  **/
 
+ESM_CommunityID = "";
+ESM_DatabaseExtension = "extDB3";
+ESM_ExtDBVersion = 3;
+ESM_Gambling_Modifier = 1;
+ESM_Gambling_PayoutBase = 95;
+ESM_Gambling_PayoutRandomizerMax = 0;
+ESM_Gambling_PayoutRandomizerMid = 0.5;
+ESM_Gambling_PayoutRandomizerMin = 1;
+ESM_Gambling_WinPercentage = 35;
+ESM_Initialized = false
+ESM_Logging_AddPlayerToTerritory = true;
+ESM_Logging_DemotePlayer = true;
+ESM_Logging_Exec = true;
+ESM_Logging_Gamble = false;
+ESM_Logging_ModifyPlayer = true;
+ESM_Logging_PayTerritory = true;
+ESM_Logging_PromotePlayer = true;
+ESM_Logging_RemovePlayerFromTerritory = true;
+ESM_Logging_RewardPlayer = true;
+ESM_Logging_TransferPoptabs = true;
+ESM_Logging_UpgradeTerritory = true;
+ESM_ServerID = "";
+ESM_Taxes_TerritoryPayment = 0;
+ESM_Taxes_TerritoryUpgrade = 0;
+ESM_TerritoryAdminUIDs = [];
+
 // For controlling which calls log
 ESM_LogLevel = "log_level" call ESMs_system_extension_call;
 ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
