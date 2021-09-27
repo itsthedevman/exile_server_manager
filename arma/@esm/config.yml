@@ -11,5 +11,5 @@
 connection_url: "esm.mshome.net:3003"
 log_level: "debug"
 env: "development"
-# extdb_conf_path: "tools/extdb4-conf.ini"
-# extdb_version: 3
+extdb_conf_path: "tools/extdb4-conf.ini"
+extdb_version: 3
