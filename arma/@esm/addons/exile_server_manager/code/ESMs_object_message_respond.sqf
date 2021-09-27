@@ -17,10 +17,10 @@
  *														"message"	- Treats the content as a free form message.
  *
  * Examples:
- *      ["id"] call ESMs_object_message_respond; // ack the message.
+ *      [_id] call ESMs_object_message_respond; // ack the message.
  *
  *		[
- *			"id",
+ *			_id,
  *			[[
  *	 			"data_type",
  *				[["key", "value"], ["key", "value"]]

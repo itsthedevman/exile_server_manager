@@ -30,7 +30,10 @@
  **/
 
 private _result = _this;
-if (isNil("_result") || { _result isEqualTo "" }) exitWith {};
+
+if (isNil("_result") || { _result isEqualTo "" }) exitWith {
+	["processResult", format["Invalid call! Please review ESMs_system_extension_processResult's file documentation", _this], "error"] call ESMs_util_log;
+};
 
 if (_result isEqualType "") then {
 	_result = parseSimpleArray _result;
@@ -49,7 +52,7 @@ if (_statusCode isEqualTo 0) exitWith { _content };
 
 // There was an error
 if (_statusCode isEqualTo -1) exitWith {
-	["processResult", format["ERROR - %1", _content]] call ESMs_util_log;
+	["processResult", format["Status code -1 returned. Content: %1", _content], "error"] call ESMs_util_log;
 	nil
 };
 

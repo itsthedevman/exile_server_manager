@@ -7,10 +7,10 @@
  *      Called after the extension has connected to the bot successfully. This function binds the required variables and their values.
  *
  * Arguments:
- *      _this	-	A hashmap of variables and their values.
+ *      _this	-	A hashmap representation of a Message
  *
  * Examples:
- *      [] call ESMs_system_process_postInit;
+ *      Message call ESMs_system_process_postInit;
  *
  * * *
  *
@@ -26,9 +26,6 @@
 private _id = _this getOrDefault ["id", nil];
 private _data = _this getOrDefault ["data", nil];
 if (isNil "_id" || { isNil "_data" }) exitWith { nil };
-
-// createHashMapFromArray is not recursive
-_data = createHashMapFromArray(_data);
 
 // Bind the variables from CfgESM >> globalVariables, retrieving the values from _data
 {

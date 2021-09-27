@@ -60,6 +60,10 @@ if (_function isEqualTo "") exitWith
 private _message = createHashMapFromArray(_data call ESMs_system_extension_processResult);
 ["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
 
+// createHashMapFromArray is not recursive. Convert data/metadata to a hashmap
+_message set ["data", createHashMapFromArray(_message getOrDefault ["data", []]);
+_message set ["metadata", createHashMapFromArray(_message getOrDefault ["metadata", []]);
+
 _message call _function;
 
 true
