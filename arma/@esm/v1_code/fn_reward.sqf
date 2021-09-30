@@ -1,21 +1,30 @@
-params ["_commandID", "_parameters", "_metadata"];
-_parameters params [
-	"_playerUID",
-	["_rewardItems", [], [[]]],
-	["_rewardVehicles", [], [[]]],
-	["_rewardPoptabsPlayer", 0, [0]],
-	["_rewardPoptabsLocker", 0, [0]],
-	["_rewardRespect", 0, [0]]
-];
-// _metadata params ["_userID", "_userName", "_userMention", "userSteamUID"];
+/*
+	Exile Server Manager
+	www.esmbot.com
+	© 2018 Exile Server Manager Team
+	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
+
+	Description:
+		Rewards the player with preconfigured poptabs, respect, and items
+*/
+params ["_commandID", "_authorInfo", "_playerUID"];
+(parseSimpleArray(_authorInfo)) params ["_authorTag", "_authorID"];
 
 try
 {
+	// Don't allow adding people who aren't part of this server (also catches discord id mistakes. ;))
+	if !(format["isKnownAccount:%1", _playerUID] call ExileServer_system_database_query_selectSingleField) then
+	{
+		throw ["", format["%1, you have not joined this server yet", _authorTag]];
+	};
+
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
 
-	if (isNull _playerObject) exitWith
+
+	if (isNull _playerObject) then
 	{
-		[_commandID, "null_player"] call ESM_fnc_respondWithErrorCode;
+		throw ["", format["%1, you need to logged into the server first", _authorTag]];
 	};
 
 	if !(alive _playerObject) then
@@ -26,49 +35,38 @@ try
 	private _receipt = [];
 
 	// Process Poptabs (player)
-	if (_rewardPoptabsPlayer > 0) then
+	if (ESM_RewardPoptabsPlayer > 0) then
 	{
 		private _playerMoney = _playerObject getVariable ["ExileMoney", 0];
-
-		_playerMoney = _playerMoney + _rewardPoptabsPlayer;
+		_playerMoney = _playerMoney + ESM_RewardPoptabsPlayer;
 		_playerObject setVariable ["ExileMoney", _playerMoney, true];
-
 		format["setPlayerMoney:%1:%2", _playerMoney, _playerObject getVariable ["ExileDatabaseID", 0]] call ExileServer_system_database_query_fireAndForget;
-
-		_receipt pushBack ["Poptabs (Player)", _rewardPoptabsPlayer];
+		_receipt pushBack ["Poptabs (Player)", ESM_RewardPoptabsPlayer];
 	};
 
 	// Process Poptabs (Locker)
-	if (_rewardPoptabsLocker > 0) then
+	if (ESM_RewardPoptabsLocker > 0) then
 	{
 		private _playerLocker = _playerObject getVariable ["ExileLocker", 0];
-
-		_playerLocker = _playerLocker + _rewardPoptabsLocker;
+		_playerLocker = _playerLocker + ESM_RewardPoptabsLocker;
 		_playerObject setVariable ["ExileLocker", _playerLocker, true];
-
 		format["updateLocker:%1:%2", _playerLocker, _playerUID] call ExileServer_system_database_query_fireAndForget;
-
-		_receipt pushBack ["Poptabs (Locker)", _rewardPoptabsLocker];
+		_receipt pushBack ["Poptabs (Locker)", ESM_RewardPoptabsLocker];
 	};
 
 	// Process Respect
-	if (_rewardRespect > 0) then
+	if (ESM_RewardRespect > 0) then
 	{
 		private _playerRespect = _playerObject getVariable ["ExileScore", 0];
-
-		_playerRespect = _playerRespect + _rewardRespect;
+		_playerRespect = _playerRespect + ESM_RewardRespect;
 		_playerObject setVariable ["ExileScore", _playerRespect];
-
-		// Update the client's cache
 		[_playerRespect, { ExileClientPlayerScore = _this; }] remoteExecCall ["call", owner _playerObject];
-
 		format["setAccountScore:%1:%2", _playerRespect, (getPlayerUID _playerObject)] call ExileServer_system_database_query_fireAndForget;
-
-		_receipt pushBack ["Respect", _rewardRespect];
+		_receipt pushBack ["Respect", ESM_RewardRespect];
 	};
 
 	// Process Items
-	if !(_rewardItems isEqualTo []) then
+	if !(ESM_RewardItems isEqualTo []) then
 	{
 		{
 			private _classname = _x select 0;
@@ -93,13 +91,11 @@ try
 						private _lootHolder = objNull;
                         private _nearestHolder = nearestObjects [_playerObject, ["GroundWeaponHolder", "WeaponHolderSimulated", "LootWeaponHolder"], 3];
 
-						// Get the nearest lootholder
                         if !(_nearestHolder isEqualTo []) then
                         {
                             _lootHolder = _nearestHolder select 0;
                         };
 
-						// If there are none, spawn one nearby
                         if (isNull _lootHolder) then
                         {
                             _lootHolder = createVehicle ["GroundWeaponHolder", _playerPosition, [], 3, "CAN_COLLIDE"];
@@ -107,14 +103,12 @@ try
                             _lootHolder setVariable ["BIS_enableRandomization", false];
                         };
 
-						// If it is a backpack, add it using a different command. Because.
 						if (getText(configfile >> _configName >> _classname >> "vehicleClass") isEqualTo "Backpacks") then
                         {
                             _lootHolder addBackpackCargoGlobal [_classname, 1];
                         }
                         else
                         {
-							// And everything else is an item
                             _lootHolder addItemCargoGlobal [_classname, 1];
                         };
 
@@ -135,56 +129,7 @@ try
 				["error", "message", [format["**WARNING:** You have `%1` listed as an item reward, however, this item's config does not exist on your server\nPlease double check your spelling, add the required mod, or remove this item from the rewards for this server", _classname]]] call ESM_fnc_logToDiscord;
 			};
 		}
-		forEach _rewardItems;
-	};
-
-	// Process Vehicles
-	if !(_rewardVehicles isEqualTo []) then
-	{
-		{
-			private _vehicleClass = _x select 0;
-			private _quantity = _x select 1;
-			private _addToGarage = _x select 2;
-			private _pinCode = _x select 3;
-			private _isShip = _vehicleClass isKindOf "Ship";
-			private _position = [];
-
-			// Skip finding a position if the vehicle is to be added to the garage
-			if !(_addToGarage) then
-			{
-				if (_isShip) then
-				{
-					_position = [(getPosATL _playerObject), 80, 10] call ExileClient_util_world_findWaterPosition;
-				}
-				else
-				{
-					_position = (getPos _playerObject) findEmptyPosition [10, 175, _vehicleClass];
-				};
-			};
-
-
-			// Add to player's garage
-			if (_position isEqualTo []) then
-			{
-				// TODO, add the vehicle to the garage
-			}
-			else
-			{
-				// Spawn it at the position
-				_vehicleObject = [_vehicleClass, _position, (random 360), !_isShip, _pinCode] call ExileServer_object_vehicle_createPersistentVehicle;
-
-				// Set ownership
-				_vehicleObject setVariable ["ExileOwnerUID", _playerUID];
-				_vehicleObject setVariable ["ExileIsLocked",0];
-				_vehicleObject lock 0;
-
-				// Save vehicle in database + update position/stats
-				_vehicleObject call ExileServer_object_vehicle_database_insert;
-				_vehicleObject call ExileServer_object_vehicle_database_update;
-			};
-		}
-		forEach _rewardVehicles;
-
+		forEach ESM_RewardItems;
 	};
 
 	// Let the player know in discord
