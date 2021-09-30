@@ -220,7 +220,7 @@ impl Client {
         };
 
         info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
-        // debug!("[client#on_message] {:#?}", message);
+        trace!("[client#on_message] {:#?}", message);
 
         let arma = crate::ARMA.read();
         let result: Option<Message> = match message.message_type {

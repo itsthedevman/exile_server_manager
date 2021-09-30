@@ -9,7 +9,7 @@ mod database;
 // Various Packages
 use arma_rs::{ArmaValue, ToArma, arma_value, rv, rv_callback, rv_handler};
 use chrono::prelude::*;
-use esm_message::{Data, Message, Type, retrieve_data};
+use esm_message::{Data, Message, Metadata, Type, retrieve_data};
 use lazy_static::lazy_static;
 use uuid::Uuid;
 use esm_message::data::*;
@@ -110,11 +110,12 @@ fn initialize_logger() {
 ///     ESMs_system_extension_call will detect if it needs to make subsequent calls to the extension and perform any chunk rebuilding if needed
 ///
 /// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
-fn send_to_arma<D: ToArma + Debug + ToString>(function: &str, data: D) {
-    if env::var("ESM_IS_TERMINAL").is_ok() {
-        info!("\nFunction: {}\nData: {:#?}", function, data);
-        return;
-    }
+fn send_to_arma<D: ToArma + Debug>(function: &str, id: &Uuid, data: &D, metadata: &Metadata) {
+    trace!("\nFunction: {}\nID: {:?}\nData: {:#?}\nMetadata: {:#?}", function, id, data, metadata);
+
+    if env::var("ESM_IS_TERMINAL").is_ok() { return; }
+
+    let message = arma_value!({ "id": id, "data": data, "metadata": metadata });
 
     /*
         Convert the Arma value to a string and check its size.
@@ -122,14 +123,15 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &str, data: D) {
         If the size is greater than 10kb, split the data into chunks and send the first chuck with the ID [1, id, data_chunk]
             Use ["next_chunk", "ID"] call ESMs_system_extension_call;
     */
-    let data_string = data.to_string();
+    let data_string = message.to_string();
     let data_bytes = data_string.as_bytes().to_vec();
     let data_size = std::mem::size_of_val(&data_bytes);
 
     // Arma has a size limit. I'm not sure I'll ever hit it.
     if data_size > CHUNK_SIZE { panic!("Data is too large! Uncomment the chunking code."); }
 
-    let output = RVOutput::new(None, 0, data.to_arma()).to_string();
+    let output = RVOutput::new(None, 0, message.to_arma()).to_string();
+
     rv_callback!("exile_server_manager", function, output);
 
     // UNCOMMENT THIS AND next_chunk IF NEEDED.
@@ -162,57 +164,44 @@ fn send_to_arma<D: ToArma + Debug + ToString>(function: &str, data: D) {
     // )
 }
 
-/// Logs a message to the server's RPT using ESMs_util_log
-pub fn a3_log(message: String) {
-    send_to_arma("ESMs_util_log", arma_value!(["extension", message]))
-}
-
 /// Sends the post initialization data to the server
 pub fn a3_post_init(arma: &mut Arma, message: &Message) {
     let data = retrieve_data!(message.data, Data::PostInit);
     send_to_arma(
         "ESMs_system_process_postInit",
-        arma_value!({
-            "id": message.id,
-            "data": arma_value!({
-                "ESM_ServerID": arma.client.token().server_id(),
-                "ESM_CommunityID": arma.client.token().community_id(),
-                "ESM_ExtDBVersion": arma.database.extdb_version,
-                "ESM_Gambling_Modifier": data.gambling_modifier,
-                "ESM_Gambling_PayoutBase": data.gambling_payout,
-                "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
-                "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
-                "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
-                "ESM_Gambling_WinPercentage": data.gambling_win_chance,
-                "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
-                "ESM_Logging_DemotePlayer": data.logging_demote_player,
-                "ESM_Logging_Exec": data.logging_exec,
-                "ESM_Logging_Gamble": data.logging_gamble,
-                "ESM_Logging_ModifyPlayer": data.logging_modify_player,
-                "ESM_Logging_PayTerritory": data.logging_pay_territory,
-                "ESM_Logging_PromotePlayer": data.logging_promote_player,
-                "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
-                "ESM_Logging_RewardPlayer": data.logging_reward,
-                "ESM_Logging_TransferPoptabs": data.logging_transfer,
-                "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
-                "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
-                "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
-                "ESM_TerritoryAdminUIDs": data.territory_admins
-            }),
-            "metadata": message.metadata
-        })
+        &message.id,
+        &arma_value!({
+            "ESM_ServerID": arma.client.token().server_id(),
+            "ESM_CommunityID": arma.client.token().community_id(),
+            "ESM_ExtDBVersion": arma.database.extdb_version,
+            "ESM_Gambling_Modifier": data.gambling_modifier,
+            "ESM_Gambling_PayoutBase": data.gambling_payout,
+            "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
+            "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
+            "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
+            "ESM_Gambling_WinPercentage": data.gambling_win_chance,
+            "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
+            "ESM_Logging_DemotePlayer": data.logging_demote_player,
+            "ESM_Logging_Exec": data.logging_exec,
+            "ESM_Logging_Gamble": data.logging_gamble,
+            "ESM_Logging_ModifyPlayer": data.logging_modify_player,
+            "ESM_Logging_PayTerritory": data.logging_pay_territory,
+            "ESM_Logging_PromotePlayer": data.logging_promote_player,
+            "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
+            "ESM_Logging_RewardPlayer": data.logging_reward,
+            "ESM_Logging_TransferPoptabs": data.logging_transfer,
+            "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
+            "ESM_LoggingChannelID": data.logging_channel_id,
+            "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
+            "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
+            "ESM_TerritoryAdminUIDs": data.territory_admins
+        }),
+        &message.metadata
     );
 }
 
 pub fn a3_call_function(function_name: &str, message: &Message) {
-    send_to_arma(
-        function_name,
-        arma_value!({
-            "id": message.id,
-            "data": message.data,
-            "metadata": message.metadata
-        })
-    );
+    send_to_arma(function_name, &message.id, &message.data, &message.metadata);
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -363,7 +352,7 @@ pub fn pre_init(
 
 #[rv(thread = true)]
 pub fn event(id: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) {
-    // debug!("[#event] ID: {:?}\nDATA: {:#?}\nMETADATA: {:#?}\nERRORS: {:#?}", id, data, metadata, errors);
+    trace!("[#event] ID: {:?}\nDATA: {:#?}\nMETADATA: {:#?}\nERRORS: {:#?}", id, data, metadata, errors);
 
     let message = match Message::from_arma(Type::Event, id, data, metadata, errors) {
         Ok(m) => m,
@@ -372,6 +361,11 @@ pub fn event(id: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue
 
     let arma = crate::ARMA.read();
     arma.client.send_to_server(message);
+}
+
+#[rv(thread = true)]
+pub fn send_to_channel(channel_ident: String, data: ArmaValue) {
+    debug!("[#send] CHANNEL IDENT: {:?}\nDATA: {:#?}", channel_ident, data);
 }
 
 ////////////////////////////////////////////////////////////
