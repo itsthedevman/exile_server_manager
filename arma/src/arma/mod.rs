@@ -62,33 +62,10 @@ impl Arma {
 
         // Now process the message
         match message.data {
-            Data::Reward(ref data) => crate::a3_call_function("ESMs_object_player_reward", &message),
+            Data::Reward(_) => crate::a3_call_function("ESMs_object_player_reward", &message),
             _ => unreachable!("[arma::call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet", message.data)
         }
 
         None
     }
-
-    // pub fn reward(&self, command: &Command) {
-    //     let parameters = match command.parameters {
-    //         Parameters::Reward(ref val) => val,
-    //         _ => {
-    //             return error!("[arma_server::reward] Failed to retrieve parameters. Parameters was parsed as {:?}", command.parameters);
-    //         }
-    //     };
-
-    //     let metadata = match command.metadata {
-    //         Metadata::Default(ref val) => val,
-    //         _ => {
-    //             return error!("[arma_server::reward] Failed to retrieve metadata. Metadata was parsed as {:?}", command.metadata);
-    //         }
-    //     };
-
-    //     // Check to make sure the user who is executing this command has joined this server
-    //     if !self.database.account_exists(&parameters.target_uid) {
-    //         return command.reply_with_error_code("account_does_not_exist");
-    //     }
-
-    //     crate::a3_reward(&command, &parameters, &metadata);
-    // }
 }

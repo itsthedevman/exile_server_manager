@@ -1,4 +1,3 @@
-use arma_rs::{arma_value, ToArma};
 use esm_message::{Data, ErrorType, Message, data, retrieve_data};
 use mysql::{Opts, Pool, PooledConn, params, prelude::Queryable, Result as QueryResult};
 use ini::Ini;
@@ -77,7 +76,7 @@ impl Database {
         // Connect to the database!
         self.connection_pool = match Pool::new(database_opts) {
             Ok(pool) => Some(pool),
-            Err(e) => {
+            Err(_e) => {
                 error!("[database::connect] Failed to connect to MySQL.");
                 debug!("[database::connect] URI: {}", database_url);
                 return Err(());
