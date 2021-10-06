@@ -61,7 +61,7 @@ command :run do |c|
       end
 
     # Set some build flags
-    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :debug)
+    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :release)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -73,9 +73,6 @@ command :run do |c|
     # Kill Arma server
     Utils.kill_arma
 
-    # Clean the database
-    Utils.clean_database
-
     # Clean up the build and destination directories
     Utils.clean_directories
 
@@ -84,6 +81,9 @@ command :run do |c|
 
     # Build and copy the mod to destination
     Utils.build_and_copy_mod
+
+    # Clean the database
+    Utils.clean_database
 
     # Start the server
     Utils.start_server
