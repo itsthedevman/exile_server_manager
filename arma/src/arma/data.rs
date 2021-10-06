@@ -25,6 +25,12 @@ impl Token {
     }
 }
 
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Token {{ id: {}, key: {} }}", String::from_utf8_lossy(&self.id), String::from_utf8_lossy(&self.key))
+    }
+}
+
 #[derive(Debug)]
 pub struct RVOutput {
     pub id: Option<Uuid>,
@@ -40,11 +46,6 @@ impl RVOutput {
 
 impl std::fmt::Display for RVOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // let id = match self.id {
-        //     Some(id) => id.to_string(),
-        //     None => String::new()
-        // };
-
         write!(f, "{}", arma_value!([self.id, self.code, self.content]))
     }
 }
