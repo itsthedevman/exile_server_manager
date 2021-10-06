@@ -72,7 +72,18 @@ private _errorsWrapper = createHashMapFromArray [["code", []], ["message", []]];
 }
 forEach _errors;
 
+private _hashType = createHashMap;
+if (_data isEqualType _hashType) then
+{
+	_data = _data toArray false;
+};
+
+if (_metadata isEqualType _hashType) then
+{
+	_metadata = _metadata toArray false;
+};
+
 // Send it!
-["event", _id, _data, _metadata, _errorsWrapper] call ESMs_system_extension_call;
+["event", _id, _data, _metadata, _errorsWrapper toArray false] call ESMs_system_extension_call;
 
 true

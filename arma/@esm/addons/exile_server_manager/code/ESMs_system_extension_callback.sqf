@@ -57,12 +57,18 @@ if (_function isEqualTo "") exitWith
 							"user_mention" 		- The user's Discord mention (for tagging)
 							"user_steam_uid" 	- The user's Steam UID
 */
-private _message = createHashMapFromArray(_data call ESMs_system_extension_processResult);
-["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
+private _result = _data call ESMs_system_extension_processResult;
+
+["callback", format["Data: %1", _data], "trace"] call ESMs_util_log;
+["callback", format["Result: %1", _result], "trace"] call ESMs_util_log;
+
+private _message = createHashMapFromArray(_result);
 
 // createHashMapFromArray is not recursive. Convert data/metadata to a hashmap
-_message set ["data", createHashMapFromArray(_message getOrDefault ["data", []]);
-_message set ["metadata", createHashMapFromArray(_message getOrDefault ["metadata", []]);
+_message set ["data", createHashMapFromArray(_message getOrDefault ["data", []])];
+_message set ["metadata", createHashMapFromArray(_message getOrDefault ["metadata", []])];
+
+["callback", format["Calling ""%1"" with %2", _functionName, _message], "trace"] call ESMs_util_log;
 
 _message call _function;
 

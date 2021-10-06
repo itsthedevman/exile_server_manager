@@ -40,9 +40,9 @@ if (_this isEqualType "") exitWith {
 };
 
 // The argument is an array
-private _function = _this select 0;
+private _function = _this param [0, "", [""]];
 private _arguments = _this select [1, count(_this) - 1];
-private _sanitizedPackage = [];
+if !(_arguments isEqualType []) exitWith {};
 
 // Cache a sanitizer function that escapes any JSON unsafe strings
 private _sanitizer = {
@@ -68,14 +68,35 @@ private _sanitizer = {
 			_package pushBack (_item call ExileClient_util_string_escapeJson);
 		};
 
-		default
+		case "SCALAR":
+		{
+			_package pushBack str(_item);
+		};
+
+		case "BOOL":
 		{
 			_package pushBack _item;
+		};
+
+		case "ANY":
+		{
+			_package pushBack "null";
+		};
+
+		case "HASHMAP":
+		{
+			_package pushBack (_item toArray false);
+		};
+
+		default
+		{
+			["call", format["Unsupported type provided in arguments. Type: %2 | Value: %1", _item, typeName _item], "error"] call ESMs_util_log;
 		};
 	};
 };
 
-// Using the sanitizer, sanitize the package
+// Using the sanitizer, sanitize the provided arguments
+private _sanitizedPackage = [];
 {
 	[_sanitizedPackage, _x] call _sanitizer;
 }
