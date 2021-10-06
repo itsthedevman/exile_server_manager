@@ -31,9 +31,8 @@
 
 private _result = _this;
 
-if (isNil("_result") || { _result isEqualTo "" }) exitWith {
-	["processResult", format["Invalid call! Please review ESMs_system_extension_processResult's file documentation", _this], "error"] call ESMs_util_log;
-};
+// The extension sends back a empty string when 
+if (isNil("_result") || { _result isEqualTo "" }) exitWith {};
 
 if (_result isEqualType "") then {
 	_result = parseSimpleArray _result;

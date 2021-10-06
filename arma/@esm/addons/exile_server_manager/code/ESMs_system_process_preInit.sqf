@@ -23,6 +23,8 @@
  *
  **/
 
+ESM_Version = "";
+ESM_BuildNumber = "";
 ESM_CommunityID = "";
 ESM_DatabaseExtension = "extDB3";
 ESM_ExtDBVersion = 3;
@@ -32,7 +34,7 @@ ESM_Gambling_PayoutRandomizerMax = 0;
 ESM_Gambling_PayoutRandomizerMid = 0.5;
 ESM_Gambling_PayoutRandomizerMin = 1;
 ESM_Gambling_WinPercentage = 35;
-ESM_Initialized = false
+ESM_Initialized = false;
 ESM_Logging_AddPlayerToTerritory = true;
 ESM_Logging_DemotePlayer = true;
 ESM_Logging_Exec = true;
@@ -44,10 +46,13 @@ ESM_Logging_RemovePlayerFromTerritory = true;
 ESM_Logging_RewardPlayer = true;
 ESM_Logging_TransferPoptabs = true;
 ESM_Logging_UpgradeTerritory = true;
+ESM_LoggingChannelID = "";
 ESM_ServerID = "";
 ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
+
+["preInit", "Exile Server Manager is booting..."] call ESMs_util_log;
 
 // For controlling which calls log
 ESM_LogLevel = "log_level" call ESMs_system_extension_call;

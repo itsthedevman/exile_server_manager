@@ -42,8 +42,16 @@ forEach (getArray (configFile >> "CfgESM" >> "globalVariables"));
 ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;
 
-["postInit", format["Initialization finished. Detected %1.", ESM_DatabaseExtension]] call ESMs_util_log;
+[
+	"postInit",
+	format[
+		"Boot complete. Version %1:%2 has been loaded successfully. Detected database extension %3",
+		ESM_Version,
+		ESM_BuildNumber,
+		ESM_DatabaseExtension
+	]
+] call ESMs_util_log;
 
+// Acknowledge the message
 [_id] call ESMs_object_message_respond;
-
 true
