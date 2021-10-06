@@ -219,8 +219,17 @@ impl Client {
             }
         };
 
-        info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
         trace!("[client#on_message] {:#?}", message);
+
+        if !message.errors.is_empty() {
+            for error in message.errors {
+                error!("{}", error.error_content);
+            }
+
+            return;
+        }
+
+        info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
 
         let arma = crate::ARMA.read();
         let result: Option<Message> = match message.message_type {
