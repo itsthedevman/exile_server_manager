@@ -33,7 +33,7 @@ class CfgESM
 	// Do not modify these! You will break ESM.
 	globalVariables[] =
 	{
-		"ESM_ServerID",
+		"ESM_BuildNumber",
 		"ESM_CommunityID",
 		"ESM_ExtDBVersion",
 		"ESM_Gambling_Modifier",
@@ -53,8 +53,11 @@ class CfgESM
 		"ESM_Logging_RewardPlayer",
 		"ESM_Logging_TransferPoptabs",
 		"ESM_Logging_UpgradeTerritory",
+		"ESM_LoggingChannelID",
+		"ESM_ServerID",
 		"ESM_Taxes_TerritoryPayment",
 		"ESM_Taxes_TerritoryUpgrade",
-		"ESM_TerritoryAdminUIDs"
+		"ESM_TerritoryAdminUIDs",
+		"ESM_Version"
 	};
 };
