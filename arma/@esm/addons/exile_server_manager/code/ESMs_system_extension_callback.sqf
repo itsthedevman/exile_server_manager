@@ -58,10 +58,6 @@ if (_function isEqualTo "") exitWith
 							"user_steam_uid" 	- The user's Steam UID
 */
 private _result = _data call ESMs_system_extension_processResult;
-
-["callback", format["Data: %1", _data], "trace"] call ESMs_util_log;
-["callback", format["Result: %1", _result], "trace"] call ESMs_util_log;
-
 private _message = createHashMapFromArray(_result);
 
 // createHashMapFromArray is not recursive. Convert data/metadata to a hashmap
