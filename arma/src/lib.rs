@@ -129,7 +129,7 @@ fn send_to_arma<D: ToArma + Debug>(function: &str, id: &Uuid, data: &D, metadata
     // Arma has a size limit. I'm not sure I'll ever hit it.
     if data_size > CHUNK_SIZE { panic!("Data is too large! Uncomment the chunking code."); }
 
-    let output = RVOutput::new(None, 0, message.to_arma()).to_string();
+    let output = RVOutput::new(None, 0, message.to_arma());
 
     rv_callback!("exile_server_manager", function, output);
 

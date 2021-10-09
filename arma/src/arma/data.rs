@@ -44,9 +44,15 @@ impl RVOutput {
     }
 }
 
+impl ToArma for RVOutput {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!([self.id, self.code, self.content])
+    }
+}
+
 impl std::fmt::Display for RVOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", arma_value!([self.id, self.code, self.content]))
+        write!(f, "{}", self.to_arma())
     }
 }
 
