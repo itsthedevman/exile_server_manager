@@ -54,6 +54,3 @@ if (_statusCode isEqualTo -1) exitWith {
 	["processResult", format["Status code -1 returned. Content: %1", _content], "error"] call ESMs_util_log;
 	nil
 };
-
-// There are more messages to process
-_content + (["next_chunk", _id] call ESMs_system_extension_call)

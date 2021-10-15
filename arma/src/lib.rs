@@ -132,35 +132,6 @@ fn send_to_arma<D: ToArma + Debug>(function: &str, id: &Uuid, data: &D, metadata
     let output = RVOutput::new(None, 0, message.to_arma());
 
     rv_callback!("exile_server_manager", function, output);
-
-    // UNCOMMENT THIS AND next_chunk IF NEEDED.
-    // I wrote this in an attempt to fix a bug. But it didn't work
-    // // Create a ID for this chunk
-    // let id = Uuid::new_v4();
-
-    // // The data size is too big, chunk it. Also, flip it around so pop will give us the next in the queue
-    // let mut chunks: Vec<String> = data_bytes.chunks(CHUNK_SIZE).map(|x| String::from_utf8(x.to_vec()).unwrap()).collect();
-    // chunks.reverse();
-
-    // // Retrieve the first chunk, the rest will be written to the chunks
-    // let first_chunk = chunks.pop();
-
-    // let mut chunk_writer = CHUNKS.write();
-    // chunk_writer.insert(id.to_string(), chunks);
-
-    // // Release our write access immediately.
-    // drop(chunk_writer);
-
-    // let output = RVOutput::new(Some(id), 1, first_chunk.to_arma()).to_string();
-
-    // debug!("[send_to_arma] First Chunk: {}", output);
-
-    // // Send the first chunk to Arma
-    // rv_callback!(
-    //     "exile_server_manager",
-    //     function,
-    //     output
-    // )
 }
 
 /// Sends the post initialization data to the server
@@ -208,66 +179,6 @@ pub fn a3_call_function(function_name: &str, message: &Message) {
 ///////////////////////////////////////////////////////////////////////
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
-// #[rv]
-// pub fn next_chunk(string_id: String) -> String {
-//     // Convert the ID to a UUID to ensure it's valid
-//     let id = match Uuid::from_str(&string_id) {
-//         Ok(id) => id,
-//         Err(e) => {
-//             let output = RVOutput::new(
-//                 None,
-//                 -1,
-//                 arma_value!(format!("The provided UUID (\"{}\") is invalid. Reason: {}", string_id, e))
-//             ).to_string();
-
-//             debug!("[next_chunk] {:?}", output);
-//             return output;
-//         }
-//     };
-
-//     // Attempt to find the chunks associated to that ID
-//     let mut chunk_writer = CHUNKS.write();
-//     let chunks = match chunk_writer.get_mut(&string_id) {
-//         Some(chunks) => chunks,
-//         None => {
-//             let output =  RVOutput::new(
-//             None,
-//             -1,
-//             arma_value!(format!("The provided UUID (\"{}\") does not exist.", id))
-//             ).to_string();
-
-//             debug!("[next_chunk] {:?}", output);
-//             return output;
-//         }
-//     };
-
-//     // Ensure there is data to pull
-//     let next_chunk = match chunks.pop() {
-//         Some(chunk) => chunk,
-//         None => {
-//             let output = RVOutput::new(None, -1, arma_value!(format!("The provided UUID (\"{}\") has no more chunks.", id))).to_string();
-//             debug!("[next_chunk] {:?}", output);
-//             return output;
-//         }
-//     };
-
-//     // Check to see if there are any chunks left and remove the ID if needed
-//     let chunks_left = chunks.len();
-//     let code = if chunks_left > 0 {
-//         1
-//     } else {
-//         // It's the last chunk, remove it and let Arma know.
-//         chunk_writer.remove(&string_id);
-
-//         0
-//     };
-
-//     // Provide the chunk to Arma
-//     let output = RVOutput::new(Some(id), code, arma_value!(next_chunk)).to_string();
-//     debug!("[next_chunk] {}", output);
-//     output
-// }
-
 /// Returns a UTC timestamp as a string.
 #[rv]
 pub fn utc_timestamp() -> String {
