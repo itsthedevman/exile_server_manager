@@ -61,7 +61,7 @@ command :run do |c|
       end
 
     # Set some build flags
-    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :release)
+    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :debug)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -75,6 +75,9 @@ command :run do |c|
 
     # Clean up the build and destination directories
     Utils.clean_directories
+
+    # Writes out a config.yml
+    Utils.write_config
 
     # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
@@ -183,6 +186,20 @@ class Utils
     end
   end
 
+  def self.write_config
+    log("Writing config... ") do
+      config = {
+        "connection_url" => ENV["ESM_HOST"] || "esm.mshome.net:3003",
+        "log_level" => @env.to_s,
+        "env" => "development"
+        # extdb_conf_path: "tools/extdb4-conf.ini"
+        # extdb_version: 3
+      }
+
+      File.open("#{BUILD_DIRECTORY}/@esm/config.yml", "w") { |f| f.write(config.to_yaml) }
+    end
+  end
+
   def self.clean_database
     log("Cleaning database... ") do
       DatabaseCleaner.run
@@ -226,7 +243,7 @@ class Utils
           "cargo build --target #{target}"
         end
 
-      command += " --release" if @env == :release
+      command += " --release"
 
       `#{command}`
     end
@@ -236,9 +253,9 @@ class Utils
     log("Copying client to @esm... ") do
       path =
         if @os == :windows
-          "#{GIT_DIRECTORY}/target/#{target}/#{@env}/esm_client.dll"
+          "#{GIT_DIRECTORY}/target/#{target}/release/esm_client.dll"
         else
-          "#{GIT_DIRECTORY}/target/#{target}/#{@env}/libesm_client.so"
+          "#{GIT_DIRECTORY}/target/#{target}/release/libesm_client.so"
         end
 
       if @os == :windows
@@ -338,8 +355,8 @@ class Utils
 
         File.open(path) do |log|
           log.extend(File::Tail)
-          log.interval = 1
-          log.backward(1000)
+          log.interval = 0.5
+          log.backward(500)
           log.tail { |line| puts line }
         end
       end
