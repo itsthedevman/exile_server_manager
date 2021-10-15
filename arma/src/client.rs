@@ -131,7 +131,7 @@ impl Client {
         }
 
         // Convert the message to bytes so it can be sent
-        match message.as_bytes(|_| Some(self.token.key.clone())) {
+        match message.as_bytes(&self.token.key) {
             Ok(bytes) => {
                 debug!("[client#send_to_server] {:#?}", message);
 
@@ -206,9 +206,7 @@ impl Client {
             None => return
         };
 
-        let message = Message::from_bytes(incoming_data, |_| Some(self.token.key.clone()));
-
-        let message = match message {
+        let message = match Message::from_bytes(incoming_data, &self.token.key) {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
