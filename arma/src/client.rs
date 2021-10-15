@@ -15,7 +15,7 @@ use crate::arma::data::Token;
 
 #[derive(Clone)]
 pub struct Client {
-    token: Arc<Token>,
+    pub token: Arc<RwLock<Token>>,
     initialization_data: Arc<RwLock<Data>>,
     handler: Arc<RwLock<NodeHandler<()>>>,
     listener: Arc<RwLock<Option<NodeListener<()>>>>,
@@ -29,7 +29,7 @@ impl Client {
         let (handler, listener) = node::split::<()>();
 
         Client {
-            token: Arc::new(token),
+            token: Arc::new(RwLock::new(token)),
             initialization_data: Arc::new(RwLock::new(initialization_data)),
             handler: Arc::new(RwLock::new(handler)),
             listener: Arc::new(RwLock::new(Some(listener))),
@@ -37,10 +37,6 @@ impl Client {
             reconnection_counter: Arc::new(AtomicI16::new(1)),
             bot_pong_received: Arc::new(AtomicBool::new(false)),
         }
-    }
-
-    pub fn token(&self) -> &Token {
-        &self.token
     }
 
     pub fn connect(&self) {
@@ -126,12 +122,13 @@ impl Client {
         }
 
         // Add the server ID if there is none
+        let token = self.token.read();
         if message.server_id.is_none() {
-            message.server_id = Some(self.token.id.clone());
+            message.server_id = Some(token.id.clone());
         }
 
         // Convert the message to bytes so it can be sent
-        match message.as_bytes(&self.token.key) {
+        match message.as_bytes(&token.key) {
             Ok(bytes) => {
                 debug!("[client#send_to_server] {:#?}", message);
 
@@ -206,7 +203,7 @@ impl Client {
             None => return
         };
 
-        let message = match Message::from_bytes(incoming_data, &self.token.key) {
+        let message = match Message::from_bytes(incoming_data, &self.token.read().key) {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
@@ -239,6 +236,18 @@ impl Client {
             },
             Type::Query => arma.database.query(message),
             Type::Arma => arma.call_function(message),
+            Type::Test => {
+                // Only allow this message type when explicitly in test env
+                match crate::CONFIG.env {
+                    crate::config::Env::Test => {
+                        // All this does is just reloads the key.
+                        let token = crate::load_key().unwrap();
+                        *self.token.write() = token;
+                        None
+                    },
+                    _ => None,
+                }
+            }
             _ => unreachable!("[client::on_message] This is a bug. Message type \"{:?}\" has not been implemented yet", message.message_type),
         };
 

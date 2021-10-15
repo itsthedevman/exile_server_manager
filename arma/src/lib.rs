@@ -104,6 +104,42 @@ fn initialize_logger() {
     );
 }
 
+/// Loads the esm.key file from the disk and converts it to a Token
+pub fn load_key() -> Option<Token> {
+    let path = Path::new("@esm/esm.key");
+    let mut file = match File::open(&path) {
+        Ok(file) => file,
+        Err(_) => {
+            error!("[#pre_init] Failed to find \"esm.key\" file. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
+            return None;
+        }
+    };
+
+    let mut key_contents = Vec::new();
+    match file.read_to_end(&mut key_contents) {
+        Ok(_) => {
+            trace!("[#pre_init] esm.key - {}", String::from_utf8_lossy(&key_contents));
+        }
+        Err(e) => {
+            error!("[#pre_init] Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e);
+            return None;
+        }
+    }
+
+    let token: Token = match serde_json::from_slice(&key_contents) {
+        Ok(token) => token,
+        Err(e) => {
+            debug!("[#pre_init] ERROR - {}", e);
+            error!("[#pre_init] Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+            return None;
+        }
+    };
+
+    trace!("[#pre_init] Token decoded - {}", token);
+
+    Some(token)
+}
+
 /// Facilitates sending a message to Arma only if this is using a A3 server. When in terminal mode, it just logs.
 /// When sending a message to arma, the outbound message's size is checked and if it's larger than 9kb, it's split into <9kb chunks and associated to a ID
 ///     ESMs_system_extension_call will detect if it needs to make subsequent calls to the extension and perform any chunk rebuilding if needed
@@ -137,12 +173,14 @@ fn send_to_arma<D: ToArma + Debug>(function: &str, id: &Uuid, data: &D, metadata
 /// Sends the post initialization data to the server
 pub fn a3_post_init(arma: &mut Arma, message: &Message) {
     let data = retrieve_data!(message.data, Data::PostInit);
+    let token = arma.client.token.read();
+
     send_to_arma(
         "ESMs_system_process_postInit",
         &message.id,
         &arma_value!({
             "ESM_BuildNumber" => env!("VERGEN_GIT_SHA_SHORT"),
-            "ESM_CommunityID" => arma.client.token().community_id(),
+            "ESM_CommunityID" => token.community_id(),
             "ESM_ExtDBVersion" => arma.database.extdb_version,
             "ESM_Gambling_Modifier" => data.gambling_modifier,
             "ESM_Gambling_PayoutBase" => data.gambling_payout,
@@ -162,7 +200,7 @@ pub fn a3_post_init(arma: &mut Arma, message: &Message) {
             "ESM_Logging_TransferPoptabs" => data.logging_transfer,
             "ESM_Logging_UpgradeTerritory" => data.logging_upgrade_territory,
             "ESM_LoggingChannelID" => data.logging_channel_id,
-            "ESM_ServerID" => arma.client.token().server_id(),
+            "ESM_ServerID" => token.server_id(),
             "ESM_Taxes_TerritoryPayment" => data.territory_payment_tax,
             "ESM_Taxes_TerritoryUpgrade" => data.territory_upgrade_tax,
             "ESM_TerritoryAdminUIDs" => data.territory_admins,
@@ -219,36 +257,9 @@ pub fn pre_init(
     info!("[#pre_init] ESM is booting");
 
     // Load and convert the esm.key file into a token
-    let path = Path::new("@esm/esm.key");
-    let mut file = match File::open(&path) {
-        Ok(file) => file,
-        Err(_) => {
-            error!("[#pre_init] Failed to find \"esm.key\" file. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
-            return;
-        }
-    };
-
-    let mut key_contents = Vec::new();
-    match file.read_to_end(&mut key_contents) {
-        Ok(_) => {
-            trace!("[#pre_init] esm.key - {}", String::from_utf8_lossy(&key_contents));
-        }
-        Err(e) => {
-            error!("[#pre_init] Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e);
-            return;
-        }
-    }
-
-    let token: Token = match serde_json::from_slice(&key_contents) {
-        Ok(token) => {
-            trace!("[#pre_init] Token decoded - {}", token);
-            token
-        }
-        Err(e) => {
-            debug!("[#pre_init] ERROR - {}", e);
-            error!("[#pre_init] Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
-            return;
-        }
+    let token = match load_key() {
+        Some(t) => t,
+        None => return
     };
 
     // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
@@ -265,10 +276,7 @@ pub fn pre_init(
 
     trace!("[#pre_init] Initialization Data - {:?}", data);
 
-    let arma = Arma::new(token, Data::Init(data));
-    arma.client.connect();
-
-    *ARMA.write() = arma;
+    *ARMA.write() = Arma::new(token, Data::Init(data));
 
     info!("[#pre_init] Boot completed");
 }
