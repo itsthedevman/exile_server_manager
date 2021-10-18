@@ -8,6 +8,7 @@ require 'dotenv'
 require 'faker'
 require 'fileutils'
 require 'file-tail'
+require 'redis'
 require 'pry'
 require 'yaml'
 
@@ -52,6 +53,7 @@ command :run do |c|
   c.example 'description', 'command example'
   c.option '--use-x32', 'Build the x32 version of the extension and start the x32 version of the server'
   c.option '--target=TARGET', String, 'The target OS to build to. Valid options: linux, windows. Defaults to: windows'
+  c.option '--env=ENV', String, 'Sets the env. Valid options: debug, trace, test. Defaults to: debug'
   c.action do |args, options|
     build_target =
       if options.target == "linux"
@@ -60,8 +62,16 @@ command :run do |c|
         :windows
       end
 
+    env =
+      case options.env
+      when "trace", "test"
+        options.env.to_sym
+      else
+        :debug
+      end
+
     # Set some build flags
-    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: :debug)
+    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: env)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -78,6 +88,9 @@ command :run do |c|
 
     # Writes out a config.yml
     Utils.write_config
+
+    # Writes out the esm.key
+    Utils.write_key
 
     # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
@@ -197,6 +210,18 @@ class Utils
       }
 
       File.open("#{BUILD_DIRECTORY}/@esm/config.yml", "w") { |f| f.write(config.to_yaml) }
+    end
+  end
+
+  def self.write_key
+    log("Writing key... ") do
+      redis = Redis.new(host: "esm.mshome.net")
+      key = redis.get("test_server_key")
+      return if key.nil?
+
+      File.open("#{BUILD_DIRECTORY}/@esm/esm.key", "w") do |f|
+        f.write(key)
+      end
     end
   end
 
