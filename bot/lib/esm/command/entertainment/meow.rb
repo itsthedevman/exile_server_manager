@@ -31,7 +31,7 @@ module ESM
 
         def link
           @link ||= lambda do
-            10_000.times do
+            5.times do
               response = HTTParty.get(
                 "https://api.thecatapi.com/v1/images/search?size=full&mime_types=jpg&format=json&order=RANDOM&page=0&limit=1",
                 headers: { 'User-agent': "ESM 2.0" }
@@ -43,6 +43,8 @@ module ESM
 
               return url
             end
+
+            nil
           end.call
         end
 

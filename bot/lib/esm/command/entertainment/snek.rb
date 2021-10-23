@@ -31,7 +31,7 @@ module ESM
 
         def link
           @link ||= lambda do
-            10_000.times do
+            5.times do
               response = HTTParty.get("http://fur.im/snek/", headers: { 'User-agent': "ESM 2.0" })
               next sleep(1) if !response.ok?
 
@@ -42,6 +42,8 @@ module ESM
 
               return url
             end
+
+            nil
           end.call
         end
 

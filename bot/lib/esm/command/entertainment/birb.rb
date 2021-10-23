@@ -39,7 +39,7 @@ module ESM
 
         def birb_link
           @birb_link ||= lambda do
-            10_000.times do
+            5.times do
               response = HTTParty.get("http://www.reddit.com/r/birb/random.json", headers: { 'User-agent': "ESM 2.0" })
               next sleep(1) if !response.ok?
 
@@ -49,6 +49,8 @@ module ESM
 
               return url
             end
+
+            nil
           end.call
         end
 
