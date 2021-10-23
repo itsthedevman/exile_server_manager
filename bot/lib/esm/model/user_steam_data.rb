@@ -20,7 +20,7 @@ module ESM
     def refresh
       return if self.user.steam_uid.blank?
 
-      player_data = ESM::Service::Steam.new(self.user.steam_uid)
+      player_data = ESM::SteamAccount.new(self.user.steam_uid)
       self.update(
         username: player_data.username,
         avatar: player_data.avatar,
@@ -36,7 +36,7 @@ module ESM
 
     # A refresh can happen every 15 minutes
     def needs_refresh?
-      ((Time.now - self.updated_at ) / 1.minute) >= 15
+      ((Time.now - self.updated_at) / 1.minute) >= 15
     end
   end
 end
