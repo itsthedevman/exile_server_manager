@@ -38,12 +38,10 @@ if ENV["ESM_ENV"] != "production"
   require "otr-activerecord"
 end
 
-# Load Dotenv variables
-puts "Before: #{ENV["STEAM_TOKEN"]}"
-Dotenv.load
-Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
-Dotenv.load(".env.prod") if ENV["ESM_ENV"] == "production"
-puts "After: #{ENV["STEAM_TOKEN"]}"
+# Load Dotenv variables; overwriting any that already exist
+Dotenv.overload
+Dotenv.overload(".env.test") if ENV["ESM_ENV"] == "test"
+Dotenv.overload(".env.prod") if ENV["ESM_ENV"] == "production"
 
 module ESM
   class << self
