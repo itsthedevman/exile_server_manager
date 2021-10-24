@@ -41,7 +41,7 @@ end
 # Load Dotenv variables
 Dotenv.load
 Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
-Dotenv.load(".env.prod") if ENV["ESM_ENV"] == "production"
+puts "prod was loaded"; Dotenv.load(".env.prod") if ENV["ESM_ENV"] == "production"
 
 module ESM
   class << self
