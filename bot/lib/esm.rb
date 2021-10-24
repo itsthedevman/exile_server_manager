@@ -39,9 +39,11 @@ if ENV["ESM_ENV"] != "production"
 end
 
 # Load Dotenv variables
+puts "Before: #{ENV["STEAM_TOKEN"]}"
 Dotenv.load
 Dotenv.load(".env.test") if ENV["ESM_ENV"] == "test"
-puts "prod was loaded"; Dotenv.load(".env.prod") if ENV["ESM_ENV"] == "production"
+Dotenv.load(".env.prod") if ENV["ESM_ENV"] == "production"
+puts "After: #{ENV["STEAM_TOKEN"]}"
 
 module ESM
   class << self
