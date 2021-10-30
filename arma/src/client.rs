@@ -40,6 +40,8 @@ impl Client {
     }
 
     pub fn connect(&self) {
+        trace!("[client#connect] Connecting to esm");
+
         self.load_endpoint();
 
         let listener = match self.listener.write().take() {
@@ -52,8 +54,12 @@ impl Client {
 
         let client = self.clone();
         thread::spawn(|| {
+            trace!("[client#connect] Listening for events");
+
             listener.for_each(move |event| match event.network() {
                 NetEvent::Connected(_, connected) => {
+                    trace!("[client#connect] Event Connected: {}", connected);
+
                     if !connected {
                         client.reconnect();
                         return
@@ -63,9 +69,13 @@ impl Client {
                 }
                 NetEvent::Accepted(_, _) => unreachable!(),
                 NetEvent::Message(_, incoming_data) => {
+                    trace!("[client#connect] Event Message: {:?}", incoming_data);
+
                     client.on_message(incoming_data.into());
                 }
                 NetEvent::Disconnected(_) => {
+                    trace!("[client#connect] Event Disconnected");
+
                     client.on_disconnect();
                 }
             });
@@ -141,16 +151,16 @@ impl Client {
     }
 
     fn load_endpoint(&self) {
-        let server_address = match crate::CONFIG.connection_url.to_socket_addrs() {
+        let server_address = match format!("{}:80", crate::CONFIG.connection_url).to_socket_addrs() {
             Ok(mut addr) => match addr.next() {
                 Some(socket_addr) => socket_addr,
                 None => {
-                    error!("[client#connect] Failed to socket addr");
+                    error!("[client#connect] Failed to convert connection_url to socket addr");
                     return;
                 }
             },
             Err(e) => {
-                error!("[client#connect] Failed to convert. Reason: {}", e);
+                error!("[client#connect] Failed to parse connection url from {:?}. Reason: {}", crate::CONFIG.connection_url, e);
                 return;
             }
         };
@@ -243,6 +253,7 @@ impl Client {
                         // All this does is just reloads the key.
                         let token = crate::load_key().unwrap();
                         *self.token.write() = token;
+                        info!("[#on_message] Token reloaded");
                         None
                     },
                     _ => None,

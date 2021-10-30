@@ -110,7 +110,7 @@ pub fn load_key() -> Option<Token> {
     let mut file = match File::open(&path) {
         Ok(file) => file,
         Err(_) => {
-            error!("[#pre_init] Failed to find \"esm.key\" file. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
+            error!("[#load_key] Failed to find \"esm.key\" file. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
             return None;
         }
     };
@@ -118,10 +118,10 @@ pub fn load_key() -> Option<Token> {
     let mut key_contents = Vec::new();
     match file.read_to_end(&mut key_contents) {
         Ok(_) => {
-            trace!("[#pre_init] esm.key - {}", String::from_utf8_lossy(&key_contents));
+            trace!("[#load_key] esm.key - {}", String::from_utf8_lossy(&key_contents));
         }
         Err(e) => {
-            error!("[#pre_init] Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e);
+            error!("[#load_key] Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e);
             return None;
         }
     }
@@ -129,13 +129,13 @@ pub fn load_key() -> Option<Token> {
     let token: Token = match serde_json::from_slice(&key_contents) {
         Ok(token) => token,
         Err(e) => {
-            debug!("[#pre_init] ERROR - {}", e);
-            error!("[#pre_init] Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+            debug!("[#load_key] ERROR - {}", e);
+            error!("[#load_key] Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
             return None;
         }
     };
 
-    trace!("[#pre_init] Token decoded - {}", token);
+    trace!("[#load_key] Token decoded - {}", token);
 
     Some(token)
 }
@@ -276,7 +276,10 @@ pub fn pre_init(
 
     trace!("[#pre_init] Initialization Data - {:?}", data);
 
-    *ARMA.write() = Arma::new(token, Data::Init(data));
+    let arma = Arma::new(token, Data::Init(data));
+    arma.client.connect();
+
+    *ARMA.write() = arma;
 
     info!("[#pre_init] Boot completed");
 }
