@@ -90,7 +90,7 @@ impl Client {
 
         // Get the current reconnection count and calculate the wait time
         let current_count = self.reconnection_counter.load(Ordering::SeqCst);
-        let time_to_wait = if crate::CONFIG.env.development() {
+        let time_to_wait = if crate::CONFIG.env.development() || crate::CONFIG.env.test() {
             3
         } else {
             15 * (current_count as u64)
@@ -198,7 +198,7 @@ impl Client {
     }
 
     fn reload_token(&self) {
-        if !(crate::CONFIG.env.test() && std::path::Path::new("./.RELOAD").exists()) { return }
+        if !(crate::CONFIG.env.test() && std::path::Path::new("@esm\\.RELOAD").exists()) { return }
 
         let new_token = match crate::load_key() {
             Some(t) => t,
@@ -207,6 +207,8 @@ impl Client {
                 return
             }
         };
+
+        trace!("[client#reload_token] Reloaded token");
 
         *self.token.write() = new_token;
     }

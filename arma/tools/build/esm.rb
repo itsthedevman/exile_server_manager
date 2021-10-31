@@ -53,25 +53,11 @@ command :run do |c|
   c.example 'description', 'command example'
   c.option '--use-x32', 'Build the x32 version of the extension and start the x32 version of the server'
   c.option '--target=TARGET', String, 'The target OS to build to. Valid options: linux, windows. Defaults to: windows'
-  c.option '--env=ENV', String, 'Sets the env. Valid options: debug, trace, test. Defaults to: debug'
+  c.option '--log-level=LEVEL', String, 'Sets the log level. Valid options: error, warn, info, debug, trace. Defaults to: debug'
+  c.option '--env=ENV', String, 'Sets the env. Valid options: production, development, test. Defaults to: development'
   c.action do |args, options|
-    build_target =
-      if options.target == "linux"
-        :linux
-      else
-        :windows
-      end
-
-    env =
-      case options.env
-      when "trace", "test"
-        options.env.to_sym
-      else
-        :debug
-      end
-
     # Set some build flags
-    Utils.flags(os: build_target, arch: options.use_x32 ? :x86 : :x64, env: env)
+    Utils.flags(options)
 
     # Check for required stuff
     next say("Server path is missing, please set it using `ESM_SERVER_PATH` environment variable") if Utils::SERVER_DIRECTORY.empty?
@@ -90,7 +76,7 @@ command :run do |c|
     Utils.write_config
 
     # Writes out the esm.key
-    Utils.check_for_key if env == :test
+    Utils.check_for_key if Utils.env == :test
 
     # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
@@ -136,12 +122,17 @@ class Utils
     }
   }.freeze
 
+  class << self
+    attr_reader :os, :arch, :env, :log_level
+  end
+
   def self.print_info
     puts <<~STRING
       | ESM Build Tool
       |   OS: #{@os}
       |   ARCH: #{@arch}
       |   ENV: #{@env}
+      |   LOG_LEVEL: #{@log_level}
       |   GIT_DIRECTORY: #{GIT_DIRECTORY}
       |   BUILD_DIRECTORY: #{BUILD_DIRECTORY}
       |   SERVER_DIRECTORY: #{SERVER_DIRECTORY}
@@ -149,10 +140,34 @@ class Utils
     STRING
   end
 
-  def self.flags(os:, arch:, env:)
+  def self.flags(options)
+    os =
+      if options.target == "linux"
+        :linux
+      else
+        :windows
+      end
+
+    env =
+      case options.env
+      when "production", "development", "test"
+        options.env.to_sym
+      else
+        :development
+      end
+
+    log_level =
+      case options.log_level
+      when "error", "warn", "info", "debug", "trace"
+        options.log_level.to_sym
+      else
+        :debug
+      end
+
     @os = os
-    @arch = arch
+    @arch = options.use_x32 ? :x86 : :x64
     @env = env
+    @log_level = log_level
   end
 
   def self.deployment_directory
@@ -203,8 +218,8 @@ class Utils
     log("Writing config... ") do
       config = {
         "connection_url" => ENV["ESM_HOST"] || "esm.mshome.net:3003",
-        "log_level" => @env.to_s,
-        "env" => "development"
+        "log_level" => @log_level.to_s,
+        "env" => @env.to_s
         # extdb_conf_path: "tools/extdb4-conf.ini"
         # extdb_version: 3
       }
@@ -219,9 +234,8 @@ class Utils
       key = redis.getdel("test_server_key")
       return if key.nil?
 
-      File.open("#{BUILD_DIRECTORY}/@esm/esm.key", "w") do |f|
-        f.write(key)
-      end
+      File.open("#{BUILD_DIRECTORY}/@esm/esm.key", "w") { |f| f.write(key) }
+      File.open("#{server_directory}/ArmAServer/@esm/esm.key", "w") { |f| f.write(key) }
     end
   end
 
@@ -232,7 +246,7 @@ class Utils
         loop do
           if redis.exists?("test_server_key")
             self.write_key
-            File.open("#{server_directory}/ArmAServer/@esm/.RELOAD", "w") { |f| f.write }
+            File.open("#{server_directory}/ArmAServer/@esm/.RELOAD", "w") { |f| f.write("0") }
           end
 
           sleep(0.5)
