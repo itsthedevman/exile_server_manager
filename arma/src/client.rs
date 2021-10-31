@@ -198,7 +198,8 @@ impl Client {
     }
 
     fn reload_token(&self) {
-        if !(crate::CONFIG.env.test() && std::path::Path::new("@esm\\.RELOAD").exists()) { return }
+        let reload_file = std::path::Path::new("@esm\\.RELOAD");
+        if !(crate::CONFIG.env.test() && reload_file.exists()) { return }
 
         let new_token = match crate::load_key() {
             Some(t) => t,
@@ -211,6 +212,11 @@ impl Client {
         trace!("[client#reload_token] Reloaded token");
 
         *self.token.write() = new_token;
+
+        match std::fs::remove_file(reload_file) {
+            Ok(_) => {},
+            Err(e) => error!("[client#reload_token] {}", e)
+        }
     }
 
     fn on_connect(&self) {
