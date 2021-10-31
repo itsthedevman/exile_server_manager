@@ -131,8 +131,12 @@ impl Client {
             _ => {}
         }
 
+        // Only reloads if the env is set to test
+        self.reload_token();
+
         // Add the server ID if there is none
         let token = self.token.read();
+
         if message.server_id.is_none() {
             message.server_id = Some(token.id.clone());
         }
@@ -151,7 +155,7 @@ impl Client {
     }
 
     fn load_endpoint(&self) {
-        let server_address = match format!("{}:80", crate::CONFIG.connection_url).to_socket_addrs() {
+        let server_address = match crate::CONFIG.connection_url.to_socket_addrs() {
             Ok(mut addr) => match addr.next() {
                 Some(socket_addr) => socket_addr,
                 None => {
@@ -193,6 +197,20 @@ impl Client {
         endpoint
     }
 
+    fn reload_token(&self) {
+        if !(crate::CONFIG.env.test() && std::path::Path::new("./.RELOAD").exists()) { return }
+
+        let new_token = match crate::load_key() {
+            Some(t) => t,
+            None => {
+                error!("[client#reload_token] Failed to reload key");
+                return
+            }
+        };
+
+        *self.token.write() = new_token;
+    }
+
     fn on_connect(&self) {
         info!("[client#on_connect] Connected to server");
 
@@ -212,6 +230,9 @@ impl Client {
             Some(e) => e,
             None => return
         };
+
+        // Only reloads if the env is set to test
+        self.reload_token();
 
         let message = match Message::from_bytes(incoming_data, &self.token.read().key) {
             Ok(mut message) => {

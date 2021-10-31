@@ -90,7 +90,7 @@ command :run do |c|
     Utils.write_config
 
     # Writes out the esm.key
-    Utils.write_key
+    Utils.check_for_key if env == :test
 
     # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
@@ -216,11 +216,27 @@ class Utils
   def self.write_key
     log("Writing key... ") do
       redis = Redis.new(host: "esm.mshome.net")
-      key = redis.get("test_server_key")
+      key = redis.getdel("test_server_key")
       return if key.nil?
 
       File.open("#{BUILD_DIRECTORY}/@esm/esm.key", "w") do |f|
         f.write(key)
+      end
+    end
+  end
+
+  def self.check_for_key
+    log("Starting key server... ") do
+      Thread.new do
+        redis = Redis.new(host: "esm.mshome.net")
+        loop do
+          if redis.exists?("test_server_key")
+            self.write_key
+            File.open("#{server_directory}/ArmAServer/@esm/.RELOAD", "w") { |f| f.write }
+          end
+
+          sleep(0.5)
+        end
       end
     end
   end
