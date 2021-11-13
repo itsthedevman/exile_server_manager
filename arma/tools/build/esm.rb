@@ -13,7 +13,7 @@ require 'pry'
 require 'yaml'
 
 # Load the ENV
-Dotenv.load("../run.env")
+Dotenv.load
 
 program :name, 'esm'
 program :version, '0.0.1'
@@ -462,6 +462,11 @@ class DatabaseCleaner
   ].freeze
 
   def self.run
+    redis = Redis.new(host: "esm.mshome.net")
+
+    @data = YAML.safe_load(File.read("test_data.yml"))
+    raise "tools\\build\\test_data.yml is missing or empty" if @data.blank?
+
     @users = build_users
     players = build_players
     territories = build_territories
@@ -501,14 +506,13 @@ class DatabaseCleaner
   end
 
   def self.build_users
-    users = YAML.safe_load(File.read("../test_users.yml"))
-    @steam_uids = users.map { |u| u["steam_uid"] }
+    @steam_uids = @data["steam_uids"]
 
-    users.map do |user|
+    @steam_uids.map do |uid|
       {
-        uid: "'#{user["steam_uid"]}'",
+        uid: "'#{uid}'",
         clan_id: "NULL",
-        name: "'#{user["steam_username"]}'",
+        name: "'#{Faker::Internet.username}'",
         score: Faker::Number.between(from: 10_000, to: 9_000_000),
         kills: Faker::Number.between(from: 0, to: 1_000),
         deaths: Faker::Number.between(from: 0, to: 1_000),
@@ -575,15 +579,14 @@ class DatabaseCleaner
   end
 
   def self.build_territories
-    10.times.map do |index|
+    @steam_uids.map.with_index do |owner_uid, index|
       stolen = Faker::Boolean.boolean
-      owner_uid = @steam_uids.sample
-      build_rights = [owner_uid] + @steam_uids.sample(Faker::Number.between(from: 0, to: @steam_uids.size - 1)).uniq.compact
-      moderators = [owner_uid] + build_rights.sample(Faker::Number.between(from: 0, to: @steam_uids.size - 1)).uniq.compact
+      build_rights = [owner_uid] + @steam_uids.sample(Faker::Number.between(from: 0, to: [@steam_uids.size / 2, 30].max)).uniq.compact
+      moderators = [owner_uid] + build_rights.sample(Faker::Number.between(from: 0, to: [@steam_uids.size / 2, 30].max)).uniq.compact
 
       {
         id: index + 1,
-        custom_id: Faker::Boolean.boolean ? "'#{Faker::Internet.slug}'" : "NULL",
+        custom_id: Faker::Boolean.boolean ? "'#{[Faker::Internet.slug, Faker::Internet.slug, Faker::Internet.slug].join("-").truncate(45)}'" : "NULL",
         owner_uid: "'#{owner_uid}'",
         name: "'#{Faker::Company.name.gsub("'", "")}'",
         position_x: Faker::Number.between(from: 0, to: 5_000).to_f,
@@ -598,8 +601,8 @@ class DatabaseCleaner
         created_at: random_time,
         last_paid_at: "NOW()",
         xm8_protectionmoney_notified: '0',
-        build_rights: "'#{build_rights.to_json}'",
-        moderators: "'#{moderators.to_json}'",
+        build_rights: "'#{build_rights.map(&:to_s).to_json}'",
+        moderators: "'#{moderators.map(&:to_s).to_json}'",
         esm_payment_counter: 0,
         deleted_at: "NULL"
       }
