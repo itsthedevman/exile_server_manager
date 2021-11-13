@@ -24,3 +24,6 @@ test_users.yml
 
 node_modules
 reset.sql
+
+test_data.yml
+.env
