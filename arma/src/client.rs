@@ -21,7 +21,8 @@ pub struct Client {
     listener: Arc<RwLock<Option<NodeListener<()>>>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
     reconnection_counter: Arc<AtomicI16>,
-    bot_pong_received: Arc<AtomicBool>
+    bot_pong_received: Arc<AtomicBool>,
+    connected: Arc<AtomicBool>,
 }
 
 impl Client {
@@ -36,6 +37,7 @@ impl Client {
             endpoint: Arc::new(RwLock::new(None)),
             reconnection_counter: Arc::new(AtomicI16::new(1)),
             bot_pong_received: Arc::new(AtomicBool::new(false)),
+            connected: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -87,11 +89,14 @@ impl Client {
     /// When env is set to "development", it will attempt roughly every second.
     pub fn reconnect(&self) {
         self.handler.read().stop();
+        self.connected.store(false, Ordering::SeqCst);
 
         // Get the current reconnection count and calculate the wait time
         let current_count = self.reconnection_counter.load(Ordering::SeqCst);
-        let time_to_wait = if crate::CONFIG.env.development() || crate::CONFIG.env.test() {
+        let time_to_wait = if crate::CONFIG.env.development() {
             3
+        } else if crate::CONFIG.env.test() {
+            1
         } else {
             15 * (current_count as u64)
         };
@@ -220,15 +225,13 @@ impl Client {
     }
 
     fn on_connect(&self) {
-        info!("[client#on_connect] Connected to server");
-
         // Reset the reconnect counter.
         self.reconnection_counter.store(0, Ordering::SeqCst);
 
         let mut message = Message::new(Type::Init);
         message.data = self.initialization_data.read().clone();
 
-        // debug!("[client#on_connect] Initialization {:#?}", message);
+        trace!("[client#on_connect] Initialization {:#?}", message);
 
         self.send_to_server(message);
     }
@@ -268,10 +271,17 @@ impl Client {
         let arma = crate::ARMA.read();
         let result: Option<Message> = match message.message_type {
             Type::Init => {
-                drop(arma); // Release the read so a write can be established
+                if self.connected.load(Ordering::SeqCst) {
+                    error!("[client#on_message] Client is already initialized");
+                    return
+                }
 
-                let mut writer_arma = crate::ARMA.write();
-                writer_arma.post_initialization(message)
+                info!("[client#on_message] Connection established with bot");
+                self.connected.store(true, Ordering::SeqCst);
+
+                drop(arma); // Release the read so a write can be established
+                let mut arma = crate::ARMA.write();
+                arma.post_initialization(message)
             },
             Type::Query => arma.database.query(message),
             Type::Arma => arma.call_function(message),
