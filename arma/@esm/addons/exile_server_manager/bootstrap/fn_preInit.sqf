@@ -61,8 +61,8 @@ private ['_code', '_function', '_file', '_fileContent'];
 forEach
 // ["ESMs_", "exile_server_manager\code\ESMs_.sqf"],
 [
-    ["ESMs_object_message_respond", "exile_server_manager\code\ESMs_object_message_respond.sqf"],
-    ["ESMs_object_message_respondWithError", "exile_server_manager\code\ESMs_object_message_respondWithError.sqf"],
+    ["ESMs_object_message_respond_to", "exile_server_manager\code\ESMs_object_message_respond_to.sqf"],
+    ["ESMs_object_message_respond_withError", "exile_server_manager\code\ESMs_object_message_respond_withError.sqf"],
     ["ESMs_object_player_reward", "exile_server_manager\code\ESMs_object_player_reward.sqf"],
     ["ESMs_system_extension_call", "exile_server_manager\code\ESMs_system_extension_call.sqf"],
     ["ESMs_system_extension_callback", "exile_server_manager\code\ESMs_system_extension_callback.sqf"],
@@ -71,6 +71,7 @@ forEach
     ["ESMs_system_network_discord_send_to", "exile_server_manager\code\ESMs_system_network_discord_send_to.sqf"],
 	["ESMs_system_process_preInit", "exile_server_manager\code\ESMs_system_process_preInit.sqf"],
     ["ESMs_system_process_postInit", "exile_server_manager\code\ESMs_system_process_postInit.sqf"],
+    ["ESMs_system_sqf_execute", "exile_server_manager\code\ESMs_system_sqf_execute.sqf"],
     ["ESMs_util_hashmap_get", "exile_server_manager\code\ESMs_util_hashmap_get.sqf"],
     ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
 ];
