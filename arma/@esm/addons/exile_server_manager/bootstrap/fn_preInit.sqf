@@ -73,6 +73,7 @@ forEach
     ["ESMs_system_process_postInit", "exile_server_manager\code\ESMs_system_process_postInit.sqf"],
     ["ESMs_system_sqf_execute", "exile_server_manager\code\ESMs_system_sqf_execute.sqf"],
     ["ESMs_util_hashmap_get", "exile_server_manager\code\ESMs_util_hashmap_get.sqf"],
+    ["ESMs_util_hashmap_toArray", "exile_server_manager\code\ESMs_util_hashmap_toArray.sqf"],
     ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
 ];
 
