@@ -37,13 +37,30 @@
  *
  **/
 
-private _id = _this select 0;
-private _dataType = _this param [1, "empty", [""]];
-private _data = _this param [2, [], [[], HASH_TYPE]];
-private _metadataType = _this param [3, "empty", [""]];
-private _metadata = _this param [4, [], [[], HASH_TYPE]];
-private _errorMessages = _this param [5, []];
+params [
+	"_id",
+	["_type", "event", [""]],
+	["_dataType", "empty", [""]],
+	["_data", [], [[], HASH_TYPE]],
+	["_metadataType", "empty", [""]],
+	["_metadata", [], [[], HASH_TYPE]],
+	["_errorMessages", []]
+];
 
+// Add check for hashmap or hashmap syntax
+
+// Do not convert empty arrays
+if (_data isEqualType ARRAY_TYPE && { count(_data) > 0 }) then
+{
+	_data = createHashMapFromArray(_data);
+};
+
+if (_metadata isEqualType ARRAY_TYPE && { count(_metadata) > 0 }) then
+{
+	_metadata = createHashMapFromArray(_metadata);
+};
+
+// Process the errors
 private _errors = [];
 {
 	private _content = _x;
@@ -56,18 +73,7 @@ private _errors = [];
 }
 forEach _errorMessages;
 
-
-if (_data isEqualType HASH_TYPE) then
-{
-	_data = _data toArray false;
-};
-
-if (_metadata isEqualType HASH_TYPE) then
-{
-	_metadata = _metadata toArray false;
-};
-
 // Send it!
-["event", _id, _data, _metadata, _errors] call ESMs_system_extension_call;
+["send_message", _id, _type, [_dataType, _data], [_metadataType, _metadata], _errors] call ESMs_system_extension_call;
 
 true

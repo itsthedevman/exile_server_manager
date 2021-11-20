@@ -52,6 +52,9 @@ ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
 
+HASH_TYPE = createHashMap;
+ARRAY_TYPE = [];
+
 ["preInit", "Exile Server Manager is booting..."] call ESMs_util_log;
 
 // For controlling which calls log

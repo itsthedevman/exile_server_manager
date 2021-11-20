@@ -53,14 +53,14 @@ private _sanitizer = {
 	{
 		case "ARRAY":
 		{
-			private _tempPackage = [];
+			private _sanitizedValue = [];
 
 			{
-				[_tempPackage, _x] call _sanitizer;
+				[_sanitizedValue, _x] call _sanitizer;
 			}
 			forEach _item;
 
-			_package pushBack _tempPackage;
+			_package pushBack _sanitizedValue;
 		};
 
 		case "STRING":
@@ -80,12 +80,26 @@ private _sanitizer = {
 
 		case "ANY":
 		{
-			_package pushBack "null";
+			_package pushBack nil;
 		};
 
 		case "HASHMAP":
 		{
-			_package pushBack (_item toArray false);
+			private _arrayPairs = _item call ESMs_util_hashmap_toArray;
+
+			private _keys = [];
+			{
+				[_keys, _x] call _sanitizer;
+			}
+			forEach (_arrayPairs select 0);
+
+			private _values = [];
+			{
+				[_values, _x] call _sanitizer;
+			}
+			forEach (_arrayPairs select 1);
+
+			_package pushBack [_keys, _values];
 		};
 
 		default
@@ -96,19 +110,19 @@ private _sanitizer = {
 };
 
 // Using the sanitizer, sanitize the provided arguments
-private _sanitizedPackage = [];
+private _sanitizedArguments = [];
 {
-	[_sanitizedPackage, _x] call _sanitizer;
+	[_sanitizedArguments, _x] call _sanitizer;
 }
 forEach _arguments;
 
-["call", format["[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedPackage], "debug"] call ESMs_util_log;
+["call", format["[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedArguments], "debug"] call ESMs_util_log;
 
 // Call the extension and process the result
 // Calls to callExtension without arguments returns a string.
 // Calls to callExtension with arguments returns an array. And sometimes a string...
 // I forgot how _inconsistent_ Arma is.
-private _result = "esm" callExtension [_function, _sanitizedPackage];
+private _result = "esm" callExtension [_function, _sanitizedArguments];
 
 ["call", format["[%1] Extension returned: %2", _id, _result], "debug"] call ESMs_util_log;
 

@@ -254,7 +254,7 @@ pub fn pre_init(
         return;
     }
 
-    info!("[#pre_init] ESM is booting");
+    info!("[#pre_init] ESM is booting - Hello world!");
 
     // Load and convert the esm.key file into a token
     let token = match load_key() {
@@ -285,12 +285,12 @@ pub fn pre_init(
 }
 
 #[rv(thread = true)]
-pub fn event(id: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) {
-    trace!("[#event] id: {:?}\ndata: {:#?}\nmetadata: {:#?}\nerrors: {:#?}", id, data, metadata, errors);
+pub fn send_message(id: String, message_type: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) {
+    debug!("[#send_message] id: {:?}\ntype: {:?}\ndata: {:#?}\nmetadata: {:#?}\nerrors: {:#?}", id, message_type, data, metadata, errors);
 
-    let message = match Message::from_arma(Type::Event, id, data, metadata, errors) {
+    let message = match Message::from_arma(id, message_type, data, metadata, errors) {
         Ok(m) => m,
-        Err(e) => return error!("[#event] {}", e)
+        Err(e) => return error!("[#send_message] {}", e)
     };
 
     crate::ARMA.read().client.send_to_server(message);

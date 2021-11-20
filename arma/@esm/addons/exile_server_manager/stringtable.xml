@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project name="ESM">
+	<Package name="exile_server_manager">
+		<Container name="General">
+			<Key ID="STR_ESM_NullPlayer">
+				<English>Hey %1, you must be spawned into `%2` in order to receive your reward</English>
+			</Key>
+
+			<Key ID="STR_ESM_AlivePlayer">
+				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
+			</Key>
+
+			<Key ID="STR_ESM_SqfExecute_NullPlayer">
+				<English>Hey %1, %2 must be spawned into `%3` before you can execute code on them</English>
+			</Key>
+		</Container>
+	</Package>
+</Project>

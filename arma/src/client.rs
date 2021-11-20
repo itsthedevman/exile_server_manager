@@ -12,6 +12,7 @@ use message_io::node::{self, NodeHandler, NodeListener};
 use parking_lot::RwLock;
 
 use crate::arma::data::Token;
+use crate::config::Env;
 
 #[derive(Clone)]
 pub struct Client {
@@ -93,12 +94,10 @@ impl Client {
 
         // Get the current reconnection count and calculate the wait time
         let current_count = self.reconnection_counter.load(Ordering::SeqCst);
-        let time_to_wait = if crate::CONFIG.env.development() {
-            3
-        } else if crate::CONFIG.env.test() {
-            1
-        } else {
-            15 * (current_count as u64)
+        let time_to_wait = match crate::CONFIG.env {
+            Env::Test => 1,
+            Env::Development => 3,
+            _ => 15 * (current_count as u64)
         };
 
         let time_to_wait = Duration::from_secs(time_to_wait);
@@ -149,7 +148,9 @@ impl Client {
         // Convert the message to bytes so it can be sent
         match message.as_bytes(&token.key) {
             Ok(bytes) => {
-                debug!("[client#send_to_server] {:#?}", message);
+                if message.message_type != Type::Init {
+                    debug!("[client#send_to_server] {:?}", message);
+                }
 
                 network.send(endpoint, &bytes);
             }

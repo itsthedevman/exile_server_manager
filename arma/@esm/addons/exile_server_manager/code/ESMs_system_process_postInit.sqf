@@ -53,6 +53,6 @@ ESM_Initialized = true;
 ] call ESMs_util_log;
 
 // Acknowledge the message
-[_id] call ESMs_object_message_respond;
+[_id] call ESMs_object_message_respond_to;
 
 true
