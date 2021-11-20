@@ -506,7 +506,7 @@ class DatabaseCleaner
   end
 
   def self.build_users
-    @steam_uids = @data["steam_uids"]
+    @steam_uids = @data["steam_uids"] << @data["dev"]["steam_uid"]
 
     @steam_uids.map do |uid|
       {
