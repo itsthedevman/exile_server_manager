@@ -29,17 +29,15 @@
 private _hashMap = _this select 0;
 private _keys = _this select [1, count(_this)];
 
-// Used for checking types
-private _hashType = createHashMap;
-private _result = _hashMap;
+private _lastKey = _keys select (count(_keys) - 1);
+private _result = nil;
 
 {
 	private _key = _x;
+	if !(_hashMap isEqualType HASH_TYPE) exitWith {};
 
-	// If this is nil, the key wasn't found or extra keys were provided
-	if !(_result isEqualType _hashType) exitWith {};
-
-	_result = _result getOrDefault [_key, nil];
+	_hashMap = _hashMap getOrDefault [_key, nil];
+	if (_key isEqualTo _lastKey) exitWith { _result = _hashMap; };
 }
 forEach _keys;
 
