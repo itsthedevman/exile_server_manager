@@ -30,8 +30,13 @@ private _processor = {
 
 	if (_input isEqualType HASH_TYPE) then
 	{
+		// Arma has the worst implementation of `nil` I have ever seen
+		// This is such a silly thing to have to do
 		{
-			_input set [_x call _processor, _y call _processor];
+			_input set [
+				if (isNil "_x") then { nil } else { _x call _processor },
+				if (isNil "_y") then { nil } else { _y call _processor }
+			];
 		}
 		forEach _input;
 

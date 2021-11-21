@@ -34,11 +34,12 @@ private _result = nil;
 
 {
 	private _key = _x;
-	if !(_hashMap isEqualType HASH_TYPE) exitWith {};
+	if (isNil "_hashMap" || { !(_hashMap isEqualType HASH_TYPE) }) exitWith {};
 
 	_hashMap = _hashMap getOrDefault [_key, nil];
 	if (_key isEqualTo _lastKey) exitWith { _result = _hashMap; };
 }
 forEach _keys;
 
-_result
+// The variable, cannot be used, while it is nil. Even when returning
+if (isNil "_result") then { nil } else { _result }

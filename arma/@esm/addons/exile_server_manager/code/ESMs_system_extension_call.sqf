@@ -49,6 +49,8 @@ private _sanitizer = {
 	private _package = _this select 0;
 	private _item = _this select 1;
 
+	if (isNil "_item") exitWith { _package pushBack nil };
+
 	switch (typeName(_item)) do
 	{
 		case "ARRAY":
@@ -56,7 +58,10 @@ private _sanitizer = {
 			private _sanitizedValue = [];
 
 			{
-				[_sanitizedValue, _x] call _sanitizer;
+				[
+					_sanitizedValue,
+					if (isNil "_x") then { nil } else { _x }
+				] call _sanitizer;
 			}
 			forEach _item;
 
@@ -89,13 +94,21 @@ private _sanitizer = {
 
 			private _keys = [];
 			{
-				[_keys, _x] call _sanitizer;
+				[
+					_keys,
+					if (isNil "_x") then { nil } else { _x }
+				]
+				call _sanitizer;
 			}
 			forEach (_arrayPairs select 0);
 
 			private _values = [];
 			{
-				[_values, _x] call _sanitizer;
+				[
+					_values,
+					if (isNil "_x") then { nil } else { _x }
+				]
+				call _sanitizer;
 			}
 			forEach (_arrayPairs select 1);
 
@@ -112,7 +125,10 @@ private _sanitizer = {
 // Using the sanitizer, sanitize the provided arguments
 private _sanitizedArguments = [];
 {
-	[_sanitizedArguments, _x] call _sanitizer;
+	[
+		_sanitizedArguments,
+		if (isNil "_x") then { nil } else { _x }
+	] call _sanitizer;
 }
 forEach _arguments;
 

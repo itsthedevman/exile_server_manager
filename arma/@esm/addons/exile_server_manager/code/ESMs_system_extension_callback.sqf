@@ -64,7 +64,7 @@ private _message = createHashMapFromArray(_result);
 _message set ["data", createHashMapFromArray(_message getOrDefault ["data", []])];
 _message set ["metadata", createHashMapFromArray(_message getOrDefault ["metadata", []])];
 
-["callback", format["Calling ""%1"" with %2", _functionName, _message], "trace"] call ESMs_util_log;
+["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
 ["callback", format["Executing ""%1"" with message ""%2""", _functionName, _message get "id"]] call ESMs_util_log;
 
 _message call _function;
