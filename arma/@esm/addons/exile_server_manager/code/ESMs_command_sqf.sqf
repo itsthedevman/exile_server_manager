@@ -2,16 +2,11 @@
 /**
  *
  * Function:
- *      ESMs_system_sqf_execute
+ *      ESMs_command_sqf
  *
  * Description:
  *      Executes the provided SQF on the target (server, all players, or a single player)
  *
- * Arguments:
- *      _this	-	A hashmap representation of a Message
- *
- * Examples:
- *      Message call ESMs_system_sqf_execute;
  *
  * * *
  *
@@ -27,7 +22,7 @@
 private _id = _this getOrDefault ["id", nil];
 
 /*
-	target_type: String,
+	execute_on: String. Valid options: "server", "all", "player"
 	code: String
 */
 private _data = _this getOrDefault ["data", nil];
