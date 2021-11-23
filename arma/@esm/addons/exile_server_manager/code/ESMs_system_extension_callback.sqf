@@ -38,31 +38,8 @@ if (_function isEqualTo "") exitWith
 	] call ESMs_util_log;
 };
 
-/*
-	The data will always be in the following format:
-	[
-		["id", "uuid"],
-		["data", [[]]],
-		["metadata", [[]]]
-	]
-
-	Once converted to a hashmap, it will have the following keys:
-		"id" 		- The message's ID. Used for responding to the message
-		"data" 		- The data for the function in array hashmap format. The contents of this hashmap will depend on the message
-		"metadata" 	- Any extra data that is needed.
-						If this is a system initiated message, this array array will be empty
-						If this is a user initiated message, this array hashmap will contain the following keys:
-							"user_id" 			- The user's Discord ID
-							"user_name" 		- The user's Discord name
-							"user_mention" 		- The user's Discord mention (for tagging)
-							"user_steam_uid" 	- The user's Steam UID
-*/
 private _result = _data call ESMs_system_extension_processResult;
-private _message = createHashMapFromArray(_result);
-
-// createHashMapFromArray is not recursive. Convert data/metadata to a hashmap
-_message set ["data", createHashMapFromArray(_message getOrDefault ["data", []])];
-_message set ["metadata", createHashMapFromArray(_message getOrDefault ["metadata", []])];
+private _message = _result call ESMs_util_hashmap_fromArray;
 
 ["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
 ["callback", format["Executing ""%1"" with message ""%2""", _functionName, _message get "id"]] call ESMs_util_log;
