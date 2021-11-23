@@ -34,11 +34,13 @@ private _result = _this;
 // The extension sends back a empty string after receiving a call
 if (isNil("_result") || { _result isEqualTo "" }) exitWith {};
 
-if (_result isEqualType "") then {
+if (_result isEqualType "") then
+{
 	_result = parseSimpleArray _result;
 };
 
-if (_result isEqualTo []) exitWith {
+if (_result isEqualTo []) exitWith
+{
 	["processResult", format["Failed to parse %1", _this], "error"] call ESMs_util_log;
 };
 
@@ -50,7 +52,8 @@ private _content = _result select 2;
 if (_statusCode isEqualTo 0) exitWith { _content };
 
 // There was an error
-if (_statusCode isEqualTo -1) exitWith {
+if (_statusCode isEqualTo -1) exitWith
+{
 	["processResult", format["Status code -1 returned. Content: %1", _content], "error"] call ESMs_util_log;
 	nil
 };
