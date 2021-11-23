@@ -72,6 +72,8 @@ forEach
 	["ESMs_system_process_preInit", "exile_server_manager\code\ESMs_system_process_preInit.sqf"],
     ["ESMs_system_process_postInit", "exile_server_manager\code\ESMs_system_process_postInit.sqf"],
     ["ESMs_system_sqf_execute", "exile_server_manager\code\ESMs_system_sqf_execute.sqf"],
+    ["ESMs_util_array_isValidHashmap", "exile_server_manager\code\ESMs_util_array_isValidHashmap.sqf"],
+    ["ESMs_util_hashmap_fromArray", "exile_server_manager\code\ESMs_util_hashmap_fromArray.sqf"],
     ["ESMs_util_hashmap_get", "exile_server_manager\code\ESMs_util_hashmap_get.sqf"],
     ["ESMs_util_hashmap_toArray", "exile_server_manager\code\ESMs_util_hashmap_toArray.sqf"],
     ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
