@@ -76,7 +76,10 @@ command :run do |c|
     Utils.write_config
 
     # Writes out the esm.key
-    Utils.check_for_key if Utils.env == :test
+    if Utils.env == :test
+      Utils.check_for_key
+      Utils.add_test_pbo
+    end
 
     # Compile and copy over the DLL into the @esm mod locally
     Utils.build_and_copy_extension
@@ -100,16 +103,6 @@ class Utils
   BUILD_DIRECTORY = "#{GIT_DIRECTORY}/target/arma"
   SERVER_DIRECTORY = ENV["ESM_SERVER_PATH"] || ""
   REMOTE_HOST = ENV["ESM_REMOTE_HOST"] || ""
-  ADDONS = [
-    "exile_server_manager",
-    "exile_server_overwrites",
-    "exile_server_xm8",
-    "exile_server_hacking",
-    "exile_server_grinding",
-    "exile_server_charge_plant_started",
-    "exile_server_flag_steal_started",
-    "exile_server_player_connected"
-  ].freeze
 
   TARGETS = {
     windows: {
@@ -168,6 +161,17 @@ class Utils
     @arch = options.use_x32 ? :x86 : :x64
     @env = env
     @log_level = log_level
+
+    @addons = [
+      "exile_server_manager",
+      "exile_server_overwrites",
+      "exile_server_xm8",
+      "exile_server_hacking",
+      "exile_server_grinding",
+      "exile_server_charge_plant_started",
+      "exile_server_flag_steal_started",
+      "exile_server_player_connected"
+    ]
   end
 
   def self.deployment_directory
@@ -255,6 +259,10 @@ class Utils
     end
   end
 
+  def self.add_test_pbo
+    @addons << "esm_test"
+  end
+
   def self.clean_database
     log("Cleaning database... ") do
       DatabaseCleaner.run
@@ -329,7 +337,7 @@ class Utils
 
   def self.build_addons
     log("Building addons... ") do
-      ADDONS.each do |addon|
+      @addons.each do |addon|
         source = "#{GIT_DIRECTORY}/@esm/addons/#{addon}"
         destination = "#{BUILD_DIRECTORY}/@esm/addons/#{addon}"
 

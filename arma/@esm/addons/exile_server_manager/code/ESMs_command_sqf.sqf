@@ -45,10 +45,8 @@ if (isNil "_id" || { isNil "_data" } || { isNil "_metadata" }) exitWith { nil };
 try
 {
 	private _type = [_data, "execute_on"] call ESMs_util_hashmap_get;
-	private _code = [_data, "code"] call ESMs_util_hashmap_get;
+	private _code = compile ([_data, "code"] call ESMs_util_hashmap_get);
 	private _result = nil;
-
-	_code = compile _code;
 
 	switch (_type) do
 	{
@@ -77,11 +75,6 @@ try
 		};
 	};
 
-	if (!(isNil "_result") && { _result isEqualType "" }) then
-	{
-		_result = str(_result);
-	};
-
 	[
 		_id,
 		"arma",
@@ -89,7 +82,7 @@ try
 		[
 			[
 				"result",
-				if (isNil "_result") then { nil } else { _result }
+				if (isNil "_result") then { nil } else { str(_result) }
 			]
 		]
 	]
