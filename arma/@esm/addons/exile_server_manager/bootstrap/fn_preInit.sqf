@@ -61,12 +61,12 @@ private ['_code', '_function', '_file', '_fileContent'];
 forEach
 // ["ESMs_", "exile_server_manager\code\ESMs_.sqf"],
 [
-    ["ESMs_command_sqf", "exile_server_manager\code\ESMs_command_sqf.sqf"],
     ["ESMs_object_embed_addField", "exile_server_manager\code\ESMs_object_embed_addField.sqf"],
     ["ESMs_object_embed_create", "exile_server_manager\code\ESMs_object_embed_create.sqf"],
     ["ESMs_object_message_respond_to", "exile_server_manager\code\ESMs_object_message_respond_to.sqf"],
+    ["ESMs_system_command_reward", "exile_server_manager\code\ESMs_system_command_reward.sqf"],
+    ["ESMs_system_command_sqf", "exile_server_manager\code\ESMs_system_command_sqf.sqf"],
     ["ESMs_object_message_respond_withError", "exile_server_manager\code\ESMs_object_message_respond_withError.sqf"],
-    ["ESMs_object_player_reward", "exile_server_manager\code\ESMs_object_player_reward.sqf"],
     ["ESMs_system_extension_call", "exile_server_manager\code\ESMs_system_extension_call.sqf"],
     ["ESMs_system_extension_callback", "exile_server_manager\code\ESMs_system_extension_callback.sqf"],
     ["ESMs_system_extension_processResult", "exile_server_manager\code\ESMs_system_extension_processResult.sqf"],

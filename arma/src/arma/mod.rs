@@ -62,8 +62,8 @@ impl Arma {
 
         // Now process the message
         match message.data {
-            Data::Reward(_) => crate::a3_call_function("ESMs_object_player_reward", &message),
-            Data::Sqf(_) => crate::a3_call_function("ESMs_command_sqf", &message),
+            Data::Reward(_) => crate::a3_call_function("ESMs_system_command_reward", &message),
+            Data::Sqf(_) => crate::a3_call_function("ESMs_system_command_sqf", &message),
             _ => unreachable!("[arma::call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet", message.data)
         }
 
