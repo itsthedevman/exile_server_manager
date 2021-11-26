@@ -68,7 +68,7 @@ try
 
 			if (isNull _targetObject) then
 			{
-				throw format[localize "$STR_ESM_SqfExecute_NullPlayer", _targetMention, _targetUID, ESM_ServerID];
+				throw format[localize "$STR_ESM_Sqf_NullTarget", _targetMention, _targetUID, ESM_ServerID];
 			};
 
 			_code remoteExec ["call", owner _targetObject];
