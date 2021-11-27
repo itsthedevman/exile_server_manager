@@ -33,12 +33,15 @@ private _processor = {
 		private _key = _x select 0;
 		private _value = _x select 1;
 
-		if (!(isNil "_value") && _value call ESMs_util_array_isValidHashmap) then
+		// Silly Arma
+		if !(isNil "_value") then
 		{
-			private _container = createHashMap;
-			[_container, _value] call _processor;
-
-			_value = _container;
+			if (_value call ESMs_util_array_isValidHashmap) then
+			{
+				private _container = createHashMap;
+				[_container, _value] call _processor;
+				_value = _container;
+			};
 		};
 
 		_output set [
