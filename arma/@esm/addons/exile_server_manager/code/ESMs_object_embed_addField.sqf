@@ -31,7 +31,7 @@ private _name = _this select 1;
 private _value = _this select 2;
 private _inline = _this param [3, false];
 
-private _field = createHashMapFromArray [["name", _name], ["value", _value], ["inline", _inline]];
+private _field = createHashMapFromArray [["name", str(_name)], ["value", str(_value)], ["inline", _inline isEqualTo true]];
 private _fields = _embed getOrDefault ["fields", []];
 
 _fields pushBack _field;

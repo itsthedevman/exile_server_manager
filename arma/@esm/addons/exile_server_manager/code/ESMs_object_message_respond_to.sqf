@@ -52,12 +52,12 @@ params [
 // Do not convert empty arrays
 if (_data isEqualType ARRAY_TYPE && { count(_data) > 0 }) then
 {
-	_data = createHashMapFromArray(_data);
+	_data = _data call ESMs_util_hashmap_fromArray;
 };
 
 if (_metadata isEqualType ARRAY_TYPE && { count(_metadata) > 0 }) then
 {
-	_metadata = createHashMapFromArray(_metadata);
+	_metadata = _metadata call ESMs_util_hashmap_fromArray;
 };
 
 // Process the errors

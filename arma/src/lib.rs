@@ -146,7 +146,15 @@ pub fn load_key() -> Option<Token> {
 ///
 /// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
 fn send_to_arma<D: ToArma + Debug>(function: &str, id: &Uuid, data: &D, metadata: &Metadata) {
-    trace!("[#send_to_arma] \"{}\" -> ID: \"{:?}\"\nData: {:#?}\nMetadata: {:#?}", function, id, data, metadata);
+    trace!(
+        r#"[#send_to_arma]
+            function: {}
+            id: {:?}
+            data: {:?}
+            metadata: {:?}
+        "#,
+        function, id, data, metadata
+    );
 
     if env::var("ESM_IS_TERMINAL").is_ok() { return; }
 
@@ -237,12 +245,13 @@ pub fn pre_init(
     vg_enabled: bool,
     vg_max_sizes: String,
 ) {
-    trace!(r#"[#pre_init] server_name: {:?}
-            price_per_object: {:#?}
-            territory_lifetime: {:#?}
-            territory_data: {:#?}
-            vg_enabled: {:#?}
-            vg_max_sizes: {:#?}
+    trace!(r#"[#pre_init]
+            server_name: {:?}
+            price_per_object: {:?}
+            territory_lifetime: {:?}
+            territory_data: {:?}
+            vg_enabled: {:?}
+            vg_max_sizes: {:?}
         "#,
         server_name,price_per_object, territory_lifetime,
         territory_data, vg_enabled, vg_max_sizes
@@ -286,7 +295,7 @@ pub fn pre_init(
 
 #[rv(thread = true)]
 pub fn send_message(id: String, message_type: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) {
-    debug!("[#send_message] id: {:?}\ntype: {:?}\ndata: {:#?}\nmetadata: {:#?}\nerrors: {:#?}", id, message_type, data, metadata, errors);
+    debug!("[#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}", id, message_type, data, metadata, errors);
 
     let message = match Message::from_arma(id, message_type, data, metadata, errors) {
         Ok(m) => m,
@@ -298,7 +307,7 @@ pub fn send_message(id: String, message_type: String, data: ArmaValue, metadata:
 
 #[rv(thread = true)]
 pub fn send_to_channel(id: String, content: String) {
-    trace!("[#send_to_channel] id: {:?}\ncontent: {:#?}", id, content);
+    trace!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
 
     let mut message = Message::new(Type::Event);
     message.data = Data::SendToChannel(data::SendToChannel { id, content });
