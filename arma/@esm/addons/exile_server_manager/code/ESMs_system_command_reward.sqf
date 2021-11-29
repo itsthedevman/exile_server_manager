@@ -89,7 +89,7 @@ try
 
 		format["updateLocker:%1:%2", _playerLocker, _playerUID] call ExileServer_system_database_query_fireAndForget;
 
-		_receipt set ["locker_poptabs", _rewardLockerPoptabs];
+		_receipt set ["locker_poptabs", _playerLocker];
 	};
 
 	// Process Respect
@@ -114,8 +114,8 @@ try
 	if !(_rewardItems isEqualTo []) then
 	{
 		{
-			private _classname = _x select 0;
-			private _quantity = _x select 1;
+			private _classname = _x;
+			private _quantity = parseNumber(_y);
 			private _added = false;
 			private _configName = _classname call ExileClient_util_gear_getConfigNameByClassName;
 
@@ -190,10 +190,10 @@ try
 	if !(_rewardVehicles isEqualTo []) then
 	{
 		{
-			private _vehicleClass = _x select 0;
-			private _quantity = _x select 1;
-			private _addToGarage = _x select 2;
-			private _pinCode = _x select 3;
+			private _success = false;
+			private _vehicleClass = _x get "class_name";
+			private _location = _x get "location";
+			private _pinCode = _x get "code";
 			private _isShip = _vehicleClass isKindOf "Ship";
 			private _position = [];
 
@@ -223,19 +223,32 @@ try
 
 				// Set ownership
 				_vehicleObject setVariable ["ExileOwnerUID", _playerUID];
-				_vehicleObject setVariable ["ExileIsLocked",0];
+				_vehicleObject setVariable ["ExileIsLocked", 0];
 				_vehicleObject lock 0;
 
 				// Save vehicle in database + update position/stats
 				_vehicleObject call ExileServer_object_vehicle_database_insert;
 				_vehicleObject call ExileServer_object_vehicle_database_update;
+
+				_success = true
+			};
+
+			if (_success) then
+			{
+				private _items = _receipt getOrDefault ["vehicles", createHashMap];
+				private _currentQuantity = _items getOrDefault [_vehicleClass, 0];
+
+				// Increase the quantity
+				_items set [_vehicleClass, _currentQuantity + 1];
+
+				// Set the items back
+				_receipt set ["vehicles", _items];
 			};
 		}
 		forEach _rewardVehicles;
 	};
 
-
-	[_id, "reward_result", [["receipt", _receipt]]] call ESMs_object_message_respond_to;
+	[_id, "arma", "reward", _receipt] call ESMs_object_message_respond_to;
 
 	if (ESM_Logging_RewardPlayer) then
 	{
