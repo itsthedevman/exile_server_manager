@@ -369,6 +369,33 @@ module ESM
         raise args[:exception_class] || ESM::Exception::CheckFailure, message
       end
 
+      def to_h
+        {
+          name: self.name,
+          description: self.description,
+          example: self.example,
+          usage: self.usage,
+          prefix: self.prefix,
+          distinct: self.distinct,
+          current_community: self.current_community&.attributes,
+          current_channel: self.current_channel.inspect,
+          current_user: self.current_user.inspect,
+          current_cooldown: self.current_cooldown&.attributes,
+          target_community: self.target_community&.attributes,
+          target_server: self.target_server&.attributes,
+          target_user: self.target_user&.attributes,
+          target_uid: self.target_uid,
+          same_user: self.same_user?,
+          dm_only: self.dm_only?,
+          text_only: self.text_only?,
+          dev_only: self.dev_only?,
+          registration_required: self.registration_required?,
+          whitelist_enabled: self.whitelist_enabled?,
+          on_cooldown: self.on_cooldown?,
+          permissions: @permissions.to_h
+        }
+      end
+
       private
 
       def discord; end
@@ -395,6 +422,7 @@ module ESM
 
         # Parse arguments or raises FailedArgumentParse
         @arguments.parse!(@event)
+        @permissions.load
 
         # Logging
         ESM::Notifications.trigger("command_from_discord", command: self)

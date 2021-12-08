@@ -15,39 +15,39 @@ module ESM
           return if @loaded
 
           community = @command.target_community || @command.current_community
-          config =
+          @config =
             if community.present?
               ESM::CommandConfiguration.where(community_id: community.id, command_name: @command.name).first
             else
               nil
             end
 
-          config_present = config.present?
+          config_present = @config.present?
 
           @enabled =
             if config_present
-              config.enabled?
+              @config.enabled?
             else
               @command.defines.enabled.default
             end
 
           @allowed =
             if config_present
-              config.allowed_in_text_channels?
+              @config.allowed_in_text_channels?
             else
               @command.defines.allowed_in_text_channels.default
             end
 
           @whitelist_enabled =
             if config_present
-              config.whitelist_enabled?
+              @config.whitelist_enabled?
             else
               @command.defines.whitelist_enabled.default
             end
 
           @whitelisted_role_ids =
             if config_present
-              config.whitelisted_role_ids
+              @config.whitelisted_role_ids
             else
               @command.defines.whitelisted_role_ids.default
             end
@@ -56,14 +56,14 @@ module ESM
             if config_present
               # [2, "seconds"] -> 2 seconds
               # Calls .seconds, .days, .months, etc
-              config.cooldown_quantity.send(config.cooldown_type)
+              @config.cooldown_quantity.send(@config.cooldown_type)
             else
               @command.defines.cooldown_time.default
             end
 
           @notify_when_disabled =
             if config_present
-              config.notify_when_disabled?
+              @config.notify_when_disabled?
             else
               true
             end
@@ -118,6 +118,24 @@ module ESM
 
           # Allowed to use if sent in PM and the command is allowed in text channels
           return true if !text_channel && @allowed
+        end
+
+        def to_h
+          {
+            config: @config&.attributes,
+            vars: {
+              enabled: @enabled,
+              allowed: @allowed,
+              whitelist_enabled: @whitelist_enabled,
+              whitelisted_role_ids: @whitelisted_role_ids,
+              cooldown_time: @cooldown_time,
+              notify_when_disabled: @notify_when_disabled
+            },
+            enabled: self.enabled?,
+            allowed: self.allowed?,
+            whitelisted: self.whitelisted?,
+            notify_when_disabled: self.notify_when_disabled?
+          }
         end
       end
     end
