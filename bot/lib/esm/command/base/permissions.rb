@@ -17,7 +17,7 @@ module ESM
           community = @command.target_community || @command.current_community
           config =
             if community.present?
-              CommandConfiguration.where(community_id: community.id, command_name: @command.name).first
+              ESM::CommandConfiguration.where(community_id: community.id, command_name: @command.name).first
             else
               nil
             end
