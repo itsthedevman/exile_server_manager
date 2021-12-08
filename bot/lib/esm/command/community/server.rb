@@ -14,11 +14,13 @@ module ESM
 
         argument :server_id
 
+        skip_check :connected_server
+
         def discord
           embed =
             ESM::Embed.build do |e|
               e.title = target_server.server_name
-              e.color = :green
+              e.color = target_server.online? ? :green : :red
 
               # Server ID, IP, port, status
               add_connection_info(e)
@@ -48,21 +50,23 @@ module ESM
           #     :max_players, :number_of_bots, :dedicated, :operating_system, :password_needed, :secure, :game_version, :server_port,
           #     :server_id, :server_tags, :game_id
           server.server_info.to_ostruct
-        rescue SteamCondenser::TimeoutError
+        rescue StandardError => e
+          ESM.logger.warn("#{self.class}##{__method__}") { e }
           nil
         end
 
         def add_connection_info(e)
           e.add_field(name: I18n.t(:server_id), value: "```#{target_server.server_id}```")
           e.add_field(name: I18n.t(:ip), value: "```#{target_server.server_ip}```", inline: true)
-          e.add_field(name: I18n.t(:port), value: "```#{target_server.server_port}```", inline: true)
+          e.add_field(name: I18n.t(:port), value: "```#{target_server.server_port}```")
+          return unless target_server.online?
+
           e.add_field(name: I18n.t("commands.server.online_for"), value: "```#{target_server.uptime}```")
           e.add_field(name: I18n.t("commands.server.restart_in"), value: "```#{target_server.time_left_before_restart}```")
         end
 
         def add_server_info(e)
           query_response = query_server
-
           return if query_response.nil?
 
           e.add_field(name: I18n.t(:map), value: query_response.map_name, inline: true)
