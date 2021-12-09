@@ -15,13 +15,12 @@ module ESM
           return if @loaded
 
           community = @command.target_community || @command.current_community
-          @config =
-            if community.present?
-              ESM::CommandConfiguration.where(community_id: community.id, command_name: @command.name).first
-            else
-              nil
-            end
+          if community.nil?
+            argument = @command.arguments.get("server_id") || @command.arguments.get("community_id")
+            @command.arguments.invalid_argument!(argument) if argument&.invalid?
+          end
 
+          @config = community&.command_configurations&.where(command_name: @command.name)&.first
           config_present = @config.present?
 
           @enabled =

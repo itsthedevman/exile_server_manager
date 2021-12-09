@@ -405,19 +405,18 @@ module ESM
         @event = event
         @executed_at = DateTime.now
 
-        # Check permissions ahead of time so if the command is disabled, it doesn't try to correct argument errors
-        @checks.permissions! if event.channel.text?
+        @arguments.parse!(@event)
+        @permissions.load
 
-        # Check channel access due to argument parsing needing access to certain channels.
-        @checks.text_only!
-        @checks.dm_only!
+        @checks.permissions!
 
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
         # @event.channel.start_typing if !ESM.env.test? || !ESM.env.error_testing?
 
-        # Parse arguments or raises FailedArgumentParse
-        @arguments.parse!(@event)
-        @permissions.load
+        @checks.text_only!
+        @checks.dm_only!
+
+        @arguments.validate!
 
         # Logging
         ESM::Notifications.trigger("command_from_discord", command: self)

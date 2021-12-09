@@ -68,11 +68,8 @@ module ESM
         end
 
         def permissions!
-          # Load the permissions AFTER we have checked for invalid communities.
-          @command.permissions.load
-
           if !@command.permissions.enabled?
-            # If the community doesn't to send a message, don't send a message.
+            # If the community doesn't want to send a message, don't send a message.
             # This only applies to text channels. The user needs to know why the bot is not replying to their message
             if @command.event.channel.text? && !@command.permissions.notify_when_disabled?
               check_failed!(exception_class: ESM::Exception::CheckFailureNoMessage)
