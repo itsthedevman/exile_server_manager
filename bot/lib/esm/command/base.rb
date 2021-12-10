@@ -408,13 +408,13 @@ module ESM
         @arguments.parse!(@event)
         @permissions.load
 
+        @checks.text_only!
+        @checks.dm_only!
+
         @checks.permissions!
 
         # Start typing. The bot will automatically stop after 5 seconds or when the next message sends
         # @event.channel.start_typing if !ESM.env.test? || !ESM.env.error_testing?
-
-        @checks.text_only!
-        @checks.dm_only!
 
         @arguments.validate!
 
