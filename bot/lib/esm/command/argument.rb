@@ -84,17 +84,14 @@ module ESM
       end
 
       def to_s
-        string = "<"
-        string += "?" if !required?
-
-        string +=
-          if display_as.present?
-            display_as.to_s
+        name =
+          if self.display_as.present?
+            self.display_as.to_s
           else
-            name.to_s
+            self.name.to_s
           end
 
-        string + ">"
+        "<#{"?" if !required?}#{name}>"
       end
 
       def parse(command, message)
