@@ -88,11 +88,13 @@ module ESM
         def command
           command = ESM::Command[@arguments.category].new
 
-          # For prefix
-          command.current_community = current_community
+          if current_community
+            # For prefix
+            command.current_community = current_community
 
-          # For whitelisted permission
-          command.permissions.load
+            # For whitelisted permission
+            command.permissions.load
+          end
 
           embed =
             ESM::Embed.build do |e|

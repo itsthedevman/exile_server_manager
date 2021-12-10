@@ -56,11 +56,12 @@ describe ESM::Command::ArgumentContainer do
     end
 
     it "should raise an error with a embed" do
-      expect { container.parse!(event) }.to raise_error do |error|
+      expect { container.parse!(event) }.not_to raise_error
+      expect { container.validate! }.to raise_error do |error|
         embed = error.data
 
         expect(embed.title).to eql("**Missing argument `<_preserve>` for `#{ESM.config.prefix}base`**")
-        expect(embed.description).to match(/```.+base #{community.community_id} #{server.server_id} #{user.discord_id} 1 <_preserve> <sa_yalpsid> <\?_default> <\?_multiline> ```/)
+        expect(embed.description).to match(/```.+base #{community.community_id} #{server.server_id} #{user.discord_id} 1 <_preserve> <sa_yalpsid> not_default <\?_multiline> ```/)
         expect(embed.fields.size).to eql(1)
         expect(embed.fields.first.name).to eql("Arguments:")
         expect(embed.fields.first.value).to eql(ESM::Command::Test::Base::COMMAND_AS_STRING)

@@ -4,106 +4,83 @@ module ESM
   module Command
     class Base
       class Permissions
-        attr_reader :cooldown_time
-
         def initialize(command)
           @command = command
-          @loaded = false
+          @config = nil
         end
 
         def load
-          return if @loaded
+          return if @config
 
           community = @command.target_community || @command.current_community
           if community.nil?
-            argument = @command.arguments.get("server_id") || @command.arguments.get("community_id")
+            argument = @command.arguments.get(:server_id) || @command.arguments.get(:community_id)
             @command.arguments.invalid_argument!(argument) if argument&.invalid?
           end
 
           @config = community&.command_configurations&.where(command_name: @command.name)&.first
-          config_present = @config.present?
+        end
 
-          @enabled =
-            if config_present
-              @config.enabled?
-            else
-              @command.defines.enabled.default
-            end
+        def config_present?
+          @config.present?
+        end
 
-          @allowed =
-            if config_present
-              @config.allowed_in_text_channels?
-            else
-              @command.defines.allowed_in_text_channels.default
-            end
-
-          @whitelist_enabled =
-            if config_present
-              @config.whitelist_enabled?
-            else
-              @command.defines.whitelist_enabled.default
-            end
-
-          @whitelisted_role_ids =
-            if config_present
-              @config.whitelisted_role_ids
-            else
-              @command.defines.whitelisted_role_ids.default
-            end
-
-          @cooldown_time =
-            if config_present
-              # [2, "seconds"] -> 2 seconds
-              # Calls .seconds, .days, .months, etc
-              @config.cooldown_quantity.send(@config.cooldown_type)
-            else
-              @command.defines.cooldown_time.default
-            end
-
-          @notify_when_disabled =
-            if config_present
-              @config.notify_when_disabled?
-            else
-              true
-            end
-
-          @loaded = true
+        def cooldown_time
+          if config_present?
+            # [2, "seconds"] -> 2 seconds
+            # Calls .seconds, .days, .months, etc
+            @config.cooldown_quantity.send(@config.cooldown_type)
+          else
+            @command.defines.cooldown_time.default
+          end
         end
 
         def enabled?
-          @enabled
+          if config_present?
+            @config.enabled?
+          else
+            @command.defines.enabled.default
+          end
         end
 
         def notify_when_disabled?
-          @notify_when_disabled
+          if config_present?
+            @config.notify_when_disabled?
+          else
+            true
+          end
         end
 
         def whitelisted?
-          return @whitelisted if !@whitelisted.nil?
-          return true if !@whitelist_enabled
+          @whitelisted ||= lambda do
+            whitelist_enabled = config_present? ? @config.whitelist_enabled? : @command.defines.whitelist_enabled.default
+            return true if !whitelist_enabled
 
-          community = @command.target_community || @command.current_community
-          return false if community.nil?
+            community = @command.target_community || @command.current_community
+            return false if community.nil?
 
-          server = ESM.bot.server(community.guild_id.to_i)
-          guild_member = @command.current_user.on(server)
-          return false if guild_member.nil?
+            server = ESM.bot.server(community.guild_id.to_i)
+            guild_member = @command.current_user.on(server)
+            return false if guild_member.nil?
 
-          @whitelisted =
-            if guild_member.permission?(:administrator)
-              true
-            elsif @whitelisted_role_ids.empty?
-              false
-            else
-              @whitelisted_role_ids.any? { |role_id| guild_member.role?(role_id.to_i) }
-            end
+            whitelisted_role_ids = config_present? ? @config.whitelisted_role_ids : @command.defines.whitelisted_role_ids.default
+            return true if guild_member.permission?(:administrator)
+            return false if whitelisted_role_ids.empty?
 
-          @whitelisted
+            whitelisted_role_ids.any? { |role_id| guild_member.role?(role_id.to_i) }
+          end.call
         end
 
         # Is the command allowed in this channel?
         # @note: Purposefully explicit
         def allowed?
+          @allowed =
+            if config_present?
+              @config.allowed_in_text_channels?
+            else
+              @command.defines.allowed_in_text_channels.default
+            end
+
           text_channel = @command.event.channel.text?
 
           # Not allowed to use if sent in text channel and the command isn't allowed in text channels
@@ -122,18 +99,11 @@ module ESM
         def to_h
           {
             config: @config&.attributes,
-            vars: {
-              enabled: @enabled,
-              allowed: @allowed,
-              whitelist_enabled: @whitelist_enabled,
-              whitelisted_role_ids: @whitelisted_role_ids,
-              cooldown_time: @cooldown_time,
-              notify_when_disabled: @notify_when_disabled
-            },
             enabled: self.enabled?,
             allowed: self.allowed?,
             whitelisted: self.whitelisted?,
-            notify_when_disabled: self.notify_when_disabled?
+            notify_when_disabled: self.notify_when_disabled?,
+            cooldown_time: self.cooldown_time
           }
         end
       end
