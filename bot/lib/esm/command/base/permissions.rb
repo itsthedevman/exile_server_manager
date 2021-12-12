@@ -52,48 +52,33 @@ module ESM
         end
 
         def whitelisted?
-          @whitelisted ||= lambda do
-            whitelist_enabled = config_present? ? @config.whitelist_enabled? : @command.defines.whitelist_enabled.default
-            return true if !whitelist_enabled
+          whitelist_enabled = config_present? ? @config.whitelist_enabled? : @command.defines.whitelist_enabled.default
+          return true if !whitelist_enabled
 
-            community = @command.target_community || @command.current_community
-            return false if community.nil?
+          community = @command.target_community || @command.current_community
+          return false if community.nil?
 
-            server = ESM.bot.server(community.guild_id.to_i)
-            guild_member = @command.current_user.on(server)
-            return false if guild_member.nil?
+          server = ESM.bot.server(community.guild_id.to_i)
+          guild_member = @command.current_user.on(server)
+          return false if guild_member.nil?
 
-            whitelisted_role_ids = config_present? ? @config.whitelisted_role_ids : @command.defines.whitelisted_role_ids.default
-            return true if guild_member.permission?(:administrator)
-            return false if whitelisted_role_ids.empty?
+          whitelisted_role_ids = config_present? ? @config.whitelisted_role_ids : @command.defines.whitelisted_role_ids.default
+          return true if guild_member.permission?(:administrator)
+          return false if whitelisted_role_ids.empty?
 
-            whitelisted_role_ids.any? { |role_id| guild_member.role?(role_id.to_i) }
-          end.call
+          whitelisted_role_ids.any? { |role_id| guild_member.role?(role_id.to_i) }
         end
 
-        # Is the command allowed in this channel?
-        # @note: Purposefully explicit
+        # Is the command allowed in this text channel?
         def allowed?
-          @allowed =
-            if config_present?
-              @config.allowed_in_text_channels?
-            else
-              @command.defines.allowed_in_text_channels.default
-            end
+          return true if @command.event.channel.pm?
+          return true if @command.current_community&.player_mode_enabled?
 
-          text_channel = @command.event.channel.text?
-
-          # Not allowed to use if sent in text channel and the command isn't allowed in text channels
-          return false if text_channel && !@allowed
-
-          # Allowed to use if sent in text channel and the command is allowed in text channels
-          return true if text_channel && @allowed
-
-          # Allowed to use if sent in PM and the command isn't allowed in text channels
-          return true if !text_channel && !@allowed
-
-          # Allowed to use if sent in PM and the command is allowed in text channels
-          return true if !text_channel && @allowed
+          if config_present?
+            @config.allowed_in_text_channels?
+          else
+            @command.defines.allowed_in_text_channels.default
+          end
         end
 
         def to_h

@@ -1258,6 +1258,10 @@ describe ESM::Command::Base do
     it "should be able to run player command for other communities in text channel" do
       community_command = ESM::Command::Test::CommunityCommand.new
       command_statement = community_command.statement(community_id: community.community_id)
+
+      # Ensure the command can still be used regardless of that communities permissions for "allowed_in_text_channels"
+      community.command_configurations.where(command_name: community_command.name).first.update!(allowed_in_text_channels: false)
+
       event = CommandEvent.create(command_statement, channel_type: :text, user: secondary_user)
 
       expect { community_command.execute(event) }.not_to raise_error
