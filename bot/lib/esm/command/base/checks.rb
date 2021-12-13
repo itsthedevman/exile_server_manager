@@ -38,16 +38,13 @@ module ESM
           dev_only!
           registered!
           player_mode!
-          text_only!
-          dm_only!
 
           nil_targets!
           different_community!
-          permissions!
           cooldown!
 
           # Check for skip outside of the method so it can be called later if need be
-          connected_server!
+          connected_server! unless @skipped_checks.include?(:connected_server)
         end
 
         def nil_targets!
@@ -130,7 +127,6 @@ module ESM
         end
 
         def connected_server!
-          return if @skipped_checks.include?(:connected_server)
           return if @command.arguments.server_id.nil?
           return if ESM::Websocket.connected?(@command.arguments.server_id)
 
