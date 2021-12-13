@@ -7,4 +7,4 @@ set :deploy_to, "/home/wolf/esm_bot"
 
 append :linked_dirs, ".bundle", "tmp", "log"
 set :rbenv_ruby, "2.7.2"
-set :branch, fetch(:branch, "main")
+set :branch, "main"
