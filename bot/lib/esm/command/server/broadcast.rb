@@ -15,10 +15,11 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        argument :broadcast_to,
+        argument(
+          :broadcast_to,
           regex: ESM::Regex::BROADCAST,
           description: "commands.broadcast.arguments.broadcast_to",
-          before_store: lambda { |parser|
+          before_store: lambda do |parser|
             return if parser.value.blank?
             return if %w[all preview].include?(parser.value)
 
@@ -27,7 +28,8 @@ module ESM
 
             # Add the community ID to the front of the match
             parser.value = "#{current_community.community_id}_#{parser.value}"
-          }
+          end
+        )
 
         argument :message, regex: /(.|[\r\n])+/, description: "commands.broadcast.arguments.message", preserve: true, multiline: true
 

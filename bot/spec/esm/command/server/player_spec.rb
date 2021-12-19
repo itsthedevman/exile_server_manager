@@ -180,5 +180,30 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect(embed.description).not_to be_blank
     end
+
+    it "sets the default value to nil if the type is kill or heal" do
+      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "k", value: 55)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.not_to raise_error
+      expect(command.arguments.value).to be_nil
+
+      # Since we just executed the command
+      command.current_cooldown.reset!
+
+      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "h", value: 55)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.not_to raise_error
+      expect(command.arguments.value).to be_nil
+    end
+
+    # Ensures the `before_store` does not cause a crash due to the change to how arguments are parsed.
+    it "displays missing argument" do
+      command_statement = command.statement(server_id: server.server_id, target: second_user.mention)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+
+      expect { command.execute(event) }.to raise_error(ESM::Exception::FailedArgumentParse)
+    end
   end
 end

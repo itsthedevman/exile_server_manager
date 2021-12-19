@@ -18,16 +18,19 @@ module ESM
         argument :server_id
         argument :target
         argument :type, regex: /^m(?:oney)?|^r(?:espect)?|^l(?:ocker)?|^h(?:eal)?|^k(?:ill)?/, description: "commands.player.arguments.type"
-        argument :value,
+        argument(
+          :value,
           regex: /-?\d+/,
           description: "commands.player.arguments.value",
-          before_parse: lambda { |parser|
-            return if !@arguments.type.match(/^h(?:eal)?|^k(?:ill)?/i)
+          before_store: lambda do |parser|
+            return unless @arguments.type&.match(/^h(?:eal)?|^k(?:ill)?/i)
 
             # The types `heal` and `kill` don't require the value argument.
             # This is done this way because setting `value` to have a default of nil makes the help text confusing
             parser.argument.default = nil
-          }
+            parser.value = nil
+          end
+        )
 
         def discord
           @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
