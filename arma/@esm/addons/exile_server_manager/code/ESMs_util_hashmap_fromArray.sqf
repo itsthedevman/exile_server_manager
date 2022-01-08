@@ -10,7 +10,8 @@
  *      _this 	- The source array containing the keys and values for the hashmap
  *
  * Examples:
- *      [["key_1", "value_1"], ["key_2", "value_2"]] call ESMs_util_hashmap_fromArray;
+ *		// Creates a hashmap with "key_1" containing the scalar 1 and "key_2" containing the string "value_2"
+ *      [["key_1", "key_2"], [1, "value_2"]] call ESMs_util_hashmap_fromArray;
  *
  * * *
  *
@@ -23,36 +24,37 @@
  *
  **/
 
-private _processor = {
-	private _output = _this select 0;
-	private _input = _this select 1;
+private _check = {
+	if (isNil "_this") exitWith { false };
+	if !(_this isEqualType []) exitWith { false };
 
-	if !(_input call ESMs_util_array_isValidHashmap) exitWith {};
-
-	{
-		private _key = _x select 0;
-		private _value = _x select 1;
-
-		// Silly Arma
-		if !(isNil "_value") then
-		{
-			if (_value call ESMs_util_array_isValidHashmap) then
-			{
-				private _container = createHashMap;
-				[_container, _value] call _processor;
-				_value = _container;
-			};
-		};
-
-		_output set [
-			if (isNil "_key") then { nil } else { _key },
-			if (isNil "_value") then { nil } else { _value }
-		];
-	}
-	forEach _input;
+	count(_this) == 2 && count(_this select 0) >= count(_this select 1)
 };
 
-private _result = createHashMap;
-[_result, _this] call _processor;
+private _processor = {
+	if !(_this call _check) exitWith { _this };
 
-_result
+	_this params [
+		["_keys", [], [[]]],
+		["_values", [], [[]]]
+	];
+
+	private _sanitizedValues = [];
+	{
+		private _key = _x;
+		private _value = _values select _forEachIndex;
+
+		if (isNil "_value") then
+		{
+			_sanitizedValues pushBack nil;
+			continue;
+		};
+
+		_sanitizedValues pushBack (_value call _processor);
+	}
+	forEach _keys; // The keys are what matter here. We don't care if it doesn't have a value
+
+	_keys createHashMapFromArray _sanitizedValues
+};
+
+_this call _processor

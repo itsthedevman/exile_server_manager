@@ -10,7 +10,8 @@
  *      _this  	-> Any value to check
  *
  * Examples:
- *      [["key", "value"]] call ESMs_util_array_isValidHashmap; // true
+ *      [["key"], ["value"]] call ESMs_util_array_isValidHashmap; // true
+ *      [["key", "value"]] call ESMs_util_array_isValidHashmap; // false
  *		"key" call ESMs_util_array_isValidHashmap // false
  *
  * * *
@@ -24,9 +25,6 @@
  *
  **/
 
-if !(_this isEqualType ARRAY_TYPE) exitWith {};
-
-private _size = count(_this);
-private _pairCount = { count(_x) isEqualTo 2 } count _this;
-
-_pairCount isEqualTo _size
+_this isEqualType [] &&
+	count(_this) == 2 &&
+	count(_this select 0) >= count(_this select 1)
