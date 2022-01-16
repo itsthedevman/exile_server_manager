@@ -1,30 +1,16 @@
-PATH
-  remote: .
+GIT
+  remote: https://github.com/shardlab/discordrb.git
+  revision: 3c73c337b496a56f57299e8b2363216099536d97
+  branch: main
   specs:
-    esm_bot (2.0.1)
-      actionview
-      activerecord
-      activerecord-import
-      activesupport
-      discordrb
-      dotenv
-      dotiw
-      eye
-      faye-websocket
-      httparty
-      i18n
-      otr-activerecord
-      pg
-      pry
-      puma
-      rake
-      sinatra
-      standalone_migrations
-      steam-condenser
-      steam_web_api
-      sucker_punch
-      terminal-table
-      zeitwerk
+    discordrb (3.4.2)
+      discordrb-webhooks (~> 3.4.2)
+      ffi (>= 1.9.24)
+      opus-ruby
+      rest-client (>= 2.0.0)
+      websocket-client-simple (>= 0.3.0)
+    discordrb-webhooks (3.4.2)
+      rest-client (>= 2.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -106,14 +92,6 @@ GEM
       database_cleaner-core (~> 2.0.0)
     database_cleaner-core (2.0.1)
     diff-lcs (1.4.4)
-    discordrb (3.4.0)
-      discordrb-webhooks (~> 3.3.0)
-      ffi (>= 1.9.24)
-      opus-ruby
-      rest-client (>= 2.0.0)
-      websocket-client-simple (>= 0.3.0)
-    discordrb-webhooks (3.3.0)
-      rest-client (>= 2.1.0.rc1)
     docile (1.4.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
@@ -326,7 +304,7 @@ GEM
     unicode-display_width (2.1.0)
     webrick (1.7.0)
     websocket (1.2.9)
-    websocket-client-simple (0.3.0)
+    websocket-client-simple (0.5.1)
       event_emitter
       websocket
     websocket-driver (0.7.5)
@@ -341,7 +319,11 @@ PLATFORMS
   x64-mingw32
 
 DEPENDENCIES
+  actionview
   active_record_query_trace
+  activerecord
+  activerecord-import
+  activesupport
   awesome_print
   benchmark-ips
   bundler
@@ -350,18 +332,36 @@ DEPENDENCIES
   capistrano-rbenv
   colorize
   database_cleaner
-  esm_bot!
+  discordrb!
+  dotenv
+  dotiw
+  eye
   factory_bot
   faker
+  faye-websocket
+  httparty
+  i18n
   memory_profiler
+  otr-activerecord
+  pg
+  pry
+  puma
+  rake
   rerun
   rspec
   rspec-wait
   rubocop
   ruby-prof
   simplecov
+  sinatra
   solargraph
+  standalone_migrations
+  steam-condenser
+  steam_web_api
+  sucker_punch
+  terminal-table
   yard
+  zeitwerk
 
 BUNDLED WITH
    2.1.4
