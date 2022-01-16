@@ -10,11 +10,29 @@ module ESM
     PERMISSION_BITS = 52_288
 
     STATUS_TYPES = {
-      "PLAYING": 0,
-      "STREAMING": 1,
-      "LISTENING": 2,
-      "WATCHING": 3
+      PLAYING: 0,
+      STREAMING: 1,
+      LISTENING: 2,
+      WATCHING: 3
     }.freeze
+
+    INTENTS = Discordrb::INTENTS.slice(
+      :servers,
+      :server_members,
+      # :server_bans,
+      # :server_emojis,
+      # :server_integrations,
+      # :server_webhooks,
+      # :server_invites,
+      # :server_voice_states,
+      # :server_presences,
+      :server_messages,
+      # :server_message_reactions,
+      :server_message_typing,
+      :direct_messages,
+      # :direct_message_reactions,
+      :direct_message_typing
+    ).keys.freeze
 
     attr_reader :config, :prefix
 
@@ -31,7 +49,12 @@ module ESM
 
       @resend_queue = ESM::Bot::ResendQueue.new(self)
 
-      super(token: ESM.config.token, prefix: method(:determine_activation_prefix), help_command: false)
+      super(
+        token: ESM.config.token,
+        prefix: method(:determine_activation_prefix),
+        help_command: false,
+        intents: INTENTS
+      )
     end
 
     def run
@@ -173,7 +196,7 @@ module ESM
       nil
     end
 
-    def deliver_and_await!(message, to:, owner: to, expected:, invalid_response: nil, timeout: nil, give_up_after: 99)
+    def deliver_and_await!(message, to:, expected:, owner: to, invalid_response: nil, timeout: nil, give_up_after: 99)
       counter = 0
       match = nil
       invalid_response = format_invalid_response(expected) if invalid_response.nil?
