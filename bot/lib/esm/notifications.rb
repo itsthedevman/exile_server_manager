@@ -51,7 +51,6 @@ module ESM
         JSON.pretty_generate(
           author: "#{command.current_user.distinct} (#{command.current_user.id})",
           channel: "#{Discordrb::Channel::TYPE_NAMES[command.event.channel.type]} (#{command.event.channel.id})",
-          message: command.event.message.content,
           command: command.to_h
         )
       end
@@ -68,7 +67,6 @@ module ESM
         JSON.pretty_generate(
           author: "#{command.current_user.distinct} (#{command.current_user.id})",
           channel: "#{Discordrb::Channel::TYPE_NAMES[command.event.channel.type]} (#{command.event.channel.id})",
-          message: command.event.message.content,
           reason: reason.is_a?(Embed) ? reason.description : reason,
           command: command.to_h
         )
@@ -86,7 +84,6 @@ module ESM
         JSON.pretty_generate(
           author: "#{command.current_user.distinct} (#{command.current_user.id})",
           channel: "#{Discordrb::Channel::TYPE_NAMES[command.event.channel.type]} (#{command.event.channel.id})",
-          message: command.event.message.content,
           response: payload[:response],
           command: command.to_h
         )
