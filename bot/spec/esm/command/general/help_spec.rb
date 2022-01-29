@@ -3,19 +3,19 @@
 describe ESM::Command::General::Help, category: "command" do
   let!(:command) { ESM::Command::General::Help.new }
 
-  it "should be valid" do
+  it "be valid" do
     expect(command).not_to be_nil
   end
 
-  it "should have 1 argument" do
+  it "has 1 argument" do
     expect(command.arguments.size).to eql(1)
   end
 
-  it "should have a description" do
+  it "has a description" do
     expect(command.description).not_to be_blank
   end
 
-  it "should have examples" do
+  it "has examples" do
     expect(command.example).not_to be_blank
   end
 
@@ -24,20 +24,33 @@ describe ESM::Command::General::Help, category: "command" do
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
 
-    it "should execute with default getting started" do
+    it "executes with default getting started" do
       command_statement = command.statement
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
 
       embed = ESM::Test.messages.first.second
-      expect(embed.title).to match(/my name is exile server manager/i)
-      expect(embed.description).to eql(I18n.t("commands.help.getting_started.description"))
-      expect(embed.fields.size).to eql(1)
-      expect(embed.fields.first.name).to eql(I18n.t("commands.help.categories.name"))
-      expect(embed.fields.first.value).to eql(I18n.t("commands.help.categories.value", prefix: ESM.config.prefix))
+      expect(embed.title).to match(/well, hello there .+/i)
+
+      commands_by_type = ESM::Command.by_type.to_h
+      expect(embed.description).to eq(
+        I18n.t(
+          "commands.help.getting_started.description",
+          command_count_player: commands_by_type[:player].size,
+          command_count_total: commands_by_type.values.flatten.size,
+          prefix: command.prefix
+        )
+      )
+
+      expect(embed.fields.size).to eq(3)
+
+      %w[commands command privacy].each_with_index do |field_type, index|
+        expect(embed.fields[index].name).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.name"))
+        expect(embed.fields[index].value).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.value", prefix: command.prefix))
+      end
     end
 
-    it "should return a valid embed (commands)" do
+    it "returns a valid embed (commands)" do
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
@@ -46,7 +59,7 @@ describe ESM::Command::General::Help, category: "command" do
       expect(embed).not_to be_nil
     end
 
-    it "should return a valid embed (command)" do
+    it "returns a valid embed (command)" do
       command_statement = command.statement(category: "help")
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
@@ -55,7 +68,7 @@ describe ESM::Command::General::Help, category: "command" do
       expect(embed).not_to be_nil
     end
 
-    it "should not show admin commands if in player mode (commands)" do
+    it "does not show admin commands if in player mode (commands)" do
       community.update(player_mode_enabled: true)
 
       command_statement = command.statement(category: "commands")
@@ -70,7 +83,7 @@ describe ESM::Command::General::Help, category: "command" do
       end
     end
 
-    it "should not show development commands" do
+    it "does not show development commands" do
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
@@ -81,6 +94,32 @@ describe ESM::Command::General::Help, category: "command" do
       embed.fields.each do |field|
         expect(field.value).not_to match(/development/i)
       end
+    end
+
+    it "shows only player commands" do
+      command_statement = command.statement(category: "player commands")
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(ESM::Test.messages.size).to eq(1)
+
+      embed = ESM::Test.messages.first.second
+      expect(embed).not_to be_nil
+      expect(embed.title).to match(/player commands/i)
+      expect(embed.title).not_to match(/admin commands/i)
+    end
+
+    it "shows only admin commands" do
+      command_statement = command.statement(category: "admin commands")
+      event = CommandEvent.create(command_statement, user: user)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(ESM::Test.messages.size).to eq(1)
+
+      embed = ESM::Test.messages.first.second
+      expect(embed).not_to be_nil
+      expect(embed.title).to match(/admin commands/i)
+      expect(embed.title).not_to match(/player commands/i)
     end
   end
 end

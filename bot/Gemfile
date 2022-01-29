@@ -2,10 +2,10 @@
 
 source "https://rubygems.org"
 
-gem "actionview"
-gem "activerecord"
+gem "actionview", "~> 6.1", ">= 6.1.4.4"
+gem "activerecord", "~> 6.1", ">= 6.1.4.4"
 gem "activerecord-import"
-gem "activesupport"
+gem "activesupport", "~> 6.1", ">= 6.1.4.4"
 gem "discordrb", github: "shardlab/discordrb", branch: "main"
 gem "dotenv"
 gem "dotiw"

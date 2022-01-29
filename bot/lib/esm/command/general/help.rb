@@ -16,9 +16,16 @@ module ESM
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
         def discord
-          if @arguments.category == "commands"
+          case @arguments.category
+          when "commands"
             commands
-          elsif ESM::Command.include?(@arguments.category)
+          when "player commands"
+            commands(types: [:player], include_development: false)
+          when "admin commands"
+            commands(types: [:admin], include_development: false)
+          # when "esm history"
+          #   esm_history
+          when ->(category) { ESM::Command.include?(category) }
             command
           else
             getting_started
@@ -30,22 +37,31 @@ module ESM
         #########################
         def getting_started
           embed =
-            ESM::Embed.build do |embed|
-              embed.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
-              embed.description = I18n.t("commands.help.getting_started.description")
+            ESM::Embed.build do |e|
+              e.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
 
-              embed.add_field(
-                name: I18n.t("commands.help.categories.name"),
-                value: I18n.t("commands.help.categories.value", prefix: prefix)
+              commands_by_type = ESM::Command.by_type.to_h
+              e.description = I18n.t(
+                "commands.help.getting_started.description",
+                command_count_player: commands_by_type[:player].size,
+                command_count_total: commands_by_type.values.flatten.size,
+                prefix: prefix
               )
+
+              # history
+              %w[commands command privacy].each do |field_type|
+                e.add_field(
+                  name: I18n.t("commands.help.getting_started.fields.#{field_type}.name"),
+                  value: I18n.t("commands.help.getting_started.fields.#{field_type}.value", prefix: prefix)
+                )
+              end
             end
 
           reply(embed)
         end
 
-        def commands
-          types = %i[player admin]
-          types << :development if ESM.env.development?
+        def commands(types: %i[player admin], include_development: ESM.env.development?)
+          types << :development if include_development
 
           # Remove :admin if player mode is enabled for this community
           types.delete(:admin) if current_community&.player_mode_enabled?
@@ -70,6 +86,26 @@ module ESM
 
             reply(embed)
           end
+        end
+
+        def esm_history
+          embed =
+            ESM::Embed.build do |e|
+              e.title = I18n.t("commands.help.esm_history.title")
+              e.description = I18n.t(
+                "commands.help.esm_history.description",
+                prefix: prefix
+              )
+
+              %w[what_next when_done why].each do |field_type|
+                e.add_field(
+                  name: I18n.t("commands.help.esm_history.fields.#{field_type}.name"),
+                  value: I18n.t("commands.help.esm_history.fields.#{field_type}.value", prefix: prefix)
+                )
+              end
+            end
+
+          reply(embed)
         end
 
         def categories(type)
