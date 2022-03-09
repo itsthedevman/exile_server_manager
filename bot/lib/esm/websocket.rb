@@ -59,7 +59,7 @@ module ESM
     end
 
     def self.connected?(server_id)
-      !@connections[server_id].nil?
+      self.connection(server_id).present?
     end
 
     # Retrieves the WS connection based on a server_id
@@ -112,9 +112,7 @@ module ESM
     end
 
     # Sets if the server has been sent the post_init package
-    def ready=(boolean)
-      @ready = boolean
-    end
+    attr_writer :ready
 
     # Sends a ping to the WS client.
     def ping
