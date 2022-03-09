@@ -51,7 +51,7 @@ module ESM
     end
 
     def self.find_by_community_id(id)
-      self.order(:community_id).where(community_id: id).first
+      self.order(:community_id).where("community_id ilike ?", id).first
     end
 
     def self.find_by_guild_id(id)

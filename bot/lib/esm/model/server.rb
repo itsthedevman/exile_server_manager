@@ -31,7 +31,7 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
 
     def self.find_by_server_id(id)
-      self.order(:server_id).where(server_id: id).first
+      self.order(:server_id).where("server_id ilike ?", id).first
     end
 
     def territories
