@@ -50,8 +50,7 @@ module ESM
           #     :max_players, :number_of_bots, :dedicated, :operating_system, :password_needed, :secure, :game_version, :server_port,
           #     :server_id, :server_tags, :game_id
           server.server_info.to_ostruct
-        rescue StandardError => e
-          ESM.logger.warn("#{self.class}##{__method__}") { e }
+        rescue StandardError
           nil
         end
 
