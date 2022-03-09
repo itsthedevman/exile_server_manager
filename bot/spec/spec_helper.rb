@@ -33,7 +33,7 @@ ESM.run!
 Discordrb::LOGGER.debug = false
 
 # Ignore debug messages when running tests
-ActiveRecord::Base.logger.level = Logger::INFO
+ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.present?
 
 RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods

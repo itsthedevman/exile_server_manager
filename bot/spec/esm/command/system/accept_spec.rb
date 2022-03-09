@@ -54,5 +54,14 @@ describe ESM::Command::System::Accept, category: "command" do
 
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /unable to find a request/i)
     end
+
+    it "defines current_channel" do
+      command_statement = command.statement(uuid: request.uuid_short)
+      event = CommandEvent.create(command_statement, user: user_2, channel_type: :dm)
+
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(command.current_channel).not_to be_nil
+    end
   end
 end

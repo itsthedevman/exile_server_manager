@@ -8,14 +8,13 @@ require_relative "websocket_client/responses"
 class WebsocketClient
   include WebsocketClient::Responses
 
-  attr_reader :ws
-  attr_reader :flags
-  attr_reader :server_id
+  attr_reader :ws, :flags, :server_id
+
   def initialize(server)
     @thread = Thread.new do
       EventMachine.run do
         @ws = Faye::WebSocket::Client.new(
-          "ws://localhost:#{ENV["WEBSOCKET_PORT"]}",
+          "ws://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}",
           [],
           headers: { "authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}" }
         )
