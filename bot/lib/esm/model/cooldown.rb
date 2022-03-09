@@ -31,7 +31,7 @@ module ESM
       if self.cooldown_type == "times"
         self.cooldown_amount >= self.cooldown_quantity
       else
-        expires_at >= DateTime.now
+        expires_at >= ::Time.current
       end
     end
 
@@ -46,13 +46,17 @@ module ESM
     def update_expiry!(executed_at, cooldown_time)
       case cooldown_time
       # 1.times, 5.times...
-      when Enumerator
-        self.update!(cooldown_quantity: cooldown_time.size, cooldown_type: "times", cooldown_amount: self.cooldown_amount + 1)
+      when Enumerator, Integer
+        self.update!(
+          cooldown_quantity: cooldown_time.is_a?(Integer) ? cooldown_time : cooldown_time.size,
+          cooldown_type: "times",
+          cooldown_amount: self.cooldown_amount + 1
+        )
       # 1.second, 5.days
       when ActiveSupport::Duration
         # Converts 1.second to [:seconds, 1]
         type, quantity = cooldown_time.parts.to_a.first
-        self.update!(cooldown_quantity: quantity, cooldown_type: type, expires_at: executed_at + cooldown_time)
+        self.update!(cooldown_quantity: quantity, cooldown_type: type, expires_at: (executed_at + cooldown_time).to_time)
       end
     end
 
@@ -72,7 +76,7 @@ module ESM
 
       # They have changed to times, just reset the cooldown_amount to 0
       # Or they have changed from times to seconds (minutes, hours, etc.)
-      if configuration.cooldown_type == "times" || configuration.cooldown_type != "times" && self.cooldown_type == "times"
+      if configuration.cooldown_type == "times" || (configuration.cooldown_type != "times" && self.cooldown_type == "times")
         self.expires_at = 1.second.ago
         self.cooldown_amount = 0
       else
