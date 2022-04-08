@@ -46,10 +46,14 @@ module ESM
     end
 
     def title=(text)
+      text ||= ""
+
       @title = text.truncate(Limit::TITLE_LENGTH_MAX, separator: " ")
     end
 
     def description=(text)
+      text ||= ""
+
       text = text.join("\n") if text.is_a?(Array)
       @description = text.truncate(Limit::DESCRIPTION_LENGTH_MAX)
     end
