@@ -36,8 +36,6 @@ module ESM
 
     attr_reader :config, :prefix
 
-    attr_reader :resend_queue if ESM.env.test?
-
     def initialize
       @prefixes = {}
       @prefixes.default = ESM.config.prefix
@@ -46,8 +44,6 @@ module ESM
       ESM::Database.connect!
 
       load_community_prefixes
-
-      @resend_queue = ESM::Bot::ResendQueue.new(self)
 
       super(
         token: ESM.config.token,
@@ -74,7 +70,6 @@ module ESM
       @esm_status = :stopping
       ESM::Websocket::Server.stop
       ESM::Request::Overseer.die
-      @resend_queue.die
 
       super
     end
@@ -159,40 +154,40 @@ module ESM
       @esm_status == :ready
     end
 
-    def deliver(message, to:)
+    #
+    # Sends a message via the bot to a channel
+    #
+    # @param message [String, ESM::Embed] A message or embed to send
+    # @param to [String, Discordrb::Commands::CommandEvent, Discordrb::Channel, Discordrb::Member, Discordrb::User] Where should the message be sent? This ultimately will end up as a channel
+    # @param embed_message [String] An optional message to attach with an embed. Only works if `message` is an embed
+    # @param replying_to [Discordrb::Message] A message to "reply" to. Discord will reference the previous message
+    #
+    # @return [Discordrb::Message, nil] The message response or nil if it failed
+    #
+    def deliver(message, to:, embed_message: "", replying_to: nil)
       return if message.blank?
 
-      delivery_channel = determine_delivery_channel(to)
-
-      raise ESM::Exception::ChannelNotFound.new(message, to) if delivery_channel.nil?
-
-      # Format the message if it's an array
+      replying_to = nil if replying_to.present? && !replying_to.is_a?(Discordrb::Message)
       message = message.join("\n") if message.is_a?(Array)
+
+      delivery_channel = determine_delivery_channel(to)
+      raise ESM::Exception::ChannelNotFound.new(message, to) if delivery_channel.nil?
 
       ESM::Notifications.trigger("bot_deliver", message: message, channel: delivery_channel)
 
       # So we can test if it's working
       # env.error_testing? is to allow testing of errors without sending messages
-      return ESM::Test.messages.store(message, to, delivery_channel) if ESM.env.test? || ESM.env.error_testing?
-
-      discord_message =
-        if message.is_a?(ESM::Embed)
-          # Send the embed
-          delivery_channel.send_embed { |embed| message.transfer(embed) }
-        else
-          # Send the text message
-          delivery_channel.send_message(message)
-        end
-
-      # Dequeue the message if it was enqueued
-      @resend_queue.dequeue(message, to: to)
-
-      # Return the Discordrb::Message
-      discord_message
+      if ESM.env.test? || ESM.env.error_testing?
+        ESM::Test.messages.store(message, delivery_channel)
+      elsif message.is_a?(ESM::Embed)
+        # Send the embed
+        delivery_channel.send_embed(embed_message, nil, nil, false, nil, replying_to) { |embed| message.transfer(embed) }
+      else
+        # Send the text message
+        delivery_channel.send_message(message, false, nil, nil, nil, replying_to)
+      end
     rescue StandardError => e
-      ESM.logger.warn("#{self.class}##{__method__}") { "Send failed!\n#{e.message}" }
-      @resend_queue.enqueue(message, to: to, exception: e)
-
+      ESM.logger.warn("#{self.class}##{__method__}") { "Send failed!\n#{e.message}\n#{e.backtrace[0..5].join("\n\t")}" }
       nil
     end
 

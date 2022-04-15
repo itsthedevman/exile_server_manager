@@ -6,7 +6,7 @@ export ESM_ENV='development'
 
 if [[ -z $1 ]]
 then
-  rerun --dir lib bin/start_dev.rb
+  rerun --dir lib bin/esm.rb
 else
-  bundle exec ruby bin/start_dev.rb
+  bundle exec ruby bin/esm.rb
 fi

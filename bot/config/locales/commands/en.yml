@@ -581,3 +581,8 @@ en:
         Parses the logs on `esm_altis` for `Exile_Chopper_Hummingbird_Green` and returns any matched lines
       arguments:
         query: "Can be a target (Discord Mention, Discord ID, or Steam UID) which will be automatically converted to a Steam UID. Otherwise, interpreted as a search term."
+    requests:
+      description: "Displays your pending requests for commands such as `reward`, `add`, etc."
+      example: |-
+        **`%{prefix}requests`**
+        Displays your pending requests

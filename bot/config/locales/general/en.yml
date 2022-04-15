@@ -132,8 +132,17 @@ en:
         %{title}
         **Description:**
         %{description}
-      delivered_to: "**Delivered to**"
-      undeliverable: "**Unable to deliver to**"
+      message_statuses:
+        name: "**Notification Statuses**"
+        values:
+          direct_message:
+            success: "DM notified"
+            failure: "DM blocked, bot blocked, or Discord is having issues"
+            ignored: "DM turned off"
+          custom_routes:
+            none: ""
+            success: "Sent to %{number_sent} custom routes"
+            failure: "Sent to %{number_sent} of %{number_expected} custom routes"
       unregistered_steam_uids: "**Unregistered Steam UIDs**"
     recipient_steam_uids: "Recipient Steam UIDs"
     footer: "These notifications can be configured via the Admin Dashboard"

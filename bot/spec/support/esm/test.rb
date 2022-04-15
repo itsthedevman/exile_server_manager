@@ -5,6 +5,7 @@ module ESM
     class << self
       attr_reader :response
       attr_writer :messages
+
       attr_accessor :skip_cooldown
     end
 
@@ -67,12 +68,6 @@ module ESM
       @community_type = @communities.sample
       @user_type = @community_type == :esm_community ? :user : :secondary_user
       @second_community_type = @communities.find { |type| type != @community_type }
-
-      # Reset the bot's resend_queue
-      ESM.bot.resend_queue.reset
-
-      # Auto resume in case if was paused
-      ESM.bot.resend_queue.resume
     end
 
     # I hate this code, it doesn't make me happy
@@ -99,7 +94,7 @@ module ESM
       end
     end
 
-    def self.wait_until(timeout: 30, &block)
+    def self.wait_until(timeout: 30)
       # Offset the fact that we check every 0.25s
       timeout *= 4
       counter = 0

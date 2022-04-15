@@ -34,9 +34,7 @@ require "terminal-table"
 require "yaml"
 require "zeitwerk"
 
-if ENV["ESM_ENV"] != "production"
-  require "otr-activerecord"
-end
+require "otr-activerecord" if ENV["ESM_ENV"] != "production"
 
 # Load Dotenv variables; overwriting any that already exist
 Dotenv.overload
@@ -73,7 +71,7 @@ module ESM
   end
 
   def self.load_i18n
-    I18n.load_path += Dir[File.expand_path("config/locales/**") + "/*.yml"]
+    I18n.load_path += Dir[File.expand_path("config/locales/**/*.yml")]
     I18n.reload!
   end
 
@@ -137,4 +135,4 @@ end
 
 # Run pre_init (Throwback to Exile)
 require_relative "pre_init"
-require_relative "pre_init_dev"
+require_relative "pre_init_dev" if ESM.env.development?

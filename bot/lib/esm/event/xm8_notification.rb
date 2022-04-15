@@ -1,26 +1,12 @@
 module ESM
   module Event
     class Xm8Notification
-      TYPES = %w[
-        custom
-        base-raid
-        flag-stolen
-        flag-restored
-        flag-steal-started
-        protection-money-due
-        protection-money-paid
-        grind-started
-        hack-started
-        charge-plant-started
-        marxet-item-sold
-      ].freeze
-
       # @param parameters [OpenStruct] The message from the server
       # @option id [String] The territory ID. Not available in `marxet-item-sold`, or `custom`
       # @option message [String, JSON] The name of the territory, not available in `marxet-item-sold`, or `custom`.
       #                                This value will be JSON for `marxet-item-sold` (`item`, `amount`), and `custom` (`title`, `body`)
       # @option type [String] The type of XM8 notification
-      def initialize(connection:, server:, parameters:)
+      def initialize(server:, parameters:, connection: nil)
         @server = server
         @community = server.community
 
@@ -44,10 +30,6 @@ module ESM
           item: "",
           amount: ""
         }
-
-        # For the log
-        @delivered = []
-        @undeliverable = []
       end
 
       def run!
@@ -81,29 +63,11 @@ module ESM
 
         # Convert the steam_uids in @recipients to users and send the notification
         @users = ESM::User.where(steam_uid: @recipients)
+        @statuses_by_user = {}
 
-        # Get the preferences for all the users we're supposed to send to
-        preferences = ESM::UserNotificationPreference.where(user_id: @users.pluck(:id)).pluck(:user_id, @xm8_type.underscore).to_h
-
-        # Default the preference to allow. This is used for if the user hasn't ran the preference command before
-        preferences.default = true
-
-        @users.each do |user|
-          # Check to see if the user allows this notification type
-          allowed = preferences[user.id]
-          next @undeliverable << { user: user, reason: "Denied via preferences" } if !allowed
-
-          message = ESM.bot.deliver(embed, to: user.discord_user)
-
-          if message.nil?
-            @undeliverable << { user: user, reason: "Direct message blocked, ESM blocked, or Discord Error" }
-          else
-            @delivered << user
-          end
-
-          # Anti-ratelimit
-          sleep(0.5)
-        end
+        # Send the messages
+        send_to_users(embed)
+        send_to_custom_routes(embed)
 
         # Trigger a notification event
         ESM::Notifications.trigger(
@@ -111,10 +75,11 @@ module ESM
           type: @xm8_type,
           server: @server,
           embed: embed,
-          delivered: @delivered,
-          undeliverable: @undeliverable,
+          statuses: @statuses_by_user,
           unregistered_steam_uids: unregistered_steam_uids
         )
+
+        @statuses_by_user
       rescue ESM::Exception::CheckFailure => e
         ESM::Notifications.trigger(e.data, server: @server, recipients: @recipients, message: @message, type: @xm8_type)
         raise ESM::Exception::Error if ESM.env.test?
@@ -130,7 +95,7 @@ module ESM
       private
 
       def check_for_valid_type!
-        return if TYPES.include?(@xm8_type)
+        return if UserNotificationRoute::TYPES.include?(@xm8_type)
 
         raise ESM::Exception::CheckFailure, "xm8_notification_invalid_type"
       end
@@ -153,11 +118,57 @@ module ESM
           e.title = @message.title
           e.description = @message.body
           e.color = ESM::Color.random
+          e.footer = "[#{@server.server_id}] #{@server.server_name}"
         end
       end
 
       def notification_embed
-        ESM::Notification.build_random(@attributes.merge(community_id: @community.id, type: @xm8_type, category: "xm8"))
+        embed = ESM::Notification.build_random(@attributes.merge(community_id: @community.id, type: @xm8_type, category: "xm8"))
+        embed.footer = "[#{@server.server_id}] #{@server.server_name}"
+        embed
+      end
+
+      def send_to_users(embed)
+        # Get the preferences for all the users we're supposed to send to
+        dm_preferences_by_user_id = ESM::UserNotificationPreference.where(user_id: @users.pluck(:id)).pluck(:user_id, @xm8_type.underscore).to_h
+
+        # Default the preference to allow. This is used for if the user hasn't ran the preference command before
+        dm_preferences_by_user_id.default = true
+
+        @users.each do |user|
+          # For the logs later on
+          @statuses_by_user[user] = status = { direct_message: :ignored, custom_routes: { sent: 0, expected: 0 } }
+
+          dm_allowed = dm_preferences_by_user_id[user.id]
+          next unless dm_allowed
+
+          message = ESM.bot.deliver(embed, to: user.discord_user)
+          status[:direct_message] = message.nil? ? :failure : :success
+        end
+      end
+
+      def send_to_custom_routes(embed)
+        # Custom routes are a little different.
+        #   Using a mention in an embed does not cause a "notification" on discord. This does not work since these are often urgent.
+        #   To get around this, routes need to be grouped by channel. From here, an initial message can be sent tagging each user with this channel (and type)
+        users_by_channel_id = ESM::UserNotificationRoute.select(:user_id, :channel_id)
+                                                        .includes(:user)
+                                                        .enabled
+                                                        .accepted
+                                                        .where(notification_type: @xm8_type)
+                                                        .where("source_server_id IS NULL OR source_server_id = ?", @server.id)
+                                                        .group_by(&:channel_id)
+                                                        .transform_values! { |r| r.map(&:user) }
+
+        users_by_channel_id.each do |channel_id, users|
+          notification_message = ESM.bot.deliver(embed, to: channel_id, embed_message: users.map(&:mention).join(" "))
+
+          users.each do |user|
+            status = @statuses_by_user[user][:custom_routes]
+            status[:sent] += 1 if notification_message
+            status[:expected] += 1
+          end
+        end
       end
     end
   end

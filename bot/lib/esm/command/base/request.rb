@@ -55,34 +55,29 @@ module ESM
         end
 
         def request_url
-          return nil if @request.nil?
-
           # I have no idea why the ENV won't apply for this _one_ key.
-          url =
-            if ESM.env.production?
-              "https://www.esmbot.com/requests"
-            else
-              ENV["REQUEST_URL"]
-            end
-
-          "#{url}/#{@request.uuid}"
+          if ESM.env.production?
+            "https://www.esmbot.com/requests"
+          else
+            ENV["REQUEST_URL"]
+          end
         end
 
-        def accept_request_url
-          "#{request_url}/accept"
+        def accept_request_url(uuid)
+          "#{request_url}/#{uuid}/accept"
         end
 
-        def decline_request_url
-          "#{request_url}/decline"
+        def decline_request_url(uuid)
+          "#{request_url}/#{uuid}/decline"
         end
 
-        def send_request_message(description: "", target:)
+        def send_request_message(target:, description: "")
           embed =
             ESM::Embed.build do |e|
               e.set_author(name: current_user.distinct, icon_url: current_user.avatar_url)
               e.description = description
-              e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url), inline: true)
-              e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url), inline: true)
+              e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url(request.uuid)), inline: true)
+              e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url(request.uuid)), inline: true)
               e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", prefix: ESM.config.prefix, uuid: request.uuid_short))
             end
 
