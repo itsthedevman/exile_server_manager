@@ -161,7 +161,7 @@ module ESM
                                                         .transform_values! { |r| r.map(&:user) }
 
         users_by_channel_id.each do |channel_id, users|
-          notification_message = ESM.bot.deliver(embed, to: channel_id, embed_message: users.map(&:mention).join(" "))
+          notification_message = ESM.bot.deliver(embed, to: channel_id, embed_message: "#{@xm8_type.titleize} - #{users.map(&:mention).join(" ")}")
 
           users.each do |user|
             status = @statuses_by_user[user][:custom_routes]
