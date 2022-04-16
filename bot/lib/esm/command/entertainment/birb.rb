@@ -12,13 +12,15 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: false, default: 5.seconds
 
+        SUB_REDDIT = %w[Birb birbs].freeze
+
         def discord
           send_waiting_message
           check_for_empty_link!
           remove_waiting_message
 
           # Send the link
-          reply(birb_link)
+          reply(link)
         end
 
         module ErrorMessage
@@ -31,17 +33,22 @@ module ESM
         end
 
         def check_for_empty_link!
-          return if birb_link.present?
+          return if link.present?
 
           remove_waiting_message
           check_failed!(:birb_not_found, user: current_user.mention)
         end
 
-        def birb_link
-          @birb_link ||= lambda do
-            5.times do
-              response = HTTParty.get("http://www.reddit.com/r/birb/random.json", headers: { 'User-agent': "ESM 2.0" })
-              next sleep(1) if !response.ok?
+        def link
+          @link ||= lambda do
+            10.times do
+              response = begin
+                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: { 'User-agent': "ESM 2.0" })
+              rescue URI::InvalidURIError
+                nil
+              end
+
+              next sleep(1) unless response&.ok?
 
               url = response.parsed_response[0]["data"]["children"][0]["data"]["url"]
               next if url.blank?

@@ -13,6 +13,8 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: false, default: 5.seconds
 
+        SUB_REDDIT = %w[lolcats catpics catpictures Chonkers CatsStandingUp].freeze
+
         def discord
           send_waiting_message
           check_for_empty_link!
@@ -31,15 +33,18 @@ module ESM
 
         def link
           @link ||= lambda do
-            5.times do
-              response = HTTParty.get(
-                "https://api.thecatapi.com/v1/images/search?size=full&mime_types=jpg&format=json&order=RANDOM&page=0&limit=1",
-                headers: { 'User-agent': "ESM 2.0" }
-              )
-              next sleep(1) if !response.ok?
+            10.times do
+              response = begin
+                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: { 'User-agent': "ESM 2.0" })
+              rescue URI::InvalidURIError
+                nil
+              end
 
-              url = response.parsed_response.first["url"]
+              next sleep(1) unless response&.ok?
+
+              url = response.parsed_response[0]["data"]["children"][0]["data"]["url"]
               next if url.blank?
+              next if !url.match(/\.jpg$|\.png$|\.gif$|\.jpeg$/i)
 
               return url
             end
