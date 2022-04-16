@@ -287,7 +287,7 @@ class Utils
       FileUtils.mkdir_p("#{BUILD_DIRECTORY}/@esm/addons")
 
       # Delete the esm.log if it exists
-      FileUtils.rm("#{BUILD_DIRECTORY}/@esm/log/esm.log")
+      FileUtils.rm("#{BUILD_DIRECTORY}/@esm/log/esm.log") if File.exist?("#{BUILD_DIRECTORY}/@esm/log/esm.log")
     end
   end
 
