@@ -1,4 +1,4 @@
-use arma_rs::{ArmaValue, arma_value, ToArma};
+use arma_rs::{IntoArma, Value as ArmaValue};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -27,26 +27,31 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Token {{ id: {}, key: {} }}", String::from_utf8_lossy(&self.id), String::from_utf8_lossy(&self.key))
+        write!(
+            f,
+            "Token {{ id: {}, key: {} }}",
+            String::from_utf8_lossy(&self.id),
+            String::from_utf8_lossy(&self.key)
+        )
     }
 }
 
 #[derive(Debug)]
 pub struct RVOutput {
     pub id: Option<Uuid>,
-    pub code: isize,
+    pub code: i32,
     pub content: ArmaValue,
 }
 
 impl RVOutput {
-    pub fn new(id: Option<Uuid>, code: isize, content: ArmaValue) -> Self {
+    pub fn new(id: Option<Uuid>, code: i32, content: ArmaValue) -> Self {
         RVOutput { id, code, content }
     }
 }
 
-impl ToArma for RVOutput {
+impl IntoArma for RVOutput {
     fn to_arma(&self) -> ArmaValue {
-        arma_value!([self.id, self.code, self.content])
+        vec![self.id.to_arma(), self.code.to_arma(), self.content].to_arma()
     }
 }
 
