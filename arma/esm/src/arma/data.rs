@@ -36,31 +36,6 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug)]
-pub struct RVOutput {
-    pub id: Option<Uuid>,
-    pub code: i32,
-    pub content: ArmaValue,
-}
-
-impl RVOutput {
-    pub fn new(id: Option<Uuid>, code: i32, content: ArmaValue) -> Self {
-        RVOutput { id, code, content }
-    }
-}
-
-impl IntoArma for RVOutput {
-    fn to_arma(&self) -> ArmaValue {
-        vec![self.id.to_arma(), self.code.to_arma(), self.content].to_arma()
-    }
-}
-
-impl std::fmt::Display for RVOutput {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_arma())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
