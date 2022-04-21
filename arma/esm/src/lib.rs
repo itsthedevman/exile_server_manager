@@ -11,15 +11,14 @@ use arma_rs::{arma, Context, Extension, IntoArma, Value};
 use chrono::prelude::*;
 use esm_message::*;
 use lazy_static::lazy_static;
+use serde::Serialize;
 use serde_json::json;
-use uuid::Uuid;
-
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::{env, fs};
+use uuid::Uuid;
 
 use parking_lot::RwLock;
 
@@ -29,11 +28,9 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use crate::arma::data::{RVOutput, Token};
+use crate::arma::data::Token;
 use crate::arma::Arma;
 use crate::config::Config;
-
-const CHUNK_SIZE: usize = 8_000;
 
 lazy_static! {
     /// Config data
@@ -62,9 +59,6 @@ lazy_static! {
 
         RwLock::new(arma)
     };
-
-    /// When sending large messages to Arma, the messages need to be chunked in order to avoid being "cut off"
-    pub static ref CHUNKS: RwLock<HashMap<String, Vec<String>>> = RwLock::new(HashMap::new());
 
     /// Our connection to the arma server
     pub static ref CALLBACK: RwLock<Option<Context>> = RwLock::new(None);
@@ -98,7 +92,10 @@ fn initialize_logger() {
         )
         .unwrap();
 
-    log4rs::init_config(config).unwrap();
+    match log4rs::init_config(config) {
+        Ok(_) => (),
+        Err(_e) => println!("Failed to initialize logger"),
+    };
 
     info!(
         "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {:#?}\n----------------------------------",
@@ -148,11 +145,13 @@ pub fn load_key() -> Option<Token> {
 }
 
 /// Facilitates sending a message to Arma only if this is using a A3 server. When in terminal mode, it just logs.
-/// When sending a message to arma, the outbound message's size is checked and if it's larger than 9kb, it's split into <9kb chunks and associated to a ID
-///     ESMs_system_extension_call will detect if it needs to make subsequent calls to the extension and perform any chunk rebuilding if needed
-///
 /// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
-fn send_to_arma<D: IntoArma + Debug>(function: &str, id: &Uuid, data: &D, metadata: &Metadata) {
+fn send_to_arma<D: Serialize + IntoArma + Debug>(
+    function: &str,
+    id: &Uuid,
+    data: &D,
+    metadata: &Metadata,
+) {
     trace!(
         r#"[#send_to_arma]
             function: {}
@@ -170,27 +169,11 @@ fn send_to_arma<D: IntoArma + Debug>(function: &str, id: &Uuid, data: &D, metada
         return;
     }
 
-    let message = json!({ "id": id, "data": data, "metadata": metadata });
+    let message = json!({ "id": id.to_string(), "data": data, "metadata": metadata });
 
-    /*
-        Convert the Arma value to a string and check its size.
-        If the size is less than 10kb, build the [0, data] array and use RV callback to send it
-        If the size is greater than 10kb, split the data into chunks and send the first chuck with the ID [1, id, data_chunk]
-            Use ["next_chunk", "ID"] call ESMs_system_extension_call;
-    */
-    let data_string = message.to_string();
-    let data_bytes = data_string.as_bytes().to_vec();
-    let data_size = std::mem::size_of_val(&data_bytes);
-
-    // Arma has a size limit. I'm not sure I'll ever hit it.
-    if data_size > CHUNK_SIZE {
-        panic!("Data is too large! Uncomment the chunking code.");
-    }
-
-    let output = RVOutput::new(None, 0, message.to_arma());
-
-    match CALLBACK.read() {
-        Some(ctx) => ctx.callback("exile_server_manager", function, output),
+    let callback = CALLBACK.read();
+    match &*callback {
+        Some(ctx) => ctx.callback("exile_server_manager", function, Some(json!([null, 0, message]))),
         None => error!("[send_to_arma] Attempted to send a message to Arma but we haven't connected to Arma yet")
     }
 }
@@ -247,8 +230,8 @@ pub fn utc_timestamp() -> Value {
     json!([null, 0, Utc::now()]).to_arma()
 }
 
-pub fn log_level() -> String {
-    RVOutput::new(None, 0, CONFIG.log_level.to_lowercase().to_arma()).to_string()
+pub fn log_level() -> Value {
+    json!([null, 0, CONFIG.log_level.to_lowercase()]).to_arma()
 }
 
 pub fn pre_init(
@@ -313,11 +296,18 @@ pub fn pre_init(
     arma.client.connect();
 
     *ARMA.write() = arma;
+    *CALLBACK.write() = Some(ctx);
 
     info!("[#pre_init] Boot completed");
 }
 
-pub fn send_message(id: String, message_type: String, data: Value, metadata: Value, errors: Value) {
+pub fn send_message(
+    id: String,
+    message_type: String,
+    data: String,
+    metadata: String,
+    errors: String,
+) {
     debug!(
         "[#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
         id, message_type, data, metadata, errors
@@ -361,26 +351,26 @@ pub fn init() -> Extension {
 
 #[cfg(test)]
 mod tests {
-    use regex::Regex;
-
+    use super::init;
     use super::*;
+    use regex::Regex;
 
     #[test]
     fn it_returns_current_timestamp() {
-        let result = utc_timestamp();
+        let extension = init().testing();
+        let (result, _) = unsafe { extension.call("utc_timestamp", None) };
 
-        // [null, 0, "2021-01-01T00:00:00.000000000+00:00"]
-        let re = Regex::new(
-            r#"^\[null, 0, "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}\+\d{2}:\d{2}"\]$"#,
-        )
-        .unwrap();
+        // [null,0,"2021-01-01T00:00:00.000000000Z"]
+        let re =
+            Regex::new(r#"^\[null,0,"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z"\]$"#).unwrap();
 
         assert!(re.is_match(&result));
     }
 
     #[test]
     fn it_returns_log_level() {
-        let result = log_level();
-        assert_eq!(result, "[null, 0, \"debug\"]");
+        let extension = init().testing();
+        let (result, _) = unsafe { extension.call("log_level", None) };
+        assert_eq!(result, "[null,0,\"info\"]");
     }
 }

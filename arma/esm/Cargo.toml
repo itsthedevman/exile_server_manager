@@ -41,6 +41,3 @@ regex = "1"
 
 [build-dependencies]
 vergen = { version = "5", default-features = false, features = ["git"] }
-
-# [patch."https://github.com/WolfkillArcadia/esm_message"]
-# esm_message = { path = "../esm_message" }
