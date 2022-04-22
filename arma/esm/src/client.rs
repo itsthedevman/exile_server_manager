@@ -1,7 +1,6 @@
-
 use std::net::ToSocketAddrs;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI16, Ordering};
+use std::sync::Arc;
 use std::thread::{self};
 use std::time::Duration;
 
@@ -65,7 +64,7 @@ impl Client {
 
                     if !connected {
                         client.reconnect();
-                        return
+                        return;
                     };
 
                     client.on_connect();
@@ -97,18 +96,22 @@ impl Client {
         let time_to_wait = match crate::CONFIG.env {
             Env::Test => 1,
             Env::Development => 3,
-            _ => 15 * (current_count as u64)
+            _ => 15 * (current_count as u64),
         };
 
         let time_to_wait = Duration::from_secs(time_to_wait);
-        warn!("[client#reconnect] Lost connection to server - Attempting reconnect in {:?}", time_to_wait);
+        warn!(
+            "[client#reconnect] Lost connection to server - Attempting reconnect in {:?}",
+            time_to_wait
+        );
 
         thread::sleep(time_to_wait);
 
         // Sleep a max of 5 minutes
         if current_count <= 20 {
             // Increase the reconnect counter by 1
-            self.reconnection_counter.store(current_count + 1, Ordering::SeqCst);
+            self.reconnection_counter
+                .store(current_count + 1, Ordering::SeqCst);
         }
 
         let (handler, listener) = node::split::<()>();
@@ -121,7 +124,7 @@ impl Client {
     pub fn send_to_server(&self, mut message: Message) {
         let endpoint = match self.endpoint() {
             Some(e) => e,
-            None => return
+            None => return,
         };
 
         let handler = self.handler.read();
@@ -131,7 +134,7 @@ impl Client {
             Some(false) | None => {
                 error!("[client#send_to_server] Failed to send, server not connected");
                 return;
-            },
+            }
             _ => {}
         }
 
@@ -170,7 +173,11 @@ impl Client {
                 }
             },
             Err(e) => {
-                error!("[client#connect] Failed to parse connection url from {:?}. Reason: {}", crate::CONFIG.connection_url, e);
+                error!(
+                    "[client#connect] Failed to parse connection url from {:?}. Reason: {}",
+                    crate::CONFIG.connection_url,
+                    e
+                );
                 return;
             }
         };
@@ -205,13 +212,15 @@ impl Client {
 
     fn reload_token(&self) {
         let reload_file = std::path::Path::new("@esm\\.RELOAD");
-        if !(crate::CONFIG.env.test() && reload_file.exists()) { return }
+        if !(crate::CONFIG.env.test() && reload_file.exists()) {
+            return;
+        }
 
         let new_token = match crate::load_key() {
             Some(t) => t,
             None => {
                 error!("[client#reload_token] Failed to reload key");
-                return
+                return;
             }
         };
 
@@ -220,8 +229,8 @@ impl Client {
         *self.token.write() = new_token;
 
         match std::fs::remove_file(reload_file) {
-            Ok(_) => {},
-            Err(e) => error!("[client#reload_token] {}", e)
+            Ok(_) => {}
+            Err(e) => error!("[client#reload_token] {}", e),
         }
     }
 
@@ -240,7 +249,7 @@ impl Client {
     fn on_message(&self, incoming_data: Vec<u8>) {
         let endpoint = match self.endpoint() {
             Some(e) => e,
-            None => return
+            None => return,
         };
 
         // Only reloads if the env is set to test
@@ -250,7 +259,7 @@ impl Client {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
-            },
+            }
             Err(e) => {
                 error!("[client#on_message] {}", e);
                 return;
@@ -267,7 +276,10 @@ impl Client {
             return;
         }
 
-        info!("[client#on_message] Received {:?} message with ID {}", message.message_type, message.id);
+        info!(
+            "[client#on_message] Received {:?} message with ID {}",
+            message.message_type, message.id
+        );
 
         let arma = crate::ARMA.read();
         let result: Option<Message> = match message.message_type {

@@ -1,6 +1,4 @@
-use arma_rs::{IntoArma, Value as ArmaValue};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// Represents the esm.key file
 #[derive(Serialize, Deserialize, Debug)]
