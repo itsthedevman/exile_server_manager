@@ -16,7 +16,6 @@ use serde_json::json;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
 use std::{env, fs};
 use uuid::Uuid;
 
@@ -107,11 +106,22 @@ fn initialize_logger() {
 
 /// Loads the esm.key file from the disk and converts it to a Token
 pub fn load_key() -> Option<Token> {
-    let path = Path::new("@esm/esm.key");
+    let path = match env::current_dir() {
+        Ok(mut p) => {
+            p.push("@esm");
+            p.push("esm.key");
+            p
+        }
+        Err(e) => {
+            error!("[#load_key] Failed to get current directory. Reason: {e}");
+            return None;
+        }
+    };
+
     let mut file = match File::open(&path) {
         Ok(file) => file,
         Err(_) => {
-            error!("[#load_key] Failed to find \"esm.key\" file. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
+            error!("[#load_key] Failed to find \"esm.key\" file here: {path:?}. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.");
             return None;
         }
     };
@@ -145,7 +155,6 @@ pub fn load_key() -> Option<Token> {
 }
 
 /// Facilitates sending a message to Arma only if this is using a A3 server. When in terminal mode, it just logs.
-/// All data sent to Arma is in the following format (converted to a String): "[int_code, id, content]"
 fn send_to_arma<D: Serialize + IntoArma + Debug>(
     function: &str,
     id: &Uuid,
@@ -169,11 +178,16 @@ fn send_to_arma<D: Serialize + IntoArma + Debug>(
         return;
     }
 
-    let message = json!({ "id": id.to_string(), "data": data, "metadata": metadata });
+    // Arma-rs converts hashes to [["key", "value"], ["key", "value"]], which is slower for the rv engine.
+    // This is syntax #2, [["key", "key"], ["value", "value"]]
+    let message = json!([
+        json!(["id", "data", "metadata"]),
+        json!([id.to_string(), data, metadata])
+    ]);
 
     let callback = CALLBACK.read();
     match &*callback {
-        Some(ctx) => ctx.callback("exile_server_manager", function, Some(json!([null, 0, message]))),
+        Some(ctx) => ctx.callback("exile_server_manager", function, Some(message)),
         None => error!("[send_to_arma] Attempted to send a message to Arma but we haven't connected to Arma yet")
     }
 }
@@ -226,12 +240,12 @@ pub fn a3_call_function(function_name: &str, message: &Message) {
 // Below are the Arma Functions accessible from callExtension
 ///////////////////////////////////////////////////////////////////////
 /// Returns a UTC timestamp as a string.
-pub fn utc_timestamp() -> Value {
-    json!([null, 0, Utc::now()]).to_arma()
+pub fn utc_timestamp() -> String {
+    Utc::now().to_rfc3339()
 }
 
-pub fn log_level() -> Value {
-    json!([null, 0, CONFIG.log_level.to_lowercase()]).to_arma()
+pub fn log_level() -> String {
+    CONFIG.log_level.to_lowercase()
 }
 
 pub fn pre_init(
@@ -352,7 +366,6 @@ pub fn init() -> Extension {
 #[cfg(test)]
 mod tests {
     use super::init;
-    use super::*;
     use regex::Regex;
 
     #[test]
@@ -360,9 +373,9 @@ mod tests {
         let extension = init().testing();
         let (result, _) = unsafe { extension.call("utc_timestamp", None) };
 
-        // [null,0,"2021-01-01T00:00:00.000000000Z"]
+        // "2021-01-01T00:00:00.000000000+00:00"
         let re =
-            Regex::new(r#"^\[null,0,"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z"\]$"#).unwrap();
+            Regex::new(r#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}\+\d{2}:\d{2}$"#).unwrap();
 
         assert!(re.is_match(&result));
     }
@@ -371,6 +384,6 @@ mod tests {
     fn it_returns_log_level() {
         let extension = init().testing();
         let (result, _) = unsafe { extension.call("log_level", None) };
-        assert_eq!(result, "[null,0,\"info\"]");
+        assert_eq!(result, "info");
     }
 }
