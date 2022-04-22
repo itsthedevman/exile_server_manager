@@ -25,6 +25,6 @@
  *
  **/
 
-_this isEqualType [] &&
-	count(_this) == 2 &&
-	count(_this select 0) >= count(_this select 1)
+if !(_this isEqualType []) exitWith {};
+
+count(_this) == 2 && count(_this select 0) >= count(_this select 1)
