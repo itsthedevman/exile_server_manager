@@ -82,7 +82,7 @@ fn main() {
         String::from(r#"["-1","5","8","11","13","15","18","21","25","28"]"#),
     ];
 
-    let (result, _) = unsafe { extension.call("pre_init", Some(args)) };
+    let (_result, _) = unsafe { extension.call("pre_init", Some(args)) };
 
     loop {
         thread::sleep(std::time::Duration::from_secs(1))
