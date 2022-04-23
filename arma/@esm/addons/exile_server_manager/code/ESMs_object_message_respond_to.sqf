@@ -1,41 +1,61 @@
-/**
- *
- * Function:
- *      ESMs_object_message_respond_to
- *
- * Description:
- *      Used to respond to a incoming message with data, or to just say "ack". Every incoming message must be acknowledged, at the very least.
- *
- * Arguments:
- *      _id				-	<String> The ID of the message to respond to.
- *		_dataType		-	<String> The type of data that the outgoing message will hold. Defaults to "empty"
- *		_data			-	<HashMap, Array> The data to send along with the outgoing message. Defaults to []
- *		_metadataType	-	<String> The type of metadata that the outgoing message will hold. Defaults to "empty"
- *		_metadata		-	<HashMap, Array> The metadata to send along with the outgoing message. Defaults to []
- *		_errors		 	-	<Array<String>> An array of error messages. Defaults to []
- *
- * Examples:
- *      ["id"] call ESMs_object_message_respond_to; // ack the message.
- *
- *		[
- *			"id",
- * 			"data_type"
- *			[["key", "value"], ["key", "value"]],
- *			"metadata_type",
- *			[["key", "value"], ["key", "value"]],
- *			["error_message"]
- *		] call ESMs_object_message_respond_to;
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+/* ----------------------------------------------------------------------------
+Function: ESMs_object_message_respond_to
+
+Description:
+	Used to respond to a incoming message with data, or to just say "ack". Every incoming message must be acknowledged, at the very least.
+
+Parameters:
+	_id				- The ID of the message to respond to. [String]
+	_dataType		- The type of data that the outgoing message will hold. Defaults to "empty". [String]
+	_data			- The data to send along with the outgoing message. Defaults to []. [HashMap, Array]
+	_metadataType	- The type of metadata that the outgoing message will hold. Defaults to "empty". [String]
+	_metadata		- The metadata to send along with the outgoing message. Defaults to []. [HashMap, Array]
+	_errors		 	- An array of error objects. Defaults to []. [Array<HashMap>]
+
+Returns:
+	The response from the extension which defaults to ""
+
+Examples:
+	(begin example)
+
+	// ack the message.
+	["id"] call ESMs_object_message_respond_to;
+
+	// Or send a message with everything
+	[
+		"id",
+		"data_type"
+		[
+			["data_key_1", "data_key_2"],
+			["data_value_1", "data_value_2"]
+		],
+		"metadata_type",
+		[
+			["metadata_key_1", "metadata_key_2"],
+			["metadata_value_1", "metadata_value_2"]
+		],
+		[
+			[
+				["type", "content"],
+				["code", "ERROR_CODE"]
+			],
+			[
+				["type", "content"],
+				["message", "This is an error message"]
+			]
+		]
+	] call ESMs_object_message_respond_to;
+
+	(end)
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-2022 Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
 
 params [
 	"_id",
@@ -44,36 +64,38 @@ params [
 	["_data", [], [[], HASH_TYPE]],
 	["_metadataType", "empty", [""]],
 	["_metadata", [], [[], HASH_TYPE]],
-	["_errorMessages", []]
+	["_errors", [], [[]]]
 ];
 
-// Add check for hashmap or hashmap syntax
-
-// Do not convert empty arrays
-if (_data isEqualType ARRAY_TYPE && { count(_data) > 0 }) then
+// Errors must be hashmaps or hashmap arrays
+private _errorPackage = [];
 {
-	_data = _data call ESMs_util_hashmap_fromArray;
-};
+	if (isNil "_x") then { continue; };
+	if !(_x isEqualType HASH_TYPE || _x call ESMs_util_array_isValidHashmap) then { continue; };
 
-if (_metadata isEqualType ARRAY_TYPE && { count(_metadata) > 0 }) then
-{
-	_metadata = _metadata call ESMs_util_hashmap_fromArray;
-};
-
-// Process the errors
-private _errors = [];
-{
-	private _content = _x;
-
-	// Check the data
-	if (count(_content) < 1) then { continue; };
-	if !(_content isEqualType "") then { continue; };
-
-	_errors pushBack _content;
+	_errorPackage pushBack _x;
 }
-forEach _errorMessages;
+forEach _errors;
 
 // Send it!
-["send_message", _id, _type, [_dataType, _data], [_metadataType, _metadata], _errors] call ESMs_system_extension_call;
-
-true
+[
+	"send_message",
+	_id,
+	_type,
+	[
+		["type", "content"],
+		[
+			_dataType,
+			if (_dataType isEqualTo "empty") then { nil } else { _data }
+		]
+	],
+	[
+		["type", "content"],
+		[
+			_metadataType,
+			if (_metadataType isEqualTo "empty") then { nil } else { _metadata }
+		]
+	],
+	_errorPackage
+]
+call ESMs_system_extension_call
