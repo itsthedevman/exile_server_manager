@@ -1,23 +1,33 @@
+/* ----------------------------------------------------------------------------
+Function: ESMs_system_command_sqf
 
-/**
- *
- * Function:
- *      ESMs_command_sqf
- *
- * Description:
- *      Executes the provided SQF on the target (server, all players, or a single player)
- *
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+Description:
+	Executes the provided SQF on the target (server, all players, or a single player).
+	Called from ESMs_system_extension_callback as part of a command workflow.
+	Do not call manually unless you know what you're doing
+
+Parameters:
+	_this 	- A hashmap representation of a ESM message [Hashmap]
+
+Returns:
+	None
+
+Examples:
+	(begin example)
+
+	[...] call ESMs_system_command_sqf;
+
+	(end)
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-2022 Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
+
 
 private _id = _this getOrDefault ["id", nil];
 
@@ -40,7 +50,7 @@ private _data = _this getOrDefault ["data", nil];
 		discord_mention: String,
 */
 private _metadata = _this getOrDefault ["metadata", nil];
-if (isNil "_id" || { isNil "_data" } || { isNil "_metadata" }) exitWith { nil };
+if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
 try
 {
@@ -80,8 +90,8 @@ try
 		"arma",
 		"sqf_result",
 		[
+			["result"],
 			[
-				"result",
 				if (isNil "_result") then { nil } else { str(_result) }
 			]
 		]
