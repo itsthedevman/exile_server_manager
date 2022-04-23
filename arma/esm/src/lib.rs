@@ -219,10 +219,12 @@ fn send_to_arma<D: Serialize + IntoArma + Debug>(
 
     // Arma-rs converts hashes to [["key", "value"], ["key", "value"]], which is slower for the rv engine.
     // This is syntax #2, [["key", "key"], ["value", "value"]]
-    let message = json!([
-        json!(["id", "data", "metadata"]),
-        json!([id.to_string(), data, metadata])
-    ]);
+    let message = vec![
+        vec!["id".to_arma(), "data".to_arma(), "metadata".to_arma()],
+        vec![id.to_arma(), data.to_arma(), metadata.to_arma()],
+    ];
+
+    debug!("[#send_to_arma]\n{message:?}");
 
     let callback = CALLBACK.read();
     match &*callback {
@@ -239,34 +241,64 @@ pub fn a3_post_init(arma: &mut Arma, message: &Message) {
     send_to_arma(
         "ESMs_system_process_postInit",
         &message.id,
-        &json!({
-            "ESM_BuildNumber": env!("VERGEN_GIT_SHA_SHORT"),
-            "ESM_CommunityID": token.community_id(),
-            "ESM_ExtDBVersion": arma.database.extdb_version,
-            "ESM_Gambling_Modifier": data.gambling_modifier,
-            "ESM_Gambling_PayoutBase": data.gambling_payout,
-            "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
-            "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
-            "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
-            "ESM_Gambling_WinPercentage": data.gambling_win_chance,
-            "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
-            "ESM_Logging_DemotePlayer": data.logging_demote_player,
-            "ESM_Logging_Exec": data.logging_exec,
-            "ESM_Logging_Gamble": data.logging_gamble,
-            "ESM_Logging_ModifyPlayer": data.logging_modify_player,
-            "ESM_Logging_PayTerritory": data.logging_pay_territory,
-            "ESM_Logging_PromotePlayer": data.logging_promote_player,
-            "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
-            "ESM_Logging_RewardPlayer": data.logging_reward,
-            "ESM_Logging_TransferPoptabs": data.logging_transfer,
-            "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
-            "ESM_LoggingChannelID": data.logging_channel_id,
-            "ESM_ServerID": token.server_id(),
-            "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
-            "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
-            "ESM_TerritoryAdminUIDs": data.territory_admins,
-            "ESM_Version": env!("CARGO_PKG_VERSION")
-        }),
+        &json!([
+            json!([
+                "ESM_BuildNumber",
+                "ESM_CommunityID",
+                "ESM_ExtDBVersion",
+                "ESM_Gambling_Modifier",
+                "ESM_Gambling_PayoutBase",
+                "ESM_Gambling_PayoutRandomizerMax",
+                "ESM_Gambling_PayoutRandomizerMid",
+                "ESM_Gambling_PayoutRandomizerMin",
+                "ESM_Gambling_WinPercentage",
+                "ESM_Logging_AddPlayerToTerritory",
+                "ESM_Logging_DemotePlayer",
+                "ESM_Logging_Exec",
+                "ESM_Logging_Gamble",
+                "ESM_Logging_ModifyPlayer",
+                "ESM_Logging_PayTerritory",
+                "ESM_Logging_PromotePlayer",
+                "ESM_Logging_RemovePlayerFromTerritory",
+                "ESM_Logging_RewardPlayer",
+                "ESM_Logging_TransferPoptabs",
+                "ESM_Logging_UpgradeTerritory",
+                "ESM_LoggingChannelID",
+                "ESM_ServerID",
+                "ESM_Taxes_TerritoryPayment",
+                "ESM_Taxes_TerritoryUpgrade",
+                "ESM_TerritoryAdminUIDs",
+                "ESM_Version"
+            ]),
+            json!([
+                env!("VERGEN_GIT_SHA_SHORT"),
+                token.community_id(),
+                arma.database.extdb_version,
+                data.gambling_modifier,
+                data.gambling_payout,
+                data.gambling_randomizer_max,
+                data.gambling_randomizer_mid,
+                data.gambling_randomizer_min,
+                data.gambling_win_chance,
+                data.logging_add_player_to_territory,
+                data.logging_demote_player,
+                data.logging_exec,
+                data.logging_gamble,
+                data.logging_modify_player,
+                data.logging_pay_territory,
+                data.logging_promote_player,
+                data.logging_remove_player_from_territory,
+                data.logging_reward,
+                data.logging_transfer,
+                data.logging_upgrade_territory,
+                data.logging_channel_id,
+                token.server_id(),
+                data.territory_payment_tax,
+                data.territory_upgrade_tax,
+                data.territory_admins,
+                env!("CARGO_PKG_VERSION")
+            ])
+        ]),
         &message.metadata,
     );
 }
