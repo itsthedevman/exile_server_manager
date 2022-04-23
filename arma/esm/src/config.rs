@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt};
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
@@ -22,7 +22,7 @@ pub struct Config {
     pub extdb_conf_header_name: String,
 
     #[serde(default = "default_extdb_version")]
-    pub extdb_version: u8
+    pub extdb_version: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -30,7 +30,7 @@ pub struct Config {
 pub enum Env {
     Production,
     Test,
-    Development
+    Development,
 }
 
 impl fmt::Display for Env {
@@ -58,7 +58,15 @@ fn default_connection_url() -> String {
 }
 
 fn default_logging_path() -> String {
-    "@esm/log/esm.log".into()
+    match std::env::current_dir() {
+        Ok(mut p) => {
+            p.push("@esm");
+            p.push("log");
+            p.push("esm.log");
+            p.to_str().unwrap_or("").to_string()
+        }
+        Err(_e) => String::new(),
+    }
 }
 
 fn default_log_level() -> String {
