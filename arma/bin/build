@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Run the build script
-./tools/esm_build_tool build "$@"

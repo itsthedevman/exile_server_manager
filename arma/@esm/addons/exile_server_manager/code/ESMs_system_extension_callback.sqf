@@ -1,28 +1,33 @@
-/**
- *
- * Function:
- *      ESMs_system_extension_callback
- *
- * Description:
- *      Facilitates a SQF function call from the extension
- *
- * Arguments:
- *      _functionName	-	The name of the function to be called as a string.
- *		_data			-	The data to be passed to the function
- *
- * Examples:
- *      ["ESMs_util_log", ["extension", "This is how the extension calls functions"]] call ESMs_system_extension_callback;
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+/* ----------------------------------------------------------------------------
+Function: ESMs_system_extension_callback
+
+Description:
+	Processes a SQF function call from the extension
+
+Parameters:
+	_functionName 	- The name of the function to be called [String]
+	_data 			- The data to be passed to the function [Any]
+
+Returns:
+	true
+
+Examples:
+	(begin example)
+
+	["ESMs_util_log", ["extension", "This is how the extension calls functions"]] call ESMs_system_extension_callback;
+	["ESMs_system_command_sqf", "[[""id"",""data"",""metadata""], [...]]] call ESMs_system_extension_callback;
+
+	(end)
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-2022 Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
+
 
 private _functionName = _this select 0;
 private _data = _this select 1;
@@ -38,28 +43,29 @@ if (_function isEqualTo "") exitWith
 	] call ESMs_util_log;
 };
 
-/*
-	The data will always be in the following format:
+private _response = _data call ESMs_system_extension_processResult;
+if (_response isEqualType HASH_TYPE && { "id" in _response }) then
+{
+	private _id = _response getOrDefault ["id", ""];
+	private _data = _response getOrDefault ["data", ""];
+	private _metadata = _response getOrDefault ["metadata", ""];
+
+	{
+		["callback", _x] call ESMs_util_log;
+	}
+	forEach
 	[
-		["id", "uuid"],
-		["data", [[]]],
-		["metadata", [[]]]
-	]
+		format["Executing ""%1""", _functionName],
+		format["    ID (%1): %2", typeName _id, _id],
+		format["    DATA (%1): %2", typeName _data, _data],
+		format["    METADATA (%1): %2", typeName _metadata, _metadata]
+	];
+}
+else
+{
+	["callback", format["Calling function ""%1"" with %2", _functionName, _response]] call ESMs_util_log;
+};
 
-	Once converted to a hashmap, it will have the following keys:
-		"id" 		- The message's ID. Used for responding to the message
-		"data" 		- The data for the function in array hashmap format. The contents of this hashmap will depend on the message
-		"metadata" 	- Any extra data that is needed.
-						If this is a system initiated message, this array array will be empty
-						If this is a user initiated message, this array hashmap will contain the following keys:
-							"user_id" 			- The user's Discord ID
-							"user_name" 		- The user's Discord name
-							"user_mention" 		- The user's Discord mention (for tagging)
-							"user_steam_uid" 	- The user's Steam UID
-*/
-private _message = createHashMapFromArray(_data call ESMs_system_extension_processResult);
-["callback", format["Calling ""%1"" with %2", _functionName, _message], "debug"] call ESMs_util_log;
-
-_message call _function;
+_response call _function;
 
 true

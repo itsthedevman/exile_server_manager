@@ -1,3 +1,4 @@
 @echo off
 
-ruby.exe .\tools\esm_build_tool build %*
+cd tools\build
+bundle exec ruby esm.rb build %*

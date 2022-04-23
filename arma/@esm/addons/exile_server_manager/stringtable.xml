@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project name="ESM">
+	<Package name="exile_server_manager">
+		<Container name="General">
+			<Key ID="STR_ESM_NullPlayer">
+				<English>Hey %1, you must be spawned into `%2` in order to receive your reward</English>
+			</Key>
+
+			<Key ID="STR_ESM_AlivePlayer">
+				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
+			</Key>
+		</Container>
+
+		<Container name="ESMs_command_sqf">
+			<Key ID="STR_ESM_Sqf_NullTarget">
+				<English>Hey %1, `%2` must be spawned into `%3` before you can execute code on them</English>
+			</Key>
+		</Container>
+
+		<Container name="ESMs_command_reward">
+			<Key ID="STR_ESM_Reward_InvalidItem">
+				<English>
+					**WARNING:** You have `%1` listed as an item reward, however, this item's config does not exist on your server
+					Please double check your spelling, add the required mod, or remove this item from the rewards for this server
+				</English>
+			</Key>
+
+			<Key ID="STR_ESM_Reward_LogDescription">
+				<English>%1 received rewards</English>
+			</Key>
+
+			<Key ID="STR_ESM_Reward_Log_Field1_Name">
+				<English>Player UID</English>
+			</Key>
+
+			<Key ID="STR_ESM_Reward_Log_Field2_Name">
+				<English>Receipt</English>
+			</Key>
+		</Container>
+	</Package>
+</Project>

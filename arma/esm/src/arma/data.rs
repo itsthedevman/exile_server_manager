@@ -1,6 +1,4 @@
-use arma_rs::{ArmaValue, arma_value, ToArma};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// Represents the esm.key file
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,27 +23,14 @@ impl Token {
     }
 }
 
-#[derive(Debug)]
-pub struct RVOutput {
-    pub id: Option<Uuid>,
-    pub code: isize,
-    pub content: ArmaValue,
-}
-
-impl RVOutput {
-    pub fn new(id: Option<Uuid>, code: isize, content: ArmaValue) -> Self {
-        RVOutput { id, code, content }
-    }
-}
-
-impl std::fmt::Display for RVOutput {
+impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // let id = match self.id {
-        //     Some(id) => id.to_string(),
-        //     None => String::new()
-        // };
-
-        write!(f, "{}", arma_value!([self.id, self.code, self.content]))
+        write!(
+            f,
+            "Token {{ id: {}, key: {} }}",
+            String::from_utf8_lossy(&self.id),
+            String::from_utf8_lossy(&self.key)
+        )
     }
 }
 

@@ -35,8 +35,11 @@ forEach
     // Hacking
     ['ExileServer_object_lock_network_startHackRequest', 'exile_server_hacking'],
 
-    // OPC, bitches!
-    ['ExileServer_system_network_event_onPlayerConnected', 'exile_server_player_connected']
+    // OPC!
+    ['ExileServer_system_network_event_onPlayerConnected', 'exile_server_player_connected'],
+
+    // For testing purposes
+    ['ExileClient_util_player_objectFromPlayerUID', 'esm_test']
 ];
 
 call compile (preprocessFileLineNumbers 'exile_server\bootstrap\fn_preInit.sqf');

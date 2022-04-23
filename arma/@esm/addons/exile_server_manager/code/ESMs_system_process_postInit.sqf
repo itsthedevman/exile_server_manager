@@ -7,10 +7,10 @@
  *      Called after the extension has connected to the bot successfully. This function binds the required variables and their values.
  *
  * Arguments:
- *      _this	-	A hashmap of variables and their values.
+ *      _this	-	A hashmap representation of a Message
  *
  * Examples:
- *      [] call ESMs_system_process_postInit;
+ *      Message call ESMs_system_process_postInit;
  *
  * * *
  *
@@ -25,10 +25,8 @@
 
 private _id = _this getOrDefault ["id", nil];
 private _data = _this getOrDefault ["data", nil];
-if (isNil "_id" || { isNil "_data" }) exitWith { nil };
 
-// createHashMapFromArray is not recursive
-_data = createHashMapFromArray(_data);
+if (isNil "_id" || { isNil "_data" }) exitWith { nil };
 
 // Bind the variables from CfgESM >> globalVariables, retrieving the values from _data
 {
@@ -45,8 +43,17 @@ forEach (getArray (configFile >> "CfgESM" >> "globalVariables"));
 ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;
 
-["postInit", format["Initialization finished. Detected %1.", ESM_DatabaseExtension]] call ESMs_util_log;
+[
+	"postInit",
+	format[
+		"Boot complete. Version %1:%2 has been loaded successfully. Detected database extension %3",
+		ESM_Version,
+		ESM_BuildNumber,
+		ESM_DatabaseExtension
+	]
+] call ESMs_util_log;
 
-[_id] call ESMs_object_message_respond;
+// Acknowledge the message
+[_id] call ESMs_object_message_respond_to;
 
 true
