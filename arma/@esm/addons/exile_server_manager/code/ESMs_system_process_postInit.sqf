@@ -25,6 +25,7 @@
 
 private _id = _this getOrDefault ["id", nil];
 private _data = _this getOrDefault ["data", nil];
+
 if (isNil "_id" || { isNil "_data" }) exitWith { nil };
 
 // Bind the variables from CfgESM >> globalVariables, retrieving the values from _data
