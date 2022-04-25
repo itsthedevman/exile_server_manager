@@ -85,6 +85,12 @@ try
 		};
 	};
 
+	// It becomes difficult to handle while parsing if there are multiple layers of quotes
+	if (!(isNil "_result") && { !(_result isEqualType "") }) then
+	{
+		_result = str(_result);
+	};
+
 	[
 		_id,
 		"arma",
@@ -92,7 +98,7 @@ try
 		[
 			["result"],
 			[
-				if (isNil "_result") then { nil } else { str(_result) }
+				if (isNil "_result") then { nil } else { _result }
 			]
 		]
 	]

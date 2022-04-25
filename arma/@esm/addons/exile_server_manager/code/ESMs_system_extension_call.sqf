@@ -58,6 +58,12 @@ private _sanitizer = {
 
 	switch (typeName(_item)) do
 	{
+		case "STRING";
+		case "BOOL":
+		{
+			_package pushBack _item;
+		};
+
 		case "ARRAY":
 		{
 			private _sanitizedValue = [];
@@ -73,19 +79,9 @@ private _sanitizer = {
 			_package pushBack _sanitizedValue;
 		};
 
-		case "STRING":
-		{
-			_package pushBack (_item call ExileClient_util_string_escapeJson);
-		};
-
 		case "SCALAR":
 		{
 			_package pushBack str(_item);
-		};
-
-		case "BOOL":
-		{
-			_package pushBack _item;
 		};
 
 		case "ANY":
