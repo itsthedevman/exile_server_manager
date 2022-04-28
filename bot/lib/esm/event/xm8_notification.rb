@@ -164,7 +164,9 @@ module ESM
           notification_message = ESM.bot.deliver(embed, to: channel_id, embed_message: "#{@xm8_type.titleize} - #{users.map(&:mention).join(" ")}")
 
           users.each do |user|
-            status = @statuses_by_user[user][:custom_routes]
+            status = @statuses_by_user[user] ||= { direct_message: :ignored, custom_routes: { sent: 0, expected: 0 } }
+
+            status = status[:custom_routes]
             status[:sent] += 1 if notification_message
             status[:expected] += 1
           end
