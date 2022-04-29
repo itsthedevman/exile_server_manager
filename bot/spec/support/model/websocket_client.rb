@@ -41,7 +41,7 @@ class WebsocketClient
     return ESM.logger.error("#{self.class}##{__method__}") { "Missing command config for `#{@data.command}`" } if command_config.nil?
 
     send_ignore_message if command_config[:send_ignore_message]
-    delay(command_config[:delay]) if command_config[:delay]
+    # delay(command_config[:delay]) if command_config[:delay]
 
     self.send("response_#{@data.command}".to_sym)
   end

@@ -9,7 +9,7 @@ module ESM
         @thread = Thread.new do
           loop do
             ESM::Request.expired.destroy_all
-            sleep(ESM.env.test? ? 0.5 : check_every)
+            sleep(check_every)
           end
         end
       end

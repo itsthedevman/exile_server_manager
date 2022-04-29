@@ -14,6 +14,10 @@ default: &default
     websocket_request_overseer:
       check_every: 15
 
+    # ESM::Websocket::Connection::Overseer
+    websocket_connection_overseer:
+      check_every: 3
+
 development:
   <<: *default
   prefix: "~"
@@ -21,6 +25,18 @@ development:
 test:
   <<: *default
   prefix: "~"
+  loops:
+    # ESM::Request::Overseer
+    request_overseer:
+      check_every: 0.5
+
+    # ESM::Websocket::Request::Overseer
+    websocket_request_overseer:
+      check_every: 0.5
+
+    # ESM::Websocket::Connection::Overseer
+    websocket_connection_overseer:
+      check_every: 0.5
 
 production:
   <<: *default

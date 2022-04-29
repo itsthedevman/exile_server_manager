@@ -85,7 +85,6 @@ module ESM
       # In dev, for whatever reason, this ping causes all messages to be delayed 15 seconds.
       @ping_timer = EventMachine.add_periodic_timer(10) { ping } if ESM.env.production?
 
-      bind_events
       on_open
     end
 
@@ -160,11 +159,13 @@ module ESM
       # Authorize the request and extract the server key
       authorize!
 
+      bind_events
+
       # Tell the server to store the connection for access later
       ESM::Websocket.add_connection(self)
     rescue ESM::Exception::FailedAuthentication => e
       # Application code may only use codes from 1000, 3000-4999
-      @connection.close(1002, e.message)
+      @connection.close(3002, e.message)
     rescue StandardError => e
       ESM.logger.fatal("#{self.class}##{__method__}") { "Message:\n#{e.message}\n\nBacktrace:\n#{e.backtrace}" }
     end
