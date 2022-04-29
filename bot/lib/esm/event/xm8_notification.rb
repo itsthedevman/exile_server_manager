@@ -155,7 +155,7 @@ module ESM
                                                         .includes(:user)
                                                         .enabled
                                                         .accepted
-                                                        .where(notification_type: @xm8_type)
+                                                        .where(notification_type: @xm8_type, user_id: @users.pluck(:id))
                                                         .where("source_server_id IS NULL OR source_server_id = ?", @server.id)
                                                         .group_by(&:channel_id)
                                                         .transform_values! { |r| r.map(&:user) }
