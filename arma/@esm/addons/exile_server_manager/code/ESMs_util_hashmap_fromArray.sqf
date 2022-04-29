@@ -55,7 +55,8 @@ private _processor = {
 
 					if (isNil "_value") then
 					{
-						_sanitizedValues pushBack nil;
+						// Because Arma does not support `_sanitizedValues pushBack nil` - Again, the worst implementation of nil ever
+						_sanitizedValues set [_forEachIndex, nil];
 						continue;
 					};
 
