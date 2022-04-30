@@ -10,7 +10,7 @@ Parameters:
 	_data			- The data to send along with the outgoing message. Defaults to []. [HashMap, Array]
 	_metadataType	- The type of metadata that the outgoing message will hold. Defaults to "empty". [String]
 	_metadata		- The metadata to send along with the outgoing message. Defaults to []. [HashMap, Array]
-	_errors		 	- An array of error objects. Defaults to []. [Array<HashMap>]
+	_errors		 	- An array of error objects. Defaults to []. See example [Array<Array<String>>]
 
 Returns:
 	The response from the extension which defaults to ""
@@ -35,14 +35,8 @@ Examples:
 			["metadata_value_1", "metadata_value_2"]
 		],
 		[
-			[
-				["type", "content"],
-				["code", "ERROR_CODE"]
-			],
-			[
-				["type", "content"],
-				["message", "This is an error message"]
-			]
+			["code", "ERROR_CODE"],
+			["message", "This is an error message"]
 		]
 	] call ESMs_object_message_respond_to;
 
@@ -71,9 +65,17 @@ params [
 private _errorPackage = [];
 {
 	if (isNil "_x") then { continue; };
-	if !(_x isEqualType HASH_TYPE || _x call ESMs_util_array_isValidHashmap) then { continue; };
 
-	_errorPackage pushBack _x;
+	// Only accepts ["code", "content"] or ["message", "content"]
+	if !(
+		_x isEqualType ARRAY_TYPE && {
+			[_x, { _this isEqualType "" }] call ESMs_util_array_all && {
+				count(_x) isEqualTo 2
+			}
+		}
+	) then { continue; };
+
+	_errorPackage pushBack [["type", "content"], _x];
 }
 forEach _errors;
 
