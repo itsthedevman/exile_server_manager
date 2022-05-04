@@ -1,23 +1,16 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_system_command_sqf
+Function: ESMs_command_sqf
 
 Description:
 	Executes the provided SQF on the target (server, all players, or a single player).
 	Called from ESMs_system_extension_callback as part of a command workflow.
-	Do not call manually unless you know what you're doing
+	Do not call manually unless you know what you're doing!
 
 Parameters:
-	_this 	- A hashmap representation of a ESM message [Hashmap]
+	_this  -  A hashmap representation of a ESM message [Hashmap]
 
 Returns:
-	None
-
-Examples:
-	(begin example)
-
-	[...] call ESMs_system_command_sqf;
-
-	(end)
+	Nothing
 
 Author:
 	Exile Server Manager
@@ -102,11 +95,11 @@ try
 			]
 		]
 	]
-	call ESMs_object_message_respond_to;
+	spawn ESMs_object_message_respond_to;
 }
 catch
 {
-	[_id, _exception] call ESMs_object_message_respond_withError;
+	[_id, _exception] spawn ESMs_object_message_respond_withError;
 };
 
 nil

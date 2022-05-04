@@ -1,27 +1,26 @@
-/**
- *
- * Function:
- *      ESMs_object_player_reward
- *
- * Description:
- *      Rewards the player with the configured reward
- *
- * Arguments:
- *      _this	-	A hashmap representation of a Message
- *
- * Examples:
- *      Message call ESMs_object_player_reward;
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+/* ----------------------------------------------------------------------------
+Function: ESMs_command_reward
+
+Description:
+	Grants a player a reward
+	Called from ESMs_system_extension_callback as part of a command workflow.
+	Do not call manually unless you know what you're doing!
+
+Parameters:
+	_this  -  A hashmap representation of a ESM message [Hashmap]
+
+Returns:
+	Nothing
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-2022 Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
+
 
 private _id = _this getOrDefault ["id", nil];
 
@@ -248,7 +247,7 @@ try
 		forEach _rewardVehicles;
 	};
 
-	[_id, "arma", "reward", _receipt] call ESMs_object_message_respond_to;
+	[_id, "arma", "reward", _receipt] spawn ESMs_object_message_respond_to;
 
 	if (ESM_Logging_RewardPlayer) then
 	{
@@ -256,12 +255,12 @@ try
 		[_embed, localize "$STR_ESM_Reward_Log_Field1_Name", _playerUID] call ESMs_object_embed_addField;
 		[_embed, localize "$STR_ESM_Reward_Log_Field2_Name", _receipt] call ESMs_object_embed_addField;
 
-		_embed call ESMs_system_network_discord_log;
+		_embed spawn ESMs_system_network_discord_log;
 	};
 }
 catch
 {
-	[_id, _exception] call ESMs_object_message_respond_withError;
+	[_id, _exception] spawn ESMs_object_message_respond_withError;
 };
 
 nil

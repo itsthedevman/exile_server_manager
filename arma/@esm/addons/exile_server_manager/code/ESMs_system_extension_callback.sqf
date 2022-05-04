@@ -15,7 +15,7 @@ Examples:
 	(begin example)
 
 	["ESMs_util_log", ["extension", "This is how the extension calls functions"]] call ESMs_system_extension_callback;
-	["ESMs_system_command_sqf", "[[""id"",""data"",""metadata""], [...]]] call ESMs_system_extension_callback;
+	["ESMs_command_sqf", "[[""id"",""data"",""metadata""], [...]]] call ESMs_system_extension_callback;
 
 	(end)
 
@@ -66,6 +66,6 @@ else
 	["callback", format["Calling function ""%1"" with %2", _functionName, _response]] call ESMs_util_log;
 };
 
-_response call _function;
+_response spawn _function;
 
 true
