@@ -1,29 +1,3 @@
-/**
- *
- * Function:
- *      ESMs_system_network_discord_send
- *
- * Description:
- *
- *
- * Arguments:
- *
- *
- *
- * Examples:
- *
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
-
 /* ----------------------------------------------------------------------------
 Function: ESMs_system_network_discord_send_to
 
@@ -66,4 +40,4 @@ if (_messageOrEmbed isEqualType HASH_TYPE) then
 	_messageOrEmbed = str(_messageOrEmbed call ESMs_util_hashmap_toArray);
 };
 
-["send_to_channel", _channelIDorName, _messageOrEmbed] call ESMs_system_extension_call;
+["send_to_channel", _channelIDorName, _messageOrEmbed] call ESMs_system_extension_call

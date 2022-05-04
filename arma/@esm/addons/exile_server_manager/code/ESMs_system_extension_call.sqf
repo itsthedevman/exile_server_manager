@@ -5,8 +5,8 @@ Description:
 	Calls ESM's extension with the provided function and data.
 
 Parameters:
-	_this 	- 	If _this is a string, it will be treated as the name of the endpoint.
-				If _this is an array, the first element will be treated as the name of the endpoint and any other elements as arguments
+	_this  -  If _this is a string, it will be treated as the name of the endpoint.
+              If _this is an array, the first element will be treated as the name of the endpoint and any other elements as arguments
 
 Returns:
 	The result from the extension call
@@ -46,10 +46,11 @@ else
 	if !(_arguments isEqualType []) exitWith
 	{
 		["extension_call", format["Invalid arguments provided for extension call to ""%1""", _function]] call ESMs_util_log;
+		false
 	};
 };
 
-// Cache a sanitizer function that escapes any JSON unsafe strings
+// Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
 	private _package = _this select 0;
 	private _item = _this select 1;
@@ -151,6 +152,7 @@ private _result = "esm" callExtension [_function, _sanitizedArguments];
 if ((_result select 1) > 0) exitWith
 {
 	["extension_call", format["Extension barfed. Error code: %1", _result select 1], "error"] call ESMs_util_log;
+	false
 };
 
 // If there is an issue, Arma will return an error code.
@@ -160,6 +162,7 @@ if ((_result select 1) > 0) exitWith
 //     301: EXECUTION_WARNING_TAKES_TOO_LONG
 if ((_result select 2) > 0) exitWith {
 	["extension_call", format["Arma barfed. Error code: %1", _result select 2], "error"] call ESMs_util_log;
+	false
 };
 
 (_result select 0) call ESMs_system_extension_processResult

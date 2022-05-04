@@ -31,7 +31,7 @@ Author:
 private _result = _this;
 
 // The extension sends back a empty string after receiving a call
-if (isNil("_result") || { _result isEqualTo "" }) exitWith {};
+if (isNil("_result") || { _result isEqualTo "" }) exitWith { true };
 
 if (_result isEqualType "") then
 {
