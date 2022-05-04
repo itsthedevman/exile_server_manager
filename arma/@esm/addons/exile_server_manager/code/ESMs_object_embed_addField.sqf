@@ -30,10 +30,10 @@ Author:
 ---------------------------------------------------------------------------- */
 
 params [
-	"_embed",
+	["_embed", [HASH_TYPE]],
 	["_name", [""]],
 	["_value", [""]],
-	["_inline", [], false]
+	["_inline", [true, nil], false]
 ];
 
 private _fields = _embed getOrDefault ["fields", []];
