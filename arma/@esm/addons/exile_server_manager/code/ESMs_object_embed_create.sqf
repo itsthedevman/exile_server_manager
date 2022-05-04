@@ -13,7 +13,7 @@ Returns:
 Examples:
 	(begin example)
 
-	[["title", "description"], ["This is the title", "This is a description"]] call ESMs_object_embed_create;
+	[["title", "This is the title"], ["description", "This is a description"]] call ESMs_object_embed_create;
 
 	(end)
 
@@ -31,9 +31,9 @@ private _embedData = _this;
 private _embed = createHashMap;
 if (isNil "_embedData") exitWith { _embed };
 
-if (_embedData isEqualType ARRAY_TYPE && { _embedData call ESMs_util_array_isValidHashmap }) then
+if (_embedData isEqualType ARRAY_TYPE) then
 {
-	_embedData = _embedData call ESMs_util_hashmap_fromArray;
+	_embedData = createHashmapFromArray _embedData;
 };
 
 if !(_embedData isEqualType HASH_TYPE) exitWith { _embed };
