@@ -1,3 +1,3 @@
 [workspace]
-
 members = ["esm"]
+exclude = ["tools\\server"]
