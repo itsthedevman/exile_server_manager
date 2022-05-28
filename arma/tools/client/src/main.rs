@@ -1,9 +1,11 @@
 // Most of this code was from the example, thank you!
 // https://github.com/lemunozm/message-io/tree/master/examples/file-transfer
 
+mod builder;
+
+use builder::Builder;
 use message_io::network::{NetEvent, Transport};
 use message_io::node::{self, NodeEvent};
-
 use std::fs::{self, File};
 use std::io::{Read};
 use std::time::{Duration};
@@ -19,8 +21,8 @@ struct Args {
     build_x32: bool,
 
     /// Set the target build platform for the extension
-    #[clap(short, long, arg_enum, default_value_t = BuildTarget::Windows)]
-    target: BuildTarget,
+    #[clap(short, long, arg_enum, default_value_t = BuildOS::Windows)]
+    target: BuildOS,
 
     /// Sets the logging level for the extension and the mod
     #[clap(short, long, arg_enum, default_value_t = LogLevel::Debug)]
@@ -32,13 +34,13 @@ struct Args {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
-enum BuildTarget {
+pub enum BuildOS {
     Linux,
     Windows,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
-enum LogLevel {
+pub enum LogLevel {
     Error,
     Warn,
     Info,
@@ -47,12 +49,10 @@ enum LogLevel {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
-enum BuildEnv {
+pub enum BuildEnv {
     Development,
     Production
 }
-
-
 
 #[derive(Serialize, Deserialize)]
 pub enum SenderMsg {
@@ -73,6 +73,14 @@ enum Signal {
 }
 
 const CHUNK_SIZE: usize = 65536;
+
+fn main() {
+    let args = Args::parse();
+    let builder = Builder::new(args);
+
+    print_info(&builder);
+}
+
 
 pub fn run(file_path: String) {
     let (handler, listener) = node::split();
@@ -141,8 +149,16 @@ pub fn run(file_path: String) {
 }
 
 
-fn main() {
-    let args = Args::parse();
-
-
+fn print_info(builder: &Builder) {
+    println!(r#"
+        | ESM Build tool
+        |   OS: {builder.os}
+        |   ARCH: {builder.arch}
+        |   ENV: {builder.env}
+        |   LOG_LEVEL: {builder.log_level}
+        |   GIT_DIRECTORY: TODO
+        |   BUILD_DIRECTORY: TODO
+        |   SERVER_DIRECTORY: TODO
+        |   REMOTE_HOST: TODO
+    "#)
 }

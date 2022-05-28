@@ -1,3 +1,3 @@
 [workspace]
-members = ["esm", "tools\\server", "tools\\client"]
+members = ["esm", "tools/server", "tools/client"]
 # exclude = ["tools\\server", "tools\\client"]
