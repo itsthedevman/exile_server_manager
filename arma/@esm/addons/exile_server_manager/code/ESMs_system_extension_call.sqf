@@ -52,87 +52,48 @@ else
 
 // Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
-	private _package = _this select 0;
-	private _item = _this select 1;
-
-	if (isNil "_item") exitWith { _package pushBack nil };
-
-	switch (typeName(_item)) do
+	["DEBUGGING CALL", format["Input is %1 (%2)", _this, typeName(_this)]] call ESMs_util_log;
+	switch (typeName(_this)) do
 	{
 		case "STRING";
 		case "BOOL":
 		{
-			_package pushBack _item;
+			_this
 		};
 
 		case "ARRAY":
 		{
-			private _sanitizedValue = [];
-
-			{
-				[
-					_sanitizedValue,
-					if (isNil "_x") then { nil } else { _x }
-				] call _sanitizer;
-			}
-			forEach _item;
-
-			_package pushBack _sanitizedValue;
+			[_this, _sanitizer] call ESMs_util_array_map;
 		};
 
 		case "SCALAR":
 		{
-			_package pushBack str(_item);
-		};
-
-		case "ANY":
-		{
-			_package pushBack nil;
+			// Because arma
+			str(_this);
 		};
 
 		case "HASHMAP":
 		{
-			private _arrayPairs = _item call ESMs_util_hashmap_toArray;
+			[_this call ESMs_util_hashmap_toArray, _sanitizer] call ESMs_util_array_map;
+		};
 
-			private _keys = [];
-			{
-				[
-					_keys,
-					if (isNil "_x") then { nil } else { _x }
-				]
-				call _sanitizer;
-			}
-			forEach (_arrayPairs select 0);
-
-			private _values = [];
-			{
-				[
-					_values,
-					if (isNil "_x") then { nil } else { _x }
-				]
-				call _sanitizer;
-			}
-			forEach (_arrayPairs select 1);
-
-			_package pushBack [_keys, _values];
+		case "OBJECT";
+		case "SCRIPT":
+		{
+			nil
 		};
 
 		default
 		{
-			["extension_call", format["Unsupported type provided in arguments. Type: %2 | Value: %1", _item, typeName _item], "error"] call ESMs_util_log;
+			["extension_call", format["Unsupported type provided in arguments. Type: %2 | Value: %1", _this, typeName _this], "error"] call ESMs_util_log;
+			nil
 		};
 	};
 };
 
 // Using the sanitizer, sanitize the provided arguments
-private _sanitizedArguments = [];
-{
-	[
-		_sanitizedArguments,
-		if (isNil "_x") then { nil } else { _x }
-	] call _sanitizer;
-}
-forEach _arguments;
+["extension_call", format["[%1] PRE SANITIZE |%2|", _id, _arguments], "debug"] call ESMs_util_log;
+private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
 
 ["extension_call", format["[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedArguments], "debug"] call ESMs_util_log;
 

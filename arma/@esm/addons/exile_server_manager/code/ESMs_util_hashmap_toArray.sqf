@@ -44,12 +44,11 @@ private _processor = {
 
 		case "HASHMAP":
 		{
-			// Don't modify the hash in memory
-			private _hashmap = createHashmap;
+			private _result = [];
 			{
 				if (isNil "_x") then { continue; };
 
-				_hashmap set [
+				_result pushBack [
 					_x call _processor,
 
 					// Arma has the worst implementation of `nil` I have ever seen
@@ -59,7 +58,7 @@ private _processor = {
 			}
 			forEach _this;
 
-			_hashmap toArray true
+			_result
 		};
 
 		default

@@ -26,13 +26,13 @@ Examples:
 		"id",
 		"data_type"
 		[
-			["data_key_1", "data_key_2"],
-			["data_value_1", "data_value_2"]
+			["data_key_1", "data_value_1"],
+			["data_key_2", "data_value_2"]
 		],
 		"metadata_type",
 		[
-			["metadata_key_1", "metadata_key_2"],
-			["metadata_value_1", "metadata_value_2"]
+			["metadata_key_1", "metadata_value_1"],
+			["metadata_key_2", "metadata_value_2"]
 		],
 		[
 			["code", "ERROR_CODE"],
@@ -53,15 +53,15 @@ Author:
 
 params [
 	"_id",
-	["_type", "event", [""]],
-	["_dataType", "empty", [""]],
-	["_data", [], [[], HASH_TYPE]],
-	["_metadataType", "empty", [""]],
-	["_metadata", [], [[], HASH_TYPE]],
-	["_errors", [], [[]]]
+	["_type", "event", [STRING_TYPE]],
+	["_dataType", "empty", [STRING_TYPE]],
+	["_data", [], [ARRAY_TYPE, HASH_TYPE]],
+	["_metadataType", "empty", [STRING_TYPE]],
+	["_metadata", [], [ARRAY_TYPE, HASH_TYPE]],
+	["_errors", [], [ARRAY_TYPE]]
 ];
 
-// Errors must be hashmaps or hashmap arrays
+// Errors must be hashmap arrays
 private _errorPackage = [];
 {
 	if (isNil "_x") then { continue; };
@@ -75,29 +75,30 @@ private _errorPackage = [];
 		}
 	) then { continue; };
 
-	_errorPackage pushBack [["type", "content"], _x];
+	_errorPackage pushBack _x;
 }
 forEach _errors;
+
+// Inserts the "content" section of Data/Metadata only if it is needed
+private _validator = {
+	private _type = _this select 0;
+	private _data = _this select 1;
+
+	private _package = [["type", _type]];
+	if (_type isEqualTo "empty" || count(_data) isEqualTo 0) exitWith { _package };
+
+	_package pushBack ["content", _this select 1];
+	_package
+};
+
 
 // Send it!
 [
 	"send_message",
 	_id,
 	_type,
-	[
-		["type", "content"],
-		[
-			_dataType,
-			if (_dataType isEqualTo "empty") then { nil } else { _data }
-		]
-	],
-	[
-		["type", "content"],
-		[
-			_metadataType,
-			if (_metadataType isEqualTo "empty") then { nil } else { _metadata }
-		]
-	],
+	[_dataType, _data] call _validator,
+	[_metadataType, _metadata] call _validator,
 	_errorPackage
 ]
 call ESMs_system_extension_call

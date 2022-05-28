@@ -14,8 +14,8 @@ Returns:
 Examples:
 	(begin example)
 
-	[["key"], ["value"]] call ESMs_util_array_isValidHashmap; // true
-	[["key", "value"]] call ESMs_util_array_isValidHashmap; // false
+	[["key", "value"]] call ESMs_util_array_isValidHashmap; // true
+	[["key"], ["value"]] call ESMs_util_array_isValidHashmap; // false
 	"key" call ESMs_util_array_isValidHashmap // false
 
 	(end)
@@ -33,11 +33,18 @@ Author:
 if (isNil "_this") exitWith { false };
 
 _this isEqualType [] && {
-	count(_this) == 2 && {
-		(_this select 0) isEqualType ARRAY_TYPE && {
-			(_this select 1) isEqualType ARRAY_TYPE && {
-				count(_this select 0) >= count(_this select 1)
+	[
+		_this,
+		{
+			// _this represents a single key/value pair
+			_this isEqualType ARRAY_TYPE && {
+				// Must have a key and a value
+				count(_this) isEqualTo 2 && {
+					// The key must be a string
+					(_this select 0) isEqualType STRING_TYPE
+				}
 			}
 		}
-	}
+	]
+	call ESMs_util_array_all
 }

@@ -29,4 +29,18 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-({ _x call (_this select 1) } count (_this select 0)) isEqualTo count(_this select 0)
+(
+	{
+		if (isNil "_x") then
+		{
+			// I would like to formally lodge a compliant about nil. k thx
+			nil call (_this select 1)
+		}
+		else
+		{
+			_x call (_this select 1)
+		}
+	}
+	count (_this select 0)
+)
+isEqualTo count(_this select 0)
