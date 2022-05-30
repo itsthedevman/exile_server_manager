@@ -10,27 +10,35 @@ use std::fs::{self, File};
 use std::io::{Read};
 use std::time::{Duration};
 use serde::{Serialize, Deserialize};
-use clap::{Parser, ArgEnum};
+use clap::{Parser, ArgEnum, Subcommand};
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
-struct Args {
-    /// Build the extension as 32 bit instead of 64 bit
-    #[clap(short, long)]
-    build_x32: bool,
+pub struct Args {
+    #[clap(subcommand)]
+    command: Commands,
+}
 
-    /// Set the target build platform for the extension
-    #[clap(short, long, arg_enum, default_value_t = BuildOS::Windows)]
-    target: BuildOS,
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    Run {
+        /// Build the extension as 32 bit instead of 64 bit
+        #[clap(short, long)]
+        build_x32: bool,
 
-    /// Sets the logging level for the extension and the mod
-    #[clap(short, long, arg_enum, default_value_t = LogLevel::Debug)]
-    log_level: LogLevel,
+        /// Set the target build platform for the extension
+        #[clap(short, long, arg_enum, default_value_t = BuildOS::Windows)]
+        target: BuildOS,
 
-    /// Sets the logging level for the extension and the mod
-    #[clap(short, long, arg_enum, default_value_t = BuildEnv::Development)]
-    env: BuildEnv,
+        /// Sets the logging level for the extension and the mod
+        #[clap(short, long, arg_enum, default_value_t = LogLevel::Debug)]
+        log_level: LogLevel,
+
+        /// Sets the logging level for the extension and the mod
+        #[clap(short, long, arg_enum, default_value_t = BuildEnv::Development)]
+        env: BuildEnv,
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
@@ -76,9 +84,17 @@ const CHUNK_SIZE: usize = 65536;
 
 fn main() {
     let args = Args::parse();
-    let builder = Builder::new(args);
+
+    let builder = match args.command {
+        Commands::Run { build_x32, target, log_level, env } => {
+            Builder::new(build_x32, target, log_level, env)
+        }
+    };
 
     print_info(&builder);
+
+    // Spin up the server
+    // Kill arma
 }
 
 
@@ -150,15 +166,16 @@ pub fn run(file_path: String) {
 
 
 fn print_info(builder: &Builder) {
-    println!(r#"
-        | ESM Build tool
-        |   OS: {builder.os}
-        |   ARCH: {builder.arch}
-        |   ENV: {builder.env}
-        |   LOG_LEVEL: {builder.log_level}
-        |   GIT_DIRECTORY: TODO
-        |   BUILD_DIRECTORY: TODO
-        |   SERVER_DIRECTORY: TODO
-        |   REMOTE_HOST: TODO
-    "#)
+    println!(
+r#"| ESM Build tool
+|   OS: {:?}
+|   ARCH: {:?}
+|   ENV: {:?}
+|   LOG_LEVEL: {:?}
+|   GIT_DIRECTORY: {}
+|   BUILD_DIRECTORY: {}
+"#,
+        builder.target, builder.arch, builder.env,
+        builder.log_level, builder.git_directory, builder.build_directory
+    )
 }

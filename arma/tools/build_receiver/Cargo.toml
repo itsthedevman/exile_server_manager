@@ -1,5 +1,5 @@
 [package]
-name = "server"
+name = "build_receiver"
 version = "0.1.0"
 edition = "2021"
 
