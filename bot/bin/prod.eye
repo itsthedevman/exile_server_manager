@@ -13,7 +13,7 @@ Eye.application "esm" do
     daemonize true
     pid_file "esm.pid"
     stdall "log/stdall.log"
-    start_command "ESM_ENV=production bundle exec ruby bin/esm.rb"
+    start_command "bundle exec ruby bin/esm.rb"
     stop_command "kill -9 {PID}"
     env 'ESM_ENV' => 'production'
   end
