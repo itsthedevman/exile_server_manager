@@ -1,3 +1,8 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use std::io::{self, Write};
+
 use super::{BuildOS, BuildEnv, LogLevel, BuildArch};
 
 use message_io::network::{NetEvent, Transport, Endpoint};
@@ -5,9 +10,7 @@ use message_io::node::{self, NodeTask, NodeHandler};
 use serde::{Serialize, Deserialize};
 use colored::*;
 use lazy_static::lazy_static;
-
-use std::collections::{HashMap};
-use std::fs::{File};
+use parking_lot::RwLock;
 
 pub struct Builder {
     os: BuildOS,
@@ -16,10 +19,7 @@ pub struct Builder {
     log_level: LogLevel,
     git_directory: String,
     build_directory: String,
-
-    server_task: Option<NodeTask>,
-    handler: Option<NodeHandler<()>>,
-    endpoint: Option<Endpoint>,
+    server: Server,
 }
 
 impl Builder {
@@ -38,8 +38,7 @@ impl Builder {
             log_level,
             git_directory,
             build_directory,
-            server_task: None,
-            handler: None
+            server: Server::new()
         }
     }
 
@@ -48,6 +47,7 @@ impl Builder {
         F: Fn(&mut Builder)
     {
         print!("{} - {message} ... ", "<esm_bt>".blue().bold());
+        io::stdout().flush().expect("Failed to flush stdout");
         code(self);
         println!("{}", "done".green().bold());
     }
@@ -55,7 +55,12 @@ impl Builder {
     pub fn start(&mut self) {
         self.print_info();
         self.print_status("Starting build server", Builder::start_server);
+        self.print_status("Waiting for receiver", Builder::wait_for_receiver);
         self.print_status("Killing Arma", Builder::kill_arma);
+    }
+
+    fn send_to_receiver(&self, command: NetworkCommands) {
+        self.server.send(command);
     }
 
     fn print_info(&self) {
@@ -72,31 +77,13 @@ impl Builder {
     }
 
     fn start_server(&mut self) {
-        let (handler, listener) = node::split::<()>();
-
-        let listen_addr = "0.0.0.0:6969";
-        handler.network().listen(Transport::FramedTcp, listen_addr).unwrap();
-        let mut transfers: HashMap<Endpoint, Transfer> = HashMap::new();
-
-        let task = listener.for_each_async(move |event| match event.network() {
-            NetEvent::Connected(_, _) => unreachable!(),
-            NetEvent::Accepted(_, _) => (),
-            NetEvent::Message(endpoint, input_data) => {
-                let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
-                match message {
-                    _ => ()
-                }
-            }
-            NetEvent::Disconnected(endpoint) => {}
-        });
-
-        self.server_task = Some(task);
-        self.handler = Some(handler);
+        self.server.start();
     }
 
-    fn send_to_receiver(&self, command: NetworkCommands) {
-        let data = bincode::serialize(&command).unwrap();
-        self.handler.unwrap().network().send(self.endpoint.unwrap(), &data);
+    fn wait_for_receiver(&mut self) {
+        while !self.server.connected.load(Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_secs(1))
+        }
     }
 
     fn kill_arma(&mut self) {
@@ -111,9 +98,10 @@ impl Builder {
 
         match self.os {
             BuildOS::Windows => {
-                for exe in WINDOWS_EXES.into_iter() {
+                for exe in WINDOWS_EXES.iter() {
                     let command = format!("taskkill /IM \"{}\" /F /T >nul 2>&1", exe);
-                    self.send_to_receiver(NetworkCommands::SystemCommand(command));
+                    let args: Vec<String> = ["/IM", exe, "/F", "/T", ">nul", "2>&1"].iter().map(|a| a.to_string()).collect();
+                    self.send_to_receiver(NetworkCommands::SystemCommand(command, args));
                 }
             },
             BuildOS::Linux => todo!(),
@@ -122,14 +110,51 @@ impl Builder {
 
 }
 
-struct Transfer {
-    file: File,
-    name: String,
-    current_size: usize,
-    expected_size: usize,
+#[derive(Clone)]
+struct Server {
+    pub connected: Arc<AtomicBool>,
+    server_task: Arc<Option<NodeTask>>,
+    handler: Option<NodeHandler<()>>,
+    endpoint: Arc<RwLock<Option<Endpoint>>>,
+}
+
+impl Server {
+    pub fn new() -> Self {
+        Server { connected: Arc::new(AtomicBool::new(false)), server_task: Arc::new(None), handler: None, endpoint: Arc::new(RwLock::new(None)) }
+    }
+
+    pub fn start(&mut self) {
+        let (handler, listener) = node::split::<()>();
+
+        let listen_addr = "0.0.0.0:6969";
+        handler.network().listen(Transport::FramedTcp, listen_addr).unwrap();
+
+        let builder = self.clone();
+        let task = listener.for_each_async(move |event| match event.network() {
+            NetEvent::Connected(_, _) => unreachable!(),
+            NetEvent::Accepted(_endpoint, _id) => { },
+            NetEvent::Message(endpoint, input_data) => {
+                let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
+                if let NetworkCommands::Hello = message {
+                    *builder.endpoint.write() = Some(endpoint);
+                    builder.connected.store(true, Ordering::SeqCst);
+                }
+            }
+            NetEvent::Disconnected(_endpoint) => {}
+        });
+
+        self.server_task = Arc::new(Some(task));
+        self.handler = Some(handler);
+    }
+
+    pub fn send(&self, command: NetworkCommands) {
+        let data = bincode::serialize(&command).unwrap();
+        self.handler.as_ref().unwrap().network().send(self.endpoint.read().unwrap(), &data);
+    }
 }
 
 #[derive(Serialize, Deserialize)]
 enum NetworkCommands {
-    SystemCommand(String)
+    Hello,
+    SystemCommand(String, Vec<String>)
 }
