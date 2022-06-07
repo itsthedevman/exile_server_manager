@@ -99,12 +99,15 @@ impl Builder {
         match self.os {
             BuildOS::Windows => {
                 for exe in WINDOWS_EXES.iter() {
-                    let command = format!("taskkill /IM \"{}\" /F /T >nul 2>&1", exe);
                     let args: Vec<String> = ["/IM", exe, "/F", "/T", ">nul", "2>&1"].iter().map(|a| a.to_string()).collect();
-                    self.send_to_receiver(NetworkCommands::SystemCommand(command, args));
+                    self.send_to_receiver(NetworkCommands::SystemCommand("taskkill".to_string(), args));
                 }
             },
-            BuildOS::Linux => todo!(),
+            BuildOS::Linux => {
+                for exe in LINUX_EXES.iter() {
+                    self.send_to_receiver(NetworkCommands::SystemCommand("pkill".to_string(), vec![exe.to_string()]));
+                }
+            },
         }
     }
 
@@ -116,11 +119,18 @@ struct Server {
     server_task: Arc<Option<NodeTask>>,
     handler: Option<NodeHandler<()>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
+    waiting_for_response: Arc<AtomicBool>,
 }
 
 impl Server {
     pub fn new() -> Self {
-        Server { connected: Arc::new(AtomicBool::new(false)), server_task: Arc::new(None), handler: None, endpoint: Arc::new(RwLock::new(None)) }
+        Server {
+            connected: Arc::new(AtomicBool::new(false)),
+            waiting_for_response: Arc::new(AtomicBool::new(false)),
+            server_task: Arc::new(None),
+            handler: None,
+            endpoint: Arc::new(RwLock::new(None))
+        }
     }
 
     pub fn start(&mut self) {
@@ -138,6 +148,8 @@ impl Server {
                 if let NetworkCommands::Hello = message {
                     *builder.endpoint.write() = Some(endpoint);
                     builder.connected.store(true, Ordering::SeqCst);
+                } else {
+                    builder.waiting_for_response.store(false, Ordering::SeqCst);
                 }
             }
             NetEvent::Disconnected(_endpoint) => {}
@@ -150,11 +162,18 @@ impl Server {
     pub fn send(&self, command: NetworkCommands) {
         let data = bincode::serialize(&command).unwrap();
         self.handler.as_ref().unwrap().network().send(self.endpoint.read().unwrap(), &data);
+
+        self.waiting_for_response.store(true, Ordering::SeqCst);
+        while self.waiting_for_response.load(Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_secs_f32(0.5))
+        }
     }
 }
 
 #[derive(Serialize, Deserialize)]
 enum NetworkCommands {
     Hello,
-    SystemCommand(String, Vec<String>)
+    Success,
+    Error(String),
+    SystemCommand(String, Vec<String>),
 }
