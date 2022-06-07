@@ -2,6 +2,7 @@ use std::net::ToSocketAddrs;
 use std::process::Command;
 use std::time::Duration;
 
+use colored::Colorize;
 use message_io::network::{NetEvent, Transport, Endpoint};
 use message_io::node::{self, NodeHandler};
 use serde::{Serialize, Deserialize};
@@ -10,24 +11,23 @@ use serde::{Serialize, Deserialize};
 pub struct Client {
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
+    pub host: String
 }
 
 impl Client {
-    pub fn new() -> Self {
-        let mut client = Client {
+    pub fn new(host: String) -> Self {
+        Client {
             handler: None,
-            endpoint: None
-        };
-
-        client.connect();
-        client
+            endpoint: None,
+            host
+        }
     }
 
-    fn connect(&mut self) {
+    pub fn connect(&mut self) {
         let (handler, listener) = node::split::<()>();
 
         // Move this to an argument that is passed into the program
-        let server_addr = "0.0.0.0:6969".to_socket_addrs().unwrap().next().unwrap();
+        let server_addr = self.host.to_socket_addrs().unwrap().next().unwrap();
         let (server, _) = handler.network().connect(Transport::FramedTcp, server_addr).unwrap();
 
         self.handler = Some(handler);
@@ -48,7 +48,14 @@ impl Client {
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
                 let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
-                message.execute();
+                match message.execute() {
+                    Ok(_) => {
+                        self.send(NetworkCommands::Success);
+                    },
+                    Err(e) => {
+                        self.send(NetworkCommands::Error(e));
+                    }
+                }
             }
             NetEvent::Disconnected(_endpoint) => {
                 client.on_disconnect();
@@ -68,30 +75,36 @@ impl Client {
     }
 }
 
-impl Default for Client {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 enum NetworkCommands {
     Hello,
-    SystemCommand(String, Vec<String>)
+    Success,
+    Error(String),
+    SystemCommand(String, Vec<String>),
 }
 
+
 impl NetworkCommands {
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<(), String> {
         match self {
-            NetworkCommands::Hello => (),
             NetworkCommands::SystemCommand(command, args) => self.system_command(command, args),
+            _ => Ok(()),
         }
     }
 
-    fn system_command(&self, command: &str, args: &[String]) {
-        Command::new(command)
+    fn system_command(&self, command: &str, args: &[String]) -> Result<(), String> {
+        println!("Running system command `{command}` with args: `{args:?}`");
+
+        let result = Command::new(command)
                 .args(args)
-                .output()
-                .expect("failed to execute process");
+                .output();
+
+        match result {
+            Ok(_out) => Ok(()),
+            Err(e) => {
+                println!("{}", format!("Failed! {e}").red());
+                Err(e.to_string())
+            }
+        }
     }
 }

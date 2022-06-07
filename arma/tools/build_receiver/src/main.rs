@@ -1,12 +1,19 @@
 mod client;
 
 use client::Client;
-use lazy_static::lazy_static;
+use clap::{Parser};
 
-lazy_static! {
-    pub static ref CLIENT: Client = Client::new();
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+    /// The build host's IP and port
+    #[clap(short, long)]
+    host: String,
 }
 
 fn main() {
-    lazy_static::initialize(&CLIENT);
+    let args = Args::parse();
+    let mut client = Client::new(args.host);
+    client.connect();
 }
