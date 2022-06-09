@@ -16,4 +16,8 @@ fn main() {
     let args = Args::parse();
     let mut client = Client::new(args.host);
     client.connect();
+
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    };
 }

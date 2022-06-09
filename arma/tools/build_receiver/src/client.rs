@@ -1,16 +1,18 @@
 use std::net::ToSocketAddrs;
 use std::process::Command;
+use std::sync::Arc;
 use std::time::Duration;
 
 use colored::Colorize;
 use message_io::network::{NetEvent, Transport, Endpoint};
-use message_io::node::{self, NodeHandler};
+use message_io::node::{self, NodeHandler, NodeTask};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone)]
 pub struct Client {
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
+    task: Arc<Option<NodeTask>>,
     pub host: String
 }
 
@@ -19,6 +21,7 @@ impl Client {
         Client {
             handler: None,
             endpoint: None,
+            task: Arc::new(None),
             host
         }
     }
@@ -34,11 +37,11 @@ impl Client {
         self.endpoint = Some(server);
 
         let mut client = self.clone();
-        listener.for_each(move |event| match event.network() {
+        let task = listener.for_each_async(move |event| match event.network() {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
                     println!("Connected to build host @ {}", server_addr);
-                    self.send(NetworkCommands::Hello);
+                    client.send(NetworkCommands::Hello);
                 }
                 else {
                     println!("Failed to connect to build host @ {}", server_addr);
@@ -50,10 +53,10 @@ impl Client {
                 let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
                 match message.execute() {
                     Ok(_) => {
-                        self.send(NetworkCommands::Success);
+                        client.send(NetworkCommands::Success);
                     },
                     Err(e) => {
-                        self.send(NetworkCommands::Error(e));
+                        client.send(NetworkCommands::Error(e));
                     }
                 }
             }
@@ -61,6 +64,8 @@ impl Client {
                 client.on_disconnect();
             }
         });
+
+        self.task = Arc::new(Some(task));
     }
 
     fn send(&self, command: NetworkCommands) {
@@ -93,14 +98,19 @@ impl NetworkCommands {
     }
 
     fn system_command(&self, command: &str, args: &[String]) -> Result<(), String> {
-        println!("Running system command `{command}` with args: `{args:?}`");
+        println!("Running system command `{command} {}`", args.join(" "));
 
         let result = Command::new(command)
                 .args(args)
                 .output();
 
         match result {
-            Ok(_out) => Ok(()),
+            Ok(output) => {
+                println!("  Status: {}", output.status);
+                println!("  OUT: {}", String::from_utf8_lossy(&output.stdout));
+                println!("  ERR: {}", String::from_utf8_lossy(&output.stderr));
+                Ok(())
+            },
             Err(e) => {
                 println!("{}", format!("Failed! {e}").red());
                 Err(e.to_string())
