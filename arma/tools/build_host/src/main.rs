@@ -2,6 +2,7 @@
 // https://github.com/lemunozm/message-io/tree/master/examples/file-transfer
 
 mod builder;
+mod server;
 
 use builder::Builder;
 use clap::{Parser, ArgEnum, Subcommand};
