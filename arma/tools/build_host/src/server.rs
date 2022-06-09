@@ -6,6 +6,15 @@ use message_io::node::{self, NodeTask, NodeHandler};
 use serde::{Serialize, Deserialize};
 use parking_lot::RwLock;
 
+#[derive(Serialize, Deserialize)]
+pub enum NetworkCommands {
+    Hello,
+    Success,
+    Error(String),
+    SystemCommand(String, Vec<String>),
+}
+
+
 #[derive(Clone)]
 pub struct Server {
     pub connected: Arc<AtomicBool>,
@@ -61,12 +70,4 @@ impl Server {
             std::thread::sleep(Duration::from_secs_f32(0.5))
         }
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum NetworkCommands {
-    Hello,
-    Success,
-    Error(String),
-    SystemCommand(String, Vec<String>),
 }
