@@ -4,8 +4,10 @@
 mod builder;
 mod server;
 
+use std::fmt;
+
 use builder::Builder;
-use clap::{Parser, ArgEnum, Subcommand};
+use clap::{ArgEnum, Parser, Subcommand};
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
@@ -33,7 +35,11 @@ pub enum Commands {
         /// Sets the logging level for the extension and the mod
         #[clap(short, long, arg_enum, default_value_t = BuildEnv::Development)]
         env: BuildEnv,
-    }
+
+        /// The URI of the server hosting esm_bot
+        #[clap(short, long,default_value_t = String::from("esm.mshome.net:3003"))]
+        bot_host: String,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
@@ -48,13 +54,25 @@ pub enum LogLevel {
     Warn,
     Info,
     Debug,
-    Trace
+    Trace,
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
 pub enum BuildEnv {
     Development,
-    Production
+    Production,
+}
+
+impl fmt::Display for BuildEnv {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
 }
 
 #[derive(Debug)]
@@ -65,12 +83,5 @@ pub enum BuildArch {
 
 fn main() {
     let args = Args::parse();
-
-    let mut builder = match args.command {
-        Commands::Run { build_x32, target, log_level, env } => {
-            Builder::new(build_x32, target, log_level, env)
-        }
-    };
-
-    builder.start();
+    Builder::new(args.command).start();
 }
