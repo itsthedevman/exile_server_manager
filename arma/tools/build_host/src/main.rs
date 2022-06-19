@@ -9,6 +9,7 @@ use std::fmt;
 
 use builder::Builder;
 use clap::{ArgEnum, Parser, Subcommand};
+use colored::Colorize;
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
@@ -85,5 +86,12 @@ pub enum BuildArch {
 
 fn main() {
     let args = Args::parse();
-    Builder::new(args.command).start();
+    let mut builder = Builder::new(args.command);
+
+    match builder.start() {
+        Ok(_) => {}
+        Err(e) => println!("{} - {}", "ERROR".red().bold(), e),
+    };
+
+    builder.teardown();
 }

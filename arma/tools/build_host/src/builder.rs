@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
-use std::fs::{self, File};
 use std::io::{self, Write};
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
+use vfs::{PhysicalFS, VfsPath};
 
 use crate::transfer::Transfer;
 use crate::Commands;
@@ -27,7 +27,7 @@ pub struct Builder {
     bot_host: String,
     git_directory: String,
     build_directory: String,
-    local_build_directory: String,
+    local_build_path: VfsPath,
     extension_build_target: String,
     server: Server,
 }
@@ -56,10 +56,11 @@ impl Builder {
             Err(e) => panic!("{e}"),
         };
 
-        let local_build_directory = format!("{}/target", git_directory);
+        let local_build_path = VfsPath::new(PhysicalFS::new(format!("{}/target", git_directory)));
+
         let build_directory = match os {
             BuildOS::Windows => "C:\\temp".to_string(),
-            BuildOS::Linux => format!("{local_build_directory}/@esm"),
+            BuildOS::Linux => format!("{}/@esm", local_build_path.as_str()),
         };
 
         let extension_build_target: String = match os {
@@ -81,13 +82,17 @@ impl Builder {
             log_level,
             git_directory,
             build_directory,
-            local_build_directory,
+            local_build_path,
             extension_build_target,
             server: Server::new(),
         }
     }
 
-    fn print_status<F>(&mut self, message: impl Into<String> + std::fmt::Display, code: F)
+    fn print_status<F>(
+        &mut self,
+        message: impl Into<String> + std::fmt::Display,
+        code: F,
+    ) -> BuildResult
     where
         F: Fn(&mut Builder) -> BuildResult,
     {
@@ -95,26 +100,29 @@ impl Builder {
         io::stdout().flush().expect("Failed to flush stdout");
 
         match code(self) {
-            Ok(_) => println!("{}", "done".green().bold()),
+            Ok(_) => {
+                println!("{}", "done".green().bold());
+                Ok(())
+            }
             Err(e) => {
                 println!("{}", "failed".red().bold());
-                println!("{} - {}", "<ERROR>".red().bold(), e);
+                Err(e)
             }
-        };
+        }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> BuildResult {
         self.print_info();
-        self.print_status("Starting build server", Builder::start_server);
-        self.print_status("Waiting for build receiver", Builder::wait_for_receiver);
-        self.print_status("Killing Arma", Builder::kill_arma);
-        self.print_status("Cleaning directories", Builder::clean_directories);
-        self.print_status("Writing server config", Builder::create_server_config);
-        self.print_status("Compiling esm_arma", Builder::build_extension);
-        self.end();
+        self.print_status("Starting build server", Builder::start_server)?;
+        self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
+        self.print_status("Killing Arma", Builder::kill_arma)?;
+        self.print_status("Cleaning directories", Builder::clean_directories)?;
+        self.print_status("Writing server config", Builder::create_server_config)?;
+        self.print_status("Compiling esm_arma", Builder::build_extension)?;
+        Ok(())
     }
 
-    fn end(&mut self) {
+    pub fn teardown(&mut self) {
         self.server.stop();
     }
 
@@ -155,27 +163,33 @@ impl Builder {
 
         match self.os {
             BuildOS::Windows => {
-                let command_file_path =
-                    format!("{}/.esm-build-command", self.local_build_directory);
-
-                let command_result_path =
-                    format!("{}/.esm-build-command-result", self.local_build_directory);
+                let command_file_path = self.local_build_path.join(".esm-build-command").unwrap();
+                let command_result_path = self
+                    .local_build_path
+                    .join(".esm-build-command-result")
+                    .unwrap();
 
                 // Removes the "Preparing modules for first use." errors that powershell return
                 let script = format!(
                     "$ProgressPreference = 'SilentlyContinue'; {command} {}",
                     args.join(" ")
                 );
-                let script = WHITESPACE_REGEX.replace_all(&script, " ");
 
-                let command_file = File::create(&command_file_path).unwrap();
-                write!(&command_file, "{}", script).unwrap();
+                let script = WHITESPACE_REGEX.replace_all(&script, " ");
+                match command_file_path.create_file() {
+                    Ok(mut f) => {
+                        if let Err(e) = f.write(script.as_bytes()) {
+                            return Err(format!("{}", e));
+                        }
+                    }
+                    Err(_) => return Err("Failed to write command to file".into()),
+                };
 
                 // Convert the command file into UTF-16LE as required by Microsoft
                 match Command::new("iconv")
                     .arg("-t UTF-16LE")
-                    .arg(format!("--output={}", command_result_path))
-                    .arg(&command_file_path)
+                    .arg(format!("--output={}", command_result_path.as_str()))
+                    .arg(command_file_path.as_str())
                     .output()
                 {
                     Ok(_o) => (),
@@ -183,7 +197,9 @@ impl Builder {
                 };
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let base64_output = match Command::new("base64").arg(&command_result_path).output()
+                let base64_output = match Command::new("base64")
+                    .arg(&command_result_path.as_str())
+                    .output()
                 {
                     Ok(p) => p,
                     Err(e) => return Err(format!("Failed to convert command to base64. {e}")),
@@ -243,17 +259,32 @@ impl Builder {
 
     fn clean_directories(&mut self) -> BuildResult {
         // Local directories
-        let local_path = format!("{}/@esm", self.local_build_directory);
-        match fs::remove_dir_all(&local_path) {
-            Ok(_) => {}
-            Err(_e) => {}
+        let esm_path = match self.local_build_path.join("@esm") {
+            Ok(p) => p,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        // Delete @esm and recreate it
+        match esm_path.remove_dir_all() {
+            Ok(_) => {
+                if let Err(e) = esm_path.create_dir_all() {
+                    return Err(format!("{}", e));
+                }
+            }
+            Err(e) => return Err(e.to_string()),
         }
 
-        match fs::create_dir_all(&format!("{local_path}/addons")) {
-            Ok(_) => {}
-            Err(e) => return Err(format!("Failed to create local build directory. {}", e)),
-        }
+        // Create @esm/addons
+        match esm_path.join("addons") {
+            Ok(p) => {
+                if let Err(e) = p.create_dir_all() {
+                    return Err(format!("{}", e));
+                }
+            }
+            Err(e) => return Err(e.to_string()),
+        };
 
+        /////////////////////
         // Remote directories
         let script = match self.os {
             BuildOS::Windows => {
@@ -289,20 +320,20 @@ impl Builder {
             env: self.env.to_string(),
         };
 
-        let mut file = match File::create(format!("{}/@esm/config.yml", self.local_build_directory))
-        {
-            Ok(f) => f,
-            Err(e) => return Err(format!("Failed to create server config. {}", e)),
-        };
-
         let config_yaml = match serde_yaml::to_vec(&config) {
             Ok(c) => c,
-            Err(e) => return Err(format!("Failed to create yaml from config. {}", e)),
+            Err(e) => return Err(e.to_string()),
         };
 
-        match file.write_all(&config_yaml) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to write config.yml. {}", e)),
+        match self.local_build_path.join("@esm/config.yml") {
+            Ok(p) => match p.create_file() {
+                Ok(mut f) => match f.write_all(&config_yaml) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(e.to_string()),
+                },
+                Err(e) => Err(e.to_string()),
+            },
+            Err(e) => Err(e.to_string()),
         }
     }
 
