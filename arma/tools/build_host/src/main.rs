@@ -3,6 +3,7 @@
 
 mod builder;
 mod server;
+mod transfer;
 
 use std::fmt;
 
@@ -66,6 +67,7 @@ impl fmt::Display for LogLevel {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
 pub enum BuildEnv {
     Development,
+    Test,
     Production,
 }
 

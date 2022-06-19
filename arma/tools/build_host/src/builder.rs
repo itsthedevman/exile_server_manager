@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{self, Write};
-use std::process::{exit, Command};
+use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
+use crate::transfer::Transfer;
 use crate::Commands;
 
 use super::{
@@ -16,6 +17,8 @@ use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+pub type BuildResult = Result<(), String>;
+
 pub struct Builder {
     os: BuildOS,
     arch: BuildArch,
@@ -25,6 +28,7 @@ pub struct Builder {
     git_directory: String,
     build_directory: String,
     local_build_directory: String,
+    extension_build_target: String,
     server: Server,
 }
 
@@ -41,6 +45,12 @@ impl Builder {
             _ => panic!("Unexpected command type"),
         };
 
+        let arch = if build_x32 {
+            BuildArch::X32
+        } else {
+            BuildArch::X64
+        };
+
         let git_directory = match std::env::current_dir() {
             Ok(d) => d.to_string_lossy().to_string(),
             Err(e) => panic!("{e}"),
@@ -52,31 +62,45 @@ impl Builder {
             BuildOS::Linux => format!("{local_build_directory}/@esm"),
         };
 
+        let extension_build_target: String = match os {
+            BuildOS::Windows => match arch {
+                BuildArch::X32 => "i686-pc-windows-msvc".into(),
+                BuildArch::X64 => "x86_64-pc-windows-msvc".into(),
+            },
+            BuildOS::Linux => match arch {
+                BuildArch::X32 => "i686-unknown-linux-gnu".into(),
+                BuildArch::X64 => "x86_64-unknown-linux-gnu".into(),
+            },
+        };
+
         Builder {
             os,
-            arch: if build_x32 {
-                BuildArch::X32
-            } else {
-                BuildArch::X64
-            },
+            arch,
             env,
             bot_host,
             log_level,
             git_directory,
             build_directory,
             local_build_directory,
+            extension_build_target,
             server: Server::new(),
         }
     }
 
     fn print_status<F>(&mut self, message: impl Into<String> + std::fmt::Display, code: F)
     where
-        F: Fn(&mut Builder),
+        F: Fn(&mut Builder) -> BuildResult,
     {
         print!("{} - {message} ... ", "<esm_bt>".blue().bold());
         io::stdout().flush().expect("Failed to flush stdout");
-        code(self);
-        println!("{}", "done".green().bold());
+
+        match code(self) {
+            Ok(_) => println!("{}", "done".green().bold()),
+            Err(e) => {
+                println!("{}", "failed".red().bold());
+                println!("{} - {}", "<ERROR>".red().bold(), e);
+            }
+        };
     }
 
     pub fn start(&mut self) {
@@ -86,6 +110,12 @@ impl Builder {
         self.print_status("Killing Arma", Builder::kill_arma);
         self.print_status("Cleaning directories", Builder::clean_directories);
         self.print_status("Writing server config", Builder::create_server_config);
+        self.print_status("Compiling esm_arma", Builder::build_extension);
+        self.end();
+    }
+
+    fn end(&mut self) {
+        self.server.stop();
     }
 
     fn send_to_receiver(&self, command: NetworkCommands) {
@@ -105,25 +135,20 @@ impl Builder {
         )
     }
 
-    fn print_error(&self, error: &str) {
-        println!(
-            "{} - {} - {error}",
-            "<esm_bt>".blue().bold(),
-            "ERROR".red().bold()
-        );
-    }
-
-    fn start_server(&mut self) {
+    fn start_server(&mut self) -> BuildResult {
         self.server.start();
+        Ok(())
     }
 
-    fn wait_for_receiver(&mut self) {
+    fn wait_for_receiver(&mut self) -> BuildResult {
         while !self.server.connected.load(Ordering::SeqCst) {
             std::thread::sleep(Duration::from_secs(1))
         }
+
+        Ok(())
     }
 
-    fn system_command<'a>(&'a mut self, command: &'a str, args: Vec<&'a str>) {
+    fn system_command<'a>(&'a mut self, command: &'a str, args: Vec<&'a str>) -> BuildResult {
         lazy_static! {
             static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
         }
@@ -154,20 +179,14 @@ impl Builder {
                     .output()
                 {
                     Ok(_o) => (),
-                    Err(e) => {
-                        self.print_error("Failed to convert command to UTF-16LE. {e}");
-                        exit(1);
-                    }
+                    Err(e) => return Err(format!("Failed to convert command to UTF-16LE. {e}")),
                 };
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
                 let base64_output = match Command::new("base64").arg(&command_result_path).output()
                 {
                     Ok(p) => p,
-                    Err(e) => {
-                        self.print_error("Failed to convert command to base64. {e}");
-                        exit(1);
-                    }
+                    Err(e) => return Err(format!("Failed to convert command to base64. {e}")),
                 };
 
                 let mut encoded_command =
@@ -189,9 +208,11 @@ impl Builder {
                 ));
             }
         }
+
+        Ok(())
     }
 
-    fn kill_arma(&mut self) {
+    fn kill_arma(&mut self) -> BuildResult {
         lazy_static! {
             static ref WINDOWS_EXES: Vec<&'static str> = vec![
                 "arma3server.exe",
@@ -203,21 +224,24 @@ impl Builder {
             static ref LINUX_EXES: Vec<&'static str> = vec!["arma3server", "arma3server_x64"];
         };
 
+        let mut script = String::new();
         match self.os {
             BuildOS::Windows => {
                 for exe in WINDOWS_EXES.iter() {
-                    self.system_command("Stop-Process", ["-Name", exe].into());
+                    script.push_str(&format!("Stop-Process -Name {exe};"));
                 }
             }
             BuildOS::Linux => {
                 for exe in LINUX_EXES.iter() {
-                    self.system_command("pkill", vec![exe]);
+                    script.push_str(&format!("pkill {exe};"));
                 }
             }
         }
+
+        self.system_command(&script, vec![])
     }
 
-    fn clean_directories(&mut self) {
+    fn clean_directories(&mut self) -> BuildResult {
         // Local directories
         let local_path = format!("{}/@esm", self.local_build_directory);
         match fs::remove_dir_all(&local_path) {
@@ -227,16 +251,13 @@ impl Builder {
 
         match fs::create_dir_all(&format!("{local_path}/addons")) {
             Ok(_) => {}
-            Err(e) => {
-                self.print_error("Failed to create local build directory. {e}");
-                exit(1);
-            }
+            Err(e) => return Err(format!("Failed to create local build directory. {}", e)),
         }
 
         // Remote directories
-        match self.os {
+        let script = match self.os {
             BuildOS::Windows => {
-                let script = format!(
+                format!(
                     r#"
                         if ( Test-Path -Path "{build_directory}" -PathType Container ) {{
                             Remove-Item -Path "{build_directory}" -Recurse -Force;
@@ -246,15 +267,15 @@ impl Builder {
                         New-Item -Path "{build_directory}\@esm\addons" -ItemType Directory;
                     "#,
                     build_directory = self.build_directory,
-                );
-
-                self.system_command(&script, vec![]);
+                )
             }
             BuildOS::Linux => todo!(),
-        }
+        };
+
+        self.system_command(&script, vec![])
     }
 
-    fn create_server_config(&mut self) {
+    fn create_server_config(&mut self) -> BuildResult {
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
         struct Config {
             connection_url: String,
@@ -271,26 +292,43 @@ impl Builder {
         let mut file = match File::create(format!("{}/@esm/config.yml", self.local_build_directory))
         {
             Ok(f) => f,
-            Err(e) => {
-                self.print_error(&format!("Failed to create server config. {}", e));
-                exit(1);
-            }
+            Err(e) => return Err(format!("Failed to create server config. {}", e)),
         };
 
         let config_yaml = match serde_yaml::to_vec(&config) {
             Ok(c) => c,
-            Err(e) => {
-                self.print_error(&format!("Failed to create yaml from config. {}", e));
-                exit(1);
-            }
+            Err(e) => return Err(format!("Failed to create yaml from config. {}", e)),
         };
 
         match file.write_all(&config_yaml) {
-            Ok(_) => {}
-            Err(e) => {
-                self.print_error(&format!("Failed to write config.yml. {}", e));
-                exit(1);
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to write config.yml. {}", e)),
+        }
+    }
+
+    fn build_extension(&mut self) -> BuildResult {
+        Transfer::file(
+            &self.server,
+            "/home/ubuntu/esm_arma/target/@esm",
+            "config.yml",
+            "C:/temp/@esm",
+        )?;
+
+        match self.os {
+            BuildOS::Windows => {
+                // // TODO: Implement file copying feature and copy over the extension
+                // let script = format!(
+                //     "rustup run stable-{build_target} cargo build --target {build_target} --release",
+                //     build_target = self.extension_build_target
+                // );
+
+                // self.system_command(&script, vec![])?;
             }
-        };
+            BuildOS::Linux => {
+                // TODO: Build locally and copy to build directory
+            }
+        }
+
+        Ok(())
     }
 }
