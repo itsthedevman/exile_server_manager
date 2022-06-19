@@ -3,17 +3,21 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::transfer::*;
 use colored::Colorize;
-use message_io::network::{NetEvent, Transport, Endpoint};
+use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+pub type BuildResult = Result<(), String>;
 
 #[derive(Clone)]
 pub struct Client {
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
     task: Arc<Option<NodeTask>>,
-    pub host: String
+    pub host: String,
 }
 
 impl Client {
@@ -22,7 +26,7 @@ impl Client {
             handler: None,
             endpoint: None,
             task: Arc::new(None),
-            host
+            host,
         }
     }
 
@@ -31,7 +35,10 @@ impl Client {
 
         // Move this to an argument that is passed into the program
         let server_addr = self.host.to_socket_addrs().unwrap().next().unwrap();
-        let (server, _) = handler.network().connect(Transport::FramedTcp, server_addr).unwrap();
+        let (server, _) = handler
+            .network()
+            .connect(Transport::FramedTcp, server_addr)
+            .unwrap();
 
         self.handler = Some(handler);
         self.endpoint = Some(server);
@@ -42,19 +49,18 @@ impl Client {
                 if established {
                     println!("Connected to build host @ {}", server_addr);
                     client.send(NetworkCommands::Hello);
-                }
-                else {
+                } else {
                     println!("Failed to connect to build host @ {}", server_addr);
                     client.on_disconnect();
                 }
-            },
+            }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
                 let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
                 match message.execute() {
                     Ok(_) => {
                         client.send(NetworkCommands::Success);
-                    },
+                    }
                     Err(e) => {
                         client.send(NetworkCommands::Error(e));
                     }
@@ -70,7 +76,11 @@ impl Client {
 
     fn send(&self, command: NetworkCommands) {
         let data = bincode::serialize(&command).unwrap();
-        self.handler.as_ref().unwrap().network().send(self.endpoint.unwrap(), &data);
+        self.handler
+            .as_ref()
+            .unwrap()
+            .network()
+            .send(self.endpoint.unwrap(), &data);
     }
 
     fn on_disconnect(&mut self) {
@@ -86,23 +96,26 @@ enum NetworkCommands {
     Success,
     Error(String),
     SystemCommand(String, Vec<String>),
+    FileTransferStart(Transfer),
+    FileTransferChunk(FileChunk),
+    FileTransferEnd(Uuid),
 }
 
-
 impl NetworkCommands {
-    pub fn execute(&self) -> Result<(), String> {
+    pub fn execute(&self) -> BuildResult {
         match self {
             NetworkCommands::SystemCommand(command, args) => self.system_command(command, args),
+            NetworkCommands::FileTransferStart(transfer) => Transfer::start(transfer),
+            NetworkCommands::FileTransferChunk(chunk) => Transfer::append_chunk(chunk),
+            NetworkCommands::FileTransferEnd(id) => Transfer::end(id),
             _ => Ok(()),
         }
     }
 
-    fn system_command(&self, command: &str, args: &[String]) -> Result<(), String> {
+    fn system_command(&self, command: &str, args: &[String]) -> BuildResult {
         println!("Running system command `{command} {}`", args.join(" "));
 
-        let result = Command::new(command)
-                .args(args)
-                .output();
+        let result = Command::new(command).args(args).output();
 
         match result {
             Ok(output) => {
@@ -110,7 +123,7 @@ impl NetworkCommands {
                 println!("  OUT: {}", String::from_utf8_lossy(&output.stdout));
                 println!("  ERR: {}", String::from_utf8_lossy(&output.stderr));
                 Ok(())
-            },
+            }
             Err(e) => {
                 println!("{}", format!("Failed! {e}").red());
                 Err(e.to_string())
