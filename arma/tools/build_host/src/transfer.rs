@@ -1,4 +1,4 @@
-use crate::{builder::BuildResult, server::Server, FileTransfer, NetworkCommands, FileChunk};
+use crate::{server::Server, BuildResult, FileChunk, FileTransfer, NetworkCommands};
 use uuid::Uuid;
 use vfs::{SeekAndRead, VfsPath};
 
@@ -7,11 +7,7 @@ const CHUNK_SIZE: usize = 65536;
 pub struct Transfer;
 
 impl Transfer {
-    pub fn file(
-        server: &Server,
-        source_path: &VfsPath,
-        destination_path: &VfsPath,
-    ) -> crate::builder::BuildResult {
+    pub fn file(server: &Server, source_path: &VfsPath, destination_path: &VfsPath) -> BuildResult {
         // let source_file_path = source_path.join(file_name)?;
         let total_size = source_path.metadata()?.len as usize;
 

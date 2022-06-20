@@ -6,16 +6,13 @@ use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
 
 use crate::{
-    error::BuildError, server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildOS, Commands,
-    LogLevel, NetworkCommands,
+    server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
+    Commands, LogLevel, NetworkCommands,
 };
 
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
-
-// TODO: Use Error instead of string so question marks can be used
-pub type BuildResult = Result<(), BuildError>;
 
 pub struct Builder {
     os: BuildOS,

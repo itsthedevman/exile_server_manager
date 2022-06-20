@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub mod error;
+pub use error::*;
 
 #[derive(Serialize, Deserialize)]
 pub enum NetworkCommands {
@@ -28,3 +29,5 @@ pub struct FileChunk {
     pub size: usize,
     pub bytes: Vec<u8>,
 }
+
+pub type BuildResult = Result<(), BuildError>;
