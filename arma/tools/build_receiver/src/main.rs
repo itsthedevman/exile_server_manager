@@ -1,8 +1,8 @@
 mod client;
+mod transfer;
 
+use clap::Parser;
 use client::Client;
-use clap::{Parser};
-
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -19,5 +19,5 @@ fn main() {
 
     loop {
         std::thread::sleep(std::time::Duration::from_secs(1));
-    };
+    }
 }
