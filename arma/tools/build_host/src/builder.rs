@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use vfs::{PhysicalFS, VfsPath};
+use vfs::{MemoryFS, PhysicalFS, VfsPath};
 
 use crate::{
     server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
@@ -22,13 +22,13 @@ pub struct Builder {
     bot_host: String,
     local_git_path: VfsPath,
     local_build_path: VfsPath,
-    remote_build_directory: String,
+    remote_build_directory: VfsPath,
     extension_build_target: String,
     server: Server,
 }
 
 impl Builder {
-    pub fn new(command: Commands) -> Self {
+    pub fn new(command: Commands) -> Result<Self, BuildError> {
         let (build_x32, os, log_level, env, bot_host) = match command {
             Commands::Run {
                 build_x32,
@@ -49,14 +49,14 @@ impl Builder {
 
         // Have to remove the first slash in order for this to work
         let local_git_path = root_path
-            .join(&std::env::current_dir().unwrap().to_string_lossy()[1..])
+            .join(&std::env::current_dir()?.to_string_lossy()[1..])
             .unwrap();
 
-        let local_build_path = local_git_path.join("target").unwrap();
+        let local_build_path = local_git_path.join("target")?;
 
         let remote_build_directory = match os {
-            BuildOS::Windows => "C:\\temp".to_string(),
-            BuildOS::Linux => format!("{}/@esm", local_build_path.as_str()),
+            BuildOS::Windows => root_path.join("temp")?,
+            BuildOS::Linux => local_build_path.join("@esm")?,
         };
 
         let extension_build_target: String = match os {
@@ -70,7 +70,7 @@ impl Builder {
             },
         };
 
-        Builder {
+        let builder = Builder {
             os,
             arch,
             env,
@@ -81,7 +81,9 @@ impl Builder {
             remote_build_directory,
             extension_build_target,
             server: Server::new(),
-        }
+        };
+
+        Ok(builder)
     }
 
     fn print_status<F>(
@@ -117,7 +119,7 @@ impl Builder {
             "ENV".black().bold(), self.env,
             "LOG LEVEL".black().bold(), self.log_level,
             "GIT DIRECTORY".black().bold(), self.local_git_path.as_str(),
-            "BUILD DIRECTORY".black().bold(), self.remote_build_directory
+            "BUILD DIRECTORY".black().bold(), self.remote_build_directory.as_str()
         )
     }
 
@@ -264,14 +266,14 @@ impl Builder {
             BuildOS::Windows => {
                 format!(
                     r#"
-                        if ( Test-Path -Path "{build_directory}" -PathType Container ) {{
-                            Remove-Item -Path "{build_directory}" -Recurse -Force;
+                        if ( Test-Path -Path "C:\{build_directory}" -PathType Container ) {{
+                            Remove-Item -Path "C:\{build_directory}" -Recurse -Force;
                         }}
 
-                        New-Item -Path "{build_directory}\@esm" -ItemType Directory;
-                        New-Item -Path "{build_directory}\@esm\addons" -ItemType Directory;
+                        New-Item -Path "C:\{build_directory}\@esm" -ItemType Directory;
+                        New-Item -Path "C:\{build_directory}\@esm\addons" -ItemType Directory;
                     "#,
-                    build_directory = self.remote_build_directory,
+                    build_directory = &self.remote_build_directory.as_str()[1..],
                 )
             }
             BuildOS::Linux => todo!(),
@@ -305,7 +307,7 @@ impl Builder {
 
     fn build_extension(&mut self) -> BuildResult {
         let source_path = self.local_build_path.join("@esm")?;
-        Transfer::directory(&self.server, &source_path, &self.local_git_path)?;
+        Transfer::directory(&self.server, &source_path, &self.remote_build_directory)?;
         match self.os {
             BuildOS::Windows => {
                 // // TODO: Implement file copying feature and copy over the extension

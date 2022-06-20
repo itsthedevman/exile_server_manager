@@ -7,15 +7,19 @@ const CHUNK_SIZE: usize = 65536;
 pub struct Transfer;
 
 impl Transfer {
-    pub fn file(server: &Server, source_path: &VfsPath, destination_path: &VfsPath) -> BuildResult {
-        // let source_file_path = source_path.join(file_name)?;
+    pub fn file(
+        server: &Server,
+        source_path: &VfsPath,
+        destination_path: &VfsPath,
+        file_name: String,
+    ) -> BuildResult {
         let total_size = source_path.metadata()?.len as usize;
 
         let id = Uuid::new_v4();
         let transfer = FileTransfer {
             id,
-            file_name: source_path.filename(),
-            destination_path: destination_path.as_str().to_string(),
+            file_name,
+            destination_path: destination_path.as_str()[1..].to_string(),
             total_size,
         };
 
@@ -46,8 +50,21 @@ impl Transfer {
                 continue;
             }
 
-            let relative_path = path.as_str().replace(path.root().as_str(), "");
-            Transfer::file(server, &path, &destination_path.join(&relative_path[1..])?)?;
+            // This removes the source_path's... path... from the file's path.
+            // This keeps the same structure of the file so it can be copied wherever on the remote
+            let relative_path = path
+                .as_str()
+                .replace(source_path.parent().unwrap().as_str(), "");
+
+            Transfer::file(
+                server,
+                &path,
+                &destination_path
+                    .join(&relative_path[1..])?
+                    .parent()
+                    .unwrap(),
+                path.filename(),
+            )?;
         }
 
         Ok(())

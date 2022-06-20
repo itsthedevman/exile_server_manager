@@ -5,7 +5,7 @@ mod builder;
 mod server;
 mod transfer;
 
-use std::fmt;
+use std::{fmt, process::exit};
 
 pub use build_common::*;
 use builder::Builder;
@@ -87,7 +87,13 @@ pub enum BuildArch {
 
 fn main() {
     let args = Args::parse();
-    let mut builder = Builder::new(args.command);
+    let mut builder = match Builder::new(args.command) {
+        Ok(b) => b,
+        Err(e) => {
+            println!("{} - {}", "ERROR".red().bold(), e);
+            exit(1)
+        }
+    };
 
     match builder.start() {
         Ok(_) => {}
