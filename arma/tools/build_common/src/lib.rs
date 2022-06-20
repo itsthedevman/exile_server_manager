@@ -4,7 +4,7 @@ use uuid::Uuid;
 pub mod error;
 pub use error::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum NetworkCommands {
     Hello,
     Success,
@@ -15,7 +15,7 @@ pub enum NetworkCommands {
     FileTransferEnd(Uuid),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileTransfer {
     pub id: Uuid,
     pub file_name: String,
@@ -23,7 +23,7 @@ pub struct FileTransfer {
     pub total_size: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileChunk {
     pub id: Uuid,
     pub size: usize,
