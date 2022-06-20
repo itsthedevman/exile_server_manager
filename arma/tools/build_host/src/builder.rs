@@ -1,137 +1,201 @@
-use std::fs::File;
+use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
+use vfs::{PhysicalFS, VfsPath};
 
-use super::{
-    server::{NetworkCommands, Server},
-    BuildArch, BuildEnv, BuildOS, LogLevel,
+use crate::{
+    error::BuildError, server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildOS, Commands,
+    LogLevel, NetworkCommands,
 };
 
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+// TODO: Use Error instead of string so question marks can be used
+pub type BuildResult = Result<(), BuildError>;
+
 pub struct Builder {
     os: BuildOS,
     arch: BuildArch,
     env: BuildEnv,
     log_level: LogLevel,
-    git_directory: String,
-    build_directory: String,
-    local_build_directory: String,
+    bot_host: String,
+    local_git_path: VfsPath,
+    local_build_path: VfsPath,
+    remote_build_directory: String,
+    extension_build_target: String,
     server: Server,
 }
 
 impl Builder {
-    pub fn new(build_x32: bool, os: BuildOS, log_level: LogLevel, env: BuildEnv) -> Self {
-        let git_directory = match std::env::current_dir() {
-            Ok(d) => d.to_string_lossy().to_string(),
-            Err(e) => panic!("{e}"),
+    pub fn new(command: Commands) -> Self {
+        let (build_x32, os, log_level, env, bot_host) = match command {
+            Commands::Run {
+                build_x32,
+                target,
+                log_level,
+                env,
+                bot_host,
+            } => (build_x32, target, log_level, env, bot_host),
         };
 
-        let local_build_directory = format!("{}/target", git_directory);
-        let build_directory = match os {
-            BuildOS::Windows => "C:\\temp\\@esm".to_string(),
-            BuildOS::Linux => format!("{local_build_directory}/@esm"),
+        let arch = if build_x32 {
+            BuildArch::X32
+        } else {
+            BuildArch::X64
+        };
+
+        let root_path = VfsPath::new(PhysicalFS::new("/"));
+
+        // Have to remove the first slash in order for this to work
+        let local_git_path = root_path
+            .join(&std::env::current_dir().unwrap().to_string_lossy()[1..])
+            .unwrap();
+
+        let local_build_path = local_git_path.join("target").unwrap();
+
+        let remote_build_directory = match os {
+            BuildOS::Windows => "C:\\temp".to_string(),
+            BuildOS::Linux => format!("{}/@esm", local_build_path.as_str()),
+        };
+
+        let extension_build_target: String = match os {
+            BuildOS::Windows => match arch {
+                BuildArch::X32 => "i686-pc-windows-msvc".into(),
+                BuildArch::X64 => "x86_64-pc-windows-msvc".into(),
+            },
+            BuildOS::Linux => match arch {
+                BuildArch::X32 => "i686-unknown-linux-gnu".into(),
+                BuildArch::X64 => "x86_64-unknown-linux-gnu".into(),
+            },
         };
 
         Builder {
             os,
-            arch: if build_x32 {
-                BuildArch::X32
-            } else {
-                BuildArch::X64
-            },
+            arch,
             env,
+            bot_host,
             log_level,
-            git_directory,
-            build_directory,
-            local_build_directory,
+            local_git_path,
+            local_build_path,
+            remote_build_directory,
+            extension_build_target,
             server: Server::new(),
         }
     }
 
-    fn print_status<F>(&mut self, message: impl Into<String> + std::fmt::Display, code: F)
+    fn print_status<F>(
+        &mut self,
+        message: impl Into<String> + std::fmt::Display,
+        code: F,
+    ) -> BuildResult
     where
-        F: Fn(&mut Builder),
+        F: Fn(&mut Builder) -> BuildResult,
     {
         print!("{} - {message} ... ", "<esm_bt>".blue().bold());
         io::stdout().flush().expect("Failed to flush stdout");
-        code(self);
-        println!("{}", "done".green().bold());
+
+        match code(self) {
+            Ok(_) => {
+                println!("{}", "done".green().bold());
+                Ok(())
+            }
+            Err(e) => {
+                println!("{}", "failed".red().bold());
+                Err(e)
+            }
+        }
     }
 
-    pub fn start(&mut self) {
+    fn print_info(&self) {
+        println!(
+            "{}\n{}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {}\n  {:17}: {}\n",
+            "------------------------------------------".black().bold(),
+            "ESM Build tool".blue().bold(),
+            "OS".black().bold(), self.os,
+            "ARCH".black().bold(), self.arch,
+            "ENV".black().bold(), self.env,
+            "LOG LEVEL".black().bold(), self.log_level,
+            "GIT DIRECTORY".black().bold(), self.local_git_path.as_str(),
+            "BUILD DIRECTORY".black().bold(), self.remote_build_directory
+        )
+    }
+
+    pub fn start(&mut self) -> BuildResult {
         self.print_info();
-        self.print_status("Starting build server", Builder::start_server);
-        self.print_status("Waiting for receiver", Builder::wait_for_receiver);
-        self.print_status("Killing Arma", Builder::kill_arma);
-        self.print_status("Cleaning directories", Builder::clean_directories);
+        self.print_status("Starting build server", Builder::start_server)?;
+        self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
+        self.print_status("Killing Arma", Builder::kill_arma)?;
+        self.print_status("Cleaning directories", Builder::clean_directories)?;
+        self.print_status("Writing server config", Builder::create_server_config)?;
+        self.print_status("Compiling esm_arma", Builder::build_extension)?;
+        Ok(())
+    }
+
+    pub fn teardown(&mut self) {
+        self.server.stop();
     }
 
     fn send_to_receiver(&self, command: NetworkCommands) {
         self.server.send(command);
     }
 
-    fn print_info(&self) {
-        println!(
-            "{}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {}\n  {:17}: {}\n",
-            "ESM Build tool".blue().bold(),
-            "OS".black().bold(), self.os,
-            "ARCH".black().bold(), self.arch,
-            "ENV".black().bold(), self.env,
-            "LOG LEVEL".black().bold(), self.log_level,
-            "GIT DIRECTORY".black().bold(), self.git_directory,
-            "BUILD DIRECTORY".black().bold(), self.build_directory
-        )
-    }
-
-    fn start_server(&mut self) {
+    fn start_server(&mut self) -> BuildResult {
         self.server.start();
+        Ok(())
     }
 
-    fn wait_for_receiver(&mut self) {
+    fn wait_for_receiver(&mut self) -> BuildResult {
         while !self.server.connected.load(Ordering::SeqCst) {
             std::thread::sleep(Duration::from_secs(1))
         }
+
+        Ok(())
     }
 
-    fn system_command<'a>(&'a mut self, command: &'a str, args: Vec<&'a str>) {
+    fn system_command<'a>(&'a mut self, command: &'a str, args: Vec<&'a str>) -> BuildResult {
+        lazy_static! {
+            static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
+        }
+
         match self.os {
             BuildOS::Windows => {
-                let command_file_path =
-                    format!("{}/.esm-build-command", self.local_build_directory);
-
+                let command_file_path = self.local_build_path.join(".esm-build-command").unwrap();
                 let command_result_path =
-                    format!("{}/.esm-build-command-result", self.local_build_directory);
+                    self.local_build_path.join(".esm-build-command-result")?;
 
-                let command_file = File::create(&command_file_path).unwrap();
-                write!(
-                    &command_file,
-                    // Removes the "Preparing modules for first use." errors that powershell return
-                    "$ProgressPreference = 'SilentlyContinue'\n{command} {}",
+                // Removes the "Preparing modules for first use." errors that powershell return
+                let script = format!(
+                    "$ProgressPreference = 'SilentlyContinue'; {command} {}",
                     args.join(" ")
-                )
-                .unwrap();
+                );
+
+                let script = WHITESPACE_REGEX.replace_all(&script, " ");
+                command_file_path
+                    .create_file()?
+                    .write_all(script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
                 match Command::new("iconv")
                     .arg("-t UTF-16LE")
-                    .arg(format!("--output={}", command_result_path))
-                    .arg(&command_file_path)
+                    .arg(format!("--output={}", command_result_path.as_str()))
+                    .arg(command_file_path.as_str())
                     .output()
                 {
                     Ok(_o) => (),
-                    Err(e) => panic!("Failed to run iconv: {}", e),
+                    Err(e) => return Err(BuildError::Generic(e.to_string())),
                 };
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let base64_output = match Command::new("base64").arg(&command_result_path).output()
+                let base64_output = match Command::new("base64")
+                    .arg(&command_result_path.as_str())
+                    .output()
                 {
                     Ok(p) => p,
-                    Err(e) => panic!("Failed to run base64: {}", e),
+                    Err(e) => return Err(BuildError::Generic(e.to_string())),
                 };
 
                 let mut encoded_command =
@@ -153,9 +217,11 @@ impl Builder {
                 ));
             }
         }
+
+        Ok(())
     }
 
-    fn kill_arma(&mut self) {
+    fn kill_arma(&mut self) -> BuildResult {
         lazy_static! {
             static ref WINDOWS_EXES: Vec<&'static str> = vec![
                 "arma3server.exe",
@@ -167,40 +233,97 @@ impl Builder {
             static ref LINUX_EXES: Vec<&'static str> = vec!["arma3server", "arma3server_x64"];
         };
 
+        let mut script = String::new();
         match self.os {
             BuildOS::Windows => {
                 for exe in WINDOWS_EXES.iter() {
-                    self.system_command("Stop-Process", ["-Name", exe].into());
+                    script.push_str(&format!("Stop-Process -Name {exe};"));
                 }
             }
             BuildOS::Linux => {
                 for exe in LINUX_EXES.iter() {
-                    self.system_command("pkill", vec![exe]);
+                    script.push_str(&format!("pkill {exe};"));
                 }
             }
         }
+
+        self.system_command(&script, vec![])
     }
 
-    fn clean_directories(&mut self) {
-        lazy_static! {
-            static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
+    fn clean_directories(&mut self) -> BuildResult {
+        // Local directories
+        let esm_path = self.local_build_path.join("@esm")?;
+
+        // Delete @esm and recreate it
+        esm_path.remove_dir_all()?;
+        esm_path.create_dir_all()?;
+
+        // Create @esm/addons
+        esm_path.join("addons")?.create_dir_all()?;
+
+        /////////////////////
+        // Remote directories
+        let script = match self.os {
+            BuildOS::Windows => {
+                format!(
+                    r#"
+                        if ( Test-Path -Path "{build_directory}" -PathType Container ) {{
+                            Remove-Item -Path "{build_directory}" -Recurse -Force;
+                        }}
+
+                        New-Item -Path "{build_directory}\@esm" -ItemType Directory;
+                        New-Item -Path "{build_directory}\@esm\addons" -ItemType Directory;
+                    "#,
+                    build_directory = self.remote_build_directory,
+                )
+            }
+            BuildOS::Linux => todo!(),
+        };
+
+        self.system_command(&script, vec![])
+    }
+
+    fn create_server_config(&mut self) -> BuildResult {
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
+        struct Config {
+            connection_url: String,
+            log_level: String,
+            env: String,
         }
 
+        let config = Config {
+            connection_url: self.bot_host.clone(),
+            log_level: self.log_level.to_string(),
+            env: self.env.to_string(),
+        };
+
+        let config_yaml = serde_yaml::to_vec(&config)?;
+        self.local_build_path
+            .join("@esm/config.yml")?
+            .create_file()?
+            .write_all(&config_yaml)?;
+
+        Ok(())
+    }
+
+    fn build_extension(&mut self) -> BuildResult {
+        let source_path = self.local_build_path.join("@esm")?;
+        Transfer::directory(&self.server, &source_path, &self.local_git_path)?;
         match self.os {
             BuildOS::Windows => {
-                let script = format!(
-                    r#"
-                        if ( Test-Path -Path "{}" -PathType Container ) {{
-                            Start-Process "E:\git\a3_editor_exile.bat"
-                        }}
-                    "#,
-                    self.build_directory
-                );
+                // // TODO: Implement file copying feature and copy over the extension
+                // let script = format!(
+                //     "rustup run stable-{build_target} cargo build --target {build_target} --release",
+                //     build_target = self.extension_build_target
+                // );
 
-                let script = WHITESPACE_REGEX.replace_all(&script, " ");
-                self.system_command(&script, vec![]);
+                // self.system_command(&script, vec![])?;
             }
-            BuildOS::Linux => {}
+            BuildOS::Linux => {
+                // TODO: Build locally and copy to build directory
+            }
         }
+
+        Ok(())
     }
 }

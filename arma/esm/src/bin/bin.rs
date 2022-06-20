@@ -71,7 +71,7 @@ fn main() {
     ])
     .to_string();
 
-    let extension = esm_client::init().testing();
+    let extension = esm_arma::init().testing();
 
     let args = vec![
         server_name,
