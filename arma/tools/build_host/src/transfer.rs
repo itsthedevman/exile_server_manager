@@ -1,68 +1,31 @@
-use crate::server::{NetworkCommands, Server};
-use serde::{Deserialize, Serialize};
+use crate::{builder::BuildResult, server::Server, FileTransfer, NetworkCommands, FileChunk};
 use uuid::Uuid;
-use vfs::{PhysicalFS, SeekAndRead, VfsPath};
+use vfs::{SeekAndRead, VfsPath};
 
 const CHUNK_SIZE: usize = 65536;
 
-#[derive(Serialize, Deserialize)]
-pub struct Transfer {
-    id: Uuid,
-    file_name: String,
-    destination_path: String,
-    total_size: usize,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct FileChunk {
-    id: Uuid,
-    size: usize,
-    bytes: Vec<u8>,
-}
+pub struct Transfer;
 
 impl Transfer {
     pub fn file(
         server: &Server,
-        source_path: &str,
-        file_name: &str,
-        destination_path: &str,
+        source_path: &VfsPath,
+        destination_path: &VfsPath,
     ) -> crate::builder::BuildResult {
-        let path = VfsPath::new(PhysicalFS::new(source_path))
-            .join(file_name)
-            .unwrap();
-
-        let total_size = match path.metadata() {
-            Ok(m) => m.len as usize,
-            Err(e) => {
-                return Err(format!(
-                    "Failed to read metadata for file {}. {}",
-                    path.filename(),
-                    e
-                ))
-            }
-        };
+        // let source_file_path = source_path.join(file_name)?;
+        let total_size = source_path.metadata()?.len as usize;
 
         let id = Uuid::new_v4();
-        let transfer = Transfer {
+        let transfer = FileTransfer {
             id,
-            file_name: file_name.to_string(),
-            destination_path: destination_path.to_string(),
+            file_name: source_path.filename(),
+            destination_path: destination_path.as_str().to_string(),
             total_size,
         };
 
         server.send(NetworkCommands::FileTransferStart(transfer));
 
-        let mut file = match path.open_file() {
-            Ok(f) => f,
-            Err(e) => {
-                return Err(format!(
-                    "Failed to file for reading {}. {}",
-                    path.filename(),
-                    e
-                ))
-            }
-        };
-
+        let mut file = source_path.open_file()?;
         while let Some(bytes) = chunk_file(&mut file) {
             server.send(NetworkCommands::FileTransferChunk(FileChunk {
                 id,
@@ -72,6 +35,24 @@ impl Transfer {
         }
 
         server.send(NetworkCommands::FileTransferEnd(id));
+
+        Ok(())
+    }
+
+    pub fn directory(
+        server: &Server,
+        source_path: &VfsPath,
+        destination_path: &VfsPath,
+    ) -> BuildResult {
+        for path in source_path.walk_dir()? {
+            let path = path?;
+            if path.is_dir()? {
+                continue;
+            }
+
+            let relative_path = path.as_str().replace(path.root().as_str(), "");
+            Transfer::file(server, &path, &destination_path.join(&relative_path[1..])?)?;
+        }
 
         Ok(())
     }

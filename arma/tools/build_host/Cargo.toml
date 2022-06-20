@@ -17,4 +17,4 @@ regex = "1.5.6"
 serde_yaml = "0.8.24"
 vfs = "0.7.1"
 uuid = { version = "1.1.2", features = ["serde", "v4", "fast-rng"] }
-#hemtt-pbo = { git = "https://github.com/BrettMayson/HEMTT" }
+build_common = { path = "../build_common" }

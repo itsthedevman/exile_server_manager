@@ -5,19 +5,17 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
 
-use crate::transfer::Transfer;
-use crate::Commands;
-
-use super::{
-    server::{NetworkCommands, Server},
-    BuildArch, BuildEnv, BuildOS, LogLevel,
+use crate::{
+    error::BuildError, server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildOS, Commands,
+    LogLevel, NetworkCommands,
 };
 
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-pub type BuildResult = Result<(), String>;
+// TODO: Use Error instead of string so question marks can be used
+pub type BuildResult = Result<(), BuildError>;
 
 pub struct Builder {
     os: BuildOS,
@@ -25,9 +23,9 @@ pub struct Builder {
     env: BuildEnv,
     log_level: LogLevel,
     bot_host: String,
-    git_directory: String,
-    build_directory: String,
+    local_git_path: VfsPath,
     local_build_path: VfsPath,
+    remote_build_directory: String,
     extension_build_target: String,
     server: Server,
 }
@@ -42,7 +40,6 @@ impl Builder {
                 env,
                 bot_host,
             } => (build_x32, target, log_level, env, bot_host),
-            _ => panic!("Unexpected command type"),
         };
 
         let arch = if build_x32 {
@@ -51,14 +48,16 @@ impl Builder {
             BuildArch::X64
         };
 
-        let git_directory = match std::env::current_dir() {
-            Ok(d) => d.to_string_lossy().to_string(),
-            Err(e) => panic!("{e}"),
-        };
+        let root_path = VfsPath::new(PhysicalFS::new("/"));
 
-        let local_build_path = VfsPath::new(PhysicalFS::new(format!("{}/target", git_directory)));
+        // Have to remove the first slash in order for this to work
+        let local_git_path = root_path
+            .join(&std::env::current_dir().unwrap().to_string_lossy()[1..])
+            .unwrap();
 
-        let build_directory = match os {
+        let local_build_path = local_git_path.join("target").unwrap();
+
+        let remote_build_directory = match os {
             BuildOS::Windows => "C:\\temp".to_string(),
             BuildOS::Linux => format!("{}/@esm", local_build_path.as_str()),
         };
@@ -80,9 +79,9 @@ impl Builder {
             env,
             bot_host,
             log_level,
-            git_directory,
-            build_directory,
+            local_git_path,
             local_build_path,
+            remote_build_directory,
             extension_build_target,
             server: Server::new(),
         }
@@ -111,6 +110,20 @@ impl Builder {
         }
     }
 
+    fn print_info(&self) {
+        println!(
+            "{}\n{}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {}\n  {:17}: {}\n",
+            "------------------------------------------".black().bold(),
+            "ESM Build tool".blue().bold(),
+            "OS".black().bold(), self.os,
+            "ARCH".black().bold(), self.arch,
+            "ENV".black().bold(), self.env,
+            "LOG LEVEL".black().bold(), self.log_level,
+            "GIT DIRECTORY".black().bold(), self.local_git_path.as_str(),
+            "BUILD DIRECTORY".black().bold(), self.remote_build_directory
+        )
+    }
+
     pub fn start(&mut self) -> BuildResult {
         self.print_info();
         self.print_status("Starting build server", Builder::start_server)?;
@@ -128,19 +141,6 @@ impl Builder {
 
     fn send_to_receiver(&self, command: NetworkCommands) {
         self.server.send(command);
-    }
-
-    fn print_info(&self) {
-        println!(
-            "{}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {}\n  {:17}: {}\n",
-            "ESM Build tool".blue().bold(),
-            "OS".black().bold(), self.os,
-            "ARCH".black().bold(), self.arch,
-            "ENV".black().bold(), self.env,
-            "LOG LEVEL".black().bold(), self.log_level,
-            "GIT DIRECTORY".black().bold(), self.git_directory,
-            "BUILD DIRECTORY".black().bold(), self.build_directory
-        )
     }
 
     fn start_server(&mut self) -> BuildResult {
@@ -164,10 +164,8 @@ impl Builder {
         match self.os {
             BuildOS::Windows => {
                 let command_file_path = self.local_build_path.join(".esm-build-command").unwrap();
-                let command_result_path = self
-                    .local_build_path
-                    .join(".esm-build-command-result")
-                    .unwrap();
+                let command_result_path =
+                    self.local_build_path.join(".esm-build-command-result")?;
 
                 // Removes the "Preparing modules for first use." errors that powershell return
                 let script = format!(
@@ -176,14 +174,9 @@ impl Builder {
                 );
 
                 let script = WHITESPACE_REGEX.replace_all(&script, " ");
-                match command_file_path.create_file() {
-                    Ok(mut f) => {
-                        if let Err(e) = f.write(script.as_bytes()) {
-                            return Err(format!("{}", e));
-                        }
-                    }
-                    Err(_) => return Err("Failed to write command to file".into()),
-                };
+                command_file_path
+                    .create_file()?
+                    .write_all(script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
                 match Command::new("iconv")
@@ -193,7 +186,7 @@ impl Builder {
                     .output()
                 {
                     Ok(_o) => (),
-                    Err(e) => return Err(format!("Failed to convert command to UTF-16LE. {e}")),
+                    Err(e) => return Err(BuildError::Generic(e.to_string())),
                 };
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
@@ -202,7 +195,7 @@ impl Builder {
                     .output()
                 {
                     Ok(p) => p,
-                    Err(e) => return Err(format!("Failed to convert command to base64. {e}")),
+                    Err(e) => return Err(BuildError::Generic(e.to_string())),
                 };
 
                 let mut encoded_command =
@@ -259,30 +252,14 @@ impl Builder {
 
     fn clean_directories(&mut self) -> BuildResult {
         // Local directories
-        let esm_path = match self.local_build_path.join("@esm") {
-            Ok(p) => p,
-            Err(e) => return Err(e.to_string()),
-        };
+        let esm_path = self.local_build_path.join("@esm")?;
 
         // Delete @esm and recreate it
-        match esm_path.remove_dir_all() {
-            Ok(_) => {
-                if let Err(e) = esm_path.create_dir_all() {
-                    return Err(format!("{}", e));
-                }
-            }
-            Err(e) => return Err(e.to_string()),
-        }
+        esm_path.remove_dir_all()?;
+        esm_path.create_dir_all()?;
 
         // Create @esm/addons
-        match esm_path.join("addons") {
-            Ok(p) => {
-                if let Err(e) = p.create_dir_all() {
-                    return Err(format!("{}", e));
-                }
-            }
-            Err(e) => return Err(e.to_string()),
-        };
+        esm_path.join("addons")?.create_dir_all()?;
 
         /////////////////////
         // Remote directories
@@ -297,7 +274,7 @@ impl Builder {
                         New-Item -Path "{build_directory}\@esm" -ItemType Directory;
                         New-Item -Path "{build_directory}\@esm\addons" -ItemType Directory;
                     "#,
-                    build_directory = self.build_directory,
+                    build_directory = self.remote_build_directory,
                 )
             }
             BuildOS::Linux => todo!(),
@@ -320,31 +297,18 @@ impl Builder {
             env: self.env.to_string(),
         };
 
-        let config_yaml = match serde_yaml::to_vec(&config) {
-            Ok(c) => c,
-            Err(e) => return Err(e.to_string()),
-        };
+        let config_yaml = serde_yaml::to_vec(&config)?;
+        self.local_build_path
+            .join("@esm/config.yml")?
+            .create_file()?
+            .write_all(&config_yaml)?;
 
-        match self.local_build_path.join("@esm/config.yml") {
-            Ok(p) => match p.create_file() {
-                Ok(mut f) => match f.write_all(&config_yaml) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(e.to_string()),
-                },
-                Err(e) => Err(e.to_string()),
-            },
-            Err(e) => Err(e.to_string()),
-        }
+        Ok(())
     }
 
     fn build_extension(&mut self) -> BuildResult {
-        Transfer::file(
-            &self.server,
-            "/home/ubuntu/esm_arma/target/@esm",
-            "config.yml",
-            "C:/temp/@esm",
-        )?;
-
+        let source_path = self.local_build_path.join("@esm")?;
+        Transfer::directory(&self.server, &source_path, &self.local_git_path)?;
         match self.os {
             BuildOS::Windows => {
                 // // TODO: Implement file copying feature and copy over the extension

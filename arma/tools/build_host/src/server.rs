@@ -1,24 +1,12 @@
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use uuid::Uuid;
 
-use crate::transfer::*;
-
-#[derive(Serialize, Deserialize)]
-pub enum NetworkCommands {
-    Hello,
-    Success,
-    Error(String),
-    SystemCommand(String, Vec<String>),
-    FileTransferStart(Transfer),
-    FileTransferChunk(FileChunk),
-    FileTransferEnd(Uuid),
-}
+use crate::NetworkCommands;
 
 #[derive(Clone)]
 pub struct Server {

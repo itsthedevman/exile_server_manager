@@ -7,6 +7,7 @@ mod transfer;
 
 use std::fmt;
 
+pub use build_common::*;
 use builder::Builder;
 use clap::{ArgEnum, Parser, Subcommand};
 use colored::Colorize;
