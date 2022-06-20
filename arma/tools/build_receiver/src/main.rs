@@ -1,6 +1,7 @@
 mod client;
 mod transfer;
 
+pub use build_common::*;
 use clap::Parser;
 use client::Client;
 

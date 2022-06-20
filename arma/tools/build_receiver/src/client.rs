@@ -3,14 +3,10 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::transfer::*;
+use crate::{transfer::*, BuildError, BuildResult, NetworkCommands};
 use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
-pub type BuildResult = Result<(), String>;
 
 #[derive(Clone)]
 pub struct Client {
@@ -57,12 +53,14 @@ impl Client {
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
                 let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
-                match message.execute() {
+
+                println!("Inbound message:\n{:?}", message);
+                match IncomingCommand::execute(&message) {
                     Ok(_) => {
                         client.send(NetworkCommands::Success);
                     }
                     Err(e) => {
-                        client.send(NetworkCommands::Error(e));
+                        client.send(NetworkCommands::Error(e.to_string()));
                     }
                 }
             }
@@ -90,21 +88,13 @@ impl Client {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-enum NetworkCommands {
-    Hello,
-    Success,
-    Error(String),
-    SystemCommand(String, Vec<String>),
-    FileTransferStart(Transfer),
-    FileTransferChunk(FileChunk),
-    FileTransferEnd(Uuid),
-}
-
-impl NetworkCommands {
-    pub fn execute(&self) -> BuildResult {
-        match self {
-            NetworkCommands::SystemCommand(command, args) => self.system_command(command, args),
+pub struct IncomingCommand;
+impl IncomingCommand {
+    pub fn execute(network_command: &NetworkCommands) -> BuildResult {
+        match network_command {
+            NetworkCommands::SystemCommand(command, args) => {
+                IncomingCommand.system_command(command, args)
+            }
             NetworkCommands::FileTransferStart(transfer) => Transfer::start(transfer),
             NetworkCommands::FileTransferChunk(chunk) => Transfer::append_chunk(chunk),
             NetworkCommands::FileTransferEnd(id) => Transfer::end(id),
@@ -113,20 +103,19 @@ impl NetworkCommands {
     }
 
     fn system_command(&self, command: &str, args: &[String]) -> BuildResult {
-        println!("Running system command `{command} {}`", args.join(" "));
-
         let result = Command::new(command).args(args).output();
 
+        println!("Command result: {:#?}", result);
         match result {
-            Ok(output) => {
-                println!("  Status: {}", output.status);
-                println!("  OUT: {}", String::from_utf8_lossy(&output.stdout));
-                println!("  ERR: {}", String::from_utf8_lossy(&output.stderr));
+            Ok(_output) => {
+                // println!("  Status: {}", output.status);
+                // println!("  OUT: {}", String::from_utf8_lossy(&output.stdout));
+                // println!("  ERR: {}", String::from_utf8_lossy(&output.stderr));
                 Ok(())
             }
             Err(e) => {
                 println!("{}", format!("Failed! {e}").red());
-                Err(e.to_string())
+                Err(BuildError::from(e))
             }
         }
     }
