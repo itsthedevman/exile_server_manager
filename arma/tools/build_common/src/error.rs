@@ -36,3 +36,9 @@ impl From<std::io::Error> for BuildError {
         Self::Generic(e.to_string())
     }
 }
+
+impl From<String> for BuildError {
+    fn from(e: String) -> Self {
+        Self::Generic(e)
+    }
+}
