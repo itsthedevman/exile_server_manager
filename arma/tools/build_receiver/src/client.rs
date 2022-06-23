@@ -10,19 +10,24 @@ use message_io::node::{self, NodeHandler, NodeTask};
 
 #[derive(Clone)]
 pub struct Client {
+    pub host: String,
+    pub transfers: Arc<Transfers>,
+
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
     task: Arc<Option<NodeTask>>,
-    pub host: String,
 }
 
 impl Client {
     pub fn new(host: String) -> Self {
+        let transfers = Arc::new(Transfers::new());
+
         Client {
             handler: None,
             endpoint: None,
             task: Arc::new(None),
             host,
+            transfers,
         }
     }
 
@@ -55,7 +60,7 @@ impl Client {
                 let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
 
                 println!("Inbound message:\n{:?}", message);
-                match IncomingCommand::execute(&message) {
+                match IncomingCommand::execute(&client, &message) {
                     Ok(_) => {
                         client.send(NetworkCommands::Success);
                     }
@@ -90,14 +95,14 @@ impl Client {
 
 pub struct IncomingCommand;
 impl IncomingCommand {
-    pub fn execute(network_command: &NetworkCommands) -> BuildResult {
+    pub fn execute(client: &Client, network_command: &NetworkCommands) -> BuildResult {
         match network_command {
             NetworkCommands::SystemCommand(command, args) => {
                 IncomingCommand.system_command(command, args)
             }
-            NetworkCommands::FileTransferStart(transfer) => Transfer::start(transfer),
-            NetworkCommands::FileTransferChunk(chunk) => Transfer::append_chunk(chunk),
-            NetworkCommands::FileTransferEnd(id) => Transfer::end(id),
+            NetworkCommands::FileTransferStart(transfer) => client.transfers.start_new(transfer),
+            NetworkCommands::FileTransferChunk(chunk) => client.transfers.append_chunk(chunk),
+            NetworkCommands::FileTransferEnd(id) => client.transfers.complete(id),
             _ => Ok(()),
         }
     }
