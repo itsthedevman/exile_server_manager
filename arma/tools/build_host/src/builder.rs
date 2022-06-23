@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use vfs::{MemoryFS, PhysicalFS, VfsPath};
+use vfs::{PhysicalFS, VfsPath};
 
 use crate::{
     server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
@@ -55,8 +55,8 @@ impl Builder {
         let local_build_path = local_git_path.join("target")?;
 
         let remote_build_directory = match os {
-            BuildOS::Windows => root_path.join("temp")?,
-            BuildOS::Linux => local_build_path.join("@esm")?,
+            BuildOS::Windows => root_path.join("temp")?.join("esm")?,
+            BuildOS::Linux => local_build_path.join("esm")?,
         };
 
         let extension_build_target: String = match os {
@@ -266,10 +266,7 @@ impl Builder {
             BuildOS::Windows => {
                 format!(
                     r#"
-                        if ( Test-Path -Path "C:\{build_directory}" -PathType Container ) {{
-                            Remove-Item -Path "C:\{build_directory}" -Recurse -Force;
-                        }}
-
+                        New-Item -Path "C:\{build_directory}\esm" -ItemType Directory;
                         New-Item -Path "C:\{build_directory}\@esm" -ItemType Directory;
                         New-Item -Path "C:\{build_directory}\@esm\addons" -ItemType Directory;
                     "#,
@@ -298,7 +295,8 @@ impl Builder {
 
         let config_yaml = serde_yaml::to_vec(&config)?;
         self.local_build_path
-            .join("@esm/config.yml")?
+            .join("@esm")?
+            .join("config.yml")?
             .create_file()?
             .write_all(&config_yaml)?;
 
@@ -306,11 +304,15 @@ impl Builder {
     }
 
     fn build_extension(&mut self) -> BuildResult {
-        let source_path = self.local_build_path.join("@esm")?;
-        Transfer::directory(&self.server, &source_path, &self.remote_build_directory)?;
+        // Copy the extension over to the remote host
+        Transfer::directory(
+            &self.server,
+            &self.local_git_path.join("esm")?,
+            &self.remote_build_directory,
+        )?;
+
         match self.os {
             BuildOS::Windows => {
-                // // TODO: Implement file copying feature and copy over the extension
                 // let script = format!(
                 //     "rustup run stable-{build_target} cargo build --target {build_target} --release",
                 //     build_target = self.extension_build_target

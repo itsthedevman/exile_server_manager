@@ -20,18 +20,27 @@ impl Transfer {
             id,
             file_name,
             destination_path: destination_path.as_str()[1..].to_string(),
+            number_of_chunks: if total_size < CHUNK_SIZE {
+                1
+            } else {
+                total_size / CHUNK_SIZE
+            },
             total_size,
         };
 
         server.send(NetworkCommands::FileTransferStart(transfer));
 
         let mut file = source_path.open_file()?;
+        let mut index = 0;
         while let Some(bytes) = chunk_file(&mut file) {
             server.send(NetworkCommands::FileTransferChunk(FileChunk {
                 id,
+                index,
                 size: bytes.len(),
                 bytes,
             }));
+
+            index += 1;
         }
 
         server.send(NetworkCommands::FileTransferEnd(id));
