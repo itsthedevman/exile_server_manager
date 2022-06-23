@@ -20,12 +20,14 @@ pub struct FileTransfer {
     pub id: Uuid,
     pub file_name: String,
     pub destination_path: String,
+    pub number_of_chunks: usize,
     pub total_size: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileChunk {
     pub id: Uuid,
+    pub index: usize,
     pub size: usize,
     pub bytes: Vec<u8>,
 }
