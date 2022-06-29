@@ -58,9 +58,9 @@ pub struct FileChunk {
 
 pub type BuildResult = Result<(), BuildError>;
 
-pub fn read_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F)
+pub fn read_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F) -> BuildResult
 where
-    F: Fn(RwLockReadGuard<T>) -> bool,
+    F: Fn(RwLockReadGuard<T>) -> Result<bool, BuildError>,
 {
     loop {
         let reader = match lock.try_read() {
@@ -71,17 +71,22 @@ where
             }
         };
 
-        if code(reader) {
-            break;
+        match code(reader) {
+            Ok(exit_loop) => {
+                if exit_loop {
+                    break;
+                }
+            }
+            Err(e) => return Err(e),
         }
-
-        std::thread::sleep(wait);
     }
+
+    Ok(())
 }
 
-pub fn write_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F)
+pub fn write_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F) -> BuildResult
 where
-    F: Fn(RwLockWriteGuard<T>) -> bool,
+    F: Fn(RwLockWriteGuard<T>) -> Result<bool, BuildError>,
 {
     loop {
         let writer = match lock.try_write() {
@@ -92,10 +97,15 @@ where
             }
         };
 
-        if code(writer) {
-            break;
+        match code(writer) {
+            Ok(exit_loop) => {
+                if exit_loop {
+                    break;
+                }
+            }
+            Err(e) => return Err(e),
         }
-
-        std::thread::sleep(wait);
     }
+
+    Ok(())
 }
