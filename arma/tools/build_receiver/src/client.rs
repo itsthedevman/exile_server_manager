@@ -1,9 +1,9 @@
 use std::net::ToSocketAddrs;
-use std::process::Command;
+use std::process::Command as SystemCommand;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::{transfer::*, BuildError, BuildResult, NetworkCommands};
+use crate::{transfer::*, BuildError, BuildResult, Command, NetworkCommand};
 use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
@@ -49,7 +49,7 @@ impl Client {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
                     println!("Connected to build host @ {}", server_addr);
-                    client.send(NetworkCommands::Hello);
+                    client.send(Command::Hello);
                 } else {
                     println!("Failed to connect to build host @ {}", server_addr);
                     client.on_disconnect();
@@ -58,18 +58,18 @@ impl Client {
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
                 // println!("{:?}", String::from_utf8_lossy(input_data));
-                let message: NetworkCommands = match serde_json::from_slice(input_data) {
+                let message: NetworkCommand = match serde_json::from_slice(input_data) {
                     Ok(c) => c,
-                    Err(e) => return client.send(NetworkCommands::Error(e.to_string())),
+                    Err(e) => return client.send(Command::Error(e.to_string())),
                 };
 
                 // println!("Inbound message:\n{:?}", message);
-                match IncomingCommand::execute(&client, &message) {
+                match IncomingCommand::execute(&client, &message.command) {
                     Ok(_) => {
-                        client.send(NetworkCommands::Success);
+                        client.send(Command::Success);
                     }
                     Err(e) => {
-                        client.send(NetworkCommands::Error(e.to_string()));
+                        client.send(Command::Error(e.to_string()));
                     }
                 }
             }
@@ -81,7 +81,7 @@ impl Client {
         self.task = Arc::new(Some(task));
     }
 
-    fn send(&self, command: NetworkCommands) {
+    fn send(&self, command: Command) {
         let data = serde_json::to_vec(&command).unwrap();
         self.handler
             .as_ref()
@@ -99,20 +99,18 @@ impl Client {
 
 pub struct IncomingCommand;
 impl IncomingCommand {
-    pub fn execute(client: &Client, network_command: &NetworkCommands) -> BuildResult {
+    pub fn execute(client: &Client, network_command: &Command) -> BuildResult {
         match network_command {
-            NetworkCommands::SystemCommand(command, args) => {
-                IncomingCommand.system_command(command, args)
-            }
-            NetworkCommands::FileTransferStart(transfer) => client.transfers.start_new(transfer),
-            NetworkCommands::FileTransferChunk(chunk) => client.transfers.append_chunk(chunk),
-            NetworkCommands::FileTransferEnd(id) => client.transfers.complete(id),
+            Command::System(command, args) => IncomingCommand.system_command(command, args),
+            Command::FileTransferStart(transfer) => client.transfers.start_new(transfer),
+            Command::FileTransferChunk(chunk) => client.transfers.append_chunk(chunk),
+            Command::FileTransferEnd(id) => client.transfers.complete(id),
             _ => Ok(()),
         }
     }
 
     fn system_command(&self, command: &str, args: &[String]) -> BuildResult {
-        let result = Command::new(command).args(args).output();
+        let result = SystemCommand::new(command).args(args).output();
 
         println!("Command result: {:#?}", result);
         match result {
