@@ -1,3 +1,4 @@
+use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
@@ -44,19 +45,27 @@ impl Server {
             NetEvent::Accepted(_endpoint, _id) => {}
             NetEvent::Message(endpoint, input_data) => {
                 let message: NetworkCommand = serde_json::from_slice(input_data).unwrap();
-                if let Command::Hello = message.command {
-                    *server.endpoint.write() = Some(endpoint);
-                    server.connected.store(true, Ordering::SeqCst);
-                } else {
-                    write_lock(
-                        &server.requests,
-                        Duration::from_secs_f32(0.2),
-                        |mut writer| {
-                            writer.remove(&message.id);
-                            true
-                        },
-                    );
+                match message.command {
+                    Command::Hello => {
+                        *server.endpoint.write() = Some(endpoint);
+                        server.connected.store(true, Ordering::SeqCst);
+                    }
+                    Command::Error(e) => {
+                        println!("{}", "failed".red().bold());
+                        println!("{} - {}", "ERROR".red().bold(), e);
+                        std::process::exit(1)
+                    }
+                    _ => {}
                 }
+
+                write_lock(
+                    &server.requests,
+                    Duration::from_secs_f32(0.2),
+                    |mut writer| {
+                        writer.remove(&message.id);
+                        true
+                    },
+                );
             }
             NetEvent::Disconnected(_endpoint) => {}
         });
@@ -72,7 +81,11 @@ impl Server {
     pub fn send(&mut self, command: Command) {
         let command = NetworkCommand::new(command);
 
+        // println!("Sending command: {:?}", command);
         let data = serde_json::to_vec(&command).unwrap();
+
+        // println!("VEC: {:?}", data);
+        //println!("STRING: {:?}", String::from_utf8_lossy(&data));
 
         self.track_request(&command.id);
 
@@ -80,7 +93,7 @@ impl Server {
             .as_ref()
             .unwrap()
             .network()
-            .send(self.endpoint.read().unwrap(), &data);
+            .send(self.endpoint.read().unwrap(), data.as_slice());
 
         self.wait_for_response(&command.id);
     }
