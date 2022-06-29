@@ -81,6 +81,18 @@ impl Transfers {
         transfer
     }
 
+    pub fn clear(&mut self) {
+        write_lock(
+            &self.transfers,
+            Duration::from_secs_f32(0.1),
+            |mut writer| {
+                writer.clear();
+                Ok(true)
+            },
+        )
+        .unwrap();
+    }
+
     pub fn start_new(&self, transfer: &FileTransfer) -> BuildResult {
         println!("Starting {}", transfer.id);
 

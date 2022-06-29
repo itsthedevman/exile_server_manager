@@ -3,15 +3,16 @@ use std::process::Command as SystemCommand;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::{transfer::*, BuildError, BuildResult, Command, NetworkCommand};
+use crate::{read_lock, transfer::*, write_lock, BuildError, BuildResult, Command, NetworkCommand};
 use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
+use parking_lot::RwLock;
 
 #[derive(Clone)]
 pub struct Client {
     pub host: String,
-    pub transfers: Arc<Transfers>,
+    pub transfers: Arc<RwLock<Transfers>>,
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
@@ -20,7 +21,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(host: String) -> Self {
-        let transfers = Arc::new(Transfers::new());
+        let transfers = Arc::new(RwLock::new(Transfers::new()));
 
         Client {
             handler: None,
@@ -59,7 +60,7 @@ impl Client {
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
                 println!("VEC: {:?}", input_data);
-                println!("STRING: {:?}", String::from_utf8_lossy(input_data));
+                // println!("STRING: {:?}", String::from_utf8_lossy(input_data));
                 let mut message: NetworkCommand = match serde_json::from_slice(input_data) {
                     Ok(c) => c,
                     Err(e) => {
@@ -100,6 +101,17 @@ impl Client {
 
     fn on_disconnect(&mut self) {
         self.handler.as_ref().unwrap().stop();
+
+        write_lock(
+            &self.transfers,
+            Duration::from_secs_f32(0.1),
+            |mut writer| {
+                writer.clear();
+                Ok(true)
+            },
+        )
+        .unwrap();
+
         std::thread::sleep(Duration::from_secs(1));
         self.connect();
     }
@@ -110,9 +122,30 @@ impl IncomingCommand {
     pub fn execute(client: &Client, network_command: &Command) -> BuildResult {
         match network_command {
             Command::System(command, args) => IncomingCommand.system_command(command, args),
-            Command::FileTransferStart(transfer) => client.transfers.start_new(transfer),
-            Command::FileTransferChunk(chunk) => client.transfers.append_chunk(chunk),
-            Command::FileTransferEnd(id) => client.transfers.complete(id),
+            Command::FileTransferStart(transfer) => read_lock(
+                &client.transfers,
+                Duration::from_secs_f32(0.1),
+                |transfers| {
+                    transfers.start_new(transfer)?;
+                    Ok(true)
+                },
+            ),
+            Command::FileTransferChunk(chunk) => read_lock(
+                &client.transfers,
+                Duration::from_secs_f32(0.1),
+                |transfers| {
+                    transfers.append_chunk(chunk)?;
+                    Ok(true)
+                },
+            ),
+            Command::FileTransferEnd(id) => read_lock(
+                &client.transfers,
+                Duration::from_secs_f32(0.1),
+                |transfers| {
+                    transfers.complete(id)?;
+                    Ok(true)
+                },
+            ),
             _ => Ok(()),
         }
     }
