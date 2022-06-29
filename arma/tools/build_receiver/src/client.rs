@@ -57,9 +57,13 @@ impl Client {
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
-                let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
+                // println!("{:?}", String::from_utf8_lossy(input_data));
+                let message: NetworkCommands = match serde_json::from_slice(input_data) {
+                    Ok(c) => c,
+                    Err(e) => return client.send(NetworkCommands::Error(e.to_string())),
+                };
 
-                println!("Inbound message:\n{:?}", message);
+                // println!("Inbound message:\n{:?}", message);
                 match IncomingCommand::execute(&client, &message) {
                     Ok(_) => {
                         client.send(NetworkCommands::Success);
@@ -78,7 +82,7 @@ impl Client {
     }
 
     fn send(&self, command: NetworkCommands) {
-        let data = bincode::serialize(&command).unwrap();
+        let data = serde_json::to_vec(&command).unwrap();
         self.handler
             .as_ref()
             .unwrap()
