@@ -1,4 +1,6 @@
-use crate::{server::Server, BuildResult, FileChunk, FileTransfer, NetworkCommands};
+use std::{thread, time::Duration};
+
+use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use uuid::Uuid;
 use vfs::{SeekAndRead, VfsPath};
 
@@ -8,9 +10,9 @@ pub struct Transfer;
 
 impl Transfer {
     pub fn file(
-        server: &Server,
-        source_path: &VfsPath,
-        destination_path: &VfsPath,
+        server: &mut Server,
+        source_path: VfsPath,
+        destination_path: VfsPath,
         file_name: String,
     ) -> BuildResult {
         let total_size = source_path.metadata()?.len as usize;
@@ -28,52 +30,72 @@ impl Transfer {
             total_size,
         };
 
-        server.send(NetworkCommands::FileTransferStart(transfer));
+        server.send(Command::FileTransferStart(transfer));
 
         let mut file = source_path.open_file()?;
         let mut index = 0;
         while let Some(bytes) = chunk_file(&mut file) {
-            server.send(NetworkCommands::FileTransferChunk(FileChunk {
+            let chunk = Command::FileTransferChunk(FileChunk {
                 id,
                 index,
                 size: bytes.len(),
                 bytes,
-            }));
+            });
+
+            server.send(chunk);
 
             index += 1;
+            thread::sleep(Duration::from_secs_f32(0.1));
         }
 
-        server.send(NetworkCommands::FileTransferEnd(id));
+        server.send(Command::FileTransferEnd(id));
 
         Ok(())
     }
 
     pub fn directory(
-        server: &Server,
-        source_path: &VfsPath,
-        destination_path: &VfsPath,
+        server: &mut Server,
+        source_path: VfsPath,
+        destination_path: VfsPath,
     ) -> BuildResult {
-        for path in source_path.walk_dir()? {
-            let path = path?;
-            if path.is_dir()? {
-                continue;
+        let file_paths: Vec<VfsPath> = source_path
+            .walk_dir()?
+            .filter(|p| match p {
+                Ok(p) => p.is_file().unwrap(),
+                Err(_e) => false,
+            })
+            .map(|p| p.unwrap())
+            .collect();
+
+        let mut handles = Vec::new();
+        for paths in file_paths.chunks(2) {
+            for path in paths.iter().cloned() {
+                let parent_path = source_path.parent().unwrap().as_str().to_owned();
+                let mut server = server.to_owned();
+                let destination_path = destination_path.clone();
+
+                let handler = thread::spawn(move || {
+                    let relative_path = path.as_str().replace(&parent_path, "");
+                    let file_name = path.filename();
+
+                    Transfer::file(
+                        &mut server,
+                        path,
+                        destination_path
+                            .join(&relative_path[1..])
+                            .unwrap()
+                            .parent()
+                            .unwrap(),
+                        file_name,
+                    )
+                    .unwrap();
+                });
+                handles.push(handler);
             }
+        }
 
-            // This removes the source_path's... path... from the file's path.
-            // This keeps the same structure of the file so it can be copied wherever on the remote
-            let relative_path = path
-                .as_str()
-                .replace(source_path.parent().unwrap().as_str(), "");
-
-            Transfer::file(
-                server,
-                &path,
-                &destination_path
-                    .join(&relative_path[1..])?
-                    .parent()
-                    .unwrap(),
-                path.filename(),
-            )?;
+        for handle in handles {
+            handle.join().unwrap();
         }
 
         Ok(())

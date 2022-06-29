@@ -1,30 +1,31 @@
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
+use uuid::Uuid;
 
+use crate::{read_lock, write_lock, Command, NetworkCommand};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::NetworkCommands;
-
 #[derive(Clone)]
 pub struct Server {
     pub connected: Arc<AtomicBool>,
+    pub requests: Arc<RwLock<HashMap<Uuid, ()>>>,
     server_task: Arc<Option<NodeTask>>,
     handler: Option<NodeHandler<()>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
-    waiting_for_response: Arc<AtomicBool>,
 }
 
 impl Server {
     pub fn new() -> Self {
         Server {
             connected: Arc::new(AtomicBool::new(false)),
-            waiting_for_response: Arc::new(AtomicBool::new(false)),
             server_task: Arc::new(None),
             handler: None,
             endpoint: Arc::new(RwLock::new(None)),
+            requests: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -37,17 +38,24 @@ impl Server {
             .listen(Transport::FramedTcp, listen_addr)
             .unwrap();
 
-        let builder = self.clone();
+        let server = self.clone();
         let task = listener.for_each_async(move |event| match event.network() {
             NetEvent::Connected(_, _) => unreachable!(),
             NetEvent::Accepted(_endpoint, _id) => {}
             NetEvent::Message(endpoint, input_data) => {
-                let message: NetworkCommands = bincode::deserialize(input_data).unwrap();
-                if let NetworkCommands::Hello = message {
-                    *builder.endpoint.write() = Some(endpoint);
-                    builder.connected.store(true, Ordering::SeqCst);
+                let message: NetworkCommand = serde_json::from_slice(input_data).unwrap();
+                if let Command::Hello = message.command {
+                    *server.endpoint.write() = Some(endpoint);
+                    server.connected.store(true, Ordering::SeqCst);
                 } else {
-                    builder.waiting_for_response.store(false, Ordering::SeqCst);
+                    write_lock(
+                        &server.requests,
+                        Duration::from_secs_f32(0.2),
+                        |mut writer| {
+                            writer.remove(&message.id);
+                            true
+                        },
+                    );
                 }
             }
             NetEvent::Disconnected(_endpoint) => {}
@@ -61,17 +69,36 @@ impl Server {
         self.handler.as_ref().unwrap().stop();
     }
 
-    pub fn send(&self, command: NetworkCommands) {
-        let data = bincode::serialize(&command).unwrap();
+    pub fn send(&mut self, command: Command) {
+        let command = NetworkCommand::new(command);
+
+        let data = serde_json::to_vec(&command).unwrap();
+
+        self.track_request(&command.id);
+
         self.handler
             .as_ref()
             .unwrap()
             .network()
             .send(self.endpoint.read().unwrap(), &data);
 
-        self.waiting_for_response.store(true, Ordering::SeqCst);
-        while self.waiting_for_response.load(Ordering::SeqCst) {
-            std::thread::sleep(Duration::from_secs_f32(0.5))
-        }
+        self.wait_for_response(&command.id);
+    }
+
+    fn track_request(&mut self, id: &Uuid) {
+        write_lock(
+            &self.requests,
+            Duration::from_secs_f32(0.2),
+            |mut writer| {
+                writer.insert(id.to_owned(), ());
+                true
+            },
+        )
+    }
+
+    fn wait_for_response(&mut self, id: &Uuid) {
+        read_lock(&self.requests, Duration::from_secs_f32(0.2), |reader| {
+            !reader.contains_key(id)
+        })
     }
 }

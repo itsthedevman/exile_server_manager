@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
-use std::process::Command;
+use std::process::Command as SystemCommand;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
 
 use crate::{
     server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
-    Commands, LogLevel, NetworkCommands,
+    Command, Commands, LogLevel,
 };
 
 use colored::*;
@@ -138,7 +138,7 @@ impl Builder {
         self.server.stop();
     }
 
-    fn send_to_receiver(&self, command: NetworkCommands) {
+    fn send_to_receiver(&mut self, command: Command) {
         self.server.send(command);
     }
 
@@ -178,7 +178,7 @@ impl Builder {
                     .write_all(script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
-                match Command::new("iconv")
+                match SystemCommand::new("iconv")
                     .arg("-t UTF-16LE")
                     .arg(format!("--output={}", command_result_path.as_str()))
                     .arg(command_file_path.as_str())
@@ -189,7 +189,7 @@ impl Builder {
                 };
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let base64_output = match Command::new("base64")
+                let base64_output = match SystemCommand::new("base64")
                     .arg(&command_result_path.as_str())
                     .output()
                 {
@@ -204,13 +204,13 @@ impl Builder {
                 encoded_command.pop();
 
                 // Finally send the command to powershell
-                self.send_to_receiver(NetworkCommands::SystemCommand(
+                self.send_to_receiver(Command::System(
                     "powershell".into(),
                     vec!["-EncodedCommand".to_string(), encoded_command],
                 ));
             }
             BuildOS::Linux => {
-                self.send_to_receiver(NetworkCommands::SystemCommand(
+                self.send_to_receiver(Command::System(
                     command.to_string(),
                     args.iter().map(|a| a.to_string()).collect(),
                 ));
@@ -306,9 +306,9 @@ impl Builder {
     fn build_extension(&mut self) -> BuildResult {
         // Copy the extension over to the remote host
         Transfer::directory(
-            &self.server,
-            &self.local_git_path.join("esm")?,
-            &self.remote_build_directory,
+            &mut self.server,
+            self.local_git_path.join("esm")?,
+            self.remote_build_directory.to_owned(),
         )?;
 
         match self.os {
