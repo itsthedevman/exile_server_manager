@@ -49,7 +49,8 @@ impl Client {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
                     println!("Connected to build host @ {}", server_addr);
-                    client.send(Command::Hello);
+                    let message = NetworkCommand::new(Command::Hello);
+                    client.send(message);
                 } else {
                     println!("Failed to connect to build host @ {}", server_addr);
                     client.on_disconnect();
@@ -57,19 +58,26 @@ impl Client {
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
-                // println!("{:?}", String::from_utf8_lossy(input_data));
-                let message: NetworkCommand = match serde_json::from_slice(input_data) {
+                println!("VEC: {:?}", input_data);
+                println!("STRING: {:?}", String::from_utf8_lossy(input_data));
+                let mut message: NetworkCommand = match serde_json::from_slice(input_data) {
                     Ok(c) => c,
-                    Err(e) => return client.send(Command::Error(e.to_string())),
+                    Err(e) => {
+                        let message = NetworkCommand::new(Command::Error(e.to_string()));
+                        client.send(message);
+                        return;
+                    }
                 };
 
                 // println!("Inbound message:\n{:?}", message);
                 match IncomingCommand::execute(&client, &message.command) {
                     Ok(_) => {
-                        client.send(Command::Success);
+                        message.command = Command::Success;
+                        client.send(message);
                     }
                     Err(e) => {
-                        client.send(Command::Error(e.to_string()));
+                        message.command = Command::Error(e.to_string());
+                        client.send(message);
                     }
                 }
             }
@@ -81,7 +89,7 @@ impl Client {
         self.task = Arc::new(Some(task));
     }
 
-    fn send(&self, command: Command) {
+    fn send(&self, command: NetworkCommand) {
         let data = serde_json::to_vec(&command).unwrap();
         self.handler
             .as_ref()
