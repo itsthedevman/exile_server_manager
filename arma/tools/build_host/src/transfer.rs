@@ -1,5 +1,3 @@
-use std::{thread, time::Duration};
-
 use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use uuid::Uuid;
 use vfs::{SeekAndRead, VfsPath};
