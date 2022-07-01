@@ -28,7 +28,6 @@ impl IncomingTransfer {
 
         let parent_path = self.path.parent().unwrap();
         for index in 0..self.chunks.len() {
-            // It cannot find the file chunk in the filesystem
             let child_file = parent_path.join(&format!("{}.{}", self.path.filename(), index))?;
             let content = child_file.read_to_string()?;
             let bytes = content.as_bytes();
@@ -66,7 +65,6 @@ pub struct Chunk {
 }
 
 pub struct Transfers {
-    // lookup: Arc<RwLock<HashMap<Uuid, usize>>>,
     transfers: Arc<RwLock<HashMap<Uuid, IncomingTransfer>>>,
 }
 
@@ -94,9 +92,7 @@ impl Transfers {
     }
 
     pub fn start_new(&self, transfer: &FileTransfer) -> BuildResult {
-        println!("Starting {}", transfer.id);
-
-        read_lock(&self.transfers, Duration::from_secs_f32(0.4), |reader| {
+        read_lock(&self.transfers, Duration::from_secs_f32(0.005), |reader| {
             if reader.contains_key(&transfer.id) {
                 return Err(
                     format!("Transfer with ID {} has already been started", transfer.id).into(),
@@ -106,7 +102,6 @@ impl Transfers {
             Ok(true)
         })?;
 
-        println!("Adding {}", transfer.id);
         self.add(transfer)?;
 
         Ok(())
@@ -115,7 +110,7 @@ impl Transfers {
     pub fn append_chunk(&self, incoming_chunk: &FileChunk) -> BuildResult {
         write_lock(
             &self.transfers,
-            Duration::from_secs_f32(0.1),
+            Duration::from_secs_f32(0.005),
             |mut writer| {
                 let transfer = match writer.get_mut(&incoming_chunk.id) {
                     Some(transfer) => transfer,
@@ -130,11 +125,6 @@ impl Transfers {
 
                 let mut chunk = &mut transfer.chunks[incoming_chunk.index];
                 let bytes = incoming_chunk.bytes.clone();
-
-                println!(
-                    "Appended chunk {} for {}",
-                    incoming_chunk.index, incoming_chunk.id
-                );
 
                 let path = transfer.path.parent().unwrap();
                 let file = path.join(&format!(
@@ -151,22 +141,13 @@ impl Transfers {
             },
         )?;
 
-        println!(
-            "Wrote chunk #{} for {}",
-            incoming_chunk.index, incoming_chunk.id
-        );
-
         Ok(())
     }
 
     pub fn complete(&self, id: &Uuid) -> BuildResult {
-        println!("Waiting for completion {}", id);
-
-        read_lock(&self.transfers, Duration::from_secs_f32(0.5), |reader| {
+        read_lock(&self.transfers, Duration::from_secs_f32(0.1), |reader| {
             Ok(!reader.contains_key(id))
         })?;
-
-        println!("Completed {}", id);
 
         Ok(())
     }
@@ -181,7 +162,7 @@ impl Transfers {
 
         write_lock(
             &self.transfers,
-            Duration::from_secs_f32(0.2),
+            Duration::from_secs_f32(0.005),
             |mut writer| {
                 let path = destination_path.join(&transfer.file_name).unwrap();
 
@@ -206,7 +187,7 @@ impl Transfers {
         let transfers = self.transfers.to_owned();
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_secs_f32(0.1));
+            thread::sleep(Duration::from_secs_f32(0.05));
 
             let reader = match transfers.try_read() {
                 Some(w) => w,
@@ -221,31 +202,19 @@ impl Transfers {
                 None => continue,
             };
 
-            println!(
-                "Checking {} - Chunks {} - File {}",
-                transfer.id,
-                transfer.chunks_written(),
-                transfer.finished
-            );
-
             if !transfer.chunks_written() {
                 continue;
             }
 
             let id = transfer.id.to_owned();
             drop(reader);
-            println!("Writing {id}");
 
-            let result = write_lock(&transfers, Duration::from_secs_f32(0.2), |mut writer| {
-                println!("Write {id}");
-
+            let result = write_lock(&transfers, Duration::from_secs_f32(0.005), |mut writer| {
                 let mut transfer = match writer.remove(&id) {
                     Some(t) => t,
                     None => return Ok(true),
                 };
                 drop(writer);
-
-                println!("Combine {id}");
 
                 transfer.combine_files()?;
                 Ok(true)

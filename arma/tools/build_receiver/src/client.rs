@@ -59,8 +59,6 @@ impl Client {
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
-                println!("VEC: {:?}", input_data);
-                // println!("STRING: {:?}", String::from_utf8_lossy(input_data));
                 let mut message: NetworkCommand = match serde_json::from_slice(input_data) {
                     Ok(c) => c,
                     Err(e) => {
@@ -70,7 +68,6 @@ impl Client {
                     }
                 };
 
-                // println!("Inbound message:\n{:?}", message);
                 match IncomingCommand::execute(&client, &message.command) {
                     Ok(_) => {
                         message.command = Command::Success;
@@ -92,6 +89,7 @@ impl Client {
 
     fn send(&self, command: NetworkCommand) {
         let data = serde_json::to_vec(&command).unwrap();
+
         self.handler
             .as_ref()
             .unwrap()
