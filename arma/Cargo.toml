@@ -5,4 +5,5 @@ members = [
   "tools/build_receiver",
   "tools/build_common",
 ]
+default-members = ["esm"]
 # exclude = ["tools\\server", "tools\\client"]

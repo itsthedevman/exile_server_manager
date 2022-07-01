@@ -1,5 +1,3 @@
-use std::{thread, time::Duration};
-
 use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use uuid::Uuid;
 use vfs::{SeekAndRead, VfsPath};
@@ -30,7 +28,7 @@ impl Transfer {
             total_size,
         };
 
-        server.send(Command::FileTransferStart(transfer));
+        server.send(Command::FileTransferStart(transfer))?;
 
         let mut file = source_path.open_file()?;
         let mut index = 0;
@@ -42,13 +40,12 @@ impl Transfer {
                 bytes,
             });
 
-            server.send(chunk);
+            server.send(chunk)?;
 
             index += 1;
-            thread::sleep(Duration::from_secs_f32(0.1));
         }
 
-        server.send(Command::FileTransferEnd(id));
+        server.send(Command::FileTransferEnd(id))?;
 
         Ok(())
     }
@@ -67,35 +64,25 @@ impl Transfer {
             .map(|p| p.unwrap())
             .collect();
 
-        let mut handles = Vec::new();
-        for paths in file_paths.chunks(2) {
-            for path in paths.iter().cloned() {
-                let parent_path = source_path.parent().unwrap().as_str().to_owned();
-                let mut server = server.to_owned();
-                let destination_path = destination_path.clone();
+        for path in file_paths {
+            let parent_path = source_path.parent().unwrap().as_str().to_owned();
+            let mut server = server.to_owned();
+            let destination_path = destination_path.clone();
 
-                let handler = thread::spawn(move || {
-                    let relative_path = path.as_str().replace(&parent_path, "");
-                    let file_name = path.filename();
+            let relative_path = path.as_str().replace(&parent_path, "");
+            let file_name = path.filename();
 
-                    Transfer::file(
-                        &mut server,
-                        path,
-                        destination_path
-                            .join(&relative_path[1..])
-                            .unwrap()
-                            .parent()
-                            .unwrap(),
-                        file_name,
-                    )
-                    .unwrap();
-                });
-                handles.push(handler);
-            }
-        }
-
-        for handle in handles {
-            handle.join().unwrap();
+            Transfer::file(
+                &mut server,
+                path,
+                destination_path
+                    .join(&relative_path[1..])
+                    .unwrap()
+                    .parent()
+                    .unwrap(),
+                file_name,
+            )
+            .unwrap();
         }
 
         Ok(())

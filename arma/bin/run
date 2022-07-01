@@ -1,5 +1,5 @@
 cargo update --package esm_message
-cargo build --release
+cargo build --release --workspace
 
 if [ $? -ne 0 ]
 then

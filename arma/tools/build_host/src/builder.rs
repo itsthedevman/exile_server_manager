@@ -138,8 +138,8 @@ impl Builder {
         self.server.stop();
     }
 
-    fn send_to_receiver(&mut self, command: Command) {
-        self.server.send(command);
+    fn send_to_receiver(&mut self, command: Command) -> BuildResult {
+        self.server.send(command)
     }
 
     fn start_server(&mut self) -> BuildResult {
@@ -207,13 +207,13 @@ impl Builder {
                 self.send_to_receiver(Command::System(
                     "powershell".into(),
                     vec!["-EncodedCommand".to_string(), encoded_command],
-                ));
+                ))?;
             }
             BuildOS::Linux => {
                 self.send_to_receiver(Command::System(
                     command.to_string(),
                     args.iter().map(|a| a.to_string()).collect(),
-                ));
+                ))?;
             }
         }
 
@@ -314,7 +314,8 @@ impl Builder {
         match self.os {
             BuildOS::Windows => {
                 // let script = format!(
-                //     "rustup run stable-{build_target} cargo build --target {build_target} --release",
+                //     "cd {}; rustup run stable-{build_target} cargo build --target {build_target} --release",
+                //     self.remote_build_directory.join("esm")?.as_str(),
                 //     build_target = self.extension_build_target
                 // );
 
