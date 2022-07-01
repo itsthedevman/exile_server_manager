@@ -207,13 +207,13 @@ impl Builder {
                 self.send_to_receiver(Command::System(
                     "powershell".into(),
                     vec!["-EncodedCommand".to_string(), encoded_command],
-                ));
+                ))?;
             }
             BuildOS::Linux => {
                 self.send_to_receiver(Command::System(
                     command.to_string(),
                     args.iter().map(|a| a.to_string()).collect(),
-                ));
+                ))?;
             }
         }
 

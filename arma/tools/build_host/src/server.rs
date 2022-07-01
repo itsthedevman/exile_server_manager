@@ -65,7 +65,8 @@ impl Server {
                         writer.remove(&message.id);
                         Ok(true)
                     },
-                );
+                )
+                .unwrap();
             }
             NetEvent::Disconnected(_endpoint) => {}
         });
