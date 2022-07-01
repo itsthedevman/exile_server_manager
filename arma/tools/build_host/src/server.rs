@@ -4,7 +4,7 @@ use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
 use uuid::Uuid;
 
-use crate::{read_lock, write_lock, Command, NetworkCommand};
+use crate::{read_lock, write_lock, BuildResult, Command, NetworkCommand};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -60,10 +60,10 @@ impl Server {
 
                 write_lock(
                     &server.requests,
-                    Duration::from_secs_f32(0.2),
+                    Duration::from_secs_f32(0.001),
                     |mut writer| {
                         writer.remove(&message.id);
-                        true
+                        Ok(true)
                     },
                 );
             }
@@ -78,16 +78,12 @@ impl Server {
         self.handler.as_ref().unwrap().stop();
     }
 
-    pub fn send(&mut self, command: Command) {
+    pub fn send(&mut self, command: Command) -> BuildResult {
         let command = NetworkCommand::new(command);
 
-        // println!("Sending command: {:?}", command);
         let data = serde_json::to_vec(&command).unwrap();
 
-        // println!("VEC: {:?}", data);
-        //println!("STRING: {:?}", String::from_utf8_lossy(&data));
-
-        self.track_request(&command.id);
+        self.track_request(&command.id)?;
 
         self.handler
             .as_ref()
@@ -95,23 +91,23 @@ impl Server {
             .network()
             .send(self.endpoint.read().unwrap(), data.as_slice());
 
-        self.wait_for_response(&command.id);
+        self.wait_for_response(&command.id)
     }
 
-    fn track_request(&mut self, id: &Uuid) {
+    fn track_request(&mut self, id: &Uuid) -> BuildResult {
         write_lock(
             &self.requests,
-            Duration::from_secs_f32(0.2),
+            Duration::from_secs_f32(0.005),
             |mut writer| {
                 writer.insert(id.to_owned(), ());
-                true
+                Ok(true)
             },
         )
     }
 
-    fn wait_for_response(&mut self, id: &Uuid) {
-        read_lock(&self.requests, Duration::from_secs_f32(0.2), |reader| {
-            !reader.contains_key(id)
+    fn wait_for_response(&mut self, id: &Uuid) -> BuildResult {
+        read_lock(&self.requests, Duration::from_secs_f32(0.005), |reader| {
+            Ok(!reader.contains_key(id))
         })
     }
 }
