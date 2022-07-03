@@ -29,12 +29,13 @@ impl IncomingTransfer {
         let parent_path = self.path.parent().unwrap();
         for index in 0..self.chunks.len() {
             let child_file = parent_path.join(&format!("{}.{}", self.path.filename(), index))?;
-            let content = child_file.read_to_string()?;
-            let bytes = content.as_bytes();
 
-            match file.write_all(bytes) {
+            let mut buffer = Vec::new();
+            child_file.open_file()?.read_to_end(&mut buffer)?;
+
+            match file.write_all(&buffer) {
                 Ok(_) => {
-                    self.size += bytes.len();
+                    self.size += buffer.len();
                     child_file.remove_file()?;
                 }
                 Err(e) => return Err(e.into()),
@@ -92,6 +93,13 @@ impl Transfers {
     }
 
     pub fn start_new(&self, transfer: &FileTransfer) -> BuildResult {
+        println!(
+            "Starting transfer - {} - {} -> {}",
+            transfer.id.to_string().bright_yellow(),
+            transfer.file_name.black(),
+            transfer.destination_path.black()
+        );
+
         read_lock(&self.transfers, Duration::from_secs_f32(0.005), |reader| {
             if reader.contains_key(&transfer.id) {
                 return Err(
@@ -148,6 +156,8 @@ impl Transfers {
         read_lock(&self.transfers, Duration::from_secs_f32(0.1), |reader| {
             Ok(!reader.contains_key(id))
         })?;
+
+        println!("Finished transfer - {}\n", id.to_string().bright_green());
 
         Ok(())
     }
