@@ -11,14 +11,15 @@ impl Transfer {
         server: &mut Server,
         source_path: VfsPath,
         destination_path: VfsPath,
-        file_name: String,
+        file_name: &str,
     ) -> BuildResult {
+        let source_path = source_path.join(&file_name)?;
         let total_size = source_path.metadata()?.len as usize;
 
         let id = Uuid::new_v4();
         let transfer = FileTransfer {
             id,
-            file_name,
+            file_name: file_name.to_string(),
             destination_path: destination_path.as_str()[1..].to_string(),
             number_of_chunks: if total_size < CHUNK_SIZE {
                 1
@@ -74,13 +75,12 @@ impl Transfer {
 
             Transfer::file(
                 &mut server,
-                path,
+                path.parent().unwrap(),
                 destination_path
-                    .join(&relative_path[1..])
-                    .unwrap()
+                    .join(&relative_path[1..])?
                     .parent()
                     .unwrap(),
-                file_name,
+                &file_name,
             )
             .unwrap();
         }

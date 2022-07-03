@@ -7,7 +7,7 @@ use vfs::{PhysicalFS, VfsPath};
 
 use crate::{
     server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
-    Command, Commands, LogLevel,
+    Command, Commands, LogLevel, System,
 };
 
 use colored::*;
@@ -86,6 +86,17 @@ impl Builder {
         Ok(builder)
     }
 
+    pub fn start(&mut self) -> BuildResult {
+        self.print_info();
+        self.print_status("Starting build server", Builder::start_server)?;
+        self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
+        self.print_status("Killing Arma", Builder::kill_arma)?;
+        self.print_status("Cleaning directories", Builder::clean_directories)?;
+        self.print_status("Writing server config", Builder::create_server_config)?;
+        self.print_status("Compiling esm_arma", Builder::build_extension)?;
+        Ok(())
+    }
+
     fn print_status<F>(
         &mut self,
         message: impl Into<String> + std::fmt::Display,
@@ -95,7 +106,12 @@ impl Builder {
         F: Fn(&mut Builder) -> BuildResult,
     {
         print!("{} - {message} ... ", "<esm_bt>".blue().bold());
-        io::stdout().flush().expect("Failed to flush stdout");
+
+        // Forces print to write
+        if let Err(e) = io::stdout().flush() {
+            println!("{}", "failed".red().bold());
+            return Err(e.to_string().into());
+        }
 
         match code(self) {
             Ok(_) => {
@@ -111,27 +127,21 @@ impl Builder {
 
     fn print_info(&self) {
         println!(
-            "{}\n{}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {:?}\n  {:17}: {}\n  {:17}: {}\n",
-            "------------------------------------------".black().bold(),
-            "ESM Build tool".blue().bold(),
-            "OS".black().bold(), self.os,
-            "ARCH".black().bold(), self.arch,
-            "ENV".black().bold(), self.env,
-            "LOG LEVEL".black().bold(), self.log_level,
-            "GIT DIRECTORY".black().bold(), self.local_git_path.as_str(),
-            "BUILD DIRECTORY".black().bold(), self.remote_build_directory.as_str()
+            "{}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n",
+            "esm build tool".blue().bold(),
+            "os".black().bold(),
+            format!("{:?}", self.os).to_lowercase(),
+            "arch".black().bold(),
+            format!("{:?}", self.arch).to_lowercase(),
+            "env".black().bold(),
+            format!("{:?}", self.env).to_lowercase(),
+            "log level".black().bold(),
+            format!("{:?}", self.log_level).to_lowercase(),
+            "git directory".black().bold(),
+            self.local_git_path.as_str(),
+            "build directory".black().bold(),
+            self.remote_build_directory.as_str()
         )
-    }
-
-    pub fn start(&mut self) -> BuildResult {
-        self.print_info();
-        self.print_status("Starting build server", Builder::start_server)?;
-        self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
-        self.print_status("Killing Arma", Builder::kill_arma)?;
-        self.print_status("Cleaning directories", Builder::clean_directories)?;
-        self.print_status("Writing server config", Builder::create_server_config)?;
-        self.print_status("Compiling esm_arma", Builder::build_extension)?;
-        Ok(())
     }
 
     pub fn teardown(&mut self) {
@@ -143,8 +153,7 @@ impl Builder {
     }
 
     fn start_server(&mut self) -> BuildResult {
-        self.server.start();
-        Ok(())
+        self.server.start()
     }
 
     fn wait_for_receiver(&mut self) -> BuildResult {
@@ -155,7 +164,7 @@ impl Builder {
         Ok(())
     }
 
-    fn system_command<'a>(&'a mut self, command: &'a str, args: Vec<&'a str>) -> BuildResult {
+    fn system_command(&mut self, command: System) -> BuildResult {
         lazy_static! {
             static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
         }
@@ -168,8 +177,9 @@ impl Builder {
 
                 // Removes the "Preparing modules for first use." errors that powershell return
                 let script = format!(
-                    "$ProgressPreference = 'SilentlyContinue'; {command} {}",
-                    args.join(" ")
+                    "$ProgressPreference = 'SilentlyContinue'; {} {}",
+                    command.cmd,
+                    command.args.join(" ")
                 );
 
                 let script = WHITESPACE_REGEX.replace_all(&script, " ");
@@ -203,33 +213,30 @@ impl Builder {
                 // Remove the trailing newline
                 encoded_command.pop();
 
-                // Finally send the command to powershell
-                self.send_to_receiver(Command::System(
-                    "powershell".into(),
-                    vec!["-EncodedCommand".to_string(), encoded_command],
-                ))?;
-            }
-            BuildOS::Linux => {
-                self.send_to_receiver(Command::System(
-                    command.to_string(),
-                    args.iter().map(|a| a.to_string()).collect(),
-                ))?;
-            }
-        }
+                let command = System {
+                    cmd: "powershell".into(),
+                    args: vec!["-EncodedCommand".to_string(), encoded_command],
+                    check_for_success: command.check_for_success,
+                    success_regex: command.success_regex,
+                };
 
-        Ok(())
+                // Finally send the command to powershell
+                self.send_to_receiver(Command::System(command))
+            }
+            BuildOS::Linux => self.send_to_receiver(Command::System(command)),
+        }
     }
 
     fn kill_arma(&mut self) -> BuildResult {
         lazy_static! {
-            static ref WINDOWS_EXES: Vec<&'static str> = vec![
+            static ref WINDOWS_EXES: &'static [&'static str] = &[
                 "arma3server.exe",
                 "arma3server_x64.exe",
                 "arma3_x64.exe",
                 "arma3.exe",
                 "arma3battleye.exe"
             ];
-            static ref LINUX_EXES: Vec<&'static str> = vec!["arma3server", "arma3server_x64"];
+            static ref LINUX_EXES: &'static [&'static str] = &["arma3server", "arma3server_x64"];
         };
 
         let mut script = String::new();
@@ -246,7 +253,12 @@ impl Builder {
             }
         }
 
-        self.system_command(&script, vec![])
+        self.system_command(System {
+            cmd: script,
+            args: vec![],
+            check_for_success: false,
+            success_regex: "".into(),
+        })
     }
 
     fn clean_directories(&mut self) -> BuildResult {
@@ -266,9 +278,24 @@ impl Builder {
             BuildOS::Windows => {
                 format!(
                     r#"
-                        New-Item -Path "C:\{build_directory}\esm" -ItemType Directory;
-                        New-Item -Path "C:\{build_directory}\@esm" -ItemType Directory;
-                        New-Item -Path "C:\{build_directory}\@esm\addons" -ItemType Directory;
+                        $Dirs = "C:\{build_directory}\esm",
+                                "C:\{build_directory}\@esm",
+                                "C:\{build_directory}\@esm\addons";
+
+                        Foreach ($dir in $Dirs) {{
+                            if (![System.IO.Directory]::Exists($dir)) {{
+                                New-Item -Path $dir -ItemType Directory;
+                            }}
+                        }}
+
+                        $Items = Get-ChildItem -Path "C:\{build_directory}\esm" -Recurse;
+                        Foreach ($item in $Items) {{
+                            if (($item.GetType()).Name-eq "DirectoryInfo" -and $item.name -eq "target") {{
+                                continue;
+                            }}
+
+                            Remove-Item $item -Force -Recurse;
+                        }}
                     "#,
                     build_directory = &self.remote_build_directory.as_str()[1..],
                 )
@@ -276,7 +303,12 @@ impl Builder {
             BuildOS::Linux => todo!(),
         };
 
-        self.system_command(&script, vec![])
+        self.system_command(System {
+            cmd: script,
+            args: vec![],
+            check_for_success: false,
+            success_regex: "".into(),
+        })
     }
 
     fn create_server_config(&mut self) -> BuildResult {
@@ -304,22 +336,59 @@ impl Builder {
     }
 
     fn build_extension(&mut self) -> BuildResult {
-        // Copy the extension over to the remote host
-        Transfer::directory(
-            &mut self.server,
-            self.local_git_path.join("esm")?,
-            self.remote_build_directory.to_owned(),
-        )?;
+        lazy_static! {
+            pub static ref GIT_DIRECTORIES: &'static [&'static str] = &["refs"];
+            pub static ref GIT_FILES: &'static [&'static str] = &[
+                "description",
+                "FETCH_HEAD",
+                "HEAD",
+                "index",
+                "ORIG_HEAD",
+                "packed-refs"
+            ];
+        }
 
         match self.os {
             BuildOS::Windows => {
-                // let script = format!(
-                //     "cd {}; rustup run stable-{build_target} cargo build --target {build_target} --release",
-                //     self.remote_build_directory.join("esm")?.as_str(),
-                //     build_target = self.extension_build_target
-                // );
+                // Copy the extension over to the remote host
+                Transfer::directory(
+                    &mut self.server,
+                    self.local_git_path.join("esm")?,
+                    self.remote_build_directory.to_owned(),
+                )?;
 
-                // self.system_command(&script, vec![])?;
+                for dir in GIT_DIRECTORIES.iter() {
+                    Transfer::directory(
+                        &mut self.server,
+                        self.local_git_path.join(".git")?.join(dir)?,
+                        self.remote_build_directory.join("esm")?.join(".git")?,
+                    )?;
+                }
+
+                for file in GIT_FILES.iter() {
+                    Transfer::file(
+                        &mut self.server,
+                        self.local_git_path.join(".git")?,
+                        self.remote_build_directory.join("esm")?.join(".git")?,
+                        file,
+                    )?;
+                }
+
+                let script = format!(
+                    r#"
+                        cd 'C:\{build_directory}\esm';
+                        rustup run stable-{build_target} cargo build --target {build_target} --release
+                    "#,
+                    build_directory = &self.remote_build_directory.as_str()[1..],
+                    build_target = self.extension_build_target
+                );
+
+                self.system_command(System {
+                    cmd: script,
+                    args: vec![],
+                    check_for_success: true,
+                    success_regex: "finished release [optimized]".into(),
+                })?;
             }
             BuildOS::Linux => {
                 // TODO: Build locally and copy to build directory
