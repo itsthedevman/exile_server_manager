@@ -1,4 +1,5 @@
 mod client;
+mod command;
 mod transfer;
 
 pub use build_common::*;
