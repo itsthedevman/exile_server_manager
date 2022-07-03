@@ -27,7 +27,7 @@ pub enum Command {
     Hello,
     Success,
     Error(String),
-    System(String, Vec<String>),
+    System(System),
     FileTransferStart(FileTransfer),
     FileTransferChunk(FileChunk),
     FileTransferEnd(Uuid),
@@ -37,6 +37,14 @@ impl Default for Command {
     fn default() -> Self {
         Command::Hello
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct System {
+    pub cmd: String,
+    pub args: Vec<String>,
+    pub check_for_success: bool,
+    pub success_regex: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
