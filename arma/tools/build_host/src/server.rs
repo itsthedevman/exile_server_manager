@@ -30,14 +30,13 @@ impl Server {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> BuildResult {
         let (handler, listener) = node::split::<()>();
 
         let listen_addr = "0.0.0.0:6969";
-        handler
-            .network()
-            .listen(Transport::FramedTcp, listen_addr)
-            .unwrap();
+        if let Err(e) = handler.network().listen(Transport::FramedTcp, listen_addr) {
+            return Err(e.to_string().into());
+        }
 
         let server = self.clone();
         let task = listener.for_each_async(move |event| match event.network() {
@@ -52,7 +51,12 @@ impl Server {
                     }
                     Command::Error(e) => {
                         println!("{}", "failed".red().bold());
-                        println!("{} - {}", "ERROR".red().bold(), e);
+                        println!(
+                            "{} - {} - {}",
+                            "<esm_bt>".blue().bold(),
+                            "error".red().bold(),
+                            e
+                        );
                         std::process::exit(1)
                     }
                     _ => {}
@@ -73,10 +77,13 @@ impl Server {
 
         self.server_task = Arc::new(Some(task));
         self.handler = Some(handler);
+        Ok(())
     }
 
     pub fn stop(&mut self) {
-        self.handler.as_ref().unwrap().stop();
+        if let Some(s) = self.handler.as_ref() {
+            s.stop()
+        }
     }
 
     pub fn send(&mut self, command: Command) -> BuildResult {

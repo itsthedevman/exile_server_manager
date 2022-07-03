@@ -86,18 +86,34 @@ pub enum BuildArch {
 }
 
 fn main() {
+    ctrlc::set_handler(move || {
+        println!();
+        exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let args = Args::parse();
     let mut builder = match Builder::new(args.command) {
         Ok(b) => b,
         Err(e) => {
-            println!("{} - {}", "ERROR".red().bold(), e);
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "error".red().bold(),
+                e
+            );
             exit(1)
         }
     };
 
     match builder.start() {
         Ok(_) => {}
-        Err(e) => println!("{} - {}", "ERROR".red().bold(), e),
+        Err(e) => println!(
+            "{} - {} - {}",
+            "<esm_bt>".blue().bold(),
+            "error".red().bold(),
+            e
+        ),
     };
 
     builder.teardown();
