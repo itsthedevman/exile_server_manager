@@ -99,14 +99,10 @@ impl Client {
     fn on_disconnect(&mut self) {
         self.handler.as_ref().unwrap().stop();
 
-        write_lock(
-            &self.transfers,
-            Duration::from_secs_f32(0.1),
-            |mut writer| {
-                writer.clear();
-                Ok(true)
-            },
-        )
+        write_lock(&self.transfers, |mut writer| {
+            writer.clear();
+            Ok(true)
+        })
         .unwrap();
 
         std::thread::sleep(Duration::from_secs(1));

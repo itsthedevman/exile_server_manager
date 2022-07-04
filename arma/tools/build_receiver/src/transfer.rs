@@ -81,14 +81,10 @@ impl Transfers {
     }
 
     pub fn clear(&mut self) {
-        write_lock(
-            &self.transfers,
-            Duration::from_secs_f32(0.1),
-            |mut writer| {
-                writer.clear();
-                Ok(true)
-            },
-        )
+        write_lock(&self.transfers, |mut writer| {
+            writer.clear();
+            Ok(true)
+        })
         .unwrap();
     }
 
@@ -100,7 +96,7 @@ impl Transfers {
             transfer.destination_path.black()
         );
 
-        read_lock(&self.transfers, Duration::from_secs_f32(0.005), |reader| {
+        read_lock(&self.transfers, |reader| {
             if reader.contains_key(&transfer.id) {
                 return Err(
                     format!("Transfer with ID {} has already been started", transfer.id).into(),
@@ -116,46 +112,38 @@ impl Transfers {
     }
 
     pub fn append_chunk(&self, incoming_chunk: &FileChunk) -> BuildResult {
-        write_lock(
-            &self.transfers,
-            Duration::from_secs_f32(0.005),
-            |mut writer| {
-                let transfer = match writer.get_mut(&incoming_chunk.id) {
-                    Some(transfer) => transfer,
-                    None => {
-                        return Err(format!(
-                            "Failed to find transfer for chunk {}",
-                            &incoming_chunk.id
-                        )
-                        .into())
-                    }
-                };
+        write_lock(&self.transfers, |mut writer| {
+            let transfer = match writer.get_mut(&incoming_chunk.id) {
+                Some(transfer) => transfer,
+                None => {
+                    return Err(
+                        format!("Failed to find transfer for chunk {}", &incoming_chunk.id).into(),
+                    )
+                }
+            };
 
-                let mut chunk = &mut transfer.chunks[incoming_chunk.index];
-                let bytes = incoming_chunk.bytes.clone();
+            let mut chunk = &mut transfer.chunks[incoming_chunk.index];
+            let bytes = incoming_chunk.bytes.clone();
 
-                let path = transfer.path.parent().unwrap();
-                let file = path.join(&format!(
-                    "{}.{}",
-                    transfer.path.filename(),
-                    incoming_chunk.index
-                ))?;
+            let path = transfer.path.parent().unwrap();
+            let file = path.join(&format!(
+                "{}.{}",
+                transfer.path.filename(),
+                incoming_chunk.index
+            ))?;
 
-                file.create_file()?.write_all(&bytes)?;
+            file.create_file()?.write_all(&bytes)?;
 
-                chunk.written = true;
+            chunk.written = true;
 
-                Ok(true)
-            },
-        )?;
+            Ok(true)
+        })?;
 
         Ok(())
     }
 
     pub fn complete(&self, id: &Uuid) -> BuildResult {
-        read_lock(&self.transfers, Duration::from_secs_f32(0.1), |reader| {
-            Ok(!reader.contains_key(id))
-        })?;
+        read_lock(&self.transfers, |reader| Ok(!reader.contains_key(id)))?;
 
         println!("Finished transfer - {}\n", id.to_string().bright_green());
 
@@ -170,25 +158,21 @@ impl Transfers {
         // Ensure all directories exist
         destination_path.create_dir_all()?;
 
-        write_lock(
-            &self.transfers,
-            Duration::from_secs_f32(0.005),
-            |mut writer| {
-                let path = destination_path.join(&transfer.file_name).unwrap();
+        write_lock(&self.transfers, |mut writer| {
+            let path = destination_path.join(&transfer.file_name).unwrap();
 
-                let file_transfer = IncomingTransfer {
-                    id: transfer.id,
-                    size: 0,
-                    total_size: transfer.total_size,
-                    path,
-                    finished: false,
-                    chunks: vec![Default::default(); transfer.number_of_chunks],
-                };
+            let file_transfer = IncomingTransfer {
+                id: transfer.id,
+                size: 0,
+                total_size: transfer.total_size,
+                path,
+                finished: false,
+                chunks: vec![Default::default(); transfer.number_of_chunks],
+            };
 
-                writer.insert(transfer.id, file_transfer);
-                Ok(true)
-            },
-        )?;
+            writer.insert(transfer.id, file_transfer);
+            Ok(true)
+        })?;
 
         Ok(())
     }
@@ -197,8 +181,6 @@ impl Transfers {
         let transfers = self.transfers.to_owned();
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_secs_f32(0.05));
-
             let reader = match transfers.try_read() {
                 Some(w) => w,
                 None => {
@@ -219,7 +201,7 @@ impl Transfers {
             let id = transfer.id.to_owned();
             drop(reader);
 
-            let result = write_lock(&transfers, Duration::from_secs_f32(0.005), |mut writer| {
+            let result = write_lock(&transfers, |mut writer| {
                 let mut transfer = match writer.remove(&id) {
                     Some(t) => t,
                     None => return Ok(true),
