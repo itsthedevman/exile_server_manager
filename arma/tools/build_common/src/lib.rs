@@ -27,6 +27,7 @@ pub enum Command {
     Error(String),
     System(System),
     FileTransferStart(FileTransfer),
+    FileTransferResult(FileTransferResult),
     FileTransferChunk(FileChunk),
     FileTransferEnd(Uuid),
 }
