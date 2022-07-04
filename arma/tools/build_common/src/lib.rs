@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -66,7 +64,7 @@ pub struct FileChunk {
 
 pub type BuildResult = Result<(), BuildError>;
 
-pub fn read_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F) -> BuildResult
+pub fn read_lock<T, F>(lock: &RwLock<T>, code: F) -> BuildResult
 where
     F: Fn(RwLockReadGuard<T>) -> Result<bool, BuildError>,
 {
@@ -74,7 +72,6 @@ where
         let reader = match lock.try_read() {
             Some(r) => r,
             None => {
-                std::thread::sleep(wait);
                 continue;
             }
         };
@@ -92,7 +89,7 @@ where
     Ok(())
 }
 
-pub fn write_lock<T, F>(lock: &RwLock<T>, wait: Duration, code: F) -> BuildResult
+pub fn write_lock<T, F>(lock: &RwLock<T>, code: F) -> BuildResult
 where
     F: Fn(RwLockWriteGuard<T>) -> Result<bool, BuildError>,
 {
@@ -100,7 +97,6 @@ where
         let writer = match lock.try_write() {
             Some(w) => w,
             None => {
-                std::thread::sleep(wait);
                 continue;
             }
         };

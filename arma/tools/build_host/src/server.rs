@@ -62,14 +62,10 @@ impl Server {
                     _ => {}
                 }
 
-                write_lock(
-                    &server.requests,
-                    Duration::from_secs_f32(0.001),
-                    |mut writer| {
-                        writer.remove(&message.id);
-                        Ok(true)
-                    },
-                )
+                write_lock(&server.requests, |mut writer| {
+                    writer.remove(&message.id);
+                    Ok(true)
+                })
                 .unwrap();
             }
             NetEvent::Disconnected(_endpoint) => {}
@@ -103,19 +99,13 @@ impl Server {
     }
 
     fn track_request(&mut self, id: &Uuid) -> BuildResult {
-        write_lock(
-            &self.requests,
-            Duration::from_secs_f32(0.005),
-            |mut writer| {
-                writer.insert(id.to_owned(), ());
-                Ok(true)
-            },
-        )
+        write_lock(&self.requests, |mut writer| {
+            writer.insert(id.to_owned(), ());
+            Ok(true)
+        })
     }
 
     fn wait_for_response(&mut self, id: &Uuid) -> BuildResult {
-        read_lock(&self.requests, Duration::from_secs_f32(0.005), |reader| {
-            Ok(!reader.contains_key(id))
-        })
+        read_lock(&self.requests, |reader| Ok(!reader.contains_key(id)))
     }
 }
