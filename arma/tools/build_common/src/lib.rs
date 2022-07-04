@@ -50,6 +50,7 @@ pub struct FileTransfer {
     pub id: Uuid,
     pub file_name: String,
     pub destination_path: String,
+    pub sha1: Vec<u8>,
     pub number_of_chunks: usize,
     pub total_size: usize,
 }
