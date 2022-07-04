@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::{command::IncomingCommand, transfer::*, write_lock, Command, NetworkCommand};
+use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
@@ -47,11 +48,11 @@ impl Client {
         let task = listener.for_each_async(move |event| match event.network() {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
-                    println!("Connected to build host @ {}", server_addr);
+                    println!("{} - Connected to {}", "success".green(), server_addr);
                     let message = NetworkCommand::new(Command::Hello);
                     client.send(message);
                 } else {
-                    println!("Failed to connect to build host @ {}", server_addr);
+                    println!("{} - Failed to connect to {}", "error".red(), server_addr);
                     client.on_disconnect();
                 }
             }
