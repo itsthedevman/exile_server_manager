@@ -1,7 +1,6 @@
 use std::io::{BufRead, BufReader};
 use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
-use std::time::Duration;
 
 use crate::{client::Client, read_lock, BuildResult, Command, System};
 use colored::Colorize;
@@ -12,30 +11,18 @@ impl IncomingCommand {
     pub fn execute(client: &Client, network_command: &Command) -> BuildResult {
         match network_command {
             Command::System(command) => IncomingCommand.system_command(command),
-            Command::FileTransferStart(transfer) => read_lock(
-                &client.transfers,
-                Duration::from_secs_f32(0.1),
-                |transfers| {
-                    transfers.start_new(transfer)?;
-                    Ok(true)
-                },
-            ),
-            Command::FileTransferChunk(chunk) => read_lock(
-                &client.transfers,
-                Duration::from_secs_f32(0.1),
-                |transfers| {
-                    transfers.append_chunk(chunk)?;
-                    Ok(true)
-                },
-            ),
-            Command::FileTransferEnd(id) => read_lock(
-                &client.transfers,
-                Duration::from_secs_f32(0.1),
-                |transfers| {
-                    transfers.complete(id)?;
-                    Ok(true)
-                },
-            ),
+            Command::FileTransferStart(transfer) => read_lock(&client.transfers, |transfers| {
+                transfers.start_new(transfer)?;
+                Ok(true)
+            }),
+            Command::FileTransferChunk(chunk) => read_lock(&client.transfers, |transfers| {
+                transfers.append_chunk(chunk)?;
+                Ok(true)
+            }),
+            Command::FileTransferEnd(id) => read_lock(&client.transfers, |transfers| {
+                transfers.complete(id)?;
+                Ok(true)
+            }),
             _ => Ok(()),
         }
     }
