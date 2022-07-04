@@ -56,6 +56,12 @@ pub struct FileTransfer {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileTransferResult {
+    pub id: Uuid,
+    pub proceed: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileChunk {
     pub id: Uuid,
     pub index: usize,
