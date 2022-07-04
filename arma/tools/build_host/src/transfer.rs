@@ -24,7 +24,7 @@ impl Transfer {
             number_of_chunks: if total_size < CHUNK_SIZE {
                 1
             } else {
-                total_size / CHUNK_SIZE
+                total_size / CHUNK_SIZE + 1
             },
             total_size,
         };
