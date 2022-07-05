@@ -27,7 +27,7 @@ pub enum Command {
     Error(String),
     System(System),
     FileTransferStart(FileTransfer),
-    FileTransferResult(FileTransferResult),
+    FileTransferResult(bool),
     FileTransferChunk(FileChunk),
     FileTransferEnd(Uuid),
 }
@@ -54,12 +54,6 @@ pub struct FileTransfer {
     pub sha1: Vec<u8>,
     pub number_of_chunks: usize,
     pub total_size: usize,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileTransferResult {
-    pub id: Uuid,
-    pub proceed: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
