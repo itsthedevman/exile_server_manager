@@ -12,59 +12,6 @@ lazy_static! {
     static ref ROOT_PATH: VfsPath = VfsPath::new(PhysicalFS::new("C:"));
 }
 
-#[derive(Debug, Clone)]
-pub struct IncomingTransfer {
-    pub id: Uuid,
-    pub size: usize,
-    pub total_size: usize,
-    pub finished: bool,
-    pub path: VfsPath,
-    pub chunks: Vec<Chunk>,
-}
-
-impl IncomingTransfer {
-    pub fn combine_files(&mut self) -> BuildResult {
-        let mut file = self.path.create_file()?;
-
-        let parent_path = self.path.parent().unwrap();
-        for index in 0..self.chunks.len() {
-            let child_file = parent_path.join(&format!("{}.{}", self.path.filename(), index))?;
-
-            let mut buffer = Vec::new();
-            child_file.open_file()?.read_to_end(&mut buffer)?;
-
-            match file.write_all(&buffer) {
-                Ok(_) => {
-                    self.size += buffer.len();
-                    child_file.remove_file()?;
-                }
-                Err(e) => return Err(e.into()),
-            };
-        }
-
-        if self.size != self.total_size {
-            return Err(format!(
-                "Failed to write all expected bytes. Wrote {} of {}",
-                self.size, self.total_size
-            )
-            .into());
-        }
-
-        self.finished = true;
-
-        Ok(())
-    }
-
-    pub fn chunks_written(&self) -> bool {
-        !self.chunks.is_empty() && self.chunks.iter().all(|c| c.written)
-    }
-}
-
-#[derive(Clone, Default, Debug)]
-pub struct Chunk {
-    pub written: bool,
-}
-
 pub struct Transfers {
     transfers: Arc<RwLock<HashMap<Uuid, IncomingTransfer>>>,
 }
@@ -218,4 +165,57 @@ impl Transfers {
             };
         });
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct IncomingTransfer {
+    pub id: Uuid,
+    pub size: usize,
+    pub total_size: usize,
+    pub finished: bool,
+    pub path: VfsPath,
+    pub chunks: Vec<Chunk>,
+}
+
+impl IncomingTransfer {
+    pub fn combine_files(&mut self) -> BuildResult {
+        let mut file = self.path.create_file()?;
+
+        let parent_path = self.path.parent().unwrap();
+        for index in 0..self.chunks.len() {
+            let child_file = parent_path.join(&format!("{}.{}", self.path.filename(), index))?;
+
+            let mut buffer = Vec::new();
+            child_file.open_file()?.read_to_end(&mut buffer)?;
+
+            match file.write_all(&buffer) {
+                Ok(_) => {
+                    self.size += buffer.len();
+                    child_file.remove_file()?;
+                }
+                Err(e) => return Err(e.into()),
+            };
+        }
+
+        if self.size != self.total_size {
+            return Err(format!(
+                "Failed to write all expected bytes. Wrote {} of {}",
+                self.size, self.total_size
+            )
+            .into());
+        }
+
+        self.finished = true;
+
+        Ok(())
+    }
+
+    pub fn chunks_written(&self) -> bool {
+        !self.chunks.is_empty() && self.chunks.iter().all(|c| c.written)
+    }
+}
+
+#[derive(Clone, Default, Debug)]
+pub struct Chunk {
+    pub written: bool,
 }
