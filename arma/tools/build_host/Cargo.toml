@@ -19,3 +19,4 @@ uuid = { version = "1.1.2", features = ["serde", "v4", "fast-rng"] }
 build_common = { path = "../build_common" }
 serde_json = "1.0"
 ctrlc = "3.2.2"
+sha-1 = "0.10.0"

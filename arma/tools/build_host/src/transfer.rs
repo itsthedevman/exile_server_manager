@@ -1,4 +1,5 @@
 use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
+use sha1::{Digest, Sha1};
 use uuid::Uuid;
 use vfs::{SeekAndRead, VfsPath};
 
@@ -14,7 +15,11 @@ impl Transfer {
         file_name: &str,
     ) -> BuildResult {
         let source_path = source_path.join(&file_name)?;
-        let total_size = source_path.metadata()?.len as usize;
+
+        let mut bytes = Vec::new();
+        source_path.open_file()?.read_to_end(&mut bytes)?;
+        let total_size = bytes.len();
+        let sha1 = Sha1::new().chain_update(&bytes).finalize().to_vec();
 
         let id = Uuid::new_v4();
         let transfer = FileTransfer {
@@ -27,23 +32,25 @@ impl Transfer {
                 total_size / CHUNK_SIZE + 1
             },
             total_size,
+            sha1,
         };
 
-        server.send(Command::FileTransferStart(transfer))?;
+        if let Command::FileTransferResult(_b @ false) =
+            server.send(Command::FileTransferStart(transfer))?
+        {
+            return Ok(());
+        }
 
-        let mut file = source_path.open_file()?;
-        let mut index = 0;
-        while let Some(bytes) = chunk_file(&mut file) {
+        let chunks = bytes.chunks(CHUNK_SIZE);
+        for (index, bytes) in chunks.enumerate() {
             let chunk = Command::FileTransferChunk(FileChunk {
                 id,
                 index,
                 size: bytes.len(),
-                bytes,
+                bytes: bytes.to_vec(),
             });
 
             server.send(chunk)?;
-
-            index += 1;
         }
 
         server.send(Command::FileTransferEnd(id))?;
@@ -87,15 +94,4 @@ impl Transfer {
 
         Ok(())
     }
-}
-
-fn chunk_file(file: &mut Box<dyn SeekAndRead>) -> Option<Vec<u8>> {
-    let mut data = [0; CHUNK_SIZE];
-
-    let bytes_read = file.read(&mut data).unwrap();
-    if bytes_read == 0 {
-        return None;
-    }
-
-    Some(Vec::from(&data[0..bytes_read]))
 }

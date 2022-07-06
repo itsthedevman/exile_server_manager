@@ -4,16 +4,15 @@ use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
 use uuid::Uuid;
 
-use crate::{read_lock, write_lock, BuildResult, Command, NetworkCommand};
+use crate::{read_lock, write_lock, BuildError, BuildResult, Command, NetworkCommand};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 
 #[derive(Clone)]
 pub struct Server {
     pub connected: Arc<AtomicBool>,
-    pub requests: Arc<RwLock<HashMap<Uuid, ()>>>,
+    pub requests: Arc<RwLock<HashMap<Uuid, Option<Command>>>>,
     server_task: Arc<Option<NodeTask>>,
     handler: Option<NodeHandler<()>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
@@ -59,16 +58,22 @@ impl Server {
                         );
                         std::process::exit(1)
                     }
-                    _ => {}
+                    c => write_lock(&server.requests, |mut writer| {
+                        writer.insert(message.id, Some(c.to_owned()));
+                        Ok(true)
+                    })
+                    .unwrap(),
                 }
-
-                write_lock(&server.requests, |mut writer| {
-                    writer.remove(&message.id);
-                    Ok(true)
-                })
-                .unwrap();
             }
-            NetEvent::Disconnected(_endpoint) => {}
+            NetEvent::Disconnected(_endpoint) => {
+                println!("{}", "failed".red().bold());
+                println!(
+                    "{} - {}",
+                    "<esm_bt>".blue().bold(),
+                    "Build receiver has disconnected".red().bold()
+                );
+                std::process::exit(1);
+            }
         });
 
         self.server_task = Arc::new(Some(task));
@@ -82,7 +87,7 @@ impl Server {
         }
     }
 
-    pub fn send(&mut self, command: Command) -> BuildResult {
+    pub fn send(&mut self, command: Command) -> Result<Command, BuildError> {
         let command = NetworkCommand::new(command);
 
         let data = serde_json::to_vec(&command).unwrap();
@@ -100,12 +105,28 @@ impl Server {
 
     fn track_request(&mut self, id: &Uuid) -> BuildResult {
         write_lock(&self.requests, |mut writer| {
-            writer.insert(id.to_owned(), ());
+            writer.insert(id.to_owned(), None);
             Ok(true)
         })
     }
 
-    fn wait_for_response(&mut self, id: &Uuid) -> BuildResult {
-        read_lock(&self.requests, |reader| Ok(!reader.contains_key(id)))
+    fn wait_for_response(&mut self, id: &Uuid) -> Result<Command, BuildError> {
+        let result = RwLock::new(None);
+        write_lock(&self.requests, |mut writer| match writer.get_mut(id) {
+            Some(v) => match v.take() {
+                Some(command) => {
+                    *result.write() = Some(command);
+                    Ok(true)
+                }
+                None => Ok(false),
+            },
+            None => Ok(false),
+        })?;
+
+        let mut writer = result.write();
+        match writer.take() {
+            Some(c) => Ok(c),
+            None => Err("Something went very wrong".to_string().into()),
+        }
     }
 }
