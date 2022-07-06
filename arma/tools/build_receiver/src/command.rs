@@ -1,33 +1,48 @@
 use std::io::{BufRead, BufReader};
 use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{client::Client, read_lock, BuildResult, Command, System};
+use build_common::BuildError;
 use colored::Colorize;
 use regex::Regex;
 
 pub struct IncomingCommand;
 impl IncomingCommand {
-    pub fn execute(client: &Client, network_command: &Command) -> BuildResult {
+    pub fn execute(client: &Client, network_command: &Command) -> Result<Command, BuildError> {
         match network_command {
             Command::System(command) => IncomingCommand.system_command(command),
-            Command::FileTransferStart(transfer) => read_lock(&client.transfers, |transfers| {
-                transfers.start_new(transfer)?;
-                Ok(true)
-            }),
-            Command::FileTransferChunk(chunk) => read_lock(&client.transfers, |transfers| {
-                transfers.append_chunk(chunk)?;
-                Ok(true)
-            }),
-            Command::FileTransferEnd(id) => read_lock(&client.transfers, |transfers| {
-                transfers.complete(id)?;
-                Ok(true)
-            }),
-            _ => Ok(()),
+            Command::FileTransferStart(transfer) => {
+                let result = AtomicBool::new(false);
+                read_lock(&client.transfers, |transfers| {
+                    result.store(transfers.start_new(transfer)?, Ordering::SeqCst);
+                    Ok(true)
+                })?;
+
+                Ok(Command::FileTransferResult(result.load(Ordering::SeqCst)))
+            }
+            Command::FileTransferChunk(chunk) => {
+                read_lock(&client.transfers, |transfers| {
+                    transfers.append_chunk(chunk)?;
+                    Ok(true)
+                })?;
+
+                Ok(Command::Success)
+            }
+            Command::FileTransferEnd(id) => {
+                read_lock(&client.transfers, |transfers| {
+                    transfers.complete(id)?;
+                    Ok(true)
+                })?;
+
+                Ok(Command::Success)
+            }
+            _ => Ok(Command::Error("Command not implemented yet".into())),
         }
     }
 
-    fn system_command(&self, command: &System) -> BuildResult {
+    fn system_command(&self, command: &System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
             command.cmd.bright_blue(),
@@ -72,6 +87,6 @@ impl IncomingCommand {
             }
         }
 
-        Ok(())
+        Ok(Command::Success)
     }
 }

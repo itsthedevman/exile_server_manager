@@ -2,11 +2,12 @@ use colored::Colorize;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use rand::seq::IteratorRandom;
-use std::{collections::HashMap, io::Write, sync::Arc, thread, time::Duration};
+use sha1::{Digest, Sha1};
+use std::{collections::HashMap, io::Write, sync::Arc, thread};
 use uuid::Uuid;
 use vfs::{PhysicalFS, VfsPath};
 
-use crate::{read_lock, write_lock, BuildResult, FileChunk, FileTransfer};
+use crate::{read_lock, write_lock, BuildError, BuildResult, FileChunk, FileTransfer};
 
 lazy_static! {
     static ref ROOT_PATH: VfsPath = VfsPath::new(PhysicalFS::new("C:"));
@@ -35,7 +36,7 @@ impl Transfers {
         .unwrap();
     }
 
-    pub fn start_new(&self, transfer: &FileTransfer) -> BuildResult {
+    pub fn start_new(&self, transfer: &FileTransfer) -> Result<bool, BuildError> {
         println!(
             "Starting transfer - {} - {} -> {}",
             transfer.id.to_string().bright_yellow(),
@@ -53,9 +54,14 @@ impl Transfers {
             Ok(true)
         })?;
 
-        self.add(transfer)?;
+        if !self.transfer_needed(transfer) {
+            println!("Transfer not needed - {}", transfer.id.to_string().black());
+            return Ok(false);
+        }
 
-        Ok(())
+        self.add(transfer)?;
+        println!("Transfer approved - {}", transfer.id.to_string().blue());
+        Ok(true)
     }
 
     pub fn append_chunk(&self, incoming_chunk: &FileChunk) -> BuildResult {
@@ -99,14 +105,13 @@ impl Transfers {
 
     fn add(&self, transfer: &FileTransfer) -> BuildResult {
         // Any slashes in the front will cause this to fail
-        let destination_path =
-            &ROOT_PATH.join(&transfer.destination_path.trim_start_matches('/'))?;
+        let destination_path = as_local_path(&transfer.destination_path)?;
 
         // Ensure all directories exist
         destination_path.create_dir_all()?;
 
         write_lock(&self.transfers, |mut writer| {
-            let path = destination_path.join(&transfer.file_name).unwrap();
+            let path = destination_path.join(&transfer.file_name)?;
 
             let file_transfer = IncomingTransfer {
                 id: transfer.id,
@@ -165,6 +170,36 @@ impl Transfers {
             };
         });
     }
+
+    fn transfer_needed(&self, transfer: &FileTransfer) -> bool {
+        let file = match as_local_path(&transfer.destination_path) {
+            Ok(p) => match p.join(&transfer.file_name) {
+                Ok(f) => f,
+                Err(_e) => return true,
+            },
+            Err(_e) => return true,
+        };
+
+        if let Ok(_exists @ false) = file.exists() {
+            return true;
+        }
+
+        let mut bytes = Vec::new();
+        match file.open_file() {
+            Ok(mut f) => match f.read_to_end(&mut bytes) {
+                Ok(_) => {}
+                Err(_e) => return true,
+            },
+            Err(_e) => return true,
+        };
+
+        let sha1 = Sha1::new().chain_update(bytes).finalize().to_vec();
+        !sha1.eq(&transfer.sha1)
+    }
+}
+
+fn as_local_path(path: &str) -> Result<VfsPath, BuildError> {
+    Ok(ROOT_PATH.join(path.trim_start_matches('/'))?)
 }
 
 #[derive(Debug, Clone)]

@@ -68,8 +68,8 @@ impl Client {
                 };
 
                 match IncomingCommand::execute(&client, &message.command) {
-                    Ok(_) => {
-                        message.command = Command::Success;
+                    Ok(command) => {
+                        message.command = command;
                         client.send(message);
                     }
                     Err(e) => {

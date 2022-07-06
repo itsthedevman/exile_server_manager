@@ -19,3 +19,4 @@ build_common = { path = "../build_common" }
 serde_json = "1.0"
 rand = "0.8.5"
 regex = "1"
+sha-1 = "0.10.0"
