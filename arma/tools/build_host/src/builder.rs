@@ -148,7 +148,7 @@ impl Builder {
         self.server.stop();
     }
 
-    fn send_to_receiver(&mut self, command: Command) -> BuildResult {
+    fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
         self.server.send(command)
     }
 
@@ -221,9 +221,15 @@ impl Builder {
                 };
 
                 // Finally send the command to powershell
-                self.send_to_receiver(Command::System(command))
+                match self.send_to_receiver(Command::System(command)) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(e),
+                }
             }
-            BuildOS::Linux => self.send_to_receiver(Command::System(command)),
+            BuildOS::Linux => match self.send_to_receiver(Command::System(command)) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            },
         }
     }
 
@@ -287,15 +293,6 @@ impl Builder {
                                 New-Item -Path $dir -ItemType Directory;
                             }}
                         }}
-
-                        $Items = Get-ChildItem -Path "C:\{build_directory}\esm" -Recurse;
-                        Foreach ($item in $Items) {{
-                            if (($item.GetType()).Name-eq "DirectoryInfo" -and $item.name -eq "target") {{
-                                continue;
-                            }}
-
-                            Remove-Item $item -Force -Recurse;
-                        }}
                     "#,
                     build_directory = &self.remote_build_directory.as_str()[1..],
                 )
@@ -337,7 +334,8 @@ impl Builder {
 
     fn build_extension(&mut self) -> BuildResult {
         lazy_static! {
-            pub static ref GIT_DIRECTORIES: &'static [&'static str] = &["refs"];
+            pub static ref GIT_DIRECTORIES: &'static [&'static str] =
+                &["hooks", "info", "logs", "refs", "objects"];
             pub static ref GIT_FILES: &'static [&'static str] = &[
                 "description",
                 "FETCH_HEAD",
@@ -357,22 +355,9 @@ impl Builder {
                     self.remote_build_directory.to_owned(),
                 )?;
 
-                for dir in GIT_DIRECTORIES.iter() {
-                    Transfer::directory(
-                        &mut self.server,
-                        self.local_git_path.join(".git")?.join(dir)?,
-                        self.remote_build_directory.join("esm")?.join(".git")?,
-                    )?;
-                }
-
-                for file in GIT_FILES.iter() {
-                    Transfer::file(
-                        &mut self.server,
-                        self.local_git_path.join(".git")?,
-                        self.remote_build_directory.join("esm")?.join(".git")?,
-                        file,
-                    )?;
-                }
+                // Required for build
+                // TODO: Write esm build version to file and change build script to read from it
+                //       Removes need to copy .git folder over
 
                 let script = format!(
                     r#"
@@ -387,7 +372,7 @@ impl Builder {
                     cmd: script,
                     args: vec![],
                     check_for_success: true,
-                    success_regex: "finished release [optimized]".into(),
+                    success_regex: r#"(?i)finished release \[optimized\]"#.into(),
                 })?;
             }
             BuildOS::Linux => {
