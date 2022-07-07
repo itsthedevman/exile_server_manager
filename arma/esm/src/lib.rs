@@ -137,7 +137,7 @@ pub fn pre_init(
         extension_version: format!(
             "{}+{}",
             env!("CARGO_PKG_VERSION"),
-            env!("VERGEN_GIT_SHA_SHORT")
+            std::include_str!("../.build-sha")
         ),
     };
 
@@ -241,7 +241,7 @@ pub fn a3_post_init(arma: &mut Arma, message: &Message) {
         "ESMs_system_process_postInit",
         &message.id,
         &json!({
-            "ESM_BuildNumber": env!("VERGEN_GIT_SHA_SHORT"),
+            "ESM_BuildNumber": std::include_str!("../.build-sha"),
             "ESM_CommunityID": token.community_id(),
             "ESM_ExtDBVersion": arma.database.extdb_version,
             "ESM_Gambling_Modifier": data.gambling_modifier,
@@ -312,7 +312,7 @@ fn initialize_logger() {
     info!(
         "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {:#?}\n----------------------------------",
         env!("CARGO_PKG_VERSION"),
-        env!("VERGEN_GIT_SHA_SHORT"),
+        std::include_str!("../.build-sha"),
         crate::CONFIG.to_hashmap()
     );
 }

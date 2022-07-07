@@ -333,31 +333,21 @@ impl Builder {
     }
 
     fn build_extension(&mut self) -> BuildResult {
-        lazy_static! {
-            pub static ref GIT_DIRECTORIES: &'static [&'static str] =
-                &["hooks", "info", "logs", "refs", "objects"];
-            pub static ref GIT_FILES: &'static [&'static str] = &[
-                "description",
-                "FETCH_HEAD",
-                "HEAD",
-                "index",
-                "ORIG_HEAD",
-                "packed-refs"
-            ];
-        }
+        // This will be read by the build script and inserted into the extension
+        let extension_path = self.local_git_path.join("esm")?;
+        extension_path
+            .join(".build-sha")?
+            .create_file()?
+            .write_all(&git_sha_short())?;
 
         match self.os {
             BuildOS::Windows => {
                 // Copy the extension over to the remote host
                 Transfer::directory(
                     &mut self.server,
-                    self.local_git_path.join("esm")?,
+                    extension_path,
                     self.remote_build_directory.to_owned(),
                 )?;
-
-                // Required for build
-                // TODO: Write esm build version to file and change build script to read from it
-                //       Removes need to copy .git folder over
 
                 let script = format!(
                     r#"
@@ -381,5 +371,17 @@ impl Builder {
         }
 
         Ok(())
+    }
+}
+
+fn git_sha_short() -> Vec<u8> {
+    match SystemCommand::new("git")
+        .arg("rev-parse")
+        .arg("--short")
+        .arg("HEAD")
+        .output()
+    {
+        Ok(o) => o.stdout,
+        Err(_e) => "FAILED TO RETRIEVE".into(),
     }
 }

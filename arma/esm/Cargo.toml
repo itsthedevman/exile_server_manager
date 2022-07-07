@@ -3,7 +3,6 @@ name = "esm"
 version = "2.0.0"
 authors = ["Bryan <WolfkillArcadia@gmail.com>"]
 edition = "2018"
-build = "build.rs"
 
 [lib]
 name = "esm_arma"
