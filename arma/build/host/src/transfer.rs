@@ -1,7 +1,7 @@
 use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
-use vfs::{SeekAndRead, VfsPath};
+use vfs::{VfsPath};
 
 const CHUNK_SIZE: usize = 65536;
 

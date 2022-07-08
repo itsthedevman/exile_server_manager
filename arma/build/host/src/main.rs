@@ -7,10 +7,10 @@ mod transfer;
 
 use std::{fmt, process::exit};
 
-pub use build_common::*;
 use builder::Builder;
 use clap::{ArgEnum, Parser, Subcommand};
 use colored::Colorize;
+pub use common::*;
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]

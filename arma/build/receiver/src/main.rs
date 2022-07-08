@@ -2,9 +2,9 @@ mod client;
 mod command;
 mod transfer;
 
-pub use build_common::*;
 use clap::Parser;
 use client::Client;
+pub use common::*;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

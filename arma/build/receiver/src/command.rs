@@ -3,8 +3,7 @@ use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{client::Client, read_lock, BuildResult, Command, System};
-use build_common::BuildError;
+use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
 use regex::Regex;
 

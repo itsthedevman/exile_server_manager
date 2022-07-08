@@ -4,7 +4,7 @@ use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
 use uuid::Uuid;
 
-use crate::{read_lock, write_lock, BuildError, BuildResult, Command, NetworkCommand};
+use crate::{write_lock, BuildError, BuildResult, Command, NetworkCommand};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
