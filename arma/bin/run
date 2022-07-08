@@ -1,9 +1,12 @@
 cargo update --package esm_message
-cargo build --release --workspace
+
+cd build/host
+cargo build --release
 
 if [ $? -ne 0 ]
 then
   exit $?
 fi
 
-./target/release/build_host run $*
+cd ../..
+./target/release/host run $*

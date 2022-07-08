@@ -32,7 +32,7 @@ impl Server {
     pub fn start(&mut self) -> BuildResult {
         let (handler, listener) = node::split::<()>();
 
-        let listen_addr = "0.0.0.0:6969";
+        let listen_addr = "0.0.0.0:54321";
         if let Err(e) = handler.network().listen(Transport::FramedTcp, listen_addr) {
             return Err(e.to_string().into());
         }
