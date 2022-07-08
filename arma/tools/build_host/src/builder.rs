@@ -365,9 +365,7 @@ impl Builder {
                     success_regex: r#"(?i)finished release \[optimized\]"#.into(),
                 })?;
             }
-            BuildOS::Linux => {
-                // TODO: Build locally and copy to build directory
-            }
+            BuildOS::Linux => todo!()
         }
 
         Ok(())
