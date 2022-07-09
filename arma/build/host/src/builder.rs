@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
-use std::process::Command as SystemCommand;
+use std::process::{Command as SystemCommand, Output};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
@@ -15,16 +15,26 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 pub struct Builder {
-    os: BuildOS,
-    arch: BuildArch,
-    env: BuildEnv,
-    log_level: LogLevel,
-    bot_host: String,
-    local_git_path: VfsPath,
-    local_build_path: VfsPath,
-    remote_build_directory: VfsPath,
-    extension_build_target: String,
+    /// For sending messages
     server: Server,
+    /// The OS to build the extension on
+    os: BuildOS,
+    /// 32 bit or 64 bit
+    arch: BuildArch,
+    /// The environment the extension is built for
+    env: BuildEnv,
+    /// Controls how detailed the logs are
+    log_level: LogLevel,
+    /// The host URI that is currently hosting a bot instance.
+    bot_host: String,
+    /// The path to this repo's root directory
+    local_git_path: VfsPath,
+    /// Rust's build directory
+    local_build_path: VfsPath,
+    /// The temp directory on the build OS
+    remote_build_directory: VfsPath,
+    /// Rust build target for the build OS
+    extension_build_target: String,
 }
 
 impl Builder {
@@ -94,6 +104,7 @@ impl Builder {
         self.print_status("Cleaning directories", Builder::clean_directories)?;
         self.print_status("Writing server config", Builder::create_server_config)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
+        self.print_status("Building @esm", Builder::build_mod)?;
         Ok(())
     }
 
@@ -188,24 +199,17 @@ impl Builder {
                     .write_all(script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
-                match SystemCommand::new("iconv")
-                    .arg("-t UTF-16LE")
-                    .arg(format!("--output={}", command_result_path.as_str()))
-                    .arg(command_file_path.as_str())
-                    .output()
-                {
-                    Ok(_o) => (),
-                    Err(e) => return Err(BuildError::Generic(e.to_string())),
-                };
+                local_command(
+                    "iconv",
+                    vec![
+                        "-t UTF-16LE",
+                        &format!("--output={}", command_result_path.as_str()),
+                        command_file_path.as_str(),
+                    ],
+                )?;
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let base64_output = match SystemCommand::new("base64")
-                    .arg(&command_result_path.as_str())
-                    .output()
-                {
-                    Ok(p) => p,
-                    Err(e) => return Err(BuildError::Generic(e.to_string())),
-                };
+                let base64_output = local_command("base64", vec![command_result_path.as_str()])?;
 
                 let mut encoded_command =
                     String::from_utf8_lossy(&base64_output.stdout).to_string();
@@ -365,20 +369,65 @@ impl Builder {
                     success_regex: r#"(?i)finished release \[optimized\]"#.into(),
                 })?;
             }
-            BuildOS::Linux => todo!()
+            BuildOS::Linux => todo!(),
+        }
+
+        Ok(())
+    }
+
+    fn build_mod(&mut self) -> BuildResult {
+        lazy_static! {
+            static ref ADDONS: Vec<&'static str> = vec![
+                "exile_server_manager",
+                "exile_server_overwrites",
+                "exile_server_xm8",
+                "exile_server_hacking",
+                "exile_server_grinding",
+                "exile_server_charge_plant_started",
+                "exile_server_flag_steal_started",
+                "exile_server_player_connected"
+            ];
+        }
+
+        let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
+        let source_path = self.local_git_path.join("@esm")?.join("addons")?;
+        let destination_path = self.local_build_path.join("@esm")?.join("addons")?;
+
+        for addon in ADDONS.iter() {
+            let result = SystemCommand::new(mikero_path.join("bin")?.join("makepbo")?.as_str())
+                .env("LD_LIBRARY_PATH", mikero_path.join("lib")?.as_str())
+                .args(vec![
+                    &format!("{}/{addon}", source_path.as_str()),
+                    &format!("{}/{addon}.pbo", destination_path.as_str()),
+                ])
+                .output()?;
+
+            if !result.status.success() {
+                let output = format!(
+                    "Failed to build {addon}.pbo\n{}\n{}\n\n{}\n{}",
+                    "stdout".green().bold(),
+                    String::from_utf8_lossy(&result.stdout).black(),
+                    "stderr".red().bold(),
+                    String::from_utf8_lossy(&result.stderr).red()
+                );
+
+                return Err(output.into());
+            }
         }
 
         Ok(())
     }
 }
 
+fn local_command(cmd: &str, args: Vec<&str>) -> Result<Output, BuildError> {
+    match SystemCommand::new(cmd).args(args).output() {
+        Ok(o) => Ok(o),
+        Err(e) => Err(BuildError::Generic(e.to_string())),
+    }
+}
+
 fn git_sha_short() -> Vec<u8> {
-    match SystemCommand::new("git")
-        .arg("rev-parse")
-        .arg("--short")
-        .arg("HEAD")
-        .output()
-    {
+    match local_command("git", vec!["rev-parse", "--short", "HEAD"]) {
         Ok(o) => o.stdout,
         Err(_e) => "FAILED TO RETRIEVE".into(),
     }
