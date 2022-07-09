@@ -20,8 +20,6 @@ class CfgFunctions
 	{
 		class Bootstrap
 		{
-			file = "\exile_server_manager\bootstrap";
-
 			class preInit { preInit = 1; };
 		};
 	};

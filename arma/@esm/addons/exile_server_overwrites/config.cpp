@@ -18,7 +18,7 @@ class CfgFunctions
 	{
 		class Bootstrap
 		{
-			class preInit { file = "\exile_server_overwrites\bootstrap\fn_preInit.sqf"; preInit = 1; };
+			class preInit { preInit = 1; };
 		};
 	};
 };
