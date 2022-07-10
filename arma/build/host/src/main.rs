@@ -2,8 +2,9 @@
 // https://github.com/lemunozm/message-io/tree/master/examples/file-transfer
 
 mod builder;
+mod directory;
+mod file;
 mod server;
-mod transfer;
 
 use std::{fmt, process::exit};
 
@@ -11,6 +12,9 @@ use builder::Builder;
 use clap::{ArgEnum, Parser, Subcommand};
 use colored::Colorize;
 pub use common::*;
+pub use directory::*;
+pub use file::*;
+pub use std::process::Command as SystemCommand;
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]

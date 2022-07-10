@@ -1,14 +1,14 @@
-use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
+use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer, SystemCommand};
+use colored::Colorize;
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
-use vfs::{VfsPath};
+use vfs::VfsPath;
 
 const CHUNK_SIZE: usize = 65536;
 
-pub struct Transfer;
-
-impl Transfer {
-    pub fn file(
+pub struct File {}
+impl File {
+    pub fn transfer(
         server: &mut Server,
         source_path: VfsPath,
         destination_path: VfsPath,
@@ -58,40 +58,12 @@ impl Transfer {
         Ok(())
     }
 
-    pub fn directory(
-        server: &mut Server,
-        source_path: VfsPath,
-        destination_path: VfsPath,
-    ) -> BuildResult {
-        let file_paths: Vec<VfsPath> = source_path
-            .walk_dir()?
-            .filter(|p| match p {
-                Ok(p) => p.is_file().unwrap(),
-                Err(_e) => false,
-            })
-            .map(|p| p.unwrap())
-            .collect();
+    pub fn copy(source: &VfsPath, destination: &VfsPath) -> BuildResult {
+        assert!(matches!(source.is_file(), Ok(f) if f));
 
-        for path in file_paths {
-            let parent_path = source_path.parent().unwrap().as_str().to_owned();
-            let mut server = server.to_owned();
-            let destination_path = destination_path.clone();
-
-            let relative_path = path.as_str().replace(&parent_path, "");
-            let file_name = path.filename();
-
-            Transfer::file(
-                &mut server,
-                path.parent().unwrap(),
-                destination_path
-                    .join(&relative_path[1..])?
-                    .parent()
-                    .unwrap(),
-                &file_name,
-            )
-            .unwrap();
+        match source.copy_file(destination) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string().into()),
         }
-
-        Ok(())
     }
 }

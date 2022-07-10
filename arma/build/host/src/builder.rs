@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
-use std::process::{Command as SystemCommand, Output};
+use std::process::Output;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
 
+use crate::Directory;
 use crate::{
-    server::Server, transfer::Transfer, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult,
-    Command, Commands, LogLevel, System,
+    server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
+    LogLevel, System, SystemCommand,
 };
 
 use colored::*;
@@ -98,7 +99,7 @@ impl Builder {
 
     pub fn start(&mut self) -> BuildResult {
         self.print_info();
-        self.print_status("Starting build server", Builder::start_server)?;
+        self.print_status("Starting build host", Builder::start_server)?;
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
         self.print_status("Killing Arma", Builder::kill_arma)?;
         self.print_status("Cleaning directories", Builder::clean_directories)?;
@@ -139,7 +140,7 @@ impl Builder {
     fn print_info(&self) {
         println!(
             "{}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n",
-            "esm build tool".blue().bold(),
+            "ESM Build Tool".blue().bold(),
             "os".black().bold(),
             format!("{:?}", self.os).to_lowercase(),
             "arch".black().bold(),
@@ -347,7 +348,7 @@ impl Builder {
         match self.os {
             BuildOS::Windows => {
                 // Copy the extension over to the remote host
-                Transfer::directory(
+                Directory::transfer(
                     &mut self.server,
                     extension_path,
                     self.remote_build_directory.to_owned(),
@@ -387,18 +388,26 @@ impl Builder {
                 "exile_server_flag_steal_started",
                 "exile_server_player_connected"
             ];
+            static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
+            static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
         }
 
-        let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
-        let source_path = self.local_git_path.join("@esm")?.join("addons")?;
-        let destination_path = self.local_build_path.join("@esm")?.join("addons")?;
+        // Set up all the paths needed
+        let mod_path = self.local_git_path.join("@esm")?;
+        let source_path = mod_path.join("addons")?;
 
+        let mod_build_path = self.local_build_path.join("@esm")?;
+        let addon_destination_path = mod_build_path.join("addons")?;
+
+        let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
+
+        // Create the PBOs
         for addon in ADDONS.iter() {
             let result = SystemCommand::new(mikero_path.join("bin")?.join("makepbo")?.as_str())
                 .env("LD_LIBRARY_PATH", mikero_path.join("lib")?.as_str())
                 .args(vec![
                     &format!("{}/{addon}", source_path.as_str()),
-                    &format!("{}/{addon}.pbo", destination_path.as_str()),
+                    &format!("{}/{addon}.pbo", addon_destination_path.as_str()),
                 ])
                 .output()?;
 
@@ -413,6 +422,15 @@ impl Builder {
 
                 return Err(output.into());
             }
+        }
+
+        // Copy the rest of the mod contents
+        for directory in DIRECTORIES.iter() {
+            Directory::copy(&mod_path.join(directory)?, &mod_build_path.join(directory)?)?
+        }
+
+        for file in FILES.iter() {
+            File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
         }
 
         Ok(())
