@@ -1,5 +1,4 @@
-use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer, SystemCommand};
-use colored::Colorize;
+use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
 use vfs::VfsPath;
