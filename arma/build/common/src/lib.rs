@@ -26,6 +26,7 @@ pub enum Command {
     Success,
     Error(String),
     System(System),
+    Database(String),
     FileTransferStart(FileTransfer),
     FileTransferResult(bool),
     FileTransferChunk(FileChunk),

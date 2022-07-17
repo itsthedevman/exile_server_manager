@@ -5,6 +5,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use vfs::{PhysicalFS, VfsPath};
 
+use crate::database::Database;
 use crate::Directory;
 use crate::{
     server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
@@ -106,6 +107,7 @@ impl Builder {
         self.print_status("Writing server config", Builder::create_server_config)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
         self.print_status("Building @esm", Builder::build_mod)?;
+        self.print_status("Seeding database", Builder::seed_database)?;
         Ok(())
     }
 
@@ -433,6 +435,21 @@ impl Builder {
             File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
         }
 
+        Ok(())
+    }
+
+    fn seed_database(&mut self) -> BuildResult {
+        let data = crate::data::parse_data_file(
+            self.local_git_path.join("build")?.join("test_data.yml")?,
+        )?;
+
+        let sql = Database::generate_sql(data);
+        println!("SQL:\n{}", sql);
+
+        // match self.send_to_receiver(Command::Database(sql)) {
+        //     Ok(_) => Ok(()),
+        //     Err(e) => Err(e),
+        // }
         Ok(())
     }
 }
