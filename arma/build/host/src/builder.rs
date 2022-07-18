@@ -359,10 +359,16 @@ impl Builder {
                 let script = format!(
                     r#"
                         cd 'C:\{build_directory}\esm';
-                        rustup run stable-{build_target} cargo build --target {build_target} --release
+                        rustup run stable-{build_target} cargo build --target {build_target} --release;
+
+                        Copy-Item "C:\{build_directory}\esm\target\{build_target}\release\esm_arma.dll" -Destination "C:\{build_directory}\@esm\{file_name}.dll"
                     "#,
                     build_directory = &self.remote_build_directory.as_str()[1..],
-                    build_target = self.extension_build_target
+                    build_target = self.extension_build_target,
+                    file_name = match self.arch {
+                        BuildArch::X32 => "esm",
+                        BuildArch::X64 => "esm_x64",
+                    }
                 );
 
                 self.system_command(System {
@@ -434,6 +440,12 @@ impl Builder {
         for file in FILES.iter() {
             File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
         }
+
+        Directory::transfer(
+            &mut self.server,
+            mod_build_path,
+            self.remote_build_directory.to_owned(),
+        )?;
 
         Ok(())
     }
