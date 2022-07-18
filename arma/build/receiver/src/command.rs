@@ -37,6 +37,10 @@ impl IncomingCommand {
 
                 Ok(Command::Success)
             }
+            Command::Database(query) => {
+                client.database.exec_query(query)?;
+                Ok(Command::Success)
+            }
             _ => Ok(Command::Error("Command not implemented yet".into())),
         }
     }

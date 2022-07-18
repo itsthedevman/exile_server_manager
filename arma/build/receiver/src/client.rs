@@ -2,8 +2,9 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::{command::IncomingCommand, transfer::*, write_lock, Command, NetworkCommand};
+use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
 use colored::Colorize;
+use common::BuildError;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
@@ -12,6 +13,7 @@ use parking_lot::RwLock;
 pub struct Client {
     pub host: String,
     pub transfers: Arc<RwLock<Transfers>>,
+    pub database: Arc<Database>,
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
@@ -19,16 +21,18 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(host: String) -> Self {
+    pub fn new(host: String, database_uri: String) -> Result<Self, BuildError> {
         let transfers = Arc::new(RwLock::new(Transfers::new()));
+        let database = Arc::new(Database::new(database_uri)?);
 
-        Client {
+        Ok(Client {
             handler: None,
             endpoint: None,
             task: Arc::new(None),
             host,
             transfers,
-        }
+            database,
+        })
     }
 
     pub fn connect(&mut self) {
