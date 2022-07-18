@@ -22,3 +22,4 @@ ctrlc = "3.2.2"
 sha-1 = "0.10.0"
 fake = { version = "2.5", features = ['chrono'] }
 chrono = "0.4"
+rand = "0.8"

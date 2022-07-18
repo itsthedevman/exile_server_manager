@@ -5,50 +5,53 @@ use vfs::VfsPath;
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct DevUser {
     /// The dev user's Discord ID
-    id: String,
+    pub id: String,
 
     /// The dev user's Steam ID
-    steam_uid: String,
+    pub steam_uid: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Server {
     /// The Discord server's ID
-    server_id: String,
+    pub server_id: String,
 
     /// The Discord server channel's ID that ESM can log to
-    logging_channel_id: String,
+    pub logging_channel_id: String,
 
     /// The Discord IDs of the channels ESM can use in this Discord server
-    channels: Vec<String>,
+    pub channels: Vec<String>,
 
     /// The Discord IDs of the users ESM can use to send messages to
-    users: Vec<String>,
+    pub users: Vec<String>,
 
     /// The Discord IDs of the users who have a particular role
-    role_users: Vec<RoleUser>,
+    pub role_users: Vec<RoleUser>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct RoleUser {
     /// The user's Discord ID
-    id: String,
+    pub id: String,
 
     /// The server's role ID that this user has
-    role_id: String,
+    pub role_id: String,
 }
 
 // TODO: refactor "primary" and "secondary" to a list of servers
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Data {
+    /// The dev user (i.e, you)
+    pub dev: DevUser,
+
     /// The "primary" server
-    primary: Server,
+    pub primary: Server,
 
     /// The "secondary" server
-    secondary: Server,
+    pub secondary: Server,
 
     /// A list of Steam UIDs to assign and use
-    steam_uids: Vec<String>,
+    pub steam_uids: Vec<String>,
 }
 
 pub fn parse_data_file(path: VfsPath) -> Result<Data, BuildError> {

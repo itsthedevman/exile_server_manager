@@ -444,7 +444,6 @@ impl Builder {
         )?;
 
         let sql = Database::generate_sql(data);
-        println!("SQL:\n{}", sql);
 
         // match self.send_to_receiver(Command::Database(sql)) {
         //     Ok(_) => Ok(()),

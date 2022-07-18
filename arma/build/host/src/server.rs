@@ -18,8 +18,8 @@ pub struct Server {
     endpoint: Arc<RwLock<Option<Endpoint>>>,
 }
 
-impl Server {
-    pub fn new() -> Self {
+impl Default for Server {
+    fn default() -> Self {
         Server {
             connected: Arc::new(AtomicBool::new(false)),
             server_task: Arc::new(None),
@@ -27,6 +27,12 @@ impl Server {
             endpoint: Arc::new(RwLock::new(None)),
             requests: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+}
+
+impl Server {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn start(&mut self) -> BuildResult {
