@@ -8,8 +8,8 @@ use vfs::{PhysicalFS, VfsPath};
 use crate::database::Database;
 use crate::Directory;
 use crate::{
-    server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
-    LogLevel, System, SystemCommand,
+    server::Server, Arma, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands,
+    File, LogLevel, System, SystemCommand,
 };
 
 use colored::*;
@@ -34,7 +34,7 @@ pub struct Builder {
     /// Rust's build directory
     local_build_path: VfsPath,
     /// The temp directory on the build OS
-    remote_build_directory: VfsPath,
+    remote_build_path: VfsPath,
     /// Rust build target for the build OS
     extension_build_target: String,
 }
@@ -66,7 +66,7 @@ impl Builder {
 
         let local_build_path = local_git_path.join("target")?;
 
-        let remote_build_directory = match os {
+        let remote_build_path = match os {
             BuildOS::Windows => root_path.join("temp")?.join("esm")?,
             BuildOS::Linux => local_build_path.join("esm")?,
         };
@@ -90,7 +90,7 @@ impl Builder {
             log_level,
             local_git_path,
             local_build_path,
-            remote_build_directory,
+            remote_build_path,
             extension_build_target,
             server: Server::new(),
         };
@@ -108,6 +108,10 @@ impl Builder {
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
         self.print_status("Building @esm", Builder::build_mod)?;
         self.print_status("Seeding database", Builder::seed_database)?;
+        self.print_status("Configuring a3 server", Builder::configure_server)?;
+        // self.print_status("Starting a3 server", Builder::start_a3_server)?;
+        // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
+        // self.print_status("Starting log stream", Builder::log_stream)?;
         Ok(())
     }
 
@@ -154,7 +158,7 @@ impl Builder {
             "git directory".black().bold(),
             self.local_git_path.as_str(),
             "build directory".black().bold(),
-            self.remote_build_directory.as_str()
+            self.remote_build_path.as_str()
         )
     }
 
@@ -240,6 +244,15 @@ impl Builder {
         }
     }
 
+    // Returns the remote build path as a string, minus the leading slash.
+    // Mainly used with Windows commands
+    fn remote_build_path_str(&self) -> &str {
+        &self.remote_build_path.as_str()[1..]
+    }
+
+    //////////////////////////////////////////////////////////////////
+    /// Build steps below
+    //////////////////////////////////////////////////////////////////
     fn kill_arma(&mut self) -> BuildResult {
         lazy_static! {
             static ref WINDOWS_EXES: &'static [&'static str] = &[
@@ -301,7 +314,7 @@ impl Builder {
                             }}
                         }}
                     "#,
-                    build_directory = &self.remote_build_directory.as_str()[1..],
+                    build_directory = self.remote_build_path_str(),
                 )
             }
             BuildOS::Linux => todo!(),
@@ -353,7 +366,7 @@ impl Builder {
                 Directory::transfer(
                     &mut self.server,
                     extension_path,
-                    self.remote_build_directory.to_owned(),
+                    self.remote_build_path.to_owned(),
                 )?;
 
                 let script = format!(
@@ -363,7 +376,7 @@ impl Builder {
 
                         Copy-Item "C:\{build_directory}\esm\target\{build_target}\release\esm_arma.dll" -Destination "C:\{build_directory}\@esm\{file_name}.dll"
                     "#,
-                    build_directory = &self.remote_build_directory.as_str()[1..],
+                    build_directory = self.remote_build_path_str(),
                     build_target = self.extension_build_target,
                     file_name = match self.arch {
                         BuildArch::X32 => "esm",
@@ -444,7 +457,7 @@ impl Builder {
         Directory::transfer(
             &mut self.server,
             mod_build_path,
-            self.remote_build_directory.to_owned(),
+            self.remote_build_path.to_owned(),
         )?;
 
         Ok(())
@@ -460,6 +473,39 @@ impl Builder {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }
+    }
+
+    fn configure_server(&mut self) -> BuildResult {
+        match self.send_to_receiver(Command::Arma(Arma::CopyMod(
+            self.remote_build_path.join("@esm")?.as_str().to_string(),
+        ))) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn start_a3_server(&mut self) -> BuildResult {
+        // client arg: server start args
+        // Send command to receiver to start server
+        // Note! Make sure the receiver doesn't take ownership of the a3 server process so killing it won't kill the server
+        // Kill arma server if interrupted
+        Ok(())
+    }
+
+    fn start_a3_client(&mut self) -> BuildResult {
+        // client arg: client start args
+        // Send command to receiver
+        // Issue! In order to start the client on linux, both the linux machine and windows machine will need to be connected
+        //          This will need to be solved.
+        Ok(())
+    }
+
+    fn stream_logs(&mut self) -> BuildResult {
+        // Send message to receiver to stream esm.log and the RPT intertwined
+        // Print to console the lines.
+        // Color the line prefixes differently based on the file.
+        // Use regex to highlight errors
+        Ok(())
     }
 }
 
