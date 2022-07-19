@@ -1,3 +1,4 @@
+mod arma;
 mod client;
 mod command;
 mod database;
@@ -19,11 +20,15 @@ pub struct Args {
     /// For example: mysql://user:password@host:port/database_name
     #[clap(short, long)]
     database_uri: String,
+
+    /// The path to the root directory that contains arma3server[_x64][.exe]
+    #[clap(short, long)]
+    a3_server_path: String,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    let mut client = Client::new(args.host, args.database_uri)?;
+    let mut client = Client::new(args)?;
     client.connect();
 
     loop {

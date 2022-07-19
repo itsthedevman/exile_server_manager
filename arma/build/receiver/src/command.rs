@@ -3,7 +3,7 @@ use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{client::Client, read_lock, BuildError, Command, System};
+use crate::{client::Client, read_lock, Arma, BuildError, Command, System};
 use colored::Colorize;
 use regex::Regex;
 
@@ -39,6 +39,13 @@ impl IncomingCommand {
             }
             Command::Database(query) => {
                 client.database.exec_query(query)?;
+                Ok(Command::Success)
+            }
+            Command::Arma(a) => {
+                match a {
+                    Arma::CopyMod(dest) => client.a3_server.copy_mod(dest)?,
+                }
+
                 Ok(Command::Success)
             }
             _ => Ok(Command::Error("Command not implemented yet".into())),
