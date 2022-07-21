@@ -16,9 +16,29 @@ use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+struct Remote {
+    pub build_path: VfsPath,
+    pub build_path_str: String,
+    pub server_path: String,
+    pub server_args: String,
+}
+
+impl Remote {
+    pub fn new() -> Self {
+        Remote {
+            build_path: VfsPath::new(PhysicalFS::new("/")),
+            build_path_str: "/".into(),
+            server_path: String::new(),
+            server_args: String::new(),
+        }
+    }
+}
+
 pub struct Builder {
     /// For sending messages
     server: Server,
+    /// For storing remote paths and other data
+    remote: Remote,
     /// The OS to build the extension on
     os: BuildOS,
     /// 32 bit or 64 bit
@@ -33,8 +53,6 @@ pub struct Builder {
     local_git_path: VfsPath,
     /// Rust's build directory
     local_build_path: VfsPath,
-    /// The temp directory on the build OS
-    remote_build_path: VfsPath,
     /// Rust build target for the build OS
     extension_build_target: String,
 }
@@ -64,13 +82,6 @@ impl Builder {
             .join(&std::env::current_dir()?.to_string_lossy()[1..])
             .unwrap();
 
-        let local_build_path = local_git_path.join("target")?;
-
-        let remote_build_path = match os {
-            BuildOS::Windows => root_path.join("temp")?.join("esm")?,
-            BuildOS::Linux => local_build_path.join("esm")?,
-        };
-
         let extension_build_target: String = match os {
             BuildOS::Windows => match arch {
                 BuildArch::X32 => "i686-pc-windows-msvc".into(),
@@ -82,6 +93,7 @@ impl Builder {
             },
         };
 
+        let local_build_path = local_git_path.join("target")?;
         let builder = Builder {
             os,
             arch,
@@ -89,9 +101,9 @@ impl Builder {
             bot_host,
             log_level,
             local_git_path,
-            local_build_path,
-            remote_build_path,
             extension_build_target,
+            local_build_path,
+            remote: Remote::new(),
             server: Server::new(),
         };
 
@@ -99,17 +111,17 @@ impl Builder {
     }
 
     pub fn start(&mut self) -> BuildResult {
-        self.print_info();
         self.print_status("Starting build host", Builder::start_server)?;
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
+
+        self.print_info();
         self.print_status("Killing Arma", Builder::kill_arma)?;
         self.print_status("Cleaning directories", Builder::clean_directories)?;
         self.print_status("Writing server config", Builder::create_server_config)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
         self.print_status("Building @esm", Builder::build_mod)?;
         self.print_status("Seeding database", Builder::seed_database)?;
-        self.print_status("Configuring a3 server", Builder::configure_server)?;
-        // self.print_status("Starting a3 server", Builder::start_a3_server)?;
+        self.print_status("Starting a3 server", Builder::start_a3_server)?;
         // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
         // self.print_status("Starting log stream", Builder::log_stream)?;
         Ok(())
@@ -145,8 +157,8 @@ impl Builder {
 
     fn print_info(&self) {
         println!(
-            "{}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n",
-            "ESM Build Tool".blue().bold(),
+            "{} - Starting @esm build for\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}",
+            "<esm_bt>".blue().bold(),
             "os".black().bold(),
             format!("{:?}", self.os).to_lowercase(),
             "arch".black().bold(),
@@ -158,7 +170,7 @@ impl Builder {
             "git directory".black().bold(),
             self.local_git_path.as_str(),
             "build directory".black().bold(),
-            self.remote_build_path.as_str()
+            self.remote_build_path_str()
         )
     }
 
@@ -178,6 +190,32 @@ impl Builder {
         while !self.server.connected.load(Ordering::SeqCst) {
             std::thread::sleep(Duration::from_secs(1))
         }
+
+        // We're connected, request update
+        match self.send_to_receiver(Command::PostInitRequest) {
+            Ok(ref res) => {
+                if let Command::PostInit(post_init) = res {
+                    let path = post_init.build_path.to_owned();
+
+                    self.remote = Remote {
+                        build_path: match self.os {
+                            BuildOS::Windows => {
+                                VfsPath::new(PhysicalFS::new(&path[0..=1])).join(&path[3..])?
+                            }
+                            BuildOS::Linux => {
+                                VfsPath::new(PhysicalFS::new("/")).join(&path[1..])?
+                            }
+                        },
+                        build_path_str: path,
+                        server_path: post_init.server_path.to_owned(),
+                        server_args: post_init.server_args.to_owned(),
+                    }
+                } else {
+                    return Err("Invalid response from receiver".to_string().into());
+                }
+            }
+            Err(e) => return Err(e),
+        };
 
         Ok(())
     }
@@ -244,10 +282,12 @@ impl Builder {
         }
     }
 
-    // Returns the remote build path as a string, minus the leading slash.
-    // Mainly used with Windows commands
+    fn remote_build_path(&self) -> &VfsPath {
+        &self.remote.build_path
+    }
+
     fn remote_build_path_str(&self) -> &str {
-        &self.remote_build_path.as_str()[1..]
+        &self.remote.build_path_str
     }
 
     //////////////////////////////////////////////////////////////////
@@ -255,12 +295,13 @@ impl Builder {
     //////////////////////////////////////////////////////////////////
     fn kill_arma(&mut self) -> BuildResult {
         lazy_static! {
+            // Stop-Process doesn't want the extension
             static ref WINDOWS_EXES: &'static [&'static str] = &[
-                "arma3server.exe",
-                "arma3server_x64.exe",
-                "arma3_x64.exe",
-                "arma3.exe",
-                "arma3battleye.exe"
+                "arma3server",
+                "arma3server_x64",
+                "arma3_x64",
+                "arma3",
+                "arma3battleye"
             ];
             static ref LINUX_EXES: &'static [&'static str] = &["arma3server", "arma3server_x64"];
         };
@@ -304,9 +345,9 @@ impl Builder {
             BuildOS::Windows => {
                 format!(
                     r#"
-                        $Dirs = "C:\{build_directory}\esm",
-                                "C:\{build_directory}\@esm",
-                                "C:\{build_directory}\@esm\addons";
+                        $Dirs = "{build_path}\esm",
+                                "{build_path}\@esm",
+                                "{build_path}\@esm\addons";
 
                         Foreach ($dir in $Dirs) {{
                             if (![System.IO.Directory]::Exists($dir)) {{
@@ -314,7 +355,7 @@ impl Builder {
                             }}
                         }}
                     "#,
-                    build_directory = self.remote_build_path_str(),
+                    build_path = self.remote_build_path_str(),
                 )
             }
             BuildOS::Linux => todo!(),
@@ -363,20 +404,17 @@ impl Builder {
         match self.os {
             BuildOS::Windows => {
                 // Copy the extension over to the remote host
-                Directory::transfer(
-                    &mut self.server,
-                    extension_path,
-                    self.remote_build_path.to_owned(),
-                )?;
+                let destination = self.remote_build_path().to_owned();
+                Directory::transfer(&mut self.server, extension_path, destination)?;
 
                 let script = format!(
                     r#"
-                        cd 'C:\{build_directory}\esm';
+                        cd '{build_path}\esm';
                         rustup run stable-{build_target} cargo build --target {build_target} --release;
 
-                        Copy-Item "C:\{build_directory}\esm\target\{build_target}\release\esm_arma.dll" -Destination "C:\{build_directory}\@esm\{file_name}.dll"
+                        Copy-Item "{build_path}\esm\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
                     "#,
-                    build_directory = self.remote_build_path_str(),
+                    build_path = self.remote_build_path_str(),
                     build_target = self.extension_build_target,
                     file_name = match self.arch {
                         BuildArch::X32 => "esm",
@@ -454,11 +492,8 @@ impl Builder {
             File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
         }
 
-        Directory::transfer(
-            &mut self.server,
-            mod_build_path,
-            self.remote_build_path.to_owned(),
-        )?;
+        let destination = self.remote_build_path().to_owned();
+        Directory::transfer(&mut self.server, mod_build_path, destination)?;
 
         Ok(())
     }
@@ -475,20 +510,42 @@ impl Builder {
         }
     }
 
-    fn configure_server(&mut self) -> BuildResult {
-        match self.send_to_receiver(Command::Arma(Arma::CopyMod(
-            self.remote_build_path.join("@esm")?.as_str().to_string(),
-        ))) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
-    }
-
     fn start_a3_server(&mut self) -> BuildResult {
-        // client arg: server start args
-        // Send command to receiver to start server
-        // Note! Make sure the receiver doesn't take ownership of the a3 server process so killing it won't kill the server
-        // Kill arma server if interrupted
+        match self.os {
+            BuildOS::Windows => {
+                let script = format!(
+                    r#"
+                        Remove-Item -Path "{server_path}\@esm" -Recurse;
+                        Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
+
+                        & Start-Process "{server_path}\{server_executable}" `
+                            -ArgumentList "{server_args}" `
+                            -WorkingDirectory "{server_path}" `
+                            -NoNewWindow `
+                            -RedirectStandardOutput "{server_path}\stdout.log" `
+                            -RedirectStandardError "{server_path}\stderr.log";
+                    "#,
+                    build_path = self.remote_build_path_str(),
+                    server_path = self.remote.server_path,
+                    server_executable = match self.arch {
+                        BuildArch::X32 => "arma3server.exe",
+                        BuildArch::X64 => "arma3server_x64.exe",
+                    },
+                    server_args = self.remote.server_args
+                );
+
+                println!("SCRIPT:\n {}", script);
+
+                self.system_command(System {
+                    cmd: script,
+                    args: vec![],
+                    check_for_success: true,
+                    success_regex: r#"(?i)finished release \[optimized\]"#.into(),
+                })?;
+            }
+            BuildOS::Linux => todo!(),
+        }
+
         Ok(())
     }
 
