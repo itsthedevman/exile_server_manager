@@ -1,17 +1,13 @@
 use colored::Colorize;
-use lazy_static::lazy_static;
+
 use parking_lot::RwLock;
 use rand::seq::IteratorRandom;
 use sha1::{Digest, Sha1};
 use std::{collections::HashMap, io::Write, sync::Arc, thread};
 use uuid::Uuid;
-use vfs::{PhysicalFS, VfsPath};
+use vfs::VfsPath;
 
 use crate::{read_lock, write_lock, BuildError, BuildResult, FileChunk, FileTransfer};
-
-lazy_static! {
-    static ref ROOT_PATH: VfsPath = VfsPath::new(PhysicalFS::new("C:"));
-}
 
 pub struct Transfers {
     transfers: Arc<RwLock<HashMap<Uuid, IncomingTransfer>>>,
@@ -199,7 +195,7 @@ impl Transfers {
 }
 
 fn as_local_path(path: &str) -> Result<VfsPath, BuildError> {
-    Ok(ROOT_PATH.join(path.trim_start_matches('/'))?)
+    Ok(crate::ROOT_PATH.join(path.trim_start_matches('/'))?)
 }
 
 #[derive(Debug, Clone)]

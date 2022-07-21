@@ -9,11 +9,18 @@ use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
 
+pub struct Arma {
+    pub build_path: String,
+    pub server_path: String,
+    pub server_args: String,
+}
+
 #[derive(Clone)]
 pub struct Client {
     pub host: String,
     pub transfers: Arc<RwLock<Transfers>>,
     pub database: Arc<Database>,
+    pub arma: Arc<Arma>,
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
@@ -21,17 +28,23 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(host: String, database_uri: String) -> Result<Self, BuildError> {
+    pub fn new(args: crate::Args) -> Result<Self, BuildError> {
         let transfers = Arc::new(RwLock::new(Transfers::new()));
-        let database = Arc::new(Database::new(database_uri)?);
+        let database = Arc::new(Database::new(args.database_uri)?);
+        let arma = Arc::new(Arma {
+            build_path: args.build_path,
+            server_path: args.a3_server_path,
+            server_args: args.a3_server_args,
+        });
 
         Ok(Client {
             handler: None,
             endpoint: None,
             task: Arc::new(None),
-            host,
+            host: args.host,
             transfers,
             database,
+            arma,
         })
     }
 

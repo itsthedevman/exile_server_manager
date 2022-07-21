@@ -5,12 +5,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
+use common::PostInit;
 use regex::Regex;
 
 pub struct IncomingCommand;
 impl IncomingCommand {
     pub fn execute(client: &Client, network_command: &Command) -> Result<Command, BuildError> {
         match network_command {
+            Command::PostInitRequest => Ok(Command::PostInit(PostInit {
+                build_path: client.arma.build_path.to_owned(),
+                server_path: client.arma.server_path.to_owned(),
+                server_args: client.arma.server_args.to_owned(),
+            })),
             Command::System(command) => IncomingCommand.system_command(command),
             Command::FileTransferStart(transfer) => {
                 let result = AtomicBool::new(false);
@@ -45,7 +51,7 @@ impl IncomingCommand {
         }
     }
 
-    fn system_command(&self, command: &System) -> Result<Command, BuildError> {
+    pub fn system_command(&self, command: &System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
             command.cmd.bright_blue(),
