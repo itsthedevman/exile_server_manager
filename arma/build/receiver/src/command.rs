@@ -3,14 +3,20 @@ use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{client::Client, read_lock, Arma, BuildError, Command, System};
+use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
+use common::PostInit;
 use regex::Regex;
 
 pub struct IncomingCommand;
 impl IncomingCommand {
     pub fn execute(client: &Client, network_command: &Command) -> Result<Command, BuildError> {
         match network_command {
+            Command::PostInitRequest => Ok(Command::PostInit(PostInit {
+                build_path: client.arma.build_path.to_owned(),
+                server_path: client.arma.server_path.to_owned(),
+                server_args: client.arma.server_args.to_owned(),
+            })),
             Command::System(command) => IncomingCommand.system_command(command),
             Command::FileTransferStart(transfer) => {
                 let result = AtomicBool::new(false);
@@ -41,18 +47,11 @@ impl IncomingCommand {
                 client.database.exec_query(query)?;
                 Ok(Command::Success)
             }
-            Command::Arma(a) => {
-                match a {
-                    Arma::CopyMod(dest) => client.a3_server.copy_mod(dest)?,
-                }
-
-                Ok(Command::Success)
-            }
             _ => Ok(Command::Error("Command not implemented yet".into())),
         }
     }
 
-    fn system_command(&self, command: &System) -> Result<Command, BuildError> {
+    pub fn system_command(&self, command: &System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
             command.cmd.bright_blue(),

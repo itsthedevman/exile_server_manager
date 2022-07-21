@@ -2,22 +2,25 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::{
-    arma::Arma, command::IncomingCommand, transfer::*, write_lock, Command, Database,
-    NetworkCommand,
-};
+use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
 use colored::Colorize;
 use common::BuildError;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
 
+pub struct Arma {
+    pub build_path: String,
+    pub server_path: String,
+    pub server_args: String,
+}
+
 #[derive(Clone)]
 pub struct Client {
     pub host: String,
     pub transfers: Arc<RwLock<Transfers>>,
     pub database: Arc<Database>,
-    pub a3_server: Arc<Arma>,
+    pub arma: Arc<Arma>,
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
@@ -28,7 +31,11 @@ impl Client {
     pub fn new(args: crate::Args) -> Result<Self, BuildError> {
         let transfers = Arc::new(RwLock::new(Transfers::new()));
         let database = Arc::new(Database::new(args.database_uri)?);
-        let a3_server = Arc::new(Arma::new(&args.a3_server_path));
+        let arma = Arc::new(Arma {
+            build_path: args.build_path,
+            server_path: args.a3_server_path,
+            server_args: args.a3_server_args,
+        });
 
         Ok(Client {
             handler: None,
@@ -37,7 +44,7 @@ impl Client {
             host: args.host,
             transfers,
             database,
-            a3_server,
+            arma,
         })
     }
 
