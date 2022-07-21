@@ -444,12 +444,10 @@ impl Builder {
         )?;
 
         let sql = Database::generate_sql(data);
-
-        // match self.send_to_receiver(Command::Database(sql)) {
-        //     Ok(_) => Ok(()),
-        //     Err(e) => Err(e),
-        // }
-        Ok(())
+        match self.send_to_receiver(Command::Database(sql)) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
 
