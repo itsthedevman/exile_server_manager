@@ -24,6 +24,8 @@ impl NetworkCommand {
 pub enum Command {
     Hello,
     Success,
+    PostInitRequest,
+    PostInit(PostInit),
     Error(String),
     System(System),
     Database(String),
@@ -63,6 +65,13 @@ pub struct FileChunk {
     pub index: usize,
     pub size: usize,
     pub bytes: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostInit {
+    pub build_path: String,
+    pub server_path: String,
+    pub server_args: String,
 }
 
 pub type BuildResult = Result<(), BuildError>;
