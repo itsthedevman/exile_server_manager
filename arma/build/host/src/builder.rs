@@ -8,8 +8,8 @@ use vfs::{PhysicalFS, VfsPath};
 use crate::database::Database;
 use crate::Directory;
 use crate::{
-    server::Server, Arma, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands,
-    File, LogLevel, System, SystemCommand,
+    server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
+    LogLevel, System, SystemCommand,
 };
 
 use colored::*;
@@ -518,12 +518,9 @@ impl Builder {
                         Remove-Item -Path "{server_path}\@esm" -Recurse;
                         Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
 
-                        & Start-Process "{server_path}\{server_executable}" `
+                        Start-Process "{server_path}\{server_executable}" `
                             -ArgumentList "{server_args}" `
-                            -WorkingDirectory "{server_path}" `
-                            -NoNewWindow `
-                            -RedirectStandardOutput "{server_path}\stdout.log" `
-                            -RedirectStandardError "{server_path}\stderr.log";
+                            -WorkingDirectory "{server_path}";
                     "#,
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
@@ -534,13 +531,11 @@ impl Builder {
                     server_args = self.remote.server_args
                 );
 
-                println!("SCRIPT:\n {}", script);
-
                 self.system_command(System {
                     cmd: script,
                     args: vec![],
-                    check_for_success: true,
-                    success_regex: r#"(?i)finished release \[optimized\]"#.into(),
+                    check_for_success: false,
+                    success_regex: "".into(),
                 })?;
             }
             BuildOS::Linux => todo!(),
