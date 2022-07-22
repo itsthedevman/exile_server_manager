@@ -1,5 +1,3 @@
-cargo update --package esm_message
-
 cd build/host
 cargo build --release
 
