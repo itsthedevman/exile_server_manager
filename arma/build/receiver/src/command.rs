@@ -64,6 +64,10 @@ impl IncomingCommand {
             .stderr(Stdio::piped())
             .spawn()?;
 
+        if !command.check_for_success {
+            return Ok(Command::Success);
+        }
+
         let mut buffer = String::new();
         if let Some(stderr) = child.stderr.take() {
             let reader = BufReader::new(stderr);
@@ -85,15 +89,13 @@ impl IncomingCommand {
             }
         }
 
-        if command.check_for_success {
-            let regex = match Regex::from_str(&command.success_regex) {
-                Ok(r) => r,
-                Err(e) => return Err(e.to_string().into()),
-            };
+        let regex = match Regex::from_str(&command.success_regex) {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_string().into()),
+        };
 
-            if !regex.is_match(&buffer) {
-                return Err(buffer.into());
-            }
+        if !regex.is_match(&buffer) {
+            return Err(buffer.into());
         }
 
         Ok(Command::Success)
