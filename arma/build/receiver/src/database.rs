@@ -6,8 +6,8 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(connection_uri: String) -> Result<Self, BuildError> {
-        let opts = match Opts::from_url(&connection_uri) {
+    pub fn new(connection_uri: &str) -> Result<Self, BuildError> {
+        let opts = match Opts::from_url(connection_uri) {
             Ok(o) => o,
             Err(e) => return Err(e.to_string().into()),
         };
