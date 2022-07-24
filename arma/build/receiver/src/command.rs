@@ -5,7 +5,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
-use common::PostInit;
+use common::{write_lock, LogLine, PostInit};
+use parking_lot::RwLock;
 use regex::Regex;
 
 pub struct IncomingCommand;
@@ -46,6 +47,25 @@ impl IncomingCommand {
             Command::Database(query) => {
                 client.database.exec_query(query)?;
                 Ok(Command::Success)
+            }
+            Command::LogStreamInit => {
+                write_lock(&client.log, |mut log| {
+                    log.reset()?;
+                    Ok(true)
+                })?;
+
+                Ok(Command::Success)
+            }
+            Command::LogStreamRequest => {
+                let result: RwLock<Option<Vec<LogLine>>> = RwLock::new(None);
+
+                write_lock(&client.log, |mut log| {
+                    *result.write() = Some(log.read_lines());
+                    Ok(true)
+                })?;
+
+                let mut writer = result.write();
+                Ok(Command::LogStream(writer.take().unwrap()))
             }
             _ => Ok(Command::Error("Command not implemented yet".into())),
         }

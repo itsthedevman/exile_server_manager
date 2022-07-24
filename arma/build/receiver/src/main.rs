@@ -1,6 +1,7 @@
 mod client;
 mod command;
 mod database;
+mod log_reader;
 mod transfer;
 
 use clap::Parser;
