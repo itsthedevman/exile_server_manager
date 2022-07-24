@@ -123,7 +123,7 @@ impl Builder {
         self.print_status("Seeding database", Builder::seed_database)?;
         self.print_status("Starting a3 server", Builder::start_a3_server)?;
         // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
-        // self.print_status("Starting log stream", Builder::log_stream)?;
+        self.print_status("Starting log stream", Builder::stream_logs)?;
         Ok(())
     }
 
@@ -343,8 +343,25 @@ impl Builder {
         // Remote directories
         let script = match self.os {
             BuildOS::Windows => {
+                lazy_static! {
+                    static ref PROFILES_REGEX: Regex = Regex::new(r#"-profiles=(\w+)"#).unwrap();
+                };
+
+                let captures = PROFILES_REGEX.captures(&self.remote.server_args).unwrap();
+                let profile_name = match captures.get(1) {
+                    Some(n) => n.as_str(),
+                    None => return Err(
+                        "\"-profiles\" must be provided in the server args. This is required for log streaming"
+                            .to_string()
+                            .into(),
+                    ),
+                };
+
                 format!(
                     r#"
+                        Remove-Item "{server_path}\{profile_name}\*.log";
+                        Remove-Item "{server_path}\{profile_name}\*.rpt";
+
                         $Dirs = "{build_path}\esm",
                                 "{build_path}\@esm",
                                 "{build_path}\@esm\addons";
@@ -353,9 +370,11 @@ impl Builder {
                             if (![System.IO.Directory]::Exists($dir)) {{
                                 New-Item -Path $dir -ItemType Directory;
                             }}
-                        }}
+                        }};
                     "#,
                     build_path = self.remote_build_path_str(),
+                    server_path = self.remote.server_path,
+                    profile_name = profile_name,
                 )
             }
             BuildOS::Linux => todo!(),
@@ -553,11 +572,29 @@ impl Builder {
     }
 
     fn stream_logs(&mut self) -> BuildResult {
-        // Send message to receiver to stream esm.log and the RPT intertwined
-        // Print to console the lines.
-        // Color the line prefixes differently based on the file.
-        // Use regex to highlight errors
-        Ok(())
+        self.send_to_receiver(Command::LogStreamInit)?;
+
+        loop {
+            let result = self.send_to_receiver(Command::LogStreamRequest)?;
+            let lines = match result {
+                Command::LogStream(l) => l,
+                c => {
+                    return Err(
+                        format!("Invalid response to LogStreamRequest. Received {:?}", c).into(),
+                    )
+                }
+            };
+
+            for line in lines {
+                println!(
+                    "{name}\n{content}",
+                    name = line
+                        .filename
+                        .truecolor(line.color[0], line.color[1], line.color[2]),
+                    content = line.content.trim_end()
+                )
+            }
+        }
     }
 }
 

@@ -33,6 +33,9 @@ pub enum Command {
     FileTransferResult(bool),
     FileTransferChunk(FileChunk),
     FileTransferEnd(Uuid),
+    LogStreamInit,
+    LogStreamRequest,
+    LogStream(Vec<LogLine>),
 }
 
 impl Default for Command {
@@ -72,6 +75,13 @@ pub struct PostInit {
     pub build_path: String,
     pub server_path: String,
     pub server_args: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LogLine {
+    pub filename: String,
+    pub color: [u8; 3],
+    pub content: String,
 }
 
 pub type BuildResult = Result<(), BuildError>;
