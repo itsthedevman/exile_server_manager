@@ -2,6 +2,7 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::log_reader::LogReader;
 use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
 use colored::Colorize;
 use common::BuildError;
@@ -21,6 +22,7 @@ pub struct Client {
     pub transfers: Arc<RwLock<Transfers>>,
     pub database: Arc<Database>,
     pub arma: Arc<Arma>,
+    pub log: Arc<RwLock<LogReader>>,
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
@@ -30,7 +32,8 @@ pub struct Client {
 impl Client {
     pub fn new(args: crate::Args) -> Result<Self, BuildError> {
         let transfers = Arc::new(RwLock::new(Transfers::new()));
-        let database = Arc::new(Database::new(args.database_uri)?);
+        let database = Arc::new(Database::new(&args.database_uri)?);
+        let log = Arc::new(RwLock::new(LogReader::new(&args)));
         let arma = Arc::new(Arma {
             build_path: args.build_path,
             server_path: args.a3_server_path,
@@ -45,6 +48,7 @@ impl Client {
             transfers,
             database,
             arma,
+            log,
         })
     }
 
