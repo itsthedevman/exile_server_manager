@@ -42,3 +42,9 @@ impl From<String> for BuildError {
         Self::Generic(e)
     }
 }
+
+impl From<compiler::CompilerError> for BuildError {
+    fn from(e: compiler::CompilerError) -> Self {
+        Self::Generic(e.to_string())
+    }
+}
