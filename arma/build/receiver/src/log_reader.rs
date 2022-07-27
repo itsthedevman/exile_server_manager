@@ -117,8 +117,12 @@ impl LogReader {
         }
     }
 
-    pub fn reset(&mut self) -> BuildResult {
+    pub fn stop_reads(&self) {
         self.read.store(false, Ordering::SeqCst);
+    }
+
+    pub fn reset(&mut self) -> BuildResult {
+        self.stop_reads();
         self.files.clear();
 
         // @esm/log/esm.log

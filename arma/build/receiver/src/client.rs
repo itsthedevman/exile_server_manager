@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use crate::log_reader::LogReader;
 use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
+use crate::{read_lock, BuildError};
 use colored::Colorize;
-use common::BuildError;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
@@ -122,6 +122,12 @@ impl Client {
 
         write_lock(&self.transfers, |mut writer| {
             writer.clear();
+            Ok(true)
+        })
+        .unwrap();
+
+        read_lock(&self.log, |reader| {
+            reader.stop_reads();
             Ok(true)
         })
         .unwrap();
