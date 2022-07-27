@@ -18,6 +18,7 @@ class CfgFunctions
 	{
 		class Bootstrap
 		{
+			file = compiler.os.path("exile_server_overwrites", "bootstrap");
 			class preInit { preInit = 1; };
 		};
 	};

@@ -178,7 +178,7 @@ mod tests {
                 .source("/home/ubuntu/esm_arma/@esm/addons")
                 .destination("/home/ubuntu/esm_arma/target/@esm/addons")
                 .target("windows")
-                .replace(r#"arma\.os\.path\((.+,?)\)"#, |compiler, matches| {
+                .replace(r#"compiler\.os\.path\((.+,?)\)"#, |compiler, matches| {
                     let path_chunks: Vec<String> = matches
                         .get(1)
                         .unwrap()
