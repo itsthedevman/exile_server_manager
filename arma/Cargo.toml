@@ -1,3 +1,9 @@
 [workspace]
-members = ["esm", "build/host", "build/receiver", "build/common"]
+members = [
+    "esm",
+    "build/host",
+    "build/receiver",
+    "build/common",
+    "build/compiler",
+]
 default-members = ["esm"]

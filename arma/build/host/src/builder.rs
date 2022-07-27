@@ -477,42 +477,44 @@ impl Builder {
         let mod_build_path = self.local_build_path.join("@esm")?;
         let addon_destination_path = mod_build_path.join("addons")?;
 
-        let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
+        local_command("./", args)
 
-        // Create the PBOs
-        for addon in ADDONS.iter() {
-            let result = SystemCommand::new(mikero_path.join("bin")?.join("makepbo")?.as_str())
-                .env("LD_LIBRARY_PATH", mikero_path.join("lib")?.as_str())
-                .args(vec![
-                    &format!("{}/{addon}", source_path.as_str()),
-                    &format!("{}/{addon}.pbo", addon_destination_path.as_str()),
-                ])
-                .output()?;
+        // let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
 
-            if !result.status.success() {
-                let output = format!(
-                    "Failed to build {addon}.pbo\n{}\n{}\n\n{}\n{}",
-                    "stdout".green().bold(),
-                    String::from_utf8_lossy(&result.stdout).black(),
-                    "stderr".red().bold(),
-                    String::from_utf8_lossy(&result.stderr).red()
-                );
+        // // Create the PBOs
+        // for addon in ADDONS.iter() {
+        //     let result = SystemCommand::new(mikero_path.join("bin")?.join("makepbo")?.as_str())
+        //         .env("LD_LIBRARY_PATH", mikero_path.join("lib")?.as_str())
+        //         .args(vec![
+        //             &format!("{}/{addon}", source_path.as_str()),
+        //             &format!("{}/{addon}.pbo", addon_destination_path.as_str()),
+        //         ])
+        //         .output()?;
 
-                return Err(output.into());
-            }
-        }
+        //     if !result.status.success() {
+        //         let output = format!(
+        //             "Failed to build {addon}.pbo\n{}\n{}\n\n{}\n{}",
+        //             "stdout".green().bold(),
+        //             String::from_utf8_lossy(&result.stdout).black(),
+        //             "stderr".red().bold(),
+        //             String::from_utf8_lossy(&result.stderr).red()
+        //         );
 
-        // Copy the rest of the mod contents
-        for directory in DIRECTORIES.iter() {
-            Directory::copy(&mod_path.join(directory)?, &mod_build_path.join(directory)?)?
-        }
+        //         return Err(output.into());
+        //     }
+        // }
 
-        for file in FILES.iter() {
-            File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
-        }
+        // // Copy the rest of the mod contents
+        // for directory in DIRECTORIES.iter() {
+        //     Directory::copy(&mod_path.join(directory)?, &mod_build_path.join(directory)?)?
+        // }
 
-        let destination = self.remote_build_path().to_owned();
-        Directory::transfer(&mut self.server, mod_build_path, destination)?;
+        // for file in FILES.iter() {
+        //     File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
+        // }
+
+        // let destination = self.remote_build_path().to_owned();
+        // Directory::transfer(&mut self.server, mod_build_path, destination)?;
 
         Ok(())
     }
