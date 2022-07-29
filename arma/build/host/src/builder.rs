@@ -1,3 +1,4 @@
+use compiler::Compiler;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use std::process::Output;
@@ -15,6 +16,19 @@ use crate::{
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
+
+lazy_static! {
+    static ref ADDONS: Vec<&'static str> = vec![
+        "exile_server_manager",
+        "exile_server_overwrites",
+        "exile_server_xm8",
+        "exile_server_hacking",
+        "exile_server_grinding",
+        "exile_server_charge_plant_started",
+        "exile_server_flag_steal_started",
+        "exile_server_player_connected"
+    ];
+}
 
 struct Remote {
     pub build_path: VfsPath,
@@ -111,19 +125,26 @@ impl Builder {
     }
 
     pub fn start(&mut self) -> BuildResult {
-        self.print_status("Starting build host", Builder::start_server)?;
+        self.print_status("Preparing", Builder::start_server)?;
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
 
+        if matches!(self.os, BuildOS::Windows) {
+            self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
+        }
+
         self.print_info();
+
         self.print_status("Killing Arma", Builder::kill_arma)?;
         self.print_status("Cleaning directories", Builder::clean_directories)?;
         self.print_status("Writing server config", Builder::create_server_config)?;
+        self.print_status("Compiling @esm", Builder::compile_mod)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
+
         self.print_status("Building @esm", Builder::build_mod)?;
-        self.print_status("Seeding database", Builder::seed_database)?;
-        self.print_status("Starting a3 server", Builder::start_a3_server)?;
+        // self.print_status("Seeding database", Builder::seed_database)?;
+        // self.print_status("Starting a3 server", Builder::start_a3_server)?;
         // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
-        self.print_status("Starting log stream", Builder::stream_logs)?;
+        // self.print_status("Starting log stream", Builder::stream_logs)?;
         Ok(())
     }
 
@@ -220,7 +241,7 @@ impl Builder {
         Ok(())
     }
 
-    fn system_command(&mut self, command: System) -> BuildResult {
+    fn system_command(&mut self, command: &mut System) -> Result<Command, BuildError> {
         lazy_static! {
             static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
         }
@@ -234,8 +255,8 @@ impl Builder {
                 // Removes the "Preparing modules for first use." errors that powershell return
                 let script = format!(
                     "$ProgressPreference = 'SilentlyContinue'; {} {}",
-                    command.cmd,
-                    command.args.join(" ")
+                    command.command,
+                    command.arguments.join(" ")
                 );
 
                 let script = WHITESPACE_REGEX.replace_all(&script, " ");
@@ -262,23 +283,13 @@ impl Builder {
                 // Remove the trailing newline
                 encoded_command.pop();
 
-                let command = System {
-                    cmd: "powershell".into(),
-                    args: vec!["-EncodedCommand".to_string(), encoded_command],
-                    check_for_success: command.check_for_success,
-                    success_regex: command.success_regex,
-                };
+                command.command("powershell");
+                command.arguments(vec!["-EncodedCommand".to_string(), encoded_command]);
 
                 // Finally send the command to powershell
-                match self.send_to_receiver(Command::System(command)) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(e),
-                }
+                self.send_to_receiver(Command::System(command.to_owned()))
             }
-            BuildOS::Linux => match self.send_to_receiver(Command::System(command)) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            },
+            BuildOS::Linux => self.send_to_receiver(Command::System(command.to_owned())),
         }
     }
 
@@ -320,12 +331,8 @@ impl Builder {
             }
         }
 
-        self.system_command(System {
-            cmd: script,
-            args: vec![],
-            check_for_success: false,
-            success_regex: "".into(),
-        })
+        self.system_command(System::new().command(script))?;
+        Ok(())
     }
 
     fn clean_directories(&mut self) -> BuildResult {
@@ -362,6 +369,14 @@ impl Builder {
                         Remove-Item "{server_path}\{profile_name}\*.log";
                         Remove-Item "{server_path}\{profile_name}\*.rpt";
 
+                        Get-ChildItem "{build_path}\@esm\*.*" -Recurse | Remove-Item -Force -Recurse;
+
+                        if ([System.IO.Directory]::Exists("{build_path}\esm\target")) {{
+                            Move-Item -Path "{build_path}\esm\target" -Destination "{build_path}";
+                        }}
+
+                        Get-ChildItem "{build_path}\esm\*.*" -Recurse | Remove-Item -Force -Recurse;
+
                         $Dirs = "{build_path}\esm",
                                 "{build_path}\@esm",
                                 "{build_path}\@esm\addons";
@@ -371,6 +386,10 @@ impl Builder {
                                 New-Item -Path $dir -ItemType Directory;
                             }}
                         }};
+
+                        if ([System.IO.Directory]::Exists("{build_path}\target")) {{
+                            Move-Item -Path "{build_path}\target" -Destination "{build_path}\esm\target";
+                        }}
                     "#,
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
@@ -380,12 +399,8 @@ impl Builder {
             BuildOS::Linux => todo!(),
         };
 
-        self.system_command(System {
-            cmd: script,
-            args: vec![],
-            check_for_success: false,
-            success_regex: "".into(),
-        })
+        self.system_command(System::new().command(script).wait())?;
+        Ok(())
     }
 
     fn create_server_config(&mut self) -> BuildResult {
@@ -441,12 +456,12 @@ impl Builder {
                     }
                 );
 
-                self.system_command(System {
-                    cmd: script,
-                    args: vec![],
-                    check_for_success: true,
-                    success_regex: r#"(?i)finished release \[optimized\]"#.into(),
-                })?;
+                self.system_command(
+                    System::new()
+                        .command(script)
+                        .add_detection(r"error", true)
+                        .add_detection(r"warning", false),
+                )?;
             }
             BuildOS::Linux => todo!(),
         }
@@ -454,18 +469,56 @@ impl Builder {
         Ok(())
     }
 
-    fn build_mod(&mut self) -> BuildResult {
+    fn check_for_p_drive(&mut self) -> BuildResult {
+        assert!(matches!(self.os, BuildOS::Windows));
+
+        let script = r#"
+            if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
+                "p_drive_not_mounted";
+            }} else {{
+                "p_drive_mounted";
+            }}
+        "#;
+
+        let result = self.system_command(System::new().command(script).with_stdout())?;
+
+        // Continue building
+        if let Command::SystemResponse(r) = result {
+            if r == *"p_drive_mounted" {
+                return Ok(());
+            }
+        } else {
+            panic!("Invalid response for System command. Must be Command::SystemResponse");
+        }
+
+        // WorkDrive.exe will keep a window open that requires user input
+        println!("{}", "paused\nWaiting for input...".yellow());
+        println!("Please confirm Window's UAC and then press any key on the window that WorkDrive has opened");
+
+        let script = format!(
+            r#"
+                Start-Process -Wait -FilePath "{build_path}\windows\WorkDrive.exe" -ArgumentList "/Mount";
+
+                if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
+                    "p_drive_mounted";
+                }} else {{
+                    "p_drive_not_mounted";
+                }}
+            "#,
+            build_path = self.remote_build_path_str(),
+        );
+
+        self.system_command(
+            System::new()
+                .command(script)
+                .wait()
+                .add_detection("p_drive_not_mounted", true),
+        )?;
+        Ok(())
+    }
+
+    fn compile_mod(&mut self) -> BuildResult {
         lazy_static! {
-            static ref ADDONS: Vec<&'static str> = vec![
-                "exile_server_manager",
-                "exile_server_overwrites",
-                "exile_server_xm8",
-                "exile_server_hacking",
-                "exile_server_grinding",
-                "exile_server_charge_plant_started",
-                "exile_server_flag_steal_started",
-                "exile_server_player_connected"
-            ];
             static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
             static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
         }
@@ -477,9 +530,77 @@ impl Builder {
         let mod_build_path = self.local_build_path.join("@esm")?;
         let addon_destination_path = mod_build_path.join("addons")?;
 
-        local_command("./", args)
+        Compiler::new()
+            .source(source_path.as_str())
+            .destination(addon_destination_path.as_str())
+            .target(&self.os.to_string())
+            .replace(r#"compiler\.os\.path\((.+,?)\)"#, |compiler, matches| {
+                let path_chunks: Vec<String> = matches
+                    .get(1)
+                    .unwrap()
+                    .as_str()
+                    .split(',')
+                    .map(|p| p.trim().replace('"', ""))
+                    .collect();
 
-        // let mikero_path = self.local_git_path.join("tools")?.join("depbo-tools")?;
+                let separator = if let compiler::Target::Windows = compiler.target {
+                    "\\"
+                } else {
+                    "/"
+                };
+
+                // Windows: \my_addon\path
+                // Linux: /my_addon/path
+                Some(format!("\"{}{}\"", separator, path_chunks.join(separator)))
+            })
+            .compile()?;
+
+        let destination = self.remote_build_path().to_owned();
+        Directory::transfer(&mut self.server, mod_build_path, destination)?;
+
+        Ok(())
+    }
+
+    fn build_mod(&mut self) -> BuildResult {
+        let mikero_path = self
+            .local_git_path
+            .join("tools")?
+            .join("pbo_tools")?
+            .join(self.os.to_string())?;
+
+        let destination = self.remote_build_path().to_owned();
+        Directory::transfer(&mut self.server, mikero_path, destination)?;
+
+        match self.os {
+            BuildOS::Linux => todo!(),
+            BuildOS::Windows => {
+                for addon in ADDONS.iter() {
+                    todo!();
+                    // let script = format!(
+                    //     r#"
+                    //         $AddonNames = Get-ChildItem -Path "{build_path}" -Name -Directory -Depth 0;
+                    //         Foreach ($name in $AddonNames) {{
+                    //             Start-Process -Wait -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "{build_path}\@esm\addons\$name", "{build_path}\@esm\addons\$name.pbo";
+
+                    //             if ($?) {{
+                    //                 Get-ChildItem "{build_path}\@esm\addons\$name" | Remove-Item -Force -Recurse;
+                    //             }}
+                    //         }}
+
+                    //         echo "esm.build.done";
+                    //     "#,
+                    //     build_path = self.remote_build_path_str(),
+                    // );
+                }
+
+                // self.system_command(System {
+                //     cmd: script,
+                //     args: vec![],
+                //     check_for_success: true,
+                //     success_regex: r#"esm\.build\.done"#.into(),
+                // })?;
+            }
+        }
 
         // // Create the PBOs
         // for addon in ADDONS.iter() {
@@ -512,10 +633,6 @@ impl Builder {
         // for file in FILES.iter() {
         //     File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
         // }
-
-        // let destination = self.remote_build_path().to_owned();
-        // Directory::transfer(&mut self.server, mod_build_path, destination)?;
-
         Ok(())
     }
 
@@ -552,12 +669,7 @@ impl Builder {
                     server_args = self.remote.server_args
                 );
 
-                self.system_command(System {
-                    cmd: script,
-                    args: vec![],
-                    check_for_success: false,
-                    success_regex: "".into(),
-                })?;
+                self.system_command(System::new().command(script).wait())?;
             }
             BuildOS::Linux => todo!(),
         }

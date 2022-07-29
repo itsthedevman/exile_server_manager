@@ -8,7 +8,10 @@ mod directory;
 mod file;
 mod server;
 
-use std::{fmt, process::exit};
+use std::{
+    fmt::{self, Display},
+    process::exit,
+};
 
 use builder::Builder;
 use clap::{ArgEnum, Parser, Subcommand};
@@ -55,6 +58,12 @@ pub enum Commands {
 pub enum BuildOS {
     Linux,
     Windows,
+}
+
+impl Display for BuildOS {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
