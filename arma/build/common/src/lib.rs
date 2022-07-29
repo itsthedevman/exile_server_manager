@@ -28,6 +28,7 @@ pub enum Command {
     PostInit(PostInit),
     Error(String),
     System(System),
+    SystemResponse(String),
     Database(String),
     FileTransferStart(FileTransfer),
     FileTransferResult(bool),
@@ -44,12 +45,60 @@ impl Default for Command {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct System {
-    pub cmd: String,
-    pub args: Vec<String>,
-    pub check_for_success: bool,
-    pub success_regex: String,
+    pub command: String,
+    pub arguments: Vec<String>,
+    pub wait: bool,
+    pub detections: Vec<Detection>,
+    pub return_stdout: bool,
+}
+
+impl System {
+    pub fn new() -> Self {
+        System {
+            command: "".into(),
+            arguments: vec![],
+            wait: false,
+            detections: vec![],
+            return_stdout: false,
+        }
+    }
+
+    pub fn command<S: AsRef<str>>(&mut self, command: S) -> &mut Self {
+        self.command = command.as_ref().to_string();
+        self
+    }
+
+    pub fn arguments<S: AsRef<str>>(&mut self, arguments: Vec<S>) -> &mut Self {
+        self.arguments = arguments.iter().map(|a| a.as_ref().to_string()).collect();
+        self
+    }
+
+    pub fn wait(&mut self) -> &mut Self {
+        self.wait = true;
+        self
+    }
+
+    pub fn add_detection(&mut self, regex_str: &str, causes_error: bool) -> &mut Self {
+        self.detections.push(Detection {
+            regex: regex_str.to_string(),
+            causes_error,
+        });
+        self
+    }
+
+    pub fn with_stdout(&mut self) -> &mut Self {
+        self.wait();
+        self.return_stdout = true;
+        self
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Detection {
+    pub regex: String,
+    pub causes_error: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
