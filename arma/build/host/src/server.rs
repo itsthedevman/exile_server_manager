@@ -1,4 +1,5 @@
 use colored::Colorize;
+use common::read_lock;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use parking_lot::RwLock;
@@ -12,7 +13,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Server {
     pub connected: Arc<AtomicBool>,
-    pub requests: Arc<RwLock<HashMap<Uuid, Option<Command>>>>,
+    pub requests: Arc<RwLock<HashMap<Uuid, Result<Command, BuildError>>>>,
     server_task: Arc<Option<NodeTask>>,
     handler: Option<NodeHandler<()>>,
     endpoint: Arc<RwLock<Option<Endpoint>>>,
@@ -54,18 +55,13 @@ impl Server {
                         *server.endpoint.write() = Some(endpoint);
                         server.connected.store(true, Ordering::SeqCst);
                     }
-                    Command::Error(e) => {
-                        println!("{}", "failed".red().bold());
-                        println!(
-                            "{} - {} - {}",
-                            "<esm_bt>".blue().bold(),
-                            "error".red().bold(),
-                            e
-                        );
-                        std::process::exit(1)
-                    }
+                    Command::Error(e) => write_lock(&server.requests, |mut writer| {
+                        writer.insert(message.id, Err(e.to_owned().into()));
+                        Ok(true)
+                    })
+                    .unwrap(),
                     c => write_lock(&server.requests, |mut writer| {
-                        writer.insert(message.id, Some(c.to_owned()));
+                        writer.insert(message.id, Ok(c.to_owned()));
                         Ok(true)
                     })
                     .unwrap(),
@@ -111,28 +107,35 @@ impl Server {
 
     fn track_request(&mut self, id: &Uuid) -> BuildResult {
         write_lock(&self.requests, |mut writer| {
-            writer.insert(id.to_owned(), None);
+            writer.insert(id.to_owned(), Ok(Command::Hello));
             Ok(true)
         })
     }
 
     fn wait_for_response(&mut self, id: &Uuid) -> Result<Command, BuildError> {
-        let result = RwLock::new(None);
-        write_lock(&self.requests, |mut writer| match writer.get_mut(id) {
-            Some(v) => match v.take() {
-                Some(command) => {
-                    *result.write() = Some(command);
+        let result: RwLock<Result<Command, BuildError>> = RwLock::new(Ok(Command::Hello));
+        read_lock(&self.requests, |reader| match reader.get(id) {
+            Some(v) => match v {
+                Ok(c) => {
+                    if let Command::Hello = c {
+                        return Ok(false);
+                    }
+
+                    *result.write() = Ok(c.to_owned());
                     Ok(true)
                 }
-                None => Ok(false),
+                Err(e) => {
+                    *result.write() = Err(e.to_string().into());
+                    Ok(true)
+                }
             },
             None => Ok(false),
         })?;
 
-        let mut writer = result.write();
-        match writer.take() {
-            Some(c) => Ok(c),
-            None => Err("Something went very wrong".to_string().into()),
+        let writer = result.read();
+        match &*writer {
+            Ok(c) => Ok(c.to_owned()),
+            Err(e) => Err(e.to_string().into()),
         }
     }
 }
