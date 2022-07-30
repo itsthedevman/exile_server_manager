@@ -51,7 +51,7 @@ pub struct System {
     pub arguments: Vec<String>,
     pub wait: bool,
     pub detections: Vec<Detection>,
-    pub return_stdout: bool,
+    pub return_output: bool,
 }
 
 impl System {
@@ -61,7 +61,7 @@ impl System {
             arguments: vec![],
             wait: false,
             detections: vec![],
-            return_stdout: false,
+            return_output: false,
         }
     }
 
@@ -88,9 +88,9 @@ impl System {
         self
     }
 
-    pub fn with_stdout(&mut self) -> &mut Self {
+    pub fn with_output(&mut self) -> &mut Self {
         self.wait();
-        self.return_stdout = true;
+        self.return_output = true;
         self
     }
 }
