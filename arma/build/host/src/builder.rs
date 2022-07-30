@@ -17,19 +17,6 @@ use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-lazy_static! {
-    static ref ADDONS: Vec<&'static str> = vec![
-        "exile_server_manager",
-        "exile_server_overwrites",
-        "exile_server_xm8",
-        "exile_server_hacking",
-        "exile_server_grinding",
-        "exile_server_charge_plant_started",
-        "exile_server_flag_steal_started",
-        "exile_server_player_connected"
-    ];
-}
-
 struct Remote {
     pub build_path: VfsPath,
     pub build_path_str: String,
@@ -128,18 +115,18 @@ impl Builder {
         self.print_status("Preparing", Builder::start_server)?;
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
 
+        self.print_info();
+        self.print_status("Killing Arma", Builder::kill_arma)?;
+        self.print_status("Cleaning directories", Builder::clean_directories)?;
+
+        self.print_status("Preparing", Builder::prepare_to_build)?;
+
         if matches!(self.os, BuildOS::Windows) {
             self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
         }
 
-        self.print_info();
-
-        self.print_status("Killing Arma", Builder::kill_arma)?;
-        self.print_status("Cleaning directories", Builder::clean_directories)?;
-        self.print_status("Writing server config", Builder::create_server_config)?;
         self.print_status("Compiling @esm", Builder::compile_mod)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
-
         self.print_status("Building @esm", Builder::build_mod)?;
         // self.print_status("Seeding database", Builder::seed_database)?;
         // self.print_status("Starting a3 server", Builder::start_a3_server)?;
@@ -375,6 +362,10 @@ impl Builder {
                             Move-Item -Path "{build_path}\esm\target" -Destination "{build_path}";
                         }}
 
+                        if ([System.IO.Directory]::Exists("{build_path}\esm\{os}")) {{
+                            Get-ChildItem "{build_path}\esm\{os}\*.*" -Recurse | Remove-Item -Force -Recurse;
+                        }}
+
                         Get-ChildItem "{build_path}\esm\*.*" -Recurse | Remove-Item -Force -Recurse;
 
                         $Dirs = "{build_path}\esm",
@@ -394,16 +385,29 @@ impl Builder {
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
                     profile_name = profile_name,
+                    os = self.os
                 )
             }
             BuildOS::Linux => todo!(),
         };
 
         self.system_command(System::new().command(script).wait())?;
+
         Ok(())
     }
 
-    fn create_server_config(&mut self) -> BuildResult {
+    fn prepare_to_build(&mut self) -> BuildResult {
+        // Copy the build tools over
+        let mikero_path = self
+            .local_git_path
+            .join("tools")?
+            .join("pbo_tools")?
+            .join(self.os.to_string())?;
+
+        let destination = self.remote_build_path().to_owned();
+        Directory::transfer(&mut self.server, mikero_path, destination)?;
+
+        // Create the server config
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
         struct Config {
             connection_url: String,
@@ -474,13 +478,17 @@ impl Builder {
 
         let script = r#"
             if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
-                "p_drive_not_mounted";
-            }} else {{
                 "p_drive_mounted";
+            }} else {{
+                "p_drive_not_mounted";
             }}
         "#;
 
-        let result = self.system_command(System::new().command(script).with_stdout())?;
+        let result = self.system_command(
+            System::new()
+                .command(script)
+                .add_detection("p_drive_mounted", false),
+        )?;
 
         // Continue building
         if let Command::SystemResponse(r) = result {
@@ -511,7 +519,6 @@ impl Builder {
         self.system_command(
             System::new()
                 .command(script)
-                .wait()
                 .add_detection("p_drive_not_mounted", true),
         )?;
         Ok(())
@@ -562,43 +569,41 @@ impl Builder {
     }
 
     fn build_mod(&mut self) -> BuildResult {
-        let mikero_path = self
-            .local_git_path
-            .join("tools")?
-            .join("pbo_tools")?
-            .join(self.os.to_string())?;
+        todo!("Build mod");
 
-        let destination = self.remote_build_path().to_owned();
-        Directory::transfer(&mut self.server, mikero_path, destination)?;
+        lazy_static! {
+            static ref ADDONS: Vec<&'static str> = vec![
+                "exile_server_manager",
+                "exile_server_overwrites",
+                "exile_server_xm8",
+                "exile_server_hacking",
+                "exile_server_grinding",
+                "exile_server_charge_plant_started",
+                "exile_server_flag_steal_started",
+                "exile_server_player_connected"
+            ];
+        }
 
         match self.os {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
                 for addon in ADDONS.iter() {
-                    todo!();
-                    // let script = format!(
-                    //     r#"
-                    //         $AddonNames = Get-ChildItem -Path "{build_path}" -Name -Directory -Depth 0;
-                    //         Foreach ($name in $AddonNames) {{
-                    //             Start-Process -Wait -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "{build_path}\@esm\addons\$name", "{build_path}\@esm\addons\$name.pbo";
+                    let script = format!(
+                        r#"
+                            $AddonNames = Get-ChildItem -Path "{build_path}" -Name -Directory -Depth 0;
+                            Foreach ($name in $AddonNames) {{
+                                Start-Process -Wait -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "{build_path}\@esm\addons\$name", "{build_path}\@esm\addons\$name.pbo";
 
-                    //             if ($?) {{
-                    //                 Get-ChildItem "{build_path}\@esm\addons\$name" | Remove-Item -Force -Recurse;
-                    //             }}
-                    //         }}
+                                if ($?) {{
+                                    Get-ChildItem "{build_path}\@esm\addons\$name" | Remove-Item -Force -Recurse;
+                                }}
+                            }}
 
-                    //         echo "esm.build.done";
-                    //     "#,
-                    //     build_path = self.remote_build_path_str(),
-                    // );
+                            echo "esm.build.done";
+                        "#,
+                        build_path = self.remote_build_path_str(),
+                    );
                 }
-
-                // self.system_command(System {
-                //     cmd: script,
-                //     args: vec![],
-                //     check_for_success: true,
-                //     success_regex: r#"esm\.build\.done"#.into(),
-                // })?;
             }
         }
 
