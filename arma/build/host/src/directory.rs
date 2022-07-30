@@ -1,43 +1,32 @@
-use crate::{server::Server, BuildResult, File};
-use vfs::VfsPath;
+use crate::{builder::Builder, BuildResult, File};
+use common::System;
 
+use vfs::VfsPath;
 pub struct Directory;
 
 impl Directory {
-    pub fn transfer(
-        server: &mut Server,
-        source_path: VfsPath,
-        destination_path: VfsPath,
-    ) -> BuildResult {
-        let file_paths: Vec<VfsPath> = source_path
-            .walk_dir()?
-            .filter(|p| match p {
-                Ok(p) => p.is_file().unwrap(),
-                Err(_e) => false,
-            })
-            .map(|p| p.unwrap())
-            .collect();
+    pub fn transfer(builder: &mut Builder, source_path: VfsPath) -> BuildResult {
+        let dir_name = source_path.filename();
+        let file_name = format!("{}.zip", dir_name);
+        let parent_path = source_path.parent().unwrap();
 
-        for path in file_paths {
-            let parent_path = source_path.parent().unwrap().as_str().to_owned();
-            let mut server = server.to_owned();
-            let destination_path = destination_path.clone();
+        File::transfer(builder, parent_path, &file_name)?;
 
-            let relative_path = path.as_str().replace(&parent_path, "");
-            let file_name = path.filename();
+        let destination_path = builder.remote_build_path_str();
+        match builder.os {
+            crate::BuildOS::Linux => todo!(),
+            crate::BuildOS::Windows => {
+                let script = format!(
+                    r#"
+                        Import-Module Microsoft.PowerShell.Archive;
+                        Expand-Archive -Path "{destination_path}\{file_name}" -DestinationPath {destination_path};
+                        Remove-Item -Path "{destination_path}\{file_name}";
+                    "#
+                );
 
-            File::transfer(
-                &mut server,
-                path.parent().unwrap(),
-                destination_path
-                    .join(&relative_path[1..])?
-                    .parent()
-                    .unwrap(),
-                &file_name,
-            )
-            .unwrap();
+                builder.system_command(System::new().command(script).wait())?;
+            }
         }
-
         Ok(())
     }
 

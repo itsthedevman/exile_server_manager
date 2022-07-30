@@ -1,4 +1,4 @@
-use crate::{server::Server, BuildResult, Command, FileChunk, FileTransfer};
+use crate::{builder::Builder, server::Server, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
 use vfs::VfsPath;
@@ -7,12 +7,8 @@ const CHUNK_SIZE: usize = 65536;
 
 pub struct File {}
 impl File {
-    pub fn transfer(
-        server: &mut Server,
-        source_path: VfsPath,
-        destination_path: VfsPath,
-        file_name: &str,
-    ) -> BuildResult {
+    pub fn transfer(builder: &mut Builder, source_path: VfsPath, file_name: &str) -> BuildResult {
+        let destination_path = builder.remote_build_path().to_owned();
         let source_path = source_path.join(&file_name)?;
 
         let mut bytes = Vec::new();
@@ -35,7 +31,7 @@ impl File {
         };
 
         if let Command::FileTransferResult(_b @ false) =
-            server.send(Command::FileTransferStart(transfer))?
+            builder.send_to_receiver(Command::FileTransferStart(transfer))?
         {
             return Ok(());
         }
@@ -49,10 +45,10 @@ impl File {
                 bytes: bytes.to_vec(),
             });
 
-            server.send(chunk)?;
+            builder.send_to_receiver(chunk)?;
         }
 
-        server.send(Command::FileTransferEnd(id))?;
+        builder.send_to_receiver(Command::FileTransferEnd(id))?;
 
         Ok(())
     }

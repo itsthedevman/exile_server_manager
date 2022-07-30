@@ -16,8 +16,9 @@ use crate::{
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
+use run_script::ScriptOptions;
 
-struct Remote {
+pub struct Remote {
     pub build_path: VfsPath,
     pub build_path_str: String,
     pub server_path: String,
@@ -25,6 +26,7 @@ struct Remote {
 }
 
 impl Remote {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Remote {
             build_path: VfsPath::new(PhysicalFS::new("/")),
@@ -37,25 +39,25 @@ impl Remote {
 
 pub struct Builder {
     /// For sending messages
-    server: Server,
+    pub server: Server,
     /// For storing remote paths and other data
-    remote: Remote,
+    pub remote: Remote,
     /// The OS to build the extension on
-    os: BuildOS,
+    pub os: BuildOS,
     /// 32 bit or 64 bit
-    arch: BuildArch,
+    pub arch: BuildArch,
     /// The environment the extension is built for
-    env: BuildEnv,
+    pub env: BuildEnv,
     /// Controls how detailed the logs are
-    log_level: LogLevel,
+    pub log_level: LogLevel,
     /// The host URI that is currently hosting a bot instance.
-    bot_host: String,
+    pub bot_host: String,
     /// The path to this repo's root directory
-    local_git_path: VfsPath,
+    pub local_git_path: VfsPath,
     /// Rust's build directory
-    local_build_path: VfsPath,
+    pub local_build_path: VfsPath,
     /// Rust build target for the build OS
-    extension_build_target: String,
+    pub extension_build_target: String,
 }
 
 impl Builder {
@@ -186,7 +188,7 @@ impl Builder {
         self.server.stop();
     }
 
-    fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
+    pub fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
         self.server.send(command)
     }
 
@@ -228,7 +230,7 @@ impl Builder {
         Ok(())
     }
 
-    fn system_command(&mut self, command: &mut System) -> Result<Command, BuildError> {
+    pub fn system_command(&mut self, command: &mut System) -> Result<Command, BuildError> {
         lazy_static! {
             static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
         }
@@ -262,10 +264,8 @@ impl Builder {
                 )?;
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let base64_output = local_command("base64", vec![command_result_path.as_str()])?;
-
                 let mut encoded_command =
-                    String::from_utf8_lossy(&base64_output.stdout).to_string();
+                    local_command("base64", vec![command_result_path.as_str()])?;
 
                 // Remove the trailing newline
                 encoded_command.pop();
@@ -280,11 +280,11 @@ impl Builder {
         }
     }
 
-    fn remote_build_path(&self) -> &VfsPath {
+    pub fn remote_build_path(&self) -> &VfsPath {
         &self.remote.build_path
     }
 
-    fn remote_build_path_str(&self) -> &str {
+    pub fn remote_build_path_str(&self) -> &str {
         &self.remote.build_path_str
     }
 
@@ -404,8 +404,7 @@ impl Builder {
             .join("pbo_tools")?
             .join(self.os.to_string())?;
 
-        let destination = self.remote_build_path().to_owned();
-        Directory::transfer(&mut self.server, mikero_path, destination)?;
+        Directory::transfer(self, mikero_path)?;
 
         // Create the server config
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -437,13 +436,12 @@ impl Builder {
         extension_path
             .join(".build-sha")?
             .create_file()?
-            .write_all(&git_sha_short())?;
+            .write_all(git_sha_short().as_bytes())?;
 
         match self.os {
             BuildOS::Windows => {
                 // Copy the extension over to the remote host
-                let destination = self.remote_build_path().to_owned();
-                Directory::transfer(&mut self.server, extension_path, destination)?;
+                Directory::transfer(self, extension_path)?;
 
                 let script = format!(
                     r#"
@@ -562,8 +560,7 @@ impl Builder {
             })
             .compile()?;
 
-        let destination = self.remote_build_path().to_owned();
-        Directory::transfer(&mut self.server, mod_build_path, destination)?;
+        Directory::transfer(self, mod_build_path)?;
 
         Ok(())
     }
@@ -717,16 +714,25 @@ impl Builder {
     }
 }
 
-fn local_command(cmd: &str, args: Vec<&str>) -> Result<Output, BuildError> {
-    match SystemCommand::new(cmd).args(args).output() {
-        Ok(o) => Ok(o),
-        Err(e) => Err(BuildError::Generic(e.to_string())),
+pub fn local_command(cmd: &str, args: Vec<&str>) -> Result<String, BuildError> {
+    let options = ScriptOptions::new();
+    let (code, output, error) = run_script::run(
+        &format!("{} {}", cmd, args.join(" ").as_str()),
+        &vec![],
+        &options,
+    )
+    .unwrap();
+
+    if code == 0 {
+        return Ok(output);
     }
+
+    Err(error.into())
 }
 
-fn git_sha_short() -> Vec<u8> {
+fn git_sha_short() -> String {
     match local_command("git", vec!["rev-parse", "--short", "HEAD"]) {
-        Ok(o) => o.stdout,
+        Ok(o) => o,
         Err(_e) => "FAILED TO RETRIEVE".into(),
     }
 }

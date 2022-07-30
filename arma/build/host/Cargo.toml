@@ -24,4 +24,4 @@ fake = { version = "2.5", features = ['chrono'] }
 chrono = "0.4"
 rand = "0.8"
 compiler = { path = "../compiler" }
-zip = "0.6.2"
+run_script = "0.9.0"
