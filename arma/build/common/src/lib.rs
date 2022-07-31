@@ -81,6 +81,7 @@ impl System {
     }
 
     pub fn add_detection(&mut self, regex_str: &str, causes_error: bool) -> &mut Self {
+        self.wait();
         self.detections.push(Detection {
             regex: regex_str.to_string(),
             causes_error,

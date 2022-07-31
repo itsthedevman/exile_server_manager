@@ -29,3 +29,4 @@ test_data.yml
 .env
 
 build_config.yml
+*.zip
