@@ -2,7 +2,6 @@ use compiler::Compiler;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::Output;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
@@ -10,7 +9,7 @@ use crate::database::Database;
 use crate::Directory;
 use crate::{
     server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
-    LogLevel, System, SystemCommand,
+    LogLevel, System,
 };
 
 use colored::*;
@@ -127,10 +126,10 @@ impl Builder {
         self.print_status("Compiling @esm", Builder::compile_mod)?;
         self.print_status("Compiling esm_arma", Builder::build_extension)?;
         self.print_status("Building @esm", Builder::build_mod)?;
-        // self.print_status("Seeding database", Builder::seed_database)?;
-        // self.print_status("Starting a3 server", Builder::start_a3_server)?;
+        self.print_status("Seeding database", Builder::seed_database)?;
+        self.print_status("Starting a3 server", Builder::start_a3_server)?;
         // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
-        // self.print_status("Starting log stream", Builder::stream_logs)?;
+        self.print_status("Starting log stream", Builder::stream_logs)?;
         Ok(())
     }
 
@@ -576,12 +575,12 @@ impl Builder {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
                 for addon in ADDONS.iter() {
-                    todo!("HERE");
                     // If the addons are copied over to the P drive and then PBOed there?
                     // The "root" is probably what matters here. The root needs to be P: drive
                     let script = format!(
                         r#"
-                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "{build_path}\@esm\addons\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
+                            Move-Item -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
+                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
                         "#,
                         build_path = self.remote_build_path_str(),
                     );
@@ -648,6 +647,13 @@ impl Builder {
     }
 
     fn stream_logs(&mut self) -> BuildResult {
+        lazy_static! {
+            static ref REGEXES: Vec<Regex> = vec!["error"]
+                .iter()
+                .map(|r| Regex::new(r).unwrap())
+                .collect();
+        }
+
         self.send_to_receiver(Command::LogStreamInit)?;
 
         loop {
@@ -662,12 +668,20 @@ impl Builder {
             };
 
             for line in lines {
+                let content = line.content.trim_end();
+                let is_error = REGEXES.iter().any(|r| r.is_match(content));
+
                 println!(
-                    "{name}\n{content}",
+                    "{name}\n{content}\n",
                     name = line
                         .filename
-                        .truecolor(line.color[0], line.color[1], line.color[2]),
-                    content = line.content.trim_end()
+                        .truecolor(line.color[0], line.color[1], line.color[2])
+                        .underline(),
+                    content = if is_error {
+                        content.red().bold()
+                    } else {
+                        content.normal()
+                    }
                 )
             }
         }

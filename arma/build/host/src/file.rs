@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{builder::Builder, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
@@ -58,8 +58,8 @@ impl File {
         Ok(())
     }
 
-    pub fn copy(source: &PathBuf, destination: &PathBuf) -> BuildResult {
-        assert!(matches!(source.is_file(), f));
+    pub fn copy(source: &Path, destination: &Path) -> BuildResult {
+        assert!(matches!(source.is_file()));
 
         std::fs::copy(source, destination)?;
         Ok(())

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{builder::Builder, BuildResult, File};
 use common::System;
@@ -24,7 +24,7 @@ impl Directory {
                 let script = format!(
                     r#"
                         Import-Module Microsoft.PowerShell.Archive;
-                        Expand-Archive -Path "{destination_path}\{file_name}" -DestinationPath {destination_path};
+                        Expand-Archive -Force -Path "{destination_path}\{file_name}" -DestinationPath {destination_path};
                         Remove-Item -Path "{destination_path}\{file_name}";
                     "#
                 );
@@ -35,7 +35,7 @@ impl Directory {
         Ok(())
     }
 
-    pub fn copy(source: &PathBuf, destination: &PathBuf) -> BuildResult {
+    pub fn copy(source: &Path, destination: &Path) -> BuildResult {
         assert!(matches!(source.is_dir(), true));
 
         crate::builder::local_command(
