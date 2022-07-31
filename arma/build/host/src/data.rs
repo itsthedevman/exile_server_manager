@@ -1,6 +1,7 @@
+use std::path::PathBuf;
+
 use common::BuildError;
 use serde::{Deserialize, Serialize};
-use vfs::VfsPath;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct DevUser {
@@ -54,8 +55,8 @@ pub struct Data {
     pub steam_uids: Vec<String>,
 }
 
-pub fn parse_data_file(path: VfsPath) -> Result<Data, BuildError> {
-    let contents = match path.read_to_string() {
+pub fn parse_data_file(path: PathBuf) -> Result<Data, BuildError> {
+    let contents = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
             return Err(format!(

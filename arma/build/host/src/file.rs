@@ -1,18 +1,23 @@
-use crate::{builder::Builder, server::Server, BuildResult, Command, FileChunk, FileTransfer};
+use std::path::PathBuf;
+
+use crate::{builder::Builder, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
-use vfs::VfsPath;
 
 const CHUNK_SIZE: usize = 65536;
 
 pub struct File {}
 impl File {
-    pub fn transfer(builder: &mut Builder, source_path: VfsPath, file_name: &str) -> BuildResult {
-        let destination_path = builder.remote_build_path().to_owned();
-        let source_path = source_path.join(&file_name)?;
+    pub fn transfer(
+        builder: &mut Builder,
+        source_path: PathBuf,
+        destination_path: PathBuf,
+        file_name: &str,
+    ) -> BuildResult {
+        let source_path = source_path.join(&file_name);
 
-        let mut bytes = Vec::new();
-        source_path.open_file()?.read_to_end(&mut bytes)?;
+        let mut bytes = std::fs::read(source_path).unwrap();
+
         let total_size = bytes.len();
         let sha1 = Sha1::new().chain_update(&bytes).finalize().to_vec();
 
@@ -20,7 +25,7 @@ impl File {
         let transfer = FileTransfer {
             id,
             file_name: file_name.to_string(),
-            destination_path: destination_path.as_str()[1..].to_string(),
+            destination_path: destination_path.to_string_lossy().to_string(),
             number_of_chunks: if total_size < CHUNK_SIZE {
                 1
             } else {
@@ -53,12 +58,10 @@ impl File {
         Ok(())
     }
 
-    pub fn copy(source: &VfsPath, destination: &VfsPath) -> BuildResult {
-        assert!(matches!(source.is_file(), Ok(f) if f));
+    pub fn copy(source: &PathBuf, destination: &PathBuf) -> BuildResult {
+        assert!(matches!(source.is_file(), f));
 
-        match source.copy_file(destination) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.to_string().into()),
-        }
+        std::fs::copy(source, destination)?;
+        Ok(())
     }
 }

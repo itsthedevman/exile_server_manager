@@ -1,10 +1,10 @@
 use compiler::Compiler;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use vfs::{PhysicalFS, VfsPath};
 
 use crate::database::Database;
 use crate::Directory;
@@ -17,9 +17,10 @@ use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 use run_script::ScriptOptions;
+use std::fs;
 
 pub struct Remote {
-    pub build_path: VfsPath,
+    pub build_path: PathBuf,
     pub build_path_str: String,
     pub server_path: String,
     pub server_args: String,
@@ -29,7 +30,7 @@ impl Remote {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Remote {
-            build_path: VfsPath::new(PhysicalFS::new("/")),
+            build_path: Path::new("/").to_path_buf(),
             build_path_str: "/".into(),
             server_path: String::new(),
             server_args: String::new(),
@@ -53,9 +54,9 @@ pub struct Builder {
     /// The host URI that is currently hosting a bot instance.
     pub bot_host: String,
     /// The path to this repo's root directory
-    pub local_git_path: VfsPath,
+    pub local_git_path: PathBuf,
     /// Rust's build directory
-    pub local_build_path: VfsPath,
+    pub local_build_path: PathBuf,
     /// Rust build target for the build OS
     pub extension_build_target: String,
 }
@@ -78,12 +79,8 @@ impl Builder {
             BuildArch::X64
         };
 
-        let root_path = VfsPath::new(PhysicalFS::new("/"));
-
         // Have to remove the first slash in order for this to work
-        let local_git_path = root_path
-            .join(&std::env::current_dir()?.to_string_lossy()[1..])
-            .unwrap();
+        let local_git_path = std::env::current_dir()?;
 
         let extension_build_target: String = match os {
             BuildOS::Windows => match arch {
@@ -96,7 +93,7 @@ impl Builder {
             },
         };
 
-        let local_build_path = local_git_path.join("target")?;
+        let local_build_path = local_git_path.join("target");
         let builder = Builder {
             os,
             arch,
@@ -178,7 +175,7 @@ impl Builder {
             "log level".black().bold(),
             format!("{:?}", self.log_level).to_lowercase(),
             "git directory".black().bold(),
-            self.local_git_path.as_str(),
+            self.local_git_path.to_string_lossy(),
             "build directory".black().bold(),
             self.remote_build_path_str()
         )
@@ -208,14 +205,7 @@ impl Builder {
                     let path = post_init.build_path.to_owned();
 
                     self.remote = Remote {
-                        build_path: match self.os {
-                            BuildOS::Windows => {
-                                VfsPath::new(PhysicalFS::new(&path[0..=1])).join(&path[3..])?
-                            }
-                            BuildOS::Linux => {
-                                VfsPath::new(PhysicalFS::new("/")).join(&path[1..])?
-                            }
-                        },
+                        build_path: Path::new(&path).to_path_buf(),
                         build_path_str: path,
                         server_path: post_init.server_path.to_owned(),
                         server_args: post_init.server_args.to_owned(),
@@ -237,9 +227,8 @@ impl Builder {
 
         match self.os {
             BuildOS::Windows => {
-                let command_file_path = self.local_build_path.join(".esm-build-command").unwrap();
-                let command_result_path =
-                    self.local_build_path.join(".esm-build-command-result")?;
+                let command_file_path = self.local_build_path.join(".esm-build-command");
+                let command_result_path = self.local_build_path.join(".esm-build-command-result");
 
                 // Removes the "Preparing modules for first use." errors that powershell return
                 let script = format!(
@@ -249,23 +238,21 @@ impl Builder {
                 );
 
                 let script = WHITESPACE_REGEX.replace_all(&script, " ");
-                command_file_path
-                    .create_file()?
-                    .write_all(script.as_bytes())?;
+                fs::write(&command_file_path, script.as_bytes());
 
                 // Convert the command file into UTF-16LE as required by Microsoft
                 local_command(
                     "iconv",
                     vec![
                         "-t UTF-16LE",
-                        &format!("--output={}", command_result_path.as_str()),
-                        command_file_path.as_str(),
+                        &format!("--output={}", command_result_path.display()),
+                        &command_file_path.to_string_lossy(),
                     ],
                 )?;
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
                 let mut encoded_command =
-                    local_command("base64", vec![command_result_path.as_str()])?;
+                    local_command("base64", vec![&command_result_path.to_string_lossy()])?;
 
                 // Remove the trailing newline
                 encoded_command.pop();
@@ -280,7 +267,7 @@ impl Builder {
         }
     }
 
-    pub fn remote_build_path(&self) -> &VfsPath {
+    pub fn remote_build_path(&self) -> &PathBuf {
         &self.remote.build_path
     }
 
@@ -324,14 +311,14 @@ impl Builder {
 
     fn clean_directories(&mut self) -> BuildResult {
         // Local directories
-        let esm_path = self.local_build_path.join("@esm")?;
+        let esm_path = self.local_build_path.join("@esm");
 
         // Delete @esm and recreate it
-        esm_path.remove_dir_all()?;
-        esm_path.create_dir_all()?;
+        fs::remove_dir_all(&esm_path)?;
+        fs::create_dir_all(&esm_path)?;
 
         // Create @esm/addons
-        esm_path.join("addons")?.create_dir_all()?;
+        fs::create_dir_all(&esm_path.join("addons"))?;
 
         /////////////////////
         // Remote directories
@@ -400,11 +387,11 @@ impl Builder {
         // Copy the build tools over
         let mikero_path = self
             .local_git_path
-            .join("tools")?
-            .join("pbo_tools")?
-            .join(self.os.to_string())?;
+            .join("tools")
+            .join("pbo_tools")
+            .join(self.os.to_string());
 
-        Directory::transfer(self, mikero_path)?;
+        Directory::transfer(self, mikero_path, self.remote_build_path().to_owned())?;
 
         // Create the server config
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -421,27 +408,33 @@ impl Builder {
         };
 
         let config_yaml = serde_yaml::to_vec(&config)?;
-        self.local_build_path
-            .join("@esm")?
-            .join("config.yml")?
-            .create_file()?
-            .write_all(&config_yaml)?;
+        fs::write(
+            self.local_build_path
+                .join("@esm")
+                .join("config.yml")
+                .to_string_lossy()
+                .to_string(),
+            config_yaml,
+        )?;
 
         Ok(())
     }
 
     fn build_extension(&mut self) -> BuildResult {
         // This will be read by the build script and inserted into the extension
-        let extension_path = self.local_git_path.join("esm")?;
-        extension_path
-            .join(".build-sha")?
-            .create_file()?
-            .write_all(git_sha_short().as_bytes())?;
+        let extension_path = self.local_git_path.join("esm");
+        fs::write(
+            extension_path
+                .join(".build-sha")
+                .to_string_lossy()
+                .to_string(),
+            git_sha_short().as_bytes(),
+        )?;
 
         match self.os {
             BuildOS::Windows => {
                 // Copy the extension over to the remote host
-                Directory::transfer(self, extension_path)?;
+                Directory::transfer(self, extension_path, self.remote_build_path().to_owned())?;
 
                 let script = format!(
                     r#"
@@ -529,15 +522,15 @@ impl Builder {
         }
 
         // Set up all the paths needed
-        let mod_path = self.local_git_path.join("@esm")?;
-        let source_path = mod_path.join("addons")?;
+        let mod_path = self.local_git_path.join("@esm");
+        let source_path = mod_path.join("addons");
 
-        let mod_build_path = self.local_build_path.join("@esm")?;
-        let addon_destination_path = mod_build_path.join("addons")?;
+        let mod_build_path = self.local_build_path.join("@esm");
+        let addon_destination_path = mod_build_path.join("addons");
 
         Compiler::new()
-            .source(source_path.as_str())
-            .destination(addon_destination_path.as_str())
+            .source(&source_path.to_string_lossy().to_string())
+            .destination(&addon_destination_path.to_string_lossy().to_string())
             .target(&self.os.to_string())
             .replace(r#"compiler\.os\.path\((.+,?)\)"#, |compiler, matches| {
                 let path_chunks: Vec<String> = matches
@@ -560,14 +553,12 @@ impl Builder {
             })
             .compile()?;
 
-        Directory::transfer(self, mod_build_path)?;
+        Directory::transfer(self, mod_build_path, self.remote_build_path().to_owned())?;
 
         Ok(())
     }
 
     fn build_mod(&mut self) -> BuildResult {
-        todo!("Build mod");
-
         lazy_static! {
             static ref ADDONS: Vec<&'static str> = vec![
                 "exile_server_manager",
@@ -585,63 +576,32 @@ impl Builder {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
                 for addon in ADDONS.iter() {
+                    todo!("HERE");
+                    // If the addons are copied over to the P drive and then PBOed there?
+                    // The "root" is probably what matters here. The root needs to be P: drive
                     let script = format!(
                         r#"
-                            $AddonNames = Get-ChildItem -Path "{build_path}" -Name -Directory -Depth 0;
-                            Foreach ($name in $AddonNames) {{
-                                Start-Process -Wait -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "{build_path}\@esm\addons\$name", "{build_path}\@esm\addons\$name.pbo";
-
-                                if ($?) {{
-                                    Get-ChildItem "{build_path}\@esm\addons\$name" | Remove-Item -Force -Recurse;
-                                }}
-                            }}
-
-                            echo "esm.build.done";
+                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "{build_path}\@esm\addons\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
                         "#,
                         build_path = self.remote_build_path_str(),
                     );
+
+                    self.system_command(
+                        System::new()
+                            .command(script)
+                            .add_detection("Failed to build", true)
+                            .add_detection("missing file", true),
+                    )?;
                 }
             }
         }
 
-        // // Create the PBOs
-        // for addon in ADDONS.iter() {
-        //     let result = SystemCommand::new(mikero_path.join("bin")?.join("makepbo")?.as_str())
-        //         .env("LD_LIBRARY_PATH", mikero_path.join("lib")?.as_str())
-        //         .args(vec![
-        //             &format!("{}/{addon}", source_path.as_str()),
-        //             &format!("{}/{addon}.pbo", addon_destination_path.as_str()),
-        //         ])
-        //         .output()?;
-
-        //     if !result.status.success() {
-        //         let output = format!(
-        //             "Failed to build {addon}.pbo\n{}\n{}\n\n{}\n{}",
-        //             "stdout".green().bold(),
-        //             String::from_utf8_lossy(&result.stdout).black(),
-        //             "stderr".red().bold(),
-        //             String::from_utf8_lossy(&result.stderr).red()
-        //         );
-
-        //         return Err(output.into());
-        //     }
-        // }
-
-        // // Copy the rest of the mod contents
-        // for directory in DIRECTORIES.iter() {
-        //     Directory::copy(&mod_path.join(directory)?, &mod_build_path.join(directory)?)?
-        // }
-
-        // for file in FILES.iter() {
-        //     File::copy(&mod_path.join(file)?, &mod_build_path.join(file)?)?
-        // }
         Ok(())
     }
 
     fn seed_database(&mut self) -> BuildResult {
-        let data = crate::data::parse_data_file(
-            self.local_git_path.join("build")?.join("test_data.yml")?,
-        )?;
+        let data =
+            crate::data::parse_data_file(self.local_git_path.join("build").join("test_data.yml"))?;
 
         let sql = Database::generate_sql(data);
         match self.send_to_receiver(Command::Database(sql)) {
