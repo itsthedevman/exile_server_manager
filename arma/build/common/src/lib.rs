@@ -131,6 +131,7 @@ pub struct LogLine {
     pub filename: String,
     pub color: [u8; 3],
     pub content: String,
+    pub line_number: usize,
 }
 
 pub type BuildResult = Result<(), BuildError>;
