@@ -48,3 +48,9 @@ impl From<compiler::CompilerError> for BuildError {
         Self::Generic(e.to_string())
     }
 }
+
+impl From<redis::RedisError> for BuildError {
+    fn from(e: redis::RedisError) -> Self {
+        Self::Generic(e.to_string())
+    }
+}
