@@ -15,11 +15,13 @@ use crate::{
 };
 
 use colored::*;
-use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use regex::Regex;
 use run_script::ScriptOptions;
-use std::fs;
+use std::{fs, thread};
+
+/// Used with the test suite, this key holds the server's current esm.key
+const REDIS_SERVER_KEY: &str = "test_server_key";
 
 pub struct Remote {
     pub build_path: PathBuf,
@@ -41,6 +43,7 @@ impl Remote {
 }
 
 pub struct Builder {
+    pub redis: redis::Client,
     /// For storing remote paths and other data
     pub remote: Remote,
     /// The OS to build the extension on
@@ -94,6 +97,7 @@ impl Builder {
         };
 
         let local_build_path = local_git_path.join("target");
+
         let builder = Builder {
             os,
             arch,
@@ -104,6 +108,7 @@ impl Builder {
             extension_build_target,
             local_build_path,
             remote: Remote::new(),
+            redis: redis::Client::open("redis://127.0.0.1/0")?,
         };
 
         Ok(builder)
@@ -196,6 +201,10 @@ impl Builder {
     }
 
     fn start_server(&mut self) -> BuildResult {
+        if let Err(e) = self.redis.get_connection() {
+            return Err(format!("Redis server - {}", e).into());
+        }
+
         write_lock(&crate::SERVER, |mut server| {
             server.start()?;
             Ok(true)
@@ -373,16 +382,23 @@ impl Builder {
     }
 
     fn prepare_to_build(&mut self) -> BuildResult {
-        // Copy the build tools over
+        self.transfer_mikeros_tools()?;
+        self.create_server_config()?;
+        self.create_esm_key_file()?;
+        Ok(())
+    }
+
+    fn transfer_mikeros_tools(&mut self) -> BuildResult {
         let mikero_path = self
             .local_git_path
             .join("tools")
             .join("pbo_tools")
             .join(self.os.to_string());
 
-        Directory::transfer(self, mikero_path, self.remote_build_path().to_owned())?;
+        Directory::transfer(self, mikero_path, self.remote_build_path().to_owned())
+    }
 
-        // Create the server config
+    fn create_server_config(&mut self) -> BuildResult {
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
         struct Config {
             connection_url: String,
@@ -405,6 +421,40 @@ impl Builder {
                 .to_string(),
             config_yaml,
         )?;
+
+        Ok(())
+    }
+
+    fn create_esm_key_file(&mut self) -> BuildResult {
+        let mut connection = self.redis.get_connection()?;
+        let mut last_key_received = String::new();
+
+        // Moved to a thread so this can happen over and over again for testing purposes
+        thread::spawn(move || loop {
+            let key: Option<String> = redis::cmd("GET")
+                .arg(REDIS_SERVER_KEY)
+                .query(&mut connection)
+                .unwrap();
+
+            if key.is_none() {
+                thread::sleep(Duration::from_millis(500));
+                continue;
+            }
+
+            let key = key.unwrap();
+            if key == last_key_received {
+                thread::sleep(Duration::from_millis(500));
+                continue;
+            }
+
+            write_lock(&crate::SERVER, |mut server| {
+                server.send(Command::Key(key.to_owned()))?;
+                Ok(true)
+            })
+            .unwrap();
+
+            last_key_received = key.to_owned();
+        });
 
         Ok(())
     }
@@ -645,19 +695,19 @@ impl Builder {
         lazy_static! {
             static ref HIGHLIGHTS: Vec<Highlight> = vec![
                 Highlight {
-                    regex: Regex::new("(?i)error").unwrap(),
+                    regex: Regex::new(r"(?i)error\b").unwrap(),
                     color: [153, 0, 51]
                 },
                 Highlight {
-                    regex: Regex::new("(?i)warn").unwrap(),
+                    regex: Regex::new(r"(?i)warn").unwrap(),
                     color: [153, 102, 0]
                 },
                 Highlight {
-                    regex: Regex::new("(?i)info").unwrap(),
+                    regex: Regex::new(r"(?i)info").unwrap(),
                     color: [102, 204, 255]
                 },
                 Highlight {
-                    regex: Regex::new("(?i)debug").unwrap(),
+                    regex: Regex::new(r"(?i)debug").unwrap(),
                     color: [51, 51, 51]
                 }
             ];
