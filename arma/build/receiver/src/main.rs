@@ -4,19 +4,20 @@ mod database;
 mod log_reader;
 mod transfer;
 
+use std::path::{Path, PathBuf};
+
 use clap::Parser;
 use client::Client;
 pub use common::*;
 pub use database::*;
 use lazy_static::lazy_static;
-use vfs::{PhysicalFS, VfsPath};
 
 lazy_static! {
-    pub static ref ROOT_PATH: VfsPath = {
+    pub static ref ROOT_PATH: PathBuf = {
         if cfg!(windows) {
-            VfsPath::new(PhysicalFS::new("C:"))
+            Path::new("C:").to_path_buf()
         } else {
-            VfsPath::new(PhysicalFS::new("/"))
+            Path::new("/").to_path_buf()
         }
     };
 }

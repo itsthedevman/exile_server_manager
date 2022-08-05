@@ -31,42 +31,36 @@ impl FileReader {
         }
     }
 
-    pub fn read_lines(&mut self) -> Option<LogLine> {
+    pub fn read_lines(&mut self) -> Vec<LogLine> {
+        let mut log_lines = Vec::new();
         if !self.ready_for_reading() {
-            return None;
+            return log_lines;
         }
 
         let reader = match &mut self.reader {
             Some(r) => r,
-            None => return None,
-        };
-
-        let mut log_line = LogLine {
-            color: self.color,
-            filename: self.file_name.to_owned(),
-            content: String::new(),
+            None => return log_lines,
         };
 
         for _ in 0..5 {
             let mut line = String::new();
             if let Ok(bytes) = reader.read_line(&mut line) {
-                if bytes == 0 {
+                if bytes == 0 || line.is_empty() {
                     continue;
                 }
 
-                log_line
-                    .content
-                    .push_str(&format!("{:5} | {}", self.current_line, line));
+                log_lines.push(LogLine {
+                    color: self.color,
+                    filename: self.file_name.to_owned(),
+                    content: line,
+                    line_number: self.current_line,
+                });
 
                 self.current_line += 1;
             }
         }
 
-        if log_line.content.is_empty() {
-            return None;
-        }
-
-        Some(log_line)
+        log_lines
     }
 
     fn ready_for_reading(&mut self) -> bool {
@@ -101,7 +95,7 @@ impl LogReader {
     }
 
     pub fn read_lines(&mut self) -> Vec<LogLine> {
-        loop {
+        for _ in 0..5 {
             if !self.read.load(Ordering::SeqCst) {
                 return vec![];
             }
@@ -115,6 +109,8 @@ impl LogReader {
 
             return new_lines;
         }
+
+        vec![]
     }
 
     pub fn stop_reads(&self) {

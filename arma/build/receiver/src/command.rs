@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
 use common::{write_lock, LogLine, PostInit};
+use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use regex::Regex;
 
@@ -18,7 +19,8 @@ impl IncomingCommand {
                 server_path: client.arma.server_path.to_owned(),
                 server_args: client.arma.server_args.to_owned(),
             })),
-            Command::System(command) => IncomingCommand.system_command(command),
+            Command::KillArma => IncomingCommand::kill_arma(),
+            Command::System(command) => IncomingCommand::system_command(command),
             Command::FileTransferStart(transfer) => {
                 let result = AtomicBool::new(false);
                 read_lock(&client.transfers, |transfers| {
@@ -71,29 +73,67 @@ impl IncomingCommand {
         }
     }
 
-    pub fn system_command(&self, command: &System) -> Result<Command, BuildError> {
+    pub fn kill_arma() -> Result<Command, BuildError> {
+        lazy_static! {
+            // Stop-Process doesn't want the extension
+            static ref WINDOWS_EXES: &'static [&'static str] = &[
+                "arma3server",
+                "arma3server_x64",
+                "arma3_x64",
+                "arma3",
+                "arma3battleye"
+            ];
+            static ref LINUX_EXES: &'static [&'static str] = &["arma3server", "arma3server_x64"];
+        };
+
+        let (command, args) = if cfg!(windows) {
+            (
+                "powershell",
+                WINDOWS_EXES
+                    .iter()
+                    .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force"))
+                    .collect::<Vec<String>>(),
+            )
+        } else {
+            (
+                "eval",
+                LINUX_EXES
+                    .iter()
+                    .map(|exe| format!("pkill \"{exe}\""))
+                    .collect::<Vec<String>>(),
+            )
+        };
+
+        let output = SystemCommand::new(&command)
+            .args(&vec![args.join(";")])
+            .output()?;
+
+        Ok(Command::Success)
+    }
+
+    pub fn system_command(command: &System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
-            command.cmd.bright_blue(),
-            command.args.join(" ").black()
+            command.command.bright_blue(),
+            command.arguments.join(" ").black()
         );
 
-        let mut child = SystemCommand::new(&command.cmd)
-            .args(&command.args)
+        let mut child = SystemCommand::new(&command.command)
+            .args(&command.arguments)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
-        if !command.check_for_success {
-            return Ok(Command::Success);
-        }
+        if !command.wait {
+            return Ok(Command::SystemResponse(String::new()));
+        };
 
-        let mut buffer = String::new();
+        let mut output = String::new();
         if let Some(stderr) = child.stderr.take() {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 let line = line.unwrap();
-                buffer.push_str(&format!("{}\n", line));
+                output.push_str(&format!("{}\n", line));
 
                 println!("{} - {}", "stderr".bright_red(), line);
             }
@@ -103,21 +143,35 @@ impl IncomingCommand {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 let line = line.unwrap();
-                buffer.push_str(&format!("{}\n", line));
+                output.push_str(&format!("{}\n", line));
 
                 println!("{} - {}", "stdout".bright_cyan(), line);
             }
         }
 
-        let regex = match Regex::from_str(&command.success_regex) {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_string().into()),
-        };
+        let mut result = String::new();
+        for detection in command.detections.iter() {
+            let regex = match Regex::from_str(&detection.regex) {
+                Ok(r) => r,
+                Err(e) => return Err(e.to_string().into()),
+            };
 
-        if !regex.is_match(&buffer) {
-            return Err(buffer.into());
+            let matches = match regex.captures(&output) {
+                Some(m) => m,
+                None => continue,
+            };
+
+            if detection.causes_error {
+                return Err(output.into());
+            }
+
+            result.push_str(matches.get(0).unwrap().as_str());
         }
 
-        Ok(Command::Success)
+        if command.return_output {
+            result.push_str(&output);
+        }
+
+        Ok(Command::SystemResponse(result))
     }
 }

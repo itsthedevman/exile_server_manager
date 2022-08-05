@@ -3,9 +3,8 @@ use colored::Colorize;
 use parking_lot::RwLock;
 use rand::seq::IteratorRandom;
 use sha1::{Digest, Sha1};
-use std::{collections::HashMap, io::Write, sync::Arc, thread};
+use std::{collections::HashMap, fs, io::Write, path::PathBuf, sync::Arc, thread};
 use uuid::Uuid;
-use vfs::VfsPath;
 
 use crate::{read_lock, write_lock, BuildError, BuildResult, FileChunk, FileTransfer};
 
@@ -77,12 +76,16 @@ impl Transfers {
             let path = transfer.path.parent().unwrap();
             let file = path.join(&format!(
                 "{}.{}",
-                transfer.path.filename(),
+                transfer
+                    .path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
                 incoming_chunk.index
-            ))?;
+            ));
 
-            file.create_file()?.write_all(&bytes)?;
-
+            fs::write(file, bytes)?;
             chunk.written = true;
 
             Ok(true)
@@ -104,10 +107,10 @@ impl Transfers {
         let destination_path = as_local_path(&transfer.destination_path)?;
 
         // Ensure all directories exist
-        destination_path.create_dir_all()?;
+        fs::create_dir_all(&destination_path)?;
 
         write_lock(&self.transfers, |mut writer| {
-            let path = destination_path.join(&transfer.file_name)?;
+            let path = destination_path.join(&transfer.file_name);
 
             let file_transfer = IncomingTransfer {
                 id: transfer.id,
@@ -168,25 +171,18 @@ impl Transfers {
     }
 
     fn transfer_needed(&self, transfer: &FileTransfer) -> bool {
-        let file = match as_local_path(&transfer.destination_path) {
-            Ok(p) => match p.join(&transfer.file_name) {
-                Ok(f) => f,
-                Err(_e) => return true,
-            },
+        let destination_path = match as_local_path(&transfer.destination_path) {
+            Ok(p) => p.join(&transfer.file_name),
             Err(_e) => return true,
         };
 
-        if let Ok(_exists @ false) = file.exists() {
+        if destination_path.exists() {
             return true;
         }
 
-        let mut bytes = Vec::new();
-        match file.open_file() {
-            Ok(mut f) => match f.read_to_end(&mut bytes) {
-                Ok(_) => {}
-                Err(_e) => return true,
-            },
-            Err(_e) => return true,
+        let bytes = match fs::read(destination_path) {
+            Ok(b) => b,
+            Err(_) => return true,
         };
 
         let sha1 = Sha1::new().chain_update(bytes).finalize().to_vec();
@@ -194,8 +190,8 @@ impl Transfers {
     }
 }
 
-fn as_local_path(path: &str) -> Result<VfsPath, BuildError> {
-    Ok(crate::ROOT_PATH.join(path.trim_start_matches('/'))?)
+fn as_local_path(path: &str) -> Result<PathBuf, BuildError> {
+    Ok(crate::ROOT_PATH.join(path.trim_start_matches('/')))
 }
 
 #[derive(Debug, Clone)]
@@ -204,25 +200,28 @@ pub struct IncomingTransfer {
     pub size: usize,
     pub total_size: usize,
     pub finished: bool,
-    pub path: VfsPath,
+    pub path: PathBuf,
     pub chunks: Vec<Chunk>,
 }
 
 impl IncomingTransfer {
     pub fn combine_files(&mut self) -> BuildResult {
-        let mut file = self.path.create_file()?;
+        let mut file = std::fs::File::create(&self.path).unwrap();
 
         let parent_path = self.path.parent().unwrap();
         for index in 0..self.chunks.len() {
-            let child_file = parent_path.join(&format!("{}.{}", self.path.filename(), index))?;
+            let child_file = parent_path.join(&format!(
+                "{}.{}",
+                self.path.file_name().unwrap().to_string_lossy(),
+                index
+            ));
 
-            let mut buffer = Vec::new();
-            child_file.open_file()?.read_to_end(&mut buffer)?;
+            let buffer = fs::read(&child_file).unwrap();
 
             match file.write_all(&buffer) {
                 Ok(_) => {
                     self.size += buffer.len();
-                    child_file.remove_file()?;
+                    fs::remove_file(&child_file)?;
                 }
                 Err(e) => return Err(e.into()),
             };
