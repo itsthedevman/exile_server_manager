@@ -38,6 +38,7 @@ pub enum Command {
     LogStreamInit,
     LogStreamRequest,
     LogStream(Vec<LogLine>),
+    Key(String),
 }
 
 impl Default for Command {
