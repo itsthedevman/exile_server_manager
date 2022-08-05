@@ -24,6 +24,7 @@ impl NetworkCommand {
 pub enum Command {
     Hello,
     Success,
+    KillArma,
     PostInitRequest,
     PostInit(PostInit),
     Error(String),

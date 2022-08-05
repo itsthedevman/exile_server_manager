@@ -11,6 +11,7 @@ mod server;
 use std::{
     fmt::{self, Display},
     process::exit,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 use builder::Builder;
@@ -19,7 +20,16 @@ use colored::Colorize;
 pub use common::*;
 pub use directory::*;
 pub use file::*;
+use lazy_static::lazy_static;
+use parking_lot::RwLock;
 pub use std::process::Command as SystemCommand;
+
+use crate::server::Server;
+
+lazy_static! {
+    pub static ref SERVER: RwLock<Server> = RwLock::new(Server::new());
+    pub static ref CTRL_C_RECEIVED: AtomicBool = AtomicBool::new(false);
+}
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
@@ -100,9 +110,33 @@ pub enum BuildArch {
     X64,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    lazy_static::initialize(&SERVER);
+    lazy_static::initialize(&CTRL_C_RECEIVED);
+
     ctrlc::set_handler(move || {
-        println!();
+        if CTRL_C_RECEIVED.load(Ordering::SeqCst) {
+            exit(1);
+        }
+
+        CTRL_C_RECEIVED.store(true, Ordering::SeqCst);
+        println!("{} - Build ", "<esm_bt>".blue().bold());
+
+        let result = write_lock(&SERVER, |mut server| {
+            server.stop();
+            Ok(true)
+        });
+
+        if result.is_err() {
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "error".red().bold(),
+                result.err().unwrap()
+            );
+            exit(1);
+        }
+
         exit(0);
     })
     .expect("Error setting Ctrl-C handler");
@@ -131,5 +165,10 @@ fn main() {
         ),
     };
 
-    builder.teardown();
+    write_lock(&SERVER, |mut server| {
+        server.stop();
+        Ok(true)
+    })?;
+
+    Ok(())
 }
