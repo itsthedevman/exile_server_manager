@@ -1,4 +1,6 @@
+use common::write_lock;
 use compiler::Compiler;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -8,11 +10,12 @@ use std::time::Duration;
 use crate::database::Database;
 use crate::Directory;
 use crate::{
-    server::Server, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, File,
-    LogLevel, System,
+    read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, LogLevel,
+    System,
 };
 
 use colored::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use regex::Regex;
 use run_script::ScriptOptions;
@@ -38,8 +41,6 @@ impl Remote {
 }
 
 pub struct Builder {
-    /// For sending messages
-    pub server: Server,
     /// For storing remote paths and other data
     pub remote: Remote,
     /// The OS to build the extension on
@@ -103,21 +104,20 @@ impl Builder {
             extension_build_target,
             local_build_path,
             remote: Remote::new(),
-            server: Server::new(),
         };
 
         Ok(builder)
     }
 
     pub fn start(&mut self) -> BuildResult {
-        self.print_status("Preparing", Builder::start_server)?;
+        self.print_status("Preparing build host", Builder::start_server)?;
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
 
         self.print_info();
         self.print_status("Killing Arma", Builder::kill_arma)?;
         self.print_status("Cleaning directories", Builder::clean_directories)?;
 
-        self.print_status("Preparing", Builder::prepare_to_build)?;
+        self.print_status("Preparing to build", Builder::prepare_to_build)?;
 
         if matches!(self.os, BuildOS::Windows) {
             self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
@@ -128,8 +128,8 @@ impl Builder {
         self.print_status("Building @esm", Builder::build_mod)?;
         self.print_status("Seeding database", Builder::seed_database)?;
         self.print_status("Starting a3 server", Builder::start_a3_server)?;
-        // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
         self.print_status("Starting log stream", Builder::stream_logs)?;
+        // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
         Ok(())
     }
 
@@ -180,22 +180,37 @@ impl Builder {
         )
     }
 
-    pub fn teardown(&mut self) {
-        self.server.stop();
-    }
-
     pub fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
-        self.server.send(command)
+        let result = RwLock::new(None);
+        write_lock(&crate::SERVER, |mut server| {
+            *result.write() = Some(server.send(command.to_owned()));
+            Ok(true)
+        })?;
+
+        if result.write().is_none() {
+            return Err("Failed to send".to_string().into());
+        }
+
+        let mut writer = result.write();
+        writer.take().unwrap()
     }
 
     fn start_server(&mut self) -> BuildResult {
-        self.server.start()
+        write_lock(&crate::SERVER, |mut server| {
+            server.start()?;
+            Ok(true)
+        })
     }
 
     fn wait_for_receiver(&mut self) -> BuildResult {
-        while !self.server.connected.load(Ordering::SeqCst) {
-            std::thread::sleep(Duration::from_secs(1))
-        }
+        read_lock(&crate::SERVER, |server| {
+            if !server.connected.load(Ordering::SeqCst) {
+                std::thread::sleep(Duration::from_secs(1));
+                return Ok(false);
+            }
+
+            Ok(true)
+        })?;
 
         // We're connected, request update
         match self.send_to_receiver(Command::PostInitRequest) {
@@ -237,7 +252,7 @@ impl Builder {
                 );
 
                 let script = WHITESPACE_REGEX.replace_all(&script, " ");
-                fs::write(&command_file_path, script.as_bytes());
+                fs::write(&command_file_path, script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
                 local_command(
@@ -278,33 +293,7 @@ impl Builder {
     /// Build steps below
     //////////////////////////////////////////////////////////////////
     fn kill_arma(&mut self) -> BuildResult {
-        lazy_static! {
-            // Stop-Process doesn't want the extension
-            static ref WINDOWS_EXES: &'static [&'static str] = &[
-                "arma3server",
-                "arma3server_x64",
-                "arma3_x64",
-                "arma3",
-                "arma3battleye"
-            ];
-            static ref LINUX_EXES: &'static [&'static str] = &["arma3server", "arma3server_x64"];
-        };
-
-        let mut script = String::new();
-        match self.os {
-            BuildOS::Windows => {
-                for exe in WINDOWS_EXES.iter() {
-                    script.push_str(&format!("Stop-Process -Name {exe};"));
-                }
-            }
-            BuildOS::Linux => {
-                for exe in LINUX_EXES.iter() {
-                    script.push_str(&format!("pkill {exe};"));
-                }
-            }
-        }
-
-        self.system_command(System::new().command(script))?;
+        self.send_to_receiver(Command::KillArma)?;
         Ok(())
     }
 
@@ -339,6 +328,7 @@ impl Builder {
 
                 format!(
                     r#"
+                        Remove-Item "{server_path}\@esm\log\*.log";
                         Remove-Item "{server_path}\{profile_name}\*.log";
                         Remove-Item "{server_path}\{profile_name}\*.rpt";
 
@@ -453,7 +443,7 @@ impl Builder {
                 self.system_command(
                     System::new()
                         .command(script)
-                        .add_detection(r"error", true)
+                        .add_detection(r"error: could not compile", true)
                         .add_detection(r"warning", false),
                 )?;
             }
@@ -579,7 +569,7 @@ impl Builder {
                     // The "root" is probably what matters here. The root needs to be P: drive
                     let script = format!(
                         r#"
-                            Move-Item -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
+                            Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
                             Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
                         "#,
                         build_path = self.remote_build_path_str(),
@@ -630,7 +620,7 @@ impl Builder {
                     server_args = self.remote.server_args
                 );
 
-                self.system_command(System::new().command(script).wait())?;
+                self.system_command(System::new().command(script))?;
             }
             BuildOS::Linux => todo!(),
         }
@@ -647,11 +637,30 @@ impl Builder {
     }
 
     fn stream_logs(&mut self) -> BuildResult {
+        struct Highlight {
+            pub regex: Regex,
+            pub color: [u8; 3],
+        }
+
         lazy_static! {
-            static ref REGEXES: Vec<Regex> = vec!["error"]
-                .iter()
-                .map(|r| Regex::new(r).unwrap())
-                .collect();
+            static ref HIGHLIGHTS: Vec<Highlight> = vec![
+                Highlight {
+                    regex: Regex::new("(?i)error").unwrap(),
+                    color: [153, 0, 51]
+                },
+                Highlight {
+                    regex: Regex::new("(?i)warn").unwrap(),
+                    color: [153, 102, 0]
+                },
+                Highlight {
+                    regex: Regex::new("(?i)info").unwrap(),
+                    color: [102, 204, 255]
+                },
+                Highlight {
+                    regex: Regex::new("(?i)debug").unwrap(),
+                    color: [51, 51, 51]
+                }
+            ];
         }
 
         self.send_to_receiver(Command::LogStreamInit)?;
@@ -669,16 +678,34 @@ impl Builder {
 
             for line in lines {
                 let content = line.content.trim_end();
-                let is_error = REGEXES.iter().any(|r| r.is_match(content));
+                let prefix = Path::new(&line.filename)
+                    .extension()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string();
+
+                let mut file_name = line
+                    .filename
+                    .to_owned()
+                    .trim_end_matches(&prefix)
+                    .to_string();
+
+                if file_name.len() > 15 {
+                    file_name.truncate(15);
+                    file_name.push_str("..");
+                }
+
+                file_name.push_str(&prefix);
+
+                let highlight = HIGHLIGHTS.iter().find(|h| h.regex.is_match(content));
 
                 println!(
-                    "{name}\n{content}\n",
-                    name = line
-                        .filename
-                        .truecolor(line.color[0], line.color[1], line.color[2])
-                        .underline(),
-                    content = if is_error {
-                        content.red().bold()
+                    "{name:.>20}:{line_number:5}{sep} {content}",
+                    sep = "|".black(),
+                    name = file_name.truecolor(line.color[0], line.color[1], line.color[2]),
+                    line_number = line.line_number.to_string().black(),
+                    content = if let Some(h) = highlight {
+                        content.bold().truecolor(h.color[0], h.color[1], h.color[2])
                     } else {
                         content.normal()
                     }

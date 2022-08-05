@@ -16,7 +16,7 @@ impl File {
     ) -> BuildResult {
         let source_path = source_path.join(&file_name);
 
-        let mut bytes = std::fs::read(source_path).unwrap();
+        let bytes = std::fs::read(source_path).unwrap();
 
         let total_size = bytes.len();
         let sha1 = Sha1::new().chain_update(&bytes).finalize().to_vec();
@@ -59,7 +59,7 @@ impl File {
     }
 
     pub fn copy(source: &Path, destination: &Path) -> BuildResult {
-        assert!(matches!(source.is_file()));
+        assert!(source.is_file());
 
         std::fs::copy(source, destination)?;
         Ok(())

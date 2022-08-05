@@ -85,7 +85,13 @@ impl Server {
 
     pub fn stop(&mut self) {
         if let Some(s) = self.handler.as_ref() {
-            s.stop()
+            let command = NetworkCommand::new(Command::KillArma);
+            let data = serde_json::to_vec(&command).unwrap();
+
+            s.network()
+                .send(self.endpoint.read().unwrap(), data.as_slice());
+
+            s.stop();
         }
     }
 
@@ -114,22 +120,28 @@ impl Server {
 
     fn wait_for_response(&mut self, id: &Uuid) -> Result<Command, BuildError> {
         let result: RwLock<Result<Command, BuildError>> = RwLock::new(Ok(Command::Hello));
-        read_lock(&self.requests, |reader| match reader.get(id) {
-            Some(v) => match v {
-                Ok(c) => {
-                    if let Command::Hello = c {
-                        return Ok(false);
-                    }
+        read_lock(&self.requests, |reader| {
+            if crate::CTRL_C_RECEIVED.load(Ordering::SeqCst) {
+                return Err("Stopped by user".to_string().into());
+            }
 
-                    *result.write() = Ok(c.to_owned());
-                    Ok(true)
-                }
-                Err(e) => {
-                    *result.write() = Err(e.to_string().into());
-                    Ok(true)
-                }
-            },
-            None => Ok(false),
+            match reader.get(id) {
+                Some(v) => match v {
+                    Ok(c) => {
+                        if let Command::Hello = c {
+                            return Ok(false);
+                        }
+
+                        *result.write() = Ok(c.to_owned());
+                        Ok(true)
+                    }
+                    Err(e) => {
+                        *result.write() = Err(e.to_string().into());
+                        Ok(true)
+                    }
+                },
+                None => Ok(false),
+            }
         })?;
 
         let writer = result.read();
