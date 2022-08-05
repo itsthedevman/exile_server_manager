@@ -85,11 +85,13 @@ impl Server {
 
     pub fn stop(&mut self) {
         if let Some(s) = self.handler.as_ref() {
-            let command = NetworkCommand::new(Command::KillArma);
-            let data = serde_json::to_vec(&command).unwrap();
+            if self.endpoint.read().is_some() {
+                let command = NetworkCommand::new(Command::KillArma);
+                let data = serde_json::to_vec(&command).unwrap();
 
-            s.network()
-                .send(self.endpoint.read().unwrap(), data.as_slice());
+                s.network()
+                    .send(self.endpoint.read().unwrap(), data.as_slice());
+            };
 
             s.stop();
         }

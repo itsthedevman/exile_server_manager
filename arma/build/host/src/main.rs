@@ -120,7 +120,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         CTRL_C_RECEIVED.store(true, Ordering::SeqCst);
-        println!("{} - Build ", "<esm_bt>".blue().bold());
 
         let result = write_lock(&SERVER, |mut server| {
             server.stop();
