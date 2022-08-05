@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use std::process::{Command as SystemCommand, Stdio};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -68,6 +69,21 @@ impl IncomingCommand {
 
                 let mut writer = result.write();
                 Ok(Command::LogStream(writer.take().unwrap()))
+            }
+            Command::Key(key) => {
+                let file_path = PathBuf::from(&client.arma.build_path)
+                    .join("@esm")
+                    .join("esm.key");
+
+                std::fs::write(file_path.as_path(), key.as_bytes())?;
+
+                let file_path = PathBuf::from(&client.arma.server_path)
+                    .join("@esm")
+                    .join("esm.key");
+
+                std::fs::write(file_path.as_path(), key.as_bytes())?;
+
+                Ok(Command::Success)
             }
             _ => Ok(Command::Error("Command not implemented yet".into())),
         }
