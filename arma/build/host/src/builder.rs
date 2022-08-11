@@ -614,7 +614,12 @@ impl Builder {
         match self.os {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
-                for addon in ADDONS.iter() {
+                let mut extra_addons = vec![];
+                if matches!(self.env, BuildEnv::Test) {
+                    extra_addons.push("esm_test");
+                }
+
+                for addon in ADDONS.iter().chain(extra_addons.iter()) {
                     // If the addons are copied over to the P drive and then PBOed there?
                     // The "root" is probably what matters here. The root needs to be P: drive
                     let script = format!(
@@ -678,13 +683,13 @@ impl Builder {
         Ok(())
     }
 
-    fn start_a3_client(&mut self) -> BuildResult {
-        // client arg: client start args
-        // Send command to receiver
-        // Issue! In order to start the client on linux, both the linux machine and windows machine will need to be connected
-        //          This will need to be solved.
-        Ok(())
-    }
+    // fn start_a3_client(&mut self) -> BuildResult {
+    //     // client arg: client start args
+    //     // Send command to receiver
+    //     // Issue! In order to start the client on linux, both the linux machine and windows machine will need to be connected
+    //     //          This will need to be solved.
+    //     Ok(())
+    // }
 
     fn stream_logs(&mut self) -> BuildResult {
         struct Highlight {
