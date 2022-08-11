@@ -4,7 +4,7 @@ mod database;
 mod log_reader;
 mod transfer;
 
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, time::Duration};
 
 use clap::Parser;
 use client::Client;
@@ -50,9 +50,11 @@ pub struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let mut client = Client::new(args)?;
-    client.connect();
 
     loop {
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        client.connect();
+        std::thread::sleep(Duration::from_secs(1));
     }
+
+    Ok(())
 }

@@ -66,7 +66,7 @@ impl Client {
         self.endpoint = Some(server);
 
         let mut client = self.clone();
-        let task = listener.for_each_async(move |event| match event.network() {
+        listener.for_each(move |event| match event.network() {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
                     println!("{} - Connected to {}", "success".green(), server_addr);
@@ -103,8 +103,6 @@ impl Client {
                 client.on_disconnect();
             }
         });
-
-        self.task = Arc::new(Some(task));
     }
 
     fn send(&self, command: NetworkCommand) {
@@ -118,8 +116,6 @@ impl Client {
     }
 
     fn on_disconnect(&mut self) {
-        self.handler.as_ref().unwrap().stop();
-
         write_lock(&self.transfers, |mut writer| {
             writer.clear();
             Ok(true)
@@ -132,7 +128,6 @@ impl Client {
         })
         .unwrap();
 
-        std::thread::sleep(Duration::from_secs(1));
-        self.connect();
+        self.handler.as_ref().unwrap().stop();
     }
 }
