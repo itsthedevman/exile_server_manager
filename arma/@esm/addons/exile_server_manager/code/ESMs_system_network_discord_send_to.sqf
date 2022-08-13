@@ -31,11 +31,11 @@ Author:
 ---------------------------------------------------------------------------- */
 
 params [
-	["_channelIdOrName", [""]],
-	["_messageOrEmbed", ["", HASH_TYPE]]
+	["_channelIdOrName", [rv_type!(STRING)]],
+	["_messageOrEmbed", [rv_type!(STRING), rv_type!(HASH)]]
 ];
 
-if (_messageOrEmbed isEqualType HASH_TYPE) then
+if (equal_type?(_messageOrEmbed, HASH)) then
 {
 	_messageOrEmbed = str(_messageOrEmbed call ESMs_util_hashmap_toArray);
 };

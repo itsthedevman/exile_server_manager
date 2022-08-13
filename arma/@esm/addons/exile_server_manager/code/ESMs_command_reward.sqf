@@ -21,8 +21,7 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-
-private _id = _this getOrDefault ["id", nil];
+private _id = get!(_this, "id");
 
 /*
 	player_poptabs: Scalar,
@@ -31,7 +30,7 @@ private _id = _this getOrDefault ["id", nil];
     items: String,
     vehicles: String,
 */
-private _data = _this getOrDefault ["data", nil];
+private _data = get!(_this, "data");
 
 /*
 	player: HashMap
@@ -41,7 +40,7 @@ private _data = _this getOrDefault ["data", nil];
 		discord_mention: String,
 	target: Nothing
 */
-private _metadata = _this getOrDefault ["metadata", nil];
+private _metadata = get!(_this, "metadata");
 if (isNil "_id" || { isNil "_data" } || { isNil "_metadata" }) exitWith { nil };
 
 try

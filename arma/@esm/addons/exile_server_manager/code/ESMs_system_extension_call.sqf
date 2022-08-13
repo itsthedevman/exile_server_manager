@@ -45,14 +45,14 @@ else
 
 	if !(_arguments isEqualType []) exitWith
 	{
-		["extension_call", format["Invalid arguments provided for extension call to ""%1""", _function]] call ESMs_util_log;
+		info!("Invalid arguments provided for extension call to ""%1""", _function);
 		false
 	};
 };
 
 // Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
-	["DEBUGGING CALL", format["Input is %1 (%2)", _this, typeName(_this)]] call ESMs_util_log;
+	debug!("Input is %1 (%2)", _this, typeName(_this));
 	switch (typeName(_this)) do
 	{
 		case "STRING";
@@ -85,22 +85,22 @@ private _sanitizer = {
 
 		default
 		{
-			["extension_call", format["Unsupported type provided in arguments. Type: %2 | Value: %1", _this, typeName _this], "error"] call ESMs_util_log;
+			error!("Unsupported type provided in arguments. Type: %2 | Value: %1", _this, typeName _this);
 			nil
 		};
 	};
 };
 
 // Using the sanitizer, sanitize the provided arguments
-["extension_call", format["[%1] PRE SANITIZE |%2|", _id, _arguments], "debug"] call ESMs_util_log;
+debug!("[%1] PRE SANITIZE |%2|", _id, _arguments);
 private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
 
-["extension_call", format["[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedArguments], "debug"] call ESMs_util_log;
+debug!("[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedArguments);
 
 // Call the extension and process the result
 private _result = "esm" callExtension [_function, _sanitizedArguments];
 
-["extension_call", format["[%1] Extension returned (%2): %3", _id, typeName _result, _result], "debug"] call ESMs_util_log;
+debug!("[%1] Extension returned (%2): %3", _id, typeName _result, _result);
 
 // If there is an issue, Arma-rs will return an error code.
 // Possible error codes:
@@ -112,7 +112,7 @@ private _result = "esm" callExtension [_function, _sanitizedArguments];
 // 		9 	Application error, from using a Result
 if ((_result select 1) > 0) exitWith
 {
-	["extension_call", format["Extension barfed. Error code: %1", _result select 1], "error"] call ESMs_util_log;
+	error!("Extension barfed. Error code: %1", _result select 1);
 	false
 };
 
@@ -122,7 +122,7 @@ if ((_result select 1) > 0) exitWith
 //     201: PARAMS_ERROR_TOO_MANY_ARGS
 //     301: EXECUTION_WARNING_TAKES_TOO_LONG
 if ((_result select 2) > 0) exitWith {
-	["extension_call", format["Arma barfed. Error code: %1", _result select 2], "error"] call ESMs_util_log;
+	error!("Arma barfed. Error code: %1", _result select 2);
 	false
 };
 

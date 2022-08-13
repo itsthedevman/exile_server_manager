@@ -20,7 +20,7 @@ class CfgFunctions
 	{
 		class Bootstrap
 		{
-			file = compiler.os.path("exile_server_manager", "bootstrap");
+			file = os_path!("exile_server_manager", "bootstrap");
 			class preInit { preInit = 1; };
 		};
 	};

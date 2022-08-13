@@ -41,8 +41,8 @@ private _message = _this select 1;
 private _logLevel = _this param [2, "info"];
 
 // error: 0, warn: 1, info: 2, debug: 3, trace: 4
-private _inputLogLevel = ESM_LogLevelLookup getOrDefault [_logLevel, 2];
-private _currentLogLevel = ESM_LogLevelLookup getOrDefault [ESM_LogLevel, 2];
+private _inputLogLevel = get!(ESM_LogLevelLookup, _logLevel, 2);
+private _currentLogLevel = get!(ESM_LogLevelLookup, ESM_LogLevel, 2);
 
 // Only log if the log level allows it
 if (_inputLogLevel > _currentLogLevel) exitWith {};

@@ -36,34 +36,24 @@ private _data = _this select 1;
 private _function = missionNameSpace getVariable [_functionName, ""];
 if (_function isEqualTo "") exitWith
 {
-	[
-		"callback",
-		format["Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data],
-		"error"
-	] call ESMs_util_log;
+	error!("Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data);
 };
 
 private _response = _data call ESMs_system_extension_processResult;
-if (_response isEqualType HASH_TYPE && { "id" in _response }) then
+if (equal_type?(_response, HASH) && { "id" in _response }) then
 {
-	private _id = _response getOrDefault ["id", ""];
-	private _data = _response getOrDefault ["data", ""];
-	private _metadata = _response getOrDefault ["metadata", ""];
+	private _id = get!(_response, "id", "");
+	private _data = get!(_response, "data", "");
+	private _metadata = get!(_response, "metadata", "");
 
-	{
-		["callback", _x] call ESMs_util_log;
-	}
-	forEach
-	[
-		format["Executing ""%1""", _functionName],
-		format["    ID (%1): %2", typeName _id, _id],
-		format["    DATA (%1): %2", typeName _data, _data],
-		format["    METADATA (%1): %2", typeName _metadata, _metadata]
-	];
+	info!("Executing ""%1""", _functionName);
+	info!("    ID (%1): %2", typeName _id, _id);
+	info!("    DATA (%1): %2", typeName _data, _data);
+	info!("    METADATA (%1): %2", typeName _metadata, _metadata);
 }
 else
 {
-	["callback", format["Calling function ""%1"" with %2", _functionName, _response]] call ESMs_util_log;
+	info!("Calling function ""%1"" with %2", _functionName, _response);
 };
 
 _response spawn _function;

@@ -30,13 +30,13 @@ Author:
 ---------------------------------------------------------------------------- */
 
 params [
-	["_embed", [HASH_TYPE]],
-	["_name", [""]],
-	["_value", [""]],
-	["_inline", [true, nil], false]
+	["_embed", [rv_type!(HASH)]],
+	["_name", [rv_type!(STRING)]],
+	["_value", [rv_type!(STRING)]],
+	["_inline", [rv_type!(BOOL), rv_type!(NIL)], false]
 ];
 
-private _fields = _embed getOrDefault ["fields", []];
+private _fields = get!(_embed, "fields", []);
 _fields pushBack (["name", "value", "inline"] createHashMapFromArray [_name, _value, _inline isEqualTo true]);
 
 _embed set ["fields", _fields];

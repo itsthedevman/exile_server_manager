@@ -31,12 +31,12 @@ private _embedData = _this;
 private _embed = createHashMap;
 if (isNil "_embedData") exitWith { _embed };
 
-if (_embedData isEqualType ARRAY_TYPE) then
+if (equal_type?(_embedData, ARRAY)) then
 {
 	_embedData = createHashmapFromArray _embedData;
 };
 
-if !(_embedData isEqualType HASH_TYPE) exitWith { _embed };
+if !(equal_type?(_embedData, HASH)) exitWith { _embed };
 
 private _validKeys = ["title", "description", "color", "fields"];
 {
@@ -44,7 +44,7 @@ private _validKeys = ["title", "description", "color", "fields"];
 		!(isNil "_x") && {
 			_x in _validKeys && {
 				!(isNil "_y") && {
-					_y isEqualType ""
+					equal_type?(_y, STRING)
 				}
 			}
 		}

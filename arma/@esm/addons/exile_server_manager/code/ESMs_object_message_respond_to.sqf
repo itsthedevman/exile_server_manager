@@ -53,12 +53,12 @@ Author:
 
 params [
 	"_id",
-	["_type", "event", [STRING_TYPE]],
-	["_dataType", "empty", [STRING_TYPE]],
-	["_data", [], [ARRAY_TYPE, HASH_TYPE]],
-	["_metadataType", "empty", [STRING_TYPE]],
-	["_metadata", [], [ARRAY_TYPE, HASH_TYPE]],
-	["_errors", [], [ARRAY_TYPE]]
+	["_type", "event", [rv_type!(STRING)]],
+	["_dataType", "empty", [rv_type!(STRING)]],
+	["_data", [], [rv_type!(ARRAY), rv_type!(HASH)]],
+	["_metadataType", "empty", [rv_type!(STRING)]],
+	["_metadata", [], [rv_type!(ARRAY), rv_type!(HASH)]],
+	["_errors", [], [rv_type!(ARRAY)]]
 ];
 
 // Errors must be hashmap arrays
@@ -68,8 +68,8 @@ private _errorPackage = [];
 
 	// Only accepts ["code", "content"] or ["message", "content"]
 	if !(
-		_x isEqualType ARRAY_TYPE && {
-			[_x, { _this isEqualType "" }] call ESMs_util_array_all && {
+		equal_type?(_x, ARRAY) && {
+			[_x, { equal_type?(_this, STRING) }] call ESMs_util_array_all && {
 				count(_x) isEqualTo 2
 			}
 		}

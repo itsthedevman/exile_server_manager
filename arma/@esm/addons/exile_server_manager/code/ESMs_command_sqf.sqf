@@ -22,13 +22,13 @@ Author:
 ---------------------------------------------------------------------------- */
 
 
-private _id = _this getOrDefault ["id", nil];
+private _id = get!(_this, "id");
 
 /*
 	execute_on: String. Valid options: "server", "all", "player"
 	code: String
 */
-private _data = _this getOrDefault ["data", nil];
+private _data = get!(_this, "data");
 
 /*
 	player: HashMap
@@ -42,7 +42,7 @@ private _data = _this getOrDefault ["data", nil];
 		discord_name: String,
 		discord_mention: String,
 */
-private _metadata = _this getOrDefault ["metadata", nil];
+private _metadata = get!(_this, "metadata");
 if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
 try
