@@ -1,13 +1,12 @@
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::log_reader::LogReader;
 use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
 use crate::{read_lock, BuildError};
 use colored::Colorize;
 use message_io::network::{Endpoint, NetEvent, Transport};
-use message_io::node::{self, NodeHandler, NodeTask};
+use message_io::node::{self, NodeHandler};
 use parking_lot::RwLock;
 
 pub struct Arma {
@@ -26,7 +25,6 @@ pub struct Client {
 
     handler: Option<NodeHandler<()>>,
     endpoint: Option<Endpoint>,
-    task: Arc<Option<NodeTask>>,
 }
 
 impl Client {
@@ -43,7 +41,6 @@ impl Client {
         Ok(Client {
             handler: None,
             endpoint: None,
-            task: Arc::new(None),
             host: args.host,
             transfers,
             database,

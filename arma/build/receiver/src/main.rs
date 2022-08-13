@@ -4,7 +4,10 @@ mod database;
 mod log_reader;
 mod transfer;
 
-use std::{path::{Path, PathBuf}, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use clap::Parser;
 use client::Client;
@@ -55,6 +58,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         client.connect();
         std::thread::sleep(Duration::from_secs(1));
     }
-
-    Ok(())
 }

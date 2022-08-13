@@ -35,8 +35,8 @@ impl Transfers {
         println!(
             "Starting transfer - {} - {} -> {}",
             transfer.id.to_string().bright_yellow(),
-            transfer.file_name.black(),
-            transfer.destination_path.black()
+            transfer.file_name,
+            transfer.destination_path
         );
 
         read_lock(&self.transfers, |reader| {
@@ -50,7 +50,7 @@ impl Transfers {
         })?;
 
         if !self.transfer_needed(transfer) {
-            println!("Transfer not needed - {}", transfer.id.to_string().black());
+            println!("Transfer not needed - {}", transfer.id.to_string());
             return Ok(false);
         }
 
