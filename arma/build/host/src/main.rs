@@ -2,6 +2,7 @@
 // https://github.com/lemunozm/message-io/tree/master/examples/file-transfer
 
 mod builder;
+mod compile;
 mod data;
 mod database;
 mod directory;

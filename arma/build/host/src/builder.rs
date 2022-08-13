@@ -317,6 +317,20 @@ impl Builder {
         // Create @esm/addons
         fs::create_dir_all(&esm_path.join("addons"))?;
 
+        // Remove some build files
+        let paths = vec![
+            "@esm.zip",
+            ".esm-build-command",
+            ".esm-build-command-result",
+        ];
+
+        for path in paths {
+            let path = self.local_build_path.join(path);
+            if path.is_file() {
+                fs::remove_file(&path)?;
+            }
+        }
+
         /////////////////////
         // Remote directories
         let script = match self.os {
@@ -567,30 +581,14 @@ impl Builder {
         let mod_build_path = self.local_build_path.join("@esm");
         let addon_destination_path = mod_build_path.join("addons");
 
-        Compiler::new()
+        let mut compiler = Compiler::new();
+        compiler
             .source(&source_path.to_string_lossy().to_string())
             .destination(&addon_destination_path.to_string_lossy().to_string())
-            .target(&self.os.to_string())
-            .replace(r#"compiler\.os\.path\((.+,?)\)"#, |compiler, matches| {
-                let path_chunks: Vec<String> = matches
-                    .get(1)
-                    .unwrap()
-                    .as_str()
-                    .split(',')
-                    .map(|p| p.trim().replace('"', ""))
-                    .collect();
+            .target(&self.os.to_string());
 
-                let separator = if let compiler::Target::Windows = compiler.target {
-                    "\\"
-                } else {
-                    "/"
-                };
-
-                // Windows: \my_addon\path
-                // Linux: /my_addon/path
-                Some(format!("\"{}{}\"", separator, path_chunks.join(separator)))
-            })
-            .compile()?;
+        crate::compile::bind_replacements(&mut compiler);
+        compiler.compile()?;
 
         Directory::transfer(self, mod_build_path, self.remote_build_path().to_owned())?;
 
@@ -624,6 +622,10 @@ impl Builder {
                     // The "root" is probably what matters here. The root needs to be P: drive
                     let script = format!(
                         r#"
+                            if ([System.IO.Directory]::Exists("P:\{addon}")) {{
+                                Remove-Item -Path "P:\{addon}" -Recurse;
+                            }}
+
                             Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
                             Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
                         "#,
@@ -633,6 +635,7 @@ impl Builder {
                     self.system_command(
                         System::new()
                             .command(script)
+                            .add_detection("ErrorId", true)
                             .add_detection("Failed to build", true)
                             .add_detection("missing file", true),
                     )?;

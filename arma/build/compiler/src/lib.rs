@@ -1,7 +1,3 @@
-// Create a struct that acts as the entry point for this lib
-// This struct is a builder. Allowing for source, destination, and defining replacements.
-// The replacement method takes in regex and a closure. The closure is given a reference to the compiler itself, plus any other data needed
-
 mod error;
 use std::path::PathBuf;
 
@@ -17,7 +13,7 @@ pub struct Compiler {
     replacements: Vec<Replacement>,
     source: PathBuf,
     destination: PathBuf,
-    target: Target,
+    target: String,
 }
 
 impl Default for Compiler {
@@ -33,7 +29,7 @@ impl Compiler {
             replacements: vec![],
             source: "".into(),
             destination: "".into(),
-            target: Target::None,
+            target: "".into(),
         }
     }
 
@@ -49,8 +45,8 @@ impl Compiler {
 
     pub fn target(&mut self, target: &str) -> &mut Self {
         self.target = match target {
-            "windows" => Target::Windows,
-            "linux" => Target::Linux,
+            "windows" => "windows".into(),
+            "linux" => "linux".into(),
             t => panic!(
                 "Invalid target provided: {t}. Target can either be \"windows\" or \"linux\""
             ),
@@ -59,7 +55,7 @@ impl Compiler {
     }
 
     pub fn compile(&mut self) -> CompilerResult {
-        assert_ne!(self.target, Target::None);
+        assert!(!self.target.is_empty());
 
         self.load_files()?;
         self.apply_replacements()?;
@@ -70,7 +66,7 @@ impl Compiler {
 
     pub fn replace<'a, F: 'static>(&'a mut self, regex_str: &'a str, callback: F) -> &'a mut Self
     where
-        F: Fn(&Data, &Captures) -> Option<String>,
+        F: Fn(&Data, &Captures) -> Result<Option<String>, CompilerError>,
     {
         let regex = Regex::new(regex_str).unwrap();
         self.replacements.push(Replacement {
@@ -86,14 +82,26 @@ impl Compiler {
             .into_iter()
             .filter_map(|f| f.ok())
             .filter(|f| f.file_type().is_file())
-            .map(|f| File {
-                relative_path: f
-                    .path()
-                    .to_string_lossy()
-                    .replace(&self.source.to_string_lossy().to_string(), "")[1..]
-                    .to_string(),
-                file_name: f.file_name().to_string_lossy().to_string(),
-                content: std::fs::read_to_string(f.path()).unwrap(),
+            .map(|f| {
+                let extension = match f.path().extension() {
+                    Some(e) => format!(".{}", e.to_string_lossy()),
+                    None => "".into(),
+                };
+
+                File {
+                    relative_path: f
+                        .path()
+                        .to_string_lossy()
+                        .replace(&self.source.to_string_lossy().to_string(), "")[1..]
+                        .to_string(),
+                    file_name: f
+                        .file_name()
+                        .to_string_lossy()
+                        .to_string()
+                        .replace(&extension, ""),
+                    extension,
+                    content: std::fs::read_to_string(f.path()).unwrap(),
+                }
             })
             .collect();
 
@@ -101,14 +109,17 @@ impl Compiler {
     }
 
     fn apply_replacements(&mut self) -> CompilerResult {
-        let data = Data {
-            target: self.target.to_owned(),
-        };
-
         for file in self.files.iter_mut() {
-            self.replacements
-                .iter()
-                .for_each(|replacement| file.replace(replacement, &data));
+            for replacement in self.replacements.iter() {
+                let data = Data {
+                    target: self.target.to_owned(),
+                    file_name: file.file_name.to_owned(),
+                    file_path: file.relative_path.to_owned(),
+                    file_extension: file.extension.to_owned(),
+                };
+
+                file.replace(replacement, &data)?
+            }
         }
 
         Ok(())
@@ -130,41 +141,41 @@ impl Compiler {
 pub struct File {
     pub relative_path: String,
     pub file_name: String,
+    pub extension: String,
     pub content: String,
 }
 
 impl File {
-    pub fn replace(&mut self, replacement: &Replacement, data: &Data) {
+    pub fn replace(&mut self, replacement: &Replacement, data: &Data) -> CompilerResult {
         let content = self.content.to_owned();
         let captures: Vec<Captures> = replacement.regex.captures_iter(&content).collect();
 
         for capture in captures {
-            match (replacement.callback)(data, &capture) {
+            match (replacement.callback)(data, &capture)? {
                 Some(result) => {
                     self.content = self
                         .content
                         .replace(capture.get(0).unwrap().as_str(), &result);
                 }
                 None => {}
-            }
+            };
         }
+
+        Ok(())
     }
 }
 
 pub struct Replacement {
-    pub callback: Box<dyn Fn(&Data, &Captures) -> Option<String>>,
+    pub callback: Box<dyn Fn(&Data, &Captures) -> Result<Option<String>, CompilerError>>,
     pub regex: Regex,
 }
 
+#[derive(Default)]
 pub struct Data {
-    pub target: Target,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Target {
-    None,
-    Windows,
-    Linux,
+    pub target: String,
+    pub file_path: String,
+    pub file_name: String,
+    pub file_extension: String,
 }
 
 #[cfg(test)]
@@ -187,7 +198,7 @@ mod tests {
                         .map(|p| p.trim().replace('"', ""))
                         .collect();
 
-                    let separator = if let Target::Windows = compiler.target {
+                    let separator = if compiler.target == "windows" {
                         "\\"
                     } else {
                         "/"
@@ -195,7 +206,11 @@ mod tests {
 
                     // Windows: \my_addon\path
                     // Linux: /my_addon/path
-                    Some(format!("\"{}{}\"", separator, path_chunks.join(separator)))
+                    Ok(Some(format!(
+                        "\"{}{}\"",
+                        separator,
+                        path_chunks.join(separator)
+                    )))
                 })
                 .compile(),
             Ok(())
