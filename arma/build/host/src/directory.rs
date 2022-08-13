@@ -13,9 +13,31 @@ impl Directory {
     ) -> BuildResult {
         let dir_name = source_path.file_name().unwrap().to_string_lossy();
         let file_name = format!("{}.zip", dir_name);
-        let parent_path = source_path.parent().unwrap().to_path_buf();
 
-        File::transfer(builder, parent_path, destination_path, &file_name)?;
+        if crate::builder::local_command(
+            &format!(
+                "cd {}; zip -r {} ./{}",
+                source_path.parent().unwrap().to_string_lossy(),
+                builder.local_build_path.join(&file_name).to_string_lossy(),
+                dir_name
+            ),
+            vec![],
+        )
+        .is_err()
+        {
+            return Err(format!(
+                "Failed to zip {} for transfer",
+                source_path.to_string_lossy()
+            )
+            .into());
+        };
+
+        File::transfer(
+            builder,
+            builder.local_build_path.to_owned(),
+            destination_path,
+            &file_name,
+        )?;
 
         let destination_path = builder.remote_build_path_str();
         match builder.os {
