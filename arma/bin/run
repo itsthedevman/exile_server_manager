@@ -1,3 +1,10 @@
+cargo check
+
+if [ $? -ne 0 ]
+then
+  exit $?
+fi
+
 cd build/host
 cargo build --release
 
