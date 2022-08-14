@@ -35,7 +35,7 @@ params [
 	["_messageOrEmbed", [rv_type!(STRING), rv_type!(HASH)]]
 ];
 
-if (equal_type?(_messageOrEmbed, HASH)) then
+if (type?(_messageOrEmbed, HASH)) then
 {
 	_messageOrEmbed = str(_messageOrEmbed call ESMs_util_hashmap_toArray);
 };

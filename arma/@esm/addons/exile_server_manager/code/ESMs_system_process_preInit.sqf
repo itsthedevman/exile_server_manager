@@ -52,7 +52,7 @@ ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
 
-info!("Exile Server Manager is booting...");
+diag_log "Exile Server Manager is booting...";
 
 // For controlling which calls log
 ESM_LogLevel = "log_level" call ESMs_system_extension_call;

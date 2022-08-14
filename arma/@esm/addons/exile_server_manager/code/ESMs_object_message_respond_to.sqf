@@ -68,8 +68,8 @@ private _errorPackage = [];
 
 	// Only accepts ["code", "content"] or ["message", "content"]
 	if !(
-		equal_type?(_x, ARRAY) && {
-			[_x, { equal_type?(_this, STRING) }] call ESMs_util_array_all && {
+		type?(_x, ARRAY) && {
+			[_x, { type?(_this, STRING) }] call ESMs_util_array_all && {
 				count(_x) isEqualTo 2
 			}
 		}

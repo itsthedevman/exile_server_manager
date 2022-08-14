@@ -3,21 +3,21 @@ use regex::Captures;
 
 type CompilerResult = Result<Option<String>, CompilerError>;
 
-const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
-const REGEX_EQUAL_TYPE: &str = r"equal_type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_NOT_EQUAL_TYPE: &str = r"not_equal_type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_GET: &str = r"get!\((.+)?,\s*(.+)?\)";
-const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.*)*\)";
-const REGEX_LOG: &str = r#"(info|warn|debug|error)!\((.+)?\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
+const REGEX_OS_PATH: &str = r"\bos_path!\((.+,?)?\)";
+const REGEX_EQUAL_TYPE: &str = r"\btype\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_NOT_EQUAL_TYPE: &str = r"\btype_ne\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_RV_TYPE: &str = r"\brv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_GET: &str = r"\bget!\((.+)?,\s*(.+)?\)";
+const REGEX_GET_WITH_DEFAULT: &str = r"\bget!\((.+),\s*(.+),\s*(.*)*\)";
+const REGEX_LOG: &str = r#"\b(info|warn|debug|error)!\((.+)?\)"#;
+const REGEX_LOG_WITH_ARGS: &str = r#"\b(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
     compiler
         .replace(REGEX_OS_PATH, os_path)
-        .replace(REGEX_NOT_EQUAL_TYPE, not_equal_type)
-        .replace(REGEX_EQUAL_TYPE, equal_type)
+        .replace(REGEX_NOT_EQUAL_TYPE, type_ne)
+        .replace(REGEX_EQUAL_TYPE, type_eq)
         .replace(REGEX_RV_TYPE, rv_type)
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
@@ -57,14 +57,14 @@ fn os_path(context: &Data, matches: &Captures) -> CompilerResult {
     )))
 }
 
-// equal_type?([], ARRAY) -> [] isEqualType []
-// equal_type?(_some_var, HASH) -> _some_var isEqualType createHashMap
-fn equal_type(context: &Data, matches: &Captures) -> CompilerResult {
+// type?([], ARRAY) -> [] isEqualType []
+// type?(_some_var, HASH) -> _some_var isEqualType createHashMap
+fn type_eq(context: &Data, matches: &Captures) -> CompilerResult {
     let comparee = match matches.get(1) {
         Some(c) => c.as_str(),
         None => {
             return Err(format!(
-                "{} -> equal_type? - Wrong number of arguments, given 0, expected 2",
+                "{} -> type? - Wrong number of arguments, given 0, expected 2",
                 context.file_path
             )
             .into())
@@ -80,7 +80,7 @@ fn equal_type(context: &Data, matches: &Captures) -> CompilerResult {
             "NIL" => "nil",
             t => {
                 return Err(format!(
-                    "{} -> equal_type? - Unsupported type provided: {t}",
+                    "{} -> type? - Unsupported type provided: {t}",
                     context.file_path
                 )
                 .into())
@@ -88,7 +88,7 @@ fn equal_type(context: &Data, matches: &Captures) -> CompilerResult {
         },
         None => {
             return Err(format!(
-                "{} -> equal_type? - Wrong number of arguments, given 1, expected 2",
+                "{} -> type? - Wrong number of arguments, given 1, expected 2",
                 context.file_path
             )
             .into())
@@ -98,14 +98,14 @@ fn equal_type(context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("{comparee} isEqualType {arma_type}")))
 }
 
-// not_equal_type?([], ARRAY) -> [] isEqualType []
-// not_equal_type?(_some_var, HASH) -> _some_var isEqualType createHashMap
-fn not_equal_type(context: &Data, matches: &Captures) -> CompilerResult {
+// type_ne?([], ARRAY) -> [] isEqualType []
+// type_ne?(_some_var, HASH) -> _some_var isEqualType createHashMap
+fn type_ne(context: &Data, matches: &Captures) -> CompilerResult {
     let comparee = match matches.get(1) {
         Some(c) => c.as_str(),
         None => {
             return Err(format!(
-                "{} -> not_equal_type? - Wrong number of arguments, given 0, expected 2",
+                "{} -> type_ne? - Wrong number of arguments, given 0, expected 2",
                 context.file_path
             )
             .into())
@@ -121,7 +121,7 @@ fn not_equal_type(context: &Data, matches: &Captures) -> CompilerResult {
             "NIL" => "nil",
             t => {
                 return Err(format!(
-                    "{} -> not_equal_type? - Unsupported type provided: {t}",
+                    "{} -> type_ne? - Unsupported type provided: {t}",
                     context.file_path
                 )
                 .into())
@@ -129,7 +129,7 @@ fn not_equal_type(context: &Data, matches: &Captures) -> CompilerResult {
         },
         None => {
             return Err(format!(
-                "{} -> not_equal_type? - Wrong number of arguments, given 1, expected 2",
+                "{} -> type_ne? - Wrong number of arguments, given 1, expected 2",
                 context.file_path
             )
             .into())

@@ -32,16 +32,16 @@ Author:
 
 if (isNil "_this") exitWith { false };
 
-equal_type?(_this, ARRAY) && {
+type?(_this, ARRAY) && {
 	[
 		_this,
 		{
 			// _this represents a single key/value pair
-			equal_type?(_this, ARRAY) && {
+			type?(_this, ARRAY) && {
 				// Must have a key and a value
 				count(_this) isEqualTo 2 && {
 					// The key must be a string
-					equal_type?((_this select 0), STRING)
+					type?((_this select 0), STRING)
 				}
 			}
 		}

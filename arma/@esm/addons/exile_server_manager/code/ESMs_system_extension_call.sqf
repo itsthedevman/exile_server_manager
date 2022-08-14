@@ -33,7 +33,7 @@ private _id = floor(random 100);
 private _function = "";
 private _arguments = [];
 
-if (_this isEqualType "") then
+if (type?(_this, STRING)) then
 {
 	_function = _this;
 }

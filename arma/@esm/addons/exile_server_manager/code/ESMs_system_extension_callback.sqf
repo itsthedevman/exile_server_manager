@@ -40,7 +40,7 @@ if (_function isEqualTo "") exitWith
 };
 
 private _response = _data call ESMs_system_extension_processResult;
-if (equal_type?(_response, HASH) && { "id" in _response }) then
+if (type?(_response, HASH) && { "id" in _response }) then
 {
 	private _id = get!(_response, "id", "");
 	private _data = get!(_response, "data", "");

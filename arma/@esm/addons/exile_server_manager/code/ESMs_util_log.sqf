@@ -36,7 +36,7 @@
  *
  **/
 
-private _function = _this select 0;
+private _caller = _this select 0;
 private _message = _this select 1;
 private _logLevel = _this param [2, "info"];
 
@@ -47,4 +47,12 @@ private _currentLogLevel = get!(ESM_LogLevelLookup, ESM_LogLevel, 2);
 // Only log if the log level allows it
 if (_inputLogLevel > _currentLogLevel) exitWith {};
 
-diag_log format["[ESM] %1 - %2 - %3", toUpperANSI(_logLevel), _function, _message];
+// Make sure it's a string
+if (type_ne?(_message, STRING)) then
+{
+	_message = str(_message);
+};
+
+// Do not use system_extension_call here
+private _result = "esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
+nil
