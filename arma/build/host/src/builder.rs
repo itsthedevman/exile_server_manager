@@ -128,9 +128,9 @@ impl Builder {
             self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
         }
 
-        self.print_status("Compiling @esm", Builder::compile_mod)?;
-        self.print_status("Compiling esm_arma", Builder::build_extension)?;
-        self.print_status("Building @esm", Builder::build_mod)?;
+        self.print_status("Compiling mod", Builder::compile_mod)?;
+        self.print_status("Compiling extension", Builder::build_extension)?;
+        self.print_status("Building mod", Builder::build_mod)?;
         self.print_status("Seeding database", Builder::seed_database)?;
         self.print_status("Starting a3 server", Builder::start_a3_server)?;
         self.print_status("Starting log stream", Builder::stream_logs)?;
@@ -736,31 +736,18 @@ impl Builder {
 
             for line in lines {
                 let content = line.content.trim_end();
-                let prefix = Path::new(&line.filename)
+                let extension = Path::new(&line.filename)
                     .extension()
                     .unwrap()
                     .to_string_lossy()
                     .to_string();
 
-                let mut file_name = line
-                    .filename
-                    .to_owned()
-                    .trim_end_matches(&prefix)
-                    .to_string();
-
-                if file_name.len() > 15 {
-                    file_name.truncate(15);
-                    file_name.push_str("..");
-                }
-
-                file_name.push_str(&prefix);
-
                 let highlight = HIGHLIGHTS.iter().find(|h| h.regex.is_match(content));
 
                 println!(
-                    "{name:.>20}:{line_number:5}{sep} {content}",
+                    "{name}:{line_number:5}{sep} {content}",
                     sep = "|".black(),
-                    name = file_name.truecolor(line.color[0], line.color[1], line.color[2]),
+                    name = extension.truecolor(line.color[0], line.color[1], line.color[2]),
                     line_number = line.line_number.to_string().black(),
                     content = if let Some(h) = highlight {
                         content.bold().truecolor(h.color[0], h.color[1], h.color[2])
