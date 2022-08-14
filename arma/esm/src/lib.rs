@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate log;
-
 mod arma;
 mod client;
 mod config;
@@ -19,9 +16,10 @@ use std::io::Read;
 use std::{env, fs};
 use uuid::Uuid;
 
-use parking_lot::RwLock;
+pub use parking_lot::RwLock;
 
 // Logging
+pub use log::{debug, error, info, trace, warn};
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};
@@ -68,6 +66,8 @@ lazy_static! {
 ///////////////////////////////////////////////////////////////////////
 #[arma]
 pub fn init() -> Extension {
+    trace!("[#init] - Starting");
+
     // Initialize the static instances to start everything
     lazy_static::initialize(&CONFIG);
     lazy_static::initialize(&READY);
@@ -77,6 +77,7 @@ pub fn init() -> Extension {
     initialize_logger();
 
     Extension::build()
+        .command("log", log)
         .command("utc_timestamp", utc_timestamp)
         .command("log_level", log_level)
         .command("pre_init", pre_init)
@@ -189,6 +190,22 @@ pub fn log_level() -> String {
     CONFIG.log_level.to_lowercase()
 }
 
+pub fn log(log_level: String, caller: String, content: String) {
+    let message = format!("{caller} | {content}");
+
+    match log_level.to_ascii_lowercase().as_str() {
+        "trace" => trace!("{message}"),
+        "debug" => debug!("{message}"),
+        "info" => info!("{message}"),
+        "warn" => warn!("{message}"),
+        "error" => error!("{message}"),
+        t => error!(
+            "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
+            t
+        ),
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////
 // END Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
@@ -228,7 +245,7 @@ fn send_to_arma<D: Serialize + IntoArma + Debug>(
     let callback = CALLBACK.read();
     match &*callback {
         Some(ctx) => ctx.callback("exile_server_manager", function, Some(message)),
-        None => error!("[send_to_arma] Attempted to send a message to Arma but we haven't connected to Arma yet")
+        None => error!("[#send_to_arma] Attempted to send a message to Arma but we haven't connected to Arma yet")
     }
 }
 
