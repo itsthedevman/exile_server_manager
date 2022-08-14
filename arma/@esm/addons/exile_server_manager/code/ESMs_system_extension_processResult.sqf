@@ -33,7 +33,7 @@ private _result = _this;
 // The extension sends back a empty string after receiving a call
 if (isNil("_result") || { _result isEqualTo "" }) exitWith { true };
 
-if (_result isEqualType "") then
+if (type?(_result, STRING)) then
 {
 	// Only convert array strings. Ignore everything else. (91 == [) and (93 == ])
 	private _chars = toArray _result;

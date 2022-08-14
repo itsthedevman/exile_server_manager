@@ -60,6 +60,6 @@ private _processor = {
 };
 
 private _result = _this call _processor;
-if (_result isEqualType HASH_TYPE) exitWith { _result };
+if (type?(_result, HASH)) exitWith { _result };
 
 nil

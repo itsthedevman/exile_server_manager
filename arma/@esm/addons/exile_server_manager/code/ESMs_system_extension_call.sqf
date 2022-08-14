@@ -43,7 +43,7 @@ else
 	_function = _this param [0, "", [""]];
 	_arguments = _this select [1, count(_this) - 1];
 
-	if !(_arguments isEqualType []) exitWith
+	if (type_ne?(_arguments, ARRAY)) exitWith
 	{
 		info!("Invalid arguments provided for extension call to ""%1""", _function);
 		false
