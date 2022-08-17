@@ -1,9 +1,9 @@
-use esm_message::{Data, ErrorType, Message, data, retrieve_data};
-use mysql::{Opts, Pool, PooledConn, params, prelude::Queryable, Result as QueryResult};
+use esm_message::{data, retrieve_data, Data, ErrorType, Message};
 use ini::Ini;
 use log::*;
-use std::{collections::HashMap, path::Path};
+use mysql::{params, prelude::Queryable, Opts, Pool, PooledConn, Result as QueryResult};
 use serde::Serialize;
+use std::{collections::HashMap, path::Path};
 
 pub struct Database {
     pub extdb_version: u8,
@@ -20,7 +20,10 @@ impl Default for Database {
             2
         };
 
-        Database { extdb_version, connection_pool: None, }
+        Database {
+            extdb_version,
+            connection_pool: None,
+        }
     }
 }
 
@@ -94,10 +97,16 @@ impl Database {
         let message = match name.as_str() {
             "reward_territories" => self.reward_territories(message, arguments),
             _ => {
-                error!("[database::query] Unexpected query \"{}\" with arguments {:?}", name, arguments);
+                error!(
+                    "[database::query] Unexpected query \"{}\" with arguments {:?}",
+                    name, arguments
+                );
                 message.add_error(
                     esm_message::ErrorType::Message,
-                    format!("Unexpected query \"{}\" with arguments {:?}", name, arguments)
+                    format!(
+                        "Unexpected query \"{}\" with arguments {:?}",
+                        name, arguments
+                    ),
                 );
 
                 message
@@ -127,7 +136,7 @@ impl Database {
         match result {
             Ok(r) => match r {
                 Some(v) => v == "true",
-                None => false
+                None => false,
             },
             Err(e) => {
                 error!("[database::account_exists] {}", e);
@@ -136,7 +145,11 @@ impl Database {
         }
     }
 
-    pub fn reward_territories(&self, mut message: Message, arguments: HashMap<String, String>) -> Message {
+    pub fn reward_territories(
+        &self,
+        mut message: Message,
+        arguments: HashMap<String, String>,
+    ) -> Message {
         let mut connection = match self.connection() {
             Ok(connection) => connection,
             Err(e) => {
@@ -186,19 +199,24 @@ impl Database {
                         OR moderators LIKE :uid_wildcard)
             "#,
             params! { "uid" => player_uid, "uid_wildcard" => format!("%{}%", player_uid) },
-            |(id, custom_id, name, level, vehicle_count)| {
-                TerritoryResult { id, custom_id, name, level, vehicle_count, }
-            }
+            |(id, custom_id, name, level, vehicle_count)| TerritoryResult {
+                id,
+                custom_id,
+                name,
+                level,
+                vehicle_count,
+            },
         );
 
         match result {
             Ok(territories) => {
-                let results: Vec<String> = territories.into_iter().map(|t| {
-                    serde_json::to_string(&t).unwrap()
-                }).collect();
+                let results: Vec<String> = territories
+                    .into_iter()
+                    .map(|t| serde_json::to_string(&t).unwrap())
+                    .collect();
 
                 message.data = Data::QueryResult(data::QueryResult { results });
-            },
+            }
             Err(e) => {
                 error!("[database::reward_territories] {}", e);
                 message.add_error(ErrorType::Code, "client_exception");
@@ -226,8 +244,16 @@ impl Database {
             Port = 3306
     */
     fn connection_string(&self, db_ini: Ini) -> Result<String, String> {
-        let filename = if self.extdb_version == 3 { "extdb3-conf.ini" } else { "extdb-conf.ini" };
-        let database_name_key = if self.extdb_version == 3 { "Database" } else { "Name" };
+        let filename = if self.extdb_version == 3 {
+            "extdb3-conf.ini"
+        } else {
+            "extdb-conf.ini"
+        };
+        let database_name_key = if self.extdb_version == 3 {
+            "Database"
+        } else {
+            "Name"
+        };
         let header_name = crate::CONFIG.extdb_conf_header_name.clone();
 
         let section = match db_ini.section(Some(header_name.clone())) {
@@ -295,7 +321,9 @@ impl Database {
     }
 
     fn extdb_conf_path(&self, base_ini_path: String) -> String {
-        if !crate::CONFIG.extdb_conf_path.is_empty() { return crate::CONFIG.extdb_conf_path.clone(); }
+        if !crate::CONFIG.extdb_conf_path.is_empty() {
+            return crate::CONFIG.extdb_conf_path.clone();
+        }
 
         let file_path = format!("{}/extdb3-conf.ini", base_ini_path);
         let path = Path::new(&file_path);
