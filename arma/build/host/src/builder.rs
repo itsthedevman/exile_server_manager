@@ -320,6 +320,9 @@ impl Builder {
         // Remove some build files
         let paths = vec![
             "@esm.zip",
+            "windows.zip",
+            "linux.zip",
+            "esm.zip",
             ".esm-build-command",
             ".esm-build-command-result",
         ];
@@ -351,31 +354,23 @@ impl Builder {
 
                 format!(
                     r#"
-                        Remove-Item "{server_path}\@esm\log\*.log";
-                        Remove-Item "{server_path}\{profile_name}\*.log";
-                        Remove-Item "{server_path}\{profile_name}\*.rpt";
-
-                        Get-ChildItem "{build_path}\@esm\*.*" -Recurse | Remove-Item -Force -Recurse;
+                        Remove-Item "{server_path}\@esm\log\*.log" -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
 
                         if ([System.IO.Directory]::Exists("{build_path}\esm\target")) {{
                             Move-Item -Path "{build_path}\esm\target" -Destination "{build_path}";
                         }}
 
-                        if ([System.IO.Directory]::Exists("{build_path}\esm\{os}")) {{
-                            Get-ChildItem "{build_path}\esm\{os}\*.*" -Recurse | Remove-Item -Force -Recurse;
-                        }}
+                        Remove-Item -Path "{build_path}\esm" -Recurse -ErrorAction SilentlyContinue;
+                        Remove-Item -Path "{build_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
 
-                        Get-ChildItem "{build_path}\esm\*.*" -Recurse | Remove-Item -Force -Recurse;
-
-                        $Dirs = "{build_path}\esm",
-                                "{build_path}\@esm",
-                                "{build_path}\@esm\addons";
-
-                        Foreach ($dir in $Dirs) {{
-                            if (![System.IO.Directory]::Exists($dir)) {{
-                                New-Item -Path $dir -ItemType Directory;
-                            }}
-                        }};
+                        New-Item -Path "{build_path}\esm" -ItemType Directory;
+                        New-Item -Path "{build_path}\@esm" -ItemType Directory;
+                        New-Item -Path "{build_path}\@esm\addons" -ItemType Directory;
+                        New-Item -Path "{server_path}\@esm" -ItemType Directory;
+                        New-Item -Path "{server_path}\@esm\addons" -ItemType Directory;
 
                         if ([System.IO.Directory]::Exists("{build_path}\target")) {{
                             Move-Item -Path "{build_path}\target" -Destination "{build_path}\esm\target";
@@ -383,14 +378,18 @@ impl Builder {
                     "#,
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
-                    profile_name = profile_name,
-                    os = self.os
+                    profile_name = profile_name
                 )
             }
             BuildOS::Linux => todo!(),
         };
 
-        self.system_command(System::new().command(script).wait())?;
+        self.system_command(
+            System::new()
+                .command(script)
+                .add_detection("error", true)
+                .wait(),
+        )?;
 
         Ok(())
     }
@@ -507,7 +506,7 @@ impl Builder {
                 self.system_command(
                     System::new()
                         .command(script)
-                        .add_detection(r"error: could not compile", true)
+                        .add_detection(r"error: .+", true)
                         .add_detection(r"warning", false),
                 )?;
             }
