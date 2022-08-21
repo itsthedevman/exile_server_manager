@@ -1,7 +1,6 @@
-use crate::error::ESMResult;
 use crate::token::Token;
+use crate::*;
 
-use esm_message::{Message, Type};
 use log::*;
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
@@ -227,7 +226,7 @@ impl Client {
         debug!("[client#on_connect] Event Connected: {}", connected);
 
         if !connected {
-            if let Err(e) = crate::BOT.write().on_disconnect() {
+            if let Err(e) = write_lock!(crate::BOT).on_disconnect() {
                 error!("[client#on_connect] {}", e)
             };
 
@@ -236,7 +235,7 @@ impl Client {
 
         self.connected.store(true, Ordering::SeqCst);
 
-        if let Err(e) = crate::BOT.write().on_connect() {
+        if let Err(e) = write_lock!(crate::BOT).on_connect() {
             error!("[client#on_connect] {}", e)
         };
     }
@@ -279,7 +278,7 @@ impl Client {
             crate::READY.store(true, Ordering::SeqCst);
         }
 
-        if let Err(e) = crate::BOT.write().on_message(message) {
+        if let Err(e) = write_lock!(crate::BOT).on_message(message) {
             error!("[client#on_message] {}", e)
         };
     }
@@ -287,7 +286,7 @@ impl Client {
     fn on_disconnect(&mut self) {
         debug!("[client#connect] Event Disconnected");
 
-        if let Err(e) = crate::BOT.write().on_disconnect() {
+        if let Err(e) = write_lock!(crate::BOT).on_disconnect() {
             error!("[client#on_disconnect] {}", e)
         };
 

@@ -1,14 +1,10 @@
+use crate::database::Database;
+use crate::*;
+
 use arma_rs::{Context, IntoArma};
-use esm_message::{retrieve_data, Data, Init, Message, Metadata};
-use log::{debug, trace};
 use serde::Serialize;
 use serde_json::json;
 use uuid::Uuid;
-
-use crate::{
-    database::Database,
-    error::{ESMError, ESMResult},
-};
 
 type MessageResult = Result<Option<Message>, ESMError>;
 
@@ -107,7 +103,7 @@ impl Arma {
         }
 
         // Call arma
-        let bot = crate::BOT.read();
+        let bot = read_lock!(crate::BOT);
         let token = bot.token();
         let community_id = match token.community_id() {
             Some(t) => t,

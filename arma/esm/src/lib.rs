@@ -4,12 +4,12 @@ mod client;
 mod config;
 mod database;
 mod error;
+mod macros;
 mod token;
 
 // Various Packages
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
-use esm_message::*;
 use lazy_static::lazy_static;
 pub use parking_lot::RwLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -26,6 +26,9 @@ use log4rs::encode::pattern::PatternEncoder;
 use arma::Arma;
 use bot::Bot;
 use config::Config;
+pub use error::*;
+pub use esm_message::*;
+pub use macros::*;
 
 use crate::config::Env;
 
@@ -101,12 +104,14 @@ fn initialize_logger() {
 fn connection_manager() {
     let reconnection_counter = AtomicUsize::new(0);
     thread::spawn(move || loop {
-        let mut bot = BOT.write();
+        let mut bot = write_lock!(BOT);
         let connected = bot.client.connected.clone();
         if let Err(e) = bot.connect() {
             error!("[#pre_init] Pre init failed! {}. ", e);
             return;
         };
+
+        drop(bot);
 
         while connected.load(Ordering::SeqCst) {
             reconnection_counter.store(0, Ordering::SeqCst);
@@ -141,7 +146,8 @@ fn connection_manager() {
 // START Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
 #[arma]
-pub fn init() -> Extension {
+#[tokio::main]
+pub async fn init() -> Extension {
     trace!("[#init] - Starting");
 
     // Initialize the static instances to start everything
@@ -221,7 +227,7 @@ pub fn pre_init(
         return false;
     }
 
-    ARMA.write().initialize(init, callback);
+    write_lock!(ARMA).initialize(init, callback);
 
     info!("[#pre_init]    Attempting to shake hands with esm_bot. Remember: good posture, eye contact and a firm grip");
 
@@ -248,7 +254,7 @@ pub fn send_message(
         Err(e) => return error!("[#send_message] {}", e),
     };
 
-    if let Err(e) = crate::BOT.write().send(message) {
+    if let Err(e) = write_lock!(crate::BOT).send(message) {
         error!("[#send_message] {}", e);
     };
 }
@@ -259,7 +265,7 @@ pub fn send_to_channel(id: String, content: String) {
     let mut message = Message::new(Type::Event);
     message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-    if let Err(e) = crate::BOT.write().send(message) {
+    if let Err(e) = write_lock!(crate::BOT).send(message) {
         error!("[#send_to_channel] {}", e);
     };
 }
