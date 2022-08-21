@@ -5,12 +5,12 @@ pub struct ESMError(String);
 
 impl std::fmt::Display for ESMError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", *self)
+        write!(f, "{}", self.0)
     }
 }
 impl std::error::Error for ESMError {
     fn cause(&self) -> Option<&dyn std::error::Error> {
-        Some(&*self)
+        Some(self)
     }
 }
 

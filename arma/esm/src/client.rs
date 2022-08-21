@@ -1,43 +1,45 @@
-use esm_message::{Data, Message, Type};
-use log::*;
-use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
-use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
-use std::fs::File;
-use std::io::Read;
-use std::net::ToSocketAddrs;
-use std::thread;
-use std::time::Duration;
-
-use crate::config::Env;
 use crate::error::ESMResult;
 use crate::token::Token;
 
+use esm_message::{Message, Type};
+use log::*;
+use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
+use message_io::node::{self, NodeHandler, NodeTask};
+use std::fs::File;
+use std::io::Read;
+use std::net::ToSocketAddrs;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+#[derive(Clone)]
 pub struct Client {
-    pub connected: bool,
+    /// Tracks if the client is connected to the server based on events
+    pub connected: Arc<AtomicBool>,
     pub token: Token,
-    handler: NodeHandler<()>,
-    listener: NodeListener<()>,
+    handler: Option<NodeHandler<()>>,
+    task: Arc<Option<NodeTask>>,
     endpoint: Option<Endpoint>,
-    task: Option<NodeTask>,
-    reconnection_counter: usize,
 }
 
 impl Client {
     pub fn new() -> Self {
-        let (handler, listener) = node::split::<()>();
-        Client {
-            handler,
-            listener,
-            connected: false,
+        let mut client = Client {
+            handler: None,
+            task: Arc::new(None),
             endpoint: None,
-            task: None,
-            reconnection_counter: 0,
             token: Token::default(),
-        }
+            connected: Arc::new(AtomicBool::new(false)),
+        };
+
+        if let Err(e) = client.load_token() {
+            error!("[client::load_token] {}", e);
+        };
+
+        client
     }
 
     pub fn connect(&mut self) -> Result<(), String> {
-        trace!("[client#connect] Connecting to esm");
+        debug!("[client#connect] Connecting to esm_bot");
 
         let server_address = match crate::CONFIG.connection_url.to_socket_addrs() {
             Ok(mut addr) => match addr.next() {
@@ -53,8 +55,9 @@ impl Client {
             }
         };
 
-        match self
-            .handler
+        let (handler, listener) = node::split::<()>();
+
+        match handler
             .network()
             .connect(Transport::FramedTcp, server_address)
         {
@@ -62,37 +65,24 @@ impl Client {
             Err(e) => return Err(format!("{e}")),
         };
 
-        trace!("[client#connect] Listening for events");
+        self.handler = Some(handler);
 
-        self.listener.for_each(move |event| match event.network() {
-            NetEvent::Connected(_, connected) => {
-                trace!("[client#connect] Event Connected: {}", connected);
-
-                if !connected {
-                    // self.reconnect();
-                    return;
-                };
-
-                self.on_connect();
-            }
+        debug!("[client#connect] Listening for events");
+        let mut client = self.clone();
+        let task = listener.for_each_async(move |event| match event.network() {
+            NetEvent::Connected(_, connected) => client.on_connect(connected),
             NetEvent::Accepted(_, _) => unreachable!(),
-            NetEvent::Message(_, incoming_data) => {
-                trace!("[client#connect] Event Message: {:?}", incoming_data);
-
-                self.on_message(incoming_data.into());
-            }
-            NetEvent::Disconnected(_) => {
-                trace!("[client#connect] Event Disconnected");
-
-                self.on_disconnect();
-            }
+            NetEvent::Message(_, incoming_data) => client.on_message(incoming_data),
+            NetEvent::Disconnected(_) => client.on_disconnect(),
         });
+
+        self.task = Arc::new(Some(task));
 
         Ok(())
     }
 
-    pub fn connected(&self) -> bool {
-        if self.task.is_none() {
+    pub fn ready(&self) -> bool {
+        if !self.connected.load(Ordering::SeqCst) {
             return false;
         }
 
@@ -101,42 +91,24 @@ impl Client {
             None => return false,
         };
 
-        match self.handler.network().is_ready(endpoint.resource_id()) {
-            Some(false) | None => false,
-            _ => true,
-        }
-    }
-
-    /// Attempts to reconnect to the bot with no max attempts.
-    /// Each time it attempts to reconnect, it will wait +15sec longer than the last attempt; waiting no longer than 5 minutes between attempts
-    /// When env is set to "development", it will attempt roughly every second.
-    pub fn reconnect(&mut self) {
-        self.connected = false;
-
-        // Get the current reconnection count and calculate the wait time
-        let current_count = self.reconnection_counter;
-        let time_to_wait = match crate::CONFIG.env {
-            Env::Test => 1,
-            Env::Development => 3,
-            _ => 15 * (current_count as u64),
+        let handler = match &self.handler {
+            Some(h) => h,
+            None => return false,
         };
 
-        let time_to_wait = Duration::from_secs(time_to_wait);
-        warn!(
-            "[client#reconnect] Lost connection to server - Attempting reconnect in {:?}",
-            time_to_wait
-        );
-
-        thread::sleep(time_to_wait);
-
-        // Sleep a max of 5 minutes
-        if current_count <= 20 {
-            // Increase the reconnect counter by 1
-            self.reconnection_counter += 1;
-        }
+        !matches!(
+            handler.network().is_ready(endpoint.resource_id()),
+            Some(false) | None
+        )
     }
 
     pub fn send(&mut self, mut message: Message) -> ESMResult {
+        if !self.ready() {
+            return Err(
+                "[client#send] Cannot send - We are not connected to the bot at the moment".into(),
+            );
+        }
+
         self.reload_token();
         if !self.validate_token() {
             return Err("[client#send] Cannot send - Invalid token".into());
@@ -161,16 +133,25 @@ impl Client {
                     debug!("[client#send] {:?}", message);
                 }
 
-                match self.handler.network().send(endpoint, &bytes) {
+                let handler = match &self.handler {
+                    Some(h) => h,
+                    None => {
+                        return Err(
+                            "[client#send] No handler found - Did you not call #connect?".into(),
+                        )
+                    }
+                };
+
+                match handler.network().send(endpoint, &bytes) {
                     SendStatus::Sent => Ok(()),
-                    SendStatus::MaxPacketSizeExceeded => return Err(format!(
+                    SendStatus::MaxPacketSizeExceeded => Err(format!(
                         "[client#send] Cannot send - Message is too large. Size: {}. Message: {message:?}", bytes.len()
                     )
                     .into()),
-                    _ => return Err("[client#send] Cannot send - We are not connected to the bot at the moment".into()),
+                    _ => Err("[client#send] Cannot send - We are not connected to the bot at the moment".into()),
                 }
             }
-            Err(error) => return Err(format!("[client#send] {error}").into()),
+            Err(error) => Err(format!("[client#send] {error}").into()),
         }
     }
 
@@ -221,8 +202,8 @@ impl Client {
         let mut key_contents = Vec::new();
         match file.read_to_end(&mut key_contents) {
                 Ok(_) => {
-                    trace!(
-                        "[bot::load_token] esm.key - {}",
+                    debug!(
+                        "[client::load_token] esm.key - {}",
                         String::from_utf8_lossy(&key_contents)
                     );
                 }
@@ -231,30 +212,44 @@ impl Client {
 
         match serde_json::from_slice(&key_contents) {
             Ok(token) => {
-                trace!("[bot::load_token] Token decoded - {}", token);
+                debug!("[client::load_token] Token decoded - {}", token);
                 self.token = token;
 
                 Ok(())
             }
             Err(e) => {
-                Err(format!("Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).\nError: {e}").into())
+                Err(format!("Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).\nError: {e}"))
             }
         }
     }
 
-    fn on_connect(&mut self) {
-        // Reset the reconnect counter.
-        self.reconnection_counter = 0;
+    fn on_connect(&mut self, connected: bool) {
+        debug!("[client#on_connect] Event Connected: {}", connected);
 
-        let mut message = Message::new(Type::Init);
-        message.data = Data::Init(crate::ARMA.read().init.clone());
+        if !connected {
+            if let Err(e) = crate::BOT.write().on_disconnect() {
+                error!("[client#on_connect] {}", e)
+            };
 
-        trace!("[client#on_connect] Initialization {:#?}", message);
+            return;
+        };
 
-        self.send(message);
+        self.connected.store(true, Ordering::SeqCst);
+
+        if let Err(e) = crate::BOT.write().on_connect() {
+            error!("[client#on_connect] {}", e)
+        };
     }
 
-    fn on_message(&mut self, incoming_data: Vec<u8>) {
+    fn on_message(&mut self, incoming_data: &[u8]) {
+        trace!("[client#on_message] Event Message: {:?}", incoming_data);
+
+        self.reload_token();
+        if !self.validate_token() {
+            error!("[client#on_message] Cannot process inbound message - Invalid token");
+            return;
+        }
+
         let endpoint = match self.endpoint {
             Some(e) => e,
             None => {
@@ -263,13 +258,7 @@ impl Client {
             }
         };
 
-        self.reload_token();
-        if !self.validate_token() {
-            error!("[client#on_message] Cannot process inbound message - Invalid token");
-            return;
-        }
-
-        let message = match Message::from_bytes(incoming_data, &self.token.key) {
+        let message = match Message::from_bytes(incoming_data.into(), &self.token.key) {
             Ok(mut message) => {
                 message.set_resource(endpoint.resource_id());
                 message
@@ -280,48 +269,28 @@ impl Client {
             }
         };
 
-        trace!("[client#on_message] {:#?}", message);
-
-        if !message.errors.is_empty() {
-            for error in message.errors {
-                error!("{}", error.error_content);
+        if matches!(message.message_type, Type::Init) {
+            if crate::READY.load(Ordering::SeqCst) {
+                error!("[client#on_message] Client is already initialized");
+                return;
             }
 
-            return;
+            info!("[client#on_message] Connection established with bot");
+            crate::READY.store(true, Ordering::SeqCst);
         }
 
-        info!(
-            "[client#on_message] Received {:?} message with ID {}",
-            message.message_type, message.id
-        );
-
-        let arma = crate::ARMA.read();
-        let result: Option<Message> = match message.message_type {
-            Type::Init => {
-                if self.connected {
-                    error!("[client#on_message] Client is already initialized");
-                    return
-                }
-
-                info!("[client#on_message] Connection established with bot");
-                self.connected = true;
-
-                drop(arma); // Release the read so a write can be established
-                let mut arma = crate::ARMA.write();
-                arma.post_initialization(message)
-            },
-            Type::Query => arma.database.query(message),
-            Type::Arma => arma.call_function(message),
-            _ => unreachable!("[client::on_message] This is a bug. Message type \"{:?}\" has not been implemented yet", message.message_type),
+        if let Err(e) = crate::BOT.write().on_message(message) {
+            error!("[client#on_message] {}", e)
         };
-
-        // If a message is returned, send it back
-        if let Some(m) = result {
-            self.send(m);
-        }
     }
 
-    fn on_disconnect(&self) {
-        // self.reconnect();
+    fn on_disconnect(&mut self) {
+        debug!("[client#connect] Event Disconnected");
+
+        if let Err(e) = crate::BOT.write().on_disconnect() {
+            error!("[client#on_disconnect] {}", e)
+        };
+
+        self.connected.store(false, Ordering::SeqCst);
     }
 }

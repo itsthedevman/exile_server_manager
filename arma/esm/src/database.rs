@@ -89,7 +89,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn query(&self, mut message: Message) -> Option<Message> {
+    pub fn query(&self, mut message: Message) -> Message {
         let data = retrieve_data!(message.data, Data::Query);
         let name = data.name;
         let arguments = data.arguments;
@@ -101,6 +101,7 @@ impl Database {
                     "[database::query] Unexpected query \"{}\" with arguments {:?}",
                     name, arguments
                 );
+
                 message.add_error(
                     esm_message::ErrorType::Message,
                     format!(
@@ -113,7 +114,7 @@ impl Database {
             }
         };
 
-        Some(message)
+        message
     }
 
     pub fn account_exists(&self, player_uid: &str) -> bool {

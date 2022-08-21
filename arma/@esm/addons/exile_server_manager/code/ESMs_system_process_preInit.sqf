@@ -23,7 +23,6 @@
  *
  **/
 
-ESM_Version = "";
 ESM_BuildNumber = "";
 ESM_CommunityID = "";
 ESM_DatabaseExtension = "extDB3";
@@ -47,24 +46,25 @@ ESM_Logging_RewardPlayer = true;
 ESM_Logging_TransferPoptabs = true;
 ESM_Logging_UpgradeTerritory = true;
 ESM_LoggingChannelID = "";
+ESM_LogLevel = "log_level" call ESMs_system_extension_call;
+ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
 ESM_ServerID = "";
 ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
+ESM_Version = "";
 
-diag_log "Exile Server Manager is booting...";
-
-// For controlling which calls log
-ESM_LogLevel = "log_level" call ESMs_system_extension_call;
-ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
+info!("Exile Server Manager (mod) is booting");
 
 // Cache the territory prices to make calculating upgrade costs faster
 private _territoryData = [];
 {
 	_territoryData pushBack (
 		[
-			["level", "purchase_price", "radius", "object_count"],
-			[_forEachIndex + 1] + _x
+			["level", _forEachIndex + 1],
+			["purchase_price", _x select 0],
+			["radius", _x select 1],
+			["object_count", _x select 2]
 		] call ESMs_util_hashmap_fromArray
 	);
 }

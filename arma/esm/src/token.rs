@@ -2,7 +2,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 /// Represents the esm.key file
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Token {
     pub id: Vec<u8>,
     pub key: Vec<u8>,

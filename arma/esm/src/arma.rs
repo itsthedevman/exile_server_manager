@@ -5,7 +5,12 @@ use serde::Serialize;
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{database::Database, error::ESMResult};
+use crate::{
+    database::Database,
+    error::{ESMError, ESMResult},
+};
+
+type MessageResult = Result<Option<Message>, ESMError>;
 
 pub struct Arma {
     pub database: Database,
@@ -13,13 +18,19 @@ pub struct Arma {
     callback: Option<Context>,
 }
 
-impl Arma {
-    pub fn new() -> Self {
+impl Default for Arma {
+    fn default() -> Self {
         Arma {
             database: Database::new(),
             init: Init::default(),
             callback: None,
         }
+    }
+}
+
+impl Arma {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn initialize(&mut self, init: Init, callback: Context) {
@@ -75,7 +86,7 @@ impl Arma {
         self.database.extdb_version
     }
 
-    pub fn post_initialization(&mut self, mut message: Message) -> Option<Message> {
+    pub fn post_initialization(&mut self, mut message: Message) -> MessageResult {
         let data = retrieve_data!(message.data, Data::PostInit);
 
         // Get the base path to figure out where to look for the ini
@@ -92,7 +103,7 @@ impl Arma {
                 String::from("fail_database_connect"),
             );
 
-            return Some(message);
+            return Ok(Some(message));
         }
 
         // Call arma
@@ -103,7 +114,7 @@ impl Arma {
             None => {
                 message.add_error(esm_message::ErrorType::Code, String::from("invalid_token"));
 
-                return Some(message);
+                return Ok(Some(message));
             }
         };
 
@@ -112,7 +123,7 @@ impl Arma {
             None => {
                 message.add_error(esm_message::ErrorType::Code, String::from("invalid_token"));
 
-                return Some(message);
+                return Ok(Some(message));
             }
         };
 
@@ -148,12 +159,12 @@ impl Arma {
                 "ESM_Version": env!("CARGO_PKG_VERSION")
             }),
             &message.metadata,
-        );
+        )?;
 
-        None
+        Ok(None)
     }
 
-    pub fn call_function(&self, mut message: Message) -> Option<Message> {
+    pub fn call_function(&self, mut message: Message) -> MessageResult {
         let metadata = retrieve_data!(message.metadata, Metadata::Command);
 
         // First, check to make sure the player has joined this server
@@ -162,7 +173,7 @@ impl Arma {
                 esm_message::ErrorType::Code,
                 String::from("player_account_does_not_exist"),
             );
-            return Some(message);
+            return Ok(Some(message));
         }
 
         // If the command has a target, check to make sure they've joined the server
@@ -172,7 +183,7 @@ impl Arma {
                     esm_message::ErrorType::Code,
                     String::from("target_account_does_not_exist"),
                 );
-                return Some(message);
+                return Ok(Some(message));
             }
         }
 
@@ -183,8 +194,7 @@ impl Arma {
             _ => unreachable!("[arma::call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet", message.data)
         };
 
-        self.send(function_name, &message.id, &message.data, &message.metadata);
-
-        None
+        self.send(function_name, &message.id, &message.data, &message.metadata)?;
+        Ok(None)
     }
 }
