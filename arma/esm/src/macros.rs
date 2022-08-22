@@ -1,9 +1,11 @@
 #[macro_export]
 macro_rules! read_lock {
     ($reader:expr) => {{
-        let mut container: Option<parking_lot::RwLockReadGuard<_>> = None;
+        let mut container: Option<tokio::sync::RwLockReadGuard<_>> = None;
         while container.is_none() {
-            container = $reader.try_read_for(std::time::Duration::from_micros(200));
+            if let Ok(r) = $reader.try_read() {
+                container = Some(r);
+            }
         }
         container.unwrap()
     }};
@@ -12,9 +14,11 @@ macro_rules! read_lock {
 #[macro_export]
 macro_rules! write_lock {
     ($writer:expr) => {{
-        let mut container: Option<parking_lot::RwLockWriteGuard<_>> = None;
+        let mut container: Option<tokio::sync::RwLockWriteGuard<_>> = None;
         while container.is_none() {
-            container = $writer.try_write_for(std::time::Duration::from_micros(200));
+            if let Ok(w) = $writer.try_write() {
+                container = Some(w);
+            };
         }
         container.unwrap()
     }};
@@ -22,7 +26,7 @@ macro_rules! write_lock {
 
 #[cfg(test)]
 mod tests {
-    use parking_lot::RwLock;
+    use tokio::sync::RwLock;
 
     #[test]
     fn it_locks_reader() {

@@ -111,6 +111,30 @@ impl Config {
 
         hash
     }
+
+    pub fn validate(&self) -> Result<(), String> {
+        self.validate_connection_url()
+    }
+
+    fn validate_connection_url(&self) -> Result<(), String> {
+        match std::net::ToSocketAddrs::to_socket_addrs(&self.connection_url) {
+            Ok(mut addr) => match addr.next() {
+                Some(_socket_addr) => Ok(()),
+                None => {
+                    return Err(format!(
+                        "Failed to convert connection url -> {:?}",
+                        self.connection_url
+                    ))
+                }
+            },
+            Err(e) => {
+                return Err(format!(
+                    "Failed to parse connection url -> {:?}. Reason: {}",
+                    self.connection_url, e
+                ))
+            }
+        }
+    }
 }
 
 impl Default for Config {

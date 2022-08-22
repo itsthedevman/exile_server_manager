@@ -82,7 +82,7 @@ impl Arma {
         self.database.extdb_version
     }
 
-    pub fn post_initialization(&mut self, mut message: Message) -> MessageResult {
+    pub async fn post_initialization(&mut self, mut message: Message) -> MessageResult {
         let data = retrieve_data!(message.data, Data::PostInit);
 
         // Get the base path to figure out where to look for the ini
@@ -103,8 +103,7 @@ impl Arma {
         }
 
         // Call arma
-        let bot = read_lock!(crate::BOT);
-        let token = bot.token();
+        let token = &read_lock!(crate::CLIENT).token;
         let community_id = match token.community_id() {
             Some(t) => t,
             None => {

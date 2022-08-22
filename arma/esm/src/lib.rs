@@ -2,6 +2,7 @@ mod arma;
 mod bot;
 mod client;
 mod config;
+mod connection_manager;
 mod database;
 mod error;
 mod macros;
@@ -11,10 +12,10 @@ mod token;
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
-pub use parking_lot::RwLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::time::Duration;
-use std::{env, fs, thread};
+pub use std::sync::Arc;
+use std::{env, fs};
+pub use tokio::sync::RwLock;
 
 // Logging
 pub use log::{debug, error, info, trace, warn};
@@ -26,23 +27,32 @@ use log4rs::encode::pattern::PatternEncoder;
 use arma::Arma;
 use bot::Bot;
 use config::Config;
+use config::Env;
+use connection_manager::ConnectionManager;
+
 pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 
-use crate::config::Env;
+use crate::client::Client;
 
 lazy_static! {
     /// Represents @esm/config.yml
     pub static ref CONFIG: Config = {
-        let contents = match fs::read_to_string("@esm/config.yml") {
+        let contents: String = match fs::read_to_string("@esm/config.yml") {
             Ok(file) => file,
-            Err(_) => String::from(""),
+            Err(_) => {
+                debug!("[Config Init] No config file found");
+                return Config::default()
+            },
         };
 
         let config: Config = match serde_yaml::from_str(&contents) {
             Ok(config) => config,
-            Err(_) => Config::new()
+            Err(e) => {
+                error!("[Config Init] Failed to parse @esm/config.yml - {}", e);
+                Config::default()
+            }
         };
 
         config
@@ -56,6 +66,9 @@ lazy_static! {
 
     /// Represents the connection to the bot
     pub static ref BOT: RwLock<Bot> = RwLock::new(Bot::new());
+
+    /// The actual connection to the bot - Used internally
+    pub static ref CLIENT: RwLock<Client> = RwLock::new(Client::new());
 }
 
 fn initialize_logger() {
@@ -101,47 +114,6 @@ fn initialize_logger() {
     );
 }
 
-fn connection_manager() {
-    let reconnection_counter = AtomicUsize::new(0);
-    thread::spawn(move || loop {
-        let mut bot = write_lock!(BOT);
-        let connected = bot.client.connected.clone();
-        if let Err(e) = bot.connect() {
-            error!("[#pre_init] Pre init failed! {}. ", e);
-            return;
-        };
-
-        drop(bot);
-
-        while connected.load(Ordering::SeqCst) {
-            reconnection_counter.store(0, Ordering::SeqCst);
-            std::thread::sleep(Duration::from_secs(1));
-        }
-
-        // Get the current reconnection count and calculate the wait time
-        let current_count = reconnection_counter.load(Ordering::SeqCst);
-        let time_to_wait = match crate::CONFIG.env {
-            Env::Test => 1,
-            Env::Development => 3,
-            _ => current_count * 15,
-        };
-
-        let time_to_wait = Duration::from_secs(time_to_wait as u64);
-        warn!(
-            "[connection_manager] Lost connection to esm_bot - Attempting reconnect in {:?}",
-            time_to_wait
-        );
-
-        // Sleep a max of 5 minutes
-        if current_count <= 20 {
-            // Increase the reconnect counter by 1
-            reconnection_counter.fetch_add(1, Ordering::SeqCst);
-        }
-
-        std::thread::sleep(time_to_wait);
-    });
-}
-
 ///////////////////////////////////////////////////////////////////////
 // START Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
@@ -150,12 +122,12 @@ fn connection_manager() {
 pub async fn init() -> Extension {
     trace!("[#init] - Starting");
 
+    // Start the logger
+    initialize_logger();
+
     // Initialize the static instances to start everything
     lazy_static::initialize(&CONFIG);
     lazy_static::initialize(&READY);
-
-    // Start the logger
-    initialize_logger();
 
     Extension::build()
         .command("log", log)
@@ -175,66 +147,81 @@ pub fn pre_init(
     territory_data: String,
     vg_enabled: bool,
     vg_max_sizes: String,
-) -> bool {
-    trace!(
-        r#"[#pre_init]
-            server_name: {:?}
-            price_per_object: {:?}
-            territory_lifetime: {:?}
-            territory_data: {:?}
-            vg_enabled: {:?}
-            vg_max_sizes: {:?}
-        "#,
-        server_name,
-        price_per_object,
-        territory_lifetime,
-        territory_data,
-        vg_enabled,
-        vg_max_sizes
-    );
-
-    // Only allow this method to be called properly once
-    if READY.load(Ordering::SeqCst) {
-        warn!("[#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
-        return false;
-    }
-
-    info!("[#pre_init] Exile Server Manager (extension) is booting");
-
-    // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
-    let init = Init {
-        server_name,
-        price_per_object,
-        territory_lifetime,
-        territory_data,
-        vg_enabled,
-        vg_max_sizes,
-        server_start_time: Utc::now(),
-        extension_version: format!(
-            "{}+{}",
-            env!("CARGO_PKG_VERSION"),
-            std::include_str!("../.build-sha")
-        ),
-    };
-
-    debug!("[#pre_init] Initialization Data - {:?}", init);
-
-    if !init.valid() {
-        error!(
-            "[#pre_init] Cannot boot - Received invalid initialization data. {:?}",
-            init
+) {
+    tokio::spawn(async move {
+        trace!(
+            r#"[#pre_init]
+                server_name: {:?}
+                price_per_object: {:?}
+                territory_lifetime: {:?}
+                territory_data: {:?}
+                vg_enabled: {:?}
+                vg_max_sizes: {:?}
+            "#,
+            server_name,
+            price_per_object,
+            territory_lifetime,
+            territory_data,
+            vg_enabled,
+            vg_max_sizes
         );
-        return false;
-    }
 
-    write_lock!(ARMA).initialize(init, callback);
+        // Only allow this method to be called properly once
+        if READY.load(Ordering::SeqCst) {
+            warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
+            return;
+        }
 
-    info!("[#pre_init]    Attempting to shake hands with esm_bot. Remember: good posture, eye contact and a firm grip");
+        info!("[extension#pre_init] Exile Server Manager (extension) is booting");
 
-    connection_manager();
+        info!("[extension#pre_init]    Validating config file");
+        if let Err(e) = CONFIG.validate() {
+            error!("[extension#pre_init] Boot failed - Invalid config file");
+            warn!("[config#validate] {}", e);
+            error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
+            return;
+        }
 
-    info!("[#pre_init] Boot completed");
-    true
+        info!("[extension#pre_init]    Validating initialization package");
+        // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
+        let init = Init {
+            server_name,
+            price_per_object,
+            territory_lifetime,
+            territory_data,
+            vg_enabled,
+            vg_max_sizes,
+            server_start_time: Utc::now(),
+            extension_version: format!(
+                "{}+{}",
+                env!("CARGO_PKG_VERSION"),
+                std::include_str!("../.build-sha")
+            ),
+        };
+
+        debug!("{:#?}", init);
+        if let Err(errors) = init.validate() {
+            error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
+
+            for error in errors {
+                warn!("[init#validate] {error}");
+            }
+
+            error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+            return;
+        }
+
+        info!(
+            "[extension#pre_init]    Greeting our new friend - Hello {}!",
+            init.server_name
+        );
+        write_lock!(ARMA).initialize(init, callback);
+
+        info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
+        read_lock!(BOT).connect();
+
+        info!("[extension#pre_init] Boot completed");
+    });
 }
 
 pub fn send_message(
@@ -244,60 +231,66 @@ pub fn send_message(
     metadata: String,
     errors: String,
 ) {
-    debug!(
-        "[#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
-        id, message_type, data, metadata, errors
-    );
+    tokio::spawn(async move {
+        debug!(
+            "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
+            id, message_type, data, metadata, errors
+        );
 
-    let message = match Message::from_arma(id, message_type, data, metadata, errors) {
-        Ok(m) => m,
-        Err(e) => return error!("[#send_message] {}", e),
-    };
+        let message = match Message::from_arma(id, message_type, data, metadata, errors) {
+            Ok(m) => m,
+            Err(e) => return error!("[extension#send_message] {}", e),
+        };
 
-    if let Err(e) = write_lock!(crate::BOT).send(message) {
-        error!("[#send_message] {}", e);
-    };
+        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+            error!("[extension#send_message] {}", e);
+        };
+    });
 }
 
 pub fn send_to_channel(id: String, content: String) {
-    debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
+    tokio::spawn(async move {
+        debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
 
-    let mut message = Message::new(Type::Event);
-    message.data = Data::SendToChannel(data::SendToChannel { id, content });
+        let mut message = Message::new(Type::Event);
+        message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-    if let Err(e) = write_lock!(crate::BOT).send(message) {
-        error!("[#send_to_channel] {}", e);
-    };
+        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+            error!("[extension#send_to_channel] {}", e);
+        };
+    });
 }
 
 pub fn utc_timestamp() -> String {
     let timestamp = Utc::now().to_rfc3339();
-    debug!("[#utc_timestamp] - {timestamp}");
+    debug!("[extension#utc_timestamp] - {timestamp}");
 
     timestamp
 }
 
 pub fn log_level() -> String {
     let log_level = CONFIG.log_level.to_lowercase();
-    debug!("[#log_level] - {log_level}");
+    debug!("[extension#log_level] - {log_level}");
 
     log_level
 }
 
 pub fn log(log_level: String, caller: String, content: String) {
-    let message = format!("{caller} | {content}");
+    tokio::spawn(async move {
+        let message = format!("{caller} | {content}");
 
-    match log_level.to_ascii_lowercase().as_str() {
-        "trace" => trace!("{message}"),
-        "debug" => debug!("{message}"),
-        "info" => info!("{message}"),
-        "warn" => warn!("{message}"),
-        "error" => error!("{message}"),
-        t => error!(
-            "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
-            t
-        ),
-    }
+        match log_level.to_ascii_lowercase().as_str() {
+            "trace" => trace!("{message}"),
+            "debug" => debug!("{message}"),
+            "info" => info!("{message}"),
+            "warn" => warn!("{message}"),
+            "error" => error!("{message}"),
+            t => error!(
+                "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
+                t
+            ),
+        }
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////

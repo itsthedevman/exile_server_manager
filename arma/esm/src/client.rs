@@ -7,52 +7,47 @@ use message_io::node::{self, NodeHandler, NodeTask};
 use std::fs::File;
 use std::io::Read;
 use std::net::ToSocketAddrs;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Client {
-    /// Tracks if the client is connected to the server based on events
-    pub connected: Arc<AtomicBool>,
     pub token: Token,
     handler: Option<NodeHandler<()>>,
     task: Arc<Option<NodeTask>>,
     endpoint: Option<Endpoint>,
 }
 
-impl Client {
-    pub fn new() -> Self {
-        let mut client = Client {
+impl Default for Client {
+    fn default() -> Self {
+        Client {
             handler: None,
             task: Arc::new(None),
             endpoint: None,
             token: Token::default(),
-            connected: Arc::new(AtomicBool::new(false)),
-        };
+        }
+    }
+}
 
-        if let Err(e) = client.load_token() {
+impl Client {
+    pub fn new() -> Self {
+        Client::default()
+    }
+
+    pub async fn connect(&mut self) -> Result<(), String> {
+        if let Err(e) = self.load_token().await {
             error!("[client::load_token] {}", e);
         };
 
-        client
-    }
-
-    pub fn connect(&mut self) -> Result<(), String> {
         debug!("[client#connect] Connecting to esm_bot");
 
-        let server_address = match crate::CONFIG.connection_url.to_socket_addrs() {
-            Ok(mut addr) => match addr.next() {
-                Some(socket_addr) => socket_addr,
-                None => return Err("Failed to convert connection_url to socket addr".into()),
-            },
-            Err(e) => {
-                return Err(format!(
-                    "Failed to parse connection url from {:?}. Reason: {}",
-                    crate::CONFIG.connection_url,
-                    e
-                ))
-            }
-        };
+        // This is validated on extension#pre_init
+        let server_address = crate::CONFIG
+            .connection_url
+            .to_socket_addrs()
+            .unwrap()
+            .next()
+            .unwrap();
 
         let (handler, listener) = node::split::<()>();
 
@@ -67,12 +62,37 @@ impl Client {
         self.handler = Some(handler);
 
         debug!("[client#connect] Listening for events");
-        let mut client = self.clone();
-        let task = listener.for_each_async(move |event| match event.network() {
-            NetEvent::Connected(_, connected) => client.on_connect(connected),
+        let task = listener.for_each_async(|event| match event.network() {
+            NetEvent::Connected(_, connected) => {
+                tokio::spawn(async move {
+                    debug!("[client#on_connect] Event Connected: {}", connected);
+
+                    if !connected {
+                        if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
+                            error!("[client#on_connect] {}", e)
+                        };
+
+                        return;
+                    };
+
+                    if let Err(e) = write_lock!(crate::BOT).on_connect().await {
+                        error!("[client#on_connect] {}", e)
+                    };
+                });
+            }
             NetEvent::Accepted(_, _) => unreachable!(),
-            NetEvent::Message(_, incoming_data) => client.on_message(incoming_data),
-            NetEvent::Disconnected(_) => client.on_disconnect(),
+            NetEvent::Message(_, incoming_data) => {
+                // tokio::spawn(async { client.on_message(incoming_data).await });
+            }
+            NetEvent::Disconnected(_) => {
+                tokio::spawn(async {
+                    debug!("[client#on_disconnect] Event Disconnected");
+
+                    if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
+                        error!("[client#on_disconnect] {}", e)
+                    };
+                });
+            }
         });
 
         self.task = Arc::new(Some(task));
@@ -81,10 +101,6 @@ impl Client {
     }
 
     pub fn ready(&self) -> bool {
-        if !self.connected.load(Ordering::SeqCst) {
-            return false;
-        }
-
         let endpoint = match self.endpoint {
             Some(e) => e,
             None => return false,
@@ -101,14 +117,14 @@ impl Client {
         )
     }
 
-    pub fn send(&mut self, mut message: Message) -> ESMResult {
+    pub async fn send(&mut self, mut message: Message) -> ESMResult {
         if !self.ready() {
             return Err(
                 "[client#send] Cannot send - We are not connected to the bot at the moment".into(),
             );
         }
 
-        self.reload_token();
+        self.reload_token().await;
         if !self.validate_token() {
             return Err("[client#send] Cannot send - Invalid token".into());
         }
@@ -163,13 +179,13 @@ impl Client {
         false
     }
 
-    fn reload_token(&mut self) {
+    async fn reload_token(&mut self) {
         let reload_file = std::path::Path::new("@esm\\.RELOAD");
         if !reload_file.exists() {
             return;
         }
 
-        if let Err(e) = self.load_token() {
+        if let Err(e) = self.load_token().await {
             error!("[bot::load_token] {}", e);
             return;
         };
@@ -183,7 +199,7 @@ impl Client {
     }
 
     /// Loads the esm.key file from the disk and converts it to a Token
-    fn load_token(&mut self) -> Result<(), String> {
+    async fn load_token(&mut self) -> Result<(), String> {
         let path = match std::env::current_dir() {
             Ok(mut p) => {
                 p.push("@esm");
@@ -222,28 +238,10 @@ impl Client {
         }
     }
 
-    fn on_connect(&mut self, connected: bool) {
-        debug!("[client#on_connect] Event Connected: {}", connected);
-
-        if !connected {
-            if let Err(e) = write_lock!(crate::BOT).on_disconnect() {
-                error!("[client#on_connect] {}", e)
-            };
-
-            return;
-        };
-
-        self.connected.store(true, Ordering::SeqCst);
-
-        if let Err(e) = write_lock!(crate::BOT).on_connect() {
-            error!("[client#on_connect] {}", e)
-        };
-    }
-
-    fn on_message(&mut self, incoming_data: &[u8]) {
+    async fn on_message(&mut self, incoming_data: &[u8]) {
         trace!("[client#on_message] Event Message: {:?}", incoming_data);
 
-        self.reload_token();
+        self.reload_token().await;
         if !self.validate_token() {
             error!("[client#on_message] Cannot process inbound message - Invalid token");
             return;
@@ -278,18 +276,8 @@ impl Client {
             crate::READY.store(true, Ordering::SeqCst);
         }
 
-        if let Err(e) = write_lock!(crate::BOT).on_message(message) {
+        if let Err(e) = write_lock!(crate::BOT).on_message(message).await {
             error!("[client#on_message] {}", e)
         };
-    }
-
-    fn on_disconnect(&mut self) {
-        debug!("[client#connect] Event Disconnected");
-
-        if let Err(e) = write_lock!(crate::BOT).on_disconnect() {
-            error!("[client#on_disconnect] {}", e)
-        };
-
-        self.connected.store(false, Ordering::SeqCst);
     }
 }

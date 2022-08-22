@@ -1,46 +1,41 @@
+use crate::token::Token;
 use crate::*;
-use crate::{client::Client, token::Token};
 
 pub struct Bot {
-    pub client: Client,
+    connection_manager: ConnectionManager,
 }
 
 impl Default for Bot {
     fn default() -> Self {
         Bot {
-            client: Client::new(),
+            connection_manager: ConnectionManager::new(),
         }
     }
 }
 
 impl Bot {
     pub fn new() -> Self {
-        Bot::default()
+        Self::default()
     }
 
-    pub fn token(&self) -> &Token {
-        &self.client.token
+    pub fn connect(&self) {
+        self.connection_manager.connect();
     }
 
-    pub fn send(&mut self, message: Message) -> ESMResult {
-        self.client.send(message)
+    pub async fn send(&self, message: Message) -> ESMResult {
+        write_lock!(crate::CLIENT).send(message).await
     }
 
-    pub fn connect(&mut self) -> ESMResult {
-        self.client.connect()?;
-        Ok(())
-    }
-
-    pub fn on_connect(&mut self) -> ESMResult {
+    pub async fn on_connect(&mut self) -> ESMResult {
         let mut message = Message::new(Type::Init);
         message.data = Data::Init(read_lock!(crate::ARMA).init.clone());
 
         trace!("[client#on_connect] Initialization {:#?}", message);
 
-        self.send(message)
+        self.send(message).await
     }
 
-    pub fn on_message(&mut self, message: Message) -> ESMResult {
+    pub async fn on_message(&mut self, message: Message) -> ESMResult {
         trace!("[client#on_message] {:#?}", message);
 
         if !message.errors.is_empty() {
@@ -61,7 +56,7 @@ impl Bot {
             Type::Init => {
                 drop(arma); // Release the read so a write can be established
                 let mut arma = write_lock!(crate::ARMA);
-                arma.post_initialization(message)?
+                arma.post_initialization(message).await?
             },
             Type::Query => Some(arma.database.query(message)),
             Type::Arma => arma.call_function(message)?,
@@ -70,13 +65,13 @@ impl Bot {
 
         // If a message is returned, send it back
         if let Some(m) = result {
-            self.send(m)?;
+            self.send(m).await?;
         }
 
         Ok(())
     }
 
-    pub fn on_disconnect(&self) -> ESMResult {
+    pub async fn on_disconnect(&self) -> ESMResult {
         Ok(())
     }
 }
