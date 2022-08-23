@@ -4,11 +4,11 @@ use regex::Captures;
 type CompilerResult = Result<Option<String>, CompilerError>;
 
 const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
-const REGEX_EQUAL_TYPE: &str = r"type\?\((\w+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((\w+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_EQUAL_TYPE: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_GET: &str = r"get!\((\w+)?,\s*(.+)?\)";
-const REGEX_GET_WITH_DEFAULT: &str = r"get!\((\w+),\s*(.+),\s*(.*)*\)";
+const REGEX_GET: &str = r"get!\((.+)?,\s*(.+)?\)";
+const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.*)*\)";
 const REGEX_LOG: &str = r#"(info|warn|debug|error)!\((.+)?\)"#;
 const REGEX_LOG_WITH_ARGS: &str = r#"(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
