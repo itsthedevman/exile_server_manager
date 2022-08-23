@@ -359,10 +359,11 @@ impl Builder {
 
                 format!(
                     r#"
-                        Remove-Item "{server_path}\@esm\log\*.log" -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
-                        Remove-Item "{server_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\{profile_name}\*.bidmp" -ErrorAction SilentlyContinue;
+                        Remove-Item "{server_path}\{profile_name}\*.mdmp" -ErrorAction SilentlyContinue;
 
                         if ([System.IO.Directory]::Exists("{build_path}\esm\target")) {{
                             Move-Item -Path "{build_path}\esm\target" -Destination "{build_path}";
