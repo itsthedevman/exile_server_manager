@@ -65,7 +65,7 @@ lazy_static! {
     pub static ref ARMA: RwLock<Arma> = RwLock::new(Arma::new());
 
     /// Represents the connection to the bot
-    pub static ref BOT: RwLock<Bot> = RwLock::new(Bot::new());
+    pub static ref BOT: Arc<Bot> = Arc::new(Bot::new());
 
     /// The actual connection to the bot - Used internally
     pub static ref CLIENT: RwLock<Client> = RwLock::new(Client::new());
@@ -122,7 +122,7 @@ fn initialize_logger() {
 ///////////////////////////////////////////////////////////////////////
 #[arma]
 pub fn init() -> Extension {
-    debug!("[#init] - Starting");
+    debug!("[extension#init] - Starting");
 
     // Start the logger
     initialize_logger();
@@ -150,8 +150,9 @@ pub fn pre_init(
     vg_enabled: bool,
     vg_max_sizes: String,
 ) {
+    let timer = std::time::Instant::now();
     debug!(
-        r#"[#pre_init]
+        r#"[extension#pre_init]
             server_name: {:?}
             price_per_object: {:?}
             territory_lifetime: {:?}
@@ -216,9 +217,9 @@ pub fn pre_init(
         write_lock!(ARMA).initialize(init, callback);
 
         info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-        read_lock!(BOT).connect().await;
+        BOT.connect().await;
 
-        info!("[extension#pre_init] Boot completed");
+        info!("[extension#pre_init] Boot completed in {:.2?}", timer.elapsed());
     });
 }
 
@@ -229,6 +230,7 @@ pub fn send_message(
     metadata: String,
     errors: String,
 ) {
+    let timer = std::time::Instant::now();
     debug!(
         "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
         id, message_type, data, metadata, errors
@@ -240,22 +242,30 @@ pub fn send_message(
             Err(e) => return error!("[extension#send_message] {}", e),
         };
 
-        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+        if let Err(e) = crate::BOT.send(message).await {
             error!("[extension#send_message] {}", e);
         };
+
+        info!("[extension#send_message] Took {:.2?}", timer.elapsed());
     });
 }
 
 pub fn send_to_channel(id: String, content: String) {
-    debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
+    let timer = std::time::Instant::now();
+    debug!(
+        "[extension#send_to_channel] id: {:?} - content: {:?}",
+        id, content
+    );
 
     TOKIO_RUNTIME.block_on(async {
         let mut message = Message::new(Type::Event);
         message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+        if let Err(e) = crate::BOT.send(message).await {
             error!("[extension#send_to_channel] {}", e);
         };
+
+        info!("[extension#send_to_channel] Took {:.2?}", timer.elapsed());
     });
 }
 
@@ -274,29 +284,30 @@ pub fn log_level() -> String {
 }
 
 pub fn log(log_level: String, caller: String, content: String) {
+    let timer = std::time::Instant::now();
     trace!(
-        "[extension#log]\nlog_level: {:?}\ncaller: {:?}\ncontent: {:?}",
+        "[extension#log] log_level: {:?} - caller: {:?} - content size: {:?} bytes",
         log_level,
         caller,
-        content
+        content.len()
     );
 
-    std::thread::spawn(move || {
-        TOKIO_RUNTIME.block_on(async {
-            let message = format!("{caller} | {content}");
+    TOKIO_RUNTIME.block_on(async {
+        let message = format!("{caller} | {content}");
 
-            match log_level.to_ascii_lowercase().as_str() {
-                "trace" => trace!("{message}"),
-                "debug" => debug!("{message}"),
-                "info" => info!("{message}"),
-                "warn" => warn!("{message}"),
-                "error" => error!("{message}"),
-                t => error!(
-                    "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
-                    t
-                ),
-            }
-        });
+        match log_level.to_ascii_lowercase().as_str() {
+            "trace" => trace!("{message}"),
+            "debug" => debug!("{message}"),
+            "info" => info!("{message}"),
+            "warn" => warn!("{message}"),
+            "error" => error!("{message}"),
+            t => error!(
+                "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
+                t
+            ),
+        }
+
+        trace!("[extension#log] Took {:.2?}", timer.elapsed());
     });
 }
 

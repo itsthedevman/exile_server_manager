@@ -28,7 +28,7 @@ impl Client {
             error!("[client#connect] {}", e);
         };
 
-        debug!("[client#connect] Connecting to esm_bot");
+        debug!("[client#connect] Attempting to connect to esm_bot");
 
         // This is validated on extension#pre_init
         let server_address = crate::CONFIG
@@ -49,77 +49,67 @@ impl Client {
         };
 
         self.handler = Some(handler);
-
-        debug!("[client#connect] Listening for events");
         let task = listener.for_each_async(|event| match event.network() {
             NetEvent::Connected(_, connected) => {
                 TOKIO_RUNTIME.block_on(async {
-                    tokio::spawn(async move {
-                        debug!("[client#on_connect] Event Connected: {}", connected);
+                    debug!("[client#on_connect] Are we connected? {}", connected);
 
-                        if !connected {
-                            if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
-                                error!("[client#on_connect] {}", e)
-                            };
-
-                            return;
-                        };
-
-                        if let Err(e) = write_lock!(crate::BOT).on_connect().await {
+                    if !connected {
+                        if let Err(e) = crate::BOT.on_disconnect().await {
                             error!("[client#on_connect] {}", e)
                         };
-                    });
+
+                        return;
+                    };
+
+                    if let Err(e) = crate::BOT.on_connect().await {
+                        error!("[client#on_connect] {}", e)
+                    };
                 });
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_, incoming_data) => {
                 let incoming_data = incoming_data.to_vec();
-
                 TOKIO_RUNTIME.block_on(async {
-                    tokio::spawn(async move {
-                        trace!("[client#on_message] Event Message: {:?}", incoming_data);
+                    debug!("[client#on_message] Incoming data: {:?}", String::from_utf8_lossy(&incoming_data));
+                    write_lock!(TOKEN_MANAGER).reload();
+                    let token = read_lock!(TOKEN_MANAGER);
+                    if !token.valid() {
+                        error!("[client#on_message] Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+                        return;
+                    }
 
-                        write_lock!(TOKEN_MANAGER).reload();
-                        let token = read_lock!(TOKEN_MANAGER);
-                        if !token.valid() {
-                            error!("[client#on_message] Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+                    let message =
+                        match Message::from_bytes(incoming_data, token.key_bytes()) {
+                            Ok(message) => message,
+                            Err(e) => {
+                                error!("[client#on_message] {}", e);
+                                return;
+                            }
+                        };
+
+                    if matches!(message.message_type, Type::Init) {
+                        if crate::READY.load(Ordering::SeqCst) {
+                            error!("[client#on_message] Client is already initialized");
                             return;
                         }
 
-                        let message =
-                            match Message::from_bytes(incoming_data, token.key_bytes()) {
-                                Ok(message) => message,
-                                Err(e) => {
-                                    error!("[client#on_message] {}", e);
-                                    return;
-                                }
-                            };
+                        info!("[client#on_message] Connection established with bot");
+                        crate::READY.store(true, Ordering::SeqCst);
+                    }
 
-                        if matches!(message.message_type, Type::Init) {
-                            if crate::READY.load(Ordering::SeqCst) {
-                                error!("[client#on_message] Client is already initialized");
-                                return;
-                            }
-
-                            info!("[client#on_message] Connection established with bot");
-                            crate::READY.store(true, Ordering::SeqCst);
-                        }
-
-                        if let Err(e) = write_lock!(crate::BOT).on_message(message).await {
-                            error!("[client#on_message] {}", e)
-                        };
-                    });
+                    if let Err(e) = crate::BOT.on_message(message).await {
+                        error!("[client#on_message] {}", e)
+                    };
                 });
             }
             NetEvent::Disconnected(_) => {
                 TOKIO_RUNTIME.block_on(async {
-                    tokio::spawn(async {
-                        debug!("[client#on_disconnect] Event Disconnected");
+                    debug!("[client#on_disconnect] Lost connection");
 
-                        if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
-                            error!("[client#on_disconnect] {}", e)
-                        };
-                    });
+                    if let Err(e) = crate::BOT.on_disconnect().await {
+                        error!("[client#on_disconnect] {}", e);
+                    };
                 });
             }
         });

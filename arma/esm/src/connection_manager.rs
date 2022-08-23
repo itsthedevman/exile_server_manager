@@ -76,7 +76,7 @@ impl ConnectionManager {
                 }
 
                 let message = Message::new(Type::Ping);
-                if let Err(e) = write_lock!(crate::BOT).send(message).await {
+                if let Err(e) = crate::BOT.send(message).await {
                     error!("[connection_manager#alive_check] Failed to send ping - {e}");
                     continue;
                 };
