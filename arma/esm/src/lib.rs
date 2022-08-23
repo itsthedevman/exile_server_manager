@@ -162,65 +162,63 @@ pub fn pre_init(
         server_name, price_per_object, territory_lifetime, territory_data, vg_enabled, vg_max_sizes
     );
 
-    std::thread::spawn(move || {
-        TOKIO_RUNTIME.block_on(async {
-            // Only allow this method to be called properly once
-            if READY.load(Ordering::SeqCst) {
-                warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
-                return;
+    TOKIO_RUNTIME.block_on(async {
+        // Only allow this method to be called properly once
+        if READY.load(Ordering::SeqCst) {
+            warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
+            return;
+        }
+
+        info!("[extension#pre_init] Exile Server Manager (extension) is booting");
+        info!("[extension#pre_init]    Validating config file");
+
+        if let Err(e) = CONFIG.validate() {
+            error!("[extension#pre_init] Boot failed - Invalid config file");
+            warn!("[config#validate] {}", e);
+            error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
+            return;
+        }
+
+        info!("[extension#pre_init]    Validating initialization package");
+
+        // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
+        let init = Init {
+            server_name,
+            price_per_object,
+            territory_lifetime,
+            territory_data,
+            vg_enabled,
+            vg_max_sizes,
+            server_start_time: Utc::now(),
+            extension_version: format!(
+                "{}+{}",
+                env!("CARGO_PKG_VERSION"),
+                std::include_str!("../.build-sha")
+            ),
+        };
+
+        debug!("{:#?}", init);
+        if let Err(errors) = init.validate() {
+            error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
+
+            for error in errors {
+                warn!("[init#validate] {error}");
             }
 
-            info!("[extension#pre_init] Exile Server Manager (extension) is booting");
-            info!("[extension#pre_init]    Validating config file");
+            error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+            return;
+        }
 
-            if let Err(e) = CONFIG.validate() {
-                error!("[extension#pre_init] Boot failed - Invalid config file");
-                warn!("[config#validate] {}", e);
-                error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
-                return;
-            }
+        info!(
+            "[extension#pre_init]    Greeting our new friend - Hello {}!",
+            init.server_name
+        );
+        write_lock!(ARMA).initialize(init, callback);
 
-            info!("[extension#pre_init]    Validating initialization package");
+        info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
+        read_lock!(BOT).connect().await;
 
-            // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
-            let init = Init {
-                server_name,
-                price_per_object,
-                territory_lifetime,
-                territory_data,
-                vg_enabled,
-                vg_max_sizes,
-                server_start_time: Utc::now(),
-                extension_version: format!(
-                    "{}+{}",
-                    env!("CARGO_PKG_VERSION"),
-                    std::include_str!("../.build-sha")
-                ),
-            };
-
-            debug!("{:#?}", init);
-            if let Err(errors) = init.validate() {
-                error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
-
-                for error in errors {
-                    warn!("[init#validate] {error}");
-                }
-
-                error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
-                return;
-            }
-
-            info!(
-                "[extension#pre_init]    Greeting our new friend - Hello {}!",
-                init.server_name
-            );
-            write_lock!(ARMA).initialize(init, callback);
-
-            info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-            read_lock!(BOT).connect().await;
-
-            info!("[extension#pre_init] Boot completed");
-        });
+        info!("[extension#pre_init] Boot completed");
     });
 }
 
@@ -236,32 +234,28 @@ pub fn send_message(
         id, message_type, data, metadata, errors
     );
 
-    std::thread::spawn(move || {
-        TOKIO_RUNTIME.block_on(async {
-            let message = match Message::from_arma(id, message_type, data, metadata, errors) {
-                Ok(m) => m,
-                Err(e) => return error!("[extension#send_message] {}", e),
-            };
+    TOKIO_RUNTIME.block_on(async {
+        let message = match Message::from_arma(id, message_type, data, metadata, errors) {
+            Ok(m) => m,
+            Err(e) => return error!("[extension#send_message] {}", e),
+        };
 
-            if let Err(e) = write_lock!(crate::BOT).send(message).await {
-                error!("[extension#send_message] {}", e);
-            };
-        });
+        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+            error!("[extension#send_message] {}", e);
+        };
     });
 }
 
 pub fn send_to_channel(id: String, content: String) {
     debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
 
-    std::thread::spawn(move || {
-        TOKIO_RUNTIME.block_on(async {
-            let mut message = Message::new(Type::Event);
-            message.data = Data::SendToChannel(data::SendToChannel { id, content });
+    TOKIO_RUNTIME.block_on(async {
+        let mut message = Message::new(Type::Event);
+        message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-            if let Err(e) = write_lock!(crate::BOT).send(message).await {
-                error!("[extension#send_to_channel] {}", e);
-            };
-        });
+        if let Err(e) = write_lock!(crate::BOT).send(message).await {
+            error!("[extension#send_to_channel] {}", e);
+        };
     });
 }
 
