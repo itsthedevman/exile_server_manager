@@ -48,11 +48,11 @@ private _currentLogLevel = get!(ESM_LogLevelLookup, ESM_LogLevel, 2);
 if (_inputLogLevel > _currentLogLevel) exitWith {};
 
 // Make sure it's a string
-if (type_ne?(_message, STRING)) then
+if (!type?(_message, STRING)) then
 {
 	_message = str(_message);
 };
 
 // Do not use system_extension_call here
-private _result = "esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
+"esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
 nil

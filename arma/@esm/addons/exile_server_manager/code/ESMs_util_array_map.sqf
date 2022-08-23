@@ -33,7 +33,7 @@ private _output = [];
 
 {
 	private _result = nil;
-	if (isNil "_x") then
+	if (nil?(_x)) then
 	{
 		// Arma strikes again. `nil call Function` is ignored and does not execute
 		_result = scriptNull call _function;
@@ -43,7 +43,7 @@ private _output = [];
 		_result = _x call _function;
 	};
 
-	if (isNil "_result") then
+	if (nil?(_result)) then
 	{
 		// https://community.bistudio.com/wiki/pushBack See DreadedEntity's comment
 		_output set [_forEachIndex, nil];

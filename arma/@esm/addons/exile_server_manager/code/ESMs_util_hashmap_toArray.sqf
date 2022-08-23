@@ -46,14 +46,14 @@ private _processor = {
 		{
 			private _result = [];
 			{
-				if (isNil "_x") then { continue; };
+				if (nil?(_x)) then { continue; };
 
 				_result pushBack [
 					_x call _processor,
 
 					// Arma has the worst implementation of `nil` I have ever seen
 					// This is such a silly thing to have to do
-					if (isNil "_y") then { nil } else { _y call _processor }
+					if (nil?(_y)) then { nil } else { _y call _processor }
 				];
 			}
 			forEach _this;

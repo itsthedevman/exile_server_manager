@@ -34,7 +34,7 @@ private _data = _this select 1;
 
 // Make sure the function is compiled
 private _function = missionNameSpace getVariable [_functionName, ""];
-if (_function isEqualTo "") exitWith
+if (type?(_function, STRING)) exitWith
 {
 	error!("Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data);
 };
@@ -46,14 +46,14 @@ if (type?(_response, HASH) && { "id" in _response }) then
 	private _data = get!(_response, "data", "");
 	private _metadata = get!(_response, "metadata", "");
 
-	info!("Executing ""%1""", _functionName);
-	info!("    ID (%1): %2", typeName _id, _id);
-	info!("    DATA (%1): %2", typeName _data, _data);
-	info!("    METADATA (%1): %2", typeName _metadata, _metadata);
+	debug!("Executing ""%1""", _functionName);
+	debug!("    ID (%1): %2", typeName _id, _id);
+	debug!("    DATA (%1): %2", typeName _data, _data);
+	debug!("    METADATA (%1): %2", typeName _metadata, _metadata);
 }
 else
 {
-	info!("Calling function ""%1"" with %2", _functionName, _response);
+	debug!("Calling function ""%1"" with %2", _functionName, _response);
 };
 
 _response spawn _function;

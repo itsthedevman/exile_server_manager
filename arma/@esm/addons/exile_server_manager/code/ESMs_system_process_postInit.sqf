@@ -26,13 +26,13 @@
 private _id = get!(_this, "id");
 private _data = get!(_this, "data");
 
-if (isNil "_id" || { isNil "_data" }) exitWith { nil };
+if (nil?(_id) || { nil?(_data) }) exitWith { nil };
 
 // Bind the variables from CfgESM >> globalVariables, retrieving the values from _data
 {
 	private _variableName = _x;
 	private _value = get!(_data, _variableName);
-	if (isNil "_value") then { continue };
+	if (nil?(_value)) then { continue };
 
 	info!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
 	missionNameSpace setVariable [_variableName, _value];

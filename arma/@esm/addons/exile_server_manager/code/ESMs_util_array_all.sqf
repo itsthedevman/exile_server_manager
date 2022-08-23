@@ -31,7 +31,7 @@ Author:
 
 (
 	{
-		if (isNil "_x") then
+		if (nil?(_x)) then
 		{
 			// I would like to formally lodge a compliant about nil. k thx
 			nil call (_this select 1)

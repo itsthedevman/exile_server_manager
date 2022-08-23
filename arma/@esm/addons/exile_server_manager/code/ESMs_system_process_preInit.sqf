@@ -54,6 +54,7 @@ ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
 ESM_Version = "";
 
+diag_log "Exile Server Manager (mod) is booting";
 info!("Exile Server Manager (mod) is booting");
 
 // Cache the territory prices to make calculating upgrade costs faster

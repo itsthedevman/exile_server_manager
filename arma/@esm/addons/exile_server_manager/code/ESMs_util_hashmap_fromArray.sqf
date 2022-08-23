@@ -42,7 +42,7 @@ private _processor = {
 
 					_hashmap set [
 						_key,
-						if (isNil "_value") then { nil } else { _value call _processor }
+						if (nil?(_value)) then { nil } else { _value call _processor }
 					];
 				}
 				forEach _this;

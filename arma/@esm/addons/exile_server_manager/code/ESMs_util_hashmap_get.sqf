@@ -35,12 +35,12 @@ private _lastIndex = count(_keys) - 1;
 
 private _result = {
 	private _key = _x;
-	if (isNil "_hashMap" || { type_ne?(_hashMap, HASH) }) exitWith { nil };
+	if (isNil "_hashMap" || { !type?(_hashMap, HASH) }) exitWith { nil };
 
 	_hashMap = get!(_hashMap, _key);
 	if (_forEachIndex isEqualTo _lastIndex) exitWith
 	{
-		if (isNil "_hashMap") then { nil } else { _hashMap }
+		if (nil?(_hashMap)) then { nil } else { _hashMap }
 	};
 
 	nil

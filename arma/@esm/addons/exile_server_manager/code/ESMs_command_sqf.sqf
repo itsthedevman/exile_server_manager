@@ -78,18 +78,18 @@ try
 		};
 	};
 
-	// // It becomes difficult to handle while parsing if there are multiple layers of quotes
-	// if (!(isNil "_result") && { !(_result isEqualType "") }) then
-	// {
-	// 	_result = str(_result);
-	// };
+	// It becomes difficult to handle while parsing if there are multiple layers of quotes
+	if (!nil?(_result) && { !type?(_result, STRING) }) then
+	{
+		_result = str(_result);
+	};
 
 	[
 		_id,
 		"arma",
 		"sqf_result",
 		[
-			["result", if (isNil "_result") then { nil } else { _result }]
+			["result", if (nil?(_result)) then { nil } else { _result }]
 		]
 	]
 	spawn ESMs_object_message_respond_to;

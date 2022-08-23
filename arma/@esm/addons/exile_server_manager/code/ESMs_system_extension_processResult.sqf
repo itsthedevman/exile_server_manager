@@ -31,7 +31,7 @@ Author:
 private _result = _this;
 
 // The extension sends back a empty string after receiving a call
-if (isNil("_result") || { _result isEqualTo "" }) exitWith { true };
+if (nil?(_result) || { type?(_result, STRING) }) exitWith { true };
 
 if (type?(_result, STRING)) then
 {
@@ -53,7 +53,7 @@ if (_result call ESMs_util_array_isValidHashmap) then
 		if !(_x in _result) then { continue; };
 
 		private _value = _result get _x;
-		if (isNil "_value") then
+		if (nil?(_value)) then
 		{
 			_result deleteAt _x;
 		};
