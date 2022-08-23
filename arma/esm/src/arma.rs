@@ -103,31 +103,13 @@ impl Arma {
         }
 
         // Call arma
-        let token = &read_lock!(crate::CLIENT).token;
-        let community_id = match token.community_id() {
-            Some(t) => t,
-            None => {
-                message.add_error(esm_message::ErrorType::Code, String::from("invalid_token"));
-
-                return Ok(Some(message));
-            }
-        };
-
-        let server_id = match token.server_id() {
-            Some(t) => t,
-            None => {
-                message.add_error(esm_message::ErrorType::Code, String::from("invalid_token"));
-
-                return Ok(Some(message));
-            }
-        };
-
+        let token = &read_lock!(TOKEN_MANAGER);
         self.send(
             "ESMs_system_process_postInit",
             &message.id,
             &json!({
                 "ESM_BuildNumber": std::include_str!("../.build-sha"),
-                "ESM_CommunityID": community_id,
+                "ESM_CommunityID": token.community_id(),
                 "ESM_ExtDBVersion": self.extdb_version(),
                 "ESM_Gambling_Modifier": data.gambling_modifier,
                 "ESM_Gambling_PayoutBase": data.gambling_payout,
@@ -147,7 +129,7 @@ impl Arma {
                 "ESM_Logging_TransferPoptabs": data.logging_transfer,
                 "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
                 "ESM_LoggingChannelID": data.logging_channel_id,
-                "ESM_ServerID": server_id,
+                "ESM_ServerID": token.server_id(),
                 "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
                 "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
                 "ESM_TerritoryAdminUIDs": data.territory_admins,

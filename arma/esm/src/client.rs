@@ -1,32 +1,21 @@
 use crate::token::Token;
 use crate::*;
 
-use log::*;
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
 use std::fs::File;
 use std::io::Read;
 use std::net::ToSocketAddrs;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
-#[derive(Clone)]
-pub struct Client {
-    pub token: Token,
-    handler: Option<NodeHandler<()>>,
-    task: Arc<Option<NodeTask>>,
-    endpoint: Option<Endpoint>,
+lazy_static! {
+    pub static ref TOKEN_MANAGER: RwLock<TokenManager> = RwLock::new(TokenManager::new());
 }
 
-impl Default for Client {
-    fn default() -> Self {
-        Client {
-            handler: None,
-            task: Arc::new(None),
-            endpoint: None,
-            token: Token::default(),
-        }
-    }
+#[derive(Default)]
+pub struct Client {
+    handler: Option<NodeHandler<()>>,
+    task: Option<NodeTask>,
+    endpoint: Option<Endpoint>,
 }
 
 impl Client {
@@ -35,8 +24,8 @@ impl Client {
     }
 
     pub async fn connect(&mut self) -> Result<(), String> {
-        if let Err(e) = self.load_token().await {
-            error!("[client::load_token] {}", e);
+        if let Err(e) = write_lock!(TOKEN_MANAGER).load() {
+            error!("[client#connect] {}", e);
         };
 
         debug!("[client#connect] Connecting to esm_bot");
@@ -64,38 +53,78 @@ impl Client {
         debug!("[client#connect] Listening for events");
         let task = listener.for_each_async(|event| match event.network() {
             NetEvent::Connected(_, connected) => {
-                tokio::spawn(async move {
-                    debug!("[client#on_connect] Event Connected: {}", connected);
+                TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async move {
+                        debug!("[client#on_connect] Event Connected: {}", connected);
 
-                    if !connected {
-                        if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
-                            error!("[client#on_connect] {}", e)
+                        if !connected {
+                            if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
+                                error!("[client#on_connect] {}", e)
+                            };
+
+                            return;
                         };
 
-                        return;
-                    };
-
-                    if let Err(e) = write_lock!(crate::BOT).on_connect().await {
-                        error!("[client#on_connect] {}", e)
-                    };
+                        if let Err(e) = write_lock!(crate::BOT).on_connect().await {
+                            error!("[client#on_connect] {}", e)
+                        };
+                    });
                 });
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_, incoming_data) => {
-                // tokio::spawn(async { client.on_message(incoming_data).await });
+                let incoming_data = incoming_data.to_vec();
+
+                TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async move {
+                        trace!("[client#on_message] Event Message: {:?}", incoming_data);
+
+                        write_lock!(TOKEN_MANAGER).reload();
+                        let token = read_lock!(TOKEN_MANAGER);
+                        if !token.valid() {
+                            error!("[client#on_message] Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+                            return;
+                        }
+
+                        let message =
+                            match Message::from_bytes(incoming_data, token.key_bytes()) {
+                                Ok(message) => message,
+                                Err(e) => {
+                                    error!("[client#on_message] {}", e);
+                                    return;
+                                }
+                            };
+
+                        if matches!(message.message_type, Type::Init) {
+                            if crate::READY.load(Ordering::SeqCst) {
+                                error!("[client#on_message] Client is already initialized");
+                                return;
+                            }
+
+                            info!("[client#on_message] Connection established with bot");
+                            crate::READY.store(true, Ordering::SeqCst);
+                        }
+
+                        if let Err(e) = write_lock!(crate::BOT).on_message(message).await {
+                            error!("[client#on_message] {}", e)
+                        };
+                    });
+                });
             }
             NetEvent::Disconnected(_) => {
-                tokio::spawn(async {
-                    debug!("[client#on_disconnect] Event Disconnected");
+                TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async {
+                        debug!("[client#on_disconnect] Event Disconnected");
 
-                    if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
-                        error!("[client#on_disconnect] {}", e)
-                    };
+                        if let Err(e) = write_lock!(crate::BOT).on_disconnect().await {
+                            error!("[client#on_disconnect] {}", e)
+                        };
+                    });
                 });
             }
         });
 
-        self.task = Arc::new(Some(task));
+        self.task = Some(task);
 
         Ok(())
     }
@@ -124,25 +153,19 @@ impl Client {
             );
         }
 
-        self.reload_token().await;
-        if !self.validate_token() {
-            return Err("[client#send] Cannot send - Invalid token".into());
+        write_lock!(TOKEN_MANAGER).reload();
+        let token = read_lock!(TOKEN_MANAGER);
+        if !token.valid() {
+            return Err("[client#send] Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
         }
-
-        let endpoint = match self.endpoint {
-            Some(e) => e,
-            None => {
-                return Err("[client#send] No endpoint found - Did you not call #connect?".into())
-            }
-        };
 
         // Add the server ID if there is none
         if message.server_id.is_none() {
-            message.server_id = Some(self.token.id.clone());
+            message.server_id = Some(token.id_bytes().to_vec());
         }
 
         // Convert the message to bytes so it can be sent
-        match message.as_bytes(&self.token.key) {
+        match message.as_bytes(token.key_bytes()) {
             Ok(bytes) => {
                 if !matches!(message.message_type, Type::Init) {
                     debug!("[client#send] {:?}", message);
@@ -153,6 +176,15 @@ impl Client {
                     None => {
                         return Err(
                             "[client#send] No handler found - Did you not call #connect?".into(),
+                        )
+                    }
+                };
+
+                let endpoint = match self.endpoint {
+                    Some(e) => e,
+                    None => {
+                        return Err(
+                            "[client#send] No endpoint found - Did you not call #connect?".into(),
                         )
                     }
                 };
@@ -169,115 +201,93 @@ impl Client {
             Err(error) => Err(format!("[client#send] {error}").into()),
         }
     }
+}
 
-    fn validate_token(&self) -> bool {
-        if self.token.valid() {
-            return true;
-        }
+#[derive(Default)]
+pub struct TokenManager {
+    token: Token,
+}
 
-        error!("[client::validate_token] Corrupted \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
-        false
+impl TokenManager {
+    pub fn new() -> Self {
+        TokenManager::default()
     }
 
-    async fn reload_token(&mut self) {
-        let reload_file = std::path::Path::new("@esm\\.RELOAD");
-        if !reload_file.exists() {
-            return;
-        }
+    pub fn valid(&self) -> bool {
+        self.token.valid()
+    }
 
-        if let Err(e) = self.load_token().await {
-            error!("[bot::load_token] {}", e);
-            return;
-        };
+    pub fn id_bytes(&self) -> &[u8] {
+        &self.token.id
+    }
 
-        match std::fs::remove_file(reload_file) {
-            Ok(_) => {}
-            Err(e) => error!("[bot#reload_token] {}", e),
-        }
+    pub fn key_bytes(&self) -> &[u8] {
+        &self.token.key
+    }
 
-        warn!("[bot#reload_token] Token was reloaded");
+    pub fn server_id(&self) -> &str {
+        &self.token.server_id
+    }
+
+    pub fn community_id(&self) -> &str {
+        &self.token.community_id
     }
 
     /// Loads the esm.key file from the disk and converts it to a Token
-    async fn load_token(&mut self) -> Result<(), String> {
+    pub fn load(&mut self) -> ESMResult {
         let path = match std::env::current_dir() {
             Ok(mut p) => {
                 p.push("@esm");
                 p.push("esm.key");
                 p
             }
-            Err(e) => return Err(format!("Failed to get current directory. Reason: {e}")),
+            Err(e) => return Err(format!("Failed to get current directory. Reason: {e}").into()),
         };
 
         let mut file = match File::open(&path) {
             Ok(file) => file,
-            Err(_) => return Err(format!("Failed to find \"esm.key\" file here: {path:?}. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps."))
+            Err(_) => return Err(format!("Failed to find \"esm.key\" file here: {path:?}. If you haven't registered your server yet, please visit https://esmbot.com/wiki, click \"I am a Server Owner\", and follow the steps.").into())
         };
 
         let mut key_contents = Vec::new();
         match file.read_to_end(&mut key_contents) {
                 Ok(_) => {
                     debug!(
-                        "[client::load_token] esm.key - {}",
+                        "[token_manager::load] esm.key - {}",
                         String::from_utf8_lossy(&key_contents)
                     );
                 }
-                Err(e) => return Err(format!("Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e))
+                Err(e) => return Err(format!("Failed to read \"esm.key\" file. Please check the file permissions and try again.\nReason: {}", e).into())
             }
 
         match serde_json::from_slice(&key_contents) {
             Ok(token) => {
-                debug!("[client::load_token] Token decoded - {}", token);
-                self.token = token;
-
+                debug!("[token_manager::load] Token decoded - {}", token);
+                self.token.update_from(token);
                 Ok(())
             }
             Err(e) => {
-                Err(format!("Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).\nError: {e}"))
+                Err(format!("Corrupted \"esm.key\" detected. Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).\nError: {e}").into())
             }
         }
     }
 
-    async fn on_message(&mut self, incoming_data: &[u8]) {
-        trace!("[client#on_message] Event Message: {:?}", incoming_data);
-
-        self.reload_token().await;
-        if !self.validate_token() {
-            error!("[client#on_message] Cannot process inbound message - Invalid token");
+    pub fn reload(&mut self) {
+        let reload_file = std::path::Path::new("@esm\\.RELOAD");
+        if !reload_file.exists() {
             return;
         }
 
-        let endpoint = match self.endpoint {
-            Some(e) => e,
-            None => {
-                error!("[client#on_message] No endpoint found - This is a bug!");
-                return;
-            }
+        if let Err(e) = self.load() {
+            error!("[token_manager::reload] {}", e);
+            return;
         };
 
-        let message = match Message::from_bytes(incoming_data.into(), &self.token.key) {
-            Ok(mut message) => {
-                message.set_resource(endpoint.resource_id());
-                message
-            }
-            Err(e) => {
-                error!("[client#on_message] {}", e);
-                return;
-            }
-        };
-
-        if matches!(message.message_type, Type::Init) {
-            if crate::READY.load(Ordering::SeqCst) {
-                error!("[client#on_message] Client is already initialized");
-                return;
-            }
-
-            info!("[client#on_message] Connection established with bot");
-            crate::READY.store(true, Ordering::SeqCst);
+        match std::fs::remove_file(reload_file) {
+            Ok(_) => {}
+            Err(e) => error!("[token_manager#reload] {}", e),
         }
 
-        if let Err(e) = write_lock!(crate::BOT).on_message(message).await {
-            error!("[client#on_message] {}", e)
-        };
+        warn!("[token_manager#reload] Token was reloaded");
     }
 }

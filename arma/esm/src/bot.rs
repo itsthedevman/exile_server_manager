@@ -1,4 +1,3 @@
-use crate::token::Token;
 use crate::*;
 
 pub struct Bot {
@@ -18,8 +17,8 @@ impl Bot {
         Self::default()
     }
 
-    pub fn connect(&self) {
-        self.connection_manager.connect();
+    pub async fn connect(&self) {
+        self.connection_manager.connect().await;
     }
 
     pub async fn send(&self, message: Message) -> ESMResult {

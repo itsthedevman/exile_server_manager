@@ -20,7 +20,7 @@ impl ConnectionManager {
         Self::default()
     }
 
-    pub fn connect(&self) {
+    pub async fn connect(&self) {
         let reconnection_counter = AtomicUsize::new(0);
         let connected = self.connected.clone();
 
@@ -61,10 +61,10 @@ impl ConnectionManager {
             }
         });
 
-        self.alive_check();
+        self.alive_check().await;
     }
 
-    fn alive_check(&self) {
+    async fn alive_check(&self) {
         let pong_received = self.pong_received.clone();
         let connected = self.connected.clone();
 

@@ -15,6 +15,7 @@ use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 pub use std::sync::Arc;
 use std::{env, fs};
+use tokio::runtime::Runtime;
 pub use tokio::sync::RwLock;
 
 // Logging
@@ -30,11 +31,10 @@ use config::Config;
 use config::Env;
 use connection_manager::ConnectionManager;
 
+pub use client::{Client, TOKEN_MANAGER};
 pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
-
-use crate::client::Client;
 
 lazy_static! {
     /// Represents @esm/config.yml
@@ -69,6 +69,9 @@ lazy_static! {
 
     /// The actual connection to the bot - Used internally
     pub static ref CLIENT: RwLock<Client> = RwLock::new(Client::new());
+
+    /// The runtime for the asynchronous code
+    pub static ref TOKIO_RUNTIME: Arc<Runtime> = Arc::new(tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap());
 }
 
 fn initialize_logger() {
@@ -118,9 +121,8 @@ fn initialize_logger() {
 // START Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
 #[arma]
-#[tokio::main]
-pub async fn init() -> Extension {
-    trace!("[#init] - Starting");
+pub fn init() -> Extension {
+    debug!("[#init] - Starting");
 
     // Start the logger
     initialize_logger();
@@ -148,79 +150,77 @@ pub fn pre_init(
     vg_enabled: bool,
     vg_max_sizes: String,
 ) {
-    tokio::spawn(async move {
-        trace!(
-            r#"[#pre_init]
-                server_name: {:?}
-                price_per_object: {:?}
-                territory_lifetime: {:?}
-                territory_data: {:?}
-                vg_enabled: {:?}
-                vg_max_sizes: {:?}
-            "#,
-            server_name,
-            price_per_object,
-            territory_lifetime,
-            territory_data,
-            vg_enabled,
-            vg_max_sizes
-        );
+    debug!(
+        r#"[#pre_init]
+            server_name: {:?}
+            price_per_object: {:?}
+            territory_lifetime: {:?}
+            territory_data: {:?}
+            vg_enabled: {:?}
+            vg_max_sizes: {:?}
+        "#,
+        server_name, price_per_object, territory_lifetime, territory_data, vg_enabled, vg_max_sizes
+    );
 
-        // Only allow this method to be called properly once
-        if READY.load(Ordering::SeqCst) {
-            warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
-            return;
-        }
-
-        info!("[extension#pre_init] Exile Server Manager (extension) is booting");
-
-        info!("[extension#pre_init]    Validating config file");
-        if let Err(e) = CONFIG.validate() {
-            error!("[extension#pre_init] Boot failed - Invalid config file");
-            warn!("[config#validate] {}", e);
-            error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
-            return;
-        }
-
-        info!("[extension#pre_init]    Validating initialization package");
-        // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
-        let init = Init {
-            server_name,
-            price_per_object,
-            territory_lifetime,
-            territory_data,
-            vg_enabled,
-            vg_max_sizes,
-            server_start_time: Utc::now(),
-            extension_version: format!(
-                "{}+{}",
-                env!("CARGO_PKG_VERSION"),
-                std::include_str!("../.build-sha")
-            ),
-        };
-
-        debug!("{:#?}", init);
-        if let Err(errors) = init.validate() {
-            error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
-
-            for error in errors {
-                warn!("[init#validate] {error}");
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            // Only allow this method to be called properly once
+            if READY.load(Ordering::SeqCst) {
+                warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
+                return;
             }
 
-            error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
-            return;
-        }
+            info!("[extension#pre_init] Exile Server Manager (extension) is booting");
+            info!("[extension#pre_init]    Validating config file");
 
-        info!(
-            "[extension#pre_init]    Greeting our new friend - Hello {}!",
-            init.server_name
-        );
-        write_lock!(ARMA).initialize(init, callback);
+            if let Err(e) = CONFIG.validate() {
+                error!("[extension#pre_init] Boot failed - Invalid config file");
+                warn!("[config#validate] {}", e);
+                error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
+                return;
+            }
 
-        info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-        read_lock!(BOT).connect();
+            info!("[extension#pre_init]    Validating initialization package");
 
-        info!("[extension#pre_init] Boot completed");
+            // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
+            let init = Init {
+                server_name,
+                price_per_object,
+                territory_lifetime,
+                territory_data,
+                vg_enabled,
+                vg_max_sizes,
+                server_start_time: Utc::now(),
+                extension_version: format!(
+                    "{}+{}",
+                    env!("CARGO_PKG_VERSION"),
+                    std::include_str!("../.build-sha")
+                ),
+            };
+
+            debug!("{:#?}", init);
+            if let Err(errors) = init.validate() {
+                error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
+
+                for error in errors {
+                    warn!("[init#validate] {error}");
+                }
+
+                error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+                return;
+            }
+
+            info!(
+                "[extension#pre_init]    Greeting our new friend - Hello {}!",
+                init.server_name
+            );
+            write_lock!(ARMA).initialize(init, callback);
+
+            info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
+            read_lock!(BOT).connect().await;
+
+            info!("[extension#pre_init] Boot completed");
+        });
     });
 }
 
@@ -231,33 +231,37 @@ pub fn send_message(
     metadata: String,
     errors: String,
 ) {
-    tokio::spawn(async move {
-        debug!(
-            "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
-            id, message_type, data, metadata, errors
-        );
+    debug!(
+        "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
+        id, message_type, data, metadata, errors
+    );
 
-        let message = match Message::from_arma(id, message_type, data, metadata, errors) {
-            Ok(m) => m,
-            Err(e) => return error!("[extension#send_message] {}", e),
-        };
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            let message = match Message::from_arma(id, message_type, data, metadata, errors) {
+                Ok(m) => m,
+                Err(e) => return error!("[extension#send_message] {}", e),
+            };
 
-        if let Err(e) = write_lock!(crate::BOT).send(message).await {
-            error!("[extension#send_message] {}", e);
-        };
+            if let Err(e) = write_lock!(crate::BOT).send(message).await {
+                error!("[extension#send_message] {}", e);
+            };
+        });
     });
 }
 
 pub fn send_to_channel(id: String, content: String) {
-    tokio::spawn(async move {
-        debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
+    debug!("[#send_to_channel]\nid: {:?}\ncontent: {:?}", id, content);
 
-        let mut message = Message::new(Type::Event);
-        message.data = Data::SendToChannel(data::SendToChannel { id, content });
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            let mut message = Message::new(Type::Event);
+            message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-        if let Err(e) = write_lock!(crate::BOT).send(message).await {
-            error!("[extension#send_to_channel] {}", e);
-        };
+            if let Err(e) = write_lock!(crate::BOT).send(message).await {
+                error!("[extension#send_to_channel] {}", e);
+            };
+        });
     });
 }
 
@@ -276,20 +280,29 @@ pub fn log_level() -> String {
 }
 
 pub fn log(log_level: String, caller: String, content: String) {
-    tokio::spawn(async move {
-        let message = format!("{caller} | {content}");
+    trace!(
+        "[extension#log]\nlog_level: {:?}\ncaller: {:?}\ncontent: {:?}",
+        log_level,
+        caller,
+        content
+    );
 
-        match log_level.to_ascii_lowercase().as_str() {
-            "trace" => trace!("{message}"),
-            "debug" => debug!("{message}"),
-            "info" => info!("{message}"),
-            "warn" => warn!("{message}"),
-            "error" => error!("{message}"),
-            t => error!(
-                "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
-                t
-            ),
-        }
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            let message = format!("{caller} | {content}");
+
+            match log_level.to_ascii_lowercase().as_str() {
+                "trace" => trace!("{message}"),
+                "debug" => debug!("{message}"),
+                "info" => info!("{message}"),
+                "warn" => warn!("{message}"),
+                "error" => error!("{message}"),
+                t => error!(
+                    "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
+                    t
+                ),
+            }
+        });
     });
 }
 
