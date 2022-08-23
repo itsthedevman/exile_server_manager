@@ -252,7 +252,7 @@ impl TokenManager {
         let mut key_contents = Vec::new();
         match file.read_to_end(&mut key_contents) {
                 Ok(_) => {
-                    debug!(
+                    trace!(
                         "[token_manager::load] esm.key - {}",
                         String::from_utf8_lossy(&key_contents)
                     );
@@ -262,8 +262,8 @@ impl TokenManager {
 
         match serde_json::from_slice(&key_contents) {
             Ok(token) => {
-                debug!("[token_manager::load] Token decoded - {}", token);
                 self.token.update_from(token);
+                debug!("[token_manager::load] Token loaded - {}", self.token);
                 Ok(())
             }
             Err(e) => {
