@@ -3,14 +3,16 @@ use regex::Captures;
 
 type CompilerResult = Result<Option<String>, CompilerError>;
 
-const REGEX_OS_PATH: &str = r"\bos_path!\((.+,?)?\)";
-const REGEX_EQUAL_TYPE: &str = r"\btype\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_NOT_EQUAL_TYPE: &str = r"\btype_ne\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_RV_TYPE: &str = r"\brv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_GET: &str = r"\bget!\((.+)?,\s*(.+)?\)";
-const REGEX_GET_WITH_DEFAULT: &str = r"\bget!\((.+),\s*(.+),\s*(.*)*\)";
-const REGEX_LOG: &str = r#"\b(info|warn|debug|error)!\((.+)?\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"\b(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
+const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
+const REGEX_EQUAL_TYPE: &str = r"type\?\((\w+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((\w+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_GET: &str = r"get!\((\w+)?,\s*(.+)?\)";
+const REGEX_GET_WITH_DEFAULT: &str = r"get!\((\w+),\s*(.+),\s*(.*)*\)";
+const REGEX_LOG: &str = r#"(info|warn|debug|error)!\((.+)?\)"#;
+const REGEX_LOG_WITH_ARGS: &str = r#"(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
+const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
+const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -22,7 +24,9 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
         .replace(REGEX_LOG_WITH_ARGS, log)
-        .replace(REGEX_LOG, log);
+        .replace(REGEX_LOG, log)
+        .replace(REGEX_NOT_NIL, not_nil)
+        .replace(REGEX_NIL, nil);
 }
 
 // os_path!("my_mod", "some_dir") -> Windows: "my_mod\some_dir" - Linux: "my_mod/some_dir"
@@ -98,14 +102,14 @@ fn type_eq(context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("{comparee} isEqualType {arma_type}")))
 }
 
-// type_ne?([], ARRAY) -> [] isEqualType []
-// type_ne?(_some_var, HASH) -> _some_var isEqualType createHashMap
+// !type?([], ARRAY) -> !([] isEqualType [])
+// !type?(_some_var, HASH) -> !(_some_var isEqualType createHashMap)
 fn type_ne(context: &Data, matches: &Captures) -> CompilerResult {
     let comparee = match matches.get(1) {
         Some(c) => c.as_str(),
         None => {
             return Err(format!(
-                "{} -> type_ne? - Wrong number of arguments, given 0, expected 2",
+                "{} -> !type? - Wrong number of arguments, given 0, expected 2",
                 context.file_path
             )
             .into())
@@ -121,7 +125,7 @@ fn type_ne(context: &Data, matches: &Captures) -> CompilerResult {
             "NIL" => "nil",
             t => {
                 return Err(format!(
-                    "{} -> type_ne? - Unsupported type provided: {t}",
+                    "{} -> !type? - Unsupported type provided: {t}",
                     context.file_path
                 )
                 .into())
@@ -129,7 +133,7 @@ fn type_ne(context: &Data, matches: &Captures) -> CompilerResult {
         },
         None => {
             return Err(format!(
-                "{} -> type_ne? - Wrong number of arguments, given 1, expected 2",
+                "{} -> !type? - Wrong number of arguments, given 1, expected 2",
                 context.file_path
             )
             .into())
@@ -236,11 +240,81 @@ fn log(context: &Data, matches: &Captures) -> CompilerResult {
     }))
 }
 
+fn not_nil(context: &Data, matches: &Captures) -> CompilerResult {
+    let context = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> !nil? - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("!(isNil \"{context}\")")))
+}
+
+fn nil(context: &Data, matches: &Captures) -> CompilerResult {
+    let context = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> nil? - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("isNil \"{context}\"")))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use compiler::Data;
     use regex::Regex;
+
+    #[test]
+    fn it_replaces_type() {
+        let content = r#"type?(_variable, STRING);"#;
+
+        let regex = Regex::new(REGEX_EQUAL_TYPE).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            match type_eq(&Data::default(), &capture).unwrap() {
+                Some(result) => {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+                None => {}
+            };
+        }
+
+        assert_eq!(output, r#"_variable isEqualType "";"#);
+    }
+
+    #[test]
+    fn it_replaces_not_type() {
+        let content = r#"!type?(VARIABLE, HASH);"#;
+
+        let regex = Regex::new(REGEX_NOT_EQUAL_TYPE).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            match type_ne(&Data::default(), &capture).unwrap() {
+                Some(result) => {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+                None => {}
+            };
+        }
+
+        assert_eq!(output, r#"!(VARIABLE isEqualType createHashMap);"#);
+    }
 
     #[test]
     fn it_replaces_get() {
@@ -390,5 +464,45 @@ mod tests {
             ["ESMs_compiler_test", format["Logging %1", true], "info"] call ESMs_util_log;
         "#
         )
+    }
+
+    #[test]
+    fn it_replaces_nil() {
+        let content = r#"nil?(_variable);"#;
+
+        let regex = Regex::new(REGEX_NIL).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            match nil(&Data::default(), &capture).unwrap() {
+                Some(result) => {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+                None => {}
+            };
+        }
+
+        assert_eq!(output, r#"isNil "_variable";"#)
+    }
+
+    #[test]
+    fn it_replaces_not_nil() {
+        let content = r#"!nil?(_variable);"#;
+
+        let regex = Regex::new(REGEX_NOT_NIL).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            match not_nil(&Data::default(), &capture).unwrap() {
+                Some(result) => {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+                None => {}
+            };
+        }
+
+        assert_eq!(output, r#"!(isNil "_variable");"#)
     }
 }
