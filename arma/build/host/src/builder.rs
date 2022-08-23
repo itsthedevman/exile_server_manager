@@ -311,11 +311,16 @@ impl Builder {
         let esm_path = self.local_build_path.join("@esm");
 
         // Delete @esm and recreate it
-        fs::remove_dir_all(&esm_path)?;
-        fs::create_dir_all(&esm_path)?;
+        if esm_path.exists() {
+            fs::remove_dir_all(&esm_path)?;
+            fs::create_dir_all(&esm_path)?;
+        }
 
         // Create @esm/addons
-        fs::create_dir_all(&esm_path.join("addons"))?;
+        let addons_path = esm_path.join("addons");
+        if !addons_path.exists() {
+            fs::create_dir_all(&addons_path)?;
+        }
 
         // Remove some build files
         let paths = vec![
@@ -329,7 +334,7 @@ impl Builder {
 
         for path in paths {
             let path = self.local_build_path.join(path);
-            if path.is_file() {
+            if path.exists() && path.is_file() {
                 fs::remove_file(&path)?;
             }
         }
@@ -716,6 +721,10 @@ impl Builder {
                 Highlight {
                     regex: Regex::new(r"(?i)debug").unwrap(),
                     color: [51, 51, 51]
+                },
+                Highlight {
+                    regex: Regex::new(r"(?i)trace").unwrap(),
+                    color: [255, 153, 102]
                 }
             ];
         }
