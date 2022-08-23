@@ -777,7 +777,7 @@ pub fn local_command(cmd: &str, args: Vec<&str>) -> Result<String, BuildError> {
 
 fn git_sha_short() -> String {
     match local_command("git", vec!["rev-parse", "--short", "HEAD"]) {
-        Ok(o) => o,
+        Ok(o) => o.trim().to_string(),
         Err(_e) => "FAILED TO RETRIEVE".into(),
     }
 }
