@@ -1,12 +1,20 @@
 #[macro_export]
 macro_rules! read_lock {
     ($reader:expr) => {{
+        use rand::prelude::*;
+
+        let mut rng = rand::thread_rng();
+        let delay: u64 = rng.gen_range(1..750);
+
         let mut container: Option<tokio::sync::RwLockReadGuard<_>> = None;
         while container.is_none() {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+
             if let Ok(r) = $reader.try_read() {
                 container = Some(r);
             }
         }
+
         container.unwrap()
     }};
 }
@@ -14,12 +22,20 @@ macro_rules! read_lock {
 #[macro_export]
 macro_rules! write_lock {
     ($writer:expr) => {{
+        use rand::prelude::*;
+
+        let mut rng = rand::thread_rng();
+        let delay: u64 = rng.gen_range(1..750);
+
         let mut container: Option<tokio::sync::RwLockWriteGuard<_>> = None;
         while container.is_none() {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+
             if let Ok(w) = $writer.try_write() {
                 container = Some(w);
             };
         }
+
         container.unwrap()
     }};
 }
