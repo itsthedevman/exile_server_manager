@@ -179,7 +179,7 @@ impl Client {
                 };
 
                 let endpoint = match *read_lock!(ENDPOINT) {
-                    Some(ref e) => e.clone(),
+                    Some(e) => e,
                     None => {
                         return Err(
                             "[client#send] No endpoint found - Did you not call #connect?".into(),
