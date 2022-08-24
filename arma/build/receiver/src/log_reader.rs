@@ -42,7 +42,7 @@ impl FileReader {
             None => return log_lines,
         };
 
-        for _ in 0..5 {
+        for _ in 0..25 {
             let mut line = String::new();
             if let Ok(bytes) = reader.read_line(&mut line) {
                 if bytes == 0 || line.is_empty() {
