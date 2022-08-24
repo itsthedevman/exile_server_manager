@@ -28,7 +28,6 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-
 private _functionName = _this select 0;
 private _data = _this select 1;
 

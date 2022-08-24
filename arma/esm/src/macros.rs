@@ -4,11 +4,11 @@ macro_rules! read_lock {
         use rand::prelude::*;
 
         let mut rng = rand::thread_rng();
-        let delay: u64 = rng.gen_range(1..750);
+        let delay: u64 = rng.gen_range(1..250_000);
 
         let mut container: Option<tokio::sync::RwLockReadGuard<_>> = None;
         while container.is_none() {
-            std::thread::sleep(std::time::Duration::from_millis(delay));
+            std::thread::sleep(std::time::Duration::from_nanos(delay));
 
             if let Ok(r) = $reader.try_read() {
                 container = Some(r);
@@ -25,11 +25,11 @@ macro_rules! write_lock {
         use rand::prelude::*;
 
         let mut rng = rand::thread_rng();
-        let delay: u64 = rng.gen_range(1..750);
+        let delay: u64 = rng.gen_range(1..250_000);
 
         let mut container: Option<tokio::sync::RwLockWriteGuard<_>> = None;
         while container.is_none() {
-            std::thread::sleep(std::time::Duration::from_millis(delay));
+            std::thread::sleep(std::time::Duration::from_nanos(delay));
 
             if let Ok(w) = $writer.try_write() {
                 container = Some(w);

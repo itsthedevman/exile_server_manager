@@ -34,7 +34,7 @@ if (nil?(_id) || { nil?(_data) }) exitWith { nil };
 	private _value = get!(_data, _variableName);
 	if (nil?(_value)) then { continue };
 
-	info!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
+	debug!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
 	missionNameSpace setVariable [_variableName, _value];
 }
 forEach (getArray (configFile >> "CfgESM" >> "globalVariables"));

@@ -64,7 +64,7 @@ impl Arma {
             vec!["metadata".to_arma(), metadata.to_arma()],
         ];
 
-        debug!("[arma#send]\n{message:?}");
+        trace!("[arma#send] {message:?}");
 
         match &self.callback {
             Some(ctx) => {
@@ -111,12 +111,12 @@ impl Arma {
                 "ESM_BuildNumber": std::include_str!("../.build-sha"),
                 "ESM_CommunityID": token.community_id(),
                 "ESM_ExtDBVersion": self.extdb_version(),
-                "ESM_Gambling_Modifier": data.gambling_modifier,
-                "ESM_Gambling_PayoutBase": data.gambling_payout,
-                "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max,
-                "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid,
-                "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min,
-                "ESM_Gambling_WinPercentage": data.gambling_win_chance,
+                "ESM_Gambling_Modifier": data.gambling_modifier.parse::<f32>()?,
+                "ESM_Gambling_PayoutBase": data.gambling_payout.parse::<f32>()?,
+                "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max.parse::<f32>()?,
+                "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid.parse::<f32>()?,
+                "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min.parse::<f32>()?,
+                "ESM_Gambling_WinPercentage": data.gambling_win_chance.parse::<f32>()?,
                 "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
                 "ESM_Logging_DemotePlayer": data.logging_demote_player,
                 "ESM_Logging_Exec": data.logging_exec,
@@ -130,8 +130,8 @@ impl Arma {
                 "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
                 "ESM_LoggingChannelID": data.logging_channel_id,
                 "ESM_ServerID": token.server_id(),
-                "ESM_Taxes_TerritoryPayment": data.territory_payment_tax,
-                "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax,
+                "ESM_Taxes_TerritoryPayment": data.territory_payment_tax.parse::<f32>()?,
+                "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax.parse::<f32>()?,
                 "ESM_TerritoryAdminUIDs": data.territory_admins,
                 "ESM_Version": env!("CARGO_PKG_VERSION")
             }),

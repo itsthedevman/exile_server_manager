@@ -22,7 +22,7 @@ impl Bot {
     }
 
     pub async fn send(&self, message: Message) -> ESMResult {
-        write_lock!(crate::CLIENT).send(message).await
+        crate::connection_manager::CLIENT.send(message).await
     }
 
     pub async fn on_connect(&self) -> ESMResult {
@@ -35,8 +35,6 @@ impl Bot {
     }
 
     pub async fn on_message(&self, message: Message) -> ESMResult {
-        debug!("[bot#on_message] {:#?}", message);
-
         if !message.errors.is_empty() {
             for error in message.errors {
                 error!("{}", error.error_content);

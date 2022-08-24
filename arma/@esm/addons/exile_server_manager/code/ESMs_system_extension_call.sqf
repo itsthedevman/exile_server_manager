@@ -45,14 +45,15 @@ else
 
 	if (!type?(_arguments, ARRAY)) exitWith
 	{
-		info!("Invalid arguments provided for extension call to ""%1""", _function);
+		error!("Invalid arguments provided for extension call to ""%1""", _function);
 		false
 	};
 };
 
 // Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
-	debug!("Input is %1 (%2)", _this, typeName(_this));
+	trace!("[%1] Sanitizing input with type (%2) - %3", _id, typeName(_this), _this);
+
 	switch (typeName(_this)) do
 	{
 		case "STRING";
@@ -63,18 +64,18 @@ private _sanitizer = {
 
 		case "ARRAY":
 		{
-			[_this, _sanitizer] call ESMs_util_array_map;
+			[_this, _sanitizer] call ESMs_util_array_map
 		};
 
 		case "SCALAR":
 		{
 			// Because arma
-			str(_this);
+			str(_this)
 		};
 
 		case "HASHMAP":
 		{
-			[_this call ESMs_util_hashmap_toArray, _sanitizer] call ESMs_util_array_map;
+			[_this call ESMs_util_hashmap_toArray, _sanitizer] call ESMs_util_array_map
 		};
 
 		case "OBJECT";
@@ -85,22 +86,19 @@ private _sanitizer = {
 
 		default
 		{
-			error!("Unsupported type provided in arguments. Type: %2 | Value: %1", _this, typeName _this);
+			error!("[%1] Unsupported type provided in arguments. Type: %3 | Value: %2", _id, _this, typeName _this);
 			nil
 		};
 	};
 };
 
 // Using the sanitizer, sanitize the provided arguments
-debug!("[%1] PRE SANITIZE |%2|", _id, _arguments);
 private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
-
-debug!("[%1] Calling extension endpoint ""%2"" with %3", _id, _function, _sanitizedArguments);
+debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
 
 // Call the extension and process the result
 private _result = "esm" callExtension [_function, _sanitizedArguments];
-
-debug!("[%1] Extension returned (%2): %3", _id, typeName _result, _result);
+debug!("[%1] Endpoint ""%2"" replied with %3: %4", _id, _function, typeName _result, _result);
 
 // If there is an issue, Arma-rs will return an error code.
 // Possible error codes:
@@ -112,7 +110,7 @@ debug!("[%1] Extension returned (%2): %3", _id, typeName _result, _result);
 // 		9 	Application error, from using a Result
 if ((_result select 1) > 0) exitWith
 {
-	error!("Extension barfed. Error code: %1", _result select 1);
+	error!("[%1] Extension barfed. Error code: %2", _id, _result select 1);
 	false
 };
 
@@ -121,8 +119,9 @@ if ((_result select 1) > 0) exitWith
 //     102: SYNTAX_ERROR_WRONG_PARAMS_TYPE
 //     201: PARAMS_ERROR_TOO_MANY_ARGS
 //     301: EXECUTION_WARNING_TAKES_TOO_LONG
-if ((_result select 2) > 0) exitWith {
-	error!("Arma barfed. Error code: %1", _result select 2);
+if ((_result select 2) > 0) exitWith
+{
+	error!("[%1] Arma barfed. Error code: %2", _id, _result select 2);
 	false
 };
 

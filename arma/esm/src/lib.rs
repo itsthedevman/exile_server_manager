@@ -67,9 +67,6 @@ lazy_static! {
     /// Represents the connection to the bot
     pub static ref BOT: Arc<Bot> = Arc::new(Bot::new());
 
-    /// The actual connection to the bot - Used internally
-    pub static ref CLIENT: RwLock<Client> = RwLock::new(Client::new());
-
     /// The runtime for the asynchronous code
     pub static ref TOKIO_RUNTIME: Arc<Runtime> = Arc::new(tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap());
 }
@@ -110,10 +107,10 @@ fn initialize_logger() {
     };
 
     info!(
-        "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {:#?}\n----------------------------------",
+        "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {}\n----------------------------------",
         env!("CARGO_PKG_VERSION"),
         std::include_str!("../.build-sha"),
-        crate::CONFIG.to_hashmap()
+        CONFIG.to_string()
     );
 }
 
@@ -122,7 +119,7 @@ fn initialize_logger() {
 ///////////////////////////////////////////////////////////////////////
 #[arma]
 pub fn init() -> Extension {
-    debug!("[extension#init] - Starting");
+    debug!("[extension#init] - Initializing");
 
     // Start the logger
     initialize_logger();
@@ -133,15 +130,16 @@ pub fn init() -> Extension {
 
     Extension::build()
         .command("log", log)
-        .command("utc_timestamp", utc_timestamp)
+        .command("log_output", log_output)
         .command("log_level", log_level)
+        .command("utc_timestamp", utc_timestamp)
         .command("pre_init", pre_init)
         .command("send_message", send_message)
         .command("send_to_channel", send_to_channel)
         .finish()
 }
 
-pub fn pre_init(
+fn pre_init(
     callback: Context,
     server_name: String,
     price_per_object: NumberString,
@@ -163,127 +161,134 @@ pub fn pre_init(
         server_name, price_per_object, territory_lifetime, territory_data, vg_enabled, vg_max_sizes
     );
 
-    TOKIO_RUNTIME.block_on(async {
-        // Only allow this method to be called properly once
-        if READY.load(Ordering::SeqCst) {
-            warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
-            return;
-        }
-
-        info!("[extension#pre_init] Exile Server Manager (extension) is booting");
-        info!("[extension#pre_init]    Validating config file");
-
-        if let Err(e) = CONFIG.validate() {
-            error!("[extension#pre_init] Boot failed - Invalid config file");
-            warn!("[config#validate] {}", e);
-            error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
-            return;
-        }
-
-        info!("[extension#pre_init]    Validating initialization package");
-
-        // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
-        let init = Init {
-            server_name,
-            price_per_object,
-            territory_lifetime,
-            territory_data,
-            vg_enabled,
-            vg_max_sizes,
-            server_start_time: Utc::now(),
-            extension_version: format!(
-                "{}+{}",
-                env!("CARGO_PKG_VERSION"),
-                std::include_str!("../.build-sha")
-            ),
-        };
-
-        debug!("{:#?}", init);
-        if let Err(errors) = init.validate() {
-            error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
-
-            for error in errors {
-                warn!("[init#validate] {error}");
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            // Only allow this method to be called properly once
+            if READY.load(Ordering::SeqCst) {
+                warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
+                return;
             }
 
-            error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
-            return;
-        }
+            info!("[extension#pre_init] Exile Server Manager (extension) is booting");
+            info!("[extension#pre_init]    Validating config file");
 
-        info!(
-            "[extension#pre_init]    Greeting our new friend - Hello {}!",
-            init.server_name
-        );
-        write_lock!(ARMA).initialize(init, callback);
+            if let Err(e) = CONFIG.validate() {
+                error!("[extension#pre_init] Boot failed - Invalid config file");
+                warn!("[config#validate] {}", e);
+                error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
+                return;
+            }
 
-        info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-        BOT.connect().await;
+            info!("[extension#pre_init]    Validating initialization package");
 
-        info!("[extension#pre_init] Boot completed in {:.2?}", timer.elapsed());
+            // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
+            let init = Init {
+                server_name,
+                price_per_object,
+                territory_lifetime,
+                territory_data,
+                vg_enabled,
+                vg_max_sizes,
+                server_start_time: Utc::now(),
+                extension_version: format!(
+                    "{}+{}",
+                    env!("CARGO_PKG_VERSION"),
+                    std::include_str!("../.build-sha")
+                ),
+            };
+
+            if let Err(errors) = init.validate() {
+                debug!("{:#?}", init);
+                error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
+
+                for error in errors {
+                    warn!("[init#validate] {error}");
+                }
+
+                error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+                return;
+            }
+
+            info!(
+                "[extension#pre_init]    Greeting our new friend - Hello {}!",
+                init.server_name
+            );
+            write_lock!(ARMA).initialize(init, callback);
+
+            info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
+            BOT.connect().await;
+
+            info!("[extension#pre_init] Boot completed in {:.2?}", timer.elapsed());
+        });
     });
 }
 
-pub fn send_message(
-    id: String,
-    message_type: String,
-    data: String,
-    metadata: String,
-    errors: String,
-) {
+fn send_message(id: String, message_type: String, data: String, metadata: String, errors: String) {
     let timer = std::time::Instant::now();
     debug!(
         "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
         id, message_type, data, metadata, errors
     );
 
-    TOKIO_RUNTIME.block_on(async {
-        let message = match Message::from_arma(id, message_type, data, metadata, errors) {
-            Ok(m) => m,
-            Err(e) => return error!("[extension#send_message] {}", e),
-        };
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            let message = match Message::from_arma(id, message_type, data, metadata, errors) {
+                Ok(m) => m,
+                Err(e) => return error!("[extension#send_message] {}", e),
+            };
 
-        if let Err(e) = crate::BOT.send(message).await {
-            error!("[extension#send_message] {}", e);
-        };
+            if let Err(e) = crate::BOT.send(message).await {
+                error!("[extension#send_message] {}", e);
+            };
 
-        info!("[extension#send_message] Took {:.2?}", timer.elapsed());
+            info!("[extension#send_message] Took {:.2?}", timer.elapsed());
+        });
     });
 }
 
-pub fn send_to_channel(id: String, content: String) {
+fn send_to_channel(id: String, content: String) {
     let timer = std::time::Instant::now();
     debug!(
         "[extension#send_to_channel] id: {:?} - content: {:?}",
         id, content
     );
 
-    TOKIO_RUNTIME.block_on(async {
-        let mut message = Message::new(Type::Event);
-        message.data = Data::SendToChannel(data::SendToChannel { id, content });
+    std::thread::spawn(move || {
+        TOKIO_RUNTIME.block_on(async {
+            let mut message = Message::new(Type::Event);
+            message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-        if let Err(e) = crate::BOT.send(message).await {
-            error!("[extension#send_to_channel] {}", e);
-        };
+            if let Err(e) = crate::BOT.send(message).await {
+                error!("[extension#send_to_channel] {}", e);
+            };
 
-        info!("[extension#send_to_channel] Took {:.2?}", timer.elapsed());
+            info!("[extension#send_to_channel] Took {:.2?}", timer.elapsed());
+        });
     });
 }
 
-pub fn utc_timestamp() -> String {
+fn utc_timestamp() -> String {
     let timestamp = Utc::now().to_rfc3339();
     debug!("[extension#utc_timestamp] - {timestamp}");
 
     timestamp
 }
 
-pub fn log_level() -> String {
+fn log_level() -> String {
     let log_level = CONFIG.log_level.to_lowercase();
     debug!("[extension#log_level] - {log_level}");
 
     log_level
 }
 
-pub fn log(log_level: String, caller: String, content: String) {
+fn log_output() -> String {
+    let log_output = CONFIG.log_output.to_lowercase();
+    debug!("[extension#log_output] - {log_output}");
+
+    log_output
+}
+
+fn log(log_level: String, caller: String, content: String) {
     let timer = std::time::Instant::now();
     trace!(
         "[extension#log] log_level: {:?} - caller: {:?} - content size: {:?} bytes",

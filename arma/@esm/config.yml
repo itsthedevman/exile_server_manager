@@ -6,4 +6,5 @@
 #   extdb_conf_header_name:     The name of the section header in ExtDB's config file. This section contains the connection details for the database
 #   extdb_version:              The version of ExtDB the server is using. This is mainly used for development
 #   logging_path:               The full path plus filename for the extension to log to
-#   env:                        The ENV that the code should run in. Valid options: production, test, development
+#   env:                        The ENV that the code should run in. Valid options: production, test, development. Default: production
+#   log_output:                 The output destination for log calls in the SQF code. Valid options: rpt, extension, both. Default: extension

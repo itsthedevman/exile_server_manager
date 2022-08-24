@@ -28,11 +28,10 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
+if (nil?(_this)) exitWith { nil };
+if (count(_this) isEqualTo 0) exitWith { _this };
+
 private _result = _this;
-
-// The extension sends back a empty string after receiving a call
-if (nil?(_result) || { type?(_result, STRING) }) exitWith { true };
-
 if (type?(_result, STRING)) then
 {
 	// Only convert array strings. Ignore everything else. (91 == [) and (93 == ])

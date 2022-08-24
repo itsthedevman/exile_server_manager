@@ -31,3 +31,15 @@ impl From<&str> for ESMError {
         Self(e.to_string())
     }
 }
+
+impl From<std::num::ParseIntError> for ESMError {
+    fn from(e: std::num::ParseIntError) -> Self {
+        Self(e.to_string())
+    }
+}
+
+impl From<std::num::ParseFloatError> for ESMError {
+    fn from(e: std::num::ParseFloatError) -> Self {
+        Self(e.to_string())
+    }
+}

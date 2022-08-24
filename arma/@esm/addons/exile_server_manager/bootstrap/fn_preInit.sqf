@@ -33,19 +33,17 @@
  **/
 
 
-private ['_code', '_function', '_file', '_fileContent'];
-
 {
-    _code = '';
-    _function = _x select 0;
-    _file = _x select 1;
+    private _code = '';
+    private _function = _x select 0;
+    private _file = _x select 1;
 
     if (isText (missionConfigFile >> 'CfgExileCustomCode' >> _function)) then
     {
         _file = getText (missionConfigFile >> 'CfgExileCustomCode' >> _function);
     };
 
-    _fileContent = preprocessFileLineNumbers _file;
+    private _fileContent = preprocessFileLineNumbers _file;
 
     if (_fileContent isEqualTo '') then
     {
@@ -59,28 +57,27 @@ private ['_code', '_function', '_file', '_fileContent'];
     missionNamespace setVariable [_function, _code];
 }
 forEach
-// ["ESMs_", "exile_server_manager\code\ESMs_.sqf"],
 [
-    ["ESMs_object_embed_addField", "exile_server_manager\code\ESMs_object_embed_addField.sqf"],
-    ["ESMs_object_embed_create", "exile_server_manager\code\ESMs_object_embed_create.sqf"],
-    ["ESMs_object_message_respond_to", "exile_server_manager\code\ESMs_object_message_respond_to.sqf"],
-    ["ESMs_command_reward", "exile_server_manager\code\ESMs_command_reward.sqf"],
-    ["ESMs_command_sqf", "exile_server_manager\code\ESMs_command_sqf.sqf"],
-    ["ESMs_object_message_respond_withError", "exile_server_manager\code\ESMs_object_message_respond_withError.sqf"],
-    ["ESMs_system_extension_call", "exile_server_manager\code\ESMs_system_extension_call.sqf"],
-    ["ESMs_system_extension_callback", "exile_server_manager\code\ESMs_system_extension_callback.sqf"],
-    ["ESMs_system_extension_processResult", "exile_server_manager\code\ESMs_system_extension_processResult.sqf"],
-    ["ESMs_system_network_discord_log", "exile_server_manager\code\ESMs_system_network_discord_log.sqf"],
-    ["ESMs_system_network_discord_send_to", "exile_server_manager\code\ESMs_system_network_discord_send_to.sqf"],
-    ["ESMs_system_process_postInit", "exile_server_manager\code\ESMs_system_process_postInit.sqf"],
-	["ESMs_system_process_preInit", "exile_server_manager\code\ESMs_system_process_preInit.sqf"],
-    ["ESMs_util_array_all", "exile_server_manager\code\ESMs_util_array_all.sqf"],
-    ["ESMs_util_array_isValidHashmap", "exile_server_manager\code\ESMs_util_array_isValidHashmap.sqf"],
-    ["ESMs_util_array_map", "exile_server_manager\code\ESMs_util_array_map.sqf"],
-    ["ESMs_util_hashmap_fromArray", "exile_server_manager\code\ESMs_util_hashmap_fromArray.sqf"],
-    ["ESMs_util_hashmap_get", "exile_server_manager\code\ESMs_util_hashmap_get.sqf"],
-    ["ESMs_util_hashmap_toArray", "exile_server_manager\code\ESMs_util_hashmap_toArray.sqf"],
-    ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
+    define_fn!("ESMs_object_embed_addField"),
+    define_fn!("ESMs_object_embed_create"),
+    define_fn!("ESMs_object_message_respond_to"),
+    define_fn!("ESMs_command_reward"),
+    define_fn!("ESMs_command_sqf"),
+    define_fn!("ESMs_object_message_respond_withError"),
+    define_fn!("ESMs_system_extension_call"),
+    define_fn!("ESMs_system_extension_callback"),
+    define_fn!("ESMs_system_extension_processResult"),
+    define_fn!("ESMs_system_network_discord_log"),
+    define_fn!("ESMs_system_network_discord_send_to"),
+    define_fn!("ESMs_system_process_postInit"),
+	define_fn!("ESMs_system_process_preInit"),
+    define_fn!("ESMs_util_array_all"),
+    define_fn!("ESMs_util_array_isValidHashmap"),
+    define_fn!("ESMs_util_array_map"),
+    define_fn!("ESMs_util_hashmap_fromArray"),
+    define_fn!("ESMs_util_hashmap_get"),
+    define_fn!("ESMs_util_hashmap_toArray"),
+    define_fn!("ESMs_util_log")
 ];
 
 [] call ESMs_system_process_preInit;

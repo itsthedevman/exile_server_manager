@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
@@ -23,6 +22,9 @@ pub struct Config {
 
     #[serde(default = "default_extdb_version")]
     pub extdb_version: u8,
+
+    #[serde(default = "default_log_output")]
+    pub log_output: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,12 +33,6 @@ pub enum Env {
     Production,
     Test,
     Development,
-}
-
-impl fmt::Display for Env {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
 }
 
 impl Env {
@@ -89,8 +85,12 @@ fn default_extdb_version() -> u8 {
     0
 }
 
-impl Config {
-    pub fn new() -> Self {
+fn default_log_output() -> String {
+    "extension".into()
+}
+
+impl Default for Config {
+    fn default() -> Self {
         Config {
             connection_url: default_connection_url(),
             logging_path: default_logging_path(),
@@ -99,17 +99,20 @@ impl Config {
             extdb_conf_path: default_extdb_conf_path(),
             extdb_conf_header_name: default_extdb_conf_header_name(),
             extdb_version: default_extdb_version(),
+            log_output: default_log_output(),
         }
     }
+}
 
-    pub fn to_hashmap(&self) -> HashMap<&str, String> {
-        let mut hash = HashMap::new();
+impl std::fmt::Display for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
 
-        hash.insert("connection_url", self.connection_url.clone());
-        hash.insert("logging_path", self.logging_path.clone());
-        hash.insert("log_level", self.log_level.clone());
-
-        hash
+impl Config {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn validate(&self) -> Result<(), String> {
@@ -120,25 +123,15 @@ impl Config {
         match std::net::ToSocketAddrs::to_socket_addrs(&self.connection_url) {
             Ok(mut addr) => match addr.next() {
                 Some(_socket_addr) => Ok(()),
-                None => {
-                    return Err(format!(
-                        "Failed to convert connection url -> {:?}",
-                        self.connection_url
-                    ))
-                }
+                None => Err(format!(
+                    "Failed to convert connection url -> {:?}",
+                    self.connection_url
+                )),
             },
-            Err(e) => {
-                return Err(format!(
-                    "Failed to parse connection url -> {:?}. Reason: {}",
-                    self.connection_url, e
-                ))
-            }
+            Err(e) => Err(format!(
+                "Failed to parse connection url -> {:?}. Reason: {}",
+                self.connection_url, e
+            )),
         }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config::new()
     }
 }

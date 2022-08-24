@@ -7,7 +7,7 @@
  *      If you haven't guessed, it logs a message based on it's severity. See argument "_logLevel" for more details
  *
  * Arguments:
- *      _function   -   The name of the function whom called this log.
+ *      _caller   	-   The name of the function whom called this log.
  *      _message    -   The message to log
  *      _logLevel   -   The level this log should be visible.
  *                          Valid options are "trace", "debug", "info", "warn", "error". Default: "info"
@@ -36,8 +36,6 @@
  *
  **/
 
-private _caller = _this select 0;
-private _message = _this select 1;
 private _logLevel = _this param [2, "info"];
 
 // error: 0, warn: 1, info: 2, debug: 3, trace: 4
@@ -47,12 +45,32 @@ private _currentLogLevel = get!(ESM_LogLevelLookup, ESM_LogLevel, 2);
 // Only log if the log level allows it
 if (_inputLogLevel > _currentLogLevel) exitWith {};
 
+private _message = _this select 1;
+
 // Make sure it's a string
 if (!type?(_message, STRING)) then
 {
 	_message = str(_message);
 };
 
-// Do not use system_extension_call here
-"esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
+private _caller = _this select 0;
+switch (ESM_LogOutput) do
+{
+	case "both":
+	{
+		diag_log format["%1 | %2 - %3", toUpperANSI(_logLevel), _caller, _message];
+		"esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
+	};
+
+	case "rpt":
+	{
+		diag_log format["%1 | %2 - %3", toUpperANSI(_logLevel), _caller, _message];
+	};
+
+	default
+	{
+		"esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
+	};
+};
+
 nil

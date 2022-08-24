@@ -1,6 +1,11 @@
 use crate::*;
 use tokio::time::{sleep, Duration};
 
+lazy_static! {
+    /// The actual connection to the bot - Used internally
+    pub static ref CLIENT: Arc<Client> = Arc::new(Client::new());
+}
+
 pub struct ConnectionManager {
     connected: Arc<AtomicBool>,
     pong_received: Arc<AtomicBool>,
@@ -26,7 +31,7 @@ impl ConnectionManager {
 
         tokio::spawn(async move {
             loop {
-                if let Err(e) = write_lock!(crate::CLIENT).connect().await {
+                if let Err(e) = CLIENT.connect().await {
                     error!("[connection_manager#connect] Failed to connect {e}");
                     sleep(Duration::from_secs(1)).await;
                     continue;

@@ -46,16 +46,18 @@ ESM_Logging_RewardPlayer = true;
 ESM_Logging_TransferPoptabs = true;
 ESM_Logging_UpgradeTerritory = true;
 ESM_LoggingChannelID = "";
-ESM_LogLevel = "log_level" call ESMs_system_extension_call;
+ESM_LogLevel = "info";
 ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
+ESM_LogOutput = "rpt";
 ESM_ServerID = "";
 ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
 ESM_Version = "";
 
-diag_log "Exile Server Manager (mod) is booting";
 info!("Exile Server Manager (mod) is booting");
+ESM_LogLevel = "log_level" call ESMs_system_extension_call;
+ESM_LogOutput = "log_output" call ESMs_system_extension_call;
 
 // Cache the territory prices to make calculating upgrade costs faster
 private _territoryData = [];
@@ -73,11 +75,10 @@ forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));
 
 // Bind the callback to enable the extension to communicate with the a3 server
 addMissionEventHandler ["ExtensionCallback", {
-	params ["_name", "_function", "_data"];
-
-	if (_name isEqualTo "exile_server_manager") then
+	// 0: name, 1: function, 2: data
+	if ((_this select 0) isEqualTo "exile_server_manager") then
 	{
-		[_function, _data] spawn ESMs_system_extension_callback;
+		[_this select 1, _this select 2] call ESMs_system_extension_callback;
 	};
 }];
 
