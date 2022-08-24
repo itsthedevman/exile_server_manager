@@ -9,14 +9,16 @@ const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|N
 const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_GET: &str = r"get!\((.+)?,\s*(.+)?\)";
 const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.*)*\)";
-const REGEX_LOG: &str = r#"(info|warn|debug|error)!\((.+)?\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"(info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
+const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
+const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
 const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
+const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
     compiler
+        .replace(REGEX_DEF_FN, define_fn)
         .replace(REGEX_OS_PATH, os_path)
         .replace(REGEX_NOT_EQUAL_TYPE, type_ne)
         .replace(REGEX_EQUAL_TYPE, type_eq)
@@ -27,6 +29,32 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_LOG, log)
         .replace(REGEX_NOT_NIL, not_nil)
         .replace(REGEX_NIL, nil);
+}
+
+// define_fn!("ESMs_util_log") -> ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
+// Also replaces slashes based on OS
+fn define_fn(context: &Data, matches: &Captures) -> CompilerResult {
+    let function_name = match matches.get(1) {
+        Some(c) => c.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> define_fn! - Wrong number of arguments, given 0, expected 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    let separator = if context.target == "windows" {
+        "\\"
+    } else {
+        "/"
+    };
+
+    Ok(Some(format!(
+        "[\"{function_name}\", \"exile_server_manager{sep}code{sep}{function_name}.sqf\"]",
+        sep = separator
+    )))
 }
 
 // os_path!("my_mod", "some_dir") -> Windows: "my_mod\some_dir" - Linux: "my_mod/some_dir"
@@ -277,6 +305,29 @@ mod tests {
     use regex::Regex;
 
     #[test]
+    fn it_replaces_define_fn() {
+        let content = r#"define_fn!("MY_Awesome_Method")"#;
+
+        let regex = Regex::new(REGEX_DEF_FN).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            match define_fn(&Data::default(), &capture).unwrap() {
+                Some(result) => {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+                None => {}
+            };
+        }
+
+        assert_eq!(
+            output,
+            r#"["MY_Awesome_Method", "exile_server_manager/code/MY_Awesome_Method.sqf"]"#
+        );
+    }
+
+    #[test]
     fn it_replaces_type() {
         let content = r#"type?(_variable, STRING);"#;
 
@@ -383,6 +434,9 @@ mod tests {
         let content = r#"
             private _testing = "foo";
 
+            trace!("Trace");
+            debug!("Debug");
+            info!("Info");
             warn!(_testing);
             error!([true, false]);
         "#;
@@ -415,6 +469,9 @@ mod tests {
             r#"
             private _testing = "foo";
 
+            ["ESMs_compiler_test", format["%1", "Trace"], "trace"] call ESMs_util_log;
+            ["ESMs_compiler_test", format["%1", "Debug"], "debug"] call ESMs_util_log;
+            ["ESMs_compiler_test", format["%1", "Info"], "info"] call ESMs_util_log;
             ["ESMs_compiler_test", format["%1", _testing], "warn"] call ESMs_util_log;
             ["ESMs_compiler_test", format["%1", [true, false]], "error"] call ESMs_util_log;
         "#

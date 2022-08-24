@@ -423,12 +423,14 @@ impl Builder {
             connection_url: String,
             log_level: String,
             env: String,
+            log_output: String,
         }
 
         let config = Config {
             connection_url: self.bot_host.clone(),
             log_level: self.log_level.to_string(),
             env: self.env.to_string(),
+            log_output: "rpt".into(),
         };
 
         let config_yaml = serde_yaml::to_vec(&config)?;
@@ -588,8 +590,8 @@ impl Builder {
 
         let mut compiler = Compiler::new();
         compiler
-            .source(&source_path.to_string_lossy().to_string())
-            .destination(&addon_destination_path.to_string_lossy().to_string())
+            .source(&source_path.to_string_lossy())
+            .destination(&addon_destination_path.to_string_lossy())
             .target(&self.os.to_string());
 
         crate::compile::bind_replacements(&mut compiler);
