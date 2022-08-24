@@ -157,7 +157,6 @@ fn rtp_path(server_path: &Path, server_args: &str) -> Option<PathBuf> {
             .join(profile_name)
             .join("*.rpt")
             .to_string_lossy()
-            .to_string(),
     )
     .unwrap()
     .filter_map(|path| {

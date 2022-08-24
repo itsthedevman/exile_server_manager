@@ -137,7 +137,7 @@ impl Compiler {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct File {
     pub relative_path: String,
     pub file_name: String,
@@ -165,8 +165,11 @@ impl File {
     }
 }
 
+type ReplacementFn = dyn Fn(&Data, &Captures) -> ReplacementResult;
+type ReplacementResult = Result<Option<String>, CompilerError>;
+
 pub struct Replacement {
-    pub callback: Box<dyn Fn(&Data, &Captures) -> Result<Option<String>, CompilerError>>,
+    pub callback: Box<ReplacementFn>,
     pub regex: Regex,
 }
 

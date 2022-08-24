@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command as SystemCommand, Stdio};
@@ -149,7 +150,7 @@ impl IncomingCommand {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 let line = line.unwrap();
-                output.push_str(&format!("{}\n", line));
+                writeln!(output, "{}", line)?;
 
                 println!("{} - {}", "stderr".bright_red(), line);
             }
@@ -159,7 +160,7 @@ impl IncomingCommand {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 let line = line.unwrap();
-                output.push_str(&format!("{}\n", line));
+                writeln!(output, "{}", line)?;
 
                 println!("{} - {}", "stdout".bright_cyan(), line);
             }

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum CompilerError {
     Generic(String),
 }
@@ -13,7 +13,7 @@ impl std::fmt::Display for CompilerError {
 
 impl std::error::Error for CompilerError {
     fn cause(&self) -> Option<&dyn std::error::Error> {
-        Some(&*self)
+        Some(self)
     }
 }
 

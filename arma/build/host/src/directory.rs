@@ -64,8 +64,8 @@ impl Directory {
             "cp",
             vec![
                 "-r",
-                &source.to_string_lossy().to_string(),
-                &destination.to_string_lossy().to_string(),
+                &source.to_string_lossy(),
+                &destination.to_string_lossy(),
             ],
         )?;
 

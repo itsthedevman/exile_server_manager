@@ -50,7 +50,7 @@ impl Transfers {
         })?;
 
         if !self.transfer_needed(transfer) {
-            println!("Transfer not needed - {}", transfer.id.to_string());
+            println!("Transfer not needed - {}", transfer.id);
             return Ok(false);
         }
 
@@ -76,12 +76,7 @@ impl Transfers {
             let path = transfer.path.parent().unwrap();
             let file = path.join(&format!(
                 "{}.{}",
-                transfer
-                    .path
-                    .file_name()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string(),
+                transfer.path.file_name().unwrap().to_string_lossy(),
                 incoming_chunk.index
             ));
 
