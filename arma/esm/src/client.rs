@@ -141,21 +141,18 @@ impl Client {
     }
 
     pub async fn send(&self, mut message: Message) -> ESMResult {
-        debug!("[send] 1");
         if !self.ready() {
             return Err(
                 "[client#send] Cannot send - We are not connected to the bot at the moment".into(),
             );
         }
 
-        debug!("[send] 2");
         write_lock!(TOKEN_MANAGER).reload();
-        debug!("[send] 3");
         let token = read_lock!(TOKEN_MANAGER);
         if !token.valid() {
             return Err("[client#send] Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
         }
-        debug!("[send] 4");
+
         // Add the server ID if there is none
         if message.server_id.is_none() {
             message.server_id = Some(token.id_bytes().to_vec());
@@ -164,7 +161,6 @@ impl Client {
         // Convert the message to bytes so it can be sent
         match message.as_bytes(token.key_bytes()) {
             Ok(bytes) => {
-                debug!("[send] 5");
                 if !matches!(message.message_type, Type::Init) {
                     debug!("[client#send] {}", message);
                 }

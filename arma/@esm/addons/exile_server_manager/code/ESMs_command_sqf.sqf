@@ -78,7 +78,6 @@ try
 		};
 	};
 
-	// It becomes difficult to handle while parsing if there are multiple layers of quotes
 	if (!nil?(_result) && { !type?(_result, STRING) }) then
 	{
 		_result = str(_result);
