@@ -78,7 +78,7 @@ addMissionEventHandler ["ExtensionCallback", {
 	// 0: name, 1: function, 2: data
 	if ((_this select 0) isEqualTo "exile_server_manager") then
 	{
-		[_this select 1, _this select 2] call ESMs_system_extension_callback;
+		[_this select 1, _this select 2] spawn ESMs_system_extension_callback;
 	};
 }];
 
