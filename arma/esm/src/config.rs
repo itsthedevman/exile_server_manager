@@ -50,7 +50,7 @@ impl Env {
 }
 
 fn default_connection_url() -> String {
-    "arma.esmbot.com".into()
+    "https://arma.esmbot.com".into()
 }
 
 fn default_logging_path() -> String {
