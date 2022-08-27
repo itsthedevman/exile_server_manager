@@ -75,7 +75,7 @@ private _errorPackage = [];
 		}
 	) then { continue; };
 
-	_errorPackage pushBack _x;
+	_errorPackage pushBack [["type", _x select 0], ["content", _x select 1]];
 }
 forEach _errors;
 
