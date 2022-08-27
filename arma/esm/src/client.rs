@@ -27,7 +27,9 @@ impl Client {
             error!("[client#connect] {}", e);
         };
 
-        debug!("[client#connect] Attempting to connect to esm_bot");
+        if !matches!(crate::CONFIG.env, Env::Test) {
+            debug!("[client#connect] Attempting to connect to esm_bot");
+        }
 
         // This is validated on extension#pre_init
         let server_address = crate::CONFIG
@@ -51,7 +53,9 @@ impl Client {
         let task = listener.for_each_async(|event| match event.network() {
             NetEvent::Connected(_, connected) => {
                 TOKIO_RUNTIME.block_on(async {
-                    debug!("[client#on_connect] Are we connected? {}", connected);
+                    if !matches!(crate::CONFIG.env, Env::Test) {
+                        debug!("[client#on_connect] Are we connected? {}", connected);
+                    }
 
                     if !connected {
                         if let Err(e) = crate::BOT.on_disconnect().await {
@@ -109,7 +113,9 @@ impl Client {
             }
             NetEvent::Disconnected(_) => {
                 TOKIO_RUNTIME.block_on(async {
-                    debug!("[client#on_disconnect] Lost connection");
+                    if !matches!(crate::CONFIG.env, Env::Test) {
+                        debug!("[client#on_disconnect] Lost connection");
+                    }
 
                     if let Err(e) = crate::BOT.on_disconnect().await {
                         error!("[client#on_disconnect] {}", e);

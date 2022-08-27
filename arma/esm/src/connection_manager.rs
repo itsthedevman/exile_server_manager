@@ -50,7 +50,7 @@ impl ConnectionManager {
                 // Get the current reconnection count and calculate the wait time
                 let current_count = reconnection_counter.load(Ordering::SeqCst);
                 let time_to_wait = match crate::CONFIG.env {
-                    Env::Test => 0.1,
+                    Env::Test => continue,
                     Env::Development => 3.0,
                     _ => (current_count * 15) as f32,
                 };
