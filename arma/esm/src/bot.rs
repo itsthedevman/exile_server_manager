@@ -21,8 +21,11 @@ impl Bot {
         self.connection_manager.connect().await;
     }
 
-    pub async fn send(&self, message: Message) -> ESMResult {
-        crate::connection_manager::CLIENT.send(message).await
+    pub fn send(&self, message: Message) -> ESMResult {
+        if !matches!(message.message_type, Type::Init) {
+            debug!("[bot#send] {}", message);
+        }
+        crate::connection_manager::CLIENT.send(message)
     }
 
     pub async fn on_connect(&self) -> ESMResult {
@@ -33,18 +36,24 @@ impl Bot {
         // The NetEvent::Connected must complete before we attempt to send any messages to the bot
         // The event completes once bot#on_connect exits
         tokio::spawn(async {
+            while !crate::connection_manager::CLIENT.ready() {
+                tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
+            }
+
             let mut message = Message::new(Type::Init);
-            message.data = Data::Init(read_lock!(crate::ARMA).init.clone());
+            message.data = Data::Init(lock!(crate::ARMA).init.clone());
 
-            trace!("[bot#on_connect] Initialization {:#?}", message);
+            debug!("[bot#on_connect] Initialization {:#?}", message);
 
-            crate::BOT.send(message).await
+            if let Err(e) = crate::BOT.send(message) {
+                error!("[bot#on_connect] {}", e);
+            }
         });
 
         Ok(())
     }
 
-    pub async fn on_message(&self, message: Message) -> ESMResult {
+    pub fn on_message(&self, message: Message) -> ESMResult {
         if !message.errors.is_empty() {
             for error in message.errors {
                 error!("[bot#on_message] {}", error.error_content);
@@ -59,16 +68,10 @@ impl Bot {
         );
 
         let result: Option<Message> = match message.message_type {
-            Type::Init => {
-                write_lock!(crate::ARMA)
-                    .post_initialization(message)
-                    .await?
-            }
-
-            Type::Query => Some(read_lock!(crate::ARMA).database.query(message)),
-
-            Type::Arma => read_lock!(crate::ARMA).call_function(message)?,
-
+            Type::Init => lock!(crate::ARMA).post_initialization(message)?,
+            Type::Query => Some(lock!(crate::ARMA).database.query(message)),
+            Type::Arma => lock!(crate::ARMA).call_function(message)?,
+            Type::Test => Some(message),
             _ => {
                 return Err(format!(
                     "Message type \"{:?}\" has not been implemented yet",
@@ -80,7 +83,7 @@ impl Bot {
 
         // If a message is returned, send it back
         if let Some(m) = result {
-            self.send(m).await?;
+            self.send(m)?;
         }
 
         Ok(())

@@ -29,7 +29,7 @@ impl ConnectionManager {
 
         tokio::spawn(async move {
             loop {
-                match CLIENT.connect().await {
+                match CLIENT.connect() {
                     Ok(_) => {
                         reconnection_counter.store(0, Ordering::SeqCst);
 
@@ -43,7 +43,7 @@ impl ConnectionManager {
                 };
 
                 // Connection was lost
-                if let Some(h) = &*read_lock!(crate::client::HANDLER) {
+                if let Some(h) = &*lock!(crate::client::HANDLER) {
                     h.stop();
                 }
 

@@ -82,7 +82,7 @@ impl Arma {
         self.database.extdb_version
     }
 
-    pub async fn post_initialization(&mut self, mut message: Message) -> MessageResult {
+    pub fn post_initialization(&mut self, mut message: Message) -> MessageResult {
         let data = retrieve_data!(message.data, Data::PostInit);
 
         // Get the base path to figure out where to look for the ini
@@ -103,7 +103,7 @@ impl Arma {
         }
 
         // Call arma
-        let token = &read_lock!(TOKEN_MANAGER);
+        let token = &lock!(TOKEN_MANAGER);
         self.send(
             "ESMs_system_process_postInit",
             &message.id,

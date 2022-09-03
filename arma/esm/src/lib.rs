@@ -12,11 +12,11 @@ mod token;
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
+pub use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 pub use std::sync::Arc;
 use std::{env, fs};
 use tokio::runtime::Runtime;
-pub use tokio::sync::RwLock;
 
 // Logging
 pub use log::{debug, error, info, trace, warn};
@@ -62,7 +62,7 @@ lazy_static! {
     pub static ref READY: AtomicBool = AtomicBool::new(false);
 
     /// Represents the connection to the A3 server
-    pub static ref ARMA: RwLock<Arma> = RwLock::new(Arma::new());
+    pub static ref ARMA: Arc<Mutex<Arma>> = Arc::new(Mutex::new(Arma::new()));
 
     /// Represents the connection to the bot
     pub static ref BOT: Arc<Bot> = Arc::new(Bot::new());
@@ -213,7 +213,7 @@ fn pre_init(
                 "[extension#pre_init]    Greeting our new friend - Hello {}!",
                 init.server_name
             );
-            write_lock!(ARMA).initialize(init, callback);
+            lock!(ARMA).initialize(init, callback);
 
             info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
             BOT.connect().await;
@@ -237,7 +237,7 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
                 Err(e) => return error!("[extension#send_message] {}", e),
             };
 
-            if let Err(e) = crate::BOT.send(message).await {
+            if let Err(e) = crate::BOT.send(message) {
                 error!("[extension#send_message] {}", e);
             };
 
@@ -258,7 +258,7 @@ fn send_to_channel(id: String, content: String) {
             let mut message = Message::new(Type::Event);
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-            if let Err(e) = crate::BOT.send(message).await {
+            if let Err(e) = crate::BOT.send(message) {
                 error!("[extension#send_to_channel] {}", e);
             };
 
