@@ -28,7 +28,7 @@ esm_message = { git = "https://github.com/WolfkillArcadia/esm_message.git", bran
 message-io = { version = "0.14", default-features = false, features = ["tcp"] }
 serde_yaml = "0.8"
 uuid = { version = "1.1", features = ["serde", "v4", "fast-rng"] }
-mysql = "*"
+mysql_async = "0.30.0"
 tokio = { version = "1.20.1", features = ["full"] }
 rand = "0.8"
 parking_lot = "0.12"

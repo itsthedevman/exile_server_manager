@@ -1,10 +1,47 @@
-# @esm's configuration file
-# You can override any of the following options:
-#   connection_url:             The URL that esm_server is running on plus the port: "esmbot.com:80"
-#   log_level:                  The verbosity level of the internal logger. Valid options: trace, debug, info, warn, error
-#   extdb_conf_path:            The full path plus filename for the extDB config
+##################################
+# Greetings!
+#
+# This configuration file is used internally within @esm and esm.dll
+#
+# WARNING:
+#   You should only edit this file if you know what you are doing or have been instructed to do so
+#   Improper use of this file will result in Exile Server Manager failing to boot or work
+#   You are on your own if this happens
+#
+
+###
+# The verbosity level for logs
+#   Valid options: trace, debug, info, warn, error
+###
+# log_level: "info"
+
+###
+# The fully qualified path to the extDB config
+# This MUST point to a valid INI file
+#   extdb2 / Windows
+#     Example: "F:\arma_servers\malden\config_for_extdb.ini"
+#     Default location: "<server_executable_path>\@ExileServer\extdb-conf.ini"
+#   extdb2 / Linux
+#     Example: "/arma_servers/malden/config_for_extdb.ini"
+#     Default location: "<server_executable_path>/@exileserver/extdb-conf.ini"
+
+#   extdb3 / Windows
+#     Example: "F:\arma_servers\malden\config_for_extdb.ini"
+#     Default location: "<server_executable_path>\@ExileServer\extdb3-conf.ini"
+#   extdb3 / Linux
+#     Example: "/arma_servers/malden/config_for_extdb.ini"
+#     Default location: "<server_executable_path>/@exileserver/extdb3-conf.ini"
+###
+# extdb_conf_path: ""
+
 #   extdb_conf_header_name:     The name of the section header in ExtDB's config file. This section contains the connection details for the database
 #   extdb_version:              The version of ExtDB the server is using. This is mainly used for development
 #   logging_path:               The full path plus filename for the extension to log to
 #   env:                        The ENV that the code should run in. Valid options: production, test, development. Default: production
 #   log_output:                 The output destination for log calls in the SQF code. Valid options: rpt, extension, both. Default: extension
+#   database_uri:               A valid MySQL connection URI (mysql://user:password@host:port/database_name) for the same database as the Exile server
+#   server_mod_name
+
+
+### Overwrites the connection URL that points to esm_bot - Used mainly for development
+# connection_url: ""

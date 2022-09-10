@@ -1,5 +1,3 @@
-pub type ESMResult = Result<(), ESMError>;
-
 #[derive(Debug)]
 pub struct ESMError(String);
 

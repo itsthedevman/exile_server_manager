@@ -1,6 +1,7 @@
+use crate::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     #[serde(default = "default_connection_url")]
     pub connection_url: String,
@@ -25,9 +26,15 @@ pub struct Config {
 
     #[serde(default = "default_log_output")]
     pub log_output: String,
+
+    #[serde(default = "default_database_uri")]
+    pub database_uri: String,
+
+    #[serde(default = "default_server_mod_name")]
+    pub server_mod_name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum Env {
     Production,
@@ -74,7 +81,7 @@ fn default_env() -> Env {
 }
 
 fn default_extdb_conf_path() -> String {
-    "".into()
+    String::default()
 }
 
 fn default_extdb_conf_header_name() -> String {
@@ -89,18 +96,21 @@ fn default_log_output() -> String {
     "extension".into()
 }
 
+fn default_database_uri() -> String {
+    String::default()
+}
+
+fn default_server_mod_name() -> String {
+    if cfg!(windows) {
+        "@ExileServer".into()
+    } else {
+        "@exileserver".into()
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
-        Config {
-            connection_url: default_connection_url(),
-            logging_path: default_logging_path(),
-            log_level: default_log_level(),
-            env: default_env(),
-            extdb_conf_path: default_extdb_conf_path(),
-            extdb_conf_header_name: default_extdb_conf_header_name(),
-            extdb_version: default_extdb_version(),
-            log_output: default_log_output(),
-        }
+        serde_yaml::from_str("").unwrap()
     }
 }
 
@@ -112,7 +122,21 @@ impl std::fmt::Display for Config {
 
 impl Config {
     pub fn new() -> Self {
-        Self::default()
+        let contents: String = match fs::read_to_string("@esm/config.yml") {
+            Ok(file) => file,
+            Err(_) => {
+                info!("[config#new] ✅ Default config loaded");
+                return Config::default();
+            }
+        };
+
+        match serde_yaml::from_str(&contents) {
+            Ok(config) => config,
+            Err(e) => {
+                error!("[config#new] ❌ Failed to parse @esm/config.yml - {}", e);
+                Config::default()
+            }
+        }
     }
 
     pub fn validate(&self) -> Result<(), String> {

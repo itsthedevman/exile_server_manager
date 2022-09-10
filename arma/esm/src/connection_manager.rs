@@ -1,10 +1,10 @@
 use crate::*;
 use tokio::time::{sleep, Duration};
 
-lazy_static! {
-    /// The actual connection to the bot - Used internally
-    pub static ref CLIENT: Arc<Client> = Arc::new(Client::new());
-}
+// lazy_static! {
+//     /// The actual connection to the bot - Used internally
+//     pub static ref CLIENT: Arc<Client> = Arc::new(Client::new());
+// }
 
 pub struct ConnectionManager {
     pub connected: Arc<AtomicBool>,
@@ -29,23 +29,18 @@ impl ConnectionManager {
 
         tokio::spawn(async move {
             loop {
-                match CLIENT.connect() {
-                    Ok(_) => {
-                        reconnection_counter.store(0, Ordering::SeqCst);
+                // match CLIENT.connect() {
+                //     Ok(_) => {
+                //         reconnection_counter.store(0, Ordering::SeqCst);
 
-                        while connected.load(Ordering::SeqCst) {
-                            sleep(Duration::from_secs(1)).await;
-                        }
-                    }
-                    Err(e) => {
-                        error!("[connection_manager#connect] Failed to connect {e}");
-                    }
-                };
-
-                // Connection was lost
-                if let Some(h) = &*lock!(crate::client::HANDLER) {
-                    h.stop();
-                }
+                //         while connected.load(Ordering::SeqCst) {
+                //             sleep(Duration::from_secs(1)).await;
+                //         }
+                //     }
+                //     Err(e) => {
+                //         error!("[connection_manager#connect] ❌ Failed to connect {e}");
+                //     }
+                // };
 
                 // Get the current reconnection count and calculate the wait time
                 let current_count = reconnection_counter.load(Ordering::SeqCst);
@@ -57,7 +52,7 @@ impl ConnectionManager {
 
                 let time_to_wait = Duration::from_secs_f32(time_to_wait);
                 warn!(
-                    "[connection_manager] Lost connection to esm_bot - Attempting reconnect in {:?}",
+                    "[connection_manager] ⚠ Lost connection to esm_bot - Attempting reconnect in {:?}",
                     time_to_wait
                 );
 

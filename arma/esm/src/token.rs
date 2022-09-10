@@ -24,7 +24,7 @@ impl Token {
         self.server_id = match String::from_utf8(self.id.clone()) {
             Ok(s) => s,
             Err(e) => {
-                error!("[token#server_id] Failed to parse server ID. Reason: {e}");
+                error!("[token#server_id] ❌ Failed to parse server ID. Reason: {e}");
                 String::new()
             }
         };
@@ -34,7 +34,7 @@ impl Token {
         self.community_id = match String::from_utf8(self.id[0..split_index].to_vec()) {
             Ok(s) => s,
             Err(e) => {
-                error!("[token#community_id] Failed to parse community ID. Reason: {e}");
+                error!("[token#community_id] ❌ Failed to parse community ID. Reason: {e}");
                 String::new()
             }
         };
@@ -163,16 +163,16 @@ impl TokenManager {
         }
 
         if let Err(e) = self.load() {
-            error!("[token_manager::reload] {}", e);
+            error!("[token_manager#reload] ❌ {}", e);
             return self;
         };
 
         match std::fs::remove_file(reload_file) {
             Ok(_) => {}
-            Err(e) => error!("[token_manager#reload] {}", e),
+            Err(e) => error!("[token_manager#reload] ❌ {}", e),
         }
 
-        warn!("[token_manager#reload] Token was reloaded");
+        warn!("[token_manager#reload] ⚠ Token was reloaded");
         self
     }
 }

@@ -6,6 +6,7 @@ mod connection_manager;
 mod database;
 mod error;
 mod macros;
+mod router;
 mod token;
 
 // Various Packages
@@ -25,50 +26,32 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use arma::Arma;
-use bot::Bot;
 use config::Config;
 use config::Env;
 use connection_manager::ConnectionManager;
 
-pub use client::{Client, TOKEN_MANAGER};
+pub use client::TOKEN_MANAGER;
 pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 
+use crate::router::Router;
+
+pub type ESMResult = Result<(), ESMError>;
+pub type MessageResult = Result<Option<Message>, ESMError>;
+
 lazy_static! {
     /// Represents @esm/config.yml
-    pub static ref CONFIG: Config = {
-        let contents: String = match fs::read_to_string("@esm/config.yml") {
-            Ok(file) => file,
-            Err(_) => {
-                debug!("[Config Init] No config file found");
-                return Config::default()
-            },
-        };
-
-        let config: Config = match serde_yaml::from_str(&contents) {
-            Ok(config) => config,
-            Err(e) => {
-                error!("[Config Init] Failed to parse @esm/config.yml - {}", e);
-                Config::default()
-            }
-        };
-
-        config
-    };
+    pub static ref CONFIG: Config = Config::new();
 
     /// Is the extension ready to receive messages?
     pub static ref READY: AtomicBool = AtomicBool::new(false);
 
-    /// Represents the connection to the A3 server
-    pub static ref ARMA: Arc<Mutex<Arma>> = Arc::new(Mutex::new(Arma::new()));
-
-    /// Represents the connection to the bot
-    pub static ref BOT: Arc<Bot> = Arc::new(Bot::new());
-
     /// The runtime for the asynchronous code
     pub static ref TOKIO_RUNTIME: Arc<Runtime> = Arc::new(tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap());
+
+    /// Handles sending messages to the Bot and the A3 server
+    pub static ref ROUTER: Arc<Router> = Arc::new(Router::new());
 }
 
 fn initialize_logger() {
@@ -165,7 +148,7 @@ fn pre_init(
         TOKIO_RUNTIME.block_on(async {
             // Only allow this method to be called properly once
             if READY.load(Ordering::SeqCst) {
-                warn!("[extension#pre_init] This endpoint can only be called once. Perhaps your server is boot looping?");
+                warn!("[extension#pre_init] ⚠ This endpoint can only be called once. Perhaps your server is boot looping?");
                 return;
             }
 
@@ -173,9 +156,9 @@ fn pre_init(
             info!("[extension#pre_init]    Validating config file");
 
             if let Err(e) = CONFIG.validate() {
-                error!("[extension#pre_init] Boot failed - Invalid config file");
-                warn!("[config#validate] {}", e);
-                error!("[extension#pre_init] Boot failed - You must fix the above warning before Exile Server Manager can boot");
+                error!("[extension#pre_init] ❌ Boot failed - Invalid config file");
+                warn!("[config#validate] ⚠ {}", e);
+                error!("[extension#pre_init] ❌ Boot failed - You must fix the above warning before Exile Server Manager can boot");
                 return;
             }
 
@@ -199,26 +182,23 @@ fn pre_init(
 
             if let Err(errors) = init.validate() {
                 debug!("{:#?}", init);
-                error!("[extension#pre_init] Boot failed - Invalid initialization data provided");
+                error!("[extension#pre_init] ❌ Boot failed - Invalid initialization data provided");
 
                 for error in errors {
-                    warn!("[init#validate] {error}");
+                    warn!("[init#validate] ⚠ {error}");
                 }
 
-                error!("[extension#pre_init] Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+                error!("[extension#pre_init] ❌ Boot failed - You must fix the above warnings before Exile Server Manager can boot");
                 return;
             }
 
-            info!(
-                "[extension#pre_init]    Greeting our new friend - Hello {}!",
-                init.server_name
-            );
-            lock!(ARMA).initialize(init, callback);
+            info!("[extension#pre_init]    Greeting our new friend - Hello {}!", init.server_name);
+            // lock!(ARMA).initialize(init, callback);
 
             info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-            BOT.connect().await;
+            // BOT.connect().await;
 
-            info!("[extension#pre_init] Boot completed in {:.2?}", timer.elapsed());
+            info!("[extension#pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
         });
     });
 }
@@ -234,14 +214,14 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
         TOKIO_RUNTIME.block_on(async {
             let message = match Message::from_arma(id, message_type, data, metadata, errors) {
                 Ok(m) => m,
-                Err(e) => return error!("[extension#send_message] {}", e),
+                Err(e) => return error!("[extension#send_message] ❌ {}", e),
             };
 
-            if let Err(e) = crate::BOT.send(message) {
-                error!("[extension#send_message] {}", e);
-            };
+            // if let Err(e) = crate::BOT.send(message) {
+            //     error!("[extension#send_message] ❌ {}", e);
+            // };
 
-            info!("[extension#send_message] Took {:.2?}", timer.elapsed());
+            info!("[extension#send_message] ⏲ Took {:.2?}", timer.elapsed());
         });
     });
 }
@@ -258,11 +238,11 @@ fn send_to_channel(id: String, content: String) {
             let mut message = Message::new(Type::Event);
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-            if let Err(e) = crate::BOT.send(message) {
-                error!("[extension#send_to_channel] {}", e);
-            };
+            // if let Err(e) = crate::BOT.send(message) {
+            //     error!("[extension#send_to_channel] ❌ {}", e);
+            // };
 
-            info!("[extension#send_to_channel] Took {:.2?}", timer.elapsed());
+            info!("[extension#send_to_channel] ⏲ Took {:.2?}", timer.elapsed());
         });
     });
 }
@@ -312,7 +292,7 @@ fn log(log_level: String, caller: String, content: String) {
             ),
         }
 
-        trace!("[extension#log] Took {:.2?}", timer.elapsed());
+        trace!("[extension#log] ⏲ Took {:.2?}", timer.elapsed());
     });
 }
 
