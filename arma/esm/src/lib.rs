@@ -13,11 +13,11 @@ mod token;
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
-pub use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 pub use std::sync::Arc;
 use std::{env, fs};
 use tokio::runtime::Runtime;
+pub use tokio::sync::Mutex;
 
 // Logging
 pub use log::{debug, error, info, trace, warn};

@@ -7,7 +7,7 @@ use std::{collections::HashMap, path::Path};
 #[derive(Clone)]
 pub struct Database {
     pub extdb_version: u8,
-    connection_pool: Arc<tokio::sync::Mutex<Option<Pool>>>,
+    connection_pool: Arc<Mutex<Option<Pool>>>,
 }
 
 impl Default for Database {
@@ -27,7 +27,7 @@ impl Default for Database {
 
         Database {
             extdb_version,
-            connection_pool: Arc::new(tokio::sync::Mutex::new(None)),
+            connection_pool: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Database {
             Err(e) => return Err(format!("[database::connect] {}", e).into()),
         };
 
-        *async_lock!(self.connection_pool) = Some(Pool::new(database_opts));
+        *await_lock!(self.connection_pool) = Some(Pool::new(database_opts));
 
         // Attempt to connect to the database
         if let Err(e) = self.connection().await {
@@ -68,7 +68,7 @@ impl Database {
     }
 
     pub async fn connection(&self) -> Result<Conn, String> {
-        match &*async_lock!(self.connection_pool) {
+        match &*await_lock!(self.connection_pool) {
             Some(pool) => match pool.get_conn().await {
                 Ok(c) => Ok(c),
                 Err(e) => Err(format!("[database::connection] {}", e)),

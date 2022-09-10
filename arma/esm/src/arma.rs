@@ -2,7 +2,6 @@ use crate::*;
 use crate::{database::Database, router::RoutingCommand};
 
 use arma_rs::{Context, IntoArma};
-use serde_json::json;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
@@ -22,7 +21,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
                 RoutingCommand::Query(message) => execute("query", *message).await,
                 RoutingCommand::Method { name, message } => execute(name.as_str(), *message).await,
                 RoutingCommand::ArmaInitialize { context } => {
-                    *lock!(CALLBACK) = Some(context);
+                    *await_lock!(CALLBACK) = Some(context);
                     continue;
                 }
                 c => {
@@ -55,14 +54,18 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
         ),
     };
 
-    if let Err(e) = result {
-        error!("{e}");
-        let message = Message::new(Type::Error)
-            .set_id(message_id)
-            .add_error(ErrorType::Code, "client_exception");
-    }
+    match result {
+        Ok(m) => m,
+        Err(e) => {
+            error!("{e}");
 
-    None
+            let message = Message::new(Type::Error)
+                .set_id(message_id)
+                .add_error(ErrorType::Code, "client_exception");
+
+            Some(message)
+        }
+    }
 }
 
 async fn send_to_arma(function: &str, message: Message) -> ESMResult {
@@ -87,7 +90,7 @@ async fn send_to_arma(function: &str, message: Message) -> ESMResult {
 
     trace!("[arma#send] {message:?}");
 
-    match &*lock!(CALLBACK) {
+    match &*await_lock!(CALLBACK) {
         Some(ctx) => {
             ctx.callback("exile_server_manager", function, Some(message));
             Ok(())
@@ -120,40 +123,38 @@ async fn post_initialization(message: Message) -> MessageResult {
     }
 
     // Call arma
-    let token = &lock!(TOKEN_MANAGER);
-    // send_to_arma(
-    //     "ESMs_system_process_postInit",
-    //     &message.id,
-    //     &json!({
-    //         "ESM_BuildNumber": std::include_str!("../.build-sha"),
-    //         "ESM_CommunityID": token.community_id(),
-    //         "ESM_ExtDBVersion": DATABASE.extdb_version,
-    //         "ESM_Gambling_Modifier": data.gambling_modifier.parse::<f32>()?,
-    //         "ESM_Gambling_PayoutBase": data.gambling_payout.parse::<f32>()?,
-    //         "ESM_Gambling_PayoutRandomizerMax": data.gambling_randomizer_max.parse::<f32>()?,
-    //         "ESM_Gambling_PayoutRandomizerMid": data.gambling_randomizer_mid.parse::<f32>()?,
-    //         "ESM_Gambling_PayoutRandomizerMin": data.gambling_randomizer_min.parse::<f32>()?,
-    //         "ESM_Gambling_WinPercentage": data.gambling_win_chance.parse::<f32>()?,
-    //         "ESM_Logging_AddPlayerToTerritory": data.logging_add_player_to_territory,
-    //         "ESM_Logging_DemotePlayer": data.logging_demote_player,
-    //         "ESM_Logging_Exec": data.logging_exec,
-    //         "ESM_Logging_Gamble": data.logging_gamble,
-    //         "ESM_Logging_ModifyPlayer": data.logging_modify_player,
-    //         "ESM_Logging_PayTerritory": data.logging_pay_territory,
-    //         "ESM_Logging_PromotePlayer": data.logging_promote_player,
-    //         "ESM_Logging_RemovePlayerFromTerritory": data.logging_remove_player_from_territory,
-    //         "ESM_Logging_RewardPlayer": data.logging_reward,
-    //         "ESM_Logging_TransferPoptabs": data.logging_transfer,
-    //         "ESM_Logging_UpgradeTerritory": data.logging_upgrade_territory,
-    //         "ESM_LoggingChannelID": data.logging_channel_id,
-    //         "ESM_ServerID": token.server_id(),
-    //         "ESM_Taxes_TerritoryPayment": data.territory_payment_tax.parse::<f32>()?,
-    //         "ESM_Taxes_TerritoryUpgrade": data.territory_upgrade_tax.parse::<f32>()?,
-    //         "ESM_TerritoryAdminUIDs": data.territory_admins,
-    //         "ESM_Version": env!("CARGO_PKG_VERSION")
-    //     }),
-    //     &message.metadata,
-    // )?;
+    let token = &await_lock!(TOKEN_MANAGER);
+
+    let message = message.set_data(Data::ArmaPostInit(ArmaPostInit {
+        build_number: std::include_str!("../.build-sha").to_string(),
+        community_id: token.community_id().to_string(),
+        extdb_version: DATABASE.extdb_version,
+        gambling_modifier: data.gambling_modifier,
+        gambling_payout_base: data.gambling_payout,
+        gambling_payout_randomizer_max: data.gambling_randomizer_max,
+        gambling_payout_randomizer_mid: data.gambling_randomizer_mid,
+        gambling_payout_randomizer_min: data.gambling_randomizer_min,
+        gambling_win_percentage: data.gambling_win_chance,
+        logging_add_player_to_territory: data.logging_add_player_to_territory,
+        logging_demote_player: data.logging_demote_player,
+        logging_exec: data.logging_exec,
+        logging_gamble: data.logging_gamble,
+        logging_modify_player: data.logging_modify_player,
+        logging_pay_territory: data.logging_pay_territory,
+        logging_promote_player: data.logging_promote_player,
+        logging_remove_player_from_territory: data.logging_remove_player_from_territory,
+        logging_reward_player: data.logging_reward,
+        logging_transfer_poptabs: data.logging_transfer,
+        logging_upgrade_territory: data.logging_upgrade_territory,
+        logging_channel_id: data.logging_channel_id,
+        server_id: token.server_id().to_string(),
+        taxes_territory_payment: data.territory_payment_tax,
+        taxes_territory_upgrade: data.territory_upgrade_tax,
+        territory_admin_uids: data.territory_admins,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    }));
+
+    send_to_arma("ESMs_system_process_postInit", message).await?;
 
     Ok(None)
 }

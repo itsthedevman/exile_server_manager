@@ -13,7 +13,7 @@ lazy_static! {
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
-    if let Err(e) = lock!(TOKEN_MANAGER).load() {
+    if let Err(e) = await_lock!(TOKEN_MANAGER).load() {
         error!("[client#new] ❌ {}", e);
     };
 
@@ -23,12 +23,12 @@ pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
     listener_thread(listener).await;
 }
 
-fn send_to_server(
+async fn send_to_server(
     mut message: Message,
     handler: &NodeHandler<()>,
     endpoint: Endpoint,
 ) -> ESMResult {
-    let mut token = lock!(TOKEN_MANAGER);
+    let mut token = await_lock!(TOKEN_MANAGER);
     if !token.reload().valid() {
         return Err("[client#send_to_server] Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
@@ -141,7 +141,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler
                                 error!("{e}");
                             };
                         });
-                    } else if let Err(e) = send_to_server(*message, &handler, endpoint) {
+                    } else if let Err(e) = send_to_server(*message, &handler, endpoint).await {
                         error!("{e}");
                     }
                 }
@@ -185,7 +185,7 @@ async fn listener_thread(listener: NodeListener<()>) {
                 let incoming_data = incoming_data.to_vec();
                 debug!("[client#on_message] Incoming data: {:?}", String::from_utf8_lossy(&incoming_data));
 
-                let mut token = lock!(TOKEN_MANAGER);
+                let mut token = await_lock!(TOKEN_MANAGER);
                 if !token.reload().valid() {
                     error!("[client#on_message] ❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
                     return;
