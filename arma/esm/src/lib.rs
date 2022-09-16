@@ -1,6 +1,5 @@
 mod arma;
 mod bot;
-mod client;
 mod config;
 mod connection_manager;
 mod database;
@@ -13,7 +12,7 @@ mod token;
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 pub use std::sync::Arc;
 use std::{env, fs};
 use tokio::runtime::Runtime;
@@ -28,14 +27,13 @@ use log4rs::encode::pattern::PatternEncoder;
 
 use config::Config;
 use config::Env;
-use connection_manager::ConnectionManager;
 
-pub use client::TOKEN_MANAGER;
+pub use bot::TOKEN_MANAGER;
 pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 
-use crate::router::Router;
+use crate::router::{Router, RoutingCommand};
 
 pub type ESMResult = Result<(), ESMError>;
 pub type MessageResult = Result<Option<Message>, ESMError>;
@@ -193,10 +191,18 @@ fn pre_init(
             }
 
             info!("[extension#pre_init]    Greeting our new friend - Hello {}!", init.server_name);
-            // lock!(ARMA).initialize(init, callback);
+            if let Err(e) = crate::ROUTER.route_internal("arma", RoutingCommand::ArmaInitialize { context: callback }) {
+                error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Arma");
+                warn!("[extension#pre_init] ⚠ {e}");
+                error!("[extension#pre_init] ❌ Boot failed");
+            };
 
-            info!("[extension#pre_init]    Don't forget to greet ourselves - Hello ESM!");
-            // BOT.connect().await;
+            info!("[extension#pre_init]    Remembering to greet ourselves - Hello ESM!");
+            if let Err(e) = crate::ROUTER.route_internal("bot", RoutingCommand::ClientInitialize { init }) {
+                error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Bot");
+                warn!("[extension#pre_init] ⚠ {e}");
+                error!("[extension#pre_init] ❌ Boot failed");
+            };
 
             info!("[extension#pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
         });
@@ -217,9 +223,9 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
                 Err(e) => return error!("[extension#send_message] ❌ {}", e),
             };
 
-            // if let Err(e) = crate::BOT.send(message) {
-            //     error!("[extension#send_message] ❌ {}", e);
-            // };
+            if let Err(e) = crate::ROUTER.route_to_bot(message) {
+                error!("[extension#send_message] ❌ {}", e);
+            };
 
             info!("[extension#send_message] ⏲ Took {:.2?}", timer.elapsed());
         });
@@ -238,9 +244,9 @@ fn send_to_channel(id: String, content: String) {
             let mut message = Message::new(Type::Event);
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-            // if let Err(e) = crate::BOT.send(message) {
-            //     error!("[extension#send_to_channel] ❌ {}", e);
-            // };
+            if let Err(e) = crate::ROUTER.route_to_bot(message) {
+                error!("[extension#send_to_channel] ❌ {}", e);
+            };
 
             info!("[extension#send_to_channel] ⏲ Took {:.2?}", timer.elapsed());
         });

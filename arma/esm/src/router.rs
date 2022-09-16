@@ -7,7 +7,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 pub struct Router {
     arma_channel: UnboundedSender<RoutingCommand>,
-    client_channel: UnboundedSender<RoutingCommand>,
+    bot_channel: UnboundedSender<RoutingCommand>,
 }
 
 impl Default for Router {
@@ -16,13 +16,13 @@ impl Default for Router {
         let (client_channel, client_receiver) = unbounded_channel();
 
         crate::TOKIO_RUNTIME.block_on(async {
-            crate::client::initialize(client_receiver).await;
+            crate::bot::initialize(client_receiver).await;
             crate::arma::initialize(arma_receiver).await;
         });
 
         Router {
             arma_channel,
-            client_channel,
+            bot_channel: client_channel,
         }
     }
 }
@@ -32,19 +32,19 @@ impl Router {
         Self::default()
     }
 
-    pub fn route_to_arma(&self, message: Message) -> ESMResult {
+    pub fn route_to_arma(&self, name: &str, message: Message) -> ESMResult {
         self.route_internal(
             "arma",
-            RoutingCommand::Send {
+            RoutingCommand::Method {
+                name: name.to_string(),
                 message: Box::new(message),
-                delay: None,
             },
         )
     }
 
     pub fn route_to_bot(&self, message: Message) -> ESMResult {
         self.route_internal(
-            "client",
+            "bot",
             RoutingCommand::Send {
                 message: Box::new(message),
                 delay: None,
@@ -54,17 +54,15 @@ impl Router {
 
     pub fn route_internal(&self, destination: &str, command: RoutingCommand) -> ESMResult {
         match destination {
-            "client" => match self.client_channel.send(command) {
+            "bot" => match self.bot_channel.send(command) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(format!("[router#route_to_bot] Failed to route {}", e).into()),
+                Err(e) => Err(format!("Failed to route {}", e).into()),
             },
             "arma" => match self.arma_channel.send(command) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(format!("[router#route_to_arma] Failed to route {}", e).into()),
+                Err(e) => Err(format!("Failed to route {}", e).into()),
             },
-            r => {
-                Err(format!("[router#route_internal] Invalid destination \"{r}\" provided").into())
-            }
+            r => Err(format!("Invalid destination \"{r}\" provided to router").into()),
         }
     }
 }

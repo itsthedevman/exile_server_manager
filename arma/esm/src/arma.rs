@@ -35,7 +35,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
             // If a message is returned, send it back
             if let Some(m) = result {
                 if let Err(e) = crate::ROUTER.route_to_bot(m) {
-                    error!("{e}");
+                    error!("[arma#command_thread] ❌ {e}");
                 };
             }
         }
@@ -156,10 +156,13 @@ async fn post_initialization(message: Message) -> MessageResult {
 
     send_to_arma("ESMs_system_process_postInit", message).await?;
 
+    info!("[arma#post_initialization] ✅ Connection established with bot");
+    crate::READY.store(true, Ordering::SeqCst);
+
     Ok(None)
 }
 
-async fn call_function(mut message: Message) -> MessageResult {
+async fn call_function(message: Message) -> MessageResult {
     let metadata = retrieve_data!(message.metadata, Metadata::Command);
 
     // First, check to make sure the player has joined this server
@@ -190,6 +193,7 @@ async fn call_function(mut message: Message) -> MessageResult {
         ),
     };
 
-    // self.send(function_name, &message.id, &message.data, &message.metadata)?;
+    send_to_arma(function_name, message).await?;
+
     Ok(None)
 }

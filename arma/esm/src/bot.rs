@@ -1,84 +1,255 @@
+use crate::router::RoutingCommand;
+use crate::token::TokenManager;
 use crate::*;
 
-pub struct Bot {
-    connection_manager: ConnectionManager,
+use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
+use message_io::node::{self, NodeHandler, NodeListener};
+use std::net::{SocketAddr, ToSocketAddrs};
+use tokio::sync::mpsc::UnboundedReceiver;
+
+lazy_static! {
+    pub static ref TOKEN_MANAGER: Arc<Mutex<TokenManager>> =
+        Arc::new(Mutex::new(TokenManager::new()));
 }
 
-impl Default for Bot {
-    fn default() -> Self {
-        Bot {
-            connection_manager: ConnectionManager::new(),
-        }
-    }
+pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
+    if let Err(e) = await_lock!(TOKEN_MANAGER).load() {
+        error!("[bot#initialize] ❌ {}", e);
+    };
+
+    let (handler, listener) = node::split::<()>();
+
+    command_thread(receiver, handler).await;
+    listener_thread(listener).await;
 }
 
-impl Bot {
-    pub fn new() -> Self {
-        Self::default()
+async fn send_to_bot(
+    mut message: Message,
+    handler: &NodeHandler<()>,
+    endpoint: Endpoint,
+) -> ESMResult {
+    let mut token = await_lock!(TOKEN_MANAGER);
+    if !token.reload().valid() {
+        return Err("[bot#send_to_bot] Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
 
-    pub async fn connect(&self) {
-        self.connection_manager.connect().await;
+    // Add the server ID if there is none
+    if message.server_id.is_none() {
+        message.server_id = Some(token.id_bytes().to_vec());
     }
 
-    pub fn send(&self, message: Message) -> ESMResult {
-        if !matches!(message.message_type, Type::Init) {
-            debug!("[bot#send] {}", message);
-        }
-        // crate::connection_manager::CLIENT.send(message)
-        Ok(())
-    }
+    // Convert the message to bytes so it can be sent
+    match message.as_bytes(token.key_bytes()) {
+        Ok(bytes) => {
+            drop(token);
 
-    pub async fn on_connect(&self) -> ESMResult {
-        self.connection_manager
-            .connected
-            .store(true, Ordering::SeqCst);
-
-        Ok(())
-    }
-
-    pub fn on_message(&self, message: Message) -> ESMResult {
-        if !message.errors.is_empty() {
-            for error in message.errors {
-                error!("[bot#on_message] ❌ {}", error.error_content);
+            if !matches!(message.message_type, Type::Init) {
+                debug!("[bot#send_to_bot] {}", message);
             }
 
-            return Ok(());
+            match handler.network().send(endpoint, &bytes) {
+                SendStatus::Sent => {
+                    debug!("After send");
+                    Ok(())
+                },
+                SendStatus::MaxPacketSizeExceeded => Err(format!(
+                    "[bot#send_to_bot] Cannot send - Message is too large. Size: {}. Message: {message:?}", bytes.len()
+                )
+                .into()),
+                _ => Err("[bot#send_to_bot] Cannot send - We are not connected to the bot at the moment".into()),
+            }
         }
+        Err(error) => Err(format!("[bot#send_to_bot] {error}").into()),
+    }
+}
 
-        info!(
-            "[bot#on_message] Received {:?} message with ID {}",
-            message.message_type, message.id
+async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler: NodeHandler<()>) {
+    tokio::spawn(async move {
+        // Setting up the values because this code doesn't receive certain things until extension#pre_init
+        let default_addr = SocketAddr::new(
+            std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+            0,
         );
 
-        let result: Option<Message> = match message.message_type {
-            // Type::Init => lock!(crate::ARMA).post_initialization(message)?,
-            // Type::Query => Some(lock!(crate::ARMA).database.query(message)),
-            // Type::Arma => lock!(crate::ARMA).call_function(message)?,
-            Type::Test => Some(message),
-            _ => {
-                return Err(format!(
-                    "Message type \"{:?}\" has not been implemented yet",
-                    message.message_type
+        let mut arma_init: Init = Init::default();
+        let mut endpoint: Endpoint =
+            Endpoint::from_listener(message_io::network::ResourceId::from(0), default_addr);
+
+        let ready = |handler: &NodeHandler<()>, endpoint: &Endpoint| -> bool {
+            endpoint.addr() != default_addr
+                && matches!(
+                    handler.network().is_ready(endpoint.resource_id()),
+                    Some(true)
                 )
-                .into())
-            }
         };
 
-        // If a message is returned, send it back
-        if let Some(m) = result {
-            self.send(m)?;
-        }
+        // Command loop
+        while let Some(command) = receiver.recv().await {
+            match command {
+                RoutingCommand::Connect => {
+                    if let Err(errors) = arma_init.validate() {
+                        error!("[bot#command_thread] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
+                        continue;
+                    }
 
-        Ok(())
+                    let server_address = crate::CONFIG
+                        .connection_url
+                        .to_socket_addrs()
+                        .unwrap()
+                        .next()
+                        .unwrap();
+
+                    if !matches!(crate::CONFIG.env, Env::Test) {
+                        debug!(
+                            "[bot#connect] Attempting to connect to esm_bot at {server_address}"
+                        );
+                    }
+
+                    match handler
+                        .network()
+                        .connect(Transport::FramedTcp, server_address)
+                    {
+                        Ok((e, _)) => endpoint = e,
+                        Err(e) => {
+                            error!("[bot#command_thread] ❌ Failed to connect to server - {e}");
+                            continue;
+                        }
+                    };
+
+                    let mut message = Message::new(Type::Init);
+                    message.data = Data::Init(arma_init.clone());
+
+                    debug!("[bot#command_thread] Initialization {:#?}", message);
+
+                    if let Err(e) = crate::ROUTER.route_to_bot(message) {
+                        error!("[bot#command_thread] ❌ {}", e);
+                    }
+                }
+                RoutingCommand::Send { message, delay } => {
+                    // Make sure we are connected first
+                    if ready(&handler, &endpoint) {
+                        error!("[bot#command_thread] Cannot send message - Not connected to bot");
+                        continue;
+                    }
+
+                    // If there is a delay, just spawn it off and re-route the message back after waiting
+                    if let Some(d) = delay {
+                        tokio::spawn(async move {
+                            tokio::time::sleep(d).await;
+
+                            if let Err(e) = crate::ROUTER.route_to_bot(*message) {
+                                error!("[bot#command_thread] ❌ {e}");
+                            };
+                        });
+                    } else if let Err(e) = send_to_bot(*message, &handler, endpoint).await {
+                        error!("{e}");
+                    }
+                }
+                RoutingCommand::ClientInitialize { init } => {
+                    arma_init = init;
+
+                    // Now that we have the init data, tell ourselves to try to connect
+                    if let Err(e) = crate::ROUTER.route_internal("bot", RoutingCommand::Connect) {
+                        error!("[bot#command_thread] ❌ {e}");
+                    }
+                }
+                c => error!("[bot#command_thread] Cannot process - Client does not respond to {c}"),
+            }
+        }
+    });
+}
+
+async fn listener_thread(listener: NodeListener<()>) {
+    tokio::spawn(async move {
+        listener.for_each(|event| match event.network() {
+            NetEvent::Connected(_, connected) => on_connect(connected),
+            NetEvent::Accepted(_, _) => unreachable!(),
+            NetEvent::Message(_, incoming_data) => on_message(incoming_data.to_vec()),
+            NetEvent::Disconnected(_) => on_disconnect(),
+        });
+    });
+}
+
+fn on_connect(connected: bool) {
+    if !matches!(crate::CONFIG.env, Env::Test) {
+        debug!("[bot#on_connect] Are we connected? {}", connected);
     }
 
-    pub async fn on_disconnect(&self) -> ESMResult {
-        self.connection_manager
-            .connected
-            .store(false, Ordering::SeqCst);
+    if !connected {
+        on_disconnect();
+        return;
+    };
 
-        crate::READY.store(false, Ordering::SeqCst);
-        Ok(())
+    // self.connection_manager
+    //         .connected
+    //         .store(true, Ordering::SeqCst);
+}
+
+fn on_message(incoming_data: Vec<u8>) {
+    debug!(
+        "[bot#on_message] Incoming data: {:?}",
+        String::from_utf8_lossy(&incoming_data)
+    );
+
+    let mut token = await_lock!(TOKEN_MANAGER);
+    if !token.reload().valid() {
+        error!("[bot#on_message] ❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+        return;
+    }
+
+    let message = match Message::from_bytes(incoming_data, token.key_bytes()) {
+        Ok(message) => {
+            drop(token);
+            debug!("[bot#on_message] {message}");
+            message
+        }
+        Err(e) => {
+            error!("[bot#on_message] ❌ {}", e);
+            return;
+        }
+    };
+
+    if !message.errors.is_empty() {
+        for error in message.errors {
+            error!("[bot#on_message] ❌ {}", error.error_content);
+        }
+
+        return;
+    }
+
+    let message_type = message.message_type;
+    if matches!(message_type, Type::Init) && crate::READY.load(Ordering::SeqCst) {
+        error!("[bot#on_message] ❌ Client is already initialized");
+        return;
+    }
+
+    if let Err(e) = process_message(message) {
+        error!("[bot#on_message] ❌ {e}");
+    }
+}
+
+fn on_disconnect() {
+    if !matches!(crate::CONFIG.env, Env::Test) {
+        debug!("[bot#on_disconnect] Lost connection");
+    }
+
+    // self.connection_manager
+    //         .connected
+    //         .store(false, Ordering::SeqCst);
+
+    crate::READY.store(false, Ordering::SeqCst);
+}
+
+fn process_message(message: Message) -> ESMResult {
+    match message.message_type {
+        Type::Init => crate::ROUTER.route_to_arma("post_initialization", message),
+        Type::Query => crate::ROUTER.route_to_arma("query", message),
+        Type::Arma => crate::ROUTER.route_to_arma("call_function", message),
+        Type::Test => crate::ROUTER.route_to_bot(message),
+        _ => Err(format!(
+            "[bot#on_message] ❌ Message type \"{:?}\" has not been implemented yet",
+            message.message_type
+        )
+        .into()),
     }
 }
