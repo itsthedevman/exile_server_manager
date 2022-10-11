@@ -34,6 +34,23 @@ pub struct Config {
     pub server_mod_name: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            connection_url: default_connection_url(),
+            logging_path: default_logging_path(),
+            log_level: default_log_level(),
+            env: default_env(),
+            extdb_conf_path: default_extdb_conf_path(),
+            extdb_conf_header_name: default_extdb_conf_header_name(),
+            extdb_version: default_extdb_version(),
+            log_output: default_log_output(),
+            database_uri: default_database_uri(),
+            server_mod_name: default_server_mod_name(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum Env {
@@ -105,12 +122,6 @@ fn default_server_mod_name() -> String {
         "@ExileServer".into()
     } else {
         "@exileserver".into()
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        serde_yaml::from_str("").unwrap()
     }
 }
 
