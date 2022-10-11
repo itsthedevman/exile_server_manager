@@ -100,10 +100,10 @@ fn initialize_logger() {
 ///////////////////////////////////////////////////////////////////////
 #[arma]
 pub fn init() -> Extension {
-    debug!("[extension#init] - Initializing");
-
     // Start the logger
     initialize_logger();
+
+    debug!("[extension#init] - Initializing");
 
     // Initialize the static instances to start everything
     lazy_static::initialize(&CONFIG);
