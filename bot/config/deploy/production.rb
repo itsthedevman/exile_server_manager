@@ -1,6 +1,6 @@
 append :linked_files, ".env.prod"
 
-role :app, %w{wolf@esmbot.com}
+role :app, %w{prod}
 set :default_env, {
   RAILS_ENV: "production",
   ESM_ENV: "production",
