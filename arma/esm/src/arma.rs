@@ -92,7 +92,7 @@ async fn send_to_arma(function: &str, message: Message) -> ESMResult {
 
     match &*await_lock!(CALLBACK) {
         Some(ctx) => {
-            ctx.callback("exile_server_manager", function, Some(message));
+            ctx.callback_data("exile_server_manager", function, Some(message));
             Ok(())
         }
         None => Err(
