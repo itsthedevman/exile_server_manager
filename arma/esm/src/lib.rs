@@ -88,7 +88,7 @@ fn initialize_logger() {
     };
 
     info!(
-        "\n----------------------------------\nWelcome to Exile Server Manager v{} Build {}\nLoaded config {}\n----------------------------------",
+        "\n----------------------------------\nWelcome to Exile Server Manager v{}.{}\n---\n{}\n----------------------------------",
         env!("CARGO_PKG_VERSION"),
         std::include_str!("../.build-sha"),
         CONFIG.to_string()
