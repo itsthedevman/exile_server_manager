@@ -60,7 +60,7 @@ pub enum Commands {
         env: BuildEnv,
 
         /// The URI of the server hosting esm_bot
-        #[clap(short, long,default_value_t = String::from("esm.mshome.net:3003"))]
+        #[clap(short, long, default_value_t = String::from("192.168.50.242:3003"))]
         bot_host: String,
     },
 }
