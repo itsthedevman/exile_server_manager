@@ -634,7 +634,11 @@ impl Builder {
                             }}
 
                             Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
-                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo"
+                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
+
+                            if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
+                                "Failed to build - {build_path}\@esm\addons\{addon}.pbo does not exist"
+                            }}
                         "#,
                         build_path = self.remote_build_path_str(),
                     );
