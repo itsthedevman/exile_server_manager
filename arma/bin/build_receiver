@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd build/receiver
+cargo build --release --target x86_64-pc-windows-gnu
+
+cd ../../target/x86_64-pc-windows-gnu/release
+mv receiver.exe ~/share/esm_build_receiver.exe
