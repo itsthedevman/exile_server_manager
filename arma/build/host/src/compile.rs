@@ -313,12 +313,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match define_fn(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = define_fn(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(
@@ -336,12 +333,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match type_eq(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = type_eq(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(output, r#"_variable isEqualType "";"#);
@@ -356,12 +350,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match type_ne(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = type_ne(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(output, r#"!(VARIABLE isEqualType createHashMap);"#);
@@ -380,12 +371,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match hash_get(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = hash_get(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(
@@ -411,12 +399,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match hash_get(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = hash_get(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(
@@ -446,7 +431,7 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match log(
+            if let Some(result) = log(
                 &Data {
                     target: "".into(),
                     file_path: "".into(),
@@ -457,11 +442,8 @@ mod tests {
             )
             .unwrap()
             {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(
@@ -493,7 +475,7 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match log(
+            if let Some(result) = log(
                 &Data {
                     target: "".into(),
                     file_path: "".into(),
@@ -504,11 +486,8 @@ mod tests {
             )
             .unwrap()
             {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(
@@ -532,12 +511,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match nil(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = nil(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(output, r#"isNil "_variable";"#)
@@ -552,12 +528,9 @@ mod tests {
 
         let mut output = content.to_string();
         for capture in captures {
-            match not_nil(&Data::default(), &capture).unwrap() {
-                Some(result) => {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = not_nil(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         assert_eq!(output, r#"!(isNil "_variable");"#)

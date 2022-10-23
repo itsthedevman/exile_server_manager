@@ -151,14 +151,11 @@ impl File {
         let captures: Vec<Captures> = replacement.regex.captures_iter(&content).collect();
 
         for capture in captures {
-            match (replacement.callback)(data, &capture)? {
-                Some(result) => {
-                    self.content = self
-                        .content
-                        .replace(capture.get(0).unwrap().as_str(), &result);
-                }
-                None => {}
-            };
+            if let Some(result) = (replacement.callback)(data, &capture)? {
+                self.content = self
+                    .content
+                    .replace(capture.get(0).unwrap().as_str(), &result);
+            }
         }
 
         Ok(())
