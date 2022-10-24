@@ -55,7 +55,7 @@ fn send_to_bot(mut message: Message, handler: &NodeHandler<()>, endpoint: Endpoi
                     "[bot#send_to_bot] Cannot send - Message is too large. Size: {}. Message: {message:?}", bytes.len()
                 )
                 .into()),
-                e => Err(format!("[bot#send_to_bot] Cannot send - We are not connected to the bot at the moment - {e:?}").into()),
+                _ => Err("[bot#send_to_bot] Cannot send - We are not connected to the bot at the moment".into()),
             }
         }
         Err(error) => Err(format!("[bot#send_to_bot] {error}").into()),

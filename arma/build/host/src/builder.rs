@@ -727,7 +727,7 @@ impl Builder {
                 },
                 Highlight {
                     regex: Regex::new(r"(?i)debug").unwrap(),
-                    color: [51, 51, 51]
+                    color: [80, 82, 86]
                 },
                 Highlight {
                     regex: Regex::new(r"(?i)trace").unwrap(),
@@ -761,9 +761,9 @@ impl Builder {
 
                 println!(
                     "{name}:{line_number:5}{sep} {content}",
-                    sep = "|".black(),
+                    sep = "|".bright_black(),
                     name = extension.truecolor(line.color[0], line.color[1], line.color[2]),
-                    line_number = line.line_number.to_string().black(),
+                    line_number = line.line_number.to_string().bright_black(),
                     content = if let Some(h) = highlight {
                         content.bold().truecolor(h.color[0], h.color[1], h.color[2])
                     } else {
