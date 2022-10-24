@@ -104,6 +104,6 @@ addMissionEventHandler ["ExtensionCallback", {
 
 	// vg_max_sizes
 	getArray(missionConfigFile >> "CfgVirtualGarage" >> "numberOfVehicles")
-] call ESMs_system_extension_call;
+] spawn ESMs_system_extension_call;
 
 true

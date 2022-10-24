@@ -52,7 +52,7 @@ else
 
 // Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
-	trace!("[%1] Sanitizing input with type (%2) - %3", _id, typeName(_this), _this);
+	trace!("[%1] Sanitizing %2: %3", _id, typeName(_this), _this);
 
 	switch (typeName(_this)) do
 	{
@@ -125,4 +125,8 @@ if ((_result select 2) > 0) exitWith
 	false
 };
 
+// The result is worthless, don't try to process it
+if ((_result select 0) isEqualTo "null") exitWith { nil };
+
+// There was a returned value
 (_result select 0) call ESMs_system_extension_processResult
