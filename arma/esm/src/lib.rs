@@ -143,6 +143,9 @@ fn pre_init(
     );
 
     std::thread::spawn(move || {
+        // Router must be initialized outside the async context
+        lazy_static::initialize(&ROUTER);
+
         TOKIO_RUNTIME.block_on(async {
             // Only allow this method to be called properly once
             if READY.load(Ordering::SeqCst) {
@@ -202,6 +205,7 @@ fn pre_init(
                 error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Bot");
                 warn!("[extension#pre_init] ⚠ {e}");
                 error!("[extension#pre_init] ❌ Boot failed");
+                return;
             };
 
             info!("[extension#pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
@@ -211,7 +215,7 @@ fn pre_init(
 
 fn send_message(id: String, message_type: String, data: String, metadata: String, errors: String) {
     let timer = std::time::Instant::now();
-    debug!(
+    trace!(
         "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
         id, message_type, data, metadata, errors
     );
@@ -234,7 +238,7 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
 
 fn send_to_channel(id: String, content: String) {
     let timer = std::time::Instant::now();
-    debug!(
+    trace!(
         "[extension#send_to_channel] id: {:?} - content: {:?}",
         id, content
     );
@@ -255,21 +259,21 @@ fn send_to_channel(id: String, content: String) {
 
 fn utc_timestamp() -> String {
     let timestamp = Utc::now().to_rfc3339();
-    debug!("[extension#utc_timestamp] - {timestamp}");
+    trace!("[extension#utc_timestamp] - {timestamp}");
 
     timestamp
 }
 
 fn log_level() -> String {
     let log_level = CONFIG.log_level.to_lowercase();
-    debug!("[extension#log_level] - {log_level}");
+    trace!("[extension#log_level] - {log_level}");
 
     log_level
 }
 
 fn log_output() -> String {
     let log_output = CONFIG.log_output.to_lowercase();
-    debug!("[extension#log_output] - {log_output}");
+    trace!("[extension#log_output] - {log_output}");
 
     log_output
 }
