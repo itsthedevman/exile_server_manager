@@ -52,13 +52,11 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Token {{ server_id: {:?}, community_id: {:?}, valid: {} }}",
-            self.server_id,
-            self.community_id,
-            self.valid()
-        )
+        f.debug_struct("Token")
+            .field("server_id", &self.server_id)
+            .field("community_id", &self.community_id)
+            .field("valid", &self.valid())
+            .finish()
     }
 }
 
