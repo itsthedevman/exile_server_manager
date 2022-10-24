@@ -2,11 +2,12 @@ use crate::*;
 use crate::{database::Database, router::RoutingCommand};
 
 use arma_rs::{Context, IntoArma};
+use std::sync::Mutex as SyncMutex;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
     static ref DATABASE: Database = Database::new();
-    static ref CALLBACK: Arc<Mutex<Option<Context>>> = Arc::new(Mutex::new(None));
+    static ref CALLBACK: Arc<SyncMutex<Option<Context>>> = Arc::new(SyncMutex::new(None));
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
@@ -14,14 +15,18 @@ pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
 }
 
 async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
+    trace!("[arma::command_thread] Spawning");
+
     tokio::spawn(async move {
         // Command loop
+        trace!("[arma::command_thread] Receiving");
         while let Some(command) = receiver.recv().await {
             let result: Option<Message> = match command {
                 RoutingCommand::Query(message) => execute("query", *message).await,
                 RoutingCommand::Method { name, message } => execute(name.as_str(), *message).await,
                 RoutingCommand::ArmaInitialize { context } => {
-                    *await_lock!(CALLBACK) = Some(context);
+                    trace!("[arma::command_thread] ArmaInitialize");
+                    *lock!(CALLBACK) = Some(context);
                     continue;
                 }
                 c => {
@@ -44,6 +49,8 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
 
 async fn execute(name: &str, message: Message) -> Option<Message> {
     let message_id = message.id;
+
+    trace!("[arma::execute] Executing {name} for message id:{message_id}");
 
     let result = match name {
         "query" => DATABASE.query(message).await,
@@ -68,7 +75,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
     }
 }
 
-async fn send_to_arma(function: &str, message: Message) -> ESMResult {
+fn send_to_arma(function: &str, message: Message) -> ESMResult {
     trace!(
         r#"[arma#send]
             function: {}
@@ -88,9 +95,9 @@ async fn send_to_arma(function: &str, message: Message) -> ESMResult {
         vec!["metadata".to_arma(), message.metadata.to_arma()],
     ];
 
-    trace!("[arma#send] {message:?}");
+    debug!("[arma#send] {message:?}");
 
-    match &*await_lock!(CALLBACK) {
+    match &*lock!(CALLBACK) {
         Some(ctx) => {
             ctx.callback_data("exile_server_manager", function, Some(message));
             Ok(())
@@ -123,7 +130,7 @@ async fn post_initialization(message: Message) -> MessageResult {
     }
 
     // Call arma
-    let token = &await_lock!(TOKEN_MANAGER);
+    let token = &lock!(TOKEN_MANAGER);
 
     let message = message.set_data(Data::ArmaPostInit(ArmaPostInit {
         build_number: std::include_str!("../.build-sha").to_string(),
@@ -154,7 +161,7 @@ async fn post_initialization(message: Message) -> MessageResult {
         version: env!("CARGO_PKG_VERSION").to_string(),
     }));
 
-    send_to_arma("ESMs_system_process_postInit", message).await?;
+    send_to_arma("ESMs_system_process_postInit", message)?;
 
     info!("[arma#post_initialization] ✅ Connection established with bot");
     crate::READY.store(true, Ordering::SeqCst);
@@ -193,7 +200,7 @@ async fn call_function(message: Message) -> MessageResult {
         ),
     };
 
-    send_to_arma(function_name, message).await?;
+    send_to_arma(function_name, message)?;
 
     Ok(None)
 }

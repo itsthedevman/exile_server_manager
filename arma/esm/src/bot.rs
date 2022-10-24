@@ -4,16 +4,19 @@ use crate::*;
 
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeListener};
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::ToSocketAddrs;
+use std::sync::Mutex as SyncMutex;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
-    pub static ref TOKEN_MANAGER: Arc<Mutex<TokenManager>> =
-        Arc::new(Mutex::new(TokenManager::new()));
+    pub static ref TOKEN_MANAGER: Arc<SyncMutex<TokenManager>> =
+        Arc::new(SyncMutex::new(TokenManager::new()));
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
-    if let Err(e) = await_lock!(TOKEN_MANAGER).load() {
+    trace!("[bot::initialize] Loading token");
+
+    if let Err(e) = lock!(TOKEN_MANAGER).load() {
         error!("[bot#initialize] ❌ {}", e);
     };
 
@@ -23,12 +26,8 @@ pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
     listener_thread(listener).await;
 }
 
-async fn send_to_bot(
-    mut message: Message,
-    handler: &NodeHandler<()>,
-    endpoint: Endpoint,
-) -> ESMResult {
-    let mut token = await_lock!(TOKEN_MANAGER);
+fn send_to_bot(mut message: Message, handler: &NodeHandler<()>, endpoint: Endpoint) -> ESMResult {
+    let mut token = lock!(TOKEN_MANAGER);
     if !token.reload().valid() {
         return Err("[bot#send_to_bot] Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
@@ -56,7 +55,7 @@ async fn send_to_bot(
                     "[bot#send_to_bot] Cannot send - Message is too large. Size: {}. Message: {message:?}", bytes.len()
                 )
                 .into()),
-                _ => Err("[bot#send_to_bot] Cannot send - We are not connected to the bot at the moment".into()),
+                e => Err(format!("[bot#send_to_bot] Cannot send - We are not connected to the bot at the moment - {e:?}").into()),
             }
         }
         Err(error) => Err(format!("[bot#send_to_bot] {error}").into()),
@@ -64,29 +63,32 @@ async fn send_to_bot(
 }
 
 async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler: NodeHandler<()>) {
+    trace!("[bot::command_thread] Spawning");
+
     tokio::spawn(async move {
         // Setting up the values because this code doesn't receive certain things until extension#pre_init
-        let default_addr = SocketAddr::new(
-            std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
-            0,
-        );
-
         let mut arma_init: Init = Init::default();
-        let mut endpoint: Endpoint =
-            Endpoint::from_listener(message_io::network::ResourceId::from(0), default_addr);
+        let mut endpoint: Option<Endpoint> = None;
 
-        let ready = |handler: &NodeHandler<()>, endpoint: &Endpoint| -> bool {
-            endpoint.addr() != default_addr
-                && matches!(
-                    handler.network().is_ready(endpoint.resource_id()),
-                    Some(true)
-                )
+        let ready = |handler: &NodeHandler<()>, endpoint: &Option<Endpoint>| -> bool {
+            if endpoint.is_none() {
+                return false;
+            }
+
+            let endpoint = endpoint.as_ref().unwrap();
+            matches!(
+                handler.network().is_ready(endpoint.resource_id()),
+                Some(true)
+            )
         };
 
         // Command loop
+        trace!("[bot::command_thread] Receiving");
         while let Some(command) = receiver.recv().await {
             match command {
                 RoutingCommand::Connect => {
+                    trace!("[bot#command_thread] Connect");
+
                     if let Err(errors) = arma_init.validate() {
                         error!("[bot#command_thread] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
                         continue;
@@ -109,7 +111,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler
                         .network()
                         .connect(Transport::FramedTcp, server_address)
                     {
-                        Ok((e, _)) => endpoint = e,
+                        Ok((e, _)) => endpoint = Some(e),
                         Err(e) => {
                             error!("[bot#command_thread] ❌ Failed to connect to server - {e}");
                             continue;
@@ -126,6 +128,8 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler
                     }
                 }
                 RoutingCommand::Send { message, delay } => {
+                    trace!("[bot#command_thread] Send");
+
                     // Make sure we are connected first
                     if ready(&handler, &endpoint) {
                         error!("[bot#command_thread] Cannot send message - Not connected to bot");
@@ -141,11 +145,13 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler
                                 error!("[bot#command_thread] ❌ {e}");
                             };
                         });
-                    } else if let Err(e) = send_to_bot(*message, &handler, endpoint).await {
+                    } else if let Err(e) = send_to_bot(*message, &handler, endpoint.unwrap()) {
                         error!("{e}");
                     }
                 }
                 RoutingCommand::ClientInitialize { init } => {
+                    trace!("[bot#command_thread] ClientInitialize");
+
                     arma_init = init;
 
                     // Now that we have the init data, tell ourselves to try to connect
@@ -160,6 +166,8 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>, handler
 }
 
 async fn listener_thread(listener: NodeListener<()>) {
+    trace!("[bot::listener_thread] Spawning");
+
     tokio::spawn(async move {
         listener.for_each(|event| match event.network() {
             NetEvent::Connected(_, connected) => on_connect(connected),
@@ -191,7 +199,7 @@ fn on_message(incoming_data: Vec<u8>) {
         String::from_utf8_lossy(&incoming_data)
     );
 
-    let mut token = await_lock!(TOKEN_MANAGER);
+    let mut token = lock!(TOKEN_MANAGER);
     if !token.reload().valid() {
         error!("[bot#on_message] ❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
         return;
