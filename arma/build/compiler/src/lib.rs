@@ -129,7 +129,7 @@ impl Compiler {
         for file in &self.files {
             let destination_path = self.destination.join(&file.relative_path);
 
-            std::fs::create_dir_all(&destination_path.parent().unwrap())?;
+            std::fs::create_dir_all(destination_path.parent().unwrap())?;
             std::fs::write(destination_path, &file.content)?;
         }
 

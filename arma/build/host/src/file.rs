@@ -14,7 +14,7 @@ impl File {
         destination_path: PathBuf,
         file_name: &str,
     ) -> BuildResult {
-        let source_path = source_path.join(&file_name);
+        let source_path = source_path.join(file_name);
 
         let bytes = std::fs::read(source_path).unwrap();
 

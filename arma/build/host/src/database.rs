@@ -226,7 +226,7 @@ fn generate_territories(steam_uids: &[String]) -> Vec<Territory> {
                 radius: (0.0..100.0).fake(),
                 level: (0..7).fake(),
                 flag_texture: FLAG_TEXTURES.choose(rng).unwrap().to_string(),
-                flag_stolen: if stolen { 1 } else { 0 },
+                flag_stolen: u8::from(stolen),
                 flag_stolen_by_uid: if stolen {
                     format!("'{}'", steam_uids.choose(rng).unwrap())
                 } else {

@@ -121,7 +121,7 @@ impl IncomingCommand {
             )
         };
 
-        SystemCommand::new(&command)
+        SystemCommand::new(command)
             .args(&vec![args.join(";")])
             .output()?;
 
