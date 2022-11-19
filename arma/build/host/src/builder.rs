@@ -1,5 +1,6 @@
 use common::write_lock;
 use compiler::Compiler;
+use glob::glob;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
@@ -8,6 +9,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use crate::database::Database;
+use crate::file_watcher::FileWatcher;
 use crate::Directory;
 use crate::{
     read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, LogLevel,
@@ -56,24 +58,29 @@ pub struct Builder {
     pub log_level: LogLevel,
     /// The host URI that is currently hosting a bot instance.
     pub bot_host: String,
+    /// If true, this ignores file checks and rebuilds the entire suite
+    pub rebuild: bool,
     /// The path to this repo's root directory
     pub local_git_path: PathBuf,
     /// Rust's build directory
     pub local_build_path: PathBuf,
     /// Rust build target for the build OS
     pub extension_build_target: String,
+    /// Handles file watching for changes
+    file_watcher: FileWatcher,
 }
 
 impl Builder {
     pub fn new(command: Commands) -> Result<Self, BuildError> {
-        let (build_x32, os, log_level, env, bot_host) = match command {
+        let (build_x32, os, log_level, env, bot_host, rebuild) = match command {
             Commands::Run {
                 build_x32,
                 target,
                 log_level,
                 env,
                 bot_host,
-            } => (build_x32, target, log_level, env, bot_host),
+                rebuild,
+            } => (build_x32, target, log_level, env, bot_host, rebuild),
         };
 
         let arch = if build_x32 {
@@ -82,7 +89,6 @@ impl Builder {
             BuildArch::X64
         };
 
-        // Have to remove the first slash in order for this to work
         let local_git_path = std::env::current_dir()?;
 
         let extension_build_target: String = match os {
@@ -98,17 +104,24 @@ impl Builder {
 
         let local_build_path = local_git_path.join("target");
 
+        let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
+            .watch(&local_git_path.join("@esm"))
+            .watch(&local_git_path.join("esm"))
+            .load()?;
+
         let builder = Builder {
             os,
             arch,
             env,
             bot_host,
             log_level,
+            rebuild,
             local_git_path,
             extension_build_target,
             local_build_path,
             remote: Remote::new(),
             redis: redis::Client::open("redis://127.0.0.1/0")?,
+            file_watcher,
         };
 
         Ok(builder)
@@ -120,17 +133,23 @@ impl Builder {
 
         self.print_info();
         self.print_status("Killing Arma", Builder::kill_arma)?;
-        self.print_status("Cleaning directories", Builder::clean_directories)?;
+        self.print_status("Cleaning", Builder::clean_directories)?;
 
         self.print_status("Preparing to build", Builder::prepare_to_build)?;
 
-        if matches!(self.os, BuildOS::Windows) {
+        if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
             self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
         }
 
-        self.print_status("Compiling mod", Builder::compile_mod)?;
-        self.print_status("Compiling extension", Builder::build_extension)?;
-        self.print_status("Building mod", Builder::build_mod)?;
+        if self.rebuild_mod() {
+            self.print_status("Compiling mod", Builder::compile_mod)?;
+            self.print_status("Building mod", Builder::build_mod)?;
+        }
+
+        if self.rebuild_extension() {
+            self.print_status("Compiling extension", Builder::build_extension)?;
+        }
+
         self.print_status("Seeding database", Builder::seed_database)?;
         self.print_status("Starting a3 server", Builder::start_a3_server)?;
         self.print_status("Starting log stream", Builder::stream_logs)?;
@@ -298,6 +317,22 @@ impl Builder {
         &self.remote.build_path_str
     }
 
+    fn rebuild_extension(&self) -> bool {
+        self.rebuild || has_directory_changed(&self.file_watcher, &self.local_git_path.join("esm"))
+    }
+
+    fn rebuild_mod(&self) -> bool {
+        self.rebuild || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm"))
+    }
+
+    fn rebuild_addon(&self, addon: &str) -> bool {
+        self.rebuild
+            || has_directory_changed(
+                &self.file_watcher,
+                &self.local_git_path.join("@esm").join("addons").join(addon),
+            )
+    }
+
     //////////////////////////////////////////////////////////////////
     /// Build steps below
     //////////////////////////////////////////////////////////////////
@@ -359,28 +394,16 @@ impl Builder {
 
                 format!(
                     r#"
-                        Remove-Item "{server_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.bidmp" -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.mdmp" -ErrorAction SilentlyContinue;
-
-                        if ([System.IO.Directory]::Exists("{build_path}\esm\target")) {{
-                            Move-Item -Path "{build_path}\esm\target" -Destination "{build_path}";
-                        }}
-
-                        Remove-Item -Path "{build_path}\esm" -Recurse -ErrorAction SilentlyContinue;
-                        Remove-Item -Path "{build_path}\@esm" -Recurse -ErrorAction SilentlyContinue;
 
                         New-Item -Path "{build_path}\esm" -ItemType Directory;
                         New-Item -Path "{build_path}\@esm" -ItemType Directory;
                         New-Item -Path "{build_path}\@esm\addons" -ItemType Directory;
                         New-Item -Path "{server_path}\@esm" -ItemType Directory;
                         New-Item -Path "{server_path}\@esm\addons" -ItemType Directory;
-
-                        if ([System.IO.Directory]::Exists("{build_path}\target")) {{
-                            Move-Item -Path "{build_path}\target" -Destination "{build_path}\esm\target";
-                        }}
                     "#,
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
@@ -483,6 +506,7 @@ impl Builder {
     fn build_extension(&mut self) -> BuildResult {
         // This will be read by the build script and inserted into the extension
         let extension_path = self.local_git_path.join("esm");
+
         fs::write(
             extension_path
                 .join(".build-sha")
@@ -625,8 +649,11 @@ impl Builder {
                 }
 
                 for addon in ADDONS.iter().chain(extra_addons.iter()) {
-                    // If the addons are copied over to the P drive and then PBOed there?
-                    // The "root" is probably what matters here. The root needs to be P: drive
+                    if !self.rebuild_addon(addon) {
+                        continue;
+                    }
+
+                    // The "root" is what matters here. The root needs to be P: drive
                     let script = format!(
                         r#"
                             if ([System.IO.Directory]::Exists("P:\{addon}")) {{
@@ -796,4 +823,15 @@ fn git_sha_short() -> String {
         Ok(o) => o.trim().to_string(),
         Err(_e) => "FAILED TO RETRIEVE".into(),
     }
+}
+
+pub fn has_directory_changed(watcher: &FileWatcher, path: &Path) -> bool {
+    let file_paths = match glob(&format!("{}/**/*", path.to_string_lossy())) {
+        Ok(p) => p,
+        Err(_e) => return true,
+    };
+
+    file_paths
+        .filter_map(|p| p.ok())
+        .any(|p| watcher.was_modified(&p))
 }

@@ -7,6 +7,7 @@ mod data;
 mod database;
 mod directory;
 mod file;
+mod file_watcher;
 mod server;
 
 use std::{
@@ -62,6 +63,10 @@ pub enum Commands {
         /// The URI of the server hosting esm_bot
         #[clap(short, long, default_value_t = String::from("192.168.50.242:3003"))]
         bot_host: String,
+
+        /// Forces a rebuild of the extension/mod
+        #[clap(short, long)]
+        rebuild: bool,
     },
 }
 
