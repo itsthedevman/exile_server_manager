@@ -85,7 +85,7 @@ mod tests {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TokenManager {
     token: Token,
 }
