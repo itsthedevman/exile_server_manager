@@ -254,11 +254,6 @@ fn on_connect(connected: bool) -> ESMResult {
 }
 
 fn on_message(incoming_data: &[u8]) -> ESMResult {
-    debug!(
-        "[bot#on_message] Incoming data: {:?}",
-        String::from_utf8_lossy(incoming_data)
-    );
-
     let mut token = lock!(TOKEN_MANAGER);
     if !token.reload().valid() {
         return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
@@ -295,7 +290,7 @@ fn on_message(incoming_data: &[u8]) -> ESMResult {
         Type::Query => crate::ROUTER.route_to_arma("query", message),
         Type::Arma => crate::ROUTER.route_to_arma("call_function", message),
         Type::Test => crate::ROUTER.route_to_bot(message),
-        Type::Ping => crate::ROUTER.route_to_bot(Message::new(Type::Pong)),
+        Type::Ping => crate::ROUTER.route_to_bot(message.set_type(Type::Pong)),
         _ => Err(format!(
             "❌ Message type \"{:?}\" has not been implemented yet",
             message.message_type
