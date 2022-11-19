@@ -1,5 +1,5 @@
 use crate::*;
-use crate::{database::Database, router::RoutingCommand};
+use crate::{database::Database, router::RoutingRequest};
 
 use arma_rs::{Context, IntoArma};
 use std::sync::Mutex as SyncMutex;
@@ -10,11 +10,11 @@ lazy_static! {
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> = Arc::new(SyncMutex::new(None));
 }
 
-pub async fn initialize(receiver: UnboundedReceiver<RoutingCommand>) {
+pub async fn initialize(receiver: UnboundedReceiver<RoutingRequest>) {
     command_thread(receiver).await;
 }
 
-async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
+async fn command_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
     trace!("[arma::command_thread] Spawning");
 
     tokio::spawn(async move {
@@ -22,9 +22,9 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingCommand>) {
         trace!("[arma::command_thread] Receiving");
         while let Some(command) = receiver.recv().await {
             let result: Option<Message> = match command {
-                RoutingCommand::Query(message) => execute("query", *message).await,
-                RoutingCommand::Method { name, message } => execute(name.as_str(), *message).await,
-                RoutingCommand::ArmaInitialize { context } => {
+                RoutingRequest::Query(message) => execute("query", *message).await,
+                RoutingRequest::Method { name, message } => execute(name.as_str(), *message).await,
+                RoutingRequest::ArmaInitialize { context } => {
                     trace!("[arma::command_thread] ArmaInitialize");
                     *lock!(CALLBACK) = Some(context);
                     continue;

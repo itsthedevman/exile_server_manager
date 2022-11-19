@@ -33,7 +33,7 @@ pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 
-use crate::router::{Router, RoutingCommand};
+use crate::router::{Router, RoutingRequest};
 
 pub type ESMResult = Result<(), ESMError>;
 pub type MessageResult = Result<Option<Message>, ESMError>;
@@ -194,14 +194,14 @@ fn pre_init(
             }
 
             info!("[extension#pre_init]    Greeting our new friend - Hello {}!", init.server_name);
-            if let Err(e) = crate::ROUTER.route_internal("arma", RoutingCommand::ArmaInitialize { context: callback }) {
+            if let Err(e) = crate::ROUTER.route("arma", RoutingRequest::ArmaInitialize { context: callback }) {
                 error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Arma");
                 warn!("[extension#pre_init] ⚠ {e}");
                 error!("[extension#pre_init] ❌ Boot failed");
             };
 
             info!("[extension#pre_init]    Remembering to greet ourselves - Hello ESM!");
-            if let Err(e) = crate::ROUTER.route_internal("bot", RoutingCommand::ClientInitialize { init }) {
+            if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::ClientInitialize { init }) {
                 error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Bot");
                 warn!("[extension#pre_init] ⚠ {e}");
                 error!("[extension#pre_init] ❌ Boot failed");
@@ -217,7 +217,11 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
     let timer = std::time::Instant::now();
     trace!(
         "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
-        id, message_type, data, metadata, errors
+        id,
+        message_type,
+        data,
+        metadata,
+        errors
     );
 
     std::thread::spawn(move || {
@@ -240,7 +244,8 @@ fn send_to_channel(id: String, content: String) {
     let timer = std::time::Instant::now();
     trace!(
         "[extension#send_to_channel] id: {:?} - content: {:?}",
-        id, content
+        id,
+        content
     );
 
     std::thread::spawn(move || {

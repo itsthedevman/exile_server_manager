@@ -1,12 +1,11 @@
 use crate::*;
 
 use esm_message::{Init, Message};
-use std::time::Duration;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 pub struct Router {
-    arma_channel: UnboundedSender<RoutingCommand>,
-    bot_channel: UnboundedSender<RoutingCommand>,
+    arma_channel: UnboundedSender<RoutingRequest>,
+    bot_channel: UnboundedSender<RoutingRequest>,
 }
 
 impl Default for Router {
@@ -32,9 +31,9 @@ impl Router {
     }
 
     pub fn route_to_arma(&self, name: &str, message: Message) -> ESMResult {
-        self.route_internal(
+        self.route(
             "arma",
-            RoutingCommand::Method {
+            RoutingRequest::Method {
                 name: name.to_string(),
                 message: Box::new(message),
             },
@@ -42,16 +41,10 @@ impl Router {
     }
 
     pub fn route_to_bot(&self, message: Message) -> ESMResult {
-        self.route_internal(
-            "bot",
-            RoutingCommand::Send {
-                message: Box::new(message),
-                delay: None,
-            },
-        )
+        self.route("bot", RoutingRequest::Send(Box::new(message)))
     }
 
-    pub fn route_internal(&self, destination: &str, command: RoutingCommand) -> ESMResult {
+    pub fn route(&self, destination: &str, command: RoutingRequest) -> ESMResult {
         trace!("[router#route_internal] Destination: {destination} - Package: {command}");
         match destination {
             "bot" => match self.bot_channel.send(command) {
@@ -67,52 +60,41 @@ impl Router {
     }
 }
 
-pub enum RoutingCommand {
+pub enum RoutingRequest {
     // Client
     Connect,
-    Send {
-        message: Box<Message>,
-        delay: Option<Duration>,
-    },
-    ClientInitialize {
-        init: Init,
-    },
+    Send(Box<Message>),
+    ClientInitialize { init: Init },
 
     // Arma
     Query(Box<Message>),
-    Method {
-        name: String,
-        message: Box<Message>,
-    },
-    ArmaInitialize {
-        context: Context,
-    },
+    Method { name: String, message: Box<Message> },
+    ArmaInitialize { context: Context },
 }
 
-impl std::fmt::Display for RoutingCommand {
+impl std::fmt::Display for RoutingRequest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RoutingCommand::Connect => f.debug_struct("RoutingCommand::Connect").finish(),
-            RoutingCommand::Send { message, delay } => f
-                .debug_struct("RoutingCommand::Send")
-                .field("message", message)
-                .field("delay", delay)
-                .finish(),
-            RoutingCommand::ClientInitialize { init } => f
-                .debug_struct("RoutingCommand::ClientInitialize")
-                .field("init", init)
-                .finish(),
-            RoutingCommand::Query(message) => f
-                .debug_tuple("RoutingCommand::Query")
+            RoutingRequest::Connect => f.debug_struct("RoutingRequest::Connect").finish(),
+            RoutingRequest::Send(message) => f
+                .debug_tuple("RoutingRequest::Send")
                 .field(message)
                 .finish(),
-            RoutingCommand::Method { name, message } => f
-                .debug_struct("RoutingCommand::Method")
+            RoutingRequest::ClientInitialize { init } => f
+                .debug_struct("RoutingRequest::ClientInitialize")
+                .field("init", init)
+                .finish(),
+            RoutingRequest::Query(message) => f
+                .debug_tuple("RoutingRequest::Query")
+                .field(message)
+                .finish(),
+            RoutingRequest::Method { name, message } => f
+                .debug_struct("RoutingRequest::Method")
                 .field("name", name)
                 .field("message", message)
                 .finish(),
-            RoutingCommand::ArmaInitialize { context: _ } => {
-                f.debug_struct("RoutingCommand::ArmaInitialize").finish()
+            RoutingRequest::ArmaInitialize { context: _ } => {
+                f.debug_struct("RoutingRequest::ArmaInitialize").finish()
             }
         }
     }
