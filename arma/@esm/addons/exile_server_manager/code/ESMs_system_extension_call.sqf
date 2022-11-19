@@ -52,7 +52,7 @@ else
 
 // Used to sanitize the arguments before sending them to the extension. Mainly to make the data JSON compatible as best I can
 private _sanitizer = {
-	trace!("[%1] Sanitizing %2: %3", _id, typeName(_this), _this);
+	// trace!("[%1] Sanitizing %2: %3", _id, typeName(_this), _this);
 
 	switch (typeName(_this)) do
 	{
