@@ -107,6 +107,7 @@ impl Builder {
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
             .watch(&local_git_path.join("@esm"))
             .watch(&local_git_path.join("esm"))
+            .ignore(&local_git_path.join("esm").join(".build-sha"))
             .load()?;
 
         let builder = Builder {

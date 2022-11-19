@@ -12,6 +12,7 @@ pub struct FileWatcher {
     previous_file_cache: HashMap<PathBuf, SystemTime>,
     latest_file_cache: HashMap<PathBuf, SystemTime>,
     watching_paths: Vec<PathBuf>,
+    ignored_paths: Vec<PathBuf>,
     root_path: PathBuf,
     cache_path: PathBuf,
 }
@@ -22,6 +23,7 @@ impl FileWatcher {
             previous_file_cache: HashMap::new(),
             latest_file_cache: HashMap::new(),
             watching_paths: vec![],
+            ignored_paths: vec![],
             root_path: root_path.to_owned(),
             cache_path: temp_path.join(".esm-watcher.json"),
         }
@@ -35,6 +37,19 @@ impl FileWatcher {
 
         if !self.watching_paths.contains(&path) {
             self.watching_paths.push(path);
+        }
+
+        self
+    }
+
+    pub fn ignore(mut self, path: &Path) -> Self {
+        let path = match path.strip_prefix(&*self.root_path.to_string_lossy()) {
+            Ok(p) => PathBuf::from(p),
+            Err(_) => return self,
+        };
+
+        if !self.ignored_paths.contains(&path) {
+            self.ignored_paths.push(path);
         }
 
         self
@@ -103,6 +118,16 @@ impl FileWatcher {
     }
 
     fn watched_path(&self, path: &Path) -> bool {
-        self.watching_paths.iter().any(|p| path.starts_with(p))
+        let is_watched = self
+            .watching_paths
+            .iter()
+            .any(|p| path.starts_with(p) || path == p);
+
+        let is_ignored = self
+            .ignored_paths
+            .iter()
+            .any(|p| path.starts_with(p) || path == p);
+
+        is_watched && !is_ignored
     }
 }
