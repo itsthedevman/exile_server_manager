@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
 
 use glob::glob;
@@ -103,12 +103,17 @@ impl FileWatcher {
             Err(_) => return true,
         };
 
-        let current_time = SystemTime::now();
-        let previously_modified_at = match self.previous_file_cache.get(&path) {
-            Some(t) => t,
-            None => &current_time,
+        // Makes the default time to one second ago so the check will work
+        let Some(previously_modified_at) = SystemTime::now().checked_sub(Duration::from_secs(1)) else {
+            return true;
         };
 
+        let previously_modified_at = match self.previous_file_cache.get(&path) {
+            Some(t) => t,
+            None => &previously_modified_at,
+        };
+
+        let current_time = SystemTime::now();
         let current_modified_at = match self.latest_file_cache.get(&path) {
             Some(t) => t,
             None => &current_time,
