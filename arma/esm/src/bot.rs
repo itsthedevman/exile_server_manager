@@ -3,9 +3,11 @@ use crate::token::TokenManager;
 use crate::*;
 
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
-use message_io::node::{self, NodeHandler, NodeListener};
+use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
 use std::net::ToSocketAddrs;
+use std::sync::atomic::AtomicI64;
 use std::sync::Mutex as SyncMutex;
+use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
@@ -19,6 +21,8 @@ lazy_static! {
         let (handler, _) = node::split();
         Arc::new(SyncMutex::new(handler))
     };
+    static ref LISTENER_TASK: Arc<SyncMutex<Option<NodeTask>>> = Arc::new(SyncMutex::new(None));
+    static ref RECONNECTION_COUNT: AtomicI64 = AtomicI64::new(0);
 }
 
 enum NetworkSignal {
@@ -36,17 +40,15 @@ pub async fn initialize(receiver: UnboundedReceiver<RoutingRequest>) {
     *lock!(HANDLER) = handler;
 
     routing_thread(receiver).await;
-    listener_thread(listener).await;
-    heartbeat_thread().await;
+    listener_thread(listener);
 }
 
 async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
-    trace!("[bot::routing_thread] Spawning");
-
     tokio::spawn(async move {
         trace!("[bot::routing_thread] Receiving");
         loop {
             let Some(request) = receiver.recv().await else {
+                warn!("[bot::routing_thread] Failed to receive request");
                 continue;
             };
 
@@ -70,8 +72,8 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
 
                         if !matches!(crate::CONFIG.env, Env::Test) {
                             debug!(
-                                    "[bot#connect] Attempting to connect to esm_bot at {server_address}"
-                                );
+                                "[bot#connect] Attempting to connect to esm_bot at {server_address}"
+                            );
                         }
 
                         let handler = lock!(HANDLER);
@@ -81,20 +83,19 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
                         {
                             Ok((e, _)) => {
                                 *lock!(ENDPOINT) = Some(e);
-                                handler.signals().send(NetworkSignal::Init);
                             }
                             Err(e) => {
                                 error!(
                                     "[bot::routing_thread] ❌ Failed to connect to esm_bot - {e}"
                                 );
                             }
-                        };
+                        }
                     });
                 }
                 RoutingRequest::Send(message) => {
                     tokio::spawn(async {
                         trace!("[bot::routing_thread] Send");
-                        match send_to_bot(*message) {
+                        match send(*message) {
                             Ok(_) => trace!("[bot#send_to_bot] Sent"),
                             Err(e) => error!("[bot#send_to_bot] {e}"),
                         }
@@ -117,53 +118,61 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
                     error!("[bot::routing_thread] Cannot process - Client does not respond to {c}")
                 }
             }
-            debug!("[bot::routing_thread] DONE");
         }
     });
 }
 
-async fn listener_thread(listener: NodeListener<NetworkSignal>) {
-    trace!("[bot::listener_thread] Spawning");
+fn listener_thread(listener: NodeListener<NetworkSignal>) {
+    let task = listener.for_each_async(|event| match event {
+        node::NodeEvent::Network(event) => match event {
+            NetEvent::Accepted(_, _) => unreachable!(),
+            NetEvent::Connected(_, connected) => {
+                crate::TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async move {
+                        if let Err(e) = on_connect(connected).await {
+                            error!("[bot#on_connect] {e}");
+                        }
+                    });
+                });
+            }
+            NetEvent::Disconnected(_) => {
+                crate::TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async move {
+                        if let Err(e) = on_disconnect().await {
+                            error!("[bot#on_disconnect] {e}");
+                        }
+                    });
+                });
+            }
+            NetEvent::Message(_, incoming_data) => {
+                let incoming_data = incoming_data.to_owned();
 
-    tokio::spawn(async move {
-        listener.for_each(|event| match event {
-            node::NodeEvent::Network(event) => match event {
-                NetEvent::Accepted(_, _) => unreachable!(),
-                NetEvent::Connected(_, connected) => match on_connect(connected) {
-                    Ok(_) => (),
-                    Err(e) => error!("[bot#on_connect] {e}"),
-                },
-                NetEvent::Disconnected(_) => match on_disconnect() {
-                    Ok(_) => (),
-                    Err(e) => error!("[bot#on_disconnect] {e}"),
-                },
-                NetEvent::Message(_, incoming_data) => match on_message(incoming_data) {
-                    Ok(_) => (),
-                    Err(e) => error!("[bot#on_message] {e}"),
-                },
-            },
-            node::NodeEvent::Signal(signal) => match signal {
-                NetworkSignal::Init => {
-                    let message =
-                        Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
+                crate::TOKIO_RUNTIME.block_on(async {
+                    tokio::spawn(async move {
+                        if let Err(e) = on_message(incoming_data).await {
+                            error!("[bot#on_message] {e}");
+                        }
+                    });
+                });
+            }
+        },
+        node::NodeEvent::Signal(signal) => match signal {
+            NetworkSignal::Init => {
+                let message = Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
 
-                    if let Err(e) = crate::ROUTER.route_to_bot(message) {
-                        error!("[bot#listener_thread] Error while sending init message. {e}")
-                    }
+                if let Err(e) = crate::ROUTER.route_to_bot(message) {
+                    error!("[bot#listener_thread] Error while sending init message. {e}")
                 }
-            },
-        });
+            }
+        },
     });
+
+    *lock!(LISTENER_TASK) = Some(task);
 }
 
-async fn heartbeat_thread() {
-    tokio::spawn(async {
-        info!("[heartbeat] ✅");
-    });
-}
-
-fn send_to_bot(mut message: Message) -> ESMResult {
+fn send(mut message: Message) -> ESMResult {
     let mut token = lock!(TOKEN_MANAGER).clone();
+
     if !token.reload().valid() {
         return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
@@ -174,7 +183,7 @@ fn send_to_bot(mut message: Message) -> ESMResult {
     }
 
     if !matches!(message.message_type, Type::Init) {
-        debug!("[bot#send_to_bot] {}", message);
+        debug!("[bot::send] {}", message);
     }
 
     // Convert the message to bytes so it can be sent
@@ -182,6 +191,8 @@ fn send_to_bot(mut message: Message) -> ESMResult {
         Ok(bytes) => bytes,
         Err(error) => return Err(format!("❌ {error}").into()),
     };
+
+    drop(token);
 
     let endpoint = *lock!(ENDPOINT);
     let handler = lock!(HANDLER);
@@ -195,7 +206,7 @@ fn send_to_bot(mut message: Message) -> ESMResult {
 
     match handler.network().send(endpoint.unwrap(), &bytes) {
         SendStatus::Sent => {
-            debug!("After send");
+            trace!("[bot::send] {} - Sent", message.id);
             Ok(())
         }
         SendStatus::MaxPacketSizeExceeded => Err(format!(
@@ -211,17 +222,17 @@ fn send_to_bot(mut message: Message) -> ESMResult {
 
 fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bool {
     if endpoint.is_none() {
-        error!("Endpoint is none");
+        trace!("[bot::ready] Endpoint is none");
         return false;
     }
 
     if !CONNECTED.load(Ordering::SeqCst) {
-        error!("Not connected");
+        trace!("[bot::ready] Not connected");
         return false;
     }
 
     if !handler.is_running() {
-        error!("handler is not running");
+        trace!("[bot::ready] Handler is not running");
         return false;
     }
 
@@ -229,37 +240,35 @@ fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bo
         Some(b) => match b {
             true => true,
             false => {
-                error!("Endpoint not connected");
+                trace!("[bot::ready] Endpoint not connected");
                 false
             }
         },
         None => {
-            error!("Endpoint not has been disconnected");
+            trace!("[bot::ready] Endpoint not has been disconnected");
             false
         }
     }
 }
 
-fn on_connect(connected: bool) -> ESMResult {
-    if !matches!(crate::CONFIG.env, Env::Test) {
-        debug!("[bot#on_connect] Are we connected? {}", connected);
-    }
-
+async fn on_connect(connected: bool) -> ESMResult {
     if !connected {
-        return on_disconnect();
+        return on_disconnect().await;
     };
 
     CONNECTED.store(true, Ordering::SeqCst);
+    RECONNECTION_COUNT.store(0, Ordering::SeqCst);
+
     Ok(())
 }
 
-fn on_message(incoming_data: &[u8]) -> ESMResult {
+async fn on_message(incoming_data: Vec<u8>) -> ESMResult {
     let mut token = lock!(TOKEN_MANAGER);
     if !token.reload().valid() {
         return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
 
-    let message = match Message::from_bytes(incoming_data, token.key_bytes()) {
+    let message = match Message::from_bytes(&incoming_data, token.key_bytes()) {
         Ok(message) => {
             drop(token);
             debug!("[bot#on_message] {message}");
@@ -299,17 +308,39 @@ fn on_message(incoming_data: &[u8]) -> ESMResult {
     }
 }
 
-fn on_disconnect() -> ESMResult {
+async fn on_disconnect() -> ESMResult {
     if !matches!(crate::CONFIG.env, Env::Test) {
-        debug!("[bot#on_disconnect] Lost connection");
+        warn!("[bot#on_disconnect] Lost connection with the bot");
     }
 
     CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
 
-    if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::Connect) {
-        error!("[bot::routing_thread] ❌ {e}");
-    }
+    tokio::spawn(async {
+        // Get the current reconnection count and calculate the wait time
+        let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
+        let time_to_wait = match crate::CONFIG.env {
+            Env::Test => 0.25,
+            Env::Development => 3.0,
+            _ => (current_count * 15) as f32,
+        };
+
+        let time_to_wait = Duration::from_secs_f32(time_to_wait);
+        warn!(
+            "[on_disconnect] ⚠ Lost connection to the bot - Attempting reconnect in {:?}",
+            time_to_wait
+        );
+
+        // Sleep a max of 5 minutes
+        if current_count <= 20 {
+            // Increase the reconnect counter by 1
+            RECONNECTION_COUNT.fetch_add(1, Ordering::SeqCst);
+        }
+
+        if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::Connect) {
+            error!("[bot::on_disconnect] ❌ {e}");
+        }
+    });
 
     Ok(())
 }
