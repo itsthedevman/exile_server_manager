@@ -133,9 +133,6 @@ impl Builder {
         self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
 
         self.print_info();
-        self.print_status("Killing Arma", Builder::kill_arma)?;
-        self.print_status("Cleaning", Builder::clean_directories)?;
-
         self.print_status("Preparing to build", Builder::prepare_to_build)?;
 
         if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
@@ -425,6 +422,8 @@ impl Builder {
     }
 
     fn prepare_to_build(&mut self) -> BuildResult {
+        self.kill_arma()?;
+        self.clean_directories()?;
         self.transfer_mikeros_tools()?;
         self.create_server_config()?;
         self.create_esm_key_file()?;
@@ -460,11 +459,17 @@ impl Builder {
         let config_yaml = serde_yaml::to_vec(&config)?;
         fs::write(
             self.local_build_path
-                .join("@esm")
                 .join("config.yml")
                 .to_string_lossy()
                 .to_string(),
             config_yaml,
+        )?;
+
+        crate::File::transfer(
+            self,
+            self.local_build_path.to_owned(),
+            self.remote_build_path().join("@esm"),
+            "config.yml",
         )?;
 
         Ok(())
