@@ -5,6 +5,7 @@ mod connection_manager;
 mod database;
 mod error;
 mod macros;
+mod request;
 mod router;
 mod token;
 
@@ -33,7 +34,8 @@ pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 
-use crate::router::{Router, RoutingRequest};
+use crate::router::Router;
+pub use request::*;
 
 pub type ESMResult = Result<(), ESMError>;
 pub type MessageResult = Result<Option<Message>, ESMError>;
@@ -194,14 +196,14 @@ fn pre_init(
             }
 
             info!("[extension#pre_init]    Greeting our new friend - Hello {}!", init.server_name);
-            if let Err(e) = crate::ROUTER.route("arma", RoutingRequest::ArmaInitialize { context: callback }) {
+            if let Err(e) = ArmaRequest::initialize(callback) {
                 error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Arma");
                 warn!("[extension#pre_init] ⚠ {e}");
                 error!("[extension#pre_init] ❌ Boot failed");
             };
 
             info!("[extension#pre_init]    Remembering to greet ourselves - Hello ESM!");
-            if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::ClientInitialize { init }) {
+            if let Err(e) = BotRequest::initialize(init) {
                 error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Bot");
                 warn!("[extension#pre_init] ⚠ {e}");
                 error!("[extension#pre_init] ❌ Boot failed");
@@ -231,7 +233,7 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
                 Err(e) => return error!("[extension#send_message] ❌ {}", e),
             };
 
-            if let Err(e) = crate::ROUTER.route_to_bot(message) {
+            if let Err(e) = BotRequest::send(message) {
                 error!("[extension#send_message] ❌ {}", e);
             };
 
@@ -253,7 +255,7 @@ fn send_to_channel(id: String, content: String) {
             let mut message = Message::new(Type::Event);
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
-            if let Err(e) = crate::ROUTER.route_to_bot(message) {
+            if let Err(e) = BotRequest::send(message) {
                 error!("[extension#send_to_channel] ❌ {}", e);
             };
 

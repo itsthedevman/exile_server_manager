@@ -1,5 +1,5 @@
+use crate::database::Database;
 use crate::*;
-use crate::{database::Database, router::RoutingRequest};
 
 use arma_rs::{Context, IntoArma};
 use std::sync::Mutex as SyncMutex;
@@ -10,11 +10,11 @@ lazy_static! {
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> = Arc::new(SyncMutex::new(None));
 }
 
-pub async fn initialize(receiver: UnboundedReceiver<RoutingRequest>) {
+pub async fn initialize(receiver: UnboundedReceiver<ArmaRequest>) {
     command_thread(receiver).await;
 }
 
-async fn command_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
+async fn command_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
     trace!("[arma::command_thread] Spawning");
 
     tokio::spawn(async move {
@@ -22,9 +22,9 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
         trace!("[arma::command_thread] Receiving");
         while let Some(command) = receiver.recv().await {
             let result: Option<Message> = match command {
-                RoutingRequest::Query(message) => execute("query", *message).await,
-                RoutingRequest::Method { name, message } => execute(name.as_str(), *message).await,
-                RoutingRequest::ArmaInitialize { context } => {
+                ArmaRequest::Query(message) => execute("query", *message).await,
+                ArmaRequest::Method { name, message } => execute(name.as_str(), *message).await,
+                ArmaRequest::Initialize(context) => {
                     trace!("[arma::command_thread] ArmaInitialize");
                     *lock!(CALLBACK) = Some(context);
                     continue;
@@ -39,7 +39,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
 
             // If a message is returned, send it back
             if let Some(m) = result {
-                if let Err(e) = crate::ROUTER.route_to_bot(m) {
+                if let Err(e) = crate::ROUTER.route_to_bot(BotRequest::Send(Box::new(m))) {
                     error!("[arma#command_thread] ❌ {e}");
                 };
             }

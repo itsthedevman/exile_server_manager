@@ -1,4 +1,3 @@
-use crate::router::RoutingRequest;
 use crate::token::TokenManager;
 use crate::*;
 
@@ -25,11 +24,13 @@ lazy_static! {
     static ref RECONNECTION_COUNT: AtomicI64 = AtomicI64::new(0);
 }
 
+
+
 enum NetworkSignal {
     Init,
 }
 
-pub async fn initialize(receiver: UnboundedReceiver<RoutingRequest>) {
+pub async fn initialize(receiver: UnboundedReceiver<BotRequest>) {
     trace!("[bot::initialize] Loading token");
 
     if let Err(e) = lock!(TOKEN_MANAGER).load() {
@@ -43,7 +44,7 @@ pub async fn initialize(receiver: UnboundedReceiver<RoutingRequest>) {
     listener_thread(listener);
 }
 
-async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
+async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
     tokio::spawn(async move {
         trace!("[bot::routing_thread] Receiving");
         loop {
@@ -54,7 +55,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
 
             debug!("[bot::routing_thread] Processing request: {request}");
             match request {
-                RoutingRequest::Connect => {
+                BotRequest::Connect => {
                     tokio::spawn(async {
                         trace!("[bot::routing_thread] Connect");
 
@@ -92,7 +93,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
                         }
                     });
                 }
-                RoutingRequest::Send(message) => {
+                BotRequest::Send(message) => {
                     tokio::spawn(async {
                         trace!("[bot::routing_thread] Send");
                         match send(*message) {
@@ -102,14 +103,14 @@ async fn routing_thread(mut receiver: UnboundedReceiver<RoutingRequest>) {
                     });
                 }
 
-                RoutingRequest::ClientInitialize { init } => {
+                BotRequest::Initialize(init) => {
                     tokio::spawn(async {
-                        trace!("[bot::routing_thread] ClientInitialize");
+                        trace!("[bot::routing_thread] Initialize");
 
                         *lock!(INIT) = init;
 
                         // Now that we have the init data, tell ourselves to try to connect
-                        if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::Connect) {
+                        if let Err(e) = BotRequest::connect() {
                             error!("[bot::routing_thread] ❌ {e}");
                         }
                     });
@@ -160,7 +161,7 @@ fn listener_thread(listener: NodeListener<NetworkSignal>) {
             NetworkSignal::Init => {
                 let message = Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
 
-                if let Err(e) = crate::ROUTER.route_to_bot(message) {
+                if let Err(e) = BotRequest::send(message) {
                     error!("[bot#listener_thread] Error while sending init message. {e}")
                 }
             }
@@ -294,12 +295,12 @@ async fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 return Err("❌ Client is already initialized".into());
             }
 
-            crate::ROUTER.route_to_arma("post_initialization", message)
+            ArmaRequest::call("post_initialization", message)
         }
-        Type::Query => crate::ROUTER.route_to_arma("query", message),
-        Type::Arma => crate::ROUTER.route_to_arma("call_function", message),
-        Type::Test => crate::ROUTER.route_to_bot(message),
-        Type::Ping => crate::ROUTER.route_to_bot(message.set_type(Type::Pong)),
+        Type::Query => ArmaRequest::query(message),
+        Type::Arma => ArmaRequest::call("call_function", message),
+        Type::Test => BotRequest::send(message),
+        Type::Ping => BotRequest::send(message.set_type(Type::Pong)),
         _ => Err(format!(
             "❌ Message type \"{:?}\" has not been implemented yet",
             message.message_type
@@ -337,7 +338,7 @@ async fn on_disconnect() -> ESMResult {
             RECONNECTION_COUNT.fetch_add(1, Ordering::SeqCst);
         }
 
-        if let Err(e) = crate::ROUTER.route("bot", RoutingRequest::Connect) {
+        if let Err(e) = BotRequest::connect() {
             error!("[bot::on_disconnect] ❌ {e}");
         }
     });
