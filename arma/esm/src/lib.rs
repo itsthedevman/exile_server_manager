@@ -1,7 +1,6 @@
 mod arma;
 mod bot;
 mod config;
-mod connection_manager;
 mod database;
 mod error;
 mod macros;
@@ -33,9 +32,8 @@ pub use bot::TOKEN_MANAGER;
 pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
-
-use crate::router::Router;
 pub use request::*;
+pub use router::ROUTER;
 
 pub type ESMResult = Result<(), ESMError>;
 pub type MessageResult = Result<Option<Message>, ESMError>;
@@ -49,13 +47,10 @@ lazy_static! {
 
     /// The runtime for the asynchronous code
     pub static ref TOKIO_RUNTIME: Arc<Runtime> = Arc::new(tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap());
-
-    /// Handles sending messages to the Bot and the A3 server
-    pub static ref ROUTER: Arc<Router> = Arc::new(Router::new());
 }
 
 fn initialize_logger() {
-    let log_pattern = "[{d(%Y-%m-%d %H:%M:%S)} {h({l})}] {m}{n}";
+    let log_pattern = "[{d(%Y-%m-%d %H:%M:%S%.3f)(utc)}Z {h({l})} {M}:{L}] {m}{n}";
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(log_pattern)))
         .build();
