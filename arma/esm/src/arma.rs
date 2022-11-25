@@ -29,12 +29,6 @@ async fn command_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
                     *lock!(CALLBACK) = Some(context);
                     continue;
                 }
-                c => {
-                    error!(
-                        "[arma#command_thread] ❌ Cannot process - Arma does not respond to {c}"
-                    );
-                    continue;
-                }
             };
 
             // If a message is returned, send it back

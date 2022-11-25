@@ -8,9 +8,9 @@ edition = "2018"
 name = "esm_arma"
 crate-type = ["cdylib", "rlib"]
 
-[[bin]]
-name = "esm_bin"
-path = "src/bin/bin.rs"
+# [[bin]]
+# name = "esm_bin"
+# path = "src/bin/bin.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
