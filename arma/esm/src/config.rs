@@ -136,7 +136,7 @@ impl Config {
         let contents: String = match fs::read_to_string("@esm/config.yml") {
             Ok(file) => file,
             Err(_) => {
-                info!("[config#new] ✅ Default config loaded");
+                info!("[new] ✅ Default config loaded");
                 return Config::default();
             }
         };
@@ -144,7 +144,7 @@ impl Config {
         match serde_yaml::from_str(&contents) {
             Ok(config) => config,
             Err(e) => {
-                error!("[config#new] ❌ Failed to parse @esm/config.yml - {}", e);
+                error!("[new] ❌ Failed to parse @esm/config.yml - {}", e);
                 Config::default()
             }
         }

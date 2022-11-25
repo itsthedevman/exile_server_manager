@@ -24,7 +24,7 @@ impl Token {
         self.server_id = match String::from_utf8(self.id.clone()) {
             Ok(s) => s,
             Err(e) => {
-                error!("[token#server_id] ❌ Failed to parse server ID. Reason: {e}");
+                error!("[server_id] ❌ Failed to parse server ID. Reason: {e}");
                 String::new()
             }
         };
@@ -34,7 +34,7 @@ impl Token {
         self.community_id = match String::from_utf8(self.id[0..split_index].to_vec()) {
             Ok(s) => s,
             Err(e) => {
-                error!("[token#community_id] ❌ Failed to parse community ID. Reason: {e}");
+                error!("[community_id] ❌ Failed to parse community ID. Reason: {e}");
                 String::new()
             }
         };
@@ -135,7 +135,7 @@ impl TokenManager {
         match file.read_to_end(&mut key_contents) {
                 Ok(_) => {
                     trace!(
-                        "[token_manager::load] esm.key - {}",
+                        "[load] esm.key - {}",
                         String::from_utf8_lossy(&key_contents)
                     );
                 }
@@ -145,7 +145,7 @@ impl TokenManager {
         match serde_json::from_slice(&key_contents) {
             Ok(token) => {
                 self.token.update_from(token);
-                trace!("[token_manager::load] Token loaded - {}", self.token);
+                trace!("[load] Token loaded - {}", self.token);
                 Ok(())
             }
             Err(e) => {
@@ -161,16 +161,16 @@ impl TokenManager {
         }
 
         if let Err(e) = self.load() {
-            error!("[token_manager#reload] ❌ {}", e);
+            error!("[reload] ❌ {}", e);
             return self;
         };
 
         match std::fs::remove_file(reload_file) {
             Ok(_) => {}
-            Err(e) => error!("[token_manager#reload] ❌ {}", e),
+            Err(e) => error!("[reload] ❌ {}", e),
         }
 
-        warn!("[token_manager#reload] ⚠ Token was reloaded");
+        warn!("[reload] ⚠ Token was reloaded");
         self
     }
 }

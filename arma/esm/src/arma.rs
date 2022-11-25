@@ -11,21 +11,23 @@ lazy_static! {
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<ArmaRequest>) {
-    command_thread(receiver).await;
+    trace!("[initialize] Loading threads");
+    request_thread(receiver).await;
 }
 
-async fn command_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
-    trace!("[arma::command_thread] Spawning");
-
+async fn request_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
     tokio::spawn(async move {
-        // Command loop
-        trace!("[arma::command_thread] Receiving");
-        while let Some(command) = receiver.recv().await {
-            let result: Option<Message> = match command {
+        loop {
+            let Some(request) = receiver.recv().await else {
+                continue;
+            };
+
+            trace!("[routing_thread] Processing request: {request}");
+
+            let result: Option<Message> = match request {
                 ArmaRequest::Query(message) => execute("query", *message).await,
                 ArmaRequest::Method { name, message } => execute(name.as_str(), *message).await,
                 ArmaRequest::Initialize(context) => {
-                    trace!("[arma::command_thread] ArmaInitialize");
                     *lock!(CALLBACK) = Some(context);
                     continue;
                 }
@@ -34,7 +36,7 @@ async fn command_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
             // If a message is returned, send it back
             if let Some(m) = result {
                 if let Err(e) = crate::ROUTER.route_to_bot(BotRequest::Send(Box::new(m))) {
-                    error!("[arma#command_thread] ❌ {e}");
+                    error!("[request_thread] ❌ {e}");
                 };
             }
         }
@@ -44,15 +46,13 @@ async fn command_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
 async fn execute(name: &str, message: Message) -> Option<Message> {
     let message_id = message.id;
 
-    trace!("[arma::execute] Executing {name} for message id:{message_id}");
+    trace!("[execute] Executing {name} for message id:{message_id}");
 
     let result = match name {
         "query" => DATABASE.query(message).await,
         "post_initialization" => post_initialization(message).await,
-        "call_function" => call_function(message).await,
-        n => Err(
-            format!("[arma#execute] Cannot process - Arma does not respond to method {n}").into(),
-        ),
+        "call_function" => call_arma_function(message).await,
+        n => Err(format!("[execute] Cannot process - Arma does not respond to method {n}").into()),
     };
 
     match result {
@@ -71,7 +71,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
 
 fn send_to_arma(function: &str, message: Message) -> ESMResult {
     trace!(
-        r#"[arma#send]
+        r#"[send]
             function: {}
             message: {}
         "#,
@@ -89,17 +89,14 @@ fn send_to_arma(function: &str, message: Message) -> ESMResult {
         vec!["metadata".to_arma(), message.metadata.to_arma()],
     ];
 
-    debug!("[arma#send] {message:?}");
-
     match &*lock!(CALLBACK) {
         Some(ctx) => {
             ctx.callback_data("exile_server_manager", function, Some(message));
             Ok(())
         }
-        None => Err(
-            "[arma#send] Cannot send - We are not connected to the Arma server at the moment"
-                .into(),
-        ),
+        None => {
+            Err("[send] Cannot send - We are not connected to the Arma server at the moment".into())
+        }
     }
 }
 
@@ -157,13 +154,13 @@ async fn post_initialization(message: Message) -> MessageResult {
 
     send_to_arma("ESMs_system_process_postInit", message)?;
 
-    info!("[arma#post_initialization] ✅ Connection established with bot");
+    info!("[post_initialization] ✅ Connection established with bot");
     crate::READY.store(true, Ordering::SeqCst);
 
     Ok(None)
 }
 
-async fn call_function(message: Message) -> MessageResult {
+async fn call_arma_function(message: Message) -> MessageResult {
     let metadata = retrieve_data!(message.metadata, Metadata::Command);
 
     // First, check to make sure the player has joined this server
@@ -189,7 +186,7 @@ async fn call_function(message: Message) -> MessageResult {
         Data::Reward(_) => "ESMs_command_reward",
         Data::Sqf(_) => "ESMs_command_sqf",
         _ => unreachable!(
-            "[arma::call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet",
+            "[call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet",
             message.data
         ),
     };

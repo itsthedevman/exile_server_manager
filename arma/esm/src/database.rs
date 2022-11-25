@@ -42,13 +42,13 @@ impl Database {
         // Build the connection URI
         let database_url = match connection_string(base_ini_path, self.extdb_version) {
             Ok(url) => url,
-            Err(e) => return Err(format!("[database::connect] {}", e).into()),
+            Err(e) => return Err(format!("[connect] {}", e).into()),
         };
 
         // Convert it to options
         let database_opts = match Opts::from_url(&database_url) {
             Ok(opts) => opts,
-            Err(e) => return Err(format!("[database::connect] {}", e).into()),
+            Err(e) => return Err(format!("[connect] {}", e).into()),
         };
 
         *await_lock!(self.connection_pool) = Some(Pool::new(database_opts));
@@ -57,11 +57,7 @@ impl Database {
         if let Err(e) = self.connection().await {
             error!("{e}");
 
-            return Err(format!(
-                "[database::connect] Failed to connect to MySQL at {}",
-                database_url
-            )
-            .into());
+            return Err(format!("[connect] Failed to connect to MySQL at {}", database_url).into());
         };
 
         Ok(())
@@ -71,10 +67,10 @@ impl Database {
         match &*await_lock!(self.connection_pool) {
             Some(pool) => match pool.get_conn().await {
                 Ok(c) => Ok(c),
-                Err(e) => Err(format!("[database::connection] {}", e)),
+                Err(e) => Err(format!("[connection] {}", e)),
             },
             None => {
-                Err("[database::connection] Attempted to retrieve a connection from the pool before the pool was open for swimming.".into())
+                Err("[connection] Attempted to retrieve a connection from the pool before the pool was open for swimming.".into())
             }
         }
     }
@@ -87,7 +83,7 @@ impl Database {
         match name.as_str() {
             "reward_territories" => self.reward_territories(message, arguments).await,
             _ => Err(format!(
-                "[database::query] Unexpected query \"{}\" with arguments {:?}",
+                "[query] Unexpected query \"{}\" with arguments {:?}",
                 name, arguments
             )
             .into()),
@@ -107,7 +103,7 @@ impl Database {
                 Some(v) => Ok(v == "true"),
                 None => Ok(false),
             },
-            Err(e) => Err(format!("[database::account_exists] {e}").into()),
+            Err(e) => Err(format!("[account_exists] {e}").into()),
         }
     }
 
@@ -120,11 +116,7 @@ impl Database {
 
         let player_uid = match arguments.get("uid") {
             Some(uid) => uid,
-            None => {
-                return Err(
-                    "[database#reward_territories] ❌ Missing key :uid in data arguments".into(),
-                )
-            }
+            None => return Err("[reward_territories] ❌ Missing key :uid in data arguments".into()),
         };
 
         #[derive(Debug, Serialize)]
@@ -176,7 +168,7 @@ impl Database {
                     data::QueryResult { results },
                 ))))
             }
-            Err(e) => Err(format!("[database#reward_territories] ❌ {}", e).into()),
+            Err(e) => Err(format!("[reward_territories] ❌ {}", e).into()),
         }
     }
 }
@@ -208,7 +200,7 @@ fn connection_string(base_ini_path: &str, extdb_version: u8) -> Result<String, S
 
     let db_ini = match Ini::load_from_file(&ini_path) {
         Ok(ini) => ini,
-        Err(e) => return Err(format!("[database::connect] Failed to load ExtDB's conf file located at {ini_path}. If you have a custom file path, you may overwrite it by setting the \"extdb_conf_path\" configuration option in @ESM/config.yml. Failure reason: {e}"))
+        Err(e) => return Err(format!("[connect] Failed to load ExtDB's conf file located at {ini_path}. If you have a custom file path, you may overwrite it by setting the \"extdb_conf_path\" configuration option in @ESM/config.yml. Failure reason: {e}"))
     };
 
     let filename = if extdb_version == 3 {

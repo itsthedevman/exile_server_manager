@@ -100,7 +100,7 @@ pub fn init() -> Extension {
     // Start the logger
     initialize_logger();
 
-    debug!("[extension#init] - Initializing");
+    debug!("[init] - Initializing");
 
     // Initialize the static instances to start everything
     lazy_static::initialize(&CONFIG);
@@ -128,7 +128,7 @@ fn pre_init(
 ) {
     let timer = std::time::Instant::now();
     debug!(
-        r#"[extension#pre_init]
+        r#"[pre_init]
             server_name: {:?}
             price_per_object: {:?}
             territory_lifetime: {:?}
@@ -146,21 +146,21 @@ fn pre_init(
         TOKIO_RUNTIME.block_on(async {
             // Only allow this method to be called properly once
             if READY.load(Ordering::SeqCst) {
-                warn!("[extension#pre_init] ⚠ This endpoint can only be called once. Perhaps your server is boot looping?");
+                warn!("[pre_init] ⚠ This endpoint can only be called once. Perhaps your server is boot looping?");
                 return;
             }
 
-            info!("[extension#pre_init] Exile Server Manager (extension) is booting");
-            info!("[extension#pre_init]    Validating config file");
+            info!("[pre_init] Exile Server Manager (extension) is booting");
+            info!("[pre_init]    Validating config file");
 
             if let Err(e) = CONFIG.validate() {
-                error!("[extension#pre_init] ❌ Boot failed - Invalid config file");
-                warn!("[config#validate] ⚠ {}", e);
-                error!("[extension#pre_init] ❌ Boot failed - You must fix the above warning before Exile Server Manager can boot");
+                error!("[pre_init] ❌ Boot failed - Invalid config file");
+                warn!("[validate] ⚠ {}", e);
+                error!("[pre_init] ❌ Boot failed - You must fix the above warning before Exile Server Manager can boot");
                 return;
             }
 
-            info!("[extension#pre_init]    Validating initialization package");
+            info!("[pre_init]    Validating initialization package");
 
             // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
             let init = Init {
@@ -180,32 +180,32 @@ fn pre_init(
 
             if let Err(errors) = init.validate() {
                 debug!("{:#?}", init);
-                error!("[extension#pre_init] ❌ Boot failed - Invalid initialization data provided");
+                error!("[pre_init] ❌ Boot failed - Invalid initialization data provided");
 
                 for error in errors {
-                    warn!("[init#validate] ⚠ {error}");
+                    warn!("[validate] ⚠ {error}");
                 }
 
-                error!("[extension#pre_init] ❌ Boot failed - You must fix the above warnings before Exile Server Manager can boot");
+                error!("[pre_init] ❌ Boot failed - You must fix the above warnings before Exile Server Manager can boot");
                 return;
             }
 
-            info!("[extension#pre_init]    Greeting our new friend - Hello {}!", init.server_name);
+            info!("[pre_init]    Greeting our new friend - Hello {}!", init.server_name);
             if let Err(e) = ArmaRequest::initialize(callback) {
-                error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Arma");
-                warn!("[extension#pre_init] ⚠ {e}");
-                error!("[extension#pre_init] ❌ Boot failed");
+                error!("[pre_init] ❌ Boot failed - Failed to initialize Arma");
+                warn!("[pre_init] ⚠ {e}");
+                error!("[pre_init] ❌ Boot failed");
             };
 
-            info!("[extension#pre_init]    Remembering to greet ourselves - Hello ESM!");
+            info!("[pre_init]    Remembering to greet ourselves - Hello ESM!");
             if let Err(e) = BotRequest::initialize(init) {
-                error!("[extension#pre_init] ❌ Boot failed - Failed to initialize Bot");
-                warn!("[extension#pre_init] ⚠ {e}");
-                error!("[extension#pre_init] ❌ Boot failed");
+                error!("[pre_init] ❌ Boot failed - Failed to initialize Bot");
+                warn!("[pre_init] ⚠ {e}");
+                error!("[pre_init] ❌ Boot failed");
                 return;
             };
 
-            info!("[extension#pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
+            info!("[pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
         });
     });
 }
@@ -213,7 +213,7 @@ fn pre_init(
 fn send_message(id: String, message_type: String, data: String, metadata: String, errors: String) {
     let timer = std::time::Instant::now();
     trace!(
-        "[extension#send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
+        "[send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
         id,
         message_type,
         data,
@@ -225,25 +225,21 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
         TOKIO_RUNTIME.block_on(async {
             let message = match Message::from_arma(id, message_type, data, metadata, errors) {
                 Ok(m) => m,
-                Err(e) => return error!("[extension#send_message] ❌ {}", e),
+                Err(e) => return error!("[send_message] ❌ {}", e),
             };
 
             if let Err(e) = BotRequest::send(message) {
-                error!("[extension#send_message] ❌ {}", e);
+                error!("[send_message] ❌ {}", e);
             };
 
-            info!("[extension#send_message] ⏲ Took {:.2?}", timer.elapsed());
+            info!("[send_message] ⏲ Took {:.2?}", timer.elapsed());
         });
     });
 }
 
 fn send_to_channel(id: String, content: String) {
     let timer = std::time::Instant::now();
-    trace!(
-        "[extension#send_to_channel] id: {:?} - content: {:?}",
-        id,
-        content
-    );
+    trace!("[send_to_channel] id: {:?} - content: {:?}", id, content);
 
     std::thread::spawn(move || {
         TOKIO_RUNTIME.block_on(async {
@@ -251,31 +247,31 @@ fn send_to_channel(id: String, content: String) {
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
             if let Err(e) = BotRequest::send(message) {
-                error!("[extension#send_to_channel] ❌ {}", e);
+                error!("[send_to_channel] ❌ {}", e);
             };
 
-            info!("[extension#send_to_channel] ⏲ Took {:.2?}", timer.elapsed());
+            info!("[send_to_channel] ⏲ Took {:.2?}", timer.elapsed());
         });
     });
 }
 
 fn utc_timestamp() -> String {
     let timestamp = Utc::now().to_rfc3339();
-    trace!("[extension#utc_timestamp] - {timestamp}");
+    trace!("[utc_timestamp] - {timestamp}");
 
     timestamp
 }
 
 fn log_level() -> String {
     let log_level = CONFIG.log_level.to_lowercase();
-    trace!("[extension#log_level] - {log_level}");
+    trace!("[log_level] - {log_level}");
 
     log_level
 }
 
 fn log_output() -> String {
     let log_output = CONFIG.log_output.to_lowercase();
-    trace!("[extension#log_output] - {log_output}");
+    trace!("[log_output] - {log_output}");
 
     log_output
 }
@@ -283,7 +279,7 @@ fn log_output() -> String {
 fn log(log_level: String, caller: String, content: String) {
     let timer = std::time::Instant::now();
     trace!(
-        "[extension#log] log_level: {:?} - caller: {:?} - content size: {:?} bytes",
+        "[log] log_level: {:?} - caller: {:?} - content size: {:?} bytes",
         log_level,
         caller,
         content.len()
@@ -304,7 +300,7 @@ fn log(log_level: String, caller: String, content: String) {
             ),
         }
 
-        trace!("[extension#log] ⏲ Took {:.2?}", timer.elapsed());
+        trace!("[log] ⏲ Took {:.2?}", timer.elapsed());
     });
 }
 

@@ -30,22 +30,26 @@ impl Router {
     }
 
     pub fn route_to_arma(&self, request: ArmaRequest) -> ESMResult {
+        trace!("[route_to_arma] {request}");
+
         match self.arma_channel.send(request) {
             Ok(_) => {
-                trace!("[router#route_to_arma] Sent");
+                trace!("[route_to_arma] Sent");
                 Ok(())
             }
-            Err(e) => Err(format!("Failed to route. Reason: {}", e).into()),
+            Err(e) => Err(format!("Failed to route - {}", e).into()),
         }
     }
 
     pub fn route_to_bot(&self, request: BotRequest) -> ESMResult {
+        trace!("[route_to_bot] {request}");
+
         match self.bot_channel.send(request) {
             Ok(_) => {
-                trace!("[router#route_to_bot] Sent");
+                trace!("[route_to_bot] Sent");
                 Ok(())
             }
-            Err(e) => Err(format!("Failed to route. Reason: {}", e).into()),
+            Err(e) => Err(format!("Failed to route - {}", e).into()),
         }
     }
 }

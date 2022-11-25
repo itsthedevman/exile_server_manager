@@ -30,35 +30,34 @@ enum NetworkSignal {
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<BotRequest>) {
-    trace!("[bot::initialize] Loading token");
+    trace!("[initialize] Loading token");
 
     if let Err(e) = lock!(TOKEN_MANAGER).load() {
-        error!("[bot#initialize] ❌ {}", e);
+        error!("[initialize] ❌ {}", e);
     };
 
+    trace!("[initialize] Loading network");
     let (handler, listener) = node::split::<NetworkSignal>();
     *lock!(HANDLER) = handler;
 
+    trace!("[initialize] Loading threads");
     routing_thread(receiver).await;
     listener_thread(listener);
 }
 
 async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
     tokio::spawn(async move {
-        trace!("[bot::routing_thread] Receiving");
         loop {
             let Some(request) = receiver.recv().await else {
-                warn!("[bot::routing_thread] Failed to receive request");
+                warn!("[routing_thread] Failed to receive request");
                 continue;
             };
 
-            trace!("[bot::routing_thread] Processing request: {request}");
+            trace!("[routing_thread] Processing request: {request}");
             match request {
                 BotRequest::Connect => {
-                    trace!("[bot::routing_thread] Connect");
-
                     if let Err(errors) = lock!(INIT).validate() {
-                        error!("[bot::routing_thread] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
+                        error!("[routing_thread] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
                         return;
                     }
 
@@ -71,7 +70,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 
                     if !matches!(crate::CONFIG.env, Env::Test) {
                         debug!(
-                            "[bot#connect] Attempting to connect to esm_bot at {server_address}"
+                            "[routing_thread] Attempting to connect to esm_bot at {server_address}"
                         );
                     }
 
@@ -83,23 +82,21 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                             *lock!(ENDPOINT) = Some(e);
                         }
                         Err(e) => {
-                            error!("[bot::routing_thread] ❌ Failed to connect to esm_bot - {e}")
+                            error!("[routing_thread] ❌ Failed to connect to esm_bot - {e}")
                         }
                     }
                 }
                 BotRequest::Send(message) => match send(*message) {
-                    Ok(_) => trace!("[bot#send_to_bot] Sent"),
-                    Err(e) => error!("[bot#send_to_bot] {e}"),
+                    Ok(_) => (),
+                    Err(e) => error!("[send_to_bot] {e}"),
                 },
 
                 BotRequest::Initialize(init) => {
-                    trace!("[bot::routing_thread] Initialize");
-
                     *lock!(INIT) = init;
 
                     // Now that we have the init data, tell ourselves to try to connect
                     if let Err(e) = BotRequest::connect() {
-                        error!("[bot::routing_thread] ❌ {e}");
+                        error!("[routing_thread] ❌ {e}");
                     }
                 }
             }
@@ -108,29 +105,18 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 }
 
 fn listener_thread(listener: NodeListener<NetworkSignal>) {
-    let task = listener.for_each_async(|event| match event {
-        node::NodeEvent::Network(event) => match event {
-            NetEvent::Accepted(_, _) => unreachable!(),
-            NetEvent::Connected(_, connected) => on_connect(connected),
-            NetEvent::Disconnected(_) => on_disconnect(),
+    let task = listener.for_each_async(|event| match event.network() {
+        NetEvent::Accepted(_, _) => unreachable!(),
+        NetEvent::Connected(_, connected) => on_connect(connected),
+        NetEvent::Disconnected(_) => on_disconnect(),
 
-            NetEvent::Message(_, incoming_data) => {
-                let incoming_data = incoming_data.to_owned();
+        NetEvent::Message(_, incoming_data) => {
+            let incoming_data = incoming_data.to_owned();
 
-                if let Err(e) = on_message(incoming_data) {
-                    error!("[bot#on_message] {e}");
-                }
+            if let Err(e) = on_message(incoming_data) {
+                error!("[on_message] {e}");
             }
-        },
-        node::NodeEvent::Signal(signal) => match signal {
-            NetworkSignal::Init => {
-                let message = Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
-
-                if let Err(e) = BotRequest::send(message) {
-                    error!("[bot#listener_thread] Error while sending init message. {e}")
-                }
-            }
-        },
+        }
     });
 
     *lock!(LISTENER_TASK) = Some(task);
@@ -150,7 +136,7 @@ fn send(mut message: Message) -> ESMResult {
 
     match message.message_type {
         Type::Init | Type::Pong => (),
-        _ => debug!("[bot::send] {}", message),
+        _ => debug!("[send] {}", message),
     }
 
     // Convert the message to bytes so it can be sent
@@ -173,7 +159,7 @@ fn send(mut message: Message) -> ESMResult {
 
     match handler.network().send(endpoint.unwrap(), &bytes) {
         SendStatus::Sent => {
-            trace!("[bot::send] {} - Sent", message.id);
+            trace!("[send] {} - Sent", message.id);
             Ok(())
         }
         SendStatus::MaxPacketSizeExceeded => Err(format!(
@@ -189,17 +175,17 @@ fn send(mut message: Message) -> ESMResult {
 
 fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bool {
     if endpoint.is_none() {
-        trace!("[bot::ready] Endpoint is none");
-        return false;
-    }
-
-    if !CONNECTED.load(Ordering::SeqCst) {
-        trace!("[bot::ready] Not connected");
+        error!("[ready] Endpoint is none");
         return false;
     }
 
     if !handler.is_running() {
-        trace!("[bot::ready] Handler is not running");
+        error!("[ready] Handler is not running");
+        return false;
+    }
+
+    if !CONNECTED.load(Ordering::SeqCst) {
+        error!("[ready] Not connected");
         return false;
     }
 
@@ -207,12 +193,12 @@ fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bo
         Some(b) => match b {
             true => true,
             false => {
-                trace!("[bot::ready] Endpoint not connected");
+                error!("[ready] Endpoint not connected");
                 false
             }
         },
         None => {
-            trace!("[bot::ready] Endpoint not has been disconnected");
+            error!("[ready] Endpoint not has been disconnected");
             false
         }
     }
@@ -223,16 +209,18 @@ fn on_connect(connected: bool) {
 
     // Make sure we are connected first
     if !connected {
+        debug!("[on_connect] CALLED ON_DISCONNECT");
         on_disconnect();
         return;
     };
 
+    debug!(
+        "[on_connect] CONNECTED - C:{}",
+        CONNECTED.load(Ordering::SeqCst)
+    );
+
     CONNECTED.store(true, Ordering::SeqCst);
     RECONNECTION_COUNT.store(0, Ordering::SeqCst);
-
-    lock!(HANDLER)
-        .signals()
-        .send_with_timer(NetworkSignal::Init, Duration::from_secs(1));
 }
 
 fn on_message(incoming_data: Vec<u8>) -> ESMResult {
@@ -244,7 +232,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
     let message = match Message::from_bytes(&incoming_data, token.key_bytes()) {
         Ok(message) => {
             drop(token);
-            trace!("[bot#on_message] {message}");
+            trace!("[on_message] {message}");
             message
         }
         Err(e) => return Err(format!("❌ {e}").into()),
@@ -263,6 +251,17 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
     match message.message_type {
         Type::Init => {
+            // First message received from server. Respond with the init package
+            if matches!(message.data, Data::Empty) {
+                let message = message.set_data(Data::Init(lock!(INIT).clone()));
+                if let Err(e) = BotRequest::send(message) {
+                    error!("[listener_thread] Error while sending init message. {e}")
+                }
+
+                return Ok(());
+            }
+
+            // The second message received from the server, contains the post init package
             if crate::READY.load(Ordering::SeqCst) {
                 return Err("❌ Client is already initialized".into());
             }
@@ -282,6 +281,11 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 }
 
 fn on_disconnect() {
+    debug!(
+        "[on_disconnect] ON DISCONNECT - C:{}",
+        CONNECTED.load(Ordering::SeqCst)
+    );
+
     CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
 
@@ -308,6 +312,6 @@ fn on_disconnect() {
     std::thread::sleep(time_to_wait);
 
     if let Err(e) = BotRequest::connect() {
-        error!("[bot::on_disconnect] ❌ {e}");
+        error!("[on_disconnect] ❌ {e}");
     }
 }
