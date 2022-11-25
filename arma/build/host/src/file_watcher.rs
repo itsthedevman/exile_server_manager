@@ -103,6 +103,10 @@ impl FileWatcher {
             Err(_) => return true,
         };
 
+        if !self.watched_path(&path) {
+            return false;
+        }
+
         // Makes the default time to one second ago so the check will work
         let Some(previously_modified_at) = SystemTime::now().checked_sub(Duration::from_secs(1)) else {
             return true;

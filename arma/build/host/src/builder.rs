@@ -25,6 +25,17 @@ use std::{fs, thread};
 /// Used with the test suite, this key holds the server's current esm.key
 const REDIS_SERVER_KEY: &str = "test_server_key";
 
+const ADDONS: &[&str] = &[
+    "exile_server_manager",
+    "exile_server_overwrites",
+    "exile_server_xm8",
+    "exile_server_hacking",
+    "exile_server_grinding",
+    "exile_server_charge_plant_started",
+    "exile_server_flag_steal_started",
+    "exile_server_player_connected",
+];
+
 pub struct Remote {
     pub build_path: PathBuf,
     pub build_path_str: String,
@@ -129,29 +140,55 @@ impl Builder {
     }
 
     pub fn start(&mut self) -> BuildResult {
-        self.print_status("Preparing build host", Builder::start_server)?;
-        self.print_status("Waiting for build receiver", Builder::wait_for_receiver)?;
+        self.start_server()?;
+        self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
-        self.print_info();
-        self.print_status("Preparing to build", Builder::prepare_to_build)?;
+        #[allow(clippy::format_in_format_args)]
+        self.print_status(
+            &format!(
+                "Build details\n  {os}\n  {arch}\n  {env}\n  {log}\n  {git_directory}\n  {build_directory}\n  {server_directory}\n{tag} - Starting @esm build",
+                tag = "<esm_bt>".blue().bold(),
+                os = format!("{:17}: {:?}", "os".black().bold(), self.os),
+                arch = format!("{:17}: {:?}", "arch".black().bold(), self.arch).to_lowercase(),
+                env = format!("{:17}: {:?}", "env".black().bold(), self.env).to_lowercase(),
+                log = format!("{:17}: {:?}", "log level".black().bold(), self.log_level)
+                    .to_lowercase(),
+                git_directory = format!(
+                    "{:17}: {}",
+                    "git directory".black().bold(),
+                    self.local_git_path.to_string_lossy()
+                ),
+                build_directory = format!(
+                    "{:17}: {}",
+                    "build directory".black().bold(),
+                    self.remote_build_path_str()
+                ),
+                server_directory = format!(
+                    "{:17}: {}",
+                    "server directory".black().bold(),
+                    self.remote.server_path
+                )
+            ),
+            Self::prepare_to_build,
+        )?;
 
         if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
-            self.print_status("Checking for p drive", Builder::check_for_p_drive)?;
+            self.print_status("Checking for p drive", Self::check_for_p_drive)?;
         }
 
         if self.rebuild_mod() {
-            self.print_status("Compiling mod", Builder::compile_mod)?;
-            self.print_status("Building mod", Builder::build_mod)?;
+            self.print_status("Compiling mod", Self::compile_mod)?;
+            self.print_status("Building mod", Self::build_mod)?;
         }
 
         if self.rebuild_extension() {
-            self.print_status("Compiling extension", Builder::build_extension)?;
+            self.print_status("Compiling extension", Self::build_extension)?;
         }
 
-        self.print_status("Seeding database", Builder::seed_database)?;
-        self.print_status("Starting a3 server", Builder::start_a3_server)?;
-        self.print_status("Starting log stream", Builder::stream_logs)?;
-        // self.print_status("Starting a3 client", Builder::start_a3_client)?; // If flag is set
+        self.print_status("Seeding database", Self::seed_database)?;
+        self.print_status("Starting a3 server", Self::start_a3_server)?;
+        self.print_status("Starting log stream", Self::stream_logs)?;
+        // self.print_status("Starting a3 client", Self::start_a3_client)?; // If flag is set
         Ok(())
     }
 
@@ -181,25 +218,6 @@ impl Builder {
                 Err(e)
             }
         }
-    }
-
-    fn print_info(&self) {
-        println!(
-            "{} - Starting @esm build for\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}\n  {:17}: {}",
-            "<esm_bt>".blue().bold(),
-            "os".black().bold(),
-            format!("{:?}", self.os).to_lowercase(),
-            "arch".black().bold(),
-            format!("{:?}", self.arch).to_lowercase(),
-            "env".black().bold(),
-            format!("{:?}", self.env).to_lowercase(),
-            "log level".black().bold(),
-            format!("{:?}", self.log_level).to_lowercase(),
-            "git directory".black().bold(),
-            self.local_git_path.to_string_lossy(),
-            "build directory".black().bold(),
-            self.remote_build_path_str()
-        )
     }
 
     pub fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
@@ -339,7 +357,8 @@ impl Builder {
         Ok(())
     }
 
-    fn clean_directories(&mut self) -> BuildResult {
+    fn prepare_directories(&mut self) -> BuildResult {
+        ////////////////////
         // Local directories
         let esm_path = self.local_build_path.join("@esm");
 
@@ -423,7 +442,8 @@ impl Builder {
 
     fn prepare_to_build(&mut self) -> BuildResult {
         self.kill_arma()?;
-        self.clean_directories()?;
+        self.detect_first_build()?;
+        self.prepare_directories()?;
         self.transfer_mikeros_tools()?;
         self.create_server_config()?;
         self.create_esm_key_file()?;
@@ -505,6 +525,50 @@ impl Builder {
 
             last_key_received = key.to_owned();
         });
+
+        Ok(())
+    }
+
+    fn detect_first_build(&mut self) -> BuildResult {
+        let extension_file_name = match self.arch {
+            BuildArch::X32 => "esm",
+            BuildArch::X64 => "esm_x64",
+        };
+
+        let script = match self.os {
+            BuildOS::Windows => ADDONS
+                .iter()
+                .map(|addon| format!(r"addons\{addon}.pbo"))
+                .chain(vec![format!("{extension_file_name}.dll")])
+                .map(|path| {
+                    format!(
+                        r#"
+                            if (![System.IO.File]::Exists("{server_path}\@esm\{path}")) {{
+                                return "rebuild";
+                            }}
+                        "#,
+                        server_path = self.remote.server_path
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join("\n"),
+            BuildOS::Linux => todo!(),
+        };
+
+        let result = self.system_command(
+            System::new()
+                .command(script)
+                .add_detection("rebuild.*", false),
+        )?;
+
+        let Command::SystemResponse(result) = result else {
+            return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
+        };
+
+        if result == *"rebuild" {
+            // This may be a first build - build all the things!
+            self.rebuild = true;
+        }
 
         Ok(())
     }
@@ -633,19 +697,6 @@ impl Builder {
     }
 
     fn build_mod(&mut self) -> BuildResult {
-        lazy_static! {
-            static ref ADDONS: Vec<&'static str> = vec![
-                "exile_server_manager",
-                "exile_server_overwrites",
-                "exile_server_xm8",
-                "exile_server_hacking",
-                "exile_server_grinding",
-                "exile_server_charge_plant_started",
-                "exile_server_flag_steal_started",
-                "exile_server_player_connected"
-            ];
-        }
-
         match self.os {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
@@ -666,7 +717,7 @@ impl Builder {
                                 Remove-Item -Path "P:\{addon}" -Recurse;
                             }}
 
-                            Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination P:;
+                            Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination "P:";
                             Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
 
                             if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
