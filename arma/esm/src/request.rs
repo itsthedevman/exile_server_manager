@@ -1,5 +1,6 @@
 use arma_rs::Context;
-use esm_message::{Message, Init};
+use esm_message::{Init, Message};
+use serde::{Deserialize, Serialize};
 
 use crate::ESMResult;
 
@@ -72,4 +73,17 @@ impl std::fmt::Display for BotRequest {
             BotRequest::Initialize(_) => f.debug_tuple("BotRequest::Initialize").finish(),
         }
     }
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ServerRequest {
+    #[serde(rename = "t")]
+    pub request_type: String,
+
+    #[serde(rename = "c", default, skip_serializing_if = "Vec::is_empty")]
+    pub content: Vec<u8>,
 }

@@ -16,17 +16,12 @@ lazy_static! {
     static ref PING_RECEIVED: AtomicBool = AtomicBool::new(false);
     static ref CONNECTED: AtomicBool = AtomicBool::new(false);
     static ref ENDPOINT: Arc<SyncMutex<Option<Endpoint>>> = Arc::new(SyncMutex::new(None));
-    static ref HANDLER: Arc<SyncMutex<NodeHandler<NetworkSignal>>> = {
+    static ref HANDLER: Arc<SyncMutex<NodeHandler<()>>> = {
         let (handler, _) = node::split();
         Arc::new(SyncMutex::new(handler))
     };
     static ref LISTENER_TASK: Arc<SyncMutex<Option<NodeTask>>> = Arc::new(SyncMutex::new(None));
     static ref RECONNECTION_COUNT: AtomicI64 = AtomicI64::new(0);
-}
-
-#[derive(Debug)]
-enum NetworkSignal {
-    Init,
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<BotRequest>) {
@@ -37,7 +32,7 @@ pub async fn initialize(receiver: UnboundedReceiver<BotRequest>) {
     };
 
     trace!("[initialize] Loading network");
-    let (handler, listener) = node::split::<NetworkSignal>();
+    let (handler, listener) = node::split::<()>();
     *lock!(HANDLER) = handler;
 
     trace!("[initialize] Loading threads");
@@ -49,15 +44,15 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
     tokio::spawn(async move {
         loop {
             let Some(request) = receiver.recv().await else {
-                warn!("[routing_thread] Failed to receive request");
                 continue;
             };
 
             trace!("[routing_thread] Processing request: {request}");
+
             match request {
                 BotRequest::Connect => {
                     if let Err(errors) = lock!(INIT).validate() {
-                        error!("[routing_thread] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
+                        error!("[connect] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
                         return;
                     }
 
@@ -69,9 +64,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                         .unwrap();
 
                     if !matches!(crate::CONFIG.env, Env::Test) {
-                        debug!(
-                            "[routing_thread] Attempting to connect to esm_bot at {server_address}"
-                        );
+                        warn!("[connect] Attempting to connect to esm_bot at {server_address}");
                     }
 
                     match lock!(HANDLER)
@@ -82,13 +75,14 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                             *lock!(ENDPOINT) = Some(e);
                         }
                         Err(e) => {
-                            error!("[routing_thread] ❌ Failed to connect to esm_bot - {e}")
+                            error!("[connect] ❌ Failed to connect to esm_bot - {e}")
                         }
                     }
                 }
-                BotRequest::Send(message) => match send(*message) {
+
+                BotRequest::Send(message) => match send_message(*message) {
                     Ok(_) => (),
-                    Err(e) => error!("[send_to_bot] {e}"),
+                    Err(e) => error!("[send] {e}"),
                 },
 
                 BotRequest::Initialize(init) => {
@@ -96,7 +90,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 
                     // Now that we have the init data, tell ourselves to try to connect
                     if let Err(e) = BotRequest::connect() {
-                        error!("[routing_thread] ❌ {e}");
+                        error!("[initialize] ❌ {e}");
                     }
                 }
             }
@@ -104,7 +98,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
     });
 }
 
-fn listener_thread(listener: NodeListener<NetworkSignal>) {
+fn listener_thread(listener: NodeListener<()>) {
     let task = listener.for_each_async(|event| match event.network() {
         NetEvent::Accepted(_, _) => unreachable!(),
         NetEvent::Connected(_, connected) => on_connect(connected),
@@ -122,7 +116,7 @@ fn listener_thread(listener: NodeListener<NetworkSignal>) {
     *lock!(LISTENER_TASK) = Some(task);
 }
 
-fn send(mut message: Message) -> ESMResult {
+fn send_message(mut message: Message) -> ESMResult {
     let mut token = lock!(TOKEN_MANAGER).clone();
 
     if !token.reload().valid() {
@@ -141,30 +135,44 @@ fn send(mut message: Message) -> ESMResult {
 
     // Convert the message to bytes so it can be sent
     let bytes = match message.as_bytes(token.key_bytes()) {
-        Ok(bytes) => bytes,
+        Ok(bytes) => {
+            drop(token);
+            bytes
+        }
         Err(error) => return Err(format!("❌ {error}").into()),
     };
 
-    drop(token);
+    send_request(ServerRequest {
+        request_type: "m".into(),
+        content: bytes,
+    })?;
 
-    let endpoint = *lock!(ENDPOINT);
-    let handler = lock!(HANDLER);
+    trace!("[send] {} - Sent", message.id);
 
+    Ok(())
+}
+
+fn send_request(request: ServerRequest) -> ESMResult {
     // Make sure we are connected first
-    if !ready(&handler, endpoint) {
+    if !ready(&*lock!(HANDLER), *lock!(ENDPOINT)) {
         return Err(
             "❌ Cannot send message - We are not connected to the bot at the moment".into(),
         );
     }
 
-    match handler.network().send(endpoint.unwrap(), &bytes) {
-        SendStatus::Sent => {
-            trace!("[send] {} - Sent", message.id);
-            Ok(())
-        }
+    let request = match serde_json::to_vec(&request) {
+        Ok(r) => r,
+        Err(_) => todo!(),
+    };
+
+    match lock!(HANDLER)
+        .network()
+        .send(lock!(ENDPOINT).unwrap(), &request)
+    {
+        SendStatus::Sent => Ok(()),
         SendStatus::MaxPacketSizeExceeded => Err(format!(
-            "❌ Cannot send - Message is too large. Size: {}. Message: {message:?}",
-            bytes.len()
+            "❌ Cannot send - Message is too large - Size: {}",
+            request.len()
         )
         .into()),
         s => Err(
@@ -173,19 +181,19 @@ fn send(mut message: Message) -> ESMResult {
     }
 }
 
-fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bool {
+fn ready(handler: &NodeHandler<()>, endpoint: Option<Endpoint>) -> bool {
     if endpoint.is_none() {
-        error!("[ready] Endpoint is none");
+        trace!("[ready] Endpoint is none");
         return false;
     }
 
     if !handler.is_running() {
-        error!("[ready] Handler is not running");
+        trace!("[ready] Handler is not running");
         return false;
     }
 
     if !CONNECTED.load(Ordering::SeqCst) {
-        error!("[ready] Not connected");
+        trace!("[ready] Not connected");
         return false;
     }
 
@@ -193,31 +201,25 @@ fn ready(handler: &NodeHandler<NetworkSignal>, endpoint: Option<Endpoint>) -> bo
         Some(b) => match b {
             true => true,
             false => {
-                error!("[ready] Endpoint not connected");
+                trace!("[ready] Endpoint not connected");
                 false
             }
         },
         None => {
-            error!("[ready] Endpoint not has been disconnected");
+            trace!("[ready] Endpoint not has been disconnected");
             false
         }
     }
 }
 
 fn on_connect(connected: bool) {
-    debug!("[on_connect] Connected? {connected}");
+    trace!("[on_connect] Are we connected? {connected}");
 
     // Make sure we are connected first
     if !connected {
-        debug!("[on_connect] CALLED ON_DISCONNECT");
         on_disconnect();
         return;
     };
-
-    debug!(
-        "[on_connect] CONNECTED - C:{}",
-        CONNECTED.load(Ordering::SeqCst)
-    );
 
     CONNECTED.store(true, Ordering::SeqCst);
     RECONNECTION_COUNT.store(0, Ordering::SeqCst);
@@ -229,63 +231,74 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
         return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
 
-    let message = match Message::from_bytes(&incoming_data, token.key_bytes()) {
-        Ok(message) => {
-            drop(token);
-            trace!("[on_message] {message}");
-            message
-        }
+    let request: ServerRequest = match serde_json::from_slice(&incoming_data) {
+        Ok(r) => r,
         Err(e) => return Err(format!("❌ {e}").into()),
     };
 
-    if !message.errors.is_empty() {
-        let error = message
-            .errors
-            .iter()
-            .map(|e| format!("❌ {}", e.error_content))
-            .collect::<Vec<String>>()
-            .join("\n");
+    match request.request_type.as_str() {
+        // Identify
+        "id" => send_request(ServerRequest {
+            request_type: "id".into(),
+            content: token.id_bytes().to_vec(),
+        }),
 
-        return Err(error.into());
-    }
+        // Initialize
+        "i" => {
+            let message = Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
 
-    match message.message_type {
-        Type::Init => {
-            // First message received from server. Respond with the init package
-            if matches!(message.data, Data::Empty) {
-                let message = message.set_data(Data::Init(lock!(INIT).clone()));
-                if let Err(e) = BotRequest::send(message) {
-                    error!("[listener_thread] Error while sending init message. {e}")
-                }
-
-                return Ok(());
+            if let Err(e) = BotRequest::send(message) {
+                error!("[listener_thread] Error while sending init message. {e}")
             }
 
-            // The second message received from the server, contains the post init package
-            if crate::READY.load(Ordering::SeqCst) {
-                return Err("❌ Client is already initialized".into());
-            }
-
-            ArmaRequest::call("post_initialization", message)
+            Ok(())
         }
-        Type::Query => ArmaRequest::query(message),
-        Type::Arma => ArmaRequest::call("call_function", message),
-        Type::Test => BotRequest::send(message),
-        Type::Ping => BotRequest::send(message.set_type(Type::Pong)),
-        _ => Err(format!(
-            "❌ Message type \"{:?}\" has not been implemented yet",
-            message.message_type
-        )
-        .into()),
+
+        // Message
+        _ => {
+            let message = match Message::from_bytes(&request.content, token.key_bytes()) {
+                Ok(message) => {
+                    drop(token);
+                    trace!("[on_message] {message}");
+                    message
+                }
+                Err(e) => return Err(format!("❌ {e}").into()),
+            };
+
+            if !message.errors.is_empty() {
+                let error = message
+                    .errors
+                    .iter()
+                    .map(|e| format!("❌ {}", e.error_content))
+                    .collect::<Vec<String>>()
+                    .join("\n");
+
+                return Err(error.into());
+            }
+
+            match message.message_type {
+                Type::Init => {
+                    if crate::READY.load(Ordering::SeqCst) {
+                        return Err("❌ Client is already initialized".into());
+                    }
+
+                    ArmaRequest::call("post_initialization", message)
+                }
+                Type::Query => ArmaRequest::query(message),
+                Type::Arma => ArmaRequest::call("call_function", message),
+                Type::Test => BotRequest::send(message),
+                Type::Ping => BotRequest::send(message.set_type(Type::Pong)),
+                _ => Err(format!(
+                    "❌ Message type \"{:?}\" has not been implemented yet",
+                    message.message_type
+                )
+                .into()),
+            }
+        }
     }
 }
 
 fn on_disconnect() {
-    debug!(
-        "[on_disconnect] ON DISCONNECT - C:{}",
-        CONNECTED.load(Ordering::SeqCst)
-    );
-
     CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
 
