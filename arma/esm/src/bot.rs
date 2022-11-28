@@ -117,15 +117,13 @@ fn listener_thread(listener: NodeListener<()>) {
 }
 
 fn send_message(mut message: Message) -> ESMResult {
-    let mut token = lock!(TOKEN_MANAGER).clone();
-
-    if !token.reload().valid() {
+    if !lock!(TOKEN_MANAGER).reload().valid() {
         return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
 
     // Add the server ID if there is none
     if message.server_id.is_none() {
-        message.server_id = Some(token.id_bytes().to_vec());
+        message.server_id = Some(lock!(TOKEN_MANAGER).id_bytes().to_vec());
     }
 
     match message.message_type {
@@ -134,11 +132,8 @@ fn send_message(mut message: Message) -> ESMResult {
     }
 
     // Convert the message to bytes so it can be sent
-    let bytes = match message.as_bytes(token.key_bytes()) {
-        Ok(bytes) => {
-            drop(token);
-            bytes
-        }
+    let bytes = match message.as_bytes(lock!(TOKEN_MANAGER).key_bytes()) {
+        Ok(bytes) => bytes,
         Err(error) => return Err(format!("❌ {error}").into()),
     };
 
@@ -226,11 +221,6 @@ fn on_connect(connected: bool) {
 }
 
 fn on_message(incoming_data: Vec<u8>) -> ESMResult {
-    let mut token = lock!(TOKEN_MANAGER);
-    if !token.reload().valid() {
-        return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
-    }
-
     let request: ServerRequest = match serde_json::from_slice(&incoming_data) {
         Ok(r) => r,
         Err(e) => return Err(format!("❌ {e}").into()),
@@ -240,7 +230,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
         // Identify
         "id" => send_request(ServerRequest {
             request_type: "id".into(),
-            content: token.id_bytes().to_vec(),
+            content: lock!(TOKEN_MANAGER).id_bytes().to_vec(),
         }),
 
         // Initialize
@@ -256,14 +246,18 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
         // Message
         _ => {
-            let message = match Message::from_bytes(&request.content, token.key_bytes()) {
-                Ok(message) => {
-                    drop(token);
-                    trace!("[on_message] {message}");
-                    message
-                }
-                Err(e) => return Err(format!("❌ {e}").into()),
-            };
+            if !lock!(TOKEN_MANAGER).reload().valid() {
+                return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
+            }
+
+            let message =
+                match Message::from_bytes(&request.content, lock!(TOKEN_MANAGER).key_bytes()) {
+                    Ok(message) => {
+                        trace!("[on_message] {message}");
+                        message
+                    }
+                    Err(e) => return Err(format!("❌ {e}").into()),
+                };
 
             if !message.errors.is_empty() {
                 let error = message

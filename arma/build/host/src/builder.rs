@@ -143,34 +143,33 @@ impl Builder {
         self.start_server()?;
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
-        #[allow(clippy::format_in_format_args)]
-        self.print_status(
-            &format!(
-                "Build details\n  {os}\n  {arch}\n  {env}\n  {log}\n  {git_directory}\n  {build_directory}\n  {server_directory}\n{tag} - Starting @esm build",
-                tag = "<esm_bt>".blue().bold(),
-                os = format!("{:17}: {:?}", "os".black().bold(), self.os),
-                arch = format!("{:17}: {:?}", "arch".black().bold(), self.arch).to_lowercase(),
-                env = format!("{:17}: {:?}", "env".black().bold(), self.env).to_lowercase(),
-                log = format!("{:17}: {:?}", "log level".black().bold(), self.log_level)
-                    .to_lowercase(),
-                git_directory = format!(
-                    "{:17}: {}",
-                    "git directory".black().bold(),
-                    self.local_git_path.to_string_lossy()
-                ),
-                build_directory = format!(
-                    "{:17}: {}",
-                    "build directory".black().bold(),
-                    self.remote_build_path_str()
-                ),
-                server_directory = format!(
-                    "{:17}: {}",
-                    "server directory".black().bold(),
-                    self.remote.server_path
-                )
-            ),
-            Self::prepare_to_build,
-        )?;
+        println!(
+            r#"{label} - Build details
+  {os_label:17}: {os:?}
+  {arch_label:17}: {arch:?}
+  {env_label:17}: {env:?}
+  {log_label:17}: {log}
+  {git_dir_label:17}: {git_directory}
+  {build_dir_label:17}: {build_directory}
+  {server_dir_label:17}: {server_directory}"#,
+            label = "<esm_bt>".blue().bold(),
+            os_label = "os".black().bold(),
+            arch_label = "arch".black().bold(),
+            env_label = "env".black().bold(),
+            log_label = "log level".black().bold(),
+            git_dir_label = "git directory".black().bold(),
+            build_dir_label = "build directory".black().bold(),
+            server_dir_label = "server directory".black().bold(),
+            os = self.os,
+            arch = format!("{:?}", self.arch).to_lowercase(),
+            env = format!("{:?}", self.env).to_lowercase(),
+            log = format!("{:?}", self.log_level).to_lowercase(),
+            git_directory = self.local_git_path.to_string_lossy(),
+            build_directory = self.remote_build_path_str(),
+            server_directory = self.remote.server_path
+        );
+
+        self.print_status("Starting @esm build", Self::prepare_to_build)?;
 
         if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
             self.print_status("Checking for p drive", Self::check_for_p_drive)?;
@@ -506,12 +505,11 @@ impl Builder {
                 .query(&mut connection)
                 .unwrap();
 
-            if key.is_none() {
+            let Some(key) = key else {
                 thread::sleep(Duration::from_millis(500));
                 continue;
-            }
+            };
 
-            let key = key.unwrap();
             if key == last_key_received {
                 thread::sleep(Duration::from_millis(500));
                 continue;
@@ -535,23 +533,34 @@ impl Builder {
             BuildArch::X64 => "esm_x64",
         };
 
+        let mut files_to_check: Vec<String> = ADDONS
+            .iter()
+            .map(|addon| format!(r"addons\{addon}.pbo"))
+            .collect();
+
+        if matches!(self.env, BuildEnv::Test) {
+            files_to_check.push(r"addons\esm_test.pbo".to_string());
+        }
+
         let script = match self.os {
-            BuildOS::Windows => ADDONS
-                .iter()
-                .map(|addon| format!(r"addons\{addon}.pbo"))
-                .chain(vec![format!("{extension_file_name}.dll")])
-                .map(|path| {
-                    format!(
-                        r#"
-                            if (![System.IO.File]::Exists("{server_path}\@esm\{path}")) {{
-                                return "rebuild";
-                            }}
-                        "#,
-                        server_path = self.remote.server_path
-                    )
-                })
-                .collect::<Vec<String>>()
-                .join("\n"),
+            BuildOS::Windows => {
+                files_to_check.push(format!("{extension_file_name}.dll"));
+
+                files_to_check
+                    .iter()
+                    .map(|path| {
+                        format!(
+                            r#"
+                                if (![System.IO.File]::Exists("{server_path}\@esm\{path}")) {{
+                                    return "rebuild";
+                                }}
+                            "#,
+                            server_path = self.remote.server_path
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n")
+            }
             BuildOS::Linux => todo!(),
         };
 

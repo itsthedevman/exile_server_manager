@@ -51,6 +51,7 @@ pub struct Args {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Build receiver booting");
     let args = Args::parse();
     let mut client = Client::new(args)?;
 

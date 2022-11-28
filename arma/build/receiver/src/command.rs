@@ -72,17 +72,32 @@ impl IncomingCommand {
                 Ok(Command::LogStream(writer.take().unwrap()))
             }
             Command::Key(key) => {
+                // Build path
                 let file_path = PathBuf::from(&client.arma.build_path)
                     .join("@esm")
                     .join("esm.key");
 
                 std::fs::write(file_path.as_path(), key.as_bytes())?;
 
+                // Server path
                 let file_path = PathBuf::from(&client.arma.server_path)
                     .join("@esm")
                     .join("esm.key");
 
                 std::fs::write(file_path.as_path(), key.as_bytes())?;
+
+                // Reload key
+                let reload_path = PathBuf::from(&client.arma.server_path)
+                    .join("@esm")
+                    .join(".RELOAD");
+
+                std::fs::write(reload_path.as_path(), "true")?;
+
+                println!(
+                    "[key] Wrote {} and {}",
+                    file_path.display(),
+                    reload_path.display()
+                );
 
                 Ok(Command::Success)
             }

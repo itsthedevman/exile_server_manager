@@ -145,7 +145,7 @@ impl TokenManager {
         match serde_json::from_slice(&key_contents) {
             Ok(token) => {
                 self.token.update_from(token);
-                trace!("[load] Token loaded - {}", self.token);
+                debug!("[load] Token loaded - {}", self.token);
                 Ok(())
             }
             Err(e) => {
@@ -156,6 +156,9 @@ impl TokenManager {
 
     pub fn reload(&mut self) -> &mut Self {
         let reload_file = std::path::Path::new("@esm\\.RELOAD");
+
+        trace!("[reload] File exists - {}", reload_file.exists());
+
         if !reload_file.exists() {
             return self;
         }
