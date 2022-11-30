@@ -243,7 +243,7 @@ fn send_to_channel(id: String, content: String) {
 
     std::thread::spawn(move || {
         TOKIO_RUNTIME.block_on(async {
-            let mut message = Message::new(Type::Event);
+            let mut message = Message::new();
             message.data = Data::SendToChannel(data::SendToChannel { id, content });
 
             if let Err(e) = BotRequest::send(message) {

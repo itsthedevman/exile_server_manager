@@ -602,6 +602,7 @@ impl Builder {
                 let script = format!(
                     r#"
                         cd '{build_path}\esm';
+                        cargo update --package esm_message;
                         rustup run stable-{build_target} cargo build --target {build_target} --release;
 
                         Copy-Item "{build_path}\esm\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"

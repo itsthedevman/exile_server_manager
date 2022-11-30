@@ -127,7 +127,7 @@ fn send_message(mut message: Message) -> ESMResult {
     }
 
     match message.message_type {
-        Type::Init | Type::Pong => (),
+        Type::Event => (),
         _ => debug!("[send] {}", message),
     }
 
@@ -235,7 +235,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
         // Initialize
         "i" => {
-            let message = Message::new(Type::Init).set_data(Data::Init(lock!(INIT).clone()));
+            let message = Message::new().set_data(Data::Init(lock!(INIT).clone()));
 
             if let Err(e) = BotRequest::send(message) {
                 error!("[listener_thread] Error while sending init message. {e}")
@@ -253,7 +253,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             let message =
                 match Message::from_bytes(&request.content, lock!(TOKEN_MANAGER).key_bytes()) {
                     Ok(message) => {
-                        trace!("[on_message] {message}");
+                        debug!("[on_message] {message}");
                         message
                     }
                     Err(e) => return Err(format!("❌ {e}").into()),
@@ -271,22 +271,20 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             }
 
             match message.message_type {
-                Type::Init => {
-                    if crate::READY.load(Ordering::SeqCst) {
-                        return Err("❌ Client is already initialized".into());
-                    }
-
-                    ArmaRequest::call("post_initialization", message)
-                }
                 Type::Query => ArmaRequest::query(message),
                 Type::Arma => ArmaRequest::call("call_function", message),
                 Type::Test => BotRequest::send(message),
-                Type::Ping => BotRequest::send(message.set_type(Type::Pong)),
-                _ => Err(format!(
-                    "❌ Message type \"{:?}\" has not been implemented yet",
-                    message.message_type
-                )
-                .into()),
+                Type::Event => match message.data {
+                    Data::Init(_) => {
+                        if crate::READY.load(Ordering::SeqCst) {
+                            return Err("❌ Client is already initialized".into());
+                        }
+
+                        ArmaRequest::call("post_initialization", message)
+                    }
+                    Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
+                    _ => Ok(()),
+                },
             }
         }
     }
@@ -298,13 +296,13 @@ fn on_disconnect() {
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
-    let time_to_wait = match crate::CONFIG.env {
-        Env::Test => 0.25,
-        Env::Development => 3.0,
-        _ => (current_count * 15) as f32,
+    let time_to_wait: u64 = match crate::CONFIG.env {
+        Env::Test => 1,
+        Env::Development => 3,
+        _ => (current_count * 15) as u64,
     };
 
-    let time_to_wait = Duration::from_secs_f32(time_to_wait);
+    let time_to_wait = Duration::from_secs(time_to_wait);
     warn!(
         "[on_disconnect] ⚠ Lost connection to the bot - Attempting reconnect in {:?}",
         time_to_wait

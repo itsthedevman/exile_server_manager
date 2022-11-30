@@ -60,7 +60,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
         Err(e) => {
             error!("{e}");
 
-            let message = Message::new(Type::Error)
+            let message = Message::new()
                 .set_id(message_id)
                 .add_error(ErrorType::Code, "client_exception");
 
@@ -101,7 +101,7 @@ fn send_to_arma(function: &str, message: Message) -> ESMResult {
 }
 
 async fn post_initialization(message: Message) -> MessageResult {
-    let data = retrieve_data!(message.data, Data::PostInit);
+    let mut data = retrieve_data!(message.data, Data::PostInit);
 
     // Get the base path to figure out where to look for the ini
     let base_ini_path = if data.extdb_path.is_empty() {
@@ -109,6 +109,9 @@ async fn post_initialization(message: Message) -> MessageResult {
     } else {
         data.extdb_path
     };
+
+    data.build_number = std::include_str!("../.build-sha").to_string();
+    data.version = env!("CARGO_PKG_VERSION").to_string();
 
     // Connect to the database
     if let Err(e) = DATABASE.connect(&base_ini_path).await {
@@ -119,38 +122,6 @@ async fn post_initialization(message: Message) -> MessageResult {
             String::from("fail_database_connect"),
         )));
     }
-
-    // Call arma
-    let token = &lock!(TOKEN_MANAGER);
-
-    let message = message.set_data(Data::ArmaPostInit(ArmaPostInit {
-        build_number: std::include_str!("../.build-sha").to_string(),
-        community_id: token.community_id().to_string(),
-        extdb_version: DATABASE.extdb_version,
-        gambling_modifier: data.gambling_modifier,
-        gambling_payout_base: data.gambling_payout,
-        gambling_payout_randomizer_max: data.gambling_randomizer_max,
-        gambling_payout_randomizer_mid: data.gambling_randomizer_mid,
-        gambling_payout_randomizer_min: data.gambling_randomizer_min,
-        gambling_win_percentage: data.gambling_win_chance,
-        logging_add_player_to_territory: data.logging_add_player_to_territory,
-        logging_demote_player: data.logging_demote_player,
-        logging_exec: data.logging_exec,
-        logging_gamble: data.logging_gamble,
-        logging_modify_player: data.logging_modify_player,
-        logging_pay_territory: data.logging_pay_territory,
-        logging_promote_player: data.logging_promote_player,
-        logging_remove_player_from_territory: data.logging_remove_player_from_territory,
-        logging_reward_player: data.logging_reward,
-        logging_transfer_poptabs: data.logging_transfer,
-        logging_upgrade_territory: data.logging_upgrade_territory,
-        logging_channel_id: data.logging_channel_id,
-        server_id: token.server_id().to_string(),
-        taxes_territory_payment: data.territory_payment_tax,
-        taxes_territory_upgrade: data.territory_upgrade_tax,
-        territory_admin_uids: data.territory_admins,
-        version: env!("CARGO_PKG_VERSION").to_string(),
-    }));
 
     send_to_arma("ESMs_system_process_postInit", message)?;
 
