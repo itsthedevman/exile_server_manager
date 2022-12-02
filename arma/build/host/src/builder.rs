@@ -169,14 +169,13 @@ impl Builder {
             server_directory = self.remote.server_path
         );
 
-        self.print_status("Starting @esm build", Self::prepare_to_build)?;
+        self.print_status("Starting build", Self::prepare_to_build)?;
 
         if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
             self.print_status("Checking for p drive", Self::check_for_p_drive)?;
         }
 
         if self.rebuild_mod() {
-            self.print_status("Compiling mod", Self::compile_mod)?;
             self.print_status("Building mod", Self::build_mod)?;
         }
 
@@ -707,6 +706,8 @@ impl Builder {
     }
 
     fn build_mod(&mut self) -> BuildResult {
+        self.compile_mod()?;
+
         match self.os {
             BuildOS::Linux => todo!(),
             BuildOS::Windows => {
