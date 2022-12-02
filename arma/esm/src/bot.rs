@@ -246,18 +246,18 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
         // Message
         _ => {
-            if !lock!(TOKEN_MANAGER).reload().valid() {
+            let mut token = lock!(TOKEN_MANAGER);
+            if !token.reload().valid() {
                 return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
             }
 
-            let message =
-                match Message::from_bytes(&request.content, lock!(TOKEN_MANAGER).key_bytes()) {
-                    Ok(message) => {
-                        debug!("[on_message] {message}");
-                        message
-                    }
-                    Err(e) => return Err(format!("❌ {e}").into()),
-                };
+            let message = match Message::from_bytes(&request.content, token.key_bytes()) {
+                Ok(message) => {
+                    debug!("[on_message] {message}");
+                    message
+                }
+                Err(e) => return Err(format!("❌ {e}").into()),
+            };
 
             if !message.errors.is_empty() {
                 let error = message
@@ -275,7 +275,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 Type::Arma => ArmaRequest::call("call_function", message),
                 Type::Test => BotRequest::send(message),
                 Type::Event => match message.data {
-                    Data::Init(_) => {
+                    Data::PostInit(_) => {
                         if crate::READY.load(Ordering::SeqCst) {
                             return Err("❌ Client is already initialized".into());
                         }
@@ -283,7 +283,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                         ArmaRequest::call("post_initialization", message)
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
-                    _ => Ok(()),
+                    _ => unreachable!("Invalid data type sent with Event message"),
                 },
             }
         }
@@ -296,13 +296,13 @@ fn on_disconnect() {
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
-    let time_to_wait: u64 = match crate::CONFIG.env {
-        Env::Test => 1,
-        Env::Development => 3,
-        _ => (current_count * 15) as u64,
+    let time_to_wait: f32 = match crate::CONFIG.env {
+        Env::Test => 0.5,
+        Env::Development => 3_f32,
+        _ => (current_count * 15) as f32,
     };
 
-    let time_to_wait = Duration::from_secs(time_to_wait);
+    let time_to_wait = Duration::from_secs_f32(time_to_wait);
     warn!(
         "[on_disconnect] ⚠ Lost connection to the bot - Attempting reconnect in {:?}",
         time_to_wait
