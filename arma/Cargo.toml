@@ -1,9 +1,11 @@
 [workspace]
 members = [
-    "esm",
+    "arma",
     "build/host",
     "build/receiver",
     "build/common",
     "build/compiler",
+    "message/message",
+    "message/message_proc",
 ]
-default-members = ["esm"]
+default-members = ["arma"]
