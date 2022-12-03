@@ -39,22 +39,25 @@ if (type?(_function, STRING)) exitWith
 };
 
 private _response = _data call ESMs_system_extension_processResult;
-if (type?(_response, HASH) && { "id" in _response }) then
-{
-	private _id = get!(_response, "id", "");
-	private _data = get!(_response, "data", "");
-	private _metadata = get!(_response, "metadata", "");
-
-	debug!("Executing ""%1""", _functionName);
-	debug!("    ID (%1): %2", typeName _id, _id);
-	debug!("    DATA (%1): %2", typeName _data, _data);
-	debug!("    METADATA (%1): %2", typeName _metadata, _metadata);
-}
-else
-{
-	debug!("Calling function ""%1"" with %2", _functionName, _response);
-};
-
 _response spawn _function;
+
+if (debug?) then
+{
+	if (type?(_response, HASH) && { "id" in _response }) then
+	{
+		private _id = get!(_response, "id", "");
+		private _data = get!(_response, "data", "");
+		private _metadata = get!(_response, "metadata", "");
+
+		debug!("Spawned ""%1""", _functionName);
+		debug!("- Id (%1): %2", typeName _id, _id);
+		debug!("- Data (%1): %2", typeName _data, _data);
+		debug!("- Metadata (%1): %2", typeName _metadata, _metadata);
+	}
+	else
+	{
+		debug!("Spawned function ""%1"" with %2", _functionName, _response);
+	};
+};
 
 true

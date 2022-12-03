@@ -14,6 +14,7 @@ const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,*\s
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
 const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
+const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -25,6 +26,7 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_RV_TYPE, rv_type)
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
+        .replace(REGEX_ENV, env)
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
         .replace(REGEX_NOT_NIL, not_nil)
@@ -268,6 +270,11 @@ fn log(context: &Data, matches: &Captures) -> CompilerResult {
     }))
 }
 
+fn env(_context: &Data, matches: &Captures) -> CompilerResult {
+    let log_level = matches.get(1).unwrap().as_str();
+    Ok(Some(format!("ESM_LogLevel isEqualTo \"{log_level}\"")))
+}
+
 fn not_nil(context: &Data, matches: &Captures) -> CompilerResult {
     let context = match matches.get(1) {
         Some(m) => m.as_str(),
@@ -498,6 +505,38 @@ mod tests {
 
             ["ESMs_compiler_test", format["Testing - %1bar - foo%2", _testing, _variables], "debug"] call ESMs_util_log;
             ["ESMs_compiler_test", format["Logging %1", true], "info"] call ESMs_util_log;
+        "#
+        )
+    }
+
+    #[test]
+    fn it_replaces_env() {
+        let content = r#"
+            if (trace?) exitWith {};
+            if (debug?) exitWith {};
+            if (info?) exitWith {};
+            if (warn?) exitWith {};
+            if (error?) exitWith {};
+        "#;
+
+        let regex = Regex::new(REGEX_ENV).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = env(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(
+            output,
+            r#"
+            if (ESM_LogLevel isEqualTo "trace") exitWith {};
+            if (ESM_LogLevel isEqualTo "debug") exitWith {};
+            if (ESM_LogLevel isEqualTo "info") exitWith {};
+            if (ESM_LogLevel isEqualTo "warn") exitWith {};
+            if (ESM_LogLevel isEqualTo "error") exitWith {};
         "#
         )
     }

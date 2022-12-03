@@ -27,4 +27,4 @@
 private _id = _this select 0;
 private _errorMessage = _this select 1;
 
-[_id, "error", "empty", [], "empty", [], [["message", _errorMessage]]] call ESMs_object_message_respond_to
+[_id, "event", "empty", [], "empty", [], [["message", _errorMessage]]] call ESMs_object_message_respond_to
