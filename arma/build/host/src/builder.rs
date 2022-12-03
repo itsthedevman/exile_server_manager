@@ -117,8 +117,9 @@ impl Builder {
 
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
             .watch(&local_git_path.join("@esm"))
-            .watch(&local_git_path.join("esm"))
-            .ignore(&local_git_path.join("esm").join(".build-sha"))
+            .watch(&local_git_path.join("arma"))
+            .watch(&local_git_path.join("message"))
+            .ignore(&local_git_path.join("arma").join(".build-sha"))
             .load()?;
 
         let builder = Builder {
@@ -332,7 +333,9 @@ impl Builder {
     }
 
     fn rebuild_extension(&self) -> bool {
-        self.rebuild || has_directory_changed(&self.file_watcher, &self.local_git_path.join("esm"))
+        self.rebuild
+            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("arma"))
+            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("message"))
     }
 
     fn rebuild_mod(&self) -> bool {
@@ -583,7 +586,7 @@ impl Builder {
 
     fn build_extension(&mut self) -> BuildResult {
         // This will be read by the build script and inserted into the extension
-        let extension_path = self.local_git_path.join("esm");
+        let extension_path = self.local_git_path.join("arma");
 
         fs::write(
             extension_path
