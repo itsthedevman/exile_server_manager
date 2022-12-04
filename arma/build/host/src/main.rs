@@ -17,7 +17,7 @@ use std::{
 };
 
 use builder::Builder;
-use clap::{ArgEnum, Parser, Subcommand};
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
 pub use common::*;
 pub use directory::*;
@@ -37,40 +37,40 @@ lazy_static! {
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    #[clap(subcommand)]
-    command: Commands,
+    /// Build the extension as 32 bit instead of 64 bit
+    #[arg(short, long)]
+    build_x32: bool,
+
+    /// Set the target build platform for the extension
+    #[arg(short, long, value_enum, default_value_t = BuildOS::Windows)]
+    target: BuildOS,
+
+    /// Sets the logging level for the extension and the mod
+    #[arg(short, long, value_enum, default_value_t = LogLevel::Debug)]
+    log_level: LogLevel,
+
+    /// Sets the logging level for the extension and the mod
+    #[arg(short, long, value_enum, default_value_t = BuildEnv::Development)]
+    env: BuildEnv,
+
+    /// The URI of the server hosting esm_bot
+    #[arg(short, long, default_value_t = String::from("192.168.50.242:3003"))]
+    bot_host: String,
+
+    /// Forces a rebuild of everything
+    #[arg(short, long)]
+    force: bool,
+
+    /// Sets the release flag
+    #[arg(short, long)]
+    release: bool,
+
+    /// Space or comma separated list that controls which pieces are built
+    #[arg(short, long, value_parser = ["mod", "extension"])]
+    only: Vec<String>,
 }
 
-#[derive(Subcommand, Debug)]
-pub enum Commands {
-    Run {
-        /// Build the extension as 32 bit instead of 64 bit
-        #[clap(short, long)]
-        build_x32: bool,
-
-        /// Set the target build platform for the extension
-        #[clap(short, long, arg_enum, default_value_t = BuildOS::Windows)]
-        target: BuildOS,
-
-        /// Sets the logging level for the extension and the mod
-        #[clap(short, long, arg_enum, default_value_t = LogLevel::Debug)]
-        log_level: LogLevel,
-
-        /// Sets the logging level for the extension and the mod
-        #[clap(short, long, arg_enum, default_value_t = BuildEnv::Development)]
-        env: BuildEnv,
-
-        /// The URI of the server hosting esm_bot
-        #[clap(short, long, default_value_t = String::from("192.168.50.242:3003"))]
-        bot_host: String,
-
-        /// Forces a rebuild of the extension/mod
-        #[clap(short, long)]
-        rebuild: bool,
-    },
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum BuildOS {
     Linux,
     Windows,
@@ -82,7 +82,7 @@ impl Display for BuildOS {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum LogLevel {
     Error,
     Warn,
@@ -97,7 +97,7 @@ impl fmt::Display for LogLevel {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum BuildEnv {
     Development,
     Test,
@@ -146,8 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let args = Args::parse();
-    let mut builder = match Builder::new(args.command) {
+    let mut builder = match Builder::new(Args::parse()) {
         Ok(b) => b,
         Err(e) => {
             println!(

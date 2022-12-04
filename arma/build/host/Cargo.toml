@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 message-io = { version = "0.14", default-features = false, features = ["tcp"] }
 serde = { version = "1.0", features = ["derive"] }
-clap = { version = "3.1.18", features = ["derive", "color"] }
+clap = { version = "4.0", features = ["derive", "color"] }
 colored = "2"
 lazy_static = "1.4.0"
 parking_lot = "0.10"

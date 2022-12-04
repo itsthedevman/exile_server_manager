@@ -10,11 +10,10 @@ use std::time::Duration;
 
 use crate::database::Database;
 use crate::file_watcher::FileWatcher;
-use crate::Directory;
 use crate::{
-    read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, Commands, LogLevel,
-    System,
+    read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, LogLevel, System,
 };
+use crate::{Args, Directory};
 
 use colored::*;
 use lazy_static::lazy_static;
@@ -70,7 +69,11 @@ pub struct Builder {
     /// The host URI that is currently hosting a bot instance.
     pub bot_host: String,
     /// If true, this ignores file checks and rebuilds the entire suite
-    pub rebuild: bool,
+    pub force: bool,
+    /// If true, marks this build as a release for public build
+    pub release: bool,
+    /// Controls which pieces are built
+    pub only: Vec<String>,
     /// The path to this repo's root directory
     pub local_git_path: PathBuf,
     /// Rust's build directory
@@ -82,19 +85,8 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn new(command: Commands) -> Result<Self, BuildError> {
-        let (build_x32, os, log_level, env, bot_host, rebuild) = match command {
-            Commands::Run {
-                build_x32,
-                target,
-                log_level,
-                env,
-                bot_host,
-                rebuild,
-            } => (build_x32, target, log_level, env, bot_host, rebuild),
-        };
-
-        let arch = if build_x32 {
+    pub fn new(args: Args) -> Result<Self, BuildError> {
+        let arch = if args.build_x32 {
             BuildArch::X32
         } else {
             BuildArch::X64
@@ -102,7 +94,7 @@ impl Builder {
 
         let local_git_path = std::env::current_dir()?;
 
-        let extension_build_target: String = match os {
+        let extension_build_target: String = match args.target {
             BuildOS::Windows => match arch {
                 BuildArch::X32 => "i686-pc-windows-msvc".into(),
                 BuildArch::X64 => "x86_64-pc-windows-msvc".into(),
@@ -123,12 +115,14 @@ impl Builder {
             .load()?;
 
         let builder = Builder {
-            os,
+            os: args.target,
             arch,
-            env,
-            bot_host,
-            log_level,
-            rebuild,
+            env: args.env,
+            bot_host: args.bot_host,
+            log_level: args.log_level,
+            force: args.force,
+            release: args.release,
+            only: args.only,
             local_git_path,
             extension_build_target,
             local_build_path,
@@ -333,17 +327,23 @@ impl Builder {
     }
 
     fn rebuild_extension(&self) -> bool {
-        self.rebuild
+        self.force
+            || self.only.contains(&"extension".into())
             || has_directory_changed(&self.file_watcher, &self.local_git_path.join("arma"))
             || has_directory_changed(&self.file_watcher, &self.local_git_path.join("message"))
     }
 
+    // The entire mod
     fn rebuild_mod(&self) -> bool {
-        self.rebuild || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm"))
+        self.force
+            || self.only.contains(&"mod".into())
+            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm"))
     }
 
+    // Single addon
     fn rebuild_addon(&self, addon: &str) -> bool {
-        self.rebuild
+        self.force
+            || self.only.contains(&"mod".into())
             || has_directory_changed(
                 &self.file_watcher,
                 &self.local_git_path.join("@esm").join("addons").join(addon),
@@ -578,7 +578,7 @@ impl Builder {
 
         if result == *"rebuild" {
             // This may be a first build - build all the things!
-            self.rebuild = true;
+            self.force = true;
         }
 
         Ok(())
@@ -587,6 +587,7 @@ impl Builder {
     fn build_extension(&mut self) -> BuildResult {
         // This will be read by the build script and inserted into the extension
         let extension_path = self.local_git_path.join("arma");
+        let message_path = self.local_git_path.join("message");
 
         fs::write(
             extension_path
@@ -596,18 +597,18 @@ impl Builder {
             git_sha_short().as_bytes(),
         )?;
 
+        // Copy the extension and message code over to the remote host
+        Directory::transfer(self, extension_path, self.remote_build_path().to_owned())?;
+        Directory::transfer(self, message_path, self.remote_build_path().to_owned())?;
+
         match self.os {
             BuildOS::Windows => {
-                // Copy the extension over to the remote host
-                Directory::transfer(self, extension_path, self.remote_build_path().to_owned())?;
-
                 let script = format!(
                     r#"
-                        cd '{build_path}\esm';
-                        cargo update --package esm_message;
+                        cd '{build_path}\arma';
                         rustup run stable-{build_target} cargo build --target {build_target} --release;
 
-                        Copy-Item "{build_path}\esm\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
+                        Copy-Item "{build_path}\arma\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
                     "#,
                     build_path = self.remote_build_path_str(),
                     build_target = self.extension_build_target,
