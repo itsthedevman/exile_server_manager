@@ -73,7 +73,7 @@ pub struct Builder {
     /// If true, marks this build as a release for public build
     pub release: bool,
     /// Controls which pieces are built
-    pub only: Vec<String>,
+    pub only: String,
     /// The path to this repo's root directory
     pub local_git_path: PathBuf,
     /// Rust's build directory
@@ -122,7 +122,7 @@ impl Builder {
             log_level: args.log_level,
             force: args.force,
             release: args.release,
-            only: args.only,
+            only: args.only.unwrap_or_default(),
             local_git_path,
             extension_build_target,
             local_build_path,
@@ -327,27 +327,42 @@ impl Builder {
     }
 
     fn rebuild_extension(&self) -> bool {
-        self.force
-            || self.only.contains(&"extension".into())
-            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("arma"))
-            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("message"))
+        // Force? Forced true
+        // Just building the extension? Forced true
+        // Just building just the mod? Forced false
+        // No force, no only? return true only if the files have changed
+        (self.force || self.only != "mod")
+            && (self.force
+                || self.only == "extension"
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("arma"))
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("message")))
     }
 
     // The entire mod
     fn rebuild_mod(&self) -> bool {
-        self.force
-            || self.only.contains(&"mod".into())
-            || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm"))
+        // Force? Forced true
+        // Just building the mod? Forced true
+        // Just building just the extension? Forced false
+        // No force, no only? return true only if the files have changed
+        (self.force || self.only != "extension")
+            && (self.force
+                || self.only == "mod"
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm")))
     }
 
     // Single addon
     fn rebuild_addon(&self, addon: &str) -> bool {
-        self.force
-            || self.only.contains(&"mod".into())
-            || has_directory_changed(
-                &self.file_watcher,
-                &self.local_git_path.join("@esm").join("addons").join(addon),
-            )
+        // Force? Forced true
+        // Just building the mod? Forced true
+        // Just building just the extension? Forced false
+        // No force, no only? return true only if the files have changed
+        (self.force || self.only != "extension")
+            && (self.force
+                || self.only == "mod"
+                || has_directory_changed(
+                    &self.file_watcher,
+                    &self.local_git_path.join("@esm").join("addons").join(addon),
+                ))
     }
 
     //////////////////////////////////////////////////////////////////

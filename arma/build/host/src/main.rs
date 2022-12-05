@@ -67,7 +67,7 @@ pub struct Args {
 
     /// Space or comma separated list that controls which pieces are built
     #[arg(short, long, value_parser = ["mod", "extension"])]
-    only: Vec<String>,
+    only: Option<String>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
