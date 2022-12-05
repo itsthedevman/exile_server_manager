@@ -253,7 +253,10 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
             let message = match Message::from_bytes(&request.content, token.key_bytes()) {
                 Ok(message) => {
-                    debug!("[on_message] {message}");
+                    if !matches!(message.data, Data::Ping) {
+                        debug!("[on_message] {message}");
+                    }
+
                     message
                 }
                 Err(e) => return Err(format!("❌ {e}").into()),

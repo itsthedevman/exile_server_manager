@@ -62,7 +62,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
 
             let message = Message::new()
                 .set_id(message_id)
-                .add_error(ErrorType::Code, "client_exception");
+                .add_error(e.error_type, e.error_content);
 
             Some(message)
         }
@@ -78,10 +78,6 @@ fn send_to_arma(function: &str, message: Message) -> ESMResult {
         function,
         message
     );
-
-    if std::env::var("ESM_IS_TERMINAL").is_ok() {
-        return Ok(());
-    }
 
     let message = vec![
         vec!["id".to_arma(), message.id.to_arma()],
@@ -100,18 +96,17 @@ fn send_to_arma(function: &str, message: Message) -> ESMResult {
     }
 }
 
-async fn post_initialization(message: Message) -> MessageResult {
-    let mut data = retrieve_data!(message.data, Data::PostInit);
+async fn post_initialization(mut message: Message) -> MessageResult {
+    let Data::PostInit(ref mut data) = message.data else {
+        return Err("".into());
+    };
 
     // Get the base path to figure out where to look for the ini
     let base_ini_path = if data.extdb_path.is_empty() {
         crate::CONFIG.server_mod_name.clone()
     } else {
-        data.extdb_path
+        data.extdb_path.to_owned()
     };
-
-    data.build_number = std::include_str!("../.build-sha").to_string();
-    data.version = env!("CARGO_PKG_VERSION").to_string();
 
     // Connect to the database
     if let Err(e) = DATABASE.connect(&base_ini_path).await {
@@ -123,6 +118,10 @@ async fn post_initialization(message: Message) -> MessageResult {
         )));
     }
 
+    data.build_number = std::include_str!("../.build-sha").to_string();
+    data.version = env!("CARGO_PKG_VERSION").to_string();
+    data.extdb_version = DATABASE.extdb_version;
+
     send_to_arma("ESMs_system_process_postInit", message)?;
 
     info!("[post_initialization] ✅ Connection established with esm_bot");
@@ -132,10 +131,15 @@ async fn post_initialization(message: Message) -> MessageResult {
 }
 
 async fn call_arma_function(message: Message) -> MessageResult {
-    let metadata = retrieve_data!(message.metadata, Metadata::Command);
+    let Metadata::Command(ref metadata) = message.metadata else {
+        return Err("".into());
+    };
 
     // First, check to make sure the player has joined this server
-    if !DATABASE.account_exists(&metadata.player.steam_uid).await? {
+    if !DATABASE
+        .check_account_exists(&metadata.player.steam_uid)
+        .await?
+    {
         return Ok(Some(message.add_error(
             esm_message::ErrorType::Code,
             String::from("player_account_does_not_exist"),
@@ -144,7 +148,10 @@ async fn call_arma_function(message: Message) -> MessageResult {
 
     // If the command has a target, check to make sure they've joined the server
     if let Some(target_player) = &metadata.target {
-        if !DATABASE.account_exists(&target_player.steam_uid).await? {
+        if !DATABASE
+            .check_account_exists(&target_player.steam_uid)
+            .await?
+        {
             return Ok(Some(message.add_error(
                 esm_message::ErrorType::Code,
                 String::from("target_account_does_not_exist"),

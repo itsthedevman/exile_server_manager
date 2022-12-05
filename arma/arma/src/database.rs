@@ -1,8 +1,10 @@
 use crate::*;
 use ini::Ini;
-use mysql_async::{params, prelude::Queryable, Conn, Opts, Pool, Result as QueryResult};
+use mysql_async::{params, prelude::Queryable, Conn, Opts, Pool, Result as SQLResult};
 use serde::Serialize;
 use std::{collections::HashMap, path::Path};
+
+type DatabaseResult = Result<QueryResult, Error>;
 
 #[derive(Clone)]
 pub struct Database {
@@ -76,24 +78,34 @@ impl Database {
     }
 
     pub async fn query(&self, message: Message) -> MessageResult {
-        let data = retrieve_data!(message.data, Data::Query);
-        let name = data.name;
-        let arguments = data.arguments;
+        let Data::Query(ref query) = message.data else {
+            return Err("".into());
+        };
 
-        match name.as_str() {
-            "reward_territories" => self.reward_territories(message, arguments).await,
-            _ => Err(format!(
-                "[query] Unexpected query \"{}\" with arguments {:?}",
-                name, arguments
-            )
-            .into()),
+        let name = &query.name;
+        let arguments = &query.arguments;
+
+        let query_result = match name.as_str() {
+            "reward_territories" => self.reward_territories(arguments).await,
+            _ => {
+                return Err(format!(
+                    "[query] Unexpected query \"{}\" with arguments {:?}",
+                    name, arguments
+                )
+                .into())
+            }
+        };
+
+        match query_result {
+            Ok(r) => Ok(Some(message.set_data(Data::QueryResult(r)))),
+            Err(e) => Err(e),
         }
     }
 
-    pub async fn account_exists(&self, player_uid: &str) -> Result<bool, ESMError> {
+    pub async fn check_account_exists(&self, player_uid: &str) -> Result<bool, Error> {
         let mut connection = self.connection().await?;
 
-        let result: QueryResult<Option<String>> = connection.exec_first(
+        let result: SQLResult<Option<String>> = connection.exec_first(
             "SELECT CASE WHEN EXISTS(SELECT uid FROM account WHERE uid = :uid) THEN 'true' ELSE 'false' END",
             params! { "uid" => player_uid }
         ).await;
@@ -103,20 +115,19 @@ impl Database {
                 Some(v) => Ok(v == "true"),
                 None => Ok(false),
             },
-            Err(e) => Err(format!("[account_exists] {e}").into()),
+            Err(_e) => Ok(false),
         }
     }
 
-    pub async fn reward_territories(
-        &self,
-        message: Message,
-        arguments: HashMap<String, String>,
-    ) -> MessageResult {
+    pub async fn reward_territories(&self, arguments: &HashMap<String, String>) -> DatabaseResult {
         let mut connection = self.connection().await?;
 
         let player_uid = match arguments.get("uid") {
             Some(uid) => uid,
-            None => return Err("[reward_territories] ❌ Missing key :uid in data arguments".into()),
+            None => {
+                error!("[reward_territories] ❌ Missing key `uid` in provided query arguments");
+                return Err("error".into());
+            }
         };
 
         #[derive(Debug, Serialize)]
@@ -164,11 +175,12 @@ impl Database {
                     .map(|t| serde_json::to_string(&t).unwrap())
                     .collect();
 
-                Ok(Some(message.set_data(Data::QueryResult(
-                    data::QueryResult { results },
-                ))))
+                Ok(QueryResult { results })
             }
-            Err(e) => Err(format!("[reward_territories] ❌ {}", e).into()),
+            Err(e) => {
+                error!("[reward_territories] ❌ Query failed - {}", e);
+                Err("error".into())
+            }
         }
     }
 }
@@ -217,61 +229,43 @@ fn connection_string(base_ini_path: &str, extdb_version: u8) -> Result<String, S
 
     let header_name = crate::CONFIG.extdb_conf_header_name.clone();
 
-    let section = match db_ini.section(Some(header_name.clone())) {
-        Some(section) => section,
-        None => {
-            return Err(format!("Could not find the [{}] section containing your database connection details in {}. If you have a custom name, you may overwrite it by setting the \"database_header_name\" configuration option in @ESM/config.yml.", header_name, filename));
-        }
+    let Some(section) = db_ini.section(Some(header_name.clone())) else {
+        return Err(format!("Could not find the [{}] section containing your database connection details in {}. If you have a custom name, you may overwrite it by setting the \"database_header_name\" configuration option in @ESM/config.yml.", header_name, filename));
     };
 
-    let ip = match section.get("IP") {
-        Some(ip) => ip,
-        None => {
-            return Err(format!(
-                "Failed to find \"IP\" entry under [{}] section in your {}",
-                header_name, filename
-            ));
-        }
+    let Some(ip) = section.get("IP") else {
+        return Err(format!(
+            "Failed to find \"IP\" entry under [{}] section in your {}",
+            header_name, filename
+        ));
     };
 
-    let port = match section.get("Port") {
-        Some(port) => port,
-        None => {
-            return Err(format!(
-                "Failed to find \"Port\" entry under [{}] section in your {}",
-                header_name, filename
-            ));
-        }
+    let Some(port) = section.get("Port") else {
+        return Err(format!(
+            "Failed to find \"Port\" entry under [{}] section in your {}",
+            header_name, filename
+        ));
     };
 
-    let username = match section.get("Username") {
-        Some(username) => username,
-        None => {
-            return Err(format!(
-                "Failed to find \"Username\" entry under [{}] section in your {}",
-                header_name, filename
-            ));
-        }
+    let Some(username) = section.get("Username") else {
+        return Err(format!(
+            "Failed to find \"Username\" entry under [{}] section in your {}",
+            header_name, filename
+        ));
     };
 
-    let password = match section.get("Password") {
-        Some(password) => password,
-        None => {
-            return Err(format!(
-                "Failed to find \"Password\" entry under [{}] section in your {}",
-                header_name, filename
-            ));
-        }
+    let Some(password) = section.get("Password") else {
+        return Err(format!(
+            "Failed to find \"Password\" entry under [{}] section in your {}",
+            header_name, filename
+        ));
     };
 
-    let database_name = match section.get(database_name_key) {
-        Some(name) => name,
-        None => {
-            return Err(format!(
-                "Failed to find \"{}\" entry under [{}] section in your {}",
-                database_name_key, header_name, filename
-            ));
-        }
+    let Some(database_name) = section.get(database_name_key) else {
+        return Err(format!(
+            "Failed to find \"{}\" entry under [{}] section in your {}",
+            database_name_key, header_name, filename
+        ));
     };
 
     // mysql://user:password@host:port/database_name

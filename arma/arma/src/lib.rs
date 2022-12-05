@@ -2,7 +2,6 @@ mod arma;
 mod bot;
 mod config;
 mod database;
-mod error;
 mod macros;
 mod request;
 mod router;
@@ -35,8 +34,8 @@ pub use macros::*;
 pub use request::*;
 pub use router::ROUTER;
 
-pub type ESMResult = Result<(), ESMError>;
-pub type MessageResult = Result<Option<Message>, ESMError>;
+pub type ESMResult = Result<(), Error>;
+pub type MessageResult = Result<Option<Message>, Error>;
 
 lazy_static! {
     /// Represents @esm/config.yml
