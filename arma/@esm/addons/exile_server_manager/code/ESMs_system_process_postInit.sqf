@@ -32,7 +32,11 @@ if (nil?(_id) || { nil?(_data) }) exitWith { nil };
 {
 	private _variableName = _x;
 	private _value = get!(_data, _variableName);
-	if (nil?(_value)) then { continue };
+
+	if (nil?(_value)) then {
+		error!("Failed to a value for %1", _variableName);
+		continue;
+	};
 
 	debug!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
 	missionNameSpace setVariable [_variableName, _value];
@@ -46,6 +50,6 @@ ESM_Initialized = true;
 // Acknowledge the message
 [_id] call ESMs_object_message_respond_to;
 
-info!("Boot complete. Version %1:%2 has been loaded successfully. Detected database extension %3", ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
+info!("%1 (%2) - @esm version %3:%4 loaded - %5 detected", ESM_ServerID, ESM_CommunityID, ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
 
 true

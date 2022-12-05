@@ -6,25 +6,6 @@ use chrono::{DateTime, Utc};
 use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
 
-/// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
-/// Usage:
-///     retrieve_data!(&message, Init)
-#[macro_export]
-macro_rules! retrieve_data {
-    ($enum:expr, $module:ident::$type:ident) => {{
-        let data = match &$enum {
-            $module::$type(ref v) => v.clone(),
-            data => panic!(
-                "Unexpected type {:?}. Expected: {}.",
-                data,
-                stringify!($type)
-            ),
-        };
-
-        data
-    }};
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
@@ -172,135 +153,79 @@ impl Init {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ImplIntoArma, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct PostInit {
     // Set by the client
-    #[serde(rename = "ESM_BuildNumber", alias = "ESM_BuildNumber", default)]
+    #[serde(default)]
     pub build_number: String,
 
-    #[serde(rename = "ESM_CommunityID", alias = "ESM_CommunityID")]
     pub community_id: String,
+    pub extdb_path: String, // This is only used internally between esm_bot and esm_arma
 
-    // This is only used internally between esm_bot and esm_arma
-    pub extdb_path: String,
-
-    #[serde(rename = "ESM_ExtDBVersion", alias = "ESM_ExtDBVersion", default)]
+    #[serde(default)]
     pub extdb_version: u8,
 
-    #[serde(rename = "ESM_Gambling_Modifier", alias = "ESM_Gambling_Modifier")]
     pub gambling_modifier: NumberString,
-
-    #[serde(rename = "ESM_Gambling_PayoutBase", alias = "ESM_Gambling_PayoutBase")]
     pub gambling_payout_base: NumberString,
-
-    #[serde(
-        rename = "ESM_Gambling_PayoutRandomizerMax",
-        alias = "ESM_Gambling_PayoutRandomizerMax"
-    )]
     pub gambling_payout_randomizer_max: NumberString,
-
-    #[serde(
-        rename = "ESM_Gambling_PayoutRandomizerMid",
-        alias = "ESM_Gambling_PayoutRandomizerMid"
-    )]
     pub gambling_payout_randomizer_mid: NumberString,
-
-    #[serde(
-        rename = "ESM_Gambling_PayoutRandomizerMin",
-        alias = "ESM_Gambling_PayoutRandomizerMin"
-    )]
     pub gambling_payout_randomizer_min: NumberString,
-
-    #[serde(
-        rename = "ESM_Gambling_WinPercentage",
-        alias = "ESM_Gambling_WinPercentage"
-    )]
     pub gambling_win_percentage: NumberString,
-
-    #[serde(
-        rename = "ESM_Logging_AddPlayerToTerritory",
-        alias = "ESM_Logging_AddPlayerToTerritory"
-    )]
     pub logging_add_player_to_territory: bool,
-
-    #[serde(
-        rename = "ESM_Logging_DemotePlayer",
-        alias = "ESM_Logging_DemotePlayer"
-    )]
     pub logging_demote_player: bool,
-
-    #[serde(rename = "ESM_Logging_Exec", alias = "ESM_Logging_Exec")]
     pub logging_exec: bool,
-
-    #[serde(rename = "ESM_Logging_Gamble", alias = "ESM_Logging_Gamble")]
     pub logging_gamble: bool,
-
-    #[serde(
-        rename = "ESM_Logging_ModifyPlayer",
-        alias = "ESM_Logging_ModifyPlayer"
-    )]
     pub logging_modify_player: bool,
-
-    #[serde(
-        rename = "ESM_Logging_PayTerritory",
-        alias = "ESM_Logging_PayTerritory"
-    )]
     pub logging_pay_territory: bool,
-
-    #[serde(
-        rename = "ESM_Logging_PromotePlayer",
-        alias = "ESM_Logging_PromotePlayer"
-    )]
     pub logging_promote_player: bool,
-
-    #[serde(
-        rename = "ESM_Logging_RemovePlayerFromTerritory",
-        alias = "ESM_Logging_RemovePlayerFromTerritory"
-    )]
     pub logging_remove_player_from_territory: bool,
-
-    #[serde(
-        rename = "ESM_Logging_RewardPlayer",
-        alias = "ESM_Logging_RewardPlayer"
-    )]
     pub logging_reward_player: bool,
-
-    #[serde(
-        rename = "ESM_Logging_TransferPoptabs",
-        alias = "ESM_Logging_TransferPoptabs"
-    )]
     pub logging_transfer_poptabs: bool,
-
-    #[serde(
-        rename = "ESM_Logging_UpgradeTerritory",
-        alias = "ESM_Logging_UpgradeTerritory"
-    )]
     pub logging_upgrade_territory: bool,
-
-    #[serde(rename = "ESM_LoggingChannelID", alias = "ESM_LoggingChannelID")]
     pub logging_channel_id: String,
-
-    #[serde(rename = "ESM_ServerID", alias = "ESM_ServerID")]
     pub server_id: String,
-
-    #[serde(
-        rename = "ESM_Taxes_TerritoryPayment",
-        alias = "ESM_Taxes_TerritoryPayment"
-    )]
     pub taxes_territory_payment: NumberString,
-
-    #[serde(
-        rename = "ESM_Taxes_TerritoryUpgrade",
-        alias = "ESM_Taxes_TerritoryUpgrade"
-    )]
     pub taxes_territory_upgrade: NumberString,
-
-    #[serde(rename = "ESM_TerritoryAdminUIDs", alias = "ESM_TerritoryAdminUIDs")]
     pub territory_admin_uids: Vec<String>,
 
     // Set by the client
-    #[serde(rename = "ESM_Version", alias = "ESM_Version", default)]
+    #[serde(default)]
     pub version: String,
+}
+
+impl arma_rs::IntoArma for PostInit {
+    // Custom implementation because it doesn't use all of the fields
+    fn to_arma(&self) -> arma_rs::Value {
+        serde_json::json!({
+            "ESM_BuildNumber": self.build_number,
+            "ESM_CommunityID": self.community_id,
+            "ESM_ExtDBVersion": self.extdb_version,
+            "ESM_Gambling_Modifier": self.gambling_modifier,
+            "ESM_Gambling_PayoutBase": self.gambling_payout_base,
+            "ESM_Gambling_PayoutRandomizerMax": self.gambling_payout_randomizer_max,
+            "ESM_Gambling_PayoutRandomizerMid": self.gambling_payout_randomizer_mid,
+            "ESM_Gambling_PayoutRandomizerMin": self.gambling_payout_randomizer_min,
+            "ESM_Gambling_WinPercentage": self.gambling_win_percentage,
+            "ESM_Logging_AddPlayerToTerritory": self.logging_add_player_to_territory,
+            "ESM_Logging_DemotePlayer": self.logging_demote_player,
+            "ESM_Logging_Exec": self.logging_exec,
+            "ESM_Logging_Gamble": self.logging_gamble,
+            "ESM_Logging_ModifyPlayer": self.logging_modify_player,
+            "ESM_Logging_PayTerritory": self.logging_pay_territory,
+            "ESM_Logging_PromotePlayer": self.logging_promote_player,
+            "ESM_Logging_RemovePlayerFromTerritory": self.logging_remove_player_from_territory,
+            "ESM_Logging_RewardPlayer": self.logging_reward_player,
+            "ESM_Logging_TransferPoptabs": self.logging_transfer_poptabs,
+            "ESM_Logging_UpgradeTerritory": self.logging_upgrade_territory,
+            "ESM_LoggingChannelID": self.logging_channel_id,
+            "ESM_ServerID": self.server_id,
+            "ESM_Taxes_TerritoryPayment": self.taxes_territory_payment,
+            "ESM_Taxes_TerritoryUpgrade": self.taxes_territory_upgrade,
+            "ESM_TerritoryAdminUIDs": self.territory_admin_uids,
+            "ESM_Version": self.version,
+        })
+        .to_arma()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
@@ -367,24 +292,6 @@ pub struct SendToChannel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{data, metadata, Message, Metadata, Type};
-
-    #[test]
-    fn test_retrieve_data() {
-        let mut message = Message::new().set_type(Type::Test);
-        message.data = Data::Test(data::Test {
-            foo: "testing".into(),
-        });
-        message.metadata = Metadata::Test(metadata::Test {
-            foo: "testing".into(),
-        });
-
-        let result = retrieve_data!(&message.data, Data::Test);
-        assert_eq!(result.foo, String::from("testing"));
-
-        let result = retrieve_data!(&message.metadata, Metadata::Test);
-        assert_eq!(result.foo, String::from("testing"));
-    }
 
     #[test]
     fn test_to_arma() {
