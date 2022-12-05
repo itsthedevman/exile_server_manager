@@ -110,11 +110,11 @@ impl Message {
         self.add_error(ErrorType::Message, message)
     }
 
-    pub fn add_error<S>(mut self, error_type: ErrorType, error_message: S) -> Message
+    pub fn add_error<S>(mut self, error_type: ErrorType, error_content: S) -> Message
     where
         S: Into<String>,
     {
-        let error = Error::new(error_type, error_message.into());
+        let error = Error::new(error_type, error_content.into());
         self.errors.push(error);
         self
     }
