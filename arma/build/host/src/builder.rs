@@ -376,18 +376,21 @@ impl Builder {
     fn prepare_directories(&mut self) -> BuildResult {
         ////////////////////
         // Local directories
-        let esm_path = self.local_build_path.join("@esm");
+        // Keeps the files around for viewing when building the extension by itself
+        if self.rebuild_mod() {
+            let esm_path = self.local_build_path.join("@esm");
 
-        // Delete @esm and recreate it
-        if esm_path.exists() {
-            fs::remove_dir_all(&esm_path)?;
-            fs::create_dir_all(&esm_path)?;
-        }
+            // Delete @esm and recreate it
+            if esm_path.exists() {
+                fs::remove_dir_all(&esm_path)?;
+                fs::create_dir_all(&esm_path)?;
+            }
 
-        // Create @esm/addons
-        let addons_path = esm_path.join("addons");
-        if !addons_path.exists() {
-            fs::create_dir_all(&addons_path)?;
+            // Create @esm/addons
+            let addons_path = esm_path.join("addons");
+            if !addons_path.exists() {
+                fs::create_dir_all(&addons_path)?;
+            }
         }
 
         // Remove some build files
