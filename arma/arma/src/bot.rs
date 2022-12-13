@@ -254,6 +254,11 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             let message = match Message::from_bytes(&request.content, token.key_bytes()) {
                 Ok(message) => {
                     if !matches!(message.data, Data::Ping) {
+                        info!(
+                            "[on_message] {} - {:?} - {:?}",
+                            message.id, message.message_type, message.data
+                        );
+
                         debug!("[on_message] {message}");
                     }
 
@@ -262,7 +267,8 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 Err(e) => return Err(format!("❌ {e}").into()),
             };
 
-            if !message.errors.is_empty() {
+            // Echo bypasses this so errors can be triggered on the round trip
+            if !matches!(message.data, Data::Echo) && !message.errors.is_empty() {
                 let error = message
                     .errors
                     .iter()
@@ -276,7 +282,6 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             match message.message_type {
                 Type::Query => ArmaRequest::query(message),
                 Type::Arma => ArmaRequest::call("call_function", message),
-                Type::Test => BotRequest::send(message),
                 Type::Event => match message.data {
                     Data::PostInit(_) => {
                         if crate::READY.load(Ordering::SeqCst) {
@@ -286,6 +291,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                         ArmaRequest::call("post_initialization", message)
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
+                    Data::Echo => BotRequest::send(message),
                     _ => unreachable!("Invalid data type sent with Event message"),
                 },
             }

@@ -831,23 +831,23 @@ impl Builder {
         lazy_static! {
             static ref HIGHLIGHTS: Vec<Highlight> = vec![
                 Highlight {
-                    regex: Regex::new(r"(?i)error\b").unwrap(),
+                    regex: Regex::new(r"ERROR\b").unwrap(),
                     color: [153, 0, 51]
                 },
                 Highlight {
-                    regex: Regex::new(r"(?i)warn").unwrap(),
+                    regex: Regex::new(r"WARN").unwrap(),
                     color: [153, 102, 0]
                 },
                 Highlight {
-                    regex: Regex::new(r"(?i)info").unwrap(),
+                    regex: Regex::new(r"INFO").unwrap(),
                     color: [102, 204, 255]
                 },
                 Highlight {
-                    regex: Regex::new(r"(?i)debug").unwrap(),
+                    regex: Regex::new(r"DEBUG").unwrap(),
                     color: [80, 82, 86]
                 },
                 Highlight {
-                    regex: Regex::new(r"(?i)trace").unwrap(),
+                    regex: Regex::new(r"TRACE").unwrap(),
                     color: [255, 153, 102]
                 }
             ];

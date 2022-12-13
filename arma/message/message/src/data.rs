@@ -12,7 +12,10 @@ pub enum Data {
     Empty,
     Ping,
     Pong,
-    Test(Test),
+    // Bounces the message back to the sender. Mainly used for testing
+    // This bypasses the server -> client error handling for testing purposes
+    Echo,
+    Test(Test), // TODO(Improve or remove)
 
     // Init
     Init(Init),
@@ -64,17 +67,7 @@ impl std::fmt::Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             Data::Empty => write!(f, "Empty"),
-            Data::Test(d) => write!(f, "{:?}", d),
-            Data::Init(d) => write!(f, "{:?}", d),
-            Data::PostInit(d) => write!(f, "{:?}", d),
-            Data::Query(d) => write!(f, "{:?}", d),
-            Data::QueryResult(d) => write!(f, "{:?}", d),
-            Data::SendToChannel(d) => write!(f, "{:?}", d),
-            Data::Reward(d) => write!(f, "{:?}", d),
-            Data::Sqf(d) => write!(f, "{:?}", d),
-            Data::SqfResult(d) => write!(f, "{:?}", d),
-            Data::Ping => write!(f, "Ping"),
-            Data::Pong => write!(f, "Pong"),
+            t => write!(f, "{:?}", t),
         }
     }
 }

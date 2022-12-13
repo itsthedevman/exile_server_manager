@@ -224,9 +224,6 @@ impl Default for Message {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
-    // Automatic testing
-    Test,
-
     // Events, such as Init, PostInit, etc.
     Event,
 
@@ -491,7 +488,7 @@ mod tests {
         let id = Uuid::new_v4();
         let expectation = Message::new()
             .set_id(id)
-            .set_type(Type::Test)
+            .set_type(Type::Event)
             .set_data(Data::Test(data::Test {
                 foo: "test\"ing".into(),
             }))
@@ -503,7 +500,7 @@ mod tests {
 
         let result = Message::from_arma(
             id.to_string(),
-            "test".into(),
+            "event".into(),
             r#"[["type","test"],["content",[["foo","test""ing"]]]]"#
             .to_string(),
             r#"[["type","test"],["content",[["foo","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
