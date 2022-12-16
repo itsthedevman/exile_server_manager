@@ -6,7 +6,7 @@ module ESM
     COMMUNITY_ID = /[^\s]+/i.freeze
     DISCORD_TAG = /<@[&!]?\d+>/.freeze
     DISCORD_TAG_ONLY = /^#{DISCORD_TAG.source}$/.freeze
-    DISCORD_ID = /\d{18}/.freeze
+    DISCORD_ID = /\d{18,19}/.freeze
     DISCORD_ID_ONLY = /^#{DISCORD_ID.source}$/.freeze
     STEAM_UID = /\d{17}/.freeze
     STEAM_UID_ONLY = /^#{STEAM_UID.source}$/.freeze
