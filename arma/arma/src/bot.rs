@@ -157,7 +157,7 @@ fn send_request(request: ServerRequest) -> ESMResult {
 
     let request = match serde_json::to_vec(&request) {
         Ok(r) => r,
-        Err(_) => todo!(),
+        Err(e) => return Err(format!("❌ Cannot send message - Failed to convert - {e}").into()),
     };
 
     match lock!(HANDLER)
@@ -292,7 +292,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
                     Data::Echo => BotRequest::send(message),
-                    _ => unreachable!("Invalid data type sent with Event message"),
+                    t => Err(format!("❌ Unexpected event type: {t:?}").into()),
                 },
             }
         }

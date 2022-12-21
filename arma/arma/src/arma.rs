@@ -163,10 +163,13 @@ async fn call_arma_function(message: Message) -> MessageResult {
     let function_name = match message.data {
         Data::Reward(_) => "ESMs_command_reward",
         Data::Sqf(_) => "ESMs_command_sqf",
-        _ => unreachable!(
-            "[call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet",
-            message.data
-        ),
+        _ => {
+            return Err(format!(
+                "[call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet",
+                message.data
+            )
+            .into())
+        }
     };
 
     send_to_arma(function_name, message)?;
