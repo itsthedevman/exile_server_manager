@@ -28,10 +28,12 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
+// This function is scheduled by default
 private _functionName = _this select 0;
 private _data = _this select 1;
 
 // Make sure the function is compiled
+// TODO: Ensure the function is one of ESMs functions
 private _function = missionNameSpace getVariable [_functionName, ""];
 if (type?(_function, STRING)) exitWith
 {
@@ -39,7 +41,6 @@ if (type?(_function, STRING)) exitWith
 };
 
 private _response = _data call ESMs_system_extension_processResult;
-_response spawn _function;
 
 if (debug?) then
 {
@@ -49,15 +50,18 @@ if (debug?) then
 		private _data = get!(_response, "data", "");
 		private _metadata = get!(_response, "metadata", "");
 
-		debug!("Spawned ""%1""", _functionName);
+		debug!("Calling ""%1""", _functionName);
 		debug!("- Id (%1): %2", typeName _id, _id);
 		debug!("- Data (%1): %2", typeName _data, _data);
 		debug!("- Metadata (%1): %2", typeName _metadata, _metadata);
 	}
 	else
 	{
-		debug!("Spawned function ""%1"" with %2", _functionName, _response);
+		debug!("Calling function ""%1"" with %2", _functionName, _response);
 	};
 };
+
+// Do not use spawn
+_response call _function;
 
 true
