@@ -255,11 +255,18 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 Ok(message) => {
                     if !matches!(message.data, Data::Ping) {
                         info!(
-                            "[on_message] {} - {:?} - {:?}",
-                            message.id, message.message_type, message.data
+                            "[on_message] {message_id} - {message_type:?}/{status} - {message_data:?}",
+                            message_id = message.id,
+                            message_type = message.message_type,
+                            message_data = message.data,
+                            status = if message.errors.is_empty() {
+                                "Success"
+                            } else {
+                                "Failed"
+                            }
                         );
 
-                        debug!("[on_message] {message}");
+                        debug!("[on_message] {message:?}");
                     }
 
                     message
