@@ -15,7 +15,7 @@ steam_uids:
 server:
   # Steam username used to login to steamcmd
   # Required
-  steam_user: account_steam_uid
+  steam_user: account_steam_name
 
   # The Steam account's password that steamCMD uses
   # Required
