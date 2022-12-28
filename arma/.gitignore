@@ -25,7 +25,10 @@ test_users.yml
 node_modules
 reset.sql
 
+# Ignore the root config.yml but not the mod's config.yml
 config.yml
+!src/@esm/config.yml
+
 .env
 
 build_config.yml

@@ -112,10 +112,10 @@ impl Builder {
         let config_path = local_git_path.join("config.yml");
 
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
-            .watch(&local_git_path.join("@esm"))
-            .watch(&local_git_path.join("arma"))
-            .watch(&local_git_path.join("message"))
-            .ignore(&local_git_path.join("arma").join(".build-sha"))
+            .watch(&local_git_path.join("src").join("@esm"))
+            .watch(&local_git_path.join("src").join("arma"))
+            .watch(&local_git_path.join("src").join("message"))
+            .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
             .load()?;
 
         let builder = Builder {
@@ -339,8 +339,8 @@ impl Builder {
         (self.force || self.only != "mod")
             && (self.force
                 || self.only == "extension"
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("arma"))
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("message")))
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("arma"))
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("message")))
     }
 
     // The entire mod
@@ -352,7 +352,7 @@ impl Builder {
         (self.force || self.only != "extension")
             && (self.force
                 || self.only == "mod"
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("@esm")))
+                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("@esm")))
     }
 
     // Single addon
@@ -366,7 +366,7 @@ impl Builder {
                 || self.only == "mod"
                 || has_directory_changed(
                     &self.file_watcher,
-                    &self.local_git_path.join("@esm").join("addons").join(addon),
+                    &self.local_git_path.join("src").join("@esm").join("addons").join(addon),
                 ))
     }
 
@@ -617,8 +617,8 @@ impl Builder {
 
     fn build_extension(&mut self) -> BuildResult {
         // This will be read by the build script and inserted into the extension
-        let extension_path = self.local_git_path.join("arma");
-        let message_path = self.local_git_path.join("message");
+        let extension_path = self.local_git_path.join("src").join("arma");
+        let message_path = self.local_git_path.join("src").join("message");
 
         fs::write(
             extension_path
@@ -720,7 +720,7 @@ impl Builder {
         }
 
         // Set up all the paths needed
-        let mod_path = self.local_git_path.join("@esm");
+        let mod_path = self.local_git_path.join("src").join("@esm");
         let source_path = mod_path.join("addons");
 
         let mod_build_path = self.local_build_path.join("@esm");

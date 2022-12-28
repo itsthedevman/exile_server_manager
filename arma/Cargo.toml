@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "arma",
-    "build/host",
-    "build/receiver",
-    "build/common",
-    "build/compiler",
-    "message/message",
-    "message/message_proc",
+    "src/arma",
+    "src/build/host",
+    "src/build/receiver",
+    "src/build/common",
+    "src/build/compiler",
+    "src/message/message",
+    "src/message/message_proc",
 ]
-default-members = ["arma"]
+default-members = ["src/arma"]

@@ -1,3 +1,6 @@
+#!/bin/bash
+
+git_root=$(pwd)
 cargo check
 
 if [ $? -ne 0 ]
@@ -5,7 +8,7 @@ then
   exit $?
 fi
 
-cd build/host
+cd src/build/host
 cargo build --release
 
 if [ $? -ne 0 ]
@@ -13,5 +16,5 @@ then
   exit $?
 fi
 
-cd ../..
+cd $git_root
 ./target/release/host $*
