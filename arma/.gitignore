@@ -25,10 +25,11 @@ test_users.yml
 node_modules
 reset.sql
 
-test_data.yml
+config.yml
 .env
 
 build_config.yml
 *.zip
 
-.build-sha
+# Don't ignore - Needed for code to compile without build script
+# .build-sha

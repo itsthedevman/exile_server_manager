@@ -1,0 +1,82 @@
+#
+# You, i.e. the account-in-which-is-being-used-to-develop-this-extension's Steam64 UID
+# Required
+my_steam_uid: YOUR_UID
+
+#
+# A list of valid Steam UIDs that matches the list used by the esm_bot's testing suite
+# Required
+steam_uids:
+  - UID_1
+  - UID_2
+
+#
+# Config for the Linux Arma 3 server
+server:
+  # Steam username used to login to steamcmd
+  # Required
+  steam_user: account_steam_uid
+
+  # The Steam account's password that steamCMD uses
+  # Required
+  steam_password: account_password
+
+  # Arma 3 server binary to use. "x64" will be appended to this for x64 builds
+  # Default: ./arma3server
+  #arma_binary: ./arma3server
+
+  # Creator DLCs to load
+  # See https://github.com/BrettMayson/Arma3Server#creator-dlc
+  #arma_cdlc:
+
+  # Config file to load from a3_server/configs
+  # Default: main.cfg
+  #arma_config: main.cfg
+
+  # Maximum FPS
+  # Default: 1000
+  #arma_limitfps: 1000
+
+  # Additional Arma CLI parameters
+  # Default:
+  #arma_params:
+
+  # Profile name, stored in /arma3/configs/profiles
+  # Default: main
+  #arma_profile: main
+
+  # World to load on startup
+  # Default: empty
+  #arma_world: empty
+
+  # Headless client profile name (supports valid placeholders: $profile, $i, $ii)
+  # Default: $profile-hc-$i
+  #headless_clients_profile: $profile-hc-$i
+
+  # Launch n number of headless clients
+  # Default: 0
+  #headless_clients: 0
+
+  # Should the mods folder be loaded?
+  # Default: true
+  #mods_local: true
+
+  # An Arma 3 Launcher preset to load
+  # Default:
+  #mods_preset:
+
+  # Port used by the server, (uses PORT to PORT+3)
+  # Default: 2302
+  #port: 2302
+
+  # Skips the A3 installation process
+  # Default: false
+  #skip_install: false
+
+  # Steam branch password used by steamcmd
+  # Default:
+  #steam_branch_password:
+
+  # Steam branch used by steamcmd
+  # Default: public
+  #steam_branch: public

@@ -3,7 +3,7 @@
 
 mod builder;
 mod compile;
-mod data;
+mod config;
 mod database;
 mod directory;
 mod file;

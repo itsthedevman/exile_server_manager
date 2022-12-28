@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use std::fmt::Display;
 
-use crate::data::Data;
+use crate::config::Config;
 
 lazy_static! {
     pub static ref FLAG_TEXTURES: &'static [&'static str] = &[
@@ -88,9 +88,9 @@ lazy_static! {
 pub struct Database {}
 
 impl Database {
-    pub fn generate_sql(data: Data) -> String {
-        let mut steam_uids = data.steam_uids.to_owned();
-        steam_uids.push(data.dev.steam_uid);
+    pub fn generate_sql(config: &Config) -> String {
+        let mut steam_uids = config.steam_uids.to_owned();
+        steam_uids.push(config.my_steam_uid.to_owned());
 
         let accounts = generate_accounts(&steam_uids);
         let players = generate_players(&accounts);

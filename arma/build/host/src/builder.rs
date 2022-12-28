@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
+use crate::config::Config;
 use crate::database::Database;
 use crate::file_watcher::FileWatcher;
 use crate::{
@@ -82,6 +83,8 @@ pub struct Builder {
     pub extension_build_target: String,
     /// Handles file watching for changes
     file_watcher: FileWatcher,
+    /// The config for various build functions
+    config: Config,
 }
 
 impl Builder {
@@ -106,6 +109,7 @@ impl Builder {
         };
 
         let local_build_path = local_git_path.join("target");
+        let config_path = local_git_path.join("config.yml");
 
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
             .watch(&local_git_path.join("@esm"))
@@ -129,6 +133,7 @@ impl Builder {
             remote: Remote::new(),
             redis: redis::Client::open("redis://127.0.0.1/0")?,
             file_watcher,
+            config: crate::config::parse(config_path)?,
         };
 
         Ok(builder)
@@ -369,7 +374,15 @@ impl Builder {
     /// Build steps below
     //////////////////////////////////////////////////////////////////
     fn kill_arma(&mut self) -> BuildResult {
-        self.send_to_receiver(Command::KillArma)?;
+        match self.os {
+            BuildOS::Linux => {
+                local_command("docker kill", vec!["arma-server"])?;
+            }
+            BuildOS::Windows => {
+                self.send_to_receiver(Command::KillArma)?;
+            }
+        };
+
         Ok(())
     }
 
@@ -412,7 +425,7 @@ impl Builder {
 
         /////////////////////
         // Remote directories
-        let script = match self.os {
+        match self.os {
             BuildOS::Windows => {
                 lazy_static! {
                     static ref PROFILES_REGEX: Regex = Regex::new(r#"-profiles=(\w+)"#).unwrap();
@@ -428,7 +441,7 @@ impl Builder {
                     ),
                 };
 
-                format!(
+                let script = format!(
                     r#"
                         Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
                         Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
@@ -444,17 +457,17 @@ impl Builder {
                     build_path = self.remote_build_path_str(),
                     server_path = self.remote.server_path,
                     profile_name = profile_name
-                )
-            }
-            BuildOS::Linux => todo!(),
-        };
+                );
 
-        self.system_command(
-            System::new()
-                .command(script)
-                .add_detection("error", true)
-                .wait(),
-        )?;
+                self.system_command(
+                    System::new()
+                        .command(script)
+                        .add_detection("error", true)
+                        .wait(),
+                )?;
+            }
+            BuildOS::Linux => (),
+        };
 
         Ok(())
     }
@@ -775,10 +788,7 @@ impl Builder {
     }
 
     fn seed_database(&mut self) -> BuildResult {
-        let data =
-            crate::data::parse_data_file(self.local_git_path.join("build").join("test_data.yml"))?;
-
-        let sql = Database::generate_sql(data);
+        let sql = Database::generate_sql(&self.config);
         match self.send_to_receiver(Command::Database(sql)) {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
