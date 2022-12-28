@@ -1,40 +1,24 @@
 use common::write_lock;
-use compiler::Compiler;
 use glob::glob;
 use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use crate::config::Config;
-use crate::database::Database;
 use crate::file_watcher::FileWatcher;
+use crate::Args;
 use crate::{
-    read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command, LogLevel, System,
+    build_steps, read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command,
+    LogLevel, System,
 };
-use crate::{Args, Directory};
 
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 use run_script::ScriptOptions;
-use std::{fs, thread};
-
-/// Used with the test suite, this key holds the server's current esm.key
-const REDIS_SERVER_KEY: &str = "test_server_key";
-
-const ADDONS: &[&str] = &[
-    "exile_server_manager",
-    "exile_server_overwrites",
-    "exile_server_xm8",
-    "exile_server_hacking",
-    "exile_server_grinding",
-    "exile_server_charge_plant_started",
-    "exile_server_flag_steal_started",
-    "exile_server_player_connected",
-];
+use std::fs;
 
 pub struct Remote {
     pub build_path: PathBuf,
@@ -82,9 +66,9 @@ pub struct Builder {
     /// Rust build target for the build OS
     pub extension_build_target: String,
     /// Handles file watching for changes
-    file_watcher: FileWatcher,
+    pub file_watcher: FileWatcher,
     /// The config for various build functions
-    config: Config,
+    pub config: Config,
 }
 
 impl Builder {
@@ -141,6 +125,7 @@ impl Builder {
 
     pub fn start(&mut self) -> BuildResult {
         self.start_server()?;
+
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
         println!(
@@ -169,24 +154,24 @@ impl Builder {
             server_directory = self.remote.server_path
         );
 
-        self.print_status("Starting build", Self::prepare_to_build)?;
+        self.print_status("Starting build", build_steps::prepare_to_build)?;
 
         if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
-            self.print_status("Checking for p drive", Self::check_for_p_drive)?;
+            self.print_status("Checking for p drive", build_steps::check_for_p_drive)?;
         }
 
         if self.rebuild_mod() {
-            self.print_status("Building mod", Self::build_mod)?;
+            self.print_status("Building mod", build_steps::build_mod)?;
         }
 
         if self.rebuild_extension() {
-            self.print_status("Compiling extension", Self::build_extension)?;
+            self.print_status("Compiling extension", build_steps::build_extension)?;
         }
 
-        self.print_status("Seeding database", Self::seed_database)?;
-        self.print_status("Starting a3 server", Self::start_a3_server)?;
-        self.print_status("Starting log stream", Self::stream_logs)?;
-        // self.print_status("Starting a3 client", Self::start_a3_client)?; // If flag is set
+        self.print_status("Seeding database", build_steps::seed_database)?;
+        self.print_status("Starting a3 server", build_steps::start_a3_server)?;
+        self.print_status("Starting log stream", build_steps::stream_logs)?;
+        // self.print_status("Starting a3 client", build_steps::start_a3_client)?; // If flag is set
         Ok(())
     }
 
@@ -331,7 +316,7 @@ impl Builder {
         &self.remote.build_path_str
     }
 
-    fn rebuild_extension(&self) -> bool {
+    pub fn rebuild_extension(&self) -> bool {
         // Force? Forced true
         // Just building the extension? Forced true
         // Just building just the mod? Forced false
@@ -339,24 +324,18 @@ impl Builder {
         (self.force || self.only != "mod")
             && (self.force
                 || self.only == "extension"
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("arma"))
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("message")))
+                || has_directory_changed(
+                    &self.file_watcher,
+                    &self.local_git_path.join("src").join("arma"),
+                )
+                || has_directory_changed(
+                    &self.file_watcher,
+                    &self.local_git_path.join("src").join("message"),
+                ))
     }
 
     // The entire mod
-    fn rebuild_mod(&self) -> bool {
-        // Force? Forced true
-        // Just building the mod? Forced true
-        // Just building just the extension? Forced false
-        // No force, no only? return true only if the files have changed
-        (self.force || self.only != "extension")
-            && (self.force
-                || self.only == "mod"
-                || has_directory_changed(&self.file_watcher, &self.local_git_path.join("src").join("@esm")))
-    }
-
-    // Single addon
-    fn rebuild_addon(&self, addon: &str) -> bool {
+    pub fn rebuild_mod(&self) -> bool {
         // Force? Forced true
         // Just building the mod? Forced true
         // Just building just the extension? Forced false
@@ -366,539 +345,28 @@ impl Builder {
                 || self.only == "mod"
                 || has_directory_changed(
                     &self.file_watcher,
-                    &self.local_git_path.join("src").join("@esm").join("addons").join(addon),
+                    &self.local_git_path.join("src").join("@esm"),
                 ))
     }
 
-    //////////////////////////////////////////////////////////////////
-    /// Build steps below
-    //////////////////////////////////////////////////////////////////
-    fn kill_arma(&mut self) -> BuildResult {
-        match self.os {
-            BuildOS::Linux => {
-                local_command("docker kill", vec!["arma-server"])?;
-            }
-            BuildOS::Windows => {
-                self.send_to_receiver(Command::KillArma)?;
-            }
-        };
-
-        Ok(())
-    }
-
-    fn prepare_directories(&mut self) -> BuildResult {
-        ////////////////////
-        // Local directories
-        // Keeps the files around for viewing when building the extension by itself
-        if self.rebuild_mod() {
-            let esm_path = self.local_build_path.join("@esm");
-
-            // Delete @esm and recreate it
-            if esm_path.exists() {
-                fs::remove_dir_all(&esm_path)?;
-                fs::create_dir_all(&esm_path)?;
-            }
-
-            // Create @esm/addons
-            let addons_path = esm_path.join("addons");
-            if !addons_path.exists() {
-                fs::create_dir_all(&addons_path)?;
-            }
-        }
-
-        // Remove some build files
-        let paths = vec![
-            "@esm.zip",
-            "windows.zip",
-            "linux.zip",
-            "esm.zip",
-            ".esm-build-command",
-            ".esm-build-command-result",
-        ];
-
-        for path in paths {
-            let path = self.local_build_path.join(path);
-            if path.exists() && path.is_file() {
-                fs::remove_file(&path)?;
-            }
-        }
-
-        /////////////////////
-        // Remote directories
-        match self.os {
-            BuildOS::Windows => {
-                lazy_static! {
-                    static ref PROFILES_REGEX: Regex = Regex::new(r#"-profiles=(\w+)"#).unwrap();
-                };
-
-                let captures = PROFILES_REGEX.captures(&self.remote.server_args).unwrap();
-                let profile_name = match captures.get(1) {
-                    Some(n) => n.as_str(),
-                    None => return Err(
-                        "\"-profiles\" must be provided in the server args. This is required for log streaming"
-                            .to_string()
-                            .into(),
-                    ),
-                };
-
-                let script = format!(
-                    r#"
-                        Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
-                        Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
-                        Remove-Item "{server_path}\{profile_name}\*.bidmp" -ErrorAction SilentlyContinue;
-                        Remove-Item "{server_path}\{profile_name}\*.mdmp" -ErrorAction SilentlyContinue;
-
-                        New-Item -Path "{build_path}\esm" -ItemType Directory;
-                        New-Item -Path "{build_path}\@esm" -ItemType Directory;
-                        New-Item -Path "{build_path}\@esm\addons" -ItemType Directory;
-                        New-Item -Path "{server_path}\@esm" -ItemType Directory;
-                        New-Item -Path "{server_path}\@esm\addons" -ItemType Directory;
-                    "#,
-                    build_path = self.remote_build_path_str(),
-                    server_path = self.remote.server_path,
-                    profile_name = profile_name
-                );
-
-                self.system_command(
-                    System::new()
-                        .command(script)
-                        .add_detection("error", true)
-                        .wait(),
-                )?;
-            }
-            BuildOS::Linux => (),
-        };
-
-        Ok(())
-    }
-
-    fn prepare_to_build(&mut self) -> BuildResult {
-        self.kill_arma()?;
-        self.detect_first_build()?;
-        self.prepare_directories()?;
-        self.transfer_mikeros_tools()?;
-        self.create_server_config()?;
-        self.create_esm_key_file()?;
-        Ok(())
-    }
-
-    fn transfer_mikeros_tools(&mut self) -> BuildResult {
-        let mikero_path = self
-            .local_git_path
-            .join("tools")
-            .join("pbo_tools")
-            .join(self.os.to_string());
-
-        Directory::transfer(self, mikero_path, self.remote_build_path().to_owned())
-    }
-
-    fn create_server_config(&mut self) -> BuildResult {
-        #[derive(Debug, PartialEq, Serialize, Deserialize)]
-        struct Config {
-            connection_url: String,
-            log_level: String,
-            env: String,
-            log_output: String,
-        }
-
-        let config = Config {
-            connection_url: self.bot_host.clone(),
-            log_level: self.log_level.to_string(),
-            env: self.env.to_string(),
-            log_output: "rpt".into(),
-        };
-
-        let config_yaml = serde_yaml::to_vec(&config)?;
-        fs::write(
-            self.local_build_path
-                .join("config.yml")
-                .to_string_lossy()
-                .to_string(),
-            config_yaml,
-        )?;
-
-        crate::File::transfer(
-            self,
-            self.local_build_path.to_owned(),
-            self.remote_build_path().join("@esm"),
-            "config.yml",
-        )?;
-
-        Ok(())
-    }
-
-    fn create_esm_key_file(&mut self) -> BuildResult {
-        let mut connection = self.redis.get_connection()?;
-        let mut last_key_received = String::new();
-
-        // Moved to a thread so this can happen over and over again for testing purposes
-        thread::spawn(move || loop {
-            let key: Option<String> = redis::cmd("GET")
-                .arg(REDIS_SERVER_KEY)
-                .query(&mut connection)
-                .unwrap();
-
-            let Some(key) = key else {
-                thread::sleep(Duration::from_millis(500));
-                continue;
-            };
-
-            if key == last_key_received {
-                thread::sleep(Duration::from_millis(500));
-                continue;
-            }
-
-            write_lock(&crate::SERVER, |mut server| {
-                server.send(Command::Key(key.to_owned()))?;
-                Ok(true)
-            })
-            .unwrap();
-
-            last_key_received = key.to_owned();
-        });
-
-        Ok(())
-    }
-
-    fn detect_first_build(&mut self) -> BuildResult {
-        let extension_file_name = match self.arch {
-            BuildArch::X32 => "esm",
-            BuildArch::X64 => "esm_x64",
-        };
-
-        let mut files_to_check: Vec<String> = ADDONS
-            .iter()
-            .map(|addon| format!(r"addons\{addon}.pbo"))
-            .collect();
-
-        if matches!(self.env, BuildEnv::Test) {
-            files_to_check.push(r"addons\esm_test.pbo".to_string());
-        }
-
-        let script = match self.os {
-            BuildOS::Windows => {
-                files_to_check.push(format!("{extension_file_name}.dll"));
-
-                files_to_check
-                    .iter()
-                    .map(|path| {
-                        format!(
-                            r#"
-                                if (![System.IO.File]::Exists("{server_path}\@esm\{path}")) {{
-                                    return "rebuild";
-                                }}
-                            "#,
-                            server_path = self.remote.server_path
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n")
-            }
-            BuildOS::Linux => todo!(),
-        };
-
-        let result = self.system_command(
-            System::new()
-                .command(script)
-                .add_detection("rebuild.*", false),
-        )?;
-
-        let Command::SystemResponse(result) = result else {
-            return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
-        };
-
-        if result == *"rebuild" {
-            // This may be a first build - build all the things!
-            self.force = true;
-        }
-
-        Ok(())
-    }
-
-    fn build_extension(&mut self) -> BuildResult {
-        // This will be read by the build script and inserted into the extension
-        let extension_path = self.local_git_path.join("src").join("arma");
-        let message_path = self.local_git_path.join("src").join("message");
-
-        fs::write(
-            extension_path
-                .join(".build-sha")
-                .to_string_lossy()
-                .to_string(),
-            git_sha_short().as_bytes(),
-        )?;
-
-        // Copy the extension and message code over to the remote host
-        Directory::transfer(self, extension_path, self.remote_build_path().to_owned())?;
-        Directory::transfer(self, message_path, self.remote_build_path().to_owned())?;
-
-        match self.os {
-            BuildOS::Windows => {
-                let script = format!(
-                    r#"
-                        cd '{build_path}\arma';
-                        rustup run stable-{build_target} cargo build --target {build_target} --release;
-
-                        Copy-Item "{build_path}\arma\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
-                    "#,
-                    build_path = self.remote_build_path_str(),
-                    build_target = self.extension_build_target,
-                    file_name = match self.arch {
-                        BuildArch::X32 => "esm",
-                        BuildArch::X64 => "esm_x64",
-                    }
-                );
-
-                self.system_command(
-                    System::new()
-                        .command(script)
-                        .add_detection(r"error: .+", true)
-                        .add_detection(r"warning", false),
-                )?;
-            }
-            BuildOS::Linux => todo!(),
-        }
-
-        Ok(())
-    }
-
-    fn check_for_p_drive(&mut self) -> BuildResult {
-        assert!(matches!(self.os, BuildOS::Windows));
-
-        let script = r#"
-            if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
-                "p_drive_mounted";
-            }} else {{
-                "p_drive_not_mounted";
-            }}
-        "#;
-
-        let result = self.system_command(
-            System::new()
-                .command(script)
-                .add_detection("p_drive_mounted", false),
-        )?;
-
-        // Continue building
-        if let Command::SystemResponse(r) = result {
-            if r == *"p_drive_mounted" {
-                return Ok(());
-            }
-        } else {
-            panic!("Invalid response for System command. Must be Command::SystemResponse");
-        }
-
-        // WorkDrive.exe will keep a window open that requires user input
-        println!("{}", "paused\nWaiting for input...".yellow());
-        println!("Please confirm Window's UAC and then press any key on the window that WorkDrive has opened");
-
-        let script = format!(
-            r#"
-                Start-Process -Wait -FilePath "{build_path}\windows\WorkDrive.exe" -ArgumentList "/Mount";
-
-                if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
-                    "p_drive_mounted";
-                }} else {{
-                    "p_drive_not_mounted";
-                }}
-            "#,
-            build_path = self.remote_build_path_str(),
-        );
-
-        self.system_command(
-            System::new()
-                .command(script)
-                .add_detection("p_drive_not_mounted", true),
-        )?;
-        Ok(())
-    }
-
-    fn compile_mod(&mut self) -> BuildResult {
-        lazy_static! {
-            static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
-            static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
-        }
-
-        // Set up all the paths needed
-        let mod_path = self.local_git_path.join("src").join("@esm");
-        let source_path = mod_path.join("addons");
-
-        let mod_build_path = self.local_build_path.join("@esm");
-        let addon_destination_path = mod_build_path.join("addons");
-
-        let mut compiler = Compiler::new();
-        compiler
-            .source(&source_path.to_string_lossy())
-            .destination(&addon_destination_path.to_string_lossy())
-            .target(&self.os.to_string());
-
-        crate::compile::bind_replacements(&mut compiler);
-        compiler.compile()?;
-
-        Directory::transfer(self, mod_build_path, self.remote_build_path().to_owned())?;
-
-        Ok(())
-    }
-
-    fn build_mod(&mut self) -> BuildResult {
-        self.compile_mod()?;
-
-        match self.os {
-            BuildOS::Linux => todo!(),
-            BuildOS::Windows => {
-                let mut extra_addons = vec![];
-                if matches!(self.env, BuildEnv::Test) {
-                    extra_addons.push("esm_test");
-                }
-
-                for addon in ADDONS.iter().chain(extra_addons.iter()) {
-                    if !self.rebuild_addon(addon) {
-                        continue;
-                    }
-
-                    // The "root" is what matters here. The root needs to be P: drive
-                    let script = format!(
-                        r#"
-                            if ([System.IO.Directory]::Exists("P:\{addon}")) {{
-                                Remove-Item -Path "P:\{addon}" -Recurse;
-                            }}
-
-                            Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination "P:";
-                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
-
-                            if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
-                                "Failed to build - {build_path}\@esm\addons\{addon}.pbo does not exist"
-                            }}
-                        "#,
-                        build_path = self.remote_build_path_str(),
-                    );
-
-                    self.system_command(
-                        System::new()
-                            .command(script)
-                            .add_detection("ErrorId", true)
-                            .add_detection("Failed to build", true)
-                            .add_detection("missing file", true),
-                    )?;
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn seed_database(&mut self) -> BuildResult {
-        let sql = Database::generate_sql(&self.config);
-        match self.send_to_receiver(Command::Database(sql)) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn start_a3_server(&mut self) -> BuildResult {
-        match self.os {
-            BuildOS::Windows => {
-                let script = format!(
-                    r#"
-                        Remove-Item -Path "{server_path}\@esm" -Recurse;
-                        Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
-
-                        Start-Process "{server_path}\{server_executable}" `
-                            -ArgumentList "{server_args}" `
-                            -WorkingDirectory "{server_path}";
-                    "#,
-                    build_path = self.remote_build_path_str(),
-                    server_path = self.remote.server_path,
-                    server_executable = match self.arch {
-                        BuildArch::X32 => "arma3server.exe",
-                        BuildArch::X64 => "arma3server_x64.exe",
-                    },
-                    server_args = self.remote.server_args
-                );
-
-                self.system_command(System::new().command(script))?;
-            }
-            BuildOS::Linux => todo!(),
-        }
-
-        Ok(())
-    }
-
-    // fn start_a3_client(&mut self) -> BuildResult {
-    //     // client arg: client start args
-    //     // Send command to receiver
-    //     // Issue! In order to start the client on linux, both the linux machine and windows machine will need to be connected
-    //     //          This will need to be solved.
-    //     Ok(())
-    // }
-
-    fn stream_logs(&mut self) -> BuildResult {
-        struct Highlight {
-            pub regex: Regex,
-            pub color: [u8; 3],
-        }
-
-        lazy_static! {
-            static ref HIGHLIGHTS: Vec<Highlight> = vec![
-                Highlight {
-                    regex: Regex::new(r"ERROR\b").unwrap(),
-                    color: [153, 0, 51]
-                },
-                Highlight {
-                    regex: Regex::new(r"WARN").unwrap(),
-                    color: [153, 102, 0]
-                },
-                Highlight {
-                    regex: Regex::new(r"INFO").unwrap(),
-                    color: [102, 204, 255]
-                },
-                Highlight {
-                    regex: Regex::new(r"DEBUG").unwrap(),
-                    color: [80, 82, 86]
-                },
-                Highlight {
-                    regex: Regex::new(r"TRACE").unwrap(),
-                    color: [255, 153, 102]
-                }
-            ];
-        }
-
-        self.send_to_receiver(Command::LogStreamInit)?;
-
-        loop {
-            let result = self.send_to_receiver(Command::LogStreamRequest)?;
-            let lines = match result {
-                Command::LogStream(l) => l,
-                c => {
-                    return Err(
-                        format!("Invalid response to LogStreamRequest. Received {:?}", c).into(),
-                    )
-                }
-            };
-
-            for line in lines {
-                let content = line.content.trim_end();
-                let extension = Path::new(&line.filename)
-                    .extension()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string();
-
-                let highlight = HIGHLIGHTS.iter().find(|h| h.regex.is_match(content));
-
-                println!(
-                    "{name}:{line_number:5}{sep} {content}",
-                    sep = "|".bright_black(),
-                    name = extension.truecolor(line.color[0], line.color[1], line.color[2]),
-                    line_number = line.line_number.to_string().bright_black(),
-                    content = if let Some(h) = highlight {
-                        content.bold().truecolor(h.color[0], h.color[1], h.color[2])
-                    } else {
-                        content.normal()
-                    }
-                )
-            }
-        }
+    // Single addon
+    pub fn rebuild_addon(&self, addon: &str) -> bool {
+        // Force? Forced true
+        // Just building the mod? Forced true
+        // Just building just the extension? Forced false
+        // No force, no only? return true only if the files have changed
+        (self.force || self.only != "extension")
+            && (self.force
+                || self.only == "mod"
+                || has_directory_changed(
+                    &self.file_watcher,
+                    &self
+                        .local_git_path
+                        .join("src")
+                        .join("@esm")
+                        .join("addons")
+                        .join(addon),
+                ))
     }
 }
 
@@ -918,7 +386,7 @@ pub fn local_command(cmd: &str, args: Vec<&str>) -> Result<String, BuildError> {
     Err(error.into())
 }
 
-fn git_sha_short() -> String {
+pub fn git_sha_short() -> String {
     match local_command("git", vec!["rev-parse", "--short", "HEAD"]) {
         Ok(o) => o.trim().to_string(),
         Err(_e) => "FAILED TO RETRIEVE".into(),

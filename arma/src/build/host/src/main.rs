@@ -9,6 +9,7 @@ mod directory;
 mod file;
 mod file_watcher;
 mod server;
+mod build_steps;
 
 use std::{
     fmt::{self, Display},
