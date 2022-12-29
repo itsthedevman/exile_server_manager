@@ -43,7 +43,7 @@ pub struct Args {
     build_x32: bool,
 
     /// Set the target build platform for the extension
-    #[arg(short, long, value_enum, default_value_t = BuildOS::Windows)]
+    #[arg(short, long, value_enum, default_value_t = BuildOS::Linux)]
     target: BuildOS,
 
     /// Sets the logging level for the extension and the mod

@@ -69,6 +69,8 @@ pub struct Builder {
     pub file_watcher: FileWatcher,
     /// The config for various build functions
     pub config: Config,
+    /// The matching executable plus extension for this build
+    pub server_executable: String,
 }
 
 impl Builder {
@@ -89,6 +91,17 @@ impl Builder {
             BuildOS::Linux => match arch {
                 BuildArch::X32 => "i686-unknown-linux-gnu".into(),
                 BuildArch::X64 => "x86_64-unknown-linux-gnu".into(),
+            },
+        };
+
+        let server_executable: String = match args.target {
+            BuildOS::Linux => match arch {
+                BuildArch::X32 => "arma3server.so".into(),
+                BuildArch::X64 => "arma3server_x64.so".into(),
+            },
+            BuildOS::Windows => match arch {
+                BuildArch::X32 => "arma3server.exe".into(),
+                BuildArch::X64 => "arma3server_x64.exe".into(),
             },
         };
 
@@ -118,14 +131,20 @@ impl Builder {
             redis: redis::Client::open("redis://127.0.0.1/0")?,
             file_watcher,
             config: crate::config::parse(config_path)?,
+            server_executable,
         };
 
         Ok(builder)
     }
 
     pub fn start(&mut self) -> BuildResult {
-        self.start_server()?;
+        if matches!(self.os, BuildOS::Linux) {
+            self.print_status("Preparing container", build_steps::start_container)?;
+            self.print_status("Waiting for container", build_steps::wait_for_container)?;
+            self.print_status("Preparing arma3server", build_steps::update_arma)?;
+        }
 
+        self.start_server()?;
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
         println!(

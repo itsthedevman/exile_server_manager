@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  arma_server:
+    build: .
+    platform: linux/amd64
+    container_name: ESM_ARMA_SERVER
+    network_mode: host
+    volumes:
+      - './server/@esm:/arma3/@esm'
+      - './server/@exileserver:/arma3/@exileserver'
+      - './server/mpmissions:/arma3/mpmissions'
+    tty: true
+    # restart: unless-stopped
+  mysql_db:
+    image: mysql:8
+    container_name: ESM_DB_MYSQL
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    network_mode: host
+    restart: unless-stopped
+volumes:
+  mysql-data:
