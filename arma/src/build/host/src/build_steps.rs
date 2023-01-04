@@ -1,5 +1,5 @@
 use crate::{
-    builder::{git_sha_short, local_command, Builder},
+    builder::{git_sha_short, Builder},
     database::Database,
     BuildArch, BuildEnv, BuildOS, Directory, System,
 };
@@ -26,40 +26,34 @@ const ADDONS: &[&str] = &[
     "exile_server_player_connected",
 ];
 
-const CONTAINER_NAME: &str = "ESM_ARMA_SERVER";
-
-pub fn container_command(script: &str) -> Result<String, BuildError> {
-    Ok(local_command(
-        "docker",
-        vec![
-            "compose",
-            "exec",
-            "arma_server", // Service name, not container name
-            &format!("/bin/bash -c \"{script}\""),
-        ],
-    )?)
-}
+const ARMA_CONTAINER: &str = "ESM_ARMA_SERVER";
+const ARMA_SERVICE: &str = "arma_server";
+const ARMA_PATH: &str = "/arma3server";
 
 pub fn start_container(_builder: &mut Builder) -> BuildResult {
     if container_status()?.is_empty() {
-        local_command("docker compose up -d", vec![])?;
+        System::new()
+            .command("docker")
+            .arguments(&["compose", "up", "-d"])
+            .execute()?;
     }
 
     Ok(())
 }
 
 pub fn container_status() -> Result<String, BuildError> {
-    Ok(local_command(
-        "docker",
-        vec![
+    Ok(System::new()
+        .command("docker")
+        .arguments(&[
             "ps",
-            &format!("-f \"name={CONTAINER_NAME}\""),
-            "-q",
-            "--format \"{{.State}}\"",
-        ],
-    )?
-    .trim_end()
-    .to_string())
+            &format!("--filter=name={ARMA_CONTAINER}"),
+            "--format=\"{{.State}}\"",
+        ])
+        .add_detection("running")
+        .add_error_detection(r"unknown|error")
+        .execute()?
+        .trim_end()
+        .to_string())
 }
 
 pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
@@ -86,14 +80,39 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
 
 pub fn update_arma(builder: &mut Builder) -> BuildResult {
     let steam_cmd_script = format!(
-        "cd /steamcmd && ./steamcmd.sh {install_dir} +login {steam_username} {steam_password} {update} +quit",
-        install_dir = "+force_install_dir /arma3server",
+        "/bin/bash -c \"cd /steamcmd && ./steamcmd.sh +force_install_dir {ARMA_PATH} +login {steam_username} {steam_password} {update} +quit\"",
         update = "+app_update 233780 validate",
         steam_username = builder.config.server.steam_user,
         steam_password = builder.config.server.steam_password
     );
 
-    container_command(&steam_cmd_script)?;
+    System::new()
+        .command("bash")
+        .arguments(&[
+            "-c",
+            &format!("docker exec -it {ARMA_CONTAINER} {steam_cmd_script}"),
+        ])
+        .print_stdout()
+        .execute()?;
+
+    Ok(())
+}
+
+pub fn build_receiver(builder: &mut Builder) -> BuildResult {
+    let command = format!(
+        r#"
+cargo build --release --manifest-path "{git_path}/src/build/receiver/Cargo.toml";
+docker compose cp "{git_path}/target/release/receiver" {ARMA_SERVICE}:{ARMA_PATH};
+        "#,
+        git_path = builder.local_git_path.to_string_lossy(),
+    );
+
+    System::new()
+        .script(command)
+        .add_error_detection("no such")
+        .print()
+        .execute()?;
+
     Ok(())
 }
 
@@ -159,11 +178,7 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
         }
     };
 
-    let result = builder.system_command(
-        System::new()
-            .command(script)
-            .add_detection("rebuild.*", false),
-    )?;
+    let result = builder.system_command(System::new().command(script).add_detection("rebuild"))?;
 
     let Command::SystemResponse(result) = result else {
             return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
@@ -268,12 +283,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         ),
     };
 
-    builder.system_command(
-        System::new()
-            .command(script)
-            .add_detection("error", true)
-            .wait(),
-    )?;
+    builder.system_command(System::new().command(script).add_error_detection("error"))?;
 
     Ok(())
 }
@@ -371,7 +381,7 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
     let result = builder.system_command(
         System::new()
             .command(script)
-            .add_detection("p_drive_mounted", false),
+            .add_detection("p_drive_mounted"),
     )?;
 
     // Continue building
@@ -403,7 +413,7 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
     builder.system_command(
         System::new()
             .command(script)
-            .add_detection("p_drive_not_mounted", true),
+            .add_error_detection("p_drive_not_mounted"),
     )?;
     Ok(())
 }
@@ -444,9 +454,9 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
                 builder.system_command(
                     System::new()
                         .command(script)
-                        .add_detection("ErrorId", true)
-                        .add_detection("Failed to build", true)
-                        .add_detection("missing file", true),
+                        .add_error_detection("ErrorId")
+                        .add_error_detection("Failed to build")
+                        .add_error_detection("missing file"),
                 )?;
             }
         }
@@ -531,8 +541,8 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
             builder.system_command(
                 System::new()
                     .command(script)
-                    .add_detection(r"error: .+", true)
-                    .add_detection(r"warning", false),
+                    .add_error_detection(r"error: .+")
+                    .add_detection(r"warning"),
             )?;
         }
         BuildOS::Linux => todo!(),

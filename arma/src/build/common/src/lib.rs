@@ -1,5 +1,16 @@
+use colored::*;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::{
+    io::{BufRead, BufReader},
+    process::{Command as SystemCommand, Stdio},
+    str::FromStr,
+    sync::{
+        mpsc::{channel},
+
+    },
+};
 use uuid::Uuid;
 
 pub mod error;
@@ -51,9 +62,10 @@ impl Default for Command {
 pub struct System {
     pub command: String,
     pub arguments: Vec<String>,
-    pub wait: bool,
     pub detections: Vec<Detection>,
-    pub return_output: bool,
+    pub forget: bool,
+    pub print_stdout: bool,
+    pub print_stderr: bool,
 }
 
 impl System {
@@ -61,9 +73,10 @@ impl System {
         System {
             command: "".into(),
             arguments: vec![],
-            wait: false,
             detections: vec![],
-            return_output: false,
+            forget: false,
+            print_stdout: false,
+            print_stderr: false,
         }
     }
 
@@ -72,29 +85,196 @@ impl System {
         self
     }
 
-    pub fn arguments<S: AsRef<str>>(&mut self, arguments: Vec<S>) -> &mut Self {
+    pub fn script<S: AsRef<str>>(&mut self, script: S) -> &mut Self {
+        self.arguments.clear();
+
+        if cfg!(windows) {
+            self.command("powershell");
+        } else {
+            self.command("bash");
+            self.arguments(&["-c", script.as_ref()]);
+        }
+
+        self
+    }
+
+    pub fn arguments<S: AsRef<str>>(&mut self, arguments: &[S]) -> &mut Self {
         self.arguments = arguments.iter().map(|a| a.as_ref().to_string()).collect();
         self
     }
 
-    pub fn wait(&mut self) -> &mut Self {
-        self.wait = true;
-        self
-    }
-
-    pub fn add_detection(&mut self, regex_str: &str, causes_error: bool) -> &mut Self {
-        self.wait();
+    pub fn add_detection(&mut self, regex_str: &str) -> &mut Self {
         self.detections.push(Detection {
             regex: regex_str.to_string(),
-            causes_error,
+            causes_error: false,
         });
         self
     }
 
-    pub fn with_output(&mut self) -> &mut Self {
-        self.wait();
-        self.return_output = true;
+    pub fn add_error_detection(&mut self, regex_str: &str) -> &mut Self {
+        self.detections.push(Detection {
+            regex: regex_str.to_string(),
+            causes_error: true,
+        });
         self
+    }
+
+    pub fn print_stderr(&mut self) -> &mut Self {
+        self.print_stderr = true;
+        self
+    }
+
+    pub fn print_stdout(&mut self) -> &mut Self {
+        self.print_stdout = true;
+        self
+    }
+
+    pub fn print(&mut self) -> &mut Self {
+        self.print_stderr();
+        self.print_stdout();
+        self
+    }
+
+    /// Sets the command to be ran in the background, which ignores the output/errors of the command
+    pub fn forget(&mut self) -> &mut Self {
+        self.forget = true;
+        self
+    }
+
+    pub fn command_string(&self) -> String {
+        format!("{} {}", self.command, self.arguments.join(" "))
+    }
+
+    pub fn execute(&self) -> Result<String, BuildError> {
+        let mut child = SystemCommand::new(&self.command)
+            .args(&self.arguments)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        if self.forget {
+            return Ok(String::new());
+        };
+
+        let (sender, receiver) = channel::<(&str, String)>();
+
+        let stdout_sender = sender.clone();
+        let stdout = child.stdout.take();
+        let stdout_handle = std::thread::spawn(move || {
+            if let Some(stdout) = stdout {
+                let reader = BufReader::new(stdout);
+                for line in reader.lines() {
+                    let Ok(line) = line else {
+                        continue;
+                    };
+
+                    if let Err(_e) = stdout_sender.send(("stdout", line)) {
+                        continue;
+                    }
+                }
+            }
+        });
+
+        let stderr_sender = sender.clone();
+        let stderr = child.stderr.take();
+        let stderr_handle = std::thread::spawn(move || {
+            if let Some(stderr) = stderr {
+                let reader = BufReader::new(stderr);
+                for line in reader.lines() {
+                    let Ok(line) = line else {
+                        continue;
+                    };
+
+                    if let Err(_e) = stderr_sender.send(("stderr", line)) {
+                        continue;
+                    }
+                }
+            }
+        });
+
+        drop(sender);
+
+        // Formatting
+        if self.print_stdout || self.print_stderr {
+            println!();
+        }
+
+        let mut stdout_output = String::new();
+        let mut stderr_output = String::new();
+        while let Ok((name, line)) = receiver.recv() {
+            match name {
+                "stdout" => {
+                    stdout_output.push_str(&format!("{line}\n"));
+
+                    if self.print_stdout {
+                        println!("{}: {line}", self.command.blue());
+                    }
+                }
+                "stderr" => {
+                    stderr_output.push_str(&format!("{line}\n"));
+
+                    if self.print_stderr {
+                        println!("{}: {line}", self.command.red());
+                    }
+                }
+                _ => {}
+            };
+        }
+
+        if let Err(e) = stdout_handle.join() {
+            return Err(format!("{e:?}").into());
+        }
+
+        if let Err(e) = stderr_handle.join() {
+            return Err(format!("{e:?}").into());
+        }
+
+        // println!(
+        //     "\n{}\n    OUT: {:?}\n    ERR: {:?}",
+        //     self.command_string(),
+        //     stdout_output,
+        //     stderr_output
+        // );
+
+        let status = child.wait()?;
+        if !status.success() {
+            return Err(format!("Execution failed with exit code {:?}", status.code()).into());
+        }
+
+        if self.detections.is_empty() {
+            return Ok(stdout_output);
+        }
+
+        let command_results = format!("{} {}", stdout_output, stderr_output);
+        let mut detection_results = String::new();
+
+        for detection in self.detections.iter() {
+            let regex = match Regex::from_str(&format!("(?i){}", detection.regex)) {
+                Ok(r) => r,
+                Err(e) => return Err(e.to_string().into()),
+            };
+
+            let matches = match regex.captures(&command_results) {
+                Some(m) => m,
+                None => continue,
+            };
+
+            let Some(m) = matches.get(0) else {
+                continue;
+            };
+
+            if detection.causes_error {
+                return Err(command_results.into());
+            }
+
+            detection_results.push_str(m.as_str());
+        }
+
+        if detection_results.trim().is_empty() {
+            Ok(stdout_output.to_string())
+        } else {
+            Ok(detection_results)
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 // Most of this code was from the example, thank you!
 // https://github.com/lemunozm/message-io/tree/master/examples/file-transfer
 
+mod build_steps;
 mod builder;
 mod compile;
 mod config;
@@ -9,7 +10,6 @@ mod directory;
 mod file;
 mod file_watcher;
 mod server;
-mod build_steps;
 
 use std::{
     fmt::{self, Display},
@@ -55,7 +55,7 @@ pub struct Args {
     env: BuildEnv,
 
     /// The URI of the server hosting esm_bot
-    #[arg(short, long, default_value_t = String::from("192.168.50.242:3003"))]
+    #[arg(long, default_value_t = String::from("192.168.50.242:3003"))]
     bot_host: String,
 
     /// Forces a rebuild of everything

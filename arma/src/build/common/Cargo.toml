@@ -13,3 +13,5 @@ serde_yaml = "0.8.24"
 parking_lot = "0.10"
 compiler = { path = "../compiler" }
 redis = "0.21"
+regex = "1"
+colored = "2"

@@ -17,7 +17,6 @@ use crate::{
 use colored::*;
 use lazy_static::lazy_static;
 use regex::Regex;
-use run_script::ScriptOptions;
 use std::fs;
 
 pub struct Remote {
@@ -112,6 +111,7 @@ impl Builder {
             .watch(&local_git_path.join("src").join("@esm"))
             .watch(&local_git_path.join("src").join("arma"))
             .watch(&local_git_path.join("src").join("message"))
+            .watch(&local_git_path.join("src").join("build").join("receiver"))
             .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
             .load()?;
 
@@ -138,40 +138,22 @@ impl Builder {
     }
 
     pub fn start(&mut self) -> BuildResult {
+        self.print_header();
+
         if matches!(self.os, BuildOS::Linux) {
             self.print_status("Preparing container", build_steps::start_container)?;
             self.print_status("Waiting for container", build_steps::wait_for_container)?;
             self.print_status("Preparing arma3server", build_steps::update_arma)?;
+
+            // if self.rebuild_receiver() {
+            self.print_status("Building receiver", build_steps::build_receiver)?;
+            // }
         }
 
         self.start_server()?;
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
-        println!(
-            r#"{label} - Build details
-  {os_label:17}: {os:?}
-  {arch_label:17}: {arch:?}
-  {env_label:17}: {env:?}
-  {log_label:17}: {log}
-  {git_dir_label:17}: {git_directory}
-  {build_dir_label:17}: {build_directory}
-  {server_dir_label:17}: {server_directory}"#,
-            label = "<esm_bt>".blue().bold(),
-            os_label = "os".black().bold(),
-            arch_label = "arch".black().bold(),
-            env_label = "env".black().bold(),
-            log_label = "log level".black().bold(),
-            git_dir_label = "git directory".black().bold(),
-            build_dir_label = "build directory".black().bold(),
-            server_dir_label = "server directory".black().bold(),
-            os = self.os,
-            arch = format!("{:?}", self.arch).to_lowercase(),
-            env = format!("{:?}", self.env).to_lowercase(),
-            log = format!("{:?}", self.log_level).to_lowercase(),
-            git_directory = self.local_git_path.to_string_lossy(),
-            build_directory = self.remote_build_path_str(),
-            server_directory = self.remote.server_path
-        );
+        self.print_build_info();
 
         self.print_status("Starting build", build_steps::prepare_to_build)?;
 
@@ -301,24 +283,27 @@ impl Builder {
                 fs::write(&command_file_path, script.as_bytes())?;
 
                 // Convert the command file into UTF-16LE as required by Microsoft
-                local_command(
-                    "iconv",
-                    vec![
+
+                System::new()
+                    .command("iconv")
+                    .arguments(&[
                         "-t UTF-16LE",
                         &format!("--output={}", command_result_path.display()),
                         &command_file_path.to_string_lossy(),
-                    ],
-                )?;
+                    ])
+                    .execute()?;
 
                 // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let mut encoded_command =
-                    local_command("base64", vec![&command_result_path.to_string_lossy()])?;
+                let mut encoded_command = System::new()
+                    .command("base64")
+                    .arguments(&[&*command_result_path.to_string_lossy()])
+                    .execute()?;
 
                 // Remove the trailing newline
                 encoded_command.pop();
 
                 command.command("powershell");
-                command.arguments(vec!["-EncodedCommand".to_string(), encoded_command]);
+                command.arguments(&["-EncodedCommand".to_string(), encoded_command]);
 
                 // Finally send the command to powershell
                 self.send_to_receiver(Command::System(command.to_owned()))
@@ -387,26 +372,95 @@ impl Builder {
                         .join(addon),
                 ))
     }
-}
 
-pub fn local_command(cmd: &str, args: Vec<&str>) -> Result<String, BuildError> {
-    let options = ScriptOptions::new();
-    let (code, output, error) = run_script::run(
-        &format!("{} {}", cmd, args.join(" ").as_str()),
-        &vec![],
-        &options,
-    )
-    .unwrap();
-
-    if code == 0 {
-        return Ok(output);
+    pub fn rebuild_receiver(&self) -> bool {
+        self.force
+            || has_directory_changed(
+                &self.file_watcher,
+                &self
+                    .local_git_path
+                    .join("src")
+                    .join("build")
+                    .join("receiver"),
+            )
     }
 
-    Err(error.into())
+    fn print_header(&self) {
+        let label = "<esm_bt>".blue().bold();
+        let mut header = format!("{label} ---------------------\n{label} - ESM Build Tool");
+
+        /*
+            <esm_bt> ---------------------
+            <esm_bt> - ESM Build Tool
+            <esm_bt> -   Building
+            <esm_bt> -     receiver
+            <esm_bt> -     mod
+            <esm_bt> -     extension
+            <esm_bt> ---------------------
+        */
+        let building = [
+            ["receiver", &self.rebuild_receiver().to_string()],
+            ["mod", &self.rebuild_mod().to_string()],
+            ["extension", &self.rebuild_extension().to_string()],
+        ];
+
+        let building_section: Vec<String> = building
+            .iter()
+            .filter_map(|i| {
+                if i[1] == "true" {
+                    Some(format!("{label} -     {}", i[0]))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if !building_section.is_empty() {
+            header.push_str(&format!(
+                "\n{label} -   Building\n{}",
+                &building_section.join("\n")
+            ));
+        }
+
+        println!("{}\n{label} ---------------------", header);
+    }
+
+    fn print_build_info(&self) {
+        println!(
+            r#"{label} - Build details
+{os_label:17}: {os:?}
+{arch_label:17}: {arch:?}
+{env_label:17}: {env:?}
+{log_label:17}: {log}
+{git_dir_label:17}: {git_directory}
+{build_dir_label:17}: {build_directory}
+{server_dir_label:17}: {server_directory}"#,
+            label = "<esm_bt>".blue().bold(),
+            os_label = "os".black().bold(),
+            arch_label = "arch".black().bold(),
+            env_label = "env".black().bold(),
+            log_label = "log level".black().bold(),
+            git_dir_label = "git directory".black().bold(),
+            build_dir_label = "build directory".black().bold(),
+            server_dir_label = "server directory".black().bold(),
+            os = self.os,
+            arch = format!("{:?}", self.arch).to_lowercase(),
+            env = format!("{:?}", self.env).to_lowercase(),
+            log = format!("{:?}", self.log_level).to_lowercase(),
+            git_directory = self.local_git_path.to_string_lossy(),
+            build_directory = self.remote_build_path_str(),
+            server_directory = self.remote.server_path
+        );
+    }
 }
 
 pub fn git_sha_short() -> String {
-    match local_command("git", vec!["rev-parse", "--short", "HEAD"]) {
+    match System::new()
+        .command("git")
+        .arguments(&["rev-parse", "--short", "HEAD"])
+        .add_detection(r"[a-fA-F0-9]+")
+        .execute()
+    {
         Ok(o) => o.trim().to_string(),
         Err(_e) => "FAILED TO RETRIEVE".into(),
     }

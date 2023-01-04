@@ -9,7 +9,7 @@ then
 fi
 
 cd src/build/host
-cargo build --release
+cargo build
 
 if [ $? -ne 0 ]
 then
@@ -17,4 +17,4 @@ then
 fi
 
 cd $git_root
-./target/release/host $*
+./target/debug/host $*

@@ -6,9 +6,11 @@ services:
     container_name: ESM_ARMA_SERVER
     network_mode: host
     volumes:
-      - './server/@esm:/arma3/@esm'
-      - './server/@exileserver:/arma3/@exileserver'
-      - './server/mpmissions:/arma3/mpmissions'
+      - './server/@esm:/arma3server/@esm'
+      - './server/@exileserver:/arma3server/@exileserver'
+      - './server/mpmissions:/arma3server/mpmissions'
+      - 'server-data:/arma3server'
+      - 'steam-data:/steamcmd'
     tty: true
     # restart: unless-stopped
   mysql_db:
@@ -22,7 +24,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-    network_mode: host
     restart: unless-stopped
 volumes:
   mysql-data:
+  server-data:
+  steam-data:

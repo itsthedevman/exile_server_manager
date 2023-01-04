@@ -156,7 +156,7 @@ impl IncomingCommand {
             .stderr(Stdio::piped())
             .spawn()?;
 
-        if !command.wait {
+        if !command.forget {
             return Ok(Command::SystemResponse(String::new()));
         };
 
@@ -200,9 +200,7 @@ impl IncomingCommand {
             result.push_str(matches.get(0).unwrap().as_str());
         }
 
-        if command.return_output {
-            result.push_str(&output);
-        }
+        result.push_str(&output);
 
         Ok(Command::SystemResponse(result))
     }

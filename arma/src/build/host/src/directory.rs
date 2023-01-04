@@ -14,16 +14,15 @@ impl Directory {
         let dir_name = source_path.file_name().unwrap().to_string_lossy();
         let file_name = format!("{}.zip", dir_name);
 
-        if crate::builder::local_command(
-            &format!(
+        if System::new()
+            .script(&format!(
                 "cd {}; zip -r {} ./{}",
                 source_path.parent().unwrap().to_string_lossy(),
                 builder.local_build_path.join(&file_name).to_string_lossy(),
                 dir_name
-            ),
-            vec![],
-        )
-        .is_err()
+            ))
+            .execute()
+            .is_err()
         {
             return Err(format!(
                 "Failed to zip {} for transfer",
@@ -51,7 +50,7 @@ impl Directory {
                     "#
                 );
 
-                builder.system_command(System::new().command(script).wait())?;
+                builder.system_command(System::new().command(script))?;
             }
         }
         Ok(())
@@ -60,14 +59,14 @@ impl Directory {
     pub fn copy(source: &Path, destination: &Path) -> BuildResult {
         assert!(matches!(source.is_dir(), true));
 
-        crate::builder::local_command(
-            "cp",
-            vec![
+        System::new()
+            .command("cp")
+            .arguments(&[
                 "-r",
                 &source.to_string_lossy(),
                 &destination.to_string_lossy(),
-            ],
-        )?;
+            ])
+            .execute()?;
 
         Ok(())
     }
