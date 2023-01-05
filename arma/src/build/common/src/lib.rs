@@ -6,10 +6,7 @@ use std::{
     io::{BufRead, BufReader},
     process::{Command as SystemCommand, Stdio},
     str::FromStr,
-    sync::{
-        mpsc::{channel},
-
-    },
+    sync::mpsc::channel,
 };
 use uuid::Uuid;
 
@@ -66,6 +63,7 @@ pub struct System {
     pub forget: bool,
     pub print_stdout: bool,
     pub print_stderr: bool,
+    pub print_as: String,
 }
 
 impl System {
@@ -77,6 +75,7 @@ impl System {
             forget: false,
             print_stdout: false,
             print_stderr: false,
+            print_as: "".into(),
         }
     }
 
@@ -132,6 +131,11 @@ impl System {
     pub fn print(&mut self) -> &mut Self {
         self.print_stderr();
         self.print_stdout();
+        self
+    }
+
+    pub fn print_as(&mut self, name: &str) -> &mut Self {
+        self.print_as = name.to_string();
         self
     }
 
@@ -201,32 +205,40 @@ impl System {
 
         let mut stdout_output = String::new();
         let mut stderr_output = String::new();
+        let print_as = if self.print_as.is_empty() {
+            &self.command
+        } else {
+            &self.print_as
+        };
+
         while let Ok((name, line)) = receiver.recv() {
             match name {
                 "stdout" => {
                     stdout_output.push_str(&format!("{line}\n"));
 
                     if self.print_stdout {
-                        println!("{}: {line}", self.command.blue());
+                        println!(
+                            "{} - {} -> {}",
+                            "<esm_bt>".blue().bold(),
+                            print_as,
+                            line.trim().black()
+                        );
                     }
                 }
                 "stderr" => {
                     stderr_output.push_str(&format!("{line}\n"));
 
                     if self.print_stderr {
-                        println!("{}: {line}", self.command.red());
+                        println!(
+                            "{} - {} -> {}",
+                            "<esm_bt>".blue().bold(),
+                            print_as,
+                            line.trim().black()
+                        );
                     }
                 }
                 _ => {}
             };
-        }
-
-        if let Err(e) = stdout_handle.join() {
-            return Err(format!("{e:?}").into());
-        }
-
-        if let Err(e) = stderr_handle.join() {
-            return Err(format!("{e:?}").into());
         }
 
         // println!(
@@ -237,9 +249,21 @@ impl System {
         // );
 
         let status = child.wait()?;
+
+        if let Err(e) = stdout_handle.join() {
+            return Err(format!("{e:?}").into());
+        }
+
+        if let Err(e) = stderr_handle.join() {
+            return Err(format!("{e:?}").into());
+        }
+
         if !status.success() {
             return Err(format!("Execution failed with exit code {:?}", status.code()).into());
         }
+
+        let stdout_output = stdout_output.trim().to_string();
+        let stderr_output = stderr_output.trim().to_string();
 
         if self.detections.is_empty() {
             return Ok(stdout_output);
@@ -270,8 +294,8 @@ impl System {
             detection_results.push_str(m.as_str());
         }
 
-        if detection_results.trim().is_empty() {
-            Ok(stdout_output.to_string())
+        if detection_results.is_empty() {
+            Ok(stdout_output)
         } else {
             Ok(detection_results)
         }

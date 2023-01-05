@@ -79,8 +79,23 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
 }
 
 pub fn update_arma(builder: &mut Builder) -> BuildResult {
-    let steam_cmd_script = format!(
-        "/bin/bash -c \"cd /steamcmd && ./steamcmd.sh +force_install_dir {ARMA_PATH} +login {steam_username} {steam_password} {update} +quit\"",
+    let script = "[ -f /arma3server/arma3server ] && echo \"true\"";
+
+    let files_exist = System::new()
+        .command("bash")
+        .arguments(&[
+            "-c",
+            &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
+        ])
+        .execute()?
+        == "true";
+
+    if files_exist && !builder.args.update_arma() {
+        return Ok(());
+    }
+
+    let script = format!(
+        "cd /steamcmd && ./steamcmd.sh +force_install_dir {ARMA_PATH} +login {steam_username} {steam_password} {update} +quit",
         update = "+app_update 233780 validate",
         steam_username = builder.config.server.steam_user,
         steam_password = builder.config.server.steam_password
@@ -90,8 +105,9 @@ pub fn update_arma(builder: &mut Builder) -> BuildResult {
         .command("bash")
         .arguments(&[
             "-c",
-            &format!("docker exec -it {ARMA_CONTAINER} {steam_cmd_script}"),
+            &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
         ])
+        .print_as("steamcmd")
         .print_stdout()
         .execute()?;
 
@@ -110,6 +126,7 @@ docker compose cp "{git_path}/target/release/receiver" {ARMA_SERVICE}:{ARMA_PATH
     System::new()
         .script(command)
         .add_error_detection("no such")
+        .print_as("cargo")
         .print()
         .execute()?;
 
@@ -133,7 +150,7 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
-    let extension_file_name = match builder.arch {
+    let extension_file_name = match builder.args.build_arch() {
         BuildArch::X32 => "esm",
         BuildArch::X64 => "esm_x64",
     };
@@ -143,11 +160,11 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
         .map(|addon| format!(r"addons\{addon}.pbo"))
         .collect();
 
-    if matches!(builder.env, BuildEnv::Test) {
+    if matches!(builder.args.build_env(), BuildEnv::Test) {
         files_to_check.push(r"addons\esm_test.pbo".to_string());
     }
 
-    let script = match builder.os {
+    let script = match builder.args.build_os() {
         BuildOS::Windows => {
             files_to_check.push(format!("{extension_file_name}.dll"));
 
@@ -186,7 +203,7 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
 
     if result == *"rebuild" {
         // This may be a first build - build all the things!
-        builder.force = true;
+        builder.args.force = true;
     }
 
     Ok(())
@@ -251,7 +268,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         ),
     };
 
-    let script = match builder.os {
+    let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
                 r#"
@@ -293,7 +310,7 @@ pub fn transfer_mikeros_tools(builder: &mut Builder) -> BuildResult {
         .local_git_path
         .join("tools")
         .join("pbo_tools")
-        .join(builder.os.to_string());
+        .join(builder.args.build_os().to_string());
 
     Directory::transfer(builder, mikero_path, builder.remote_build_path().to_owned())
 }
@@ -308,9 +325,9 @@ pub fn create_server_config(builder: &mut Builder) -> BuildResult {
     }
 
     let config = Config {
-        connection_url: builder.bot_host.clone(),
-        log_level: builder.log_level.to_string(),
-        env: builder.env.to_string(),
+        connection_url: builder.args.bot_host().to_string(),
+        log_level: builder.args.log_level().to_string(),
+        env: builder.args.build_env().to_string(),
         log_output: "rpt".into(),
     };
 
@@ -368,7 +385,7 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
-    assert!(matches!(builder.os, BuildOS::Windows));
+    assert!(matches!(builder.args.build_os(), BuildOS::Windows));
 
     let script = r#"
             if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
@@ -421,11 +438,11 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
 pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
 
-    match builder.os {
+    match builder.args.build_os() {
         BuildOS::Linux => todo!(),
         BuildOS::Windows => {
             let mut extra_addons = vec![];
-            if matches!(builder.env, BuildEnv::Test) {
+            if matches!(builder.args.build_env(), BuildEnv::Test) {
                 extra_addons.push("esm_test");
             }
 
@@ -482,7 +499,7 @@ pub fn compile_mod(builder: &mut Builder) -> BuildResult {
     compiler
         .source(&source_path.to_string_lossy())
         .destination(&addon_destination_path.to_string_lossy())
-        .target(&builder.os.to_string());
+        .target(&builder.args.build_os().to_string());
 
     crate::compile::bind_replacements(&mut compiler);
     compiler.compile()?;
@@ -521,7 +538,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         builder.remote_build_path().to_owned(),
     )?;
 
-    match builder.os {
+    match builder.args.build_os() {
         BuildOS::Windows => {
             let script = format!(
                 r#"
@@ -532,7 +549,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
                     "#,
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,
-                file_name = match builder.arch {
+                file_name = match builder.args.build_arch() {
                     BuildArch::X32 => "esm",
                     BuildArch::X64 => "esm_x64",
                 }
@@ -560,7 +577,7 @@ pub fn seed_database(build: &mut Builder) -> BuildResult {
 }
 
 pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
-    match builder.os {
+    match builder.args.build_os() {
         BuildOS::Windows => {
             let script = format!(
                 r#"
