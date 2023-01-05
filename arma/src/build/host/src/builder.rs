@@ -9,10 +9,7 @@ use std::time::Duration;
 use crate::config::Config;
 use crate::file_watcher::FileWatcher;
 use crate::Args;
-use crate::{
-    build_steps, read_lock, BuildArch, BuildEnv, BuildError, BuildOS, BuildResult, Command,
-    LogLevel, System,
-};
+use crate::{build_steps, read_lock, BuildArch, BuildError, BuildOS, BuildResult, Command, System};
 
 use colored::*;
 use lazy_static::lazy_static;
@@ -42,22 +39,8 @@ pub struct Builder {
     pub redis: redis::Client,
     /// For storing remote paths and other data
     pub remote: Remote,
-    /// The OS to build the extension on
-    pub os: BuildOS,
-    /// 32 bit or 64 bit
-    pub arch: BuildArch,
-    /// The environment the extension is built for
-    pub env: BuildEnv,
-    /// Controls how detailed the logs are
-    pub log_level: LogLevel,
-    /// The host URI that is currently hosting a bot instance.
-    pub bot_host: String,
-    /// If true, this ignores file checks and rebuilds the entire suite
-    pub force: bool,
-    /// If true, marks this build as a release for public build
-    pub release: bool,
-    /// Controls which pieces are built
-    pub only: String,
+    /// Arguments passed in from the user
+    pub args: Args,
     /// The path to this repo's root directory
     pub local_git_path: PathBuf,
     /// Rust's build directory
@@ -74,15 +57,12 @@ pub struct Builder {
 
 impl Builder {
     pub fn new(args: Args) -> Result<Self, BuildError> {
-        let arch = if args.build_x32 {
-            BuildArch::X32
-        } else {
-            BuildArch::X64
-        };
-
         let local_git_path = std::env::current_dir()?;
 
-        let extension_build_target: String = match args.target {
+        let arch = args.build_arch();
+        let os = args.build_os();
+
+        let extension_build_target: String = match os {
             BuildOS::Windows => match arch {
                 BuildArch::X32 => "i686-pc-windows-msvc".into(),
                 BuildArch::X64 => "x86_64-pc-windows-msvc".into(),
@@ -93,7 +73,7 @@ impl Builder {
             },
         };
 
-        let server_executable: String = match args.target {
+        let server_executable: String = match os {
             BuildOS::Linux => match arch {
                 BuildArch::X32 => "arma3server.so".into(),
                 BuildArch::X64 => "arma3server_x64.so".into(),
@@ -116,14 +96,7 @@ impl Builder {
             .load()?;
 
         let builder = Builder {
-            os: args.target,
-            arch,
-            env: args.env,
-            bot_host: args.bot_host,
-            log_level: args.log_level,
-            force: args.force,
-            release: args.release,
-            only: args.only.unwrap_or_default(),
+            args,
             local_git_path,
             extension_build_target,
             local_build_path,
@@ -140,7 +113,7 @@ impl Builder {
     pub fn start(&mut self) -> BuildResult {
         self.print_header();
 
-        if matches!(self.os, BuildOS::Linux) {
+        if matches!(self.args.build_os(), BuildOS::Linux) {
             self.print_status("Preparing container", build_steps::start_container)?;
             self.print_status("Waiting for container", build_steps::wait_for_container)?;
             self.print_status("Preparing arma3server", build_steps::update_arma)?;
@@ -157,7 +130,7 @@ impl Builder {
 
         self.print_status("Starting build", build_steps::prepare_to_build)?;
 
-        if matches!(self.os, BuildOS::Windows) && self.rebuild_mod() {
+        if matches!(self.args.build_os(), BuildOS::Windows) && self.rebuild_mod() {
             self.print_status("Checking for p drive", build_steps::check_for_p_drive)?;
         }
 
@@ -267,7 +240,7 @@ impl Builder {
             static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
         }
 
-        match self.os {
+        match self.args.build_os() {
             BuildOS::Windows => {
                 let command_file_path = self.local_build_path.join(".esm-build-command");
                 let command_result_path = self.local_build_path.join(".esm-build-command-result");
@@ -325,9 +298,9 @@ impl Builder {
         // Just building the extension? Forced true
         // Just building just the mod? Forced false
         // No force, no only? return true only if the files have changed
-        (self.force || self.only != "mod")
-            && (self.force
-                || self.only == "extension"
+        (self.args.force_rebuild() || self.args.build_only() != "mod")
+            && (self.args.force_rebuild()
+                || self.args.build_only() == "extension"
                 || has_directory_changed(
                     &self.file_watcher,
                     &self.local_git_path.join("src").join("arma"),
@@ -344,9 +317,9 @@ impl Builder {
         // Just building the mod? Forced true
         // Just building just the extension? Forced false
         // No force, no only? return true only if the files have changed
-        (self.force || self.only != "extension")
-            && (self.force
-                || self.only == "mod"
+        (self.args.force_rebuild() || self.args.build_only() != "extension")
+            && (self.args.force_rebuild()
+                || self.args.build_only() == "mod"
                 || has_directory_changed(
                     &self.file_watcher,
                     &self.local_git_path.join("src").join("@esm"),
@@ -359,9 +332,9 @@ impl Builder {
         // Just building the mod? Forced true
         // Just building just the extension? Forced false
         // No force, no only? return true only if the files have changed
-        (self.force || self.only != "extension")
-            && (self.force
-                || self.only == "mod"
+        (self.args.force_rebuild() || self.args.build_only() != "extension")
+            && (self.args.force_rebuild()
+                || self.args.build_only() == "mod"
                 || has_directory_changed(
                     &self.file_watcher,
                     &self
@@ -374,7 +347,7 @@ impl Builder {
     }
 
     pub fn rebuild_receiver(&self) -> bool {
-        self.force
+        self.args.force_rebuild()
             || has_directory_changed(
                 &self.file_watcher,
                 &self
@@ -443,10 +416,10 @@ impl Builder {
             git_dir_label = "git directory".black().bold(),
             build_dir_label = "build directory".black().bold(),
             server_dir_label = "server directory".black().bold(),
-            os = self.os,
-            arch = format!("{:?}", self.arch).to_lowercase(),
-            env = format!("{:?}", self.env).to_lowercase(),
-            log = format!("{:?}", self.log_level).to_lowercase(),
+            os = self.args.build_os(),
+            arch = format!("{:?}", self.args.build_arch()).to_lowercase(),
+            env = format!("{:?}", self.args.build_env()).to_lowercase(),
+            log = format!("{:?}", self.args.log_level()).to_lowercase(),
             git_directory = self.local_git_path.to_string_lossy(),
             build_directory = self.remote_build_path_str(),
             server_directory = self.remote.server_path

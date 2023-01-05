@@ -69,6 +69,55 @@ pub struct Args {
     /// Space or comma separated list that controls which pieces are built
     #[arg(short, long, value_parser = ["mod", "extension"])]
     only: Option<String>,
+
+    /// Updates Arma server (linux target only)
+    #[arg(short, long)]
+    update: bool,
+}
+
+impl Args {
+    pub fn build_arch(&self) -> BuildArch {
+        if self.build_x32 {
+            BuildArch::X32
+        } else {
+            BuildArch::X64
+        }
+    }
+
+    pub fn build_env(&self) -> BuildEnv {
+        self.env
+    }
+
+    pub fn build_os(&self) -> BuildOS {
+        self.target
+    }
+
+    pub fn build_release(&self) -> bool {
+        self.release
+    }
+
+    pub fn build_only(&self) -> &str {
+        match &self.only {
+            Some(v) => v,
+            None => "",
+        }
+    }
+
+    pub fn log_level(&self) -> LogLevel {
+        self.log_level
+    }
+
+    pub fn bot_host(&self) -> &str {
+        &self.bot_host
+    }
+
+    pub fn force_rebuild(&self) -> bool {
+        self.force
+    }
+
+    pub fn update_arma(&self) -> bool {
+        self.update
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]

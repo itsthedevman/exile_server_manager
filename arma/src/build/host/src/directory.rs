@@ -39,7 +39,7 @@ impl Directory {
         )?;
 
         let destination_path = builder.remote_build_path_str();
-        match builder.os {
+        match builder.args.build_os() {
             crate::BuildOS::Linux => todo!(),
             crate::BuildOS::Windows => {
                 let script = format!(
