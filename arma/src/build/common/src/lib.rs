@@ -255,11 +255,15 @@ impl System {
             return Err(format!("{e:?}").into());
         }
 
+        // Ensures everything prints and gets the final newline after a possible print above
+        if (self.print_stdout && !stdout_output.is_empty())
+            || (self.print_stderr && !stderr_output.is_empty())
+        {
+            println!();
+        }
+
         if !status.success() {
             let line_prefix = format!("{} - {} ->", "<esm_bt>".blue().bold(), print_as.red());
-
-            // Ensures everything prints and gets the final newline after a possible print above
-            println!();
 
             if !stdout_output.is_empty() {
                 for line in stdout_output {
