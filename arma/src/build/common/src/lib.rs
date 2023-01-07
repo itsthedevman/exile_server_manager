@@ -150,6 +150,8 @@ impl System {
     }
 
     pub fn execute(&self) -> Result<String, BuildError> {
+        // println!("\nRunning \"{}\"", self.command_string());
+
         let mut child = SystemCommand::new(&self.command)
             .args(&self.arguments)
             .stdout(Stdio::piped())
@@ -198,13 +200,8 @@ impl System {
 
         drop(sender);
 
-        // Formatting
-        if self.print_stdout || self.print_stderr {
-            println!();
-        }
-
-        let mut stdout_output = String::new();
-        let mut stderr_output = String::new();
+        let mut stdout_output = Vec::new();
+        let mut stderr_output = Vec::new();
         let print_as = if self.print_as.is_empty() {
             &self.command
         } else {
@@ -214,28 +211,28 @@ impl System {
         while let Ok((name, line)) = receiver.recv() {
             match name {
                 "stdout" => {
-                    stdout_output.push_str(&format!("{line}\n"));
-
                     if self.print_stdout {
-                        println!(
-                            "{} - {} -> {}",
+                        print!(
+                            "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as,
                             line.trim().black()
                         );
                     }
+
+                    stdout_output.push(line);
                 }
                 "stderr" => {
-                    stderr_output.push_str(&format!("{line}\n"));
-
                     if self.print_stderr {
-                        println!(
-                            "{} - {} -> {}",
+                        print!(
+                            "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as,
                             line.trim().black()
                         );
                     }
+
+                    stderr_output.push(line);
                 }
                 _ => {}
             };
@@ -259,11 +256,28 @@ impl System {
         }
 
         if !status.success() {
+            let line_prefix = format!("{} - {} ->", "<esm_bt>".blue().bold(), print_as.red());
+
+            // Ensures everything prints and gets the final newline after a possible print above
+            println!();
+
+            if !stdout_output.is_empty() {
+                for line in stdout_output {
+                    println!("{line_prefix} {}", line);
+                }
+            }
+
+            if !stderr_output.is_empty() {
+                for line in stderr_output {
+                    println!("{line_prefix} {}", line);
+                }
+            }
+
             return Err(format!("Execution failed with exit code {:?}", status.code()).into());
         }
 
-        let stdout_output = stdout_output.trim().to_string();
-        let stderr_output = stderr_output.trim().to_string();
+        let stdout_output = stdout_output.join("\n");
+        let stderr_output = stderr_output.join("\n");
 
         if self.detections.is_empty() {
             return Ok(stdout_output);
