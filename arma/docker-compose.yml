@@ -24,6 +24,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
     restart: unless-stopped
 volumes:
   mysql-data:

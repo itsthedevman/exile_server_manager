@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM ubuntu:latest
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -12,10 +12,12 @@ RUN apt-get update \
         lib32stdc++6 \
         lib32gcc-s1 \
         libcurl4 \
+        libssl-dev \
         openssl \
         wget \
         ca-certificates \
         vim \
+        procps \
         # Mikeros
         liblzo2-2 \
         libvorbis0a \
