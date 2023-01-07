@@ -7,8 +7,8 @@ my_steam_uid: YOUR_UID
 # A list of valid Steam UIDs that matches the list used by the esm_bot's testing suite
 # Required
 steam_uids:
-  - UID_1
-  - UID_2
+- UID_1
+- UID_2
 
 #
 # Config for the Linux Arma 3 server
@@ -20,3 +20,26 @@ server:
   # The password for the above account used to login to steamcmd
   # Password cannot contain any un-escaped special characters, nor can it be more than 64 characters long
   steam_password: account_password
+
+  # The connection URI (e.g. mysql://user:password@ip_or_domain:port/database) for the same MySQL server
+  # as defined in the config file for extDB2/3
+  # This is already pre-configured to work with the docker image
+  mysql_uri: mysql://root:password12345@127.0.0.1:3306/exile_esm
+
+  # The command line arguments that are given to the Arma 3 server
+  # Omit the dash (-) prefix. It is added automatically.
+  # Linux must escape the semi-colons
+  server_args:
+  - mod=@exile\;
+  - servermod=@exileserver\;@esm\;
+  - config=@exileserver/config.cfg
+  - port=2302
+  - profiles=server_profile
+  - cfg=@exileserver/basic.cfg
+  - name=server_profile
+  - autoinit
+  - enableHT
+  - loadMissionToMemory
+  - world=empty
+  - noSound
+  - nosplash

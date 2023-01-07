@@ -16,6 +16,8 @@ pub struct Config {
 pub struct ServerConfig {
     pub steam_password: String,
     pub steam_user: String,
+    pub mysql_uri: String,
+    pub server_args: Vec<String>,
 }
 
 pub fn parse(path: PathBuf) -> Result<Config, BuildError> {

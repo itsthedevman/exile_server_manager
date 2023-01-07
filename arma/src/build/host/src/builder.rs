@@ -6,10 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use crate::config::Config;
-use crate::file_watcher::FileWatcher;
-use crate::Args;
-use crate::{build_steps, read_lock, BuildArch, BuildError, BuildOS, BuildResult, Command, System};
+use crate::*;
 
 use colored::*;
 use lazy_static::lazy_static;
@@ -110,7 +107,7 @@ impl Builder {
         Ok(builder)
     }
 
-    pub fn start(&mut self) -> BuildResult {
+    pub fn run(&mut self) -> BuildResult {
         self.print_header();
 
         if matches!(self.args.build_os(), BuildOS::Linux) {
@@ -146,6 +143,33 @@ impl Builder {
         self.print_status("Starting a3 server", build_steps::start_a3_server)?;
         self.print_status("Starting log stream", build_steps::stream_logs)?;
         // self.print_status("Starting a3 client", build_steps::start_a3_client)?; // If flag is set
+        Ok(())
+    }
+
+    pub fn finish(&mut self) -> BuildResult {
+        write_lock(&SERVER, |mut server| {
+            server.stop();
+            Ok(true)
+        })?;
+
+        if matches!(self.args.build_os(), BuildOS::Linux) {
+            self.print_status("Closing receiver", |_| {
+                System::new()
+                    .command("docker")
+                    .arguments(&[
+                        "exec",
+                        "-t",
+                        ARMA_CONTAINER,
+                        "/bin/bash",
+                        "-c",
+                        "for pid in $(ps -ef | awk '/arma3server\\/receiver/ {print $2}'); do kill -9 $pid; done",
+                    ])
+                    .execute()?;
+
+                Ok(())
+            })?;
+        }
+
         Ok(())
     }
 

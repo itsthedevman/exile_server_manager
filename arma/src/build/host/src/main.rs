@@ -11,18 +11,25 @@ mod file;
 mod file_watcher;
 mod server;
 
+pub use build_steps::*;
+pub use builder::*;
+pub use common::*;
+pub use compile::*;
+pub use config::*;
+pub use database::*;
+pub use directory::*;
+pub use file::*;
+pub use file_watcher::*;
+pub use server::*;
+
 use std::{
     fmt::{self, Display},
     process::exit,
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use builder::Builder;
 use clap::{Parser, ValueEnum};
 use colored::Colorize;
-pub use common::*;
-pub use directory::*;
-pub use file::*;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 pub use std::process::Command as SystemCommand;
@@ -33,6 +40,24 @@ lazy_static! {
     pub static ref SERVER: RwLock<Server> = RwLock::new(Server::new());
     pub static ref CTRL_C_RECEIVED: AtomicBool = AtomicBool::new(false);
 }
+
+/// Used with the test suite, this key holds the server's current esm.key
+pub const REDIS_SERVER_KEY: &str = "test_server_key";
+
+pub const ADDONS: &[&str] = &[
+    "exile_server_manager",
+    "exile_server_overwrites",
+    "exile_server_xm8",
+    "exile_server_hacking",
+    "exile_server_grinding",
+    "exile_server_charge_plant_started",
+    "exile_server_flag_steal_started",
+    "exile_server_player_connected",
+];
+
+pub const ARMA_CONTAINER: &str = "ESM_ARMA_SERVER";
+pub const ARMA_SERVICE: &str = "arma_server";
+pub const ARMA_PATH: &str = "/arma3server";
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
@@ -192,6 +217,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             exit(1);
         }
 
+        let command_result = System::new()
+            .command("docker")
+            .arguments(&["compose", "stop", ARMA_SERVICE])
+            .print()
+            .execute();
+
+        if let Err(e) = command_result {
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "error".red().bold(),
+                e
+            );
+            exit(1);
+        }
+
         exit(0);
     })
     .expect("Error setting Ctrl-C handler");
@@ -209,7 +250,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    match builder.start() {
+    match builder.run() {
         Ok(_) => {}
         Err(e) => println!(
             "{} - {} - {}",
@@ -219,10 +260,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     };
 
-    write_lock(&SERVER, |mut server| {
-        server.stop();
-        Ok(true)
-    })?;
+    match builder.finish() {
+        Ok(_) => {}
+        Err(e) => println!(
+            "{} - {} - {}",
+            "<esm_bt>".blue().bold(),
+            "error".red().bold(),
+            e
+        ),
+    };
 
     Ok(())
 }

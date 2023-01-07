@@ -1,8 +1,4 @@
-use crate::{
-    builder::{git_sha_short, Builder},
-    database::Database,
-    BuildArch, BuildEnv, BuildOS, Directory, System,
-};
+use crate::*;
 
 use colored::*;
 use common::{write_lock, BuildError, BuildResult, Command};
@@ -11,24 +7,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, thread, time::Duration};
-
-/// Used with the test suite, this key holds the server's current esm.key
-const REDIS_SERVER_KEY: &str = "test_server_key";
-
-const ADDONS: &[&str] = &[
-    "exile_server_manager",
-    "exile_server_overwrites",
-    "exile_server_xm8",
-    "exile_server_hacking",
-    "exile_server_grinding",
-    "exile_server_charge_plant_started",
-    "exile_server_flag_steal_started",
-    "exile_server_player_connected",
-];
-
-const ARMA_CONTAINER: &str = "ESM_ARMA_SERVER";
-const ARMA_SERVICE: &str = "arma_server";
-const ARMA_PATH: &str = "/arma3server";
 
 pub fn start_container(_builder: &mut Builder) -> BuildResult {
     if container_status()?.is_empty() {
@@ -115,18 +93,80 @@ pub fn update_arma(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn build_receiver(builder: &mut Builder) -> BuildResult {
-    let command = format!(
-        r#"
-cargo build --release --manifest-path "{git_path}/src/build/receiver/Cargo.toml";
-docker compose cp "{git_path}/target/release/receiver" {ARMA_SERVICE}:{ARMA_PATH};
-        "#,
-        git_path = builder.local_git_path.to_string_lossy(),
+    let git_path = builder.local_git_path.to_string_lossy();
+
+    // Build receiver
+    System::new()
+        .command("cargo")
+        .arguments(&[
+            "build",
+            "--release",
+            "--manifest-path",
+            &format!("{git_path}/src/build/receiver/Cargo.toml"),
+        ])
+        .add_error_detection("no such")
+        .print()
+        .execute()?;
+
+    // Copy to container
+    System::new()
+        .command("docker")
+        .arguments(&[
+            "compose",
+            "cp",
+            &format!("{git_path}/target/release/receiver"),
+            &format!("{ARMA_SERVICE}:{ARMA_PATH}"),
+        ])
+        .add_error_detection("no such")
+        .print()
+        .execute()?;
+
+    // Create script to run receiver in container
+    let receiver_script = format!(
+        r#"/arma3server/receiver \
+    --host=127.0.0.1:54321 \
+    --database-uri={} \
+    --a3-server-path=/arma3server \
+    --a3-server-args="{}""#,
+        builder.config.server.mysql_uri,
+        builder
+            .config
+            .server
+            .server_args
+            .iter()
+            .map(|arg| format!("-{arg}"))
+            .collect::<Vec<String>>()
+            .join(" ")
     );
 
+    // Send receiver script and setup for execution
     System::new()
-        .script(command)
+        .command("docker")
+        .arguments(&[
+            "exec",
+            "-t",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "-c",
+            &format!("echo \"nohup {receiver_script} &\" > /arma3server/start_receiver.sh && chmod +x /arma3server/start_receiver.sh && chmod +x /arma3server/receiver"),
+        ])
         .add_error_detection("no such")
-        .print_as("cargo")
+        .print_as("writing start script")
+        .print()
+        .execute()?;
+
+    // Run the start script
+    System::new()
+        .command("docker")
+        .arguments(&[
+            "exec",
+            "-td",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "/arma3server/start_receiver.sh",
+        ])
+        .add_error_detection("no such")
+        .print_as("starting receiver")
         .print()
         .execute()?;
 
