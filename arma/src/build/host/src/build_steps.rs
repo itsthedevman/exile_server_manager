@@ -123,11 +123,14 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 
     // Create script to run receiver in container
     let receiver_script = format!(
-        r#"/arma3server/receiver \
+        r#"#!/bin/bash
+/arma3server/receiver \
     --host=127.0.0.1:54321 \
     --database-uri={} \
     --a3-server-path=/arma3server \
-    --a3-server-args="{}""#,
+    --a3-server-args=\"{}\" \
+    >> receiver.log
+"#,
         builder.config.server.mysql_uri,
         builder
             .config
@@ -148,7 +151,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("echo \"nohup {receiver_script} &\" > /arma3server/start_receiver.sh && chmod +x /arma3server/start_receiver.sh && chmod +x /arma3server/receiver"),
+            &format!("echo \"{receiver_script}\" > /arma3server/start_receiver.sh && chmod +x /arma3server/start_receiver.sh && chmod +x /arma3server/receiver"),
         ])
         .add_error_detection("no such")
         .print_as("writing start script")
