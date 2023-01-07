@@ -88,9 +88,11 @@ impl Client {
                 match IncomingCommand::execute(&client, &message.command) {
                     Ok(command) => {
                         message.command = command;
+                        println!("Success - {:#?}", message.command);
                         client.send(message);
                     }
                     Err(e) => {
+                        println!("Failed - {e} - {:#?}", message.command);
                         message.command = Command::Error(e.to_string());
                         client.send(message);
                     }

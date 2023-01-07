@@ -15,6 +15,8 @@ use regex::Regex;
 pub struct IncomingCommand;
 impl IncomingCommand {
     pub fn execute(client: &Client, network_command: &Command) -> Result<Command, BuildError> {
+        println!("Executing {network_command:#?}");
+
         match network_command {
             Command::PostInitRequest => Ok(Command::PostInit(PostInit {
                 build_path: client.arma.build_path.to_owned(),
@@ -115,30 +117,29 @@ impl IncomingCommand {
                 "arma3",
                 "arma3battleye"
             ];
-            static ref LINUX_EXES: &'static [&'static str] = &["arma3server", "arma3server_x64"];
+            static ref LINUX_EXES: &'static [&'static str] = &["arma3server$", "arma3server_x64$"];
         };
 
-        let (command, args) = if cfg!(windows) {
-            (
-                "powershell",
-                WINDOWS_EXES
-                    .iter()
-                    .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force"))
-                    .collect::<Vec<String>>(),
-            )
+        if cfg!(windows) {
+            System::new()
+                    .command("powershell")
+                    .arguments(&WINDOWS_EXES
+                        .iter()
+                        .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force"))
+                        .collect::<Vec<String>>())
+                    .execute()?;
         } else {
-            (
-                "eval",
-                LINUX_EXES
-                    .iter()
-                    .map(|exe| format!("pkill \"{exe}\""))
-                    .collect::<Vec<String>>(),
-            )
-        };
-
-        SystemCommand::new(command)
-            .args(&vec![args.join(";")])
-            .output()?;
+            System::new()
+                .command("/bin/bash")
+                .arguments(&[
+                    "-c",
+                    &format!(
+                        "for pid in $(ps -ef | awk '/{}/ {{print $2}}'); do kill -9 $pid; done",
+                        LINUX_EXES.join("|")
+                    ),
+                ])
+                .execute()?;
+        }
 
         Ok(Command::Success)
     }
