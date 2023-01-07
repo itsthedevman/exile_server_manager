@@ -217,13 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             exit(1);
         }
 
-        let command_result = System::new()
-            .command("docker")
-            .arguments(&["compose", "stop", ARMA_SERVICE])
-            .print()
-            .execute();
-
-        if let Err(e) = command_result {
+        if let Err(e) = stop_receiver() {
             println!(
                 "{} - {} - {}",
                 "<esm_bt>".blue().bold(),

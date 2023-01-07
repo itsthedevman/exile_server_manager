@@ -153,21 +153,7 @@ impl Builder {
         })?;
 
         if matches!(self.args.build_os(), BuildOS::Linux) {
-            self.print_status("Closing receiver", |_| {
-                System::new()
-                    .command("docker")
-                    .arguments(&[
-                        "exec",
-                        "-t",
-                        ARMA_CONTAINER,
-                        "/bin/bash",
-                        "-c",
-                        "for pid in $(ps -ef | awk '/arma3server\\/receiver/ {print $2}'); do kill -9 $pid; done",
-                    ])
-                    .execute()?;
-
-                Ok(())
-            })?;
+            self.print_status("Closing receiver", |_| stop_receiver())?;
         }
 
         Ok(())
@@ -425,13 +411,13 @@ impl Builder {
     fn print_build_info(&self) {
         println!(
             r#"{label} - Build details
-{os_label:17}: {os:?}
-{arch_label:17}: {arch:?}
-{env_label:17}: {env:?}
-{log_label:17}: {log}
-{git_dir_label:17}: {git_directory}
-{build_dir_label:17}: {build_directory}
-{server_dir_label:17}: {server_directory}"#,
+{label} - | {os_label:17}: {os:?}
+{label} - | {arch_label:17}: {arch:?}
+{label} - | {env_label:17}: {env:?}
+{label} - | {log_label:17}: {log}
+{label} - | {git_dir_label:17}: {git_directory}
+{label} - | {build_dir_label:17}: {build_directory}
+{label} - | {server_dir_label:17}: {server_directory}"#,
             label = "<esm_bt>".blue().bold(),
             os_label = "os".black().bold(),
             arch_label = "arch".black().bold(),
@@ -472,4 +458,20 @@ pub fn has_directory_changed(watcher: &FileWatcher, path: &Path) -> bool {
     file_paths
         .filter_map(|p| p.ok())
         .any(|p| watcher.was_modified(&p))
+}
+
+pub fn stop_receiver() -> BuildResult {
+    System::new()
+        .command("docker")
+        .arguments(&[
+            "exec",
+            "-t",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "-c",
+            "for pid in $(ps -ef | awk '/arma3server\\/receiver/ {print $2}'); do kill -9 $pid; done",
+        ])
+        .execute()?;
+
+    Ok(())
 }
