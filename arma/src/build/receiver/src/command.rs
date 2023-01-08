@@ -1,8 +1,4 @@
-use std::fmt::Write;
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::{Command as SystemCommand, Stdio};
-use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{client::Client, read_lock, BuildError, Command, System};
@@ -10,12 +6,11 @@ use colored::Colorize;
 use common::{write_lock, LogLine, PostInit};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
-use regex::Regex;
 
 pub struct IncomingCommand;
 impl IncomingCommand {
-    pub fn execute(client: &Client, network_command: &Command) -> Result<Command, BuildError> {
-        println!("Executing {network_command:#?}");
+    pub fn execute(client: &Client, network_command: &mut Command) -> Result<Command, BuildError> {
+        println!("Executing {network_command:?}");
 
         match network_command {
             Command::PostInitRequest => Ok(Command::PostInit(PostInit {
@@ -144,65 +139,14 @@ impl IncomingCommand {
         Ok(Command::Success)
     }
 
-    pub fn system_command(command: &System) -> Result<Command, BuildError> {
+    pub fn system_command(command: &mut System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
             command.command.bright_blue(),
             command.arguments.join(" ").black()
         );
 
-        let mut child = SystemCommand::new(&command.command)
-            .args(&command.arguments)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-
-        if !command.forget {
-            return Ok(Command::SystemResponse(String::new()));
-        };
-
-        let mut output = String::new();
-        if let Some(stderr) = child.stderr.take() {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                writeln!(output, "{}", line)?;
-
-                println!("{} - {}", "stderr".bright_red(), line);
-            }
-        }
-
-        if let Some(stdout) = child.stdout.take() {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                writeln!(output, "{}", line)?;
-
-                println!("{} - {}", "stdout".bright_cyan(), line);
-            }
-        }
-
-        let mut result = String::new();
-        for detection in command.detections.iter() {
-            let regex = match Regex::from_str(&detection.regex) {
-                Ok(r) => r,
-                Err(e) => return Err(e.to_string().into()),
-            };
-
-            let matches = match regex.captures(&output) {
-                Some(m) => m,
-                None => continue,
-            };
-
-            if detection.causes_error {
-                return Err(output.into());
-            }
-
-            result.push_str(matches.get(0).unwrap().as_str());
-        }
-
-        result.push_str(&output);
-
+        let result = command.execute()?;
         Ok(Command::SystemResponse(result))
     }
 }

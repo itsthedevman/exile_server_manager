@@ -2,13 +2,13 @@ use colored::Colorize;
 use common::read_lock;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeTask};
-use parking_lot::RwLock;
-use uuid::Uuid;
-
-use crate::{write_lock, BuildError, BuildResult, Command, NetworkCommand};
+use parking_lot::{RwLock};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use uuid::Uuid;
+
+use crate::*;
 
 #[derive(Clone)]
 pub struct Server {
@@ -97,30 +97,14 @@ impl Server {
         }
     }
 
-    pub fn send(&mut self, command: Command) -> Result<Command, BuildError> {
-        let command = NetworkCommand::new(command);
-
-        let data = serde_json::to_vec(&command).unwrap();
-
-        self.track_request(&command.id)?;
-
-        self.handler
-            .as_ref()
-            .unwrap()
-            .network()
-            .send(self.endpoint.read().unwrap(), data.as_slice());
-
-        self.wait_for_response(&command.id)
-    }
-
-    fn track_request(&mut self, id: &Uuid) -> BuildResult {
+    fn track_request(&self, id: &Uuid) -> BuildResult {
         write_lock(&self.requests, |mut writer| {
             writer.insert(id.to_owned(), Ok(Command::Hello));
             Ok(true)
         })
     }
 
-    fn wait_for_response(&mut self, id: &Uuid) -> Result<Command, BuildError> {
+    fn wait_for_response(&self, id: &Uuid) -> Result<Command, BuildError> {
         let result: RwLock<Result<Command, BuildError>> = RwLock::new(Ok(Command::Hello));
         read_lock(&self.requests, |reader| {
             if crate::CTRL_C_RECEIVED.load(Ordering::SeqCst) {
@@ -151,5 +135,23 @@ impl Server {
             Ok(c) => Ok(c.to_owned()),
             Err(e) => Err(e.to_string().into()),
         }
+    }
+}
+
+impl NetworkSend for Server {
+    fn send(&self, command: Command) -> Result<Command, BuildError> {
+        let command = NetworkCommand::new(command);
+
+        let data = serde_json::to_vec(&command).unwrap();
+
+        self.track_request(&command.id)?;
+
+        self.handler
+            .as_ref()
+            .unwrap()
+            .network()
+            .send(self.endpoint.read().unwrap(), data.as_slice());
+
+        self.wait_for_response(&command.id)
     }
 }

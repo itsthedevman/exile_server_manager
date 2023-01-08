@@ -1,4 +1,5 @@
 use colored::*;
+use lazy_static::lazy_static;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,14 @@ use uuid::Uuid;
 
 pub mod error;
 pub use error::*;
+
+lazy_static! {
+    static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
+}
+
+pub trait NetworkSend {
+    fn send(&self, command: Command) -> Result<Command, BuildError>;
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NetworkCommand {
@@ -58,12 +67,14 @@ impl Default for Command {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct System {
     pub command: String,
+    pub script: String,
     pub arguments: Vec<String>,
     pub detections: Vec<Detection>,
     pub forget: bool,
     pub print_stdout: bool,
     pub print_stderr: bool,
     pub print_as: String,
+    pub target_os: String,
 }
 
 impl System {
@@ -76,7 +87,19 @@ impl System {
             print_stdout: false,
             print_stderr: false,
             print_as: "".into(),
+            target_os: "linux".into(),
+            script: "".into(),
         }
+    }
+
+    pub fn windows(&mut self) -> &mut Self {
+        self.target_os = "windows".into();
+        self
+    }
+
+    pub fn linux(&mut self) -> &mut Self {
+        self.target_os = "linux".into();
+        self
     }
 
     pub fn command<S: AsRef<str>>(&mut self, command: S) -> &mut Self {
@@ -84,16 +107,10 @@ impl System {
         self
     }
 
-    pub fn script<S: AsRef<str>>(&mut self, script: S) -> &mut Self {
-        self.arguments.clear();
-
-        if cfg!(windows) {
-            self.command("powershell");
-        } else {
-            self.command("bash");
-            self.arguments(&["-c", script.as_ref()]);
-        }
-
+    pub fn script<S: AsRef<str> + std::fmt::Display>(&mut self, script: S) -> &mut Self {
+        self.script = WHITESPACE_REGEX
+            .replace_all(script.as_ref(), " ")
+            .to_string();
         self
     }
 
@@ -149,8 +166,17 @@ impl System {
         format!("{} {}", self.command, self.arguments.join(" "))
     }
 
-    pub fn execute(&self) -> Result<String, BuildError> {
+    pub fn execute(&mut self) -> Result<String, BuildError> {
         // println!("\nRunning \"{}\"", self.command_string());
+
+        // TODO: This does not support running scripts when executing from Windows.
+        // This isn't really an issue right now since the host is being ran from linux
+        if !self.script.is_empty() {
+            self.command("bash");
+
+            self.arguments.clear();
+            self.arguments(&["-c", self.script.to_string().as_ref()]);
+        }
 
         let mut child = SystemCommand::new(&self.command)
             .args(&self.arguments)
@@ -215,7 +241,7 @@ impl System {
                         print!(
                             "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
-                            print_as,
+                            print_as.bold().underline(),
                             line.trim().black()
                         );
                     }
@@ -227,7 +253,7 @@ impl System {
                         print!(
                             "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
-                            print_as,
+                            print_as.bold().underline(),
                             line.trim().black()
                         );
                     }
@@ -263,7 +289,11 @@ impl System {
         }
 
         if !status.success() {
-            let line_prefix = format!("{} - {} ->", "<esm_bt>".blue().bold(), print_as.red());
+            let line_prefix = format!(
+                "{} - {} ->",
+                "<esm_bt>".blue().bold(),
+                print_as.red().bold()
+            );
 
             if !stdout_output.is_empty() {
                 for line in stdout_output {
@@ -317,6 +347,40 @@ impl System {
         } else {
             Ok(detection_results)
         }
+    }
+
+    pub fn execute_remote(&mut self, server: &dyn NetworkSend) -> Result<String, BuildError> {
+        // Using System to execute a script for windows ON windows is not supported by this code
+        // It assumes this is being build on linux and then sent to windows
+        if self.target_os == "windows" {
+            let mut script = &self.command_string();
+
+            if !self.script.is_empty() {
+                script = &self.script;
+            }
+
+            // Removes the "Preparing modules for first use." errors that powershell return
+            let powershell_script = format!("$ProgressPreference = 'SilentlyContinue'; {}", script);
+
+            // Convert the command file into UTF-16LE as required by Microsoft and then to base64 for transport
+            let script = format!(
+                "echo \"{}\" | iconv -t UTF-16LE | base64",
+                powershell_script
+            );
+
+            if let Ok(encoded_script) = System::new().script(script).execute() {
+                self.command("powershell");
+                self.arguments(&["-EncodedCommand", encoded_script.as_ref()]);
+            }
+        }
+
+        let result = server.send(Command::System(self.to_owned()))?;
+
+        let Command::SystemResponse(result) = result else {
+            return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
+        };
+
+        Ok(result)
     }
 }
 

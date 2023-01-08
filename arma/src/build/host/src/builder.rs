@@ -1,6 +1,5 @@
-use common::write_lock;
+use colored::*;
 use glob::glob;
-use parking_lot::RwLock;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -8,10 +7,7 @@ use std::time::Duration;
 
 use crate::*;
 
-use colored::*;
-use lazy_static::lazy_static;
-use regex::Regex;
-use std::fs;
+const SEPARATOR: &str = "----------------------------------------";
 
 pub struct Remote {
     pub build_path: PathBuf,
@@ -50,6 +46,8 @@ pub struct Builder {
     pub config: Config,
     /// The matching executable plus extension for this build
     pub server_executable: String,
+    /// TODO
+    pub build_server: Server,
 }
 
 impl Builder {
@@ -102,6 +100,7 @@ impl Builder {
             file_watcher,
             config: crate::config::parse(config_path)?,
             server_executable,
+            build_server: Server::new(),
         };
 
         Ok(builder)
@@ -113,19 +112,18 @@ impl Builder {
         if matches!(self.args.build_os(), BuildOS::Linux) {
             self.print_status("Preparing container", build_steps::start_container)?;
             self.print_status("Waiting for container", build_steps::wait_for_container)?;
-            self.print_status("Preparing arma3server", build_steps::update_arma)?;
+            self.print_status("Preparing receiver", build_steps::prepare_receiver)?;
 
-            // if self.rebuild_receiver() {
-            self.print_status("Building receiver", build_steps::build_receiver)?;
-            // }
+            if self.update_arma() {
+                self.print_status("Updating arma server", build_steps::update_arma)?;
+            }
         }
 
         self.start_server()?;
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
         self.print_build_info();
-
-        self.print_status("Starting build", build_steps::prepare_to_build)?;
+        self.print_status("Preparing to build", build_steps::prepare_to_build)?;
 
         if matches!(self.args.build_os(), BuildOS::Windows) && self.rebuild_mod() {
             self.print_status("Checking for p drive", build_steps::check_for_p_drive)?;
@@ -147,10 +145,7 @@ impl Builder {
     }
 
     pub fn finish(&mut self) -> BuildResult {
-        write_lock(&SERVER, |mut server| {
-            server.stop();
-            Ok(true)
-        })?;
+        self.build_server.stop();
 
         if matches!(self.args.build_os(), BuildOS::Linux) {
             self.print_status("Closing receiver", |_| stop_receiver())?;
@@ -187,44 +182,22 @@ impl Builder {
         }
     }
 
-    pub fn send_to_receiver(&mut self, command: Command) -> Result<Command, BuildError> {
-        let result = RwLock::new(None);
-        write_lock(&crate::SERVER, |mut server| {
-            *result.write() = Some(server.send(command.to_owned()));
-            Ok(true)
-        })?;
-
-        if result.write().is_none() {
-            return Err("Failed to send".to_string().into());
-        }
-
-        let mut writer = result.write();
-        writer.take().unwrap()
-    }
-
     fn start_server(&mut self) -> BuildResult {
+        // Ensure we're connected to redis
         if let Err(e) = self.redis.get_connection() {
             return Err(format!("Redis server - {}", e).into());
         }
 
-        write_lock(&crate::SERVER, |mut server| {
-            server.start()?;
-            Ok(true)
-        })
+        self.build_server.start()
     }
 
     fn wait_for_receiver(&mut self) -> BuildResult {
-        read_lock(&crate::SERVER, |server| {
-            if !server.connected.load(Ordering::SeqCst) {
-                std::thread::sleep(Duration::from_secs(1));
-                return Ok(false);
-            }
-
-            Ok(true)
-        })?;
+        while !self.build_server.connected.load(Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_secs(1));
+        }
 
         // We're connected, request update
-        match self.send_to_receiver(Command::PostInitRequest) {
+        match self.build_server.send(Command::PostInitRequest) {
             Ok(ref res) => {
                 if let Command::PostInit(post_init) = res {
                     let path = post_init.build_path.to_owned();
@@ -243,56 +216,6 @@ impl Builder {
         };
 
         Ok(())
-    }
-
-    pub fn system_command(&mut self, command: &mut System) -> Result<Command, BuildError> {
-        lazy_static! {
-            static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
-        }
-
-        match self.args.build_os() {
-            BuildOS::Windows => {
-                let command_file_path = self.local_build_path.join(".esm-build-command");
-                let command_result_path = self.local_build_path.join(".esm-build-command-result");
-
-                // Removes the "Preparing modules for first use." errors that powershell return
-                let script = format!(
-                    "$ProgressPreference = 'SilentlyContinue'; {} {}",
-                    command.command,
-                    command.arguments.join(" ")
-                );
-
-                let script = WHITESPACE_REGEX.replace_all(&script, " ");
-                fs::write(&command_file_path, script.as_bytes())?;
-
-                // Convert the command file into UTF-16LE as required by Microsoft
-
-                System::new()
-                    .command("iconv")
-                    .arguments(&[
-                        "-t UTF-16LE",
-                        &format!("--output={}", command_result_path.display()),
-                        &command_file_path.to_string_lossy(),
-                    ])
-                    .execute()?;
-
-                // To avoid dealing with UTF in rust - just have linux convert it to base64
-                let mut encoded_command = System::new()
-                    .command("base64")
-                    .arguments(&[&*command_result_path.to_string_lossy()])
-                    .execute()?;
-
-                // Remove the trailing newline
-                encoded_command.pop();
-
-                command.command("powershell");
-                command.arguments(&["-EncodedCommand".to_string(), encoded_command]);
-
-                // Finally send the command to powershell
-                self.send_to_receiver(Command::System(command.to_owned()))
-            }
-            BuildOS::Linux => self.send_to_receiver(Command::System(command.to_owned())),
-        }
     }
 
     pub fn remote_build_path(&self) -> &PathBuf {
@@ -368,57 +291,68 @@ impl Builder {
             )
     }
 
-    fn print_header(&self) {
+    pub fn update_arma(&self) -> bool {
+        let script = "[ -f /arma3server/arma3server ] && echo \"true\"";
+
+        let files_exist = System::new()
+            .command("bash")
+            .arguments(&[
+                "-c",
+                &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
+            ])
+            .execute()
+            .unwrap_or_default()
+            == "true";
+
+        !files_exist || self.args.update_arma()
+    }
+
+    pub fn print_header(&self) {
         let label = "<esm_bt>".blue().bold();
-        let mut header = format!("{label} ---------------------\n{label} - ESM Build Tool");
+        let mut header = format!(
+            "{label} - : {SEPARATOR}\n{label} - : {:^40}",
+            "ESM Arma Build Tool".blue().bold().underline()
+        );
 
-        /*
-            <esm_bt> ---------------------
-            <esm_bt> - ESM Build Tool
-            <esm_bt> -   Building
-            <esm_bt> -     receiver
-            <esm_bt> -     mod
-            <esm_bt> -     extension
-            <esm_bt> ---------------------
-        */
-        let building = [
-            ["receiver", &self.rebuild_receiver().to_string()],
-            ["mod", &self.rebuild_mod().to_string()],
-            ["extension", &self.rebuild_extension().to_string()],
-        ];
+        let rebuild_extension = self.rebuild_extension();
+        let is_windows = matches!(self.args.build_os(), BuildOS::Windows);
+        let is_x64 = matches!(self.args.build_arch(), BuildArch::X64);
 
-        let building_section: Vec<String> = building
-            .iter()
-            .filter_map(|i| {
-                if i[1] == "true" {
-                    Some(format!("{label} -     {}", i[0]))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let building_section: Vec<&str> = [
+            ("receiver", self.rebuild_receiver()),
+            ("@esm", self.rebuild_mod()),
+            ("esm.dll", rebuild_extension && is_windows && !is_x64),
+            ("esm_x64.dll", rebuild_extension && is_windows && is_x64),
+            ("esm.so", rebuild_extension && !is_windows),
+        ]
+        .iter()
+        .filter_map(|i| if i.1 { Some(i.0) } else { None })
+        .collect();
 
         if !building_section.is_empty() {
             header.push_str(&format!(
-                "\n{label} -   Building\n{}",
-                &building_section.join("\n")
+                "\n{label} - : Build queue: {}",
+                &building_section.join(", ").black().bold()
             ));
         }
 
-        println!("{}\n{label} ---------------------", header);
+        println!("{header}\n{label} - : {SEPARATOR}");
     }
 
-    fn print_build_info(&self) {
+    pub fn print_build_info(&self) {
         println!(
-            r#"{label} - Build details
-{label} - | {os_label:17}: {os:?}
-{label} - | {arch_label:17}: {arch:?}
-{label} - | {env_label:17}: {env:?}
-{label} - | {log_label:17}: {log}
-{label} - | {git_dir_label:17}: {git_directory}
-{label} - | {build_dir_label:17}: {build_directory}
-{label} - | {server_dir_label:17}: {server_directory}"#,
+            r#"{label} - : {SEPARATOR}
+{label} - : {header:^40}
+{label} - : {os_label:>17} -> {os:?}
+{label} - : {arch_label:>17} -> {arch:?}
+{label} - : {env_label:>17} -> {env:?}
+{label} - : {log_label:>17} -> {log}
+{label} - : {git_dir_label:>17} -> {git_directory}
+{label} - : {build_dir_label:>17} -> {build_directory}
+{label} - : {server_dir_label:>17} -> {server_directory}
+{label} - : {SEPARATOR}"#,
             label = "<esm_bt>".blue().bold(),
+            header = "Build Details".green().bold().underline(),
             os_label = "os".black().bold(),
             arch_label = "arch".black().bold(),
             env_label = "env".black().bold(),
@@ -458,6 +392,24 @@ pub fn has_directory_changed(watcher: &FileWatcher, path: &Path) -> bool {
     file_paths
         .filter_map(|p| p.ok())
         .any(|p| watcher.was_modified(&p))
+}
+
+pub fn start_receiver() -> BuildResult {
+    System::new()
+        .command("docker")
+        .arguments(&[
+            "exec",
+            "-td",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "/arma3server/start_receiver.sh",
+        ])
+        .add_error_detection("no such")
+        .print_as("starting receiver")
+        .print()
+        .execute()?;
+
+    Ok(())
 }
 
 pub fn stop_receiver() -> BuildResult {

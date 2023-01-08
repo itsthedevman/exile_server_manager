@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
-
-use crate::{builder::Builder, BuildResult, Command, FileChunk, FileTransfer};
 use sha1::{Digest, Sha1};
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
+
+use crate::*;
 
 const CHUNK_SIZE: usize = 65536;
 
@@ -35,8 +35,9 @@ impl File {
             sha1,
         };
 
-        if let Command::FileTransferResult(_b @ false) =
-            builder.send_to_receiver(Command::FileTransferStart(transfer))?
+        if let Command::FileTransferResult(_b @ false) = builder
+            .build_server
+            .send(Command::FileTransferStart(transfer))?
         {
             return Ok(());
         }
@@ -50,10 +51,10 @@ impl File {
                 bytes: bytes.to_vec(),
             });
 
-            builder.send_to_receiver(chunk)?;
+            builder.build_server.send(chunk)?;
         }
 
-        builder.send_to_receiver(Command::FileTransferEnd(id))?;
+        builder.build_server.send(Command::FileTransferEnd(id))?;
 
         Ok(())
     }

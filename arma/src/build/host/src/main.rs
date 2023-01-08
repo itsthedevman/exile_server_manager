@@ -31,13 +31,9 @@ use std::{
 use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use lazy_static::lazy_static;
-use parking_lot::RwLock;
 pub use std::process::Command as SystemCommand;
 
-use crate::server::Server;
-
 lazy_static! {
-    pub static ref SERVER: RwLock<Server> = RwLock::new(Server::new());
     pub static ref CTRL_C_RECEIVED: AtomicBool = AtomicBool::new(false);
 }
 
@@ -192,7 +188,6 @@ pub enum BuildArch {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    lazy_static::initialize(&SERVER);
     lazy_static::initialize(&CTRL_C_RECEIVED);
 
     ctrlc::set_handler(move || {
@@ -202,20 +197,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         CTRL_C_RECEIVED.store(true, Ordering::SeqCst);
 
-        let result = write_lock(&SERVER, |mut server| {
-            server.stop();
-            Ok(true)
-        });
 
-        if result.is_err() {
-            println!(
-                "{} - {} - {}",
-                "<esm_bt>".blue().bold(),
-                "error".red().bold(),
-                result.err().unwrap()
-            );
-            exit(1);
-        }
 
         if let Err(e) = stop_receiver() {
             println!(

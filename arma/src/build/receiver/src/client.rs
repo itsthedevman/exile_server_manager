@@ -85,10 +85,10 @@ impl Client {
                     }
                 };
 
-                match IncomingCommand::execute(&client, &message.command) {
+                match IncomingCommand::execute(&client, &mut message.command) {
                     Ok(command) => {
+                        println!("{:#?} - {:#?}", command, message.command);
                         message.command = command;
-                        println!("Success - {:#?}", message.command);
                         client.send(message);
                     }
                     Err(e) => {

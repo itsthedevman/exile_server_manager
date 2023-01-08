@@ -1,7 +1,7 @@
 use crate::*;
 
 use colored::*;
-use common::{write_lock, BuildError, BuildResult, Command};
+use common::{BuildError, BuildResult, Command};
 use compiler::Compiler;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -57,21 +57,6 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
 }
 
 pub fn update_arma(builder: &mut Builder) -> BuildResult {
-    let script = "[ -f /arma3server/arma3server ] && echo \"true\"";
-
-    let files_exist = System::new()
-        .command("bash")
-        .arguments(&[
-            "-c",
-            &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
-        ])
-        .execute()?
-        == "true";
-
-    if files_exist && !builder.args.update_arma() {
-        return Ok(());
-    }
-
     let script = format!(
         "cd /steamcmd && ./steamcmd.sh +force_install_dir {ARMA_PATH} +login {steam_username} {steam_password} {update} +quit",
         update = "+app_update 233780 validate",
@@ -90,6 +75,16 @@ pub fn update_arma(builder: &mut Builder) -> BuildResult {
         .execute()?;
 
     Ok(())
+}
+
+pub fn prepare_receiver(builder: &mut Builder) -> BuildResult {
+    stop_receiver()?;
+
+    if builder.rebuild_receiver() {
+        build_receiver(builder)?;
+    }
+
+    start_receiver()
 }
 
 pub fn build_receiver(builder: &mut Builder) -> BuildResult {
@@ -158,37 +153,30 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
         .print()
         .execute()?;
 
-    // Run the start script
-    System::new()
-        .command("docker")
-        .arguments(&[
-            "exec",
-            "-td",
-            ARMA_CONTAINER,
-            "/bin/bash",
-            "/arma3server/start_receiver.sh",
-        ])
-        .add_error_detection("no such")
-        .print_as("starting receiver")
-        .print()
-        .execute()?;
-
     Ok(())
 }
 
 pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
+    println!();
+    println!("1");
     kill_arma(builder)?;
+    println!("2");
     detect_first_build(builder)?;
+    println!("3");
     prepare_directories(builder)?;
+    println!("4");
     transfer_mikeros_tools(builder)?;
+    println!("5");
     create_server_config(builder)?;
+    println!("6");
     create_esm_key_file(builder)?;
+    println!("7");
 
     Ok(())
 }
 
 pub fn kill_arma(builder: &mut Builder) -> BuildResult {
-    builder.send_to_receiver(Command::KillArma)?;
+    builder.build_server.send(Command::KillArma)?;
     Ok(())
 }
 
@@ -225,24 +213,25 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
         BuildOS::Linux => {
             files_to_check.push(format!("{extension_file_name}.so"));
 
-            files_to_check
+            let checks = files_to_check
                 .iter()
                 .map(|path| {
                     format!(
-                        r#"[[ ! -f "{server_path}\@esm\{path}" ]] && return "rebuild";"#,
+                        r#"[[ ! -f "{server_path}/@esm/{path}" ]]"#,
                         server_path = builder.remote.server_path
                     )
                 })
                 .collect::<Vec<String>>()
-                .join("\n")
+                .join(" || ");
+
+            format!("({checks}) && echo \"rebuild\"")
         }
     };
 
-    let result = builder.system_command(System::new().command(script).add_detection("rebuild"))?;
-
-    let Command::SystemResponse(result) = result else {
-            return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
-        };
+    let result = System::new()
+        .script(script)
+        .add_detection("rebuild")
+        .execute_remote(&builder.build_server)?;
 
     if result == *"rebuild" {
         // This may be a first build - build all the things!
@@ -332,18 +321,22 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         }
         BuildOS::Linux => format!(
             r#"
-                rm "{server_path}/{profile_name}/*.log" 2>/dev/null;
-                rm "{server_path}/{profile_name}/*.rpt" 2>/dev/null;
-                rm "{server_path}/{profile_name}/*.bidmp" 2>/dev/null;
-                rm "{server_path}/{profile_name}/*.mdmp" 2>/dev/null;
+                rm -f "{server_path}/{profile_name}/*.log";
+                rm -f "{server_path}/{profile_name}/*.rpt";
+                rm -f "{server_path}/{profile_name}/*.bidmp";
+                rm -f "{server_path}/{profile_name}/*.mdmp";
 
-                rm -r "{server_path}/@esm" 2>/dev/null;
+                rm -fr "{server_path}/@esm";
             "#,
             server_path = builder.remote.server_path,
         ),
     };
 
-    builder.system_command(System::new().command(script).add_error_detection("error"))?;
+    System::new()
+        .script(script)
+        .add_error_detection("error")
+        .print()
+        .execute_remote(&builder.build_server)?;
 
     Ok(())
 }
@@ -399,6 +392,7 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
     let mut last_key_received = String::new();
 
     // Moved to a thread so this can happen over and over again for testing purposes
+    let build_server = builder.build_server.clone();
     thread::spawn(move || loop {
         let key: Option<String> = redis::cmd("GET")
             .arg(REDIS_SERVER_KEY)
@@ -415,11 +409,16 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
             continue;
         }
 
-        write_lock(&crate::SERVER, |mut server| {
-            server.send(Command::Key(key.to_owned()))?;
-            Ok(true)
-        })
-        .unwrap();
+        if let Err(e) = build_server.send(Command::Key(key.to_owned())) {
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "failed".red().bold(),
+                e
+            );
+
+            continue;
+        };
 
         last_key_received = key.to_owned();
     });
@@ -438,19 +437,14 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
             }}
         "#;
 
-    let result = builder.system_command(
-        System::new()
-            .command(script)
-            .add_detection("p_drive_mounted"),
-    )?;
+    let result = System::new()
+        .script(script)
+        .add_detection("p_drive_mounted")
+        .execute_remote(&builder.build_server)?;
 
     // Continue building
-    if let Command::SystemResponse(r) = result {
-        if r == *"p_drive_mounted" {
-            return Ok(());
-        }
-    } else {
-        panic!("Invalid response for System command. Must be Command::SystemResponse");
+    if result == "p_drive_mounted" {
+        return Ok(());
     }
 
     // WorkDrive.exe will keep a window open that requires user input
@@ -470,11 +464,11 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
         build_path = builder.remote_build_path_str(),
     );
 
-    builder.system_command(
-        System::new()
-            .command(script)
-            .add_error_detection("p_drive_not_mounted"),
-    )?;
+    System::new()
+        .command(script)
+        .add_error_detection("p_drive_not_mounted")
+        .execute_remote(&builder.build_server)?;
+
     Ok(())
 }
 
@@ -511,13 +505,12 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
                     build_path = builder.remote_build_path_str(),
                 );
 
-                builder.system_command(
-                    System::new()
-                        .command(script)
-                        .add_error_detection("ErrorId")
-                        .add_error_detection("Failed to build")
-                        .add_error_detection("missing file"),
-                )?;
+                System::new()
+                    .script(script)
+                    .add_error_detection("ErrorId")
+                    .add_error_detection("Failed to build")
+                    .add_error_detection("missing file")
+                    .execute_remote(&builder.build_server)?;
             }
         }
     }
@@ -598,12 +591,11 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
                 }
             );
 
-            builder.system_command(
-                System::new()
-                    .command(script)
-                    .add_error_detection(r"error: .+")
-                    .add_detection(r"warning"),
-            )?;
+            System::new()
+                .script(script)
+                .add_error_detection(r"error: .+")
+                .add_detection(r"warning")
+                .execute_remote(&builder.build_server)?;
         }
         BuildOS::Linux => todo!(),
     }
@@ -611,9 +603,9 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn seed_database(build: &mut Builder) -> BuildResult {
-    let sql = Database::generate_sql(&build.config);
-    match build.send_to_receiver(Command::Database(sql)) {
+pub fn seed_database(builder: &mut Builder) -> BuildResult {
+    let sql = Database::generate_sql(&builder.config);
+    match builder.build_server.send(Command::Database(sql)) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
@@ -637,7 +629,9 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 server_args = builder.remote.server_args
             );
 
-            builder.system_command(System::new().command(script))?;
+            System::new()
+                .script(script)
+                .execute_remote(&builder.build_server)?;
         }
         BuildOS::Linux => todo!(),
     }
@@ -653,7 +647,7 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
 //     Ok(())
 // }
 
-pub fn stream_logs(build: &mut Builder) -> BuildResult {
+pub fn stream_logs(builder: &mut Builder) -> BuildResult {
     struct Highlight {
         pub regex: Regex,
         pub color: [u8; 3],
@@ -684,10 +678,10 @@ pub fn stream_logs(build: &mut Builder) -> BuildResult {
         ];
     }
 
-    build.send_to_receiver(Command::LogStreamInit)?;
+    builder.build_server.send(Command::LogStreamInit)?;
 
     loop {
-        let result = build.send_to_receiver(Command::LogStreamRequest)?;
+        let result = builder.build_server.send(Command::LogStreamRequest)?;
         let lines = match result {
             Command::LogStream(l) => l,
             c => {

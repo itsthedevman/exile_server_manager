@@ -50,7 +50,9 @@ impl Directory {
                     "#
                 );
 
-                builder.system_command(System::new().command(script))?;
+                System::new()
+                    .script(script)
+                    .execute_remote(&builder.build_server)?;
             }
         }
         Ok(())
