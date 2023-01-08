@@ -6,7 +6,6 @@ services:
     container_name: ESM_ARMA_SERVER
     network_mode: host
     volumes:
-      - './server/@esm:/arma3server/@esm'
       - './server/@exileserver:/arma3server/@exileserver'
       - './server/mpmissions:/arma3server/mpmissions'
       - 'server-data:/arma3server'
