@@ -15,7 +15,34 @@ pub mod error;
 pub use error::*;
 
 lazy_static! {
-    static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
+    pub static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
+    pub static ref HIGHLIGHTS: Vec<Highlight> = vec![
+        Highlight {
+            regex: Regex::new(r"ERROR\b").unwrap(),
+            color: [153, 0, 51],
+        },
+        Highlight {
+            regex: Regex::new(r"WARN").unwrap(),
+            color: [153, 102, 0],
+        },
+        Highlight {
+            regex: Regex::new(r"INFO").unwrap(),
+            color: [102, 204, 255],
+        },
+        Highlight {
+            regex: Regex::new(r"DEBUG").unwrap(),
+            color: [80, 82, 86],
+        },
+        Highlight {
+            regex: Regex::new(r"TRACE").unwrap(),
+            color: [255, 153, 102],
+        },
+    ];
+}
+
+pub struct Highlight {
+    pub regex: Regex,
+    pub color: [u8; 3],
 }
 
 pub trait NetworkSend {
@@ -56,6 +83,7 @@ pub enum Command {
     LogStreamRequest,
     LogStream(Vec<LogLine>),
     Key(String),
+    Print(String),
 }
 
 impl Default for Command {
@@ -307,7 +335,12 @@ impl System {
                 }
             }
 
-            return Err(format!("Execution failed with exit code {:?}", status.code()).into());
+            return Err(format!(
+                "Execution for command failed with exit code {:?}\n{}",
+                status.code(),
+                self.command_string().red()
+            )
+            .into());
         }
 
         let stdout_output = stdout_output.join("\n");
@@ -349,7 +382,7 @@ impl System {
         }
     }
 
-    pub fn execute_remote(&mut self, server: &dyn NetworkSend) -> Result<String, BuildError> {
+    pub fn execute_remote(&mut self, endpoint: &dyn NetworkSend) -> Result<String, BuildError> {
         // Using System to execute a script for windows ON windows is not supported by this code
         // It assumes this is being build on linux and then sent to windows
         if self.target_os == "windows" {
@@ -374,7 +407,7 @@ impl System {
             }
         }
 
-        let result = server.send(Command::System(self.to_owned()))?;
+        let result = endpoint.send(Command::System(self.to_owned()))?;
 
         let Command::SystemResponse(result) = result else {
             return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
@@ -382,6 +415,16 @@ impl System {
 
         Ok(result)
     }
+
+    // fn remote_print(&self, content: &str, endpoint: &dyn NetworkSend) {
+    //     if let Err(e) = endpoint.send(Command::Print(content.to_string())) {
+    //         println!(
+    //             "{} - {} - {e}",
+    //             "<esm_bt>".blue().bold(),
+    //             "failed to remote print".red()
+    //         );
+    //     }
+    // }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

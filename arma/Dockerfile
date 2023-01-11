@@ -14,10 +14,14 @@ RUN apt-get update \
         libcurl4 \
         libssl-dev \
         openssl \
+        curl \
         wget \
         ca-certificates \
         vim \
         procps \
+        unzip \
+        build-essential \
+        pkg-config \
         # Mikeros
         liblzo2-2 \
         libvorbis0a \
@@ -32,6 +36,12 @@ RUN apt-get update \
     && apt-get clean autoclean \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+# Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
 
 # SteamCMD
 RUN mkdir -p /steamcmd \

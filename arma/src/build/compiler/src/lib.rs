@@ -59,9 +59,7 @@ impl Compiler {
 
         self.load_files()?;
         self.apply_replacements()?;
-        self.write_to_destination()?;
-
-        Ok(())
+        self.write_to_destination()
     }
 
     pub fn replace<'a, F: 'static>(&'a mut self, regex_str: &'a str, callback: F) -> &'a mut Self
@@ -110,15 +108,15 @@ impl Compiler {
 
     fn apply_replacements(&mut self) -> CompilerResult {
         for file in self.files.iter_mut() {
-            for replacement in self.replacements.iter() {
-                let data = Data {
-                    target: self.target.to_owned(),
-                    file_name: file.file_name.to_owned(),
-                    file_path: file.relative_path.to_owned(),
-                    file_extension: file.extension.to_owned(),
-                };
+            let data = Data {
+                target: self.target.to_owned(),
+                file_name: file.file_name.to_owned(),
+                file_path: file.relative_path.to_owned(),
+                file_extension: file.extension.to_owned(),
+            };
 
-                file.replace(replacement, &data)?
+            for replacement in self.replacements.iter() {
+                file.replace(replacement, &data)?;
             }
         }
 

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, thread, time::Duration};
 
 pub fn start_container(_builder: &mut Builder) -> BuildResult {
-    if container_status()?.is_empty() {
+    if container_status()? != "running" {
         System::new()
             .command("docker")
             .arguments(&["compose", "up", "-d"])
@@ -23,12 +23,13 @@ pub fn container_status() -> Result<String, BuildError> {
     Ok(System::new()
         .command("docker")
         .arguments(&[
-            "ps",
-            &format!("--filter=name={ARMA_CONTAINER}"),
-            "--format=\"{{.State}}\"",
+            "container",
+            "inspect",
+            "-f",
+            "\"{{.State.Status}}\"",
+            ARMA_CONTAINER,
         ])
         .add_detection("running")
-        .add_error_detection(r"unknown|error")
         .execute()?
         .trim_end()
         .to_string())
@@ -157,22 +158,12 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
-    println!();
-    println!("1");
     kill_arma(builder)?;
-    println!("2");
     detect_first_build(builder)?;
-    println!("3");
     prepare_directories(builder)?;
-    println!("4");
     transfer_mikeros_tools(builder)?;
-    println!("5");
     create_server_config(builder)?;
-    println!("6");
-    create_esm_key_file(builder)?;
-    println!("7");
-
-    Ok(())
+    create_esm_key_file(builder)
 }
 
 pub fn kill_arma(builder: &mut Builder) -> BuildResult {
@@ -325,8 +316,9 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -f "{server_path}/{profile_name}/*.rpt";
                 rm -f "{server_path}/{profile_name}/*.bidmp";
                 rm -f "{server_path}/{profile_name}/*.mdmp";
-
                 rm -fr "{server_path}/@esm";
+
+                mkdir -p "{server_path}/@esm/addons";
             "#,
             server_path = builder.remote.server_path,
         ),
@@ -413,7 +405,7 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
             println!(
                 "{} - {} - {}",
                 "<esm_bt>".blue().bold(),
-                "failed".red().bold(),
+                "failed to set key".red().bold(),
                 e
             );
 
@@ -475,44 +467,57 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
 pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
 
-    match builder.args.build_os() {
-        BuildOS::Linux => todo!(),
-        BuildOS::Windows => {
-            let mut extra_addons = vec![];
-            if matches!(builder.args.build_env(), BuildEnv::Test) {
-                extra_addons.push("esm_test");
-            }
+    let mut extra_addons = vec![];
+    if matches!(builder.args.build_env(), BuildEnv::Test) {
+        extra_addons.push("esm_test");
+    }
 
-            for addon in ADDONS.iter().chain(extra_addons.iter()) {
-                if !builder.rebuild_addon(addon) {
-                    continue;
-                }
-
-                // The "root" is what matters here. The root needs to be P: drive
-                let script = format!(
-                    r#"
-                            if ([System.IO.Directory]::Exists("P:\{addon}")) {{
-                                Remove-Item -Path "P:\{addon}" -Recurse;
-                            }}
-
-                            Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination "P:";
-                            Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
-
-                            if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
-                                "Failed to build - {build_path}\@esm\addons\{addon}.pbo does not exist"
-                            }}
-                        "#,
-                    build_path = builder.remote_build_path_str(),
-                );
-
-                System::new()
-                    .script(script)
-                    .add_error_detection("ErrorId")
-                    .add_error_detection("Failed to build")
-                    .add_error_detection("missing file")
-                    .execute_remote(&builder.build_server)?;
-            }
+    for addon in ADDONS.iter().chain(extra_addons.iter()) {
+        if !builder.rebuild_addon(addon) {
+            continue;
         }
+
+        let script = match builder.args.build_os() {
+            BuildOS::Linux => {
+                format!(
+                    r#"
+source_dir="{build_path}/@esm/addons/{addon}";
+destination_file="{build_path}/@esm/addons/{addon}.pbo";
+{build_path}/linux/bin/makepbo -P -@={addon} "$source_dir" "$destination_file";
+
+[[ ! -f "$destination_file" ]] && return "Failed to build - $destination_file does not exist";
+
+rm -rf $source_dir;
+"#,
+                    build_path = builder.remote_build_path_str(),
+                )
+            }
+            BuildOS::Windows => {
+                // The "root" is what matters here. The root needs to be P: drive
+                format!(
+                    r#"
+if ([System.IO.Directory]::Exists("P:\{addon}")) {{
+    Remove-Item -Path "P:\{addon}" -Recurse;
+}}
+
+Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination "P:";
+Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
+
+if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
+    "Failed to build - {build_path}\@esm\addons\{addon}.pbo does not exist"
+}}
+"#,
+                    build_path = builder.remote_build_path_str(),
+                )
+            }
+        };
+
+        System::new()
+            .script(script)
+            .add_error_detection("ErrorId")
+            .add_error_detection("Failed to build")
+            .add_error_detection("missing file")
+            .execute_remote(&builder.build_server)?;
     }
 
     Ok(())
@@ -525,8 +530,11 @@ pub fn compile_mod(builder: &mut Builder) -> BuildResult {
     }
 
     // Set up all the paths needed
-    let mod_path = builder.local_git_path.join("src").join("@esm");
-    let source_path = mod_path.join("addons");
+    let source_path = builder
+        .local_git_path
+        .join("src")
+        .join("@esm")
+        .join("addons");
 
     let mod_build_path = builder.local_build_path.join("@esm");
     let addon_destination_path = mod_build_path.join("addons");
@@ -574,9 +582,9 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         builder.remote_build_path().to_owned(),
     )?;
 
-    match builder.args.build_os() {
+    let script = match builder.args.build_os() {
         BuildOS::Windows => {
-            let script = format!(
+            format!(
                 r#"
                         cd '{build_path}\arma';
                         rustup run stable-{build_target} cargo build --target {build_target} --release;
@@ -589,16 +597,31 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
                     BuildArch::X32 => "esm",
                     BuildArch::X64 => "esm_x64",
                 }
-            );
-
-            System::new()
-                .script(script)
-                .add_error_detection(r"error: .+")
-                .add_detection(r"warning")
-                .execute_remote(&builder.build_server)?;
+            )
         }
-        BuildOS::Linux => todo!(),
-    }
+        BuildOS::Linux => {
+            format!(
+                r#"
+cd {build_path}/arma;
+rustup run stable-{build_target} cargo build --target {build_target} --release;
+
+cp "{build_path}/arma/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
+"#,
+                build_path = builder.remote_build_path_str(),
+                build_target = builder.extension_build_target,
+                file_name = match builder.args.build_arch() {
+                    BuildArch::X32 => "esm",
+                    BuildArch::X64 => "esm_x64",
+                }
+            )
+        }
+    };
+
+    System::new()
+        .script(script)
+        .add_error_detection(r"error: .+")
+        .add_detection(r"warning")
+        .execute_remote(&builder.build_server)?;
 
     Ok(())
 }
@@ -648,36 +671,6 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
 // }
 
 pub fn stream_logs(builder: &mut Builder) -> BuildResult {
-    struct Highlight {
-        pub regex: Regex,
-        pub color: [u8; 3],
-    }
-
-    lazy_static! {
-        static ref HIGHLIGHTS: Vec<Highlight> = vec![
-            Highlight {
-                regex: Regex::new(r"ERROR\b").unwrap(),
-                color: [153, 0, 51]
-            },
-            Highlight {
-                regex: Regex::new(r"WARN").unwrap(),
-                color: [153, 102, 0]
-            },
-            Highlight {
-                regex: Regex::new(r"INFO").unwrap(),
-                color: [102, 204, 255]
-            },
-            Highlight {
-                regex: Regex::new(r"DEBUG").unwrap(),
-                color: [80, 82, 86]
-            },
-            Highlight {
-                regex: Regex::new(r"TRACE").unwrap(),
-                color: [255, 153, 102]
-            }
-        ];
-    }
-
     builder.build_server.send(Command::LogStreamInit)?;
 
     loop {

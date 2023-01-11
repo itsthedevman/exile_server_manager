@@ -39,22 +39,24 @@ impl Directory {
         )?;
 
         let destination_path = builder.remote_build_path_str();
-        match builder.args.build_os() {
-            crate::BuildOS::Linux => todo!(),
+        let script = match builder.args.build_os() {
+            crate::BuildOS::Linux => {
+                format!("unzip -o {destination_path}/{file_name} -d {destination_path} && rm -f {destination_path}/{file_name}")
+            }
             crate::BuildOS::Windows => {
-                let script = format!(
+                format!(
                     r#"
                         Import-Module Microsoft.PowerShell.Archive;
                         Expand-Archive -Force -Path "{destination_path}\{file_name}" -DestinationPath {destination_path};
                         Remove-Item -Path "{destination_path}\{file_name}";
                     "#
-                );
-
-                System::new()
-                    .script(script)
-                    .execute_remote(&builder.build_server)?;
+                )
             }
-        }
+        };
+
+        System::new()
+            .script(script)
+            .execute_remote(&builder.build_server)?;
         Ok(())
     }
 

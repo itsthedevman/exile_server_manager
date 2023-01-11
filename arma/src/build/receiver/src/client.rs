@@ -5,6 +5,7 @@ use crate::log_reader::LogReader;
 use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
 use crate::{read_lock, BuildError};
 use colored::Colorize;
+use common::NetworkSend;
 use message_io::network::{Endpoint, NetEvent, Transport};
 use message_io::node::{self, NodeHandler};
 use parking_lot::RwLock;
@@ -67,8 +68,7 @@ impl Client {
             NetEvent::Connected(_endpoint, established) => {
                 if established {
                     println!("{} - Connected to {}", "success".green(), server_addr);
-                    let message = NetworkCommand::new(Command::Hello);
-                    client.send(message);
+                    client.send(Command::Hello).unwrap();
                 } else {
                     println!("{} - Failed to connect to {}", "error".red(), server_addr);
                     client.on_disconnect();
@@ -76,25 +76,24 @@ impl Client {
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
-                let mut message: NetworkCommand = match serde_json::from_slice(input_data) {
+                let mut network_command: NetworkCommand = match serde_json::from_slice(input_data) {
                     Ok(c) => c,
                     Err(e) => {
-                        let message = NetworkCommand::new(Command::Error(e.to_string()));
-                        client.send(message);
+                        client.send(Command::Error(e.to_string())).unwrap();
                         return;
                     }
                 };
 
-                match IncomingCommand::execute(&client, &mut message.command) {
+                match IncomingCommand::execute(&client, &mut network_command.command) {
                     Ok(command) => {
-                        println!("{:#?} - {:#?}", command, message.command);
-                        message.command = command;
-                        client.send(message);
+                        println!("{:#?} - {:#?}", command, network_command.command);
+                        network_command.command = command;
+                        client.send_network(network_command);
                     }
                     Err(e) => {
-                        println!("Failed - {e} - {:#?}", message.command);
-                        message.command = Command::Error(e.to_string());
-                        client.send(message);
+                        println!("Failed - {e} - {:#?}", network_command.command);
+                        network_command.command = Command::Error(e.to_string());
+                        client.send_network(network_command);
                     }
                 }
             }
@@ -104,7 +103,7 @@ impl Client {
         });
     }
 
-    fn send(&self, command: NetworkCommand) {
+    pub fn send_network(&self, command: NetworkCommand) {
         let data = serde_json::to_vec(&command).unwrap();
 
         self.handler
@@ -128,5 +127,12 @@ impl Client {
         .unwrap();
 
         self.handler.as_ref().unwrap().stop();
+    }
+}
+
+impl NetworkSend for Client {
+    fn send(&self, command: Command) -> Result<Command, BuildError> {
+        self.send_network(NetworkCommand::new(command));
+        Ok(Command::Success)
     }
 }

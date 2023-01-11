@@ -197,8 +197,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         CTRL_C_RECEIVED.store(true, Ordering::SeqCst);
 
-
-
         if let Err(e) = stop_receiver() {
             println!(
                 "{} - {} - {}",
