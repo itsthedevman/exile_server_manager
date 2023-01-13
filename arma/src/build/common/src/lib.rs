@@ -323,13 +323,13 @@ impl System {
                 print_as.red().bold()
             );
 
-            if !stdout_output.is_empty() {
+            if !stdout_output.is_empty() && self.print_stdout {
                 for line in stdout_output {
                     println!("{line_prefix} {}", line);
                 }
             }
 
-            if !stderr_output.is_empty() {
+            if !stderr_output.is_empty() && self.print_stderr {
                 for line in stderr_output {
                     println!("{line_prefix} {}", line);
                 }
