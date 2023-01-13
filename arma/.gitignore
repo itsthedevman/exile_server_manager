@@ -36,3 +36,10 @@ build_config.yml
 
 # Don't ignore - Needed for code to compile without build script
 # .build-sha
+
+# Because it's a big mod
+server/@exile/addons/*.pbo
+server/@exile/addons/*.exile.bisign
+server/@exile/addons/*.txt
+server/@exile/mod.paa
+server/@exileserver/logs

@@ -8,6 +8,10 @@ STOPSIGNAL SIGINT
 EXPOSE 2302/udp 2303/udp 2304/udp 2305/udp 2306/udp
 
 RUN apt-get update \
+    && apt-get install software-properties-common -yqq \
+    && add-apt-repository multiverse \
+    && dpkg --add-architecture i386 \
+    && apt-get update \
     && apt-get install -yqq --no-install-recommends --no-install-suggests \
         lib32stdc++6 \
         lib32gcc-s1 \
