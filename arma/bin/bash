@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker compose exec arma_server /bin/bash
