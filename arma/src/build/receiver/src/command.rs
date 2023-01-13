@@ -112,7 +112,7 @@ impl IncomingCommand {
                 "arma3",
                 "arma3battleye"
             ];
-            static ref LINUX_EXES: &'static [&'static str] = &["arma3server$", "arma3server_x64$"];
+            static ref LINUX_EXES: &'static [&'static str] = &["/arma3server/arma3server", "/arma3server/arma3server_x64"];
         };
 
         if cfg!(windows) {
