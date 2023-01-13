@@ -70,8 +70,8 @@ impl Builder {
 
         let server_executable: String = match os {
             BuildOS::Linux => match arch {
-                BuildArch::X32 => "arma3server.so".into(),
-                BuildArch::X64 => "arma3server_x64.so".into(),
+                BuildArch::X32 => "arma3server".into(),
+                BuildArch::X64 => "arma3server_x64".into(),
             },
             BuildOS::Windows => match arch {
                 BuildArch::X32 => "arma3server.exe".into(),
@@ -112,6 +112,7 @@ impl Builder {
         if matches!(self.args.build_os(), BuildOS::Linux) {
             self.print_status("Preparing container", build_steps::start_container)?;
             self.print_status("Waiting for container", build_steps::wait_for_container)?;
+            self.print_status("Checking for @exile", build_steps::check_for_files)?;
             self.print_status("Preparing receiver", build_steps::prepare_receiver)?;
 
             if self.update_arma() {
