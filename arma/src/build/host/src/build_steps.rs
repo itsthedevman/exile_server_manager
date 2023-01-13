@@ -1,7 +1,7 @@
 use crate::*;
 
 use colored::*;
-use common::{BuildError, BuildResult, Command};
+use common::{BuildResult, Command};
 use compiler::Compiler;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, thread, time::Duration};
 
 pub fn start_container(_builder: &mut Builder) -> BuildResult {
-    if container_status()? != "running" {
+    if !is_container_running() {
         System::new()
             .command("docker")
             .arguments(&["compose", "up", "-d"])
@@ -19,8 +19,8 @@ pub fn start_container(_builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn container_status() -> Result<String, BuildError> {
-    Ok(System::new()
+pub fn is_container_running() -> bool {
+    let Ok(result) = System::new()
         .command("docker")
         .arguments(&[
             "container",
@@ -29,10 +29,11 @@ pub fn container_status() -> Result<String, BuildError> {
             "\"{{.State.Status}}\"",
             ARMA_CONTAINER,
         ])
-        .add_detection("running")
-        .execute()?
-        .trim_end()
-        .to_string())
+        .add_detection("running").execute() else {
+        return false;
+    };
+
+    result.trim_end() == "running"
 }
 
 pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
@@ -40,7 +41,7 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
     let mut counter = 0;
 
     loop {
-        if container_status()? == "running" || counter >= TIMEOUT {
+        if is_container_running() || counter >= TIMEOUT {
             break;
         }
 
@@ -49,7 +50,7 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
     }
 
     if counter >= TIMEOUT {
-        return Err("Timed out - The docker image never booted"
+        return Err("Failed to connect to the Docker container"
             .to_string()
             .into());
     }
@@ -57,10 +58,38 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
+pub fn check_for_files(builder: &mut Builder) -> BuildResult {
+    let exile_path = builder
+        .local_git_path
+        .join("server")
+        .join("@exile")
+        .join("addons");
+
+    if exile_path.join("exile_client.pbo").exists() {
+        return Ok(());
+    }
+
+    Err(format!(
+        "Failed to find require files in server/@exile.\nPlease download the client files for Exile Mod and copy the contents from its addons to \"{}\"",
+        exile_path.display()
+    )
+    .into())
+}
+
 pub fn update_arma(builder: &mut Builder) -> BuildResult {
+    // ExileMod on Steam workshop
+    // +workshop_download_item 233780 1487484880 \
+    // Only works if the Steam account owns the mod
+    // Since steam guard has to be disabled for this to work, I opted to not require owning
+    // Arma 3 on this account
     let script = format!(
-        "cd /steamcmd && ./steamcmd.sh +force_install_dir {ARMA_PATH} +login {steam_username} {steam_password} {update} +quit",
-        update = "+app_update 233780 validate",
+        r#"
+cd /steamcmd;
+./steamcmd.sh +force_install_dir {ARMA_PATH} \
+    +login {steam_username} {steam_password} \
+    +app_update 233780 validate \
+    +quit;
+"#,
         steam_username = builder.config.server.steam_user,
         steam_password = builder.config.server.steam_password
     );
@@ -71,6 +100,7 @@ pub fn update_arma(builder: &mut Builder) -> BuildResult {
             "-c",
             &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
         ])
+        .add_error_detection("error!")
         .print_as("steamcmd")
         .print_stdout()
         .execute()?;
@@ -481,13 +511,15 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
             BuildOS::Linux => {
                 format!(
                     r#"
-source_dir="{build_path}/@esm/addons/{addon}";
+source_dir="/{addon}";
 destination_file="{build_path}/@esm/addons/{addon}.pbo";
 {build_path}/linux/bin/makepbo -P -@={addon} "$source_dir" "$destination_file";
 
-[[ ! -f "$destination_file" ]] && return "Failed to build - $destination_file does not exist";
-
-rm -rf $source_dir;
+if [[ -f "$destination_file" ]]; then
+    rm -rf $source_dir;
+else
+    echo "Failed to build - $destination_file does not exist";
+fi
 "#,
                     build_path = builder.remote_build_path_str(),
                 )
@@ -635,29 +667,42 @@ pub fn seed_database(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
-    match builder.args.build_os() {
+    let script = match builder.args.build_os() {
         BuildOS::Windows => {
-            let script = format!(
+            format!(
                 r#"
-                        Remove-Item -Path "{server_path}\@esm" -Recurse;
-                        Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
+Remove-Item -Path "{server_path}\@esm" -Recurse;
+Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
 
-                        Start-Process "{server_path}\{server_executable}" `
-                            -ArgumentList "{server_args}" `
-                            -WorkingDirectory "{server_path}";
-                    "#,
+Start-Process "{server_path}\{server_executable}" `
+    -ArgumentList "{server_args}" `
+    -WorkingDirectory "{server_path}";
+"#,
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,
                 server_args = builder.remote.server_args
-            );
-
-            System::new()
-                .script(script)
-                .execute_remote(&builder.build_server)?;
+            )
         }
-        BuildOS::Linux => todo!(),
-    }
+        BuildOS::Linux => {
+            format!(
+                r#"
+rm -rf {server_path}/@esm;
+cp -rf {build_path}/@esm {server_path}/@esm;
+
+{server_path}/{server_executable} {server_args} &>/arma3server/server_profile/server.rpt &
+                "#,
+                build_path = builder.remote_build_path_str(),
+                server_path = builder.remote.server_path,
+                server_executable = builder.server_executable,
+                server_args = builder.remote.server_args
+            )
+        }
+    };
+
+    System::new()
+        .script(script)
+        .execute_remote(&builder.build_server)?;
 
     Ok(())
 }
@@ -671,6 +716,7 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
 // }
 
 pub fn stream_logs(builder: &mut Builder) -> BuildResult {
+    println!();
     builder.build_server.send(Command::LogStreamInit)?;
 
     loop {
