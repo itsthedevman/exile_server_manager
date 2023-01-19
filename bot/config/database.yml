@@ -7,15 +7,15 @@ default: &default
   password: password12345
 
 development:
-  <<: *default
+  !!merge <<: *default
   database: esm_development
 
 test: &test
-  <<: *default
+  !!merge <<: *default
   database: esm_test
 
 production:
-  <<: *default
+  !!merge <<: *default
   host: <%= ENV["POSTGRES_HOST"] %>
   port: <%= ENV["POSTGRES_PORT"] %>
   database: <%= ENV["POSTGRES_DATABASE"] %>
