@@ -42,9 +42,9 @@ group :development do
   gem "rerun"
   gem "rspec"
   gem "rspec-wait"
-  gem "rubocop"
   gem "ruby-prof"
   gem "simplecov"
   gem "solargraph"
+  gem "standard"
   gem "yard"
 end
