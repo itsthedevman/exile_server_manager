@@ -3,7 +3,10 @@
 module ESM
   class API < Sinatra::Base
     def self.run!
-      Thread.new { super; quit! }
+      Thread.new {
+        super
+        quit!
+      }
     end
 
     # Sinatra hooks the Ctrl-C event.
@@ -116,6 +119,44 @@ module ESM
       end
 
       ESM.bot.deliver(message, to: channel)
+    end
+
+    get("/community/:id/channels") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.find_by_guild_id(params[:id])
+      return halt(404) if community.nil?
+
+      server = community.discord_server
+      bot_member = ESM.bot.profile.on(server)
+      return halt(404) if bot_member.nil?
+
+      # Get the channels the bot has access to
+      channels = server.channels.select do |channel|
+        bot_member.permission?(:send_messages, channel)
+      end
+
+      # Now, we're going to make the order matter
+      channels.sort_by!(&:position)
+
+      # Load all of the category channels into a hash where the key is their ID and the value is an empty array
+      grouped_channels = channels.select(&:category?).map do |category_channel|
+        [
+          category_channel.to_h,
+          category_channel.text_channels.sort_by(&:position).map(&:to_h)
+        ]
+      end
+
+      # Organize the channels under their categories
+      not_categorized_channels = channels.select { |channel| channel.text? && channel.category.nil? }
+        .sort_by(&:position)
+        .map(&:to_h)
+
+      # Add a no category array to the front
+      grouped_channels.unshift([{name: community.community_name}, not_categorized_channels])
+
+      # Return the results
+      grouped_channels.to_json
     end
   end
 end

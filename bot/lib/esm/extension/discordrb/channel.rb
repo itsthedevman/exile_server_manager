@@ -9,5 +9,15 @@ module Discordrb
       3 => :group,
       4 => :category
     }.freeze
+
+    def to_h
+      {
+        id: id,
+        name: name,
+        position: position,
+        type: TYPE_NAMES[type],
+        category: category&.to_h
+      }
+    end
   end
 end
