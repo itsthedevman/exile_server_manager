@@ -93,6 +93,34 @@ module ESM
       ESM.bot.update_prefix(community)
     end
 
+    #
+    # Gets a channel by its ID. The bot must have send access to this channel
+    #
+    # @param id [String] The discord channel ID
+    # @param community_id [String] Restricts the search to this community's guild
+    # @param user_id [String] Requires the channel to be readable by this user's discord member
+    get("/channel/:id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      channel = ESM.bot.channel(params[:id])
+      return halt(404) if channel.nil?
+      return halt(422) unless ESM.bot.channel_permission?(:send_messages, channel)
+
+      if params[:community_id]
+        community = ESM::Community.find_by_id(params[:community_id])
+        return halt(404) if community.nil?
+        return halt(422) unless channel.server.id.to_s == community.guild_id
+      end
+
+      if params[:user_id]
+        user = ESM::User.find_by_id(params[:user_id])
+        return halt(404) if user.nil?
+        return halt(422) unless user.channel_permission?(:read_messages, channel)
+      end
+
+      channel.to_h.to_json
+    end
+
     # Sends a message to a channel
     # params[:id] => ID of the channel to send
     # params[:message] => The message to send encoded as JSON
@@ -101,8 +129,9 @@ module ESM
 
       channel = ESM.bot.channel(params[:id])
       return halt(404) if channel.nil?
+      return halt(404) unless ESM.bot.channel_permission?(:send_messages, channel)
 
-      message = ESM::JSON.parse(params[:message])
+      message = params[:message].to_h || params[:message]
       if message.is_a?(Hash)
         message =
           ESM::Embed.build do |e|
@@ -121,19 +150,27 @@ module ESM
       ESM.bot.deliver(message, to: channel)
     end
 
+    #
+    # Gets all channels for a community
+    #
+    # @param id [String] The database ID for the community
+    # @param user_id [String] The database ID for a user to check if they have read permissions
+    #
     get("/community/:id/channels") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.find_by_guild_id(params[:id])
+      community = ESM::Community.find_by_id(params[:id])
       return halt(404) if community.nil?
 
       server = community.discord_server
       bot_member = ESM.bot.profile.on(server)
       return halt(404) if bot_member.nil?
 
-      # Get the channels the bot has access to
+      user = ESM::User.find_by_id(params[:user_id])
+
+      # Get the channels the bot (and user if applicable) has access to
       channels = server.channels.select do |channel|
-        bot_member.permission?(:send_messages, channel)
+        bot_member.permission?(:send_messages, channel) && user&.channel_permission?(:read_messages, channel)
       end
 
       # Now, we're going to make the order matter
@@ -157,6 +194,58 @@ module ESM
 
       # Return the results
       grouped_channels.to_json
+    end
+
+    #
+    # Returns true/false if
+    get("/community/:id/is_modifiable_by/:user_id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.find_by_id(params[:id])
+      return halt(404) if community.nil?
+
+      user = ESM::User.find_by_id(params[:user_id])
+      return halt(404) if user.nil?
+
+      community.modifiable_by?(user.discord_user.on(community.discord_server)).to_s
+    end
+
+    #
+    # Returns an array of database IDs for the Community this user is part of
+    #
+    # @param id [String] The user's database ID
+    # @param player_mode_enabled [true/false] True: Filters the communities to only include player mode communities
+    #                                         False: Filters the communities based on if the user is an admin or has access to modify
+    #
+    get("/user/:id/communities") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      user = ESM::User.find_by_id(params[:id])
+      return halt(404) if user.nil?
+
+      servers = user.discord_servers.map { |s| [s.id.to_s, s] }.to_h
+      return "[]" if servers.empty?
+
+      community_ids =
+        if params[:player_mode_enabled] == "true"
+          ESM::Community.where(guild_id: servers.keys, player_mode_enabled: true).pluck(:id)
+        else
+          discord_user = user.discord_user
+
+          ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name)
+            .where(guild_id: servers.keys)
+            .select do |community|
+              server = servers[community.guild_id]
+              next if server.nil?
+
+              # Keeps the community metadata up to date
+              community.update(community_name: server.name) if community.community_name != server.name
+              community.modifiable_by?(discord_user.on(server))
+            end
+            .map(&:id)
+        end
+
+      community_ids.to_json
     end
   end
 end
