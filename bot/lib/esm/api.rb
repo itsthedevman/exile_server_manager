@@ -197,7 +197,13 @@ module ESM
     end
 
     #
-    # Returns true/false if
+    # Returns true/false if the user can modify this community
+    #
+    # @param id [String] The community's database ID
+    # @param user_id [String] The user's database ID
+    #
+    # @return [true/false]
+    #
     get("/community/:id/is_modifiable_by/:user_id") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
@@ -208,6 +214,34 @@ module ESM
       return halt(404) if user.nil?
 
       community.modifiable_by?(user.discord_user.on(community.discord_server)).to_s
+    end
+
+    #
+    # Returns the roles for the community
+    #
+    # @param id [String] The community's database ID
+    #
+    get("/community/:id/roles") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.find_by_id(params[:id])
+      return halt(404) if community.nil?
+
+      server_roles = community.discord_server.roles
+      return if server_roles.blank?
+
+      roles = server_roles.sort_by(&:position).reverse.filter_map do |role|
+        next if role.permissions.administrator || role.name == "@everyone"
+
+        {
+          id: role.id.to_s,
+          name: role.name,
+          color: role.color.hex,
+          disabled: false
+        }
+      end
+
+      roles.to_json
     end
 
     #
