@@ -80,8 +80,8 @@ module ESM
     def simple_execute(chain, event)
       return nil if chain.empty?
 
-      args = chain.split(' ')
-      execute_command(args[0].downcase.to_sym, event, args[1..-1])
+      args = chain.split(" ")
+      execute_command(args[0].downcase.to_sym, event, args[1..])
     end
 
     ###########################
@@ -89,12 +89,12 @@ module ESM
     # These all have to have unique-to-ESM names since we are inheriting
     ###########################
     def bind_events!
-      self.mention(&method(:esm_mention))
-      self.ready(&method(:esm_ready))
-      self.server_create(&method(:esm_server_create))
-      self.user_ban(&method(:esm_user_ban))
-      self.user_unban(&method(:esm_user_unban))
-      self.member_join(&method(:esm_member_join))
+      mention(&method(:esm_mention))
+      ready(&method(:esm_ready))
+      server_create(&method(:esm_server_create))
+      user_ban(&method(:esm_user_ban))
+      user_unban(&method(:esm_user_unban))
+      member_join(&method(:esm_member_join))
     end
 
     def esm_mention(_event)
@@ -111,7 +111,7 @@ module ESM
 
       # Sometimes the bot loses connection with Discord. Upon reconnect, the ready event will be triggered again.
       # Don't restart the websocket server again.
-      return if self.ready?
+      return if ready?
 
       # Wait until the bot has connected before starting the websocket.
       # This is to avoid servers connecting before the bot is ready
@@ -146,6 +146,10 @@ module ESM
     ###########################
     # Public Methods
     ###########################
+    def channel_permission?(permission, channel)
+      profile.on(channel.server)&.permission?(permission, channel) || false
+    end
+
     def stopping?
       @esm_status == :stopping
     end
@@ -186,7 +190,7 @@ module ESM
         # Send the text message
         delivery_channel.send_message(message, false, nil, nil, nil, replying_to)
       end
-    rescue StandardError => e
+    rescue => e
       ESM.logger.warn("#{self.class}##{__method__}") { "Send failed!\n#{e.message}\n#{e.backtrace[0..5].join("\n\t")}" }
       nil
     end
@@ -196,7 +200,7 @@ module ESM
       match = nil
       invalid_response = format_invalid_response(expected) if invalid_response.nil?
       channel = determine_delivery_channel(to)
-      owner = self.user(owner)
+      owner = user(owner)
 
       while match.nil? && counter < give_up_after
         deliver(message, to: channel)
@@ -253,7 +257,7 @@ module ESM
         return temp_channel if temp_channel.present?
 
         # Okay, it might be a PM channel, just go with it regardless (it returns nil)
-        self.pm_channel(channel)
+        pm_channel(channel)
       end
     end
 
