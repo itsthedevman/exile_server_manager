@@ -12,7 +12,7 @@ module Discordrb
 
     def to_h
       {
-        id: id,
+        id: id.to_s,
         name: name,
         position: position,
         type: TYPE_NAMES[type],
