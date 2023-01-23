@@ -163,14 +163,15 @@ module ESM
       return halt(404) if community.nil?
 
       server = community.discord_server
-      bot_member = ESM.bot.profile.on(server)
-      return halt(404) if bot_member.nil?
 
       user = ESM::User.find_by_id(params[:user_id])
 
       # Get the channels the bot (and user if applicable) has access to
       channels = server.channels.select do |channel|
-        bot_member.permission?(:send_messages, channel) && user&.channel_permission?(:read_messages, channel)
+        user_can_read = true
+        user_can_read = user.channel_permission?(:read_messages, channel) if user
+
+        ESM.bot.channel_permission?(:send_messages, channel) && user_can_read
       end
 
       # Now, we're going to make the order matter
@@ -242,6 +243,23 @@ module ESM
       end
 
       roles.to_json
+    end
+
+    #
+    # Returns the users for the community
+    #
+    # @param id [String] The community's database ID
+    #
+    get("/community/:id/users") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.find_by_id(params[:id])
+      return halt(404) if community.nil?
+
+      users = community.discord_server.users
+      return if users.blank?
+
+      users.map(&:to_h).to_json
     end
 
     #
