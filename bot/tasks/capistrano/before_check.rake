@@ -5,7 +5,7 @@ namespace :deploy do
 
       # Make sure the folder exists and the code has been cloned
       if !test "[ -d #{admin_repo} ]"
-        execute("cd /home/wolf && git clone esm_bot_admin:WolfkillArcadia/esm_bot_admin.git")
+        execute("cd /home/wolf && git clone esm_bot_admin:itsthedevman/esm_bot_admin.git")
       end
 
       # Pull any updates
