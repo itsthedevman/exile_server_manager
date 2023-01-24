@@ -23,6 +23,10 @@ module ESM
 
     # Every request must be authorized
     before do
+      ESM.logger.info("#{self.class}##{__method__}") {
+        "Request: '#{request.env["HTTP_AUTHORIZATION"]}' | Bot: 'Bearer #{ENV["API_AUTH_KEY"]}' | Equal: #{request.env["HTTP_AUTHORIZATION"] == "Bearer #{ENV["API_AUTH_KEY"]}"}"
+      }
+
       halt(401) if request.env["HTTP_AUTHORIZATION"] != "Bearer #{ENV["API_AUTH_KEY"]}"
     end
 
