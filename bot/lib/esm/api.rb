@@ -2,6 +2,13 @@
 
 module ESM
   class API < Sinatra::Base
+    def self.run!
+      Thread.new {
+        super
+        quit!
+      }
+    end
+
     # Sinatra hooks the Ctrl-C event.
     # This method is now in charge of killing everything. yaay /s
     def self.quit!
@@ -163,28 +170,31 @@ module ESM
       user = ESM::User.find_by_id(params[:user_id])
 
       # Get the channels the bot (and user if applicable) has access to
-      channels = server.channels.select do |channel|
+      channels = server.channels.filter_map do |channel|
+        bot_can_read = ESM.bot.channel_permission?(:send_messages, channel)
         user_can_read = true
         user_can_read = user.channel_permission?(:read_messages, channel) if user
+        next unless bot_can_read && user_can_read
 
-        ESM.bot.channel_permission?(:send_messages, channel) && user_can_read
+        channel.to_h
       end
 
       # Now, we're going to make the order matter
-      channels.sort_by!(&:position)
+      channels.sort_by! { |c| c[:position] }
 
       # Load all of the category channels into a hash where the key is their ID and the value is an empty array
-      grouped_channels = channels.select(&:category?).map do |category_channel|
-        [
-          category_channel.to_h,
-          category_channel.text_channels.sort_by(&:position).map(&:to_h)
-        ]
+      grouped_channels = channels.filter_map do |category_channel|
+        next unless category_channel[:type] == :category
+
+        children = channels.select do |channel|
+          channel[:type] == :text && channel.dig(:category, :id) == category_channel[:id]
+        end
+
+        [category_channel, children]
       end
 
       # Organize the channels under their categories
-      not_categorized_channels = channels.select { |channel| channel.text? && channel.category.nil? }
-        .sort_by(&:position)
-        .map(&:to_h)
+      not_categorized_channels = channels.select { |channel| channel[:type] == :text && channel[:category].nil? }
 
       # Add a no category array to the front
       grouped_channels.unshift([{name: community.community_name}, not_categorized_channels])
