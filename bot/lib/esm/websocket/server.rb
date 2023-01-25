@@ -37,7 +37,7 @@ module ESM
         ESM::Websocket.connections { |_server_id, connection| connection.send(:on_close) }
 
         ESM::Websocket::Request::Overseer.die
-        @server.stop
+        @server&.stop
       end
     end
   end

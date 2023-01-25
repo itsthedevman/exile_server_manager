@@ -2,13 +2,6 @@
 
 module ESM
   class API < Sinatra::Base
-    def self.run!
-      Thread.new {
-        super
-        quit!
-      }
-    end
-
     # Sinatra hooks the Ctrl-C event.
     # This method is now in charge of killing everything. yaay /s
     def self.quit!
@@ -284,27 +277,20 @@ module ESM
       user = ESM::User.find_by_id(params[:id])
       return halt(404) if user.nil?
 
-      servers = user.discord_servers.map { |s| [s.id.to_s, s] }.to_h
-      return "[]" if servers.empty?
+      communities = ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled).where(guild_id: params[:guild_ids])
+      return "[]" if communities.blank?
 
-      community_ids =
-        if params[:player_mode_enabled] == "true"
-          ESM::Community.where(guild_id: servers.keys, player_mode_enabled: true).pluck(:id)
-        else
-          discord_user = user.discord_user
+      discord_user = user.discord_user
+      community_ids = communities.filter_map do |community|
+        server = community.discord_server
+        next if server.nil?
 
-          ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name)
-            .where(guild_id: servers.keys)
-            .select do |community|
-              server = servers[community.guild_id]
-              next if server.nil?
+        # Keeps the community metadata up to date
+        community.update(community_name: server.name) if community.community_name != server.name
+        next unless community.modifiable_by?(discord_user.on(server))
 
-              # Keeps the community metadata up to date
-              community.update(community_name: server.name) if community.community_name != server.name
-              community.modifiable_by?(discord_user.on(server))
-            end
-            .map(&:id)
-        end
+        community.id
+      end
 
       ESM.logger.info("#{self.class}##{__method__}") { "END - #{community_ids.size}" }
       community_ids.to_json
