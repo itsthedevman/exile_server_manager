@@ -71,6 +71,8 @@ module ESM
 
     def discord_server
       ::ESM.bot.server(guild_id)
+    rescue
+      nil
     end
 
     def log_event(event, message)

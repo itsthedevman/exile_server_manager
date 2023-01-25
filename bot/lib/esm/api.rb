@@ -278,8 +278,7 @@ module ESM
     # Returns an array of database IDs for the Community this user is part of
     #
     # @param id [String] The user's database ID
-    # @param player_mode_enabled [true/false] True: Filters the communities to only include player mode communities
-    #                                         False: Filters the communities based on if the user is an admin or has access to modify
+    # @param guild_ids [true/false] The IDs of the guilds to check permissions
     #
     get("/user/:id/communities") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
