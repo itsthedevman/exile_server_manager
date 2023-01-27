@@ -76,17 +76,30 @@ fn os_path(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    let separator = if context.target == "windows" {
-        "\\"
-    } else {
-        "/"
-    };
+    /*
 
-    // Windows: \my_addon\path
-    // Linux: /my_addon/path
+        Windows:
+            "\mod\path"
+
+        Linux:
+            Mikeros:
+                likes:
+                    \mod\path
+                    mod\path
+                dislikes:
+
+            Arma
+                likes:
+                dislikes:
+                    \mod\path
+                    mod\path
+                    Invalid path (only relative paths supported):
+                        '/exile_server_manager/bootstrap\fn_preInit.sqf'
+
+    */
+    let separator = "\\";
     Ok(Some(format!(
-        "\"{}{}\"",
-        separator,
+        "\"{separator}{}\"",
         path_chunks.join(separator)
     )))
 }
