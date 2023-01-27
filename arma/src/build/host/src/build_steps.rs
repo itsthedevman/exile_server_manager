@@ -189,7 +189,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 
 pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
-    detect_first_build(builder)?;
+    detect_rebuild(builder)?;
     prepare_directories(builder)?;
     transfer_mikeros_tools(builder)?;
     create_server_config(builder)?;
@@ -201,19 +201,24 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
+pub fn detect_rebuild(builder: &mut Builder) -> BuildResult {
     let extension_file_name = match builder.args.build_arch() {
         BuildArch::X32 => "esm",
         BuildArch::X64 => "esm_x64",
     };
 
+    let path_separator = match builder.args.build_os() {
+        BuildOS::Linux => "/",
+        BuildOS::Windows => "\\",
+    };
+
     let mut files_to_check: Vec<String> = ADDONS
         .iter()
-        .map(|addon| format!(r"addons\{addon}.pbo"))
+        .map(|addon| format!(r"addons{path_separator}{addon}.pbo"))
         .collect();
 
     if matches!(builder.args.build_env(), BuildEnv::Test) {
-        files_to_check.push(r"addons\esm_test.pbo".to_string());
+        files_to_check.push(format!(r"addons{path_separator}esm_test.pbo"));
     }
 
     let script = match builder.args.build_os() {
@@ -234,18 +239,19 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
         BuildOS::Linux => {
             files_to_check.push(format!("{extension_file_name}.so"));
 
-            let checks = files_to_check
+            let files = files_to_check
                 .iter()
-                .map(|path| {
-                    format!(
-                        r#"[[ ! -f "{server_path}/@esm/{path}" ]]"#,
-                        server_path = builder.remote.server_path
-                    )
-                })
+                .map(|path| format!("\"{path}\""))
                 .collect::<Vec<String>>()
-                .join(" || ");
+                .join(" ");
 
-            format!("({checks}) && echo \"rebuild\"")
+            format!(
+                r#"
+files=({files});
+for file in ${{files[@]}}; do [[ ! -f "{server_path}/@esm/$file" ]] && echo "rebuild" && exit 0; done; exit 0
+"#,
+                server_path = builder.remote.server_path
+            )
         }
     };
 
@@ -254,9 +260,33 @@ pub fn detect_first_build(builder: &mut Builder) -> BuildResult {
         .add_detection("rebuild")
         .execute_remote(&builder.build_server)?;
 
-    if result == *"rebuild" {
+    // TODO: change scripts to output a different string for mod/extension rebuild
+    if result == "rebuild" {
         // This may be a first build - build all the things!
-        builder.args.force = true;
+        builder.rebuild_mod = true;
+        builder.rebuild_extension = true;
+    }
+
+    // Rebuild the mod if the compiler has changed
+    let compiler_changed = builder.file_watcher.was_modified(
+        &builder
+            .local_git_path
+            .join("src")
+            .join("build")
+            .join("host")
+            .join("src")
+            .join("compile.rs"),
+    ) || has_directory_changed(
+        &builder.file_watcher,
+        &builder
+            .local_git_path
+            .join("src")
+            .join("build")
+            .join("compiler"),
+    );
+
+    if compiler_changed {
+        builder.rebuild_mod = true;
     }
 
     Ok(())
@@ -494,6 +524,40 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
+pub fn compile_mod(builder: &mut Builder) -> BuildResult {
+    lazy_static! {
+        static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
+        static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
+    }
+
+    // Set up all the paths needed
+    let source_path = builder
+        .local_git_path
+        .join("src")
+        .join("@esm")
+        .join("addons");
+
+    let mod_build_path = builder.local_build_path.join("@esm");
+    let addon_destination_path = mod_build_path.join("addons");
+
+    let mut compiler = Compiler::new();
+    compiler
+        .source(&source_path.to_string_lossy())
+        .destination(&addon_destination_path.to_string_lossy())
+        .target(&builder.args.build_os().to_string());
+
+    crate::compile::bind_replacements(&mut compiler);
+    compiler.compile()?;
+
+    Directory::transfer(
+        builder,
+        mod_build_path,
+        builder.remote_build_path().to_owned(),
+    )?;
+
+    Ok(())
+}
+
 pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
 
@@ -511,9 +575,13 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
             BuildOS::Linux => {
                 format!(
                     r#"
-source_dir="/{addon}";
-destination_file="{build_path}/@esm/addons/{addon}.pbo";
-{build_path}/linux/bin/makepbo -P -@={addon} "$source_dir" "$destination_file";
+source_dir="{build_path}/@esm/addons/{addon}";
+destination_dir="/{addon}";
+
+cp -rf $source_dir $destination_dir;
+
+destination_file="$source_dir.pbo";
+{build_path}/linux/bin/makepbo -P "$destination_dir" "$destination_file";
 
 if [[ -f "$destination_file" ]]; then
     rm -rf $source_dir;
@@ -551,40 +619,6 @@ if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
             .add_error_detection("missing file")
             .execute_remote(&builder.build_server)?;
     }
-
-    Ok(())
-}
-
-pub fn compile_mod(builder: &mut Builder) -> BuildResult {
-    lazy_static! {
-        static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
-        static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
-    }
-
-    // Set up all the paths needed
-    let source_path = builder
-        .local_git_path
-        .join("src")
-        .join("@esm")
-        .join("addons");
-
-    let mod_build_path = builder.local_build_path.join("@esm");
-    let addon_destination_path = mod_build_path.join("addons");
-
-    let mut compiler = Compiler::new();
-    compiler
-        .source(&source_path.to_string_lossy())
-        .destination(&addon_destination_path.to_string_lossy())
-        .target(&builder.args.build_os().to_string());
-
-    crate::compile::bind_replacements(&mut compiler);
-    compiler.compile()?;
-
-    Directory::transfer(
-        builder,
-        mod_build_path,
-        builder.remote_build_path().to_owned(),
-    )?;
 
     Ok(())
 }

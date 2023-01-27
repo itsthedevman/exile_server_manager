@@ -48,6 +48,9 @@ pub struct Builder {
     pub server_executable: String,
     /// TODO
     pub build_server: Server,
+    pub rebuild_mod: bool,
+    pub rebuild_extension: bool,
+    pub rebuild_receiver: bool,
 }
 
 impl Builder {
@@ -90,6 +93,10 @@ impl Builder {
             .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
             .load()?;
 
+        let rebuild_mod = args.force_rebuild();
+        let rebuild_extension = args.force_rebuild();
+        let rebuild_receiver = args.force_rebuild();
+
         let builder = Builder {
             args,
             local_git_path,
@@ -101,6 +108,9 @@ impl Builder {
             config: crate::config::parse(config_path)?,
             server_executable,
             build_server: Server::new(),
+            rebuild_mod,
+            rebuild_extension,
+            rebuild_receiver,
         };
 
         Ok(builder)
@@ -232,8 +242,8 @@ impl Builder {
         // Just building the extension? Forced true
         // Just building just the mod? Forced false
         // No force, no only? return true only if the files have changed
-        (self.args.force_rebuild() || self.args.build_only() != "mod")
-            && (self.args.force_rebuild()
+        (self.rebuild_extension || self.args.build_only() != "mod")
+            && (self.rebuild_extension
                 || self.args.build_only() == "extension"
                 || has_directory_changed(
                     &self.file_watcher,
@@ -251,9 +261,10 @@ impl Builder {
         // Just building the mod? Forced true
         // Just building just the extension? Forced false
         // No force, no only? return true only if the files have changed
-        (self.args.force_rebuild() || self.args.build_only() != "extension")
-            && (self.args.force_rebuild()
+        (self.rebuild_mod || self.args.build_only() != "extension")
+            && (self.rebuild_mod
                 || self.args.build_only() == "mod"
+                // The mod itself
                 || has_directory_changed(
                     &self.file_watcher,
                     &self.local_git_path.join("src").join("@esm"),
@@ -266,8 +277,8 @@ impl Builder {
         // Just building the mod? Forced true
         // Just building just the extension? Forced false
         // No force, no only? return true only if the files have changed
-        (self.args.force_rebuild() || self.args.build_only() != "extension")
-            && (self.args.force_rebuild()
+        (self.rebuild_mod || self.args.build_only() != "extension")
+            && (self.rebuild_mod
                 || self.args.build_only() == "mod"
                 || has_directory_changed(
                     &self.file_watcher,
@@ -281,7 +292,7 @@ impl Builder {
     }
 
     pub fn rebuild_receiver(&self) -> bool {
-        self.args.force_rebuild()
+        self.rebuild_receiver
             || has_directory_changed(
                 &self.file_watcher,
                 &self
