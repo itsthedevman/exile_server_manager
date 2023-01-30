@@ -19,23 +19,6 @@ pub fn start_container(_builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn is_container_running() -> bool {
-    let Ok(result) = System::new()
-        .command("docker")
-        .arguments(&[
-            "container",
-            "inspect",
-            "-f",
-            "\"{{.State.Status}}\"",
-            ARMA_CONTAINER,
-        ])
-        .add_detection("running").execute() else {
-        return false;
-    };
-
-    result.trim_end() == "running"
-}
-
 pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
     const TIMEOUT: i32 = 30; // Seconds
     let mut counter = 0;
@@ -110,32 +93,42 @@ cd /steamcmd;
 
 pub fn prepare_receiver(builder: &mut Builder) -> BuildResult {
     stop_receiver()?;
-
-    if builder.rebuild_receiver() {
-        build_receiver(builder)?;
-    }
-
+    build_receiver(builder)?;
     start_receiver()
 }
 
 pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let git_path = builder.local_git_path.to_string_lossy();
+    let build_path = builder.local_git_path.join("src").join("build");
+    let docker_tmp_path = Path::new("/tmp");
+
+    let build_copy_script = |directory: &str, copy_script: &mut String| {
+        let module_changed =
+            has_directory_changed(&builder.file_watcher, &build_path.join(directory))
+                || !docker_path_exists(&docker_tmp_path.join(directory));
+
+        if module_changed {
+            copy_script.push_str(&format!(
+                "
+                    docker exec -t {ARMA_CONTAINER} /bin/bash -c 'rm -rf /tmp/{directory}/src';
+                    docker compose cp {git_path}/src/build/{directory} {ARMA_SERVICE}:/tmp;
+                "
+            ));
+        }
+    };
 
     // Copy to container
-    let copy_script = format!(
-        "
-        docker compose cp {git_path}/src/build/receiver {ARMA_SERVICE}:/tmp/receiver;
-        docker compose cp {git_path}/src/build/common {ARMA_SERVICE}:/tmp/common;
-        docker compose cp {git_path}/src/build/compiler {ARMA_SERVICE}:/tmp/compiler;
-        "
-    );
+    let mut copy_script = String::new();
+    build_copy_script("receiver", &mut copy_script);
+    build_copy_script("common", &mut copy_script);
+    build_copy_script("compiler", &mut copy_script);
 
     System::new()
-            .script(copy_script)
-            .add_error_detection("no such")
-            .print()
-            .print_as("cp (receiver)")
-            .execute()?;
+        .script(copy_script)
+        .add_error_detection("no such")
+        .print()
+        .print_as("cp (receiver)")
+        .execute()?;
 
     // Build receiver
     System::new()
@@ -146,7 +139,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("cd /tmp/receiver && cargo build --release"),
+            &format!("cargo build --release --manifest-path=/tmp/receiver/Cargo.toml"),
         ])
         .add_error_detection("no such")
         .print_as("cargo (receiver)")
@@ -157,7 +150,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let receiver_script = format!(
         r#"#!/bin/bash
 /arma3server/receiver \
---host=127.0.0.1:54321 \
+--host=host.docker.internal:54321 \
 --database-uri={} \
 --a3-server-path=/arma3server \
 --a3-server-args=\"{}\" \

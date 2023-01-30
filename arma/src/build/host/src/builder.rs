@@ -90,6 +90,8 @@ impl Builder {
             .watch(&local_git_path.join("src").join("arma"))
             .watch(&local_git_path.join("src").join("message"))
             .watch(&local_git_path.join("src").join("build").join("receiver"))
+            .watch(&local_git_path.join("src").join("build").join("common"))
+            .watch(&local_git_path.join("src").join("build").join("compiler"))
             .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
             .load()?;
 
@@ -438,4 +440,39 @@ pub fn stop_receiver() -> BuildResult {
         .execute()?;
 
     Ok(())
+}
+
+pub fn is_container_running() -> bool {
+    let Ok(result) = System::new()
+        .command("docker")
+        .arguments(&[
+            "container",
+            "inspect",
+            "-f",
+            "\"{{.State.Status}}\"",
+            ARMA_CONTAINER,
+        ])
+        .add_detection("running").execute() else {
+        return false;
+    };
+
+    result.trim_end() == "running"
+}
+
+pub fn docker_path_exists(file_path: &Path) -> bool {
+    let Ok(result) = System::new()
+        .command("docker")
+        .arguments(&[
+            "exec",
+            "-t",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "-c",
+            &format!("[[ -f {file_path}]] && echo 'exists'", file_path = file_path.display())
+        ])
+        .add_detection("exists").execute() else {
+        return false;
+    };
+
+    result.trim_end() == "exists"
 }

@@ -2,7 +2,6 @@ version: '3.8'
 services:
   arma_server:
     build: .
-    platform: linux/amd64
     container_name: ESM_ARMA_SERVER
     volumes:
       - './server/@exile:/arma3server/@exile'
@@ -18,7 +17,6 @@ services:
     image: mysql:8
     container_name: ESM_DB_MYSQL
     command: --default-authentication-plugin=mysql_native_password
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password12345
     ports:
@@ -26,7 +24,6 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
-    restart: unless-stopped
     networks:
       - dev
 
