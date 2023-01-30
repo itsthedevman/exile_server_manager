@@ -21,10 +21,9 @@ server:
   # Password cannot contain any un-escaped special characters, nor can it be more than 64 characters long
   steam_password: account_password
 
-  # The connection URI (e.g. mysql://user:password@ip_or_domain:port/database) for the same MySQL server
-  # as defined in the config file for extDB2/3
+  # The connection URI (e.g. mysql://user:password@ip_or_domain:port/database) for the same MySQL server as defined in the config file for extDB2/3
   # This is already pre-configured to work with the docker image
-  mysql_uri: mysql://root:password12345@127.0.0.1:3306/exile_esm
+  mysql_uri: mysql://root:password12345@mysql_db:3306/exile_esm
 
   # The command line arguments that are given to the Arma 3 server
   # Omit the dash (-) prefix. It is added automatically.
