@@ -42,10 +42,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && cargo install armake2  
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
+
+# Install PBO library
+RUN cargo install armake2
 
 # SteamCMD
 RUN mkdir -p /steamcmd \

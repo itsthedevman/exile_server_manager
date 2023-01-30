@@ -4,15 +4,16 @@ services:
     build: .
     platform: linux/amd64
     container_name: ESM_ARMA_SERVER
-    network_mode: host
     volumes:
       - './server/@exile:/arma3server/@exile'
       - './server/@exileserver:/arma3server/@exileserver'
       - './server/mpmissions:/arma3server/mpmissions'
       - 'server-data:/arma3server'
       - 'steam-data:/steamcmd'
+      - 'tmp-data:/tmp'
     tty: true
-    # restart: unless-stopped
+    networks:
+      - dev
   mysql_db:
     image: mysql:8
     container_name: ESM_DB_MYSQL
@@ -26,7 +27,15 @@ services:
       - mysql-data:/var/lib/mysql
       - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
     restart: unless-stopped
+    networks:
+      - dev
+
 volumes:
   mysql-data:
   server-data:
   steam-data:
+  tmp-data:
+
+networks:
+  dev:
+    driver: bridge

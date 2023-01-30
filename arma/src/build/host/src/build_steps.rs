@@ -121,29 +121,35 @@ pub fn prepare_receiver(builder: &mut Builder) -> BuildResult {
 pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let git_path = builder.local_git_path.to_string_lossy();
 
-    // Build receiver
-    System::new()
-        .command("cargo")
-        .arguments(&[
-            "build",
-            "--release",
-            "--manifest-path",
-            &format!("{git_path}/src/build/receiver/Cargo.toml"),
-        ])
-        .add_error_detection("no such")
-        .print()
-        .execute()?;
-
     // Copy to container
+    let copy_script = format!(
+        "
+        docker compose cp {git_path}/src/build/receiver {ARMA_SERVICE}:/tmp/receiver;
+        docker compose cp {git_path}/src/build/common {ARMA_SERVICE}:/tmp/common;
+        docker compose cp {git_path}/src/build/compiler {ARMA_SERVICE}:/tmp/compiler;
+        "
+    );
+
+    System::new()
+            .script(copy_script)
+            .add_error_detection("no such")
+            .print()
+            .print_as("cp (receiver)")
+            .execute()?;
+
+    // Build receiver
     System::new()
         .command("docker")
         .arguments(&[
-            "compose",
-            "cp",
-            &format!("{git_path}/target/release/receiver"),
-            &format!("{ARMA_SERVICE}:{ARMA_PATH}"),
+            "exec",
+            "-t",
+            ARMA_CONTAINER,
+            "/bin/bash",
+            "-c",
+            &format!("cd /tmp/receiver && cargo build --release"),
         ])
         .add_error_detection("no such")
+        .print_as("cargo (receiver)")
         .print()
         .execute()?;
 
@@ -151,11 +157,11 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let receiver_script = format!(
         r#"#!/bin/bash
 /arma3server/receiver \
-    --host=127.0.0.1:54321 \
-    --database-uri={} \
-    --a3-server-path=/arma3server \
-    --a3-server-args=\"{}\" \
-    >> receiver.log
+--host=127.0.0.1:54321 \
+--database-uri={} \
+--a3-server-path=/arma3server \
+--a3-server-args=\"{}\" \
+>> receiver.log
 "#,
         builder.config.server.mysql_uri,
         builder
@@ -177,10 +183,12 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("echo \"{receiver_script}\" > /arma3server/start_receiver.sh && chmod +x /arma3server/start_receiver.sh && chmod +x /arma3server/receiver"),
+            &format!(
+                "echo \"{receiver_script}\" > {ARMA_PATH}/start_receiver.sh && chmod +x {ARMA_PATH}/start_receiver.sh && cp /tmp/receiver/target/release/receiver {ARMA_PATH}/ && chmod +x {ARMA_PATH}/receiver"
+            ),
         ])
         .add_error_detection("no such")
-        .print_as("writing start script")
+        .print_as("bash (start script)")
         .print()
         .execute()?;
 
