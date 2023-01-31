@@ -726,8 +726,9 @@ Start-Process "{server_path}\{server_executable}" `
                 r#"
 rm -rf {server_path}/@esm;
 cp -rf {build_path}/@esm {server_path}/@esm;
+mkdir -p {ARMA_PATH}/server_profile;
 
-{server_path}/{server_executable} {server_args} &>/arma3server/server_profile/server.rpt &
+{server_path}/{server_executable} {server_args} &>{ARMA_PATH}/server_profile/server.rpt &
                 "#,
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,

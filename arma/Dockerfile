@@ -26,6 +26,8 @@ RUN apt-get update \
         unzip \
         build-essential \
         pkg-config \
+        # Arma3server requires ifconfig
+        net-tools \
         # Mikeros
         liblzo2-2 \
         libvorbis0a \
