@@ -100,7 +100,7 @@ pub fn prepare_receiver(builder: &mut Builder) -> BuildResult {
 pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let git_path = builder.local_git_path.to_string_lossy();
     let build_path = builder.local_git_path.join("src").join("build");
-    let docker_tmp_path = Path::new("/tmp");
+    let docker_tmp_path = Path::new("/tmp/esm");
 
     let build_copy_script = |directory: &str, copy_script: &mut String| {
         let module_changed =
@@ -110,8 +110,8 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
         if module_changed {
             copy_script.push_str(&format!(
                 "
-                    docker exec -t {ARMA_CONTAINER} /bin/bash -c 'rm -rf /tmp/{directory}/src';
-                    docker compose cp {git_path}/src/build/{directory} {ARMA_SERVICE}:/tmp;
+                    docker exec -t {ARMA_CONTAINER} /bin/bash -c 'rm -rf /tmp/esm/{directory}/src';
+                    docker compose cp {git_path}/src/build/{directory} {ARMA_SERVICE}:/tmp/esm;
                 "
             ));
         }

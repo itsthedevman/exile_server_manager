@@ -16,15 +16,20 @@ pub struct Remote {
     pub server_args: String,
 }
 
-impl Remote {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+impl Default for Remote {
+    fn default() -> Self {
         Remote {
-            build_path: Path::new("/").to_path_buf(),
-            build_path_str: "/".into(),
+            build_path: Path::new("/tmp/esm").to_path_buf(),
+            build_path_str: "/tmp/esm".into(),
             server_path: String::new(),
             server_args: String::new(),
         }
+    }
+}
+
+impl Remote {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
