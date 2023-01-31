@@ -328,32 +328,10 @@ impl Builder {
 
     pub fn print_header(&self) {
         let label = "<esm_bt>".blue().bold();
-        let mut header = format!(
+        let header = format!(
             "{label} - : {SEPARATOR}\n{label} - : {:^40}",
             "ESM Arma Build Tool".blue().bold().underline()
         );
-
-        let rebuild_extension = self.rebuild_extension();
-        let is_windows = matches!(self.args.build_os(), BuildOS::Windows);
-        let is_x64 = matches!(self.args.build_arch(), BuildArch::X64);
-
-        let building_section: Vec<&str> = [
-            ("receiver", self.rebuild_receiver()),
-            ("@esm", self.rebuild_mod()),
-            ("esm.dll", rebuild_extension && is_windows && !is_x64),
-            ("esm_x64.dll", rebuild_extension && is_windows && is_x64),
-            ("esm.so", rebuild_extension && !is_windows),
-        ]
-        .iter()
-        .filter_map(|i| if i.1 { Some(i.0) } else { None })
-        .collect();
-
-        if !building_section.is_empty() {
-            header.push_str(&format!(
-                "\n{label} - : Build queue: {}",
-                &building_section.join(", ").black().bold()
-            ));
-        }
 
         println!("{header}\n{label} - : {SEPARATOR}");
     }
@@ -372,13 +350,13 @@ impl Builder {
 {label} - : {SEPARATOR}"#,
             label = "<esm_bt>".blue().bold(),
             header = "Build Details".green().bold().underline(),
-            os_label = "os".black().bold(),
-            arch_label = "arch".black().bold(),
-            env_label = "env".black().bold(),
-            log_label = "log level".black().bold(),
-            git_dir_label = "git directory".black().bold(),
-            build_dir_label = "build directory".black().bold(),
-            server_dir_label = "server directory".black().bold(),
+            os_label = "os".bold(),
+            arch_label = "arch".bold(),
+            env_label = "env".bold(),
+            log_label = "log level".bold(),
+            git_dir_label = "git directory".bold(),
+            build_dir_label = "build directory".bold(),
+            server_dir_label = "server directory".bold(),
             os = self.args.build_os(),
             arch = format!("{:?}", self.args.build_arch()).to_lowercase(),
             env = format!("{:?}", self.args.build_env()).to_lowercase(),
