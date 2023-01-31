@@ -140,7 +140,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             "/bin/bash",
             "-c",
             &format!(
-                "cargo build --release --manifest-path={} --offline",
+                "cargo build --release --manifest-path={}",
                 docker_tmp_path.join("receiver").join("Cargo.toml").display()
             ),
         ])
@@ -658,7 +658,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
             format!(
                 r#"
                         cd '{build_path}\arma';
-                        rustup run stable-{build_target} cargo build --target {build_target} --release --offline;
+                        rustup run stable-{build_target} cargo build --target {build_target} --release;
 
                         Copy-Item "{build_path}\arma\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
                     "#,
@@ -674,7 +674,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
             format!(
                 r#"
 cd {build_path}/arma;
-rustup run stable-{build_target} cargo build --target {build_target} --release --offline;
+rustup run stable-{build_target} cargo build --target {build_target} --release;
 
 cp "{build_path}/arma/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
 "#,
