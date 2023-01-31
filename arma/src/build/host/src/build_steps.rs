@@ -139,7 +139,10 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("cargo build --release --manifest-path=/tmp/receiver/Cargo.toml"),
+            &format!(
+                "cargo build --release --manifest-path={} --offline",
+                docker_tmp_path.join("receiver").join("Cargo.toml").display()
+            ),
         ])
         .add_error_detection("no such")
         .print_as("cargo (receiver)")
@@ -152,7 +155,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 /arma3server/receiver \
 --host=host.docker.internal:54321 \
 --database-uri={} \
---a3-server-path=/arma3server \
+--a3-server-path={ARMA_PATH} \
 --a3-server-args=\"{}\" \
 >> receiver.log
 "#,
@@ -177,7 +180,8 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             "/bin/bash",
             "-c",
             &format!(
-                "echo \"{receiver_script}\" > {ARMA_PATH}/start_receiver.sh && chmod +x {ARMA_PATH}/start_receiver.sh && cp /tmp/receiver/target/release/receiver {ARMA_PATH}/ && chmod +x {ARMA_PATH}/receiver"
+                "echo \"{receiver_script}\" > {ARMA_PATH}/start_receiver.sh && chmod +x {ARMA_PATH}/start_receiver.sh && cp {} {ARMA_PATH}/ && chmod +x {ARMA_PATH}/receiver",
+                docker_tmp_path.join("receiver").join("target").join("release").join("receiver").display()
             ),
         ])
         .add_error_detection("no such")
@@ -192,7 +196,7 @@ pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
     detect_rebuild(builder)?;
     prepare_directories(builder)?;
-    transfer_mikeros_tools(builder)?;
+    // transfer_mikeros_tools(builder)?;
     create_server_config(builder)?;
     create_esm_key_file(builder)
 }
@@ -582,7 +586,7 @@ destination_dir="/{addon}";
 cp -rf $source_dir $destination_dir;
 
 destination_file="$source_dir.pbo";
-{build_path}/linux/bin/makepbo -P "$destination_dir" "$destination_file";
+armake2 build -v "$destination_dir" "$destination_file";
 
 if [[ -f "$destination_file" ]]; then
     rm -rf $source_dir;
@@ -654,7 +658,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
             format!(
                 r#"
                         cd '{build_path}\arma';
-                        rustup run stable-{build_target} cargo build --target {build_target} --release;
+                        rustup run stable-{build_target} cargo build --target {build_target} --release --offline;
 
                         Copy-Item "{build_path}\arma\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
                     "#,
@@ -670,7 +674,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
             format!(
                 r#"
 cd {build_path}/arma;
-rustup run stable-{build_target} cargo build --target {build_target} --release;
+rustup run stable-{build_target} cargo build --target {build_target} --release --offline;
 
 cp "{build_path}/arma/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
 "#,
