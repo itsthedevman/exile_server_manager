@@ -365,6 +365,14 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                     Remove-Item "{server_path}\{profile_name}\*.bidmp" -ErrorAction SilentlyContinue;
                     Remove-Item "{server_path}\{profile_name}\*.mdmp" -ErrorAction SilentlyContinue;
 
+                    if ({rebuild_mod}) {{
+                        Remove-Item "{build_path}\@esm" -ItemType Directory -ErrorAction SilentlyContinue;
+                    }};
+
+                    if ({rebuild_extension}) {{
+                        Remove-Item "{build_path}\esm" -ItemType Directory -ErrorAction SilentlyContinue;
+                    }}
+
                     New-Item -Path "{build_path}\esm" -ItemType Directory;
                     New-Item -Path "{build_path}\@esm" -ItemType Directory;
                     New-Item -Path "{build_path}\@esm\addons" -ItemType Directory;
@@ -373,6 +381,8 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 "#,
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
+                rebuild_mod = builder.rebuild_mod(),
+                rebuild_extension = builder.rebuild_extension()
             )
         }
         BuildOS::Linux => format!(
@@ -381,11 +391,17 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -f "{server_path}/{profile_name}/*.rpt";
                 rm -f "{server_path}/{profile_name}/*.bidmp";
                 rm -f "{server_path}/{profile_name}/*.mdmp";
-                rm -fr "{server_path}/@esm";
+                rm -rf "{server_path}/@esm";
+
+                [[ {rebuild_mod} ]] && rm -rf "{build_path}/@esm";
+                [[ {rebuild_extension} ]] && rm -rf "{build_path}/esm";
 
                 mkdir -p "{server_path}/@esm/addons";
             "#,
+            build_path = builder.remote_build_path_str(),
             server_path = builder.remote.server_path,
+            rebuild_mod = builder.rebuild_mod(),
+            rebuild_extension = builder.rebuild_extension()
         ),
     };
 
@@ -580,13 +596,10 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
             BuildOS::Linux => {
                 format!(
                     r#"
-source_dir="{build_path}/@esm/addons/{addon}";
-destination_dir="/{addon}";
+destination_file="{addon}.pbo";
 
-cp -rf $source_dir $destination_dir;
-
-destination_file="$source_dir.pbo";
-armake2 build -v "$destination_dir" "$destination_file";
+cd {build_path}/@esm/addons;
+armake2 pack -v "{addon}" "$destination_file";
 
 if [[ -f "$destination_file" ]]; then
     rm -rf $source_dir;
