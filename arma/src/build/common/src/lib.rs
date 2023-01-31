@@ -277,7 +277,7 @@ impl System {
                 "stdout" => {
                     if self.print_stdout {
                         print!(
-                            "\n{} - {} -> {}",
+                            "\n{} -     {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
                             line.trim()
@@ -293,7 +293,7 @@ impl System {
                 "stderr" => {
                     if self.print_stderr {
                         print!(
-                            "\n{} - {} -> {}",
+                            "\n{} -     {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
                             line.trim()
