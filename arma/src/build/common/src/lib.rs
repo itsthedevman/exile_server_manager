@@ -280,7 +280,7 @@ impl System {
                             "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
-                            line.trim().black()
+                            line.trim()
                         );
 
                         if self.print_remote && endpoint.is_some() {
@@ -296,7 +296,7 @@ impl System {
                             "\n{} - {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
-                            line.trim().black()
+                            line.trim()
                         );
                     }
 

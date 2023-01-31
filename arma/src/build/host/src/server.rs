@@ -64,7 +64,7 @@ impl Server {
                                 "{} - {} -> {}",
                                 "<esm_bt>".blue().bold(),
                                 label.underline().bold(),
-                                content.trim().black()
+                                content.trim()
                             );
                         }
                     }
