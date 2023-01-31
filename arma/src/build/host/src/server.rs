@@ -55,11 +55,26 @@ impl Server {
                         *server.endpoint.write() = Some(endpoint);
                         server.connected.store(true, Ordering::SeqCst);
                     }
+
+                    Command::Print { label, content } => {
+                        if content.is_empty() {
+                            println!();
+                        } else {
+                            println!(
+                                "{} - {} -> {}",
+                                "<esm_bt>".blue().bold(),
+                                label.underline().bold(),
+                                content.trim().black()
+                            );
+                        }
+                    }
+
                     Command::Error(e) => write_lock(&server.requests, |mut writer| {
                         writer.insert(message.id, Err(e.to_owned().into()));
                         Ok(true)
                     })
                     .unwrap(),
+
                     c => write_lock(&server.requests, |mut writer| {
                         writer.insert(message.id, Ok(c.to_owned()));
                         Ok(true)

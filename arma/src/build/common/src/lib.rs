@@ -83,7 +83,7 @@ pub enum Command {
     LogStreamRequest,
     LogStream(Vec<LogLine>),
     Key(String),
-    Print(String),
+    Print { label: String, content: String },
 }
 
 impl Default for Command {
@@ -99,6 +99,7 @@ pub struct System {
     pub arguments: Vec<String>,
     pub detections: Vec<Detection>,
     pub forget: bool,
+    pub print_remote: bool,
     pub print_stdout: bool,
     pub print_stderr: bool,
     pub print_as: String,
@@ -112,11 +113,12 @@ impl System {
             arguments: vec![],
             detections: vec![],
             forget: false,
+            print_remote: false,
             print_stdout: false,
             print_stderr: false,
             print_as: "".into(),
             target_os: "linux".into(),
-            script: "".into(),
+            script: "".into()
         }
     }
 
@@ -179,6 +181,11 @@ impl System {
         self
     }
 
+    pub fn print_to_remote(&mut self) -> &mut Self {
+        self.print_remote = true;
+        self
+    }
+
     pub fn print_as(&mut self, name: &str) -> &mut Self {
         self.print_as = name.to_string();
         self
@@ -194,7 +201,7 @@ impl System {
         format!("{} {}", self.command, self.arguments.join(" "))
     }
 
-    pub fn execute(&mut self) -> Result<String, BuildError> {
+    pub fn execute(&mut self, endpoint: Option<&dyn NetworkSend>) -> Result<String, BuildError> {
         // println!("\nRunning \"{}\"", self.command_string());
 
         // TODO: This does not support running scripts when executing from Windows.
@@ -235,7 +242,7 @@ impl System {
             }
         });
 
-        let stderr_sender = sender.clone();
+        let stderr_sender = sender;
         let stderr = child.stderr.take();
         let stderr_handle = std::thread::spawn(move || {
             if let Some(stderr) = stderr {
@@ -252,8 +259,6 @@ impl System {
             }
         });
 
-        drop(sender);
-
         let mut stdout_output = Vec::new();
         let mut stderr_output = Vec::new();
         let print_as = if self.print_as.is_empty() {
@@ -261,6 +266,11 @@ impl System {
         } else {
             &self.print_as
         };
+
+        // Formatting, prints a new line since content is empty
+        if self.print_remote && endpoint.is_some() {
+            self.remote_print("", "", endpoint.unwrap());
+        }
 
         while let Ok((name, line)) = receiver.recv() {
             match name {
@@ -272,6 +282,10 @@ impl System {
                             print_as.bold().underline(),
                             line.trim().black()
                         );
+
+                        if self.print_remote && endpoint.is_some() {
+                            self.remote_print(print_as, line.trim(), endpoint.unwrap());
+                        }
                     }
 
                     stdout_output.push(line);
@@ -284,6 +298,10 @@ impl System {
                             print_as.bold().underline(),
                             line.trim().black()
                         );
+                    }
+
+                    if self.print_remote && endpoint.is_some() {
+                        self.remote_print(print_as, line.trim(), endpoint.unwrap());
                     }
 
                     stderr_output.push(line);
@@ -401,7 +419,7 @@ impl System {
                 powershell_script
             );
 
-            if let Ok(encoded_script) = System::new().script(script).execute() {
+            if let Ok(encoded_script) = System::new().script(script).execute(None) {
                 self.command("powershell");
                 self.arguments(&["-EncodedCommand", encoded_script.as_ref()]);
             }
@@ -416,15 +434,15 @@ impl System {
         Ok(result)
     }
 
-    // fn remote_print(&self, content: &str, endpoint: &dyn NetworkSend) {
-    //     if let Err(e) = endpoint.send(Command::Print(content.to_string())) {
-    //         println!(
-    //             "{} - {} - {e}",
-    //             "<esm_bt>".blue().bold(),
-    //             "failed to remote print".red()
-    //         );
-    //     }
-    // }
+    fn remote_print(&self, print_as: &str, content: &str, endpoint: &dyn NetworkSend) {
+        if let Err(e) = endpoint.send(Command::Print { label: print_as.to_string(), content: content.to_string() }) {
+            println!(
+                "{} - {} - {e}",
+                "<esm_bt>".blue().bold(),
+                "failed to remote print".red()
+            );
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

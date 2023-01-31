@@ -13,7 +13,7 @@ pub fn start_container(_builder: &mut Builder) -> BuildResult {
         System::new()
             .command("docker")
             .arguments(&["compose", "up", "-d"])
-            .execute()?;
+            .execute(None)?;
     }
 
     Ok(())
@@ -86,7 +86,7 @@ cd /steamcmd;
         .add_error_detection("error!")
         .print_as("steamcmd")
         .print_stdout()
-        .execute()?;
+        .execute(None)?;
 
     Ok(())
 }
@@ -128,7 +128,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
         .add_error_detection("no such")
         .print()
         .print_as("cp (receiver)")
-        .execute()?;
+        .execute(None)?;
 
     // Build receiver
     System::new()
@@ -144,7 +144,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
         .add_error_detection("no such")
         .print_as("cargo (receiver)")
         .print()
-        .execute()?;
+        .execute(None)?;
 
     // Create script to run receiver in container
     let receiver_script = format!(
@@ -183,7 +183,7 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
         .add_error_detection("no such")
         .print_as("bash (start script)")
         .print()
-        .execute()?;
+        .execute(None)?;
 
     Ok(())
 }
@@ -688,6 +688,8 @@ cp "{build_path}/arma/target/{build_target}/release/libesm_arma.so" "{build_path
         .script(script)
         .add_error_detection(r"error: .+")
         .add_detection(r"warning")
+        .print_as("cargo (esm)")
+        .print_to_remote()
         .execute_remote(&builder.build_server)?;
 
     Ok(())

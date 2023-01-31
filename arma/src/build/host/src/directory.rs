@@ -21,7 +21,7 @@ impl Directory {
                 builder.local_build_path.join(&file_name).to_string_lossy(),
                 dir_name
             ))
-            .execute()
+            .execute(None)
             .is_err()
         {
             return Err(format!(
@@ -70,7 +70,7 @@ impl Directory {
                 &source.to_string_lossy(),
                 &destination.to_string_lossy(),
             ])
-            .execute()?;
+            .execute(None)?;
 
         Ok(())
     }

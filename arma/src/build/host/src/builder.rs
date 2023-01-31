@@ -314,7 +314,7 @@ impl Builder {
                 "-c",
                 &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
             ])
-            .execute()
+            .execute(None)
             .unwrap_or_default()
             == "true";
 
@@ -390,7 +390,7 @@ pub fn git_sha_short() -> String {
         .command("git")
         .arguments(&["rev-parse", "--short", "HEAD"])
         .add_detection(r"[a-fA-F0-9]+")
-        .execute()
+        .execute(None)
     {
         Ok(o) => o.trim().to_string(),
         Err(_e) => "FAILED TO RETRIEVE".into(),
@@ -421,7 +421,7 @@ pub fn start_receiver() -> BuildResult {
         .add_error_detection("no such")
         .print_as("starting receiver")
         .print()
-        .execute()?;
+        .execute(None)?;
 
     Ok(())
 }
@@ -437,7 +437,7 @@ pub fn stop_receiver() -> BuildResult {
             "-c",
             "for pid in $(ps -ef | awk '/arma3server\\/receiver/ {print $2}'); do kill -9 $pid; done",
         ])
-        .execute()?;
+        .execute(None)?;
 
     Ok(())
 }
@@ -452,7 +452,7 @@ pub fn is_container_running() -> bool {
             "\"{{.State.Status}}\"",
             ARMA_CONTAINER,
         ])
-        .add_detection("running").execute() else {
+        .add_detection("running").execute(None) else {
         return false;
     };
 
@@ -470,7 +470,7 @@ pub fn docker_path_exists(file_path: &Path) -> bool {
             "-c",
             &format!("[[ -f {file_path}]] && echo 'exists'", file_path = file_path.display())
         ])
-        .add_detection("exists").execute() else {
+        .add_detection("exists").execute(None) else {
         return false;
     };
 

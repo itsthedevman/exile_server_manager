@@ -19,7 +19,7 @@ impl IncomingCommand {
                 server_args: client.arma.server_args.to_owned(),
             })),
             Command::KillArma => IncomingCommand::kill_arma(),
-            Command::System(command) => IncomingCommand::system_command(command),
+            Command::System(command) => IncomingCommand::system_command(client, command),
             Command::FileTransferStart(transfer) => {
                 let result = AtomicBool::new(false);
                 read_lock(&client.transfers, |transfers| {
@@ -122,7 +122,7 @@ impl IncomingCommand {
                         .iter()
                         .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force"))
                         .collect::<Vec<String>>())
-                    .execute()?;
+                    .execute(None)?;
         } else {
             System::new()
                 .command("/bin/bash")
@@ -133,20 +133,20 @@ impl IncomingCommand {
                         LINUX_EXES.join("|")
                     ),
                 ])
-                .execute()?;
+                .execute(None)?;
         }
 
         Ok(Command::Success)
     }
 
-    pub fn system_command(command: &mut System) -> Result<Command, BuildError> {
+    pub fn system_command(client: &Client, command: &mut System) -> Result<Command, BuildError> {
         println!(
             "\n{} {}\n",
             command.command.bright_blue(),
             command.arguments.join(" ").black()
         );
 
-        let result = command.execute()?;
+        let result = command.execute(Some(client))?;
         Ok(Command::SystemResponse(result))
     }
 }
