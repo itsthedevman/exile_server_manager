@@ -22,7 +22,7 @@ class CfgFunctions
 		{
 			class preInit
 			{
-				file = os_path!("exile_server_manager", "bootstrap", "preInit.sqf");
+				file = os_path!("exile_server_manager", "bootstrap", "fn_preInit.sqf");
 				preInit = 1;
 			};
 		};

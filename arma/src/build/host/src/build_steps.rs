@@ -220,13 +220,11 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
         }
         BuildOS::Windows => {
             System::new()
-                .command("powershell")
-                .arguments(
-                    &WINDOWS_EXES
+                .script(
+                    WINDOWS_EXES
                     .iter()
-                    .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force;"))
-                    .collect::<Vec<String>>()
-                )
+                    .map(|exe| format!("Get-Process -Name '{exe}' -ErrorAction SilentlyContinue | Stop-Process -Force;"))
+                    .collect::<Vec<String>>().join(" "))
                 .execute_remote(&builder.build_server)?;
         }
     }
@@ -262,7 +260,7 @@ pub fn detect_rebuild(builder: &mut Builder) -> BuildResult {
                 .iter()
                 .map(|path| {
                     format!(
-                        r#"if (![System.IO.File]::Exists("{server_path}\@esm\{path}")) {{ return "rebuild"; }}"#,
+                        "if (![System.IO.File]::Exists('{server_path}\\@esm\\{path}')) {{ Write-Output('rebuild'); }};",
                         server_path = builder.remote.server_path
                     )
                 })
@@ -387,26 +385,26 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
-                r#"
-                    Remove-Item "{server_path}\{profile_name}\*.log" -ErrorAction SilentlyContinue;
-                    Remove-Item "{server_path}\{profile_name}\*.rpt" -ErrorAction SilentlyContinue;
-                    Remove-Item "{server_path}\{profile_name}\*.bidmp" -ErrorAction SilentlyContinue;
-                    Remove-Item "{server_path}\{profile_name}\*.mdmp" -ErrorAction SilentlyContinue;
+                "
+                    Remove-Item '{server_path}\\{profile_name}\\*.log' -ErrorAction SilentlyContinue;
+                    Remove-Item '{server_path}\\{profile_name}\\*.rpt' -ErrorAction SilentlyContinue;
+                    Remove-Item '{server_path}\\{profile_name}\\*.bidmp' -ErrorAction SilentlyContinue;
+                    Remove-Item '{server_path}\\{profile_name}\\*.mdmp' -ErrorAction SilentlyContinue;
 
-                    if ({rebuild_mod}) {{
-                        Remove-Item "{build_path}\@esm" -ItemType Directory -ErrorAction SilentlyContinue;
+                    if ([bool]::Parse('{rebuild_mod}')) {{
+                        Remove-Item '{build_path}\\@esm' -Recurse -ErrorAction SilentlyContinue;
                     }};
 
-                    if ({rebuild_extension}) {{
-                        Remove-Item "{build_path}\esm" -ItemType Directory -ErrorAction SilentlyContinue;
+                    if ([bool]::Parse('{rebuild_extension}')) {{
+                        Remove-Item '{build_path}\\esm' -Recurse -ErrorAction SilentlyContinue;
                     }}
 
-                    New-Item -Path "{build_path}\esm" -ItemType Directory;
-                    New-Item -Path "{build_path}\@esm" -ItemType Directory;
-                    New-Item -Path "{build_path}\@esm\addons" -ItemType Directory;
-                    New-Item -Path "{server_path}\@esm" -ItemType Directory;
-                    New-Item -Path "{server_path}\@esm\addons" -ItemType Directory;
-                "#,
+                    New-Item -Path '{build_path}\\esm' -ItemType Directory -ErrorAction SilentlyContinue;
+                    New-Item -Path '{build_path}\\@esm' -ItemType Directory -ErrorAction SilentlyContinue;
+                    New-Item -Path '{build_path}\\@esm\\addons' -ItemType Directory -ErrorAction SilentlyContinue;
+                    New-Item -Path '{server_path}\\@esm' -ItemType Directory -ErrorAction SilentlyContinue;
+                    New-Item -Path '{server_path}\\@esm\\addons' -ItemType Directory -ErrorAction SilentlyContinue;
+                ",
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
                 rebuild_mod = builder.rebuild_mod(),
@@ -598,11 +596,11 @@ pub fn compile_mod(builder: &mut Builder) -> BuildResult {
     crate::compile::bind_replacements(&mut compiler);
     compiler.compile()?;
 
-    Directory::transfer(
-        builder,
-        mod_build_path,
-        builder.remote_build_path().to_owned(),
-    )?;
+    // Directory::transfer(
+    //     builder,
+    //     mod_build_path,
+    //     builder.remote_build_path().to_owned(),
+    // )?;
 
     Ok(())
 }
@@ -615,56 +613,42 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
         extra_addons.push("esm_test");
     }
 
+    let build_path = builder.local_build_path.join("@esm").join("addons");
+
     for addon in ADDONS.iter().chain(extra_addons.iter()) {
         if !builder.rebuild_addon(addon) {
             continue;
         }
 
-        let script = match builder.args.build_os() {
-            BuildOS::Linux => {
-                format!(
-                    r#"
+        let script = format!(
+            r#"
 destination_file="{addon}.pbo";
 
-cd {build_path}/@esm/addons;
+cd {build_path};
 armake2 pack -v "{addon}" "$destination_file";
 
 if [[ -f "$destination_file" ]]; then
-    echo "Complete";
+    rm -rf {addon};
 else
     echo "Failed to build - $destination_file does not exist";
 fi
 "#,
-                    build_path = builder.remote_build_path_str(),
-                )
-            }
-            BuildOS::Windows => {
-                // The "root" is what matters here. The root needs to be P: drive
-                format!(
-                    r#"
-if ([System.IO.Directory]::Exists("P:\{addon}")) {{
-    Remove-Item -Path "P:\{addon}" -Recurse;
-}}
-
-Move-Item -Force -Path "{build_path}\@esm\addons\{addon}" -Destination "P:";
-Start-Process -Wait -NoNewWindow -FilePath "{build_path}\windows\MakePbo.exe" -ArgumentList "-P", "P:\{addon}", "{build_path}\@esm\addons\{addon}.pbo";
-
-if (!([System.IO.File]::Exists("{build_path}\@esm\addons\{addon}.pbo"))) {{
-    "Failed to build - {build_path}\@esm\addons\{addon}.pbo does not exist"
-}}
-"#,
-                    build_path = builder.remote_build_path_str(),
-                )
-            }
-        };
+            build_path = build_path.display()
+        );
 
         System::new()
             .script(script)
             .add_error_detection("ErrorId")
             .add_error_detection("Failed to build")
             .add_error_detection("missing file")
-            .execute_remote(&builder.build_server)?;
+            .execute(None)?;
     }
+
+    Directory::transfer(
+        builder,
+        build_path,
+        builder.remote_build_path().join("@esm"),
+    )?;
 
     Ok(())
 }
@@ -697,12 +681,11 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
-                r#"
-                        cd '{build_path}\arma';
-                        rustup run stable-{build_target} cargo build --target {build_target} --release;
-
-                        Copy-Item "{build_path}\arma\target\{build_target}\release\esm_arma.dll" -Destination "{build_path}\@esm\{file_name}.dll"
-                    "#,
+                "
+                    cd '{build_path}\\arma';
+                    rustup run stable-{build_target} cargo build --target {build_target} --release;
+                    Copy-Item '{build_path}\\arma\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
+                ",
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,
                 file_name = match builder.args.build_arch() {
@@ -752,14 +735,14 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
-                r#"
-Remove-Item -Path "{server_path}\@esm" -Recurse;
-Copy-Item -Path "{build_path}\@esm" -Destination "{server_path}\@esm" -Recurse;
+                "
+                    Remove-Item -Path '{server_path}\\@esm' -Recurse;
+                    Copy-Item -Path '{build_path}\\@esm' -Destination '{server_path}\\@esm' -Recurse;
 
-Start-Process "{server_path}\{server_executable}" `
-    -ArgumentList "{server_args}" `
-    -WorkingDirectory "{server_path}";
-"#,
+                    Start-Process '{server_path}\\{server_executable}' `
+                        -ArgumentList '{server_args}' `
+                        -WorkingDirectory '{server_path}';
+                ",
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,

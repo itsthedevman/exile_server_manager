@@ -47,15 +47,9 @@ fn define_fn(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    let separator = if context.target == "windows" {
-        "\\"
-    } else {
-        "/"
-    };
-
     Ok(Some(format!(
-        "[\"{function_name}\", \"exile_server_manager{sep}code{sep}{function_name}.sqf\"]",
-        sep = separator
+        "[\"{function_name}\", \"{sep}exile_server_manager{sep}code{sep}{function_name}.sqf\"]",
+        sep = "\\"
     )))
 }
 
@@ -76,17 +70,12 @@ fn os_path(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    let separator = if context.target == "windows" {
-        "\\"
-    } else {
-        "/"
-    };
+    let separator = "\\";
 
     // Windows: \my_addon\path
-    // Linux: /my_addon/path
+    // Linux: my_addon\path
     Ok(Some(format!(
-        "\"{}{}\"",
-        separator,
+        "\"{separator}{}\"",
         path_chunks.join(separator)
     )))
 }

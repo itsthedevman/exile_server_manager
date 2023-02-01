@@ -31,6 +31,7 @@ impl Directory {
             .into());
         };
 
+        let destination_path_str = destination_path.to_string_lossy().to_string();
         File::transfer(
             builder,
             builder.local_build_path.to_owned(),
@@ -38,18 +39,17 @@ impl Directory {
             &file_name,
         )?;
 
-        let destination_path = builder.remote_build_path_str();
         let script = match builder.args.build_os() {
             crate::BuildOS::Linux => {
-                format!("unzip -o {destination_path}/{file_name} -d {destination_path} && rm -f {destination_path}/{file_name}")
+                format!("unzip -o {destination_path_str}/{file_name} -d {destination_path_str} && rm -f {destination_path_str}/{file_name}")
             }
             crate::BuildOS::Windows => {
                 format!(
-                    r#"
+                    "
                         Import-Module Microsoft.PowerShell.Archive;
-                        Expand-Archive -Force -Path "{destination_path}\{file_name}" -DestinationPath {destination_path};
-                        Remove-Item -Path "{destination_path}\{file_name}";
-                    "#
+                        Expand-Archive -Force -Path '{destination_path_str}\\{file_name}' -DestinationPath '{destination_path_str}';
+                        Remove-Item -Path '{destination_path_str}\\{file_name}';
+                    "
                 )
             }
         };

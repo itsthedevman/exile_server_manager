@@ -26,6 +26,10 @@ lazy_static! {
             color: [153, 0, 51],
         },
         Highlight {
+            regex: Regex::new(r"Warning message:.+not found").unwrap(),
+            color: [153, 0, 51],
+        },
+        Highlight {
             regex: Regex::new(r"WARN").unwrap(),
             color: [153, 102, 0],
         },
@@ -207,13 +211,18 @@ impl System {
     pub fn execute(&mut self, endpoint: Option<&dyn NetworkSend>) -> Result<String, BuildError> {
         // println!("\nRunning \"{}\"", self.command_string());
 
-        // TODO: This does not support running scripts when executing from Windows.
-        // This isn't really an issue right now since the host is being ran from linux
         if !self.script.is_empty() {
-            self.command("bash");
+            if cfg!(windows) {
+                self.command("powershell");
 
-            self.arguments.clear();
-            self.arguments(&["-c", self.script.to_string().as_ref()]);
+                self.arguments.clear();
+                self.arguments(&["Invoke-Expression", &format!("\"{}\"", self.script)]);
+            } else {
+                self.command("bash");
+
+                self.arguments.clear();
+                self.arguments(&["-c", self.script.to_string().as_ref()]);
+            }
         }
 
         let mut child = SystemCommand::new(&self.command)

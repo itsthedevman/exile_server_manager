@@ -86,12 +86,12 @@ impl Client {
 
                 match IncomingCommand::execute(&client, &mut network_command.command) {
                     Ok(command) => {
-                        println!("{:#?} - {:#?}", command, network_command.command);
+                        println!("{:?} - {:?}", command, network_command.command);
                         network_command.command = command;
                         client.send_network(network_command);
                     }
                     Err(e) => {
-                        println!("Failed - {e} - {:#?}", network_command.command);
+                        println!("Failed - {e} - {:?}", network_command.command);
                         network_command.command = Command::Error(e.to_string());
                         client.send_network(network_command);
                     }

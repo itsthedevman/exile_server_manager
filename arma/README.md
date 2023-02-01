@@ -9,3 +9,6 @@ This repository source code contains the following:
 
 Powershell as admin:
     Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted;
+
+Windows requires (until I create a windows container):
+    - Rust

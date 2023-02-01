@@ -143,9 +143,6 @@ impl Builder {
         self.print_build_info();
         self.print_status("Preparing to build", build_steps::prepare_to_build)?;
 
-        if matches!(self.args.build_os(), BuildOS::Windows) && self.rebuild_mod() {
-            self.print_status("Checking for p drive", build_steps::check_for_p_drive)?;
-        }
 
         if self.rebuild_mod() {
             self.print_status("Building mod", build_steps::build_mod)?;
