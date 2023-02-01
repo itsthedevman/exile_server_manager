@@ -118,7 +118,7 @@ impl System {
             print_stderr: false,
             print_as: "".into(),
             target_os: "linux".into(),
-            script: "".into()
+            script: "".into(),
         }
     }
 
@@ -268,8 +268,10 @@ impl System {
         };
 
         // Formatting, prints a new line since content is empty
-        if self.print_remote && endpoint.is_some() {
-            self.remote_print("", "", endpoint.unwrap());
+        if self.print_remote {
+            if let Some(endpoint) = endpoint {
+                self.remote_print("", "", endpoint);
+            }
         }
 
         while let Ok((name, line)) = receiver.recv() {
@@ -283,8 +285,10 @@ impl System {
                             line.trim()
                         );
 
-                        if self.print_remote && endpoint.is_some() {
-                            self.remote_print(print_as, line.trim(), endpoint.unwrap());
+                        if self.print_remote {
+                            if let Some(endpoint) = endpoint {
+                            self.remote_print(print_as, line.trim(), endpoint);
+                            }
                         }
                     }
 
@@ -300,8 +304,10 @@ impl System {
                         );
                     }
 
-                    if self.print_remote && endpoint.is_some() {
-                        self.remote_print(print_as, line.trim(), endpoint.unwrap());
+                    if self.print_remote {
+                        if let Some(endpoint) = endpoint {
+                            self.remote_print(print_as, line.trim(), endpoint);
+                        }
                     }
 
                     stderr_output.push(line);
@@ -435,7 +441,10 @@ impl System {
     }
 
     fn remote_print(&self, print_as: &str, content: &str, endpoint: &dyn NetworkSend) {
-        if let Err(e) = endpoint.send(Command::Print { label: print_as.to_string(), content: content.to_string() }) {
+        if let Err(e) = endpoint.send(Command::Print {
+            label: print_as.to_string(),
+            content: content.to_string(),
+        }) {
             println!(
                 "{} - {} - {e}",
                 "<esm_bt>".blue().bold(),
