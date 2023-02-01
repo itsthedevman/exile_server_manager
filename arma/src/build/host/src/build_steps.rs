@@ -224,7 +224,9 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
                     WINDOWS_EXES
                     .iter()
                     .map(|exe| format!("Get-Process -Name '{exe}' -ErrorAction SilentlyContinue | Stop-Process -Force;"))
-                    .collect::<Vec<String>>().join(" "))
+                    .collect::<Vec<String>>().join(" ")
+                )
+                .windows()
                 .execute_remote(&builder.build_server)?;
         }
     }

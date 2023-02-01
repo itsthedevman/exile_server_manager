@@ -212,7 +212,7 @@ impl System {
         // println!("\nRunning \"{}\"", self.command_string());
 
         if !self.script.is_empty() {
-            if cfg!(windows) {
+            if self.target_os == "windows" {
                 self.command("powershell");
 
                 self.arguments.clear();
