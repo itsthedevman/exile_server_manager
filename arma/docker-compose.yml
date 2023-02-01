@@ -13,6 +13,8 @@ services:
     tty: true
     networks:
       - dev
+    extra_hosts: # Allows linux host to use host.docker.internal.
+      - "host.docker.internal:host-gateway"
   mysql_db:
     image: mysql:8
     container_name: ESM_DB_MYSQL
