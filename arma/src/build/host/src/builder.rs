@@ -140,9 +140,9 @@ impl Builder {
         self.start_server()?;
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
+        detect_rebuild(self)?;
         self.print_build_info();
         self.print_status("Preparing to build", build_steps::prepare_to_build)?;
-
 
         if self.rebuild_mod() {
             self.print_status("Building mod", build_steps::build_mod)?;
@@ -335,11 +335,25 @@ impl Builder {
     }
 
     pub fn print_build_info(&self) {
+        let rebuild_extension = self.rebuild_extension();
+        let is_windows = matches!(self.args.build_os(), BuildOS::Windows);
+        let is_x64 = matches!(self.args.build_arch(), BuildArch::X64);
+
+        let building_section: Vec<&str> = [
+            ("@esm", self.rebuild_mod()),
+            ("esm.dll", rebuild_extension && is_windows && !is_x64),
+            ("esm_x64.dll", rebuild_extension && is_windows && is_x64),
+            ("esm.so", rebuild_extension && !is_windows && !is_x64),
+            ("esm_x64.so", rebuild_extension && !is_windows && is_x64),
+        ]
+        .iter()
+        .filter_map(|i| if i.1 { Some(i.0) } else { None })
+        .collect();
+
         println!(
             r#"{label} - : {SEPARATOR}
 {label} - : {header:^40}
-{label} - : {os_label:>17} -> {os:?}
-{label} - : {arch_label:>17} -> {arch:?}
+{label} - : {build_queue_label:>17} -> {build_queue}
 {label} - : {env_label:>17} -> {env:?}
 {label} - : {log_label:>17} -> {log}
 {label} - : {git_dir_label:>17} -> {git_directory}
@@ -348,17 +362,15 @@ impl Builder {
 {label} - : {SEPARATOR}"#,
             label = "<esm_bt>".blue().bold(),
             header = "Build Details".green().bold().underline(),
-            os_label = "os".bold(),
-            arch_label = "arch".bold(),
+            build_queue_label = "queue".bold(),
             env_label = "env".bold(),
             log_label = "log level".bold(),
             git_dir_label = "git directory".bold(),
             build_dir_label = "build directory".bold(),
             server_dir_label = "server directory".bold(),
-            os = self.args.build_os(),
-            arch = format!("{:?}", self.args.build_arch()).to_lowercase(),
-            env = format!("{:?}", self.args.build_env()).to_lowercase(),
-            log = format!("{:?}", self.args.log_level()).to_lowercase(),
+            build_queue = building_section.join(", "),
+            env = self.args.build_env(),
+            log = self.args.log_level(),
             git_directory = self.local_git_path.to_string_lossy(),
             build_directory = self.remote_build_path_str(),
             server_directory = self.remote.server_path

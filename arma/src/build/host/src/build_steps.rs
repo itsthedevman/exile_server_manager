@@ -201,7 +201,6 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 
 pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
-    detect_rebuild(builder)?;
     prepare_directories(builder)?;
     // transfer_mikeros_tools(builder)?;
     create_server_config(builder)?;
@@ -421,8 +420,8 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -f "{server_path}/{profile_name}/*.mdmp";
                 rm -rf "{server_path}/@esm";
 
-                [[ {rebuild_mod} ]] && rm -rf "{build_path}/@esm";
-                [[ {rebuild_extension} ]] && rm -rf "{build_path}/esm";
+                {rebuild_mod} && rm -rf "{build_path}/@esm";
+                {rebuild_extension} && rm -rf "{build_path}/esm";
 
                 mkdir -p "{server_path}/@esm/addons";
             "#,
