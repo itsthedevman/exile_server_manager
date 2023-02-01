@@ -4,7 +4,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::{client::Client, read_lock, BuildError, Command, System};
 use colored::Colorize;
 use common::{write_lock, LogLine, PostInit};
-use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
 pub struct IncomingCommand;
@@ -18,7 +17,6 @@ impl IncomingCommand {
                 server_path: client.arma.server_path.to_owned(),
                 server_args: client.arma.server_args.to_owned(),
             })),
-            Command::KillArma => IncomingCommand::kill_arma(),
             Command::System(command) => IncomingCommand::system_command(client, command),
             Command::FileTransferStart(transfer) => {
                 let result = AtomicBool::new(false);
@@ -100,43 +98,6 @@ impl IncomingCommand {
             }
             _ => Ok(Command::Error("Command not implemented yet".into())),
         }
-    }
-
-    pub fn kill_arma() -> Result<Command, BuildError> {
-        lazy_static! {
-            // Stop-Process doesn't want the extension
-            static ref WINDOWS_EXES: &'static [&'static str] = &[
-                "arma3server",
-                "arma3server_x64",
-                "arma3_x64",
-                "arma3",
-                "arma3battleye"
-            ];
-            static ref LINUX_EXES: &'static [&'static str] = &["/arma3server/arma3server", "/arma3server/arma3server_x64"];
-        };
-
-        if cfg!(windows) {
-            System::new()
-                    .command("powershell")
-                    .arguments(&WINDOWS_EXES
-                        .iter()
-                        .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force"))
-                        .collect::<Vec<String>>())
-                    .execute(None)?;
-        } else {
-            System::new()
-                .command("/bin/bash")
-                .arguments(&[
-                    "-c",
-                    &format!(
-                        "for pid in $(ps -ef | awk '/{}/ {{print $2}}'); do kill -9 $pid; done",
-                        LINUX_EXES.join("|")
-                    ),
-                ])
-                .execute(None)?;
-        }
-
-        Ok(Command::Success)
     }
 
     pub fn system_command(client: &Client, command: &mut System) -> Result<Command, BuildError> {

@@ -163,6 +163,7 @@ impl Builder {
     }
 
     pub fn finish(&mut self) -> BuildResult {
+        let _ = kill_arma(self);
         self.build_server.stop();
 
         if matches!(self.args.build_os(), BuildOS::Linux) {

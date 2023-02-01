@@ -209,7 +209,28 @@ pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn kill_arma(builder: &mut Builder) -> BuildResult {
-    builder.build_server.send(Command::KillArma)?;
+    match builder.args.build_os() {
+        BuildOS::Linux => {
+            System::new()
+                .script(&format!(
+                    "for pid in $(ps -ef | awk '/{}/ {{print $2}}'); do kill -9 $pid; done",
+                    LINUX_EXES.join("|")
+                ))
+                .execute_remote(&builder.build_server)?;
+        }
+        BuildOS::Windows => {
+            System::new()
+                .command("powershell")
+                .arguments(
+                    &WINDOWS_EXES
+                    .iter()
+                    .map(|exe| format!("Get-Process -Name \"{exe}\" -ErrorAction SilentlyContinue | Stop-Process -Force;"))
+                    .collect::<Vec<String>>()
+                )
+                .execute_remote(&builder.build_server)?;
+        }
+    }
+
     Ok(())
 }
 

@@ -55,6 +55,16 @@ pub const ARMA_CONTAINER: &str = "ESM_ARMA_SERVER";
 pub const ARMA_SERVICE: &str = "arma_server";
 pub const ARMA_PATH: &str = "/arma3server";
 
+pub const WINDOWS_EXES: &[&str] = &[
+    "arma3server",
+    "arma3server_x64",
+    "arma3_x64",
+    "arma3",
+    "arma3battleye",
+];
+
+pub const LINUX_EXES: &[&str] = &["/arma3server/arma3server", "/arma3server/arma3server_x64"];
+
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

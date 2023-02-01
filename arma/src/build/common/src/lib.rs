@@ -22,6 +22,10 @@ lazy_static! {
             color: [153, 0, 51],
         },
         Highlight {
+            regex: Regex::new(r"Missing '.+'").unwrap(),
+            color: [153, 0, 51],
+        },
+        Highlight {
             regex: Regex::new(r"WARN").unwrap(),
             color: [153, 102, 0],
         },
@@ -68,7 +72,6 @@ impl NetworkCommand {
 pub enum Command {
     Hello,
     Success,
-    KillArma,
     PostInitRequest,
     PostInit(PostInit),
     Error(String),
@@ -287,7 +290,7 @@ impl System {
 
                         if self.print_remote {
                             if let Some(endpoint) = endpoint {
-                            self.remote_print(print_as, line.trim(), endpoint);
+                                self.remote_print(print_as, line.trim(), endpoint);
                             }
                         }
                     }
