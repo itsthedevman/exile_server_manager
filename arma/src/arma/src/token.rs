@@ -155,7 +155,7 @@ impl TokenManager {
     }
 
     pub fn reload(&mut self) -> &mut Self {
-        let reload_file = std::path::Path::new("@esm\\.RELOAD");
+        let reload_file = std::path::Path::new("@esm").join(".RELOAD");
 
         trace!("[reload] File exists - {}", reload_file.exists());
 
