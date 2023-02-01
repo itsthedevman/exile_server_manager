@@ -100,9 +100,9 @@ impl Builder {
             .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
             .load()?;
 
-        let rebuild_mod = args.force_rebuild();
-        let rebuild_extension = args.force_rebuild();
-        let rebuild_receiver = args.force_rebuild();
+        let rebuild_mod = args.full_rebuild();
+        let rebuild_extension = args.full_rebuild();
+        let rebuild_receiver = args.full_rebuild();
 
         let builder = Builder {
             args,
@@ -442,7 +442,7 @@ pub fn is_container_running() -> bool {
     result.trim_end() == "running"
 }
 
-pub fn docker_path_exists(file_path: &Path) -> bool {
+pub fn docker_dir_exists(file_path: &Path) -> bool {
     let Ok(result) = System::new()
         .command("docker")
         .arguments(&[
@@ -451,7 +451,7 @@ pub fn docker_path_exists(file_path: &Path) -> bool {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("[[ -f {file_path}]] && echo 'exists'", file_path = file_path.display())
+            &format!("[ -d {file_path} ] && echo 'exists'", file_path = file_path.display())
         ])
         .add_detection("exists").execute(None) else {
         return false;

@@ -79,9 +79,9 @@ pub struct Args {
     #[arg(long, default_value_t = String::from("192.168.50.242:3003"))]
     bot_host: String,
 
-    /// Forces a rebuild of everything
+    /// Forces a full rebuild of everything
     #[arg(short, long)]
-    force: bool,
+    full: bool,
 
     /// Sets the release flag
     #[arg(short, long)]
@@ -132,8 +132,8 @@ impl Args {
         &self.bot_host
     }
 
-    pub fn force_rebuild(&self) -> bool {
-        self.force
+    pub fn full_rebuild(&self) -> bool {
+        self.full
     }
 
     pub fn update_arma(&self) -> bool {
