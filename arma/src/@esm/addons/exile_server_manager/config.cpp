@@ -20,8 +20,11 @@ class CfgFunctions
 	{
 		class Bootstrap
 		{
-			file = os_path!("exile_server_manager", "bootstrap");
-			class preInit { preInit = 1; };
+			class preInit
+			{
+				file = os_path!("exile_server_manager", "bootstrap", "preInit.sqf");
+				preInit = 1;
+			};
 		};
 	};
 };

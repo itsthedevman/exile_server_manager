@@ -123,6 +123,10 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     build_copy_script("common", &mut copy_script);
     build_copy_script("compiler", &mut copy_script);
 
+    if copy_script.is_empty() {
+        return Ok(());
+    }
+
     System::new()
         .script(copy_script)
         .add_error_detection("no such")
@@ -602,7 +606,7 @@ cd {build_path}/@esm/addons;
 armake2 pack -v "{addon}" "$destination_file";
 
 if [[ -f "$destination_file" ]]; then
-    rm -rf $source_dir;
+    echo "Complete";
 else
     echo "Failed to build - $destination_file does not exist";
 fi
