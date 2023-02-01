@@ -105,13 +105,13 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
     let build_copy_script = |directory: &str, copy_script: &mut String| {
         let module_changed =
             has_directory_changed(&builder.file_watcher, &build_path.join(directory))
-                || !docker_path_exists(&docker_tmp_path.join(directory));
+                || !docker_dir_exists(&docker_tmp_path.join(directory).join("src"));
 
         if module_changed {
             copy_script.push_str(&format!(
                 "
-                    docker exec -t {ARMA_CONTAINER} /bin/bash -c 'rm -rf /tmp/esm/{directory}/src';
-                    docker compose cp {git_path}/src/build/{directory} {ARMA_SERVICE}:/tmp/esm;
+                    docker exec -t {ARMA_CONTAINER} /bin/bash -c 'mkdir -p /tmp/esm/{directory} || rm -rf /tmp/esm/{directory}';
+                    docker compose cp {git_path}/src/build/{directory} {ARMA_SERVICE}:/tmp/esm/;
                 "
             ));
         }
@@ -145,7 +145,10 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
             "-c",
             &format!(
                 "cargo build --release --manifest-path={}",
-                docker_tmp_path.join("receiver").join("Cargo.toml").display()
+                docker_tmp_path
+                    .join("receiver")
+                    .join("Cargo.toml")
+                    .display()
             ),
         ])
         .add_error_detection("no such")
