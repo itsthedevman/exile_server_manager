@@ -153,9 +153,11 @@ impl NetworkSend for Server {
 
         self.track_request(&command.id)?;
 
-        self.handler
-            .as_ref()
-            .unwrap()
+        let Some(handler) = self.handler.as_ref() else {
+            return Err("Network server not started".to_string().into());
+        };
+
+        handler
             .network()
             .send(self.endpoint.read().unwrap(), data.as_slice());
 
