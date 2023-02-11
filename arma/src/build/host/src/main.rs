@@ -37,8 +37,7 @@ lazy_static! {
     pub static ref CTRL_C_RECEIVED: AtomicBool = AtomicBool::new(false);
 }
 
-/// Used with the test suite, this key holds the server's current esm.key
-pub const REDIS_SERVER_KEY: &str = "test_server_key";
+pub const REDIS_SERVER_KEY: &str = "server_key";
 
 pub const ADDONS: &[&str] = &[
     "exile_server_manager",
