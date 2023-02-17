@@ -12,9 +12,6 @@ pub enum Data {
     Empty,
     Ping,
     Pong,
-    // Bounces the message back to the sender. Mainly used for testing
-    // This bypasses the server -> client error handling for testing purposes
-    Echo,
     Test(Test), // TODO(Improve or remove)
 
     // Init

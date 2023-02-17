@@ -275,7 +275,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             };
 
             // Echo bypasses this so errors can be triggered on the round trip
-            if !matches!(message.data, Data::Echo) && !message.errors.is_empty() {
+            if !matches!(message.message_type, Type::Echo) && !message.errors.is_empty() {
                 let error = message
                     .errors
                     .iter()
@@ -298,9 +298,9 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                         ArmaRequest::call("post_initialization", message)
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
-                    Data::Echo => BotRequest::send(message),
                     t => Err(format!("❌ Unexpected event type: {t:?}").into()),
                 },
+                Type::Echo => BotRequest::send(message),
             }
         }
     }

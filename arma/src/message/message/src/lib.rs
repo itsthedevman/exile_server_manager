@@ -227,6 +227,9 @@ pub enum Type {
     // Events, such as Init, PostInit, etc.
     Event,
 
+    // Bounces the message back
+    Echo,
+
     // Database query
     Query,
 

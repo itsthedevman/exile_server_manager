@@ -28,6 +28,21 @@ services:
       - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
     networks:
       - dev
+  mysql_db_v1:
+    image: mysql:5.7
+    container_name: ESM_DB_MYSQL_V1
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
+    networks:
+      - dev
+    profiles:
+      - v1
 
 volumes:
   mysql-data:
