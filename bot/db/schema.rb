@@ -80,6 +80,7 @@ ActiveRecord::Schema.define(version: 2022_02_03_031859) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
+    t.json "dashboard_access_role_ids", default: []
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["deleted_at"], name: "index_communities_on_deleted_at"
     t.index ["guild_id"], name: "index_communities_on_guild_id", unique: true

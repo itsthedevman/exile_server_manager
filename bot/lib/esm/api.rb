@@ -118,8 +118,6 @@ module ESM
         return halt(422) unless user.channel_permission?(:read_messages, channel)
       end
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END" }
-
       channel.to_h.to_json
     end
 
@@ -149,7 +147,6 @@ module ESM
           end
       end
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END" }
       ESM.bot.deliver(message, to: channel)
     end
 
@@ -199,8 +196,6 @@ module ESM
       # Add a no category array to the front
       grouped_channels.unshift([{name: community.community_name}, not_categorized_channels])
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END - #{channels.size}" }
-
       # Return the results
       grouped_channels.to_json
     end
@@ -223,7 +218,6 @@ module ESM
       return halt(404) if user.nil?
 
       result = community.modifiable_by?(user.discord_user.on(community.discord_server))
-      ESM.logger.info("#{self.class}##{__method__}") { "END - #{result}" }
       result.to_s
     end
 
@@ -252,7 +246,6 @@ module ESM
         }
       end
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END - #{roles.size}" }
       roles.to_json
     end
 
@@ -270,7 +263,6 @@ module ESM
       users = community.discord_server.users
       return if users.blank?
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END - #{users.size}" }
       users.map(&:to_h).to_json
     end
 
@@ -301,7 +293,6 @@ module ESM
         community.id
       end
 
-      ESM.logger.info("#{self.class}##{__method__}") { "END - #{community_ids.size}" }
       community_ids.to_json
     end
   end
