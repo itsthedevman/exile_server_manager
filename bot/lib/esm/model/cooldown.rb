@@ -7,10 +7,10 @@ module ESM
     attribute :user_id, :integer
     attribute :steam_uid, :string
     attribute :command_name, :string
-    attribute :cooldown_quantity, :integer
-    attribute :cooldown_type, :string
+    attribute :cooldown_quantity, :integer, default: 1
+    attribute :cooldown_type, :string, default: "seconds"
     attribute :cooldown_amount, :integer, default: 0
-    attribute :expires_at, :datetime
+    attribute :expires_at, :datetime, default: -> { 1.second.ago }
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
@@ -21,15 +21,15 @@ module ESM
     after_find :adjust_for_community_changes
 
     def user
-      return ESM::User.where(id: self.user_id).first if self.user_id.present?
-      return ESM::User.find_by_steam_uid(self.steam_uid) if self.steam_uid.present?
+      return ESM::User.where(id: user_id).first if user_id.present?
+      return ESM::User.find_by_steam_uid(steam_uid) if steam_uid.present?
 
       nil
     end
 
     def active?
-      if self.cooldown_type == "times"
-        self.cooldown_amount >= self.cooldown_quantity
+      if cooldown_type == "times"
+        cooldown_amount >= cooldown_quantity
       else
         expires_at >= ::Time.current
       end
@@ -47,16 +47,16 @@ module ESM
       case cooldown_time
       # 1.times, 5.times...
       when Enumerator, Integer
-        self.update!(
+        update!(
           cooldown_quantity: cooldown_time.is_a?(Integer) ? cooldown_time : cooldown_time.size,
           cooldown_type: "times",
-          cooldown_amount: self.cooldown_amount + 1
+          cooldown_amount: cooldown_amount + 1
         )
       # 1.second, 5.days
       when ActiveSupport::Duration
         # Converts 1.second to [:seconds, 1]
         type, quantity = cooldown_time.parts.to_a.first
-        self.update!(cooldown_quantity: quantity, cooldown_type: type, expires_at: (executed_at + cooldown_time).to_time)
+        update!(cooldown_quantity: quantity, cooldown_type: type, expires_at: (executed_at + cooldown_time).to_time)
       end
     end
 
@@ -68,29 +68,29 @@ module ESM
     # @note This method purposefully does not persist any values
     def adjust_for_community_changes
       # Commands that have no community_id and are used in DMs will not be able to use this code
-      return if self.community.nil?
+      return if community.nil?
 
-      configuration = self.community.command_configurations.where(command_name: self.command_name).first
+      configuration = community.command_configurations.where(command_name: command_name).first
       return if configuration.nil?
-      return if configuration.cooldown_type == self.cooldown_type && configuration.cooldown_quantity == self.cooldown_quantity
+      return if configuration.cooldown_type == cooldown_type && configuration.cooldown_quantity == cooldown_quantity
 
       # They have changed to times, just reset the cooldown_amount to 0
       # Or they have changed from times to seconds (minutes, hours, etc.)
-      if configuration.cooldown_type == "times" || (configuration.cooldown_type != "times" && self.cooldown_type == "times")
+      if configuration.cooldown_type == "times" || (configuration.cooldown_type != "times" && cooldown_type == "times")
         self.expires_at = 1.second.ago
         self.cooldown_amount = 0
       else
         # Converts 1, "minutes" to 1.minutes to 60 (seconds)
         new_cooldown_seconds = configuration.cooldown_quantity.send(configuration.cooldown_type).to_i
-        current_cooldown_seconds = self.cooldown_quantity.send(self.cooldown_type).to_i
+        current_cooldown_seconds = cooldown_quantity.send(cooldown_type).to_i
 
         # Adjust the expiry time to compensate if the new time is less than the current
-        self.expires_at = self.expires_at - (current_cooldown_seconds - new_cooldown_seconds) if new_cooldown_seconds < current_cooldown_seconds
+        self.expires_at = expires_at - (current_cooldown_seconds - new_cooldown_seconds) if new_cooldown_seconds < current_cooldown_seconds
       end
 
       self.cooldown_type = configuration.cooldown_type
       self.cooldown_quantity = configuration.cooldown_quantity
-      self.save!
+      save!
     end
   end
 end
