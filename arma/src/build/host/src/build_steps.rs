@@ -656,7 +656,7 @@ fi
 
 pub fn build_extension(builder: &mut Builder) -> BuildResult {
     // This will be read by the build script and inserted into the extension
-    let extension_path = builder.local_git_path.join("src").join("arma");
+    let extension_path = builder.local_git_path.join("src").join("esm");
     let message_path = builder.local_git_path.join("src").join("message");
 
     fs::write(

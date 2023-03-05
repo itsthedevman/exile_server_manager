@@ -92,12 +92,12 @@ impl Builder {
 
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
             .watch(&local_git_path.join("src").join("@esm"))
-            .watch(&local_git_path.join("src").join("arma"))
+            .watch(&local_git_path.join("src").join("esm"))
             .watch(&local_git_path.join("src").join("message"))
             .watch(&local_git_path.join("src").join("build").join("receiver"))
             .watch(&local_git_path.join("src").join("build").join("common"))
             .watch(&local_git_path.join("src").join("build").join("compiler"))
-            .ignore(&local_git_path.join("src").join("arma").join(".build-sha"))
+            .ignore(&local_git_path.join("src").join("esm").join(".build-sha"))
             .load()?;
 
         let rebuild_mod = args.full_rebuild();
@@ -252,7 +252,7 @@ impl Builder {
                 || self.args.build_only() == "extension"
                 || has_directory_changed(
                     &self.file_watcher,
-                    &self.local_git_path.join("src").join("arma"),
+                    &self.local_git_path.join("src").join("esm"),
                 )
                 || has_directory_changed(
                     &self.file_watcher,

@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "src/arma",
+    "src/esm",
     "src/build/host",
     "src/build/receiver",
     "src/build/common",
@@ -8,4 +8,4 @@ members = [
     "src/message/message",
     "src/message/message_proc",
 ]
-default-members = ["src/arma"]
+default-members = ["src/esm"]
