@@ -1,7 +1,7 @@
 class InitialDb < ActiveRecord::Migration[5.2]
   def change
-    enable_extension 'hstore' unless extension_enabled?('hstore')
-    enable_extension 'uuid-ossp' unless extension_enabled?("uuid-ossp")
+    enable_extension "hstore" unless extension_enabled?("hstore")
+    enable_extension "uuid-ossp" unless extension_enabled?("uuid-ossp")
 
     # Attributes for ESM
     create_table :bot_attributes do |t|

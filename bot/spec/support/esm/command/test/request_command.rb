@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class RequestCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -14,8 +14,11 @@ module ESM
 
         argument :target
 
-        def discord
+        def on_execute
           add_request(to: target_user)
+        end
+
+        def on_response(_, _)
         end
 
         def request_accepted

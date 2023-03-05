@@ -1,0 +1,16 @@
+---
+en:
+  commands:
+    server_territories:
+      description: Displays the ID, name, and owner information for every territory
+        on the provided server
+      example: |-
+        **`%{prefix}server_territories esm_malden`**
+        Displays all territories for server `esm_malden`
+
+        **`%{prefix}server_territories esm_tanoa owner_name`**
+        Displays all territories for server `esm_tanoa`, but they are sorted the owner's name
+      arguments:
+        order_by: |-
+          Controls how the territories are sorted before they are displayed.
+          Valid options are: `id`, `territory_name`, `owner_uid`

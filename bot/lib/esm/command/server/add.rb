@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Add < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -17,7 +17,7 @@ module ESM
         argument :territory_id
         argument :target
 
-        def discord
+        def on_execute
           # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
           return request_accepted if same_user?
 
@@ -40,7 +40,7 @@ module ESM
           reply(embed)
         end
 
-        def server
+        def on_response(_, _)
           # Send the success message to the requestee (which can be the requestor)
           embed = ESM::Embed.build(:success, description: I18n.t("commands.add.requestee_success", user: target_user.mention, territory_id: @arguments.territory_id))
           ESM.bot.deliver(embed, to: target_user)
@@ -64,13 +64,20 @@ module ESM
         end
 
         def request_accepted
-          # Request the arma server to add the user
-          deliver!(
-            function_name: "addPlayerToTerritory",
-            territory_id: @arguments.territory_id,
-            target_uid: target_user.steam_uid,
-            uid: current_user.steam_uid
-          )
+          if v2_target_server?
+            # send_to_arma(
+            #   data_type:
+            # )
+          else
+            # Request the arma server to add the user
+            deliver!(
+              function_name: "addPlayerToTerritory",
+              territory_id: @arguments.territory_id,
+              target_uid: target_user.steam_uid,
+              uid: current_user.steam_uid
+            )
+          end
+
 
           # # Don't send the request accepted message if the requestor is the requestee
           # return if same_user?

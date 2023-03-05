@@ -29,16 +29,16 @@ class TerritoryGenerator
   ].freeze
 
   TERRITORY_LEVELS = [
-    { price: 5_000, radius: 15, object_count: 30 },
-    { price: 10_000, radius: 30, object_count: 60 },
-    { price: 15_000, radius: 45, object_count: 90 },
-    { price: 20_000, radius: 60, object_count: 120 },
-    { price: 25_000, radius: 75, object_count: 150 },
-    { price: 30_000, radius: 90, object_count: 180 },
-    { price: 35_000, radius: 105, object_count: 210 },
-    { price: 40_000, radius: 120, object_count: 240 },
-    { price: 45_000, radius: 135, object_count: 270 },
-    { price: 50_000, radius: 150, object_count: 300 }
+    {price: 5_000, radius: 15, object_count: 30},
+    {price: 10_000, radius: 30, object_count: 60},
+    {price: 15_000, radius: 45, object_count: 90},
+    {price: 20_000, radius: 60, object_count: 120},
+    {price: 25_000, radius: 75, object_count: 150},
+    {price: 30_000, radius: 90, object_count: 180},
+    {price: 35_000, radius: 105, object_count: 210},
+    {price: 40_000, radius: 120, object_count: 240},
+    {price: 45_000, radius: 135, object_count: 270},
+    {price: 50_000, radius: 150, object_count: 300}
   ].freeze
 
   TIME_FORMAT = "%FT%H:%M:%S"

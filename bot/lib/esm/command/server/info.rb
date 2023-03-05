@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Info < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -18,7 +18,7 @@ module ESM
         argument :target, default: nil
         argument :territory_id, default: nil
 
-        def discord
+        def on_execute
           # Ensure we were given a target or territory ID
           check_for_no_target!
 
@@ -31,7 +31,7 @@ module ESM
           end
         end
 
-        def server
+        def on_response(_, _)
           # I'm not quite sure if this is needed, but just in case...
           check_for_response!
 

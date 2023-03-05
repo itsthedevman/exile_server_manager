@@ -9,13 +9,13 @@ describe Array do
           item.to_s
         end
 
-      expect(string).to eql("1true[\"hello\"]")
+      expect(string).to eq("1true[\"hello\"]")
     end
   end
 
   describe "#total_size" do
     it "should add up all items (strings)" do
-      expect(["foo", "bar", "test", "!@#${%^&*()}"].total_size).to eql(22)
+      expect(["foo", "bar", "test", "!@#${%^&*()}"].total_size).to eq(22)
     end
   end
 end

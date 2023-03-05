@@ -5,7 +5,7 @@ module ESM
   module Command
     module Server
       class Broadcast < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -33,7 +33,7 @@ module ESM
 
         argument :message, regex: /(.|[\r\n])+/, description: "commands.broadcast.arguments.message", preserve: true, multiline: true
 
-        def discord
+        def on_execute
           check_for_message_length!
 
           # Send just the preview
@@ -54,7 +54,8 @@ module ESM
             end
 
           # Send the confirmation request
-          response = ESM.bot.deliver_and_await!(embed, to: current_channel, owner: current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
+          reply(embed)
+          response = ESM.bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
           return reply(I18n.t("commands.broadcast.cancelation_reply")) if response.nil? || response.downcase == I18n.t("no").downcase
 
           # Get all of the users to broadcast to

@@ -8,7 +8,7 @@ describe ESM::Command::Server::Reset, category: "command" do
   end
 
   it "should have 2 argument" do
-    expect(command.arguments.size).to eql(2)
+    expect(command.arguments.size).to eq(2)
   end
 
   it "should have a description" do
@@ -23,7 +23,7 @@ describe ESM::Command::Server::Reset, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
-    let(:second_user) { ESM::Test.second_user }
+    let(:second_user) { ESM::Test.user }
 
     # If you need to connect to a server
     let!(:wsc) { WebsocketClient.new(server) }
@@ -54,21 +54,21 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/i've reset all stuck players\./i)
@@ -88,21 +88,21 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/i was unable to find anyone who was stuck\./i)
@@ -122,21 +122,21 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
@@ -159,21 +159,21 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
@@ -193,21 +193,21 @@ describe ESM::Command::Server::Reset, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/is not stuck\. please have them join the server again, and if they are still stuck, instruct them to close arma 3 and then attempt this command again\./i)

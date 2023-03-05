@@ -1,0 +1,8 @@
+---
+en:
+  commands:
+    changelog:
+      description: Displays the changelog for the current version of ESM
+      example: |-
+        **`%{prefix}changelog`**
+        Displays the current changelog

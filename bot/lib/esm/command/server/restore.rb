@@ -5,7 +5,7 @@ module ESM
   module Command
     module Server
       class Restore < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -18,12 +18,12 @@ module ESM
         argument :server_id
         argument :territory_id
 
-        def discord
+        def on_execute
           @checks.owned_server!
           deliver!(query: "restore", territory_id: @arguments.territory_id)
         end
 
-        def server
+        def on_response(_, _)
           embed =
             if @response.success
               ESM::Embed.build(

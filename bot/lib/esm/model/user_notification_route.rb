@@ -19,7 +19,7 @@ module ESM
     belongs_to :source_server, class_name: "Server", optional: true
 
     validates :uuid, :user_id, :destination_community_id, :channel_id, presence: true
-    validates :notification_type, presence: true, uniqueness: { scope: %i[user_id destination_community_id source_server_id channel_id] }
+    validates :notification_type, presence: true, uniqueness: {scope: %i[user_id destination_community_id source_server_id channel_id]}
 
     before_create :create_uuid
 

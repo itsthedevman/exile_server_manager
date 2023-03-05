@@ -1,24 +1,35 @@
 # frozen_string_literal: true
 
 class OpenStruct
+  attr_reader :table
+
   def blank?
-    self.to_h.blank?
+    table.blank?
   end
 
-  def to_h
-    hash = {}
+  def each(&block)
+    return self if !block.present?
 
-    self.marshal_dump.each do |key, value|
-      hash[key] =
-        if value.is_a?(OpenStruct)
-          value.to_h
-        elsif value.is_a?(ActiveSupport::Duration)
-          value.parts
-        else
-          value
-        end
+    # Loop over each key and call the passed block with the key and the original value
+    # This means nested OpenStructs stay as OpenStructs
+    to_h.each_key do |key|
+      yield(key.to_s, self[key])
     end
 
-    hash
+    self
+  end
+
+  def map(&block)
+    return [] if !block.present?
+
+    # Loop over each key and call the passed block with the key and the original value
+    # This means nested OpenStructs stay as OpenStructs
+    to_h.keys.map do |key|
+      yield(key.to_s, self[key])
+    end
+  end
+
+  def to_ostruct
+    self
   end
 end

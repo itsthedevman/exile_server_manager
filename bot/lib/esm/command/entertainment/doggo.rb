@@ -4,7 +4,7 @@ module ESM
   module Command
     module Entertainment
       class Doggo < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
@@ -14,7 +14,7 @@ module ESM
 
         SUB_REDDIT = %w[dogpictures rarepuppers puppies].freeze
 
-        def discord
+        def on_execute
           send_waiting_message
           check_for_empty_link!
           remove_waiting_message
@@ -34,7 +34,7 @@ module ESM
           @link ||= lambda do
             10.times do
               response = begin
-                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: { 'User-agent': "ESM 2.0" })
+                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: {"User-agent": "ESM 2.0"})
               rescue URI::InvalidURIError
                 nil
               end

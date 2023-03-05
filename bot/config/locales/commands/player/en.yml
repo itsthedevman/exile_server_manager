@@ -1,0 +1,25 @@
+---
+en:
+  commands:
+    player:
+      description: Modifies a player on a server, regardless of them being online
+        or not.
+      example: |-
+        **`%{prefix}player esm_malden @Bryan money 1500`**
+        Gives @Bryan's player on `esm_malden` 1500 poptabs
+
+        **`%{prefix}player esm_altis @Bryan locker -50`**
+        Removes 50 poptabs from @Bryan's locker on `esm_altis`
+
+        **`%{prefix}player esm_namalsk 76561198037177305 k`**
+        RIP @Bryan. Kills @Bryan's player on `esm_namalsk`
+      arguments:
+        type: 'Valid types: `money`/`m`, `respect`/`r`, `locker`/`l`, `heal`/`h`,
+          `kill`/`k`'
+        value: |-
+          For types `money`, `respect`, and `locker`:
+            - This argument is required and must be a positive or negative number.
+            - Positive numbers will add the given amount of that type
+            - Negative numbers will remove the given amount of that type
+          For types `heal` and `kill`:
+            - This argument is optional

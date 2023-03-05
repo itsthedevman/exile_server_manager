@@ -5,7 +5,7 @@ module ESM
   module Command
     module Server
       class Player < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -32,7 +32,7 @@ module ESM
           end
         )
 
-        def discord
+        def on_execute
           @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
           deliver!(
@@ -44,7 +44,7 @@ module ESM
           )
         end
 
-        def server
+        def on_response(_, _)
           embed = ESM::Notification.build_random(
             community_id: target_community.id,
             type: expand_type,

@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Stuck < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -15,7 +15,7 @@ module ESM
 
         argument :server_id
 
-        def discord
+        def on_execute
           # Create a confirmation request to the requestee
           @checks.pending_request!
           add_request(
@@ -32,7 +32,7 @@ module ESM
           reply(embed)
         end
 
-        def server
+        def on_response(_, _)
           embed =
             if @response.success
               ESM::Embed.build(:success, description: I18n.t("commands.stuck.success_message", user: current_user.mention))

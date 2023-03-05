@@ -19,20 +19,20 @@ FactoryBot.define do
     command_name { "base" }
     cooldown_quantity { 10 }
     cooldown_type { "seconds" }
-    expires_at { DateTime.now }
+    expires_at { 1.second.ago }
 
     trait :inactive do
       command_name { "base" }
       cooldown_quantity { 10 }
       cooldown_type { "seconds" }
-      expires_at { DateTime.now }
+      expires_at { 1.second.ago }
     end
 
     trait :active do
       command_name { "base" }
       cooldown_quantity { 10 }
       cooldown_type { "seconds" }
-      expires_at { DateTime.now + (delay || 10.seconds) }
+      expires_at { 1.second.ago + (delay || 11.seconds) }
     end
   end
 end

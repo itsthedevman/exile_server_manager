@@ -1,0 +1,11 @@
+---
+en:
+  commands:
+    accept:
+      description: Accepts a request based off its UUID
+      example: |-
+        **`%{prefix}accept c619`**
+        Accepts request `c619` from your pending requests
+      success_message: The request has been accepted and I've notified the requestor
+      arguments:
+        uuid: The request's UUID that provided in the original request

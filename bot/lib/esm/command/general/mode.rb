@@ -4,7 +4,7 @@ module ESM
   module Command
     module General
       class Mode < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :dm
 
         define :enabled, modifiable: false, default: true
@@ -16,7 +16,7 @@ module ESM
         argument :community_id
         argument :mode, regex: /player|server/, description: "commands.mode.arguments.mode"
 
-        def discord
+        def on_execute
           check_for_owner!
           check_for_same_mode!
 
@@ -30,7 +30,7 @@ module ESM
           embed =
             ESM::Embed.build do |e|
               e.description = I18n.t(
-                "commands.mode.#{@arguments.mode == "player" ? "enabled" : "disabled"}",
+                "commands.mode.#{(@arguments.mode == "player") ? "enabled" : "disabled"}",
                 community_name: target_community.name
               )
               e.color = :green
@@ -54,7 +54,7 @@ module ESM
         end
 
         def check_for_same_mode!
-          check_failed!(:same_mode, state: @arguments.mode == "player" ? "enabled" : "disabled") if same_mode?
+          check_failed!(:same_mode, state: (@arguments.mode == "player") ? "enabled" : "disabled") if same_mode?
         end
 
         def check_for_active_servers!

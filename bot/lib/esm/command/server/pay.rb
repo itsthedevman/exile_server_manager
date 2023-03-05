@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Pay < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -16,11 +16,11 @@ module ESM
         argument :server_id
         argument :territory_id
 
-        def discord
+        def on_execute
           deliver!(function_name: "payTerritory", territory_id: @arguments.territory_id, uid: current_user.esm_user.steam_uid)
         end
 
-        def server
+        def on_response(_, _)
           embed =
             ESM::Embed.build do |e|
               e.description = I18n.t(

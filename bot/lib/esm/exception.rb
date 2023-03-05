@@ -31,11 +31,44 @@ module ESM
     # Raised if a server fails to authenticate to the Websocket server
     class FailedAuthentication < Error; end
 
+    # Raised when a message fails validation or fails to create
+    class InvalidMessage < Error; end
+
     # Raised if the parser failed to find the argument in a message from a user
     class FailedArgumentParse < DataError; end
 
     # Generic exception for any checks
     class CheckFailure < DataError; end
+
+    # Raised when attempting to send a message the tcp_server when it's not online
+    class ServerNotConnected < Error; end
+
+    # Raised when a message times out during a sync operation. This should rarely be raised
+    class MessageSyncTimeout < Error; end
+
+    # When the bot does not have access to send a message to a particular channel
+    class ChannelAccessDenied < Error; end
+
+    # Handles an error code response from the extension
+    class ExtensionError < Error
+      def initialize(error_code)
+        @error_code = error_code
+
+        super("")
+      end
+
+      # Translates the underlying error code.
+      # In normal workflow, this method will be passed the following arguments:
+      # @option [String] :user The mention for the user that ran the command
+      # @option [String] :server_id The ID of the server the command was ran on
+      def translate(**args)
+        I18n.t(
+          "exceptions.extension.#{@error_code}",
+          default: I18n.t("exceptions.extension.default", error_code: @error_code),
+          **args
+        )
+      end
+    end
 
     # Check failure, but no message is sent
     class CheckFailureNoMessage < Error

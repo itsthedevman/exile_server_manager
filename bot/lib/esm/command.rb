@@ -2,43 +2,52 @@
 
 module ESM
   module Command
-    CATEGORIES = %w[development general server community entertainment system].freeze
+    CATEGORIES = %w[
+      community
+      development
+      entertainment
+      general
+      server
+      system
+    ].freeze
+
+    # @return [Array<Symbol>] A list of publicly available command types.
+    #   Any types not in this list will not show up in the help documentation or on the website.
+    TYPES = %i[admin player].freeze
 
     class << self
-      attr_reader :all
+      attr_reader :all, :v1
     end
 
     def self.[](command_name)
       return if command_name.blank?
 
-      @all.find { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
+      @all.find { |command| command_name == command.name || command.aliases.include?(command_name.to_sym) }
+    end
+
+    # V1
+    def self.get_v1(command_name)
+      return if command_name.blank?
+
+      @v1.find { |command| command_name == command.name }
     end
 
     def self.include?(command_name)
-      return false if command_name.blank?
-
-      @all.any? { |command| command_name == command.name || command.command_aliases.include?(command_name.to_sym) }
+      !self[command_name].nil?
     end
 
-    def self.load_commands
+    def self.load
       @all = []
+      @v1 = [] # V1
       @by_category = nil
       @by_type = nil
       @cache = []
 
-      path = File.expand_path("lib/esm/command")
-      CATEGORIES.each do |category|
-        Dir["#{path}/#{category}/*.rb"].each do |command_path|
-          process_command(command_path, category)
-        end
-      end
-
-      # Load all of our test commands
-      # Can't load in spec_helper because of race condition
-      if ESM.env.test?
-        path = File.expand_path("spec/support/esm/command/test")
-        Dir["#{path}/*.rb"].each do |command_path|
-          process_command(command_path, "test")
+      ESM::Command::Base.subclasses.each do |command_class|
+        if command_class.name.include?("v1") # V1
+          process_command_v1(command_class) # V1
+        else
+          process_command(command_class)
         end
       end
 
@@ -54,54 +63,36 @@ module ESM
       @cache = nil
     end
 
-    def self.process_command(command_path, category)
-      command_name = parse_command_name_from_path(command_path)
-
-      # Create our command to be stored
-      command = build(command_name, category)
-
+    def self.process_command(command_class)
       # Tell the bot about our command
-      define(command.class, command.name.to_sym, command.aliases)
+      ESM::Bot.register_command(command_class)
 
       # Cache Command
-      cache(command)
+      cache(command_class)
+    end
+
+    # V1
+    def self.process_command_v1(command_class)
+      return if command_class.type.nil?
+
+      @v1 << command_class
     end
 
     def self.parse_command_name_from_path(command_path)
       command_path.gsub("#{File.expand_path("..", command_path)}/", "").gsub(/\.rb$/, "")
     end
 
-    def self.build(command_name, category)
-      # set_id -> SetId or pay -> Pay
-      command_name = command_name.classify(keep_plural: true)
-      category = category.classify(keep_plural: true)
+    def self.cache(command_class)
+      command = command_class.new
 
-      # "ESM::Command::Server::Pay" -> ESM::Command::Server::Pay -> New instance
-      "ESM::Command::#{category}::#{command_name}".constantize.new
-    end
-
-    def self.define(command_class, name, aliases)
-      return if ESM.bot.nil?
-
-      ESM.bot.command(name, aliases: aliases) do |event|
-        # Execute the command.
-        # Threaded since I handle everything in the commands
-        Thread.new { command_class.new.execute(event) }
-
-        # Don't send anything back
-        nil
-      end
-    end
-
-    def self.cache(command)
       # Background commands do not have types
       return if command.type.nil?
 
       # Use command_name instead of command.name to get set_id instead of setid
-      @all << command.class
+      @all << command_class
 
-      # Don't cache development commands
-      return if command.type == :development
+      # Don't cache invalid command types.
+      return if !TYPES.include?(command.type)
 
       # To be written to the DB in bulk
       @cache << {
@@ -122,7 +113,40 @@ module ESM
     end
 
     def self.by_type
-      @by_type ||= OpenStruct.new(@all.group_by(&:command_type))
+      @by_type ||= OpenStruct.new(@all.group_by(&:type))
+    end
+
+    #
+    # Returns configurations for all commands, often used for database inserts
+    #
+    # @return [Array<Hash>]
+    #
+    def self.configurations
+      @configurations ||=
+        ESM::Command.all.map do |command|
+          cooldown_default = command.defines.cooldown_time.default
+
+          case cooldown_default
+          when Enumerator, Integer
+            cooldown_type = "times"
+            cooldown_quantity = cooldown_default.size
+          when ActiveSupport::Duration
+            # Converts 2.seconds to [:seconds, 2]
+            cooldown_type, cooldown_quantity = cooldown_default.parts.to_a.first
+          else
+            raise TypeError, "Invalid type \"#{cooldown_default.class}\" detected for command #{command.name}'s default cooldown"
+          end
+
+          {
+            command_name: command.name,
+            enabled: command.defines.enabled.default,
+            cooldown_quantity: cooldown_quantity,
+            cooldown_type: cooldown_type,
+            allowed_in_text_channels: command.defines.allowed_in_text_channels.default,
+            whitelist_enabled: command.defines.whitelist_enabled.default,
+            whitelisted_role_ids: command.defines.whitelisted_role_ids.default
+          }
+        end
     end
   end
 end

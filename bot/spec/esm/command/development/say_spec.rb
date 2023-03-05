@@ -4,14 +4,14 @@ describe ESM::Command::Development::Say, category: "command" do
   let!(:command) { ESM::Command::Development::Say.new }
   let!(:community) { create(:esm_community) }
   let!(:server) { create(:esm_malden, community_id: community.id) }
-  let!(:user) { create(:esm_dev) }
+  let!(:user) { create(:developer) }
 
   it "should be valid" do
     expect(command).not_to be_nil
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -29,7 +29,7 @@ describe ESM::Command::Development::Say, category: "command" do
       expect { command.execute(event) }.not_to raise_error
 
       response = ESM::Test.messages.first.second
-      expect(response).to eql("Hello World")
+      expect(response).to eq("Hello World")
     end
   end
 end

@@ -5,7 +5,7 @@ module ESM
   module Command
     module General
       class Register < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
@@ -13,7 +13,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        def discord
+        def on_execute
           message =
             if current_user.esm_user.registered?
               already_registered_message

@@ -14,6 +14,10 @@ default: &default
     websocket_request_overseer:
       check_every: 15
 
+    # ESM::Connection::MessageOverseer
+    connection_message_overseer:
+      check_every: 5
+
     # ESM::Websocket::Connection::Overseer
     websocket_connection_overseer:
       check_every: 3
@@ -34,9 +38,34 @@ test:
     websocket_request_overseer:
       check_every: 0.5
 
+    connection_message_overseer:
+      check_every: 0.5
+
     # ESM::Websocket::Connection::Overseer
     websocket_connection_overseer:
       check_every: 0.5
+
+  # ESM::Request::Overseer
+  request_overseer:
+    check_every: 0.5
+
+  # ESM::Websocket::Request::Overseer
+  websocket_request_overseer:
+    check_every: 0.5
+
+  # ESM::Bot::ResendQueue
+  bot_resend_queue:
+    check_every: 0.5
+    max_attempts: 3
+
+  # ESM::Connection::Manager
+  connection_manager:
+    check_every: 0.5
+    unauthenticated:
+      time_to_live: 5
+    authenticated:
+      check_every: 15
+
 
 production:
   <<: *default

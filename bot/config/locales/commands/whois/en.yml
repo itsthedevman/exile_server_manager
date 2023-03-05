@@ -1,0 +1,31 @@
+---
+en:
+  commands:
+    whois:
+      description: Displays all available information about a player via their Steam
+        UID, Discord ID, or Mention
+      example: |-
+        **`%{prefix}whois @Bryan`**
+        Using their mention, get all available information about this player
+
+        **`%{prefix}whois 76561198037177305`**
+        Using their steam uid, get all available information about this player
+
+        **`%{prefix}whois 137709767954137088`**
+        Using their Discord ID, get all available information about this player
+      discord:
+        header: __Discord Information__
+        id: ID
+        username: Username
+        status: Status
+        created_at: Created
+      steam:
+        header: __Steam Information__
+        id: ID
+        username: Username
+        visibility: Profile Visibility
+        created_at: Created
+        community_banned: Community banned?
+        vac_banned: VAC banned?
+        number_of_vac_bans: Number of VAC bans
+        days_since_vac_ban: Days since last VAC ban

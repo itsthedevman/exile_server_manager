@@ -1,0 +1,9 @@
+---
+en:
+  commands:
+    doggo:
+      description: Humanity's best friend
+      example: |-
+        **`%{prefix}doggo`**
+        Returns a random dog image
+      waiting: Shaking treat jar...

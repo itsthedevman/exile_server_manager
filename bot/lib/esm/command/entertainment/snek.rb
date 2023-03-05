@@ -4,8 +4,8 @@ module ESM
   module Command
     module Entertainment
       class Snek < ESM::Command::Base
-        type :player
-        aliases :snake, :nope_rope, :danger_noodle
+        set_type :player
+        register_aliases :snake, :nope_rope, :danger_noodle
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
@@ -15,7 +15,7 @@ module ESM
 
         SUB_REDDIT = %w[SnakesWithHats snek sneks snakeswearinghats].freeze
 
-        def discord
+        def on_execute
           send_waiting_message
           check_for_empty_link!
           remove_waiting_message
@@ -35,7 +35,7 @@ module ESM
           @link ||= lambda do
             10.times do
               response = begin
-                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: { 'User-agent': "ESM 2.0" })
+                HTTParty.get("http://www.reddit.com/r/#{SUB_REDDIT.sample}/random.json", headers: {"User-agent": "ESM 2.0"})
               rescue URI::InvalidURIError
                 nil
               end

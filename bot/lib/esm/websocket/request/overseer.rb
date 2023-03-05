@@ -27,14 +27,18 @@ module ESM
         # Checks all the connections
         # @private
         def self.check_connections
-          ESM::Websocket.connections.each(&method(:process_connection))
+          ESM::Websocket.connections.each do |server_id, connection|
+            process_connection(server_id, connection)
+          end
         end
 
         # Checks a connection's requests
         # @private
         def self.process_connection(_server_id, connection)
           @connection = connection
-          @connection.requests.each(&method(:check_request))
+          @connection.requests.each do |id, request|
+            check_request(id, request)
+          end
         end
 
         # Finally, check a single request, and remove it if it's timed out
@@ -62,9 +66,9 @@ module ESM
 
           # Let the user know
           request.command.reply(embed)
-        rescue StandardError => e
+        rescue => e
           ESM.logger.error("#{self.class}##{__method__}") do
-            JSON.pretty_generate(
+            ESM::JSON.pretty_generate(
               server_id: @connection&.server&.server_id,
               command_name: request&.command&.name,
               request: request&.to_h,

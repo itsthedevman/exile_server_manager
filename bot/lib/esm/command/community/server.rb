@@ -4,7 +4,7 @@ module ESM
   module Command
     module Community
       class Server < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -13,14 +13,22 @@ module ESM
         define :cooldown_time, modifiable: true, default: 2.seconds
 
         argument :server_id
-
         skip_check :connected_server
 
-        def discord
+        def on_execute
           embed =
             ESM::Embed.build do |e|
               e.title = target_server.server_name
-              e.color = target_server.online? ? :green : :red
+              e.color = target_server.connected? ? :green : :red
+
+              if !target_server.connected?
+                e.description =
+                  if target_server.disconnected_at.nil?
+                    I18n.t("commands.servers.offline")
+                  else
+                    I18n.t("commands.servers.offline_for", time: target_server.time_since_last_connection)
+                  end
+              end
 
               # Server ID, IP, port, status
               add_connection_info(e)
@@ -50,7 +58,7 @@ module ESM
           #     :max_players, :number_of_bots, :dedicated, :operating_system, :password_needed, :secure, :game_version, :server_port,
           #     :server_id, :server_tags, :game_id
           server.server_info.to_ostruct
-        rescue StandardError
+        rescue
           nil
         end
 
@@ -58,7 +66,7 @@ module ESM
           e.add_field(name: I18n.t(:server_id), value: "```#{target_server.server_id}```")
           e.add_field(name: I18n.t(:ip), value: "```#{target_server.server_ip}```", inline: true)
           e.add_field(name: I18n.t(:port), value: "```#{target_server.server_port}```")
-          return unless target_server.online?
+          return unless target_server.connected?
 
           e.add_field(name: I18n.t("commands.server.online_for"), value: "```#{target_server.uptime}```")
           e.add_field(name: I18n.t("commands.server.restart_in"), value: "```#{target_server.time_left_before_restart}```")
@@ -78,7 +86,7 @@ module ESM
 
           grouped_mods = target_server.server_mods.group_by { |mod| mod.mod_required? ? I18n.t(:required_mods) : I18n.t(:optional_mods) }
           grouped_mods.each do |header, mods|
-            mod_field = { name: header, value: [], inline: true }
+            mod_field = {name: header, value: [], inline: true}
             process_mods(e, mod_field, mods)
           end
         end
@@ -95,14 +103,14 @@ module ESM
 
             # If the owner added more mods than our field can hold, send it and create a new field
             if (mod_field[:value].total_size + mod_line.size) > ESM::Embed::Limit::FIELD_VALUE_LENGTH_MAX
-              e.add_field(mod_field)
-              mod_field = { name: "#{mod_field[:name]} #{I18n.t(:continued)}", value: [], inline: true }
+              e.add_field(**mod_field)
+              mod_field = {name: "#{mod_field[:name]} #{I18n.t(:continued)}", value: [], inline: true}
             end
 
             mod_field[:value] << mod_line
           end
 
-          e.add_field(mod_field)
+          e.add_field(**mod_field)
         end
       end
     end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe ESM::SteamAccount do
-  let!(:steam) { described_class.new(TestUser::User1::STEAM_UID) }
+  let!(:steam) { described_class.new(ESM::Test.steam_uid) }
 
   it "is valid" do
     expect(steam).not_to be_nil
@@ -9,7 +9,7 @@ describe ESM::SteamAccount do
     expect(steam.send(:bans)).not_to be_nil
   end
 
-  it "should return 'Public'" do
-    expect(steam.profile_visibility).to eql("Public")
+  it "returns the profile's visibility" do
+    expect(steam.profile_visibility).to be_in(["Private", "Friends Only", "Public"])
   end
 end

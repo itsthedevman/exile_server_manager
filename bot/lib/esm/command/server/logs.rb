@@ -28,7 +28,7 @@ module ESM
           "déc" => "dec"
         }.freeze
 
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -46,7 +46,7 @@ module ESM
         # In order to utilize the `#target_user` logic, the argument must have a name as target.
         argument :target, regex: /.+/, description: "commands.logs.arguments.query", multiline: true, display_as: :query
 
-        def discord
+        def on_execute
           query = ""
 
           # If the target was given, check to make sure they're registered and then set the steam_uid
@@ -69,7 +69,7 @@ module ESM
         #     line: <Integer>
         #     entry: <String>
         #     date: <String 2020-10-11>
-        def server
+        def on_response(_, _)
           check_for_no_logs!
 
           @log = ESM::Log.create!(server_id: target_server.id, search_text: @arguments.target, requestors_user_id: current_user.esm_user.id)
@@ -110,10 +110,10 @@ module ESM
           log_entry = ESM::LogEntry.new(log_id: @log.id, log_date: log_date, file_name: file_name)
 
           logs.each do |log|
-            parsed_entry = { timestamp: "", line_number: log.line, entry: "" }
+            parsed_entry = {timestamp: "", line_number: log.line, entry: ""}
 
             # Pull timestamp from file and remove metadata
-            if match = log.entry.match(ESM::Regex::LOG_TIMESTAMP)
+            if (match = log.entry.match(ESM::Regex::LOG_TIMESTAMP))
               parsed_entry[:timestamp] = DateTime.strptime("#{log.date} #{match["time"]} #{match["zone"]}", "%Y-%m-%d %H:%M:%S %Z")
               log.entry = log.entry.gsub(ESM::Regex::LOG_TIMESTAMP, "")
             end

@@ -4,7 +4,7 @@ module ESM
   module Command
     module General
       class Id < ESM::Command::Base
-        type :player
+        set_type :player
         limit_to :text
 
         define :enabled, modifiable: false, default: true
@@ -13,7 +13,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: false, default: true
         define :cooldown_time, modifiable: false, default: 2.seconds
 
-        def discord
+        def on_execute
           embed =
             ESM::Embed.build do |e|
               e.description = I18n.t("commands.id.embed.description", community_name: current_community.name, community_id: current_community.community_id)

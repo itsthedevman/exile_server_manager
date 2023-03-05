@@ -1,0 +1,6 @@
+---
+en:
+  commands:
+    base_v1:
+      description: A test command
+      example: A test example

@@ -1,0 +1,7 @@
+---
+en:
+  commands:
+    uptime:
+      description: Displays how long the server has been online
+      example: "**`%{prefix}uptime esm_malden`**"
+      server_uptime: "`%{server}` has been online for %{time}"

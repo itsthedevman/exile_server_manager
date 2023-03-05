@@ -12,7 +12,7 @@ describe ESM::Command::General::Whois, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -34,7 +34,7 @@ describe ESM::Command::General::Whois, category: "command" do
     it "should run (mention)" do
       command_statement = command.statement(target: user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-      expect { response = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
@@ -73,7 +73,8 @@ describe ESM::Command::General::Whois, category: "command" do
     end
 
     it "should run (steam_uid/not registered)" do
-      command_statement = command.statement(target: TestUser::User2::STEAM_UID)
+      steam_uid = ESM::Test.steam_uid
+      command_statement = command.statement(target: steam_uid)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 
@@ -83,7 +84,7 @@ describe ESM::Command::General::Whois, category: "command" do
     end
 
     it "should error (user not in discord server)" do
-      command_statement = command.statement(target: TestUser::User2::ID)
+      command_statement = command.statement(target: "000000000000000000")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end

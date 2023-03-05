@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class DirectMessageCommand < ESM::Command::Base
-        type :player
+        set_type :player
         limit_to :dm
 
         define :enabled, modifiable: true, default: true
@@ -13,9 +13,11 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        def discord; end
+        def on_execute
+        end
 
-        def server; end
+        def on_response(_, _)
+        end
       end
     end
   end

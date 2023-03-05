@@ -73,7 +73,7 @@ describe ESM::Command::General::Help, category: "command" do
 
       command_statement = command.statement(category: "commands")
       event = CommandEvent.create(command_statement, user: user)
-      expect {command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil

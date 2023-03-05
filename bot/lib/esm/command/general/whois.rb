@@ -4,7 +4,7 @@ module ESM
   module Command
     module General
       class Whois < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
 
         define :enabled, modifiable: true, default: true
@@ -15,7 +15,7 @@ module ESM
 
         argument :target
 
-        def discord
+        def on_execute
           check_for_user_access!
 
           embed =

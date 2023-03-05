@@ -9,26 +9,26 @@ class WebsocketClient
     CONFIG = {
       server_success_command: {},
       server_error_command: {},
-      post_initialization: { send_ignore_message: true },
-      me: { delay: 0..1 },
-      territories: { delay: 0..1 },
-      pay: { send_ignore_message: true, delay: 0..3 },
-      gamble: { send_ignore_message: true, delay: 0..3 },
-      setterritoryid: { delay: 0..1 },
-      add: { send_ignore_message: true, delay: 0..3 },
-      allterritories: { send_ignore_message: true, delay: 0..3 },
-      exec: { send_ignore_message: true, delay: 0..3 },
-      promote: { send_ignore_message: true, delay: 0..3 },
-      demote: { send_ignore_message: true, delay: 0..3 },
-      remove: { send_ignore_message: true, delay: 0..3 },
-      upgrade: { send_ignore_message: true, delay: 0..3 },
-      restore: { delay: 0..1 },
-      player: { send_ignore_message: true, delay: 0..3 },
-      reward: { send_ignore_message: true, delay: 0..3 },
-      info: { send_ignore_message: true, delay: 0..3 },
-      stuck: { delay: 0..1 },
-      reset: { delay: 0..1 },
-      logs: { delay: 0..1 }
+      post_initialization: {send_ignore_message: true},
+      me: {delay: 0..1},
+      territories: {delay: 0..1},
+      pay: {send_ignore_message: true, delay: 0..3},
+      gamble: {send_ignore_message: true, delay: 0..3},
+      setterritoryid: {delay: 0..1},
+      add: {send_ignore_message: true, delay: 0..3},
+      allterritories: {send_ignore_message: true, delay: 0..3},
+      exec: {send_ignore_message: true, delay: 0..3},
+      promote: {send_ignore_message: true, delay: 0..3},
+      demote: {send_ignore_message: true, delay: 0..3},
+      remove: {send_ignore_message: true, delay: 0..3},
+      upgrade: {send_ignore_message: true, delay: 0..3},
+      restore: {delay: 0..1},
+      player: {send_ignore_message: true, delay: 0..3},
+      reward: {send_ignore_message: true, delay: 0..3},
+      info: {send_ignore_message: true, delay: 0..3},
+      stuck: {delay: 0..1},
+      reset: {delay: 0..1},
+      logs: {delay: 0..1}
     }.freeze
 
     def response_server_success_command
@@ -36,7 +36,7 @@ class WebsocketClient
     end
 
     def response_server_error_command
-      send_response(parameters: [{ error: "oops" }])
+      send_response(parameters: [{error: "oops"}])
     end
 
     def response_post_initialization
@@ -98,7 +98,7 @@ class WebsocketClient
     end
 
     def response_gamble
-      return send_response(parameters: [{ error: "Not enough poptabs!" }]) if @flags.NOT_ENOUGH_MONEY
+      return send_response(parameters: [{error: "Not enough poptabs!"}]) if @flags.NOT_ENOUGH_MONEY
 
       amount = @data.parameters.amount.to_i
       locker_before = amount
@@ -123,10 +123,10 @@ class WebsocketClient
 
     # The command is actually !setid, but the v1 DLL is expecting this.
     def response_setterritoryid
-      return send_response(parameters: [{ success: false, reason: "Some reason" }]) if @flags.FAIL_WITH_REASON
-      return send_response(parameters: [{ success: false }]) if @flags.FAIL_WITHOUT_REASON
+      return send_response(parameters: [{success: false, reason: "Some reason"}]) if @flags.FAIL_WITH_REASON
+      return send_response(parameters: [{success: false}]) if @flags.FAIL_WITHOUT_REASON
 
-      send_response(parameters: [{ success: true }])
+      send_response(parameters: [{success: true}])
     end
 
     def response_add
@@ -164,7 +164,7 @@ class WebsocketClient
           "Executed code on target"
         end
 
-      send_response(parameters: [{ message: message }])
+      send_response(parameters: [{message: message}])
     end
 
     def response_promote
@@ -202,7 +202,7 @@ class WebsocketClient
 
     def response_player
       # This handles kill and heal
-      response = { type: @data.parameters.type }
+      response = {type: @data.parameters.type}
 
       if %w[money locker respect].include?(@data.parameters.type)
         modified_amount = @data.parameters.value.to_i
@@ -224,7 +224,7 @@ class WebsocketClient
       receipt << ["Poptabs (Locker)", @server_data.reward_locker_poptabs] if @server_data.reward_locker_poptabs.positive?
       receipt << ["Respect", @server_data.reward_respect] if @server_data.reward_respect.positive?
 
-      send_response(parameters: [{ receipt: receipt }])
+      send_response(parameters: [{receipt: receipt}])
     end
 
     def response_info
@@ -265,11 +265,11 @@ class WebsocketClient
     end
 
     def response_stuck
-      send_response(parameters: [{ success: @flags.SUCCESS }])
+      send_response(parameters: [{success: @flags.SUCCESS}])
     end
 
     def response_reset
-      send_response(parameters: [{ success: @flags.SUCCESS }])
+      send_response(parameters: [{success: @flags.SUCCESS}])
     end
 
     # 0: The search parameters
@@ -287,7 +287,7 @@ class WebsocketClient
 
       Faker::Number.between(from: 1, to: 4).times do
         logs << {
-          date: Faker::Date.in_date_period,
+          :date => Faker::Date.in_date_period,
           "ExileTradingLog.log" => LogGenerator.generate_trading_log,
           "ExileTerritoryLog.log" => LogGenerator.generate_territory_log,
           "ExileDeathLog.log" => LogGenerator.generate_death_log

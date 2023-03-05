@@ -3,19 +3,22 @@
 FactoryBot.define do
   factory :server_setting, class: "ESM::ServerSetting" do
     # server_id {}
-    extdb_path { Faker::File.dir }
-    gambling_payout { Faker::Number.between(from: 1, to: 100) }
-    gambling_modifier { Faker::Number.between(from: 1, to: 3) }
-    gambling_randomizer_min { 0 }
-    gambling_randomizer_mid { 0.5 }
 
-    gambling_randomizer_max do
+    # Do not randomize otherwise it'll break the client
+    # extdb_path { Faker::File.dir }
+    # logging_path { Faker::File.dir }
+
+    gambling_payout_base { Faker::Number.between(from: 1, to: 100) }
+    gambling_modifier { Faker::Number.between(from: 1, to: 3) }
+    gambling_payout_randomizer_min { 0 }
+    gambling_payout_randomizer_mid { 0.5 }
+
+    gambling_payout_randomizer_max do
       value = (rand + 0.75).round(3)
       value > 1 ? 1 : value
     end
 
-    gambling_win_chance { Faker::Number.between(from: 1, to: 100) }
-    logging_path { Faker::File.dir }
+    gambling_win_percentage { Faker::Number.between(from: 1, to: 100) }
     logging_add_player_to_territory { rand > 0.5 }
     logging_demote_player { rand > 0.5 }
     logging_exec { rand > 0.5 }
@@ -24,8 +27,8 @@ FactoryBot.define do
     logging_pay_territory { rand > 0.5 }
     logging_promote_player { rand > 0.5 }
     logging_remove_player_from_territory { rand > 0.5 }
-    logging_reward { rand > 0.5 }
-    logging_transfer { rand > 0.5 }
+    logging_reward_player { rand > 0.5 }
+    logging_transfer_poptabs { rand > 0.5 }
     logging_upgrade_territory { rand > 0.5 }
     max_payment_count { Faker::Number.number(digits: 1) }
     request_thread_type { rand > 0.5 ? "exile" : "arma" }

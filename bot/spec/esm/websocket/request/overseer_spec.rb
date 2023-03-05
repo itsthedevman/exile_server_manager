@@ -25,9 +25,9 @@ describe ESM::Websocket::Request::Overseer do
     end
 
     it "should not time out" do
-      expect(server_connection.requests.size).to eql(iterations)
+      expect(server_connection.requests.size).to eq(iterations)
       sleep(1)
-      expect(server_connection.requests.size).to eql(iterations)
+      expect(server_connection.requests.size).to eq(iterations)
     end
 
     it "should remove the timed out request" do
@@ -37,11 +37,11 @@ describe ESM::Websocket::Request::Overseer do
 
       server_connection.requests << ESM::Websocket::Request.new(user: user.discord_user, command: command, channel: nil, parameters: nil, timeout: 0)
 
-      expect(server_connection.requests.size).to eql(iterations + 1)
+      expect(server_connection.requests.size).to eq(iterations + 1)
       sleep(1)
-      expect(server_connection.requests.size).to eql(iterations)
-      expect(ESM::Test.messages.size).to eql(1)
-      expect(ESM::Test.messages.first[1].description).to match(/never replied to your command/i)
+      expect(server_connection.requests.size).to eq(iterations)
+      expect(ESM::Test.messages.size).to eq(1)
+      expect(ESM::Test.messages.first.content.description).to match(/never replied to your command/i)
     end
   end
 end

@@ -19,8 +19,8 @@ module ESM
           marxet-item-sold
         ].freeze
 
-        type :player
-        aliases :notif
+        set_type :player
+        register_aliases :notif
         limit_to :dm
         requires :registration
 
@@ -37,20 +37,20 @@ module ESM
         argument :state, regex: /allow|deny/, description: "commands.preferences.arguments.state", default: nil
         argument :type, regex: /#{TYPES.join("|")}/, description: "commands.preferences.arguments.type", default: "all"
 
-        def discord
+        def on_execute
           return send_preferences if @arguments.state.nil?
 
           # Creates an array of ["custom"] or ["base-raid", "flag-stolen", "flag-restored", etc...]
           types =
             if @arguments.type == "all"
               # Remove "all" from the list
-              TYPES.dup[1..-1]
+              TYPES.dup[1..]
             else
               [@arguments.type]
             end
 
           # Converts the array of types to { custom: true }, or { "base-raid": false, "flag-stolen": false, "flag-restored": false, etc... }
-          query = Hash[types.map { |type| [type.underscore, allowed?] }]
+          query = types.map { |type| [type.underscore, allowed?] }.to_h
 
           # Update the preference
           preference.update(query)

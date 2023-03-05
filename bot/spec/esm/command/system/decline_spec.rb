@@ -8,7 +8,7 @@ describe ESM::Command::System::Decline, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -23,7 +23,7 @@ describe ESM::Command::System::Decline, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:server) { ESM::Test.server }
     let!(:user_1) { ESM::Test.user }
-    let!(:user_2) { ESM::Test.second_user }
+    let!(:user_2) { ESM::Test.user }
 
     let!(:request) do
       channel_id = [ESM::Community::ESM::SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
@@ -45,7 +45,7 @@ describe ESM::Command::System::Decline, category: "command" do
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
-      expect(ESM::Request.all.size).to eql(0)
+      expect(ESM::Request.all.size).to eq(0)
     end
 
     it "should run (Invalid UUID)" do

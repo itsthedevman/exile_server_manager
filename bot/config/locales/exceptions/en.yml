@@ -6,14 +6,30 @@ en:
     malformed_message: "**[`ESM_fnc_sendToChannel`]**\nThe provided message is malformed and unable to be delivered.\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to send: ```%{message}```"
     deliver_failure: |-
       Hi there!
-      Sorry for bothering you. I ran into an issue with sending a message to one of your channels. Since this is more than likely a permission issue, will you please ensure I have the correct permissions to `READ MESSAGES`, `SEND MESSAGES`, and `EMBED LINKS` to this channel?
-      If you continue to receive this message, please join my Discord (https://esmbot.com/join), post in the Support Channel and my developer will get back to you as soon as he can.
-      **Failure Reason:**
-      ```%{exception}```
-      **Channel Name:**
-      ```%{channel_name}```
-      **Message:**
+      Sorry for bothering you. I ran into an issue with sending a message to one of your channels. Since this is more than likely a permission issue, will you please ensure that I have permission to "View Channels" and text channel permission to "Send Messages" and "Embed Links"? Thanks!
+
+      The channel I attempted to send to is "%{channel_name}" and I was told to send this:
       ```%{message}```
+    logging_channel_access_denied: |-
+      Hi there!
+      Sorry for bothering you. I ran into an issue with sending a message to %{community_name}'s logging channel. Will you please ensure that I have permission to "View Channels" and text channel permission to "Send Messages" and "Embed Links"? Thank you!
+    extension_error: |-
+      Hi there!
+      Your server `%{server_id}` has encountered an error that requires your attention. Please open `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path) and search for `%{id}` for the full error.
+    extension:
+      test: "%{user} | %{message_id} | %{server_id} | %{type} | %{data_type} | %{mdata_type} | %{data_content_foo} | %{mdata_content_bar}"
+      default: "Error type `%{type}` is not registered as a valid locale"
+      account_does_not_exist: "Hey %{user}, you will need to join `%{server_id}` first before you can run **any** commands on it."
+      target_account_does_not_exist: "Hey %{user}, %{target} needs to join `%{server_id}` before they can be used in **any** command."
+      client_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
+      null_player: "Hey %{user}, you need to be spawned and alive on `%{server_id}` before you can use this command."
+      message_undeliverable: "I'm sorry %{user}, `%{server_id}` never replied to your previous command. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}`"
+      system_exception: "Oh crap! I'm sorry %{user}, it appears that I have a bug in my software\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this error:" # Error included in separate error
+      error: "I'm sorry %{user}, an error occurred while processing your request on `#{server_id}`. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and let them know I left them details in `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path)"
+      fail_database_connect: |-
+        ESM on `%{server_id}` experienced an error when attempting to connect to your database. Please open `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path) and search for `ERROR` for the full error.
+        **ESM will not be available on this server until this error is resolved.**
+      invalid_send_to_channel: "Message rejected. Failed to find a channel with an ID of \"%{channel_id}\" on your Discord server. This event has been logged."
   command_errors:
     # base
     text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
@@ -45,6 +61,7 @@ en:
     pending_request_different_user: "I'm sorry %{user}, %{target_user} already has a request pending"
     owned_server: "Hey %{user}, you can only access servers belonging to `%{community_id}`. Please provide a different server ID."
     target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
+    waiting_for_reply: "Hey %{user}, I'm awaiting your response to my question in regarding the `%{command_name}` command. \nIf you are no longer in need of my previous services, please reply with `cancel`. After which, you may execute your command again."
 
     # servers
     no_servers: "I was unable to find any registered servers for `%{community_id}`.\nIf you are the owner, you can them via the Admin Dashboard"
@@ -91,7 +108,7 @@ en:
     invalid_command: "I'm sorry %{user}, `%{command_name}` is not one of my commands."
 
     # reward
-    no_reward_items: "Hey %{user}, it looks like this server does not have any rewards for you to redeem."
+    no_reward_items: "I'm sorry %{user}, the selected reward package is not available at this time"
 
     # info
     no_target: "Hey %{user}, you must provide either a territory ID, Discord ID, steam uid, or @user discord mention."

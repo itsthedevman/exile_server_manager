@@ -8,7 +8,7 @@ describe ESM::Command::Server::Logs, category: "command" do
   end
 
   it "should have 2 argument" do
-    expect(command.arguments.size).to eql(2)
+    expect(command.arguments.size).to eq(2)
   end
 
   it "should have a description" do
@@ -24,7 +24,7 @@ describe ESM::Command::Server::Logs, category: "command" do
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
 
-    let(:second_user) { ESM::Test.second_user }
+    let(:second_user) { ESM::Test.user }
 
     let!(:wsc) { WebsocketClient.new(server) }
     let(:connection) { ESM::Websocket.connections[server.server_id] }
@@ -46,14 +46,14 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
 
-      expect(ESM::Log.all.size).to eql(1)
-      expect(ESM::Log.all.first.search_text).to eql(second_user.steam_uid)
-      expect(ESM::LogEntry.all.size).not_to eql(0)
+      expect(ESM::Log.all.size).to eq(1)
+      expect(ESM::Log.all.first.search_text).to eq(second_user.steam_uid)
+      expect(ESM::LogEntry.all.size).not_to eq(0)
 
       ESM::LogEntry.all.each do |entry|
         expect(entry.entries).not_to be_empty
@@ -66,14 +66,14 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
 
-      expect(ESM::Log.all.size).to eql(1)
-      expect(ESM::Log.all.first.search_text).to eql("testing")
-      expect(ESM::LogEntry.all.size).not_to eql(0)
+      expect(ESM::Log.all.size).to eq(1)
+      expect(ESM::Log.all.first.search_text).to eq("testing")
+      expect(ESM::LogEntry.all.size).not_to eq(0)
 
       ESM::LogEntry.all.each do |entry|
         expect(entry.entries).not_to be_empty
@@ -88,7 +88,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
@@ -103,14 +103,14 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
 
-      expect(ESM::Log.all.size).to eql(1)
-      expect(ESM::Log.all.first.search_text).to eql(steam_uid)
-      expect(ESM::LogEntry.all.size).not_to eql(0)
+      expect(ESM::Log.all.size).to eq(1)
+      expect(ESM::Log.all.first.search_text).to eq(steam_uid)
+      expect(ESM::LogEntry.all.size).not_to eq(0)
 
       ESM::LogEntry.all.each do |entry|
         expect(entry.entries).not_to be_empty
@@ -129,7 +129,7 @@ describe ESM::Command::Server::Logs, category: "command" do
         entry = OpenStruct.new(date: "#{month} #{Faker::Number.between(from: 1, to: 20)} #{Faker::Number.between(from: 2000, to: 2100)}")
         date = nil
         expect { date = command.send(:parse_log_entry_date, entry) }.not_to raise_error
-        expect(date.month).to eql(index + 1)
+        expect(date.month).to eq(index + 1)
       end
     end
 

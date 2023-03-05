@@ -54,7 +54,7 @@ module ESM
     private
 
     def query
-      { key: ENV["STEAM_TOKEN"], steamids: @steam_uid }
+      {key: ENV["STEAM_TOKEN"], steamids: @steam_uid}
     end
 
     #                  "steamid" => "76561198037177305",

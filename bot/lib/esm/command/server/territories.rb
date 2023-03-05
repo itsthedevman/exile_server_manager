@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Territories < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -15,11 +15,11 @@ module ESM
 
         argument :server_id
 
-        def discord
+        def on_execute
           deliver!(query: "list_territories", uid: current_user.esm_user.steam_uid)
         end
 
-        def server
+        def on_response(_, _)
           check_for_no_territories!
 
           # Apparently past me I didn't default the response to an array if there was only one territory...

@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Reset < ESM::Command::Base
-        type :admin
+        set_type :admin
         limit_to :text
         requires :registration
 
@@ -17,7 +17,7 @@ module ESM
         argument :server_id
         argument :target, default: nil
 
-        def discord
+        def on_execute
           @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
           # Create a confirmation request to the requestee
@@ -36,7 +36,7 @@ module ESM
           reply(embed)
         end
 
-        def server
+        def on_response(_, _)
           embed =
             if target_user.present?
               if @response.success
@@ -44,12 +44,10 @@ module ESM
               else
                 ESM::Embed.build(:error, description: I18n.t("commands.reset.failure_message_target", user: current_user.mention, target: target_user.mention))
               end
+            elsif @response.success
+              ESM::Embed.build(:success, description: I18n.t("commands.reset.success_message_all", user: current_user.mention))
             else
-              if @response.success
-                ESM::Embed.build(:success, description: I18n.t("commands.reset.success_message_all", user: current_user.mention))
-              else
-                ESM::Embed.build(:error, description: I18n.t("commands.reset.failure_message_all", user: current_user.mention))
-              end
+              ESM::Embed.build(:error, description: I18n.t("commands.reset.failure_message_all", user: current_user.mention))
             end
 
           reply(embed)

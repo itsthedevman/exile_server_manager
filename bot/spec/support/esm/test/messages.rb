@@ -3,14 +3,29 @@
 module ESM
   class Test
     class Messages < Array
-      # By default, ESM returns `nil` from #deliver if the message fails to send.
-      attr_accessor :simulate_message_failure
+      class Message
+        attr_reader :destination, :content
 
-      def store(message, channel)
+        def initialize(destination, content)
+          @destination = destination
+          @content = content
+        end
+
+        # Legacy support
+        def first
+          @destination
+        end
+
+        def second
+          @content
+        end
+      end
+
+      def store(content, channel)
+        self << Message.new(channel, content)
+
         # Don't break tests
-        self << [channel, message]
-
-        message unless simulate_message_failure
+        content
       end
     end
   end

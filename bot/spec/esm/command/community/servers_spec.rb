@@ -8,7 +8,7 @@ describe ESM::Command::Community::Servers, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -49,18 +49,18 @@ describe ESM::Command::Community::Servers, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.title).to eql(server.server_name)
-      expect(embed.description).to eql(I18n.t("commands.servers.offline"))
-      expect(embed.fields.size).to eql(3)
-      expect(embed.fields.first.name).to eql(I18n.t(:server_id))
-      expect(embed.fields.first.value).to eql("```#{server.server_id}```")
-      expect(embed.fields.second.name).to eql(I18n.t(:ip))
-      expect(embed.fields.second.value).to eql("```#{server.server_ip}```")
-      expect(embed.fields.third.name).to eql(I18n.t(:port))
-      expect(embed.fields.third.value).to eql("```#{server.server_port}```")
+      expect(embed.title).to eq(server.server_name)
+      expect(embed.description).to eq(I18n.t("commands.servers.offline"))
+      expect(embed.fields.size).to eq(3)
+      expect(embed.fields.first.name).to eq(I18n.t(:server_id))
+      expect(embed.fields.first.value).to eq("```#{server.server_id}```")
+      expect(embed.fields.second.name).to eq(I18n.t(:ip))
+      expect(embed.fields.second.value).to eq("```#{server.server_ip}```")
+      expect(embed.fields.third.name).to eq(I18n.t(:port))
+      expect(embed.fields.third.value).to eq("```#{server.server_port}```")
     end
 
     it "should return one online server" do
@@ -72,22 +72,22 @@ describe ESM::Command::Community::Servers, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
       server.reload
 
-      expect(embed.title).to eql(server.server_name)
-      expect(embed.fields.size).to eql(5)
-      expect(embed.fields.first.name).to eql(I18n.t(:server_id))
-      expect(embed.fields.first.value).to eql("```#{server.server_id}```")
-      expect(embed.fields.second.name).to eql(I18n.t(:ip))
-      expect(embed.fields.second.value).to eql("```#{server.server_ip}```")
-      expect(embed.fields.third.name).to eql(I18n.t(:port))
-      expect(embed.fields.third.value).to eql("```#{server.server_port}```")
-      expect(embed.fields.fourth.name).to eql(I18n.t("commands.server.online_for"))
-      expect(embed.fields.fourth.value).to eql("```#{server.uptime}```")
-      expect(embed.fields.fifth.name).to eql(I18n.t("commands.server.restart_in"))
-      expect(embed.fields.fifth.value).to eql("```#{server.time_left_before_restart}```")
+      expect(embed.title).to eq(server.server_name)
+      expect(embed.fields.size).to eq(5)
+      expect(embed.fields.first.name).to eq(I18n.t(:server_id))
+      expect(embed.fields.first.value).to eq("```#{server.server_id}```")
+      expect(embed.fields.second.name).to eq(I18n.t(:ip))
+      expect(embed.fields.second.value).to eq("```#{server.server_ip}```")
+      expect(embed.fields.third.name).to eq(I18n.t(:port))
+      expect(embed.fields.third.value).to eq("```#{server.server_port}```")
+      expect(embed.fields.fourth.name).to eq(I18n.t("commands.server.online_for"))
+      expect(embed.fields.fourth.value).to eq("```#{server.uptime}```")
+      expect(embed.fields.fifth.name).to eq(I18n.t("commands.server.restart_in"))
+      expect(embed.fields.fifth.value).to eq("```#{server.time_left_before_restart}```")
 
       connection.disconnect!
     end

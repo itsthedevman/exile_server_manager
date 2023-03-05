@@ -4,7 +4,7 @@ module ESM
   module Command
     module System
       class Accept < ESM::Command::Base
-        type :player
+        set_type :player
         limit_to :dm
 
         define :enabled, modifiable: false, default: true
@@ -15,7 +15,7 @@ module ESM
 
         argument :uuid, regex: /[0-9a-fA-F]{4}/, description: "commands.accept.arguments.uuid"
 
-        def discord
+        def on_execute
           request = current_user.esm_user.pending_requests.where(uuid_short: @arguments.uuid).first
           check_for_request!(request)
           request.respond(true)

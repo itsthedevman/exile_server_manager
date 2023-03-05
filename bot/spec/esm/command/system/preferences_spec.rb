@@ -8,7 +8,7 @@ describe ESM::Command::System::Preferences, category: "command" do
   end
 
   it "should have 3 argument" do
-    expect(command.arguments.size).to eql(3)
+    expect(command.arguments.size).to eq(3)
   end
 
   it "should have a description" do
@@ -23,7 +23,7 @@ describe ESM::Command::System::Preferences, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
-    let!(:types) { ESM::Command::System::Preferences::TYPES.dup[1..-1] }
+    let!(:types) { ESM::Command::System::Preferences::TYPES.dup[1..] }
     let(:type) { types.sample }
     let(:preference) { ESM::UserNotificationPreference.where(server_id: server.id, user_id: user.id).first }
 
@@ -31,7 +31,7 @@ describe ESM::Command::System::Preferences, category: "command" do
       command_statement = command.statement(server_id: server.server_id, state: "allow")
       event = CommandEvent.create(command_statement, user: user, channel_type: :dm)
 
-      expect { message = command.execute(event) }.not_to raise_error
+      expect { command.execute(event) }.not_to raise_error
 
       message = ESM::Test.messages.first.second
       expect(message).not_to be_nil

@@ -8,7 +8,7 @@ describe ESM::Command::Server::Player, category: "command" do
   end
 
   it "should have 4 argument" do
-    expect(command.arguments.size).to eql(4)
+    expect(command.arguments.size).to eq(4)
   end
 
   it "should have a description" do
@@ -23,7 +23,7 @@ describe ESM::Command::Server::Player, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
-    let!(:second_user) { ESM::Test.second_user }
+    let!(:second_user) { ESM::Test.user }
 
     let!(:wsc) { WebsocketClient.new(server) }
     let(:connection) { ESM::Websocket.connections[server.server_id] }
@@ -45,10 +45,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player m" do
@@ -57,10 +57,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player locker" do
@@ -69,10 +69,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player l" do
@@ -81,10 +81,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player respect" do
@@ -93,10 +93,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player r" do
@@ -105,10 +105,10 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eql("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
+      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
     end
 
     it "!player heal" do
@@ -117,7 +117,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -129,7 +129,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -141,7 +141,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -153,7 +153,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -175,7 +175,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank

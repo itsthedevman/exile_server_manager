@@ -2,6 +2,18 @@
 
 module ESM
   class TargetUser
+    attr_reader :steam_uid, :esm_user
+
+    def initialize(steam_uid)
+      @steam_uid = steam_uid
+      @esm_user = ESMUser.new(steam_uid)
+    end
+
+    alias_method :id, :steam_uid
+    alias_method :mention, :steam_uid
+    alias_method :distinct, :steam_uid
+    alias_method :username, :steam_uid
+
     class ESMUser
       attr_reader :steam_uid
 
@@ -21,16 +33,5 @@ module ESM
         @steam_data ||= ESM::SteamAccount.new(@steam_uid)
       end
     end
-
-    attr_reader :steam_uid, :esm_user
-
-    def initialize(steam_uid)
-      @steam_uid = steam_uid
-      @esm_user = ESMUser.new(steam_uid)
-    end
-
-    alias mention steam_uid
-    alias distinct steam_uid
-    alias username steam_uid
   end
 end

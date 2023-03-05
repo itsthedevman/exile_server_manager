@@ -1,0 +1,12 @@
+---
+en:
+  commands:
+    decline:
+      description: Declines a request based off its UUID
+      example: |-
+        **`%{prefix}decline e09e`**
+        Declines request `e09e` from your pending requests
+      success_message: The request has been declined. The requestor **has not** be
+        notified
+      arguments:
+        uuid: The request's UUID that provided in the original request

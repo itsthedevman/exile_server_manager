@@ -18,7 +18,7 @@ module ESM
 
       def remove(id)
         @order.delete(id)
-        self.delete(id)
+        delete(id)
       end
     end
   end

@@ -8,7 +8,7 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
   end
 
   it "should have 2 argument" do
-    expect(command.arguments.size).to eql(2)
+    expect(command.arguments.size).to eq(2)
   end
 
   it "should have a description" do
@@ -23,7 +23,7 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
     let!(:community) { ESM::Test.community }
     let!(:server) { ESM::Test.server }
     let!(:user) { ESM::Test.user }
-    let(:second_user) { ESM::Test.second_user }
+    let(:second_user) { ESM::Test.user }
     let!(:wsc) { WebsocketClient.new(server) }
     let(:connection) { ESM::Websocket.connections[server.server_id] }
     let(:response) { command.response }
@@ -61,7 +61,7 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
       expect(ESM::Test.messages.size).to be > 3
-      expect(response).to eql(request.response.sort_by(&:territory_name))
+      expect(response).to eq(request.response.sort_by(&:territory_name))
     end
 
     it "should return (Sorted by owner uid)" do
@@ -74,7 +74,7 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
       expect(ESM::Test.messages.size).to be > 3
-      expect(response).to eql(request.response.sort_by(&:owner_uid))
+      expect(response).to eq(request.response.sort_by(&:owner_uid))
     end
 
     it "should return (No territories)" do
@@ -86,7 +86,7 @@ describe ESM::Command::Server::ServerTerritories, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       expect(ESM::Test.messages.first.second.description).to match(/it doesn't appear to be any territories on this server/i)
     end
   end

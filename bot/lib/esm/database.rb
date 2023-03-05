@@ -3,7 +3,7 @@
 module ESM
   class Database
     def self.connect!
-      ActiveRecord::Base.establish_connection(self.config)
+      ActiveRecord::Base.establish_connection(config)
     end
 
     def self.connected?

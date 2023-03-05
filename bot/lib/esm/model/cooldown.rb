@@ -40,7 +40,7 @@ module ESM
     end
 
     def reset!
-      update!(expires_at: 1.second.ago, cooldown_amount: 0)
+      update!(expires_at: 5.second.ago, cooldown_amount: 0)
     end
 
     def update_expiry!(executed_at, cooldown_time)
@@ -65,7 +65,6 @@ module ESM
     # If the community changes the configuration for a command, this will adjust the cooldown to match.
     # Mainly used to adjust a cooldown if it was changed to a lesser time, such as 24 hours to 2 seconds.
     # The user shouldn't have to wait 24 hours when the new cooldown is 2 seconds
-    # @note This method purposefully does not persist any values
     def adjust_for_community_changes
       # Commands that have no community_id and are used in DMs will not be able to use this code
       return if community.nil?

@@ -4,8 +4,8 @@ module ESM
   module Command
     module Server
       class SetId < ESM::Command::Base
-        type :player
-        aliases :setterritoryid, :setid
+        set_type :player
+        register_aliases :setterritoryid, :setid
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -18,7 +18,7 @@ module ESM
         argument :old_territory_id, template: :territory_id
         argument :new_territory_id, template: :territory_id, description: "commands.set_id.arguments.new_territory_id"
 
-        def discord
+        def on_execute
           # Require at least 3 characters and a max of 30
           check_for_minimum_characters!
           check_for_maximum_characters!
@@ -33,7 +33,7 @@ module ESM
           )
         end
 
-        def server
+        def on_response(_, _)
           check_for_failure!
           reply(success_message)
         end

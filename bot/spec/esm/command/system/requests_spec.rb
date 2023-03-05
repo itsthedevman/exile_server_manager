@@ -19,7 +19,7 @@ describe ESM::Command::System::Requests, category: "command" do
 
   describe "#execute" do
     let!(:user) { ESM::Test.user }
-    let!(:second_user) { ESM::Test.second_user }
+    let!(:second_user) { ESM::Test.user }
     let!(:reward_request) { create(:request, requestor_user_id: user.id, requestee_user_id: user.id) }
     let!(:add_request) { create(:request, requestor_user_id: second_user.id, requestee_user_id: user.id, command_name: "add") }
 

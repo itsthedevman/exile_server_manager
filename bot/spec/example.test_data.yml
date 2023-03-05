@@ -1,0 +1,49 @@
+# This represents your information.
+# You must be a member of the Discord servers below
+dev:
+  # Your Discord ID
+  id: 111111111000000000
+
+  # Your Steam64 UID
+  steam_uid: 76561101011010010
+
+# Represents a single Discord server
+# All of the following IDs must belong to that Discord server
+primary:
+  # The ID of the Discord server
+  server_id: 111000111000111000
+
+  # A channel ID to be used for logging
+  logging_channel_id: 101010000000111111
+
+  # A list of channel IDs that are used to "send" command messages from/to
+  channels:
+    - 101010000000111111
+
+  # A list of user IDs that are used to execute commands
+  # Must be a member of this Discord server and who do not have
+  users:
+    - 111110000000000000
+
+  # Used with tests that require a role in order to use a command
+  role_users:
+    # Represents a single user ID and role ID
+    - id: 111110000000000000
+      role_id: 100001111111111111
+
+# Another Discord server that is different from the primary above
+# All of the following IDs must belong to that Discord server
+secondary:
+  server_id: 111000111000111000
+  logging_channel_id: 101010000000111111
+  channels:
+    - 101010000000111111
+  users:
+    - 111110000000000000
+  role_users:
+    - id: 111110000000000000
+      role_id: 100001111111111111
+
+# A list of Steam64 UIDs that are assigned to users when needed
+steam_uids:
+  # - 76561101101010010

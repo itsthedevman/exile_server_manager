@@ -22,7 +22,10 @@ module ESM
     has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request"
     has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request"
 
-    attr_accessor :GUILD_TYPE if ESM.env.test?
+    attr_accessor :guild_type, :role_id, :connected if ESM.env.test?
+
+    validates :discord_id, uniqueness: true, presence: true
+    validates :steam_uid, uniqueness: true
 
     #########################
     # Public Methods

@@ -1,48 +1,19 @@
 # frozen_string_literal: true
 
-# Set our env to test
-ENV["ESM_ENV"] = "test"
-ENV["PRINT_LOG"] = "true"
-
-require "bundler/setup"
-require "esm"
-require "rspec/wait"
-require "database_cleaner"
-require "factory_bot"
-require "faker"
-require "awesome_print"
-require "pry"
-require "colorize"
-require "ruby-prof"
-require "rspec/expectations"
-
-# Load all of our support files
-loader = Zeitwerk::Loader.new
-loader.inflector.inflect("esm" => "ESM")
-loader.push_dir("#{__dir__}/support")
-loader.collapse("#{__dir__}/support/model")
-
-# Load everything right meow
-loader.setup
-loader.eager_load
-
-# Start the bot
-ESM.run!
-
-# Enable discordrb logging
-Discordrb::LOGGER.debug = false
-
-# Ignore debug messages when running tests
-ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.present?
+SPEC_TIMEOUT_SECONDS = 5
+EXTENSION_SERVER_LOG_LEVEL = :warn
+PRINT_LOG = false
 
 RSpec.configure do |config|
+  require_relative "./spec_helper_pre_init"
+
   config.include FactoryBot::Syntax::Methods
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
 
   # Timeout for rspec/wait, default timeout for requests
-  config.wait_timeout = 10 # seconds
+  config.wait_timeout = SPEC_TIMEOUT_SECONDS
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -54,39 +25,45 @@ RSpec.configure do |config|
     DatabaseCleaner.strategy = :deletion
   end
 
-  config.before :example do
-    ESM::Test.reset!
-  end
-
-  config.after :example do
-    ESM::Test.skip_cooldown = false
+  config.after :suite do
+    `kill -9 $(pgrep -f esm_extension_server) > /dev/null 2>&1 && kill -9 $(pgrep -f esm_bot) > /dev/null 2>&1`
+    EXTENSION_SERVER.close
   end
 
   config.around(:each) do |example|
     DatabaseCleaner.cleaning do
-      example.run
-    end
+      ESM::Test.reset!
+      ESM::Connection::Server.pause
 
-    ESM::Websocket.remove_all_connections!
+      info!(
+        example_group: example.example_group&.description,
+        example: example.description
+      )
+
+      # Run the test!
+      example.run
+
+      # Ensure every message is either replied to or timed out
+      if example.metadata[:requires_connection]
+        wait_for {
+          ESM::Connection::Server.instance.message_overseer.size
+        }.to eq(0)
+      end
+
+      ESM::Connection::Server.pause
+
+      server = ESM::Connection::Server.instance
+      server&.disconnect_all!
+      server&.message_overseer&.remove_all!
+
+      ESM::Websocket.remove_all_connections!
+    end
   end
 end
 
-def create_request(**params)
-  user = ESM.bot.user(TestUser::User1::ID)
-  command = ESM::Command::Test::Base.new
-
-  ESM::Websocket::Request.new(
-    command: command,
-    user: user,
-    channel: ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL),
-    parameters: params
-  )
-end
-
-# Disables the whitelist on admin commands so the tests can use them
-def grant_command_access!(community, command)
-  community.command_configurations.where(command_name: command).update_all(whitelist_enabled: false)
-end
-
-# Wait until the bot has fully connected
+# Wait until everything is ready
+# HEY! LISTEN! The following lines must be the last code to execute in this file
+ESM.console!
+ESM.run!
 ESM::Test.wait_until { ESM.bot.ready? }
+ESM::Test.wait_until { ESM::Connection::Server.instance&.tcp_server_alive? }

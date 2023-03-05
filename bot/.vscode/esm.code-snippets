@@ -17,7 +17,9 @@
 	// }
 	"Binding.pry": {
 		"scope": "ruby",
-		"prefix": ["bd"],
+		"prefix": [
+			"bd"
+		],
 		"body": "binding.pry",
 		"description": "Inserts a pry breakpoint"
 	},
@@ -31,181 +33,181 @@
 		],
 		"description": "Inserts the magic ruby comment to freeze all string literals"
 	},
+	"ESM Log (Trace)": {
+		"scope": "ruby",
+		"prefix": [
+			"trace",
+			"ESM.logger.trace"
+		],
+		"body": [
+			"trace!(${0})"
+		],
+		"description": "Create an trace logger with ESM"
+	},
 	"ESM Log (Debug)": {
 		"scope": "ruby",
-		"prefix": ["debug", "ESM.logger.debug"],
+		"prefix": [
+			"debug",
+			"ESM.logger.debug"
+		],
 		"body": [
-			"ESM.logger.debug(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+			"debug!(${0})"
 		],
 		"description": "Create an debug logger with ESM"
- 	},
+	},
 	"ESM Log (Info)": {
-	 	"scope": "ruby",
-	 	"prefix": ["info", "ESM.logger.info"],
-	 	"body": [
-			 "ESM.logger.info(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
-	 	],
-	 	"description": "Create an info logger with ESM"
+		"scope": "ruby",
+		"prefix": [
+			"info",
+			"ESM.logger.info"
+		],
+		"body": [
+			"info!(${0})"
+		],
+		"description": "Create an info logger with ESM"
 	},
 	"ESM Log (Warn)": {
 		"scope": "ruby",
-		"prefix": ["warn", "ESM.logger.warn"],
+		"prefix": [
+			"warn",
+			"ESM.logger.warn"
+		],
 		"body": [
-			"ESM.logger.warn(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+			"warn!(${0})"
 		],
 		"description": "Create an warn logger with ESM"
-	 },
+	},
 	"ESM Log (Error)": {
 		"scope": "ruby",
-		"prefix": ["error", "ESM.logger.error"],
+		"prefix": [
+			"error",
+			"ESM.logger.error"
+		],
 		"body": [
-			"ESM.logger.error(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+			"error!(${0})"
 		],
 		"description": "Create an error logger with ESM"
- 	},
+	},
 	"ESM Log (Fatal)": {
 		"scope": "ruby",
-		"prefix": ["fatal", "ESM.logger.fatal"],
+		"prefix": [
+			"fatal",
+			"ESM.logger.fatal"
+		],
 		"body": [
-			"ESM.logger.fatal(\"#{self.class}##{__method__}\") { \"${1:message}\" }"
+			"fatal!(${0})"
 		],
 		"description": "Create an fatal logger with ESM"
-	 },
-	 "Ruby Prof (Start)": {
+	},
+	"Ruby Prof (Start)": {
 		"scope": "ruby",
-		"prefix": ["prof-start"],
+		"prefix": [
+			"prof-start"
+		],
 		"body": [
 			"RubyProf.start"
 		],
 		"description": "Inserts a ruby prof start command"
-	 },
-	 "Ruby Prof (Stop)": {
+	},
+	"Ruby Prof (Stop)": {
 		"scope": "ruby",
-		"prefix": ["prof-stop"],
+		"prefix": [
+			"prof-stop"
+		],
 		"body": [
 			"RubyProf::FlatPrinter.new(RubyProf.stop).print(STDOUT)"
 		],
 		"description": "Inserts a ruby prof stop command"
-	 },
-	 "ESM Command Test": {
-		 "scope": "ruby",
-		 "prefix": ["test"],
-		 "body": [
+	},
+	"ESM Command Test": {
+		"scope": "ruby",
+		"prefix": [
+			"Command Test"
+		],
+		"body": [
 			"# frozen_string_literal: true",
 			"",
-			"describe ${1:command_name}, category: \"command\" do",
-			"\tlet!(:command) { ${1:command_name}.new }",
+			"describe ${1:command}, category: \"command\" do",
+			"\tinclude_context \"command\", described_class",
+			"\tinclude_examples \"validate_command\"",
 			"",
-			"\tit \"should be valid\" do",
-			"\t\texpect(command).not_to be_nil",
+			"\t# Delete one, keep the other",
+			"\tit \"is a player command\" do",
+			"\t\texpect(command.type).to eql(:player)",
 			"\tend",
 			"",
-			"\tit \"should have ${2:arguments} argument\" do",
-			"\t\texpect(command.arguments.size).to eql(${2:arguments})",
+			"\tit \"is an admin command\" do",
+			"\t\texpect(command.type).to eql(:admin)",
 			"\tend",
 			"",
-			"\tit \"should have a description\" do",
-			"\t\texpect(command.description).not_to be_blank",
+			"\t# Delete one, keep the other",
+			"\tit \"requires registration\" do",
+			"\t\texpect(command.registration_required?).to be(true)",
 			"\tend",
 			"",
-			"\tit \"should have examples\" do",
-			"\t\texpect(command.example).not_to be_blank",
+			"\tit \"does not require registration\" do",
+			"\t\texpect(command.registration_required?).to be(false)",
 			"\tend",
 			"",
-			"\tdescribe \"#execute\" do",
-			"\t\tlet!(:community) { ESM::Test.community }",
-			"\t\tlet!(:server) { ESM::Test.server }",
-			"\t\tlet!(:user) { ESM::Test.user }",
+			"\t# Change \"requires_connection\" to true if this command requires the client to be connected",
+			"\tdescribe \"#on_execute/#on_response\", requires_connection: false do",
+			"\t\t# Uncomment if \"requires_connection\" is true",
+			"\t\t# include_context \"connection\"",
 			"",
-			"\t\t# If you need a second set",
-			"\t\t# let(:second_community) { ESM::Test.second_community }",
-			"\t\t# let(:second_server) { ESM::Test.second_server }",
-			"\t\t# let(:second_user) { ESM::Test.second_user }",
-			"",
-			"\t\t# If you need to connect to a server",
-			"\t\t# let!(:wsc) { WebsocketClient.new(server) }",
-			"\t\t# let(:connection) { ESM::Websocket.connections[server.server_id] }",
-			"\t\t# let(:response) { command.response }",
-			"",
-			"\t\t# before :each do",
-			"\t\t#   wait_for { wsc.connected? }.to be(true)",
-			"\t\t# end",
-			"",
-			"\t\t# after :each do",
-			"\t\t#   wsc.disconnect!",
-			"\t\t# end",
-			"",
-			"\t\tit \"!command_name argument\" do",
-			"\t\t\tcommand_statement = command.statement($0)",
-			"\t\t\tevent = CommandEvent.create(command_statement, user: user, channel_type: :text)",
-			"",
-			"\t\t\t# If the command is for a server",
-			"\t\t\t# request = nil",
-			"\t\t\t# expect { request = command.execute(event) }.not_to raise_error",
-			"\t\t\t# expect(request).not_to be_nil",
-			"\t\t\t# wait_for { connection.requests }.to be_blank",
-			"\t\t\t# expect(ESM::Test.messages.size).to eql(0)",
-			"\t\t\t# embed = ESM::Test.messages.first.second",
+			"\t\tit \"!${2:command_name} ${3:arguments}\" do",
+			"\t\t\texecute!(${4:arguments})",
 			"\t\tend",
 			"\tend",
 			"end"
-		 ],
-		 "description": "Create a rspec test for a ESM::Command"
-	 },
-	 "ESM Command": {
-		 "scope": "ruby",
-		 "prefix": ["command"],
-		 "body": [
-				"# frozen_string_literal: true",
-				"",
-				"module ESM",
-				"\tmodule Command",
-				"\t\tmodule ${1:Category}",
-				"\t\t\tclass ${2:Name} < ESM::Command::Base",
-				"\t\t\t\ttype :${3|admin,player,development|}",
-				"\t\t\t\taliases :${4:aliases}",
-				"\t\t\t\tlimit_to :${6|text,dm|}",
-				"\t\t\t\trequires :registration",
-				"",
-				"\t\t\t\tdefine :enabled, modifiable: true, default: ${7|true,false|}",
-				"\t\t\t\tdefine :whitelist_enabled, modifiable: true, default: ${8|false,true|}",
-				"\t\t\t\tdefine :whitelisted_role_ids, modifiable: true, default: []",
-				"\t\t\t\tdefine :allowed_in_text_channels, modifiable: true, default: ${9|true,false|}",
-				"\t\t\t\tdefine :cooldown_time, modifiable: true, default: 2.seconds",
-				"",
-				"\t\t\t\targument :community_id",
-				"\t\t\t\targument :server_id",
-				"\t\t\t\targument :territory_id",
-				"\t\t\t\targument :target",
-				"",
-				"\t\t\t\t# @param name [symbol] The name of the argument. This can be anything include one of the templates",
-				"\t\t\t\t# @param regex [RegExp] Regex that matches the value you expect for this argument ",
-				"\t\t\t\t# @param description [String] A short description of this argument. Make sure to include how to use it, and any other helpful tips.",
-				"\t\t\t\t# @param preserve [Boolean] Preserve the case when parsing this argument. Otherwise, the value is stored as lowercase (Optional. Default: false)",
-				"\t\t\t\t# @param default [Any] The default value for this argument if the user did not provide it. Also makes this argument optional (Optional. Default: nil)",
-				"\t\t\t\t# @param type [Symbol] What type should this argument be stored as? Valid Options: :integer, :string, :float, :json (Optional. Default: :string)",
-				"\t\t\t\t# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
-				"\t\t\t\t# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
-				"\t\t\t\t# @param template [Symbol] The name of one of the templates to use for this command.",
-				"\t\t\t\targument :${10:name}, regex: /${11:regex}/, description: \"commands.${12:command_name}.arguments.${10:name}\", preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil",
-				"",
-				"\t\t\t\tdef discord; end",
-				"",
-				"\t\t\t\tdef server; end",
-				"",
-				"\t\t\t\tdef request_accepted; end",
-				"",
-				"\t\t\t\tdef request_declined; end",
-				"\t\t\tend",
-				"\t\tend",
-				"\tend",
-				"end"
-		 ],
-		 "description": "Create an empty command"
-	 },
-	 "ESM Command Argument": {
+		],
+		"description": "Create a rspec test for a ESM::Command"
+	},
+	"ESM Command": {
 		"scope": "ruby",
-		"prefix": ["argument"],
+		"prefix": [
+			"Command Class (New)"
+		],
+		"body": [
+			"# frozen_string_literal: true",
+			"",
+			"module ESM",
+			"\tmodule Command",
+			"\t\tmodule ${1:Category}",
+			"\t\t\tclass ${TM_FILENAME_BASE/(.*)/${1:/pascalcase}/} < ESM::Command::Base",
+			"\t\t\t\tset_type :${3|admin,player,development|}",
+			"\t\t\t\tregister_aliases :${4:aliases}",
+			"\t\t\t\tlimit_to :${6|text,dm|}",
+			"\t\t\t\trequires :registration",
+			"",
+			"\t\t\t\tdefine :enabled, modifiable: true, default: ${7|true,false|}",
+			"\t\t\t\tdefine :whitelist_enabled, modifiable: true, default: ${8|false,true|}",
+			"\t\t\t\tdefine :whitelisted_role_ids, modifiable: true, default: []",
+			"\t\t\t\tdefine :allowed_in_text_channels, modifiable: true, default: ${9|true,false|}",
+			"\t\t\t\tdefine :cooldown_time, modifiable: true, default: 2.seconds",
+			"",
+			"\t\t\t\t# Use snippet \"argument\" for an example argument",
+			"\t\t\t\targument :community_id",
+			"\t\t\t\targument :server_id",
+			"\t\t\t\targument :territory_id",
+			"\t\t\t\targument :target",
+			"",
+			"\t\t\t\tdef on_execute; end",
+			"",
+			"\t\t\t\tdef on_response; end",
+			"",
+			"\t\t\t\tdef on_accept; end",
+			"",
+			"\t\t\t\tdef on_decline; end",
+			"\t\t\tend",
+			"\t\tend",
+			"\tend",
+			"end"
+		],
+		"description": "Create an empty command"
+	},
+	"ESM Command Argument": {
+		"scope": "ruby",
+		"prefix": "argument",
 		"body": [
 			"# @param name [symbol] The name of the argument. This can be anything include one of the templates",
 			"# @param regex [RegExp] Regex that matches the value you expect for this argument ",
@@ -216,10 +218,10 @@
 			"# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
 			"# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
 			"# @param template [Symbol] The name of one of the templates to use for this command.",
-			"argument :${1:name}, regex: /${2:regex}/, description: \"commands.${3:command_name}.arguments.${1:name}\", preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil"
+			"argument :${1:name}, regex: /${2:regex}/, description: \"commands.$TM_FILENAME_BASE.arguments.${1:name}\", preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil"
 		],
-		"description": "Inserts an argument for an ESM command"
-	 },
+		"description": "Creates a new command argument"
+	},
 	"Embed": {
 		"scope": "ruby",
 		"prefix": "embed",

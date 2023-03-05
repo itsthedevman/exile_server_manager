@@ -50,8 +50,8 @@ describe ESM::Websocket do
     it "should deliver" do
       connection = ESM::Websocket.connections[esm_malden.server_id]
 
-      user = ESM.bot.user(TestUser::User1::ID)
-      command = ESM::Command::Test::Base.new
+      user = ESM::Test.user.discord_user
+      command = ESM::Command::Test::BaseV1.new
 
       request = ESM::Websocket::Request.new(
         command: command,
@@ -63,7 +63,7 @@ describe ESM::Websocket do
 
       ESM::Websocket.deliver!(esm_malden.server_id, request)
 
-      expect(connection.requests.size).to eql(1)
+      expect(connection.requests.size).to eq(1)
     end
   end
 
@@ -80,7 +80,7 @@ describe ESM::Websocket do
       correction = ESM::Websocket.correct(server.server_id[0..-3])
 
       expect(correction).not_to be_blank
-      expect(correction.first).to eql(server.server_id)
+      expect(correction.first).to eq(server.server_id)
     end
   end
 
@@ -91,7 +91,7 @@ describe ESM::Websocket do
     let!(:discord_user) { user.discord_user }
 
     let!(:command) do
-      command = ESM::Command::Test::Base.new
+      command = ESM::Command::Test::BaseV1.new
 
       command_statement = command.statement(
         community_id: esm_community.community_id,
@@ -131,9 +131,9 @@ describe ESM::Websocket do
         ignore: true
       }.to_json
 
-      expect(ws_connection.requests.size).to eql(1)
+      expect(ws_connection.requests.size).to eq(1)
       ws_connection.send(:on_message, OpenStruct.new(data: message))
-      expect(ws_connection.requests.size).to eql(1)
+      expect(ws_connection.requests.size).to eq(1)
     end
 
     it "should send an error message (error)" do
@@ -145,12 +145,12 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      wait_for { ESM::Test.messages.size }.to eql(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eql("#{discord_user.mention}, #{message.error}")
-      expect(error_message.color).to eql("#C62551")
+      expect(error_message.description).to eq("#{discord_user.mention}, #{message.error}")
+      expect(error_message.color).to eq("#C62551")
     end
 
     it "should send an error message (parameters)" do
@@ -164,12 +164,12 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      wait_for { ESM::Test.messages.size }.to eql(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eql("#{discord_user.mention}, #{message.parameters.first.error}")
-      expect(error_message.color).to eql("#C62551")
+      expect(error_message.description).to eq("#{discord_user.mention}, #{message.parameters.first.error}")
+      expect(error_message.color).to eq("#C62551")
     end
   end
 

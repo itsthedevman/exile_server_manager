@@ -12,7 +12,6 @@ FactoryBot.define do
     # attribute :created_at, :datetime
     # attribute :updated_at, :datetime
 
-    server_id {}
     server_name { Faker::FunnyName.name }
     server_ip { Faker::Internet.public_ip_v4_address }
     server_port { "2302" }
@@ -22,7 +21,7 @@ FactoryBot.define do
 
       server_id =
         loop do
-          server_id = "#{server.community.community_id}_#{Faker::NatoPhoneticAlphabet.code_word.downcase}"
+          server_id = Faker::ESM.server_id(community_id: server.community.community_id)
           break server_id if ESM::Server.find_by_server_id(server_id).nil?
         end
 
@@ -30,8 +29,16 @@ FactoryBot.define do
     end
 
     after :create do |server, _evaluator|
-      server.server_reward = create(:server_reward, server_id: server.id)
+      # Remove the default
+      server.server_rewards.clear
+
       server.server_setting = create(:server_setting, server_id: server.id)
+      server.server_rewards << create(:server_reward, server_id: server.id)
+
+      server.save!
+
+      # Store the server key so the build tool can pick it up and write it
+      Redis.new.set("server_key", server.token.to_json)
     end
 
     factory :esm_malden do

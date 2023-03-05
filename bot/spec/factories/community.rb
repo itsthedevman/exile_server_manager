@@ -21,13 +21,35 @@ FactoryBot.define do
       guild_id { ESM::Community::ESM::ID }
       logging_channel_id { ESM::Community::ESM::SPAM_CHANNEL }
       player_mode_enabled { false }
+      role_ids { [] }
+    end
+
+    factory :primary_community do
+      transient do
+        data { ESM::Test.data[:primary] }
+        discord_server { ESM.bot.server(data[:server_id]) }
+      end
+
+      community_name { discord_server.name }
+      guild_id { discord_server.id.to_s }
+      logging_channel_id { data[:logging_channel_id] }
+      player_mode_enabled { false }
+      guild_type { :primary }
+      role_ids { data[:role_users].map { |u| u[:role_id].to_s } }
     end
 
     factory :secondary_community do
-      community_name { Faker::Company.name }
-      guild_id { ESM::Community::Secondary::ID }
-      logging_channel_id { ESM::Community::ESM::SPAM_CHANNEL }
+      transient do
+        data { ESM::Test.data[:secondary] }
+        discord_server { ESM.bot.server(data[:server_id]) }
+      end
+
+      community_name { discord_server.name }
+      guild_id { discord_server.id.to_s }
+      logging_channel_id { data[:logging_channel_id] }
       player_mode_enabled { false }
+      guild_type { :secondary }
+      role_ids { data[:role_users].map { |u| u[:role_id].to_s } }
     end
 
     trait :player_mode_enabled do

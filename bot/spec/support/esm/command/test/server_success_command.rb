@@ -4,7 +4,9 @@ module ESM
   module Command
     module Test
       class ServerSuccessCommand < ESM::Command::Base
-        type :player
+        has_v1_variant!
+
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -14,12 +16,14 @@ module ESM
         define :cooldown_time, modifiable: true, default: 2.seconds
 
         argument :server_id
+        argument :nullable, regex: /.*/, description: "commands.server_success_command.arguments.nullable", default: nil
 
-        def discord
-          deliver!
+        def on_execute
+          send_to_arma(type: :echo, data: {type: :empty})
+          self
         end
 
-        def server
+        def on_response(_, _)
           reply("Yaay")
         end
       end

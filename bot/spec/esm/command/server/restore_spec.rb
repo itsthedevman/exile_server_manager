@@ -9,7 +9,7 @@ describe ESM::Command::Server::Restore, category: "command" do
   end
 
   it "should have 2 argument" do
-    expect(command.arguments.size).to eql(2)
+    expect(command.arguments.size).to eq(2)
   end
 
   it "should have a description" do
@@ -52,10 +52,10 @@ describe ESM::Command::Server::Restore, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
 
       embed = ESM::Test.messages.first.second
-      expect(embed.description).to eql("Hey #{user.mention}, `#{territory_id}` has been restored")
+      expect(embed.description).to eq("Hey #{user.mention}, `#{territory_id}` has been restored")
     end
 
     it "!restore (failure)" do
@@ -68,10 +68,10 @@ describe ESM::Command::Server::Restore, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
 
       embed = ESM::Test.messages.first.second
-      expect(embed.description).to eql("I'm sorry #{user.mention}, `#{territory_id}` no longer exists on `#{server.server_id}`.")
+      expect(embed.description).to eq("I'm sorry #{user.mention}, `#{territory_id}` no longer exists on `#{server.server_id}`.")
     end
   end
 end

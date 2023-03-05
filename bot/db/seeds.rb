@@ -1,35 +1,31 @@
 # frozen_string_literal: true
 
 require_relative "../lib/esm"
+require_relative "../spec/support/esm/test"
 
-ESM.console!
-ESM.run!
-
-# I don't feel like breaking the bot to fix the seeds file.
-# Just wait a couple of seconds for the DB to connect
-sleep 2
+ESM::Command.load
 
 ESM::BotAttribute.create!(
   maintenance_mode_enabled: false,
   maintenance_message: "",
   status_type: "PLAYING",
-  status_message: "!register"
+  status_message: "Extension V2 development"
 )
 
 community = ESM::Community.create!(
   community_id: "esm",
-  community_name: "Exile Server Manager",
-  guild_id: ESM::Community::ESM::ID,
-  logging_channel_id: "624387002443497489",
-  command_prefix: "pls ",
+  community_name: "ESM Test Server 1",
+  guild_id: "452568470765305866",
+  logging_channel_id: "901965726305382400",
+  command_prefix: "~",
   player_mode_enabled: false
 )
 
 ESM::Community.create!(
-  community_id: "test",
-  community_name: "Bryan's Test Server",
-  guild_id: ESM::Community::Secondary::ID,
-  command_prefix: "~"
+  community_id: "esm2",
+  community_name: "ESM Test Server 2",
+  guild_id: "901967248653189180",
+  command_prefix: "pls "
 )
 
 community2 = ESM::Community.create!(
@@ -73,14 +69,42 @@ ESM::ServerMod.create!(
   mod_required: false
 )
 
-ESM::ServerReward.create!(
+# This is the default reward
+server.server_rewards.where(reward_id: nil).first.update!(
   server_id: server.id,
+  reward_id: nil,
   reward_items: {
-    Exile_Item_EMRE: 1
+    Exile_Item_WoodDoorKit: 1,
+    Exile_Item_WoodWallKit: 3,
+    Exile_Item_WoodFloorKit: 2
   },
-  player_poptabs: 500,
-  locker_poptabs: 1000,
-  respect: 250
+  reward_vehicles: [],
+  player_poptabs: 12_345,
+  locker_poptabs: 98_765,
+  respect: 1
+)
+
+server.server_rewards.create!(
+  server_id: server.id,
+  reward_id: "vehicles",
+  reward_items: {},
+  reward_vehicles: [
+    {
+      class_name: "Exile_Car_Hatchback_Beige",
+      spawn_location: "nearby"
+    },
+    {
+      class_name: "Exile_Chopper_Huron_Black",
+      spawn_location: "virtual_garage"
+    },
+    {
+      class_name: "Exile_Car_Hunter",
+      spawn_location: "player_decides"
+    }
+  ],
+  player_poptabs: 0,
+  locker_poptabs: 0,
+  respect: 0
 )
 
 ESM::Server.create!(
@@ -102,10 +126,12 @@ ESM::Server.create!(
 )
 
 [
-  { discord_id: "137709767954137088", discord_username: "Bryan", discord_discriminator: "9876", steam_uid: "76561198037177305" },
-  { discord_id: "477847544521687040", discord_username: "Bryan V2", discord_discriminator: "2145", steam_uid: "76561198037177305" },
-  { discord_id: "683476391664156700", discord_username: "Bryan V3", discord_discriminator: "2369", steam_uid: "76561198037177305" }
+  {discord_id: "137709767954137088", discord_username: "Bryan", discord_discriminator: "9876", steam_uid: "76561198037177305"},
+  {discord_id: "477847544521687040", discord_username: "Bryan V2", discord_discriminator: "2145", steam_uid: ESM::Test.data[:steam_uids].sample},
+  {discord_id: "683476391664156700", discord_username: "Bryan V3", discord_discriminator: "2369", steam_uid: ESM::Test.data[:steam_uids].sample}
 ].each do |user_info|
   user = ESM::User.create!(**user_info)
   ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)
 end
+
+Redis.new.set("server_key", server.token.to_json)

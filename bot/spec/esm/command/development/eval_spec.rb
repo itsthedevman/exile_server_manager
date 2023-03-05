@@ -4,14 +4,14 @@ describe ESM::Command::Development::Eval, category: "command" do
   let!(:command) { ESM::Command::Development::Eval.new }
   let!(:community) { create(:esm_community) }
   let!(:server) { create(:esm_malden, community_id: community.id) }
-  let!(:user) { create(:esm_dev) }
+  let!(:user) { create(:developer) }
 
   it "should be valid" do
     expect(command).not_to be_nil
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -29,7 +29,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       expect { command.execute(event) }.not_to raise_error
       response = ESM::Test.messages.first.second
 
-      expect(response).to eql("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
+      expect(response).to eq("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
     end
 
     it "should return 'test'" do
@@ -38,7 +38,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       expect { command.execute(event) }.not_to raise_error
       response = ESM::Test.messages.first.second
 
-      expect(response).to eql("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\ntest\n```")
+      expect(response).to eq("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\ntest\n```")
     end
 
     it "should return 5" do
@@ -47,7 +47,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       expect { command.execute(event) }.not_to raise_error
       response = ESM::Test.messages.first.second
 
-      expect(response).to eql("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
+      expect(response).to eq("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
     end
   end
 end

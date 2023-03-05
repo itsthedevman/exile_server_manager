@@ -24,74 +24,74 @@ describe ESM::Arma::Territory do
     it "should return" do
       id = territory_example.esm_custom_id || territory_example.id
 
-      expect(territory.id).to eql(id)
+      expect(territory.id).to eq(id)
     end
   end
 
   describe "#name" do
     it "should return" do
-      expect(territory.name).to eql(territory_example.territory_name)
+      expect(territory.name).to eq(territory_example.territory_name)
     end
   end
 
   describe "#owner" do
     it "should return" do
-      expect(territory.owner).to eql("#{territory_example.owner_name} (#{territory_example.owner_uid})")
+      expect(territory.owner).to eq("#{territory_example.owner_name} (#{territory_example.owner_uid})")
     end
   end
 
   describe "#level" do
     it "should return" do
-      expect(territory.level).to eql(territory_example.level)
+      expect(territory.level).to eq(territory_example.level)
     end
   end
 
   describe "#object_count" do
     it "should return" do
-      expect(territory.object_count).to eql(territory_example.object_count)
+      expect(territory.object_count).to eq(territory_example.object_count)
     end
   end
 
   describe "#radius" do
     it "should return" do
-      expect(territory.radius).to eql(territory_example.radius)
+      expect(territory.radius).to eq(territory_example.radius)
     end
   end
 
   describe "#flag_path" do
     it "should return" do
-      expect(territory.flag_path).to eql(territory.send(:convert_flag_path, territory_example.flag_texture))
+      expect(territory.flag_path).to eq(territory.send(:convert_flag_path, territory_example.flag_texture))
     end
   end
 
   describe "#stolen?" do
     it "should return" do
-      expect(territory.stolen?).to eql(territory_example.flag_stolen)
+      expect(territory.stolen?).to eq(territory_example.flag_stolen)
     end
   end
 
   describe "#flag_status" do
     it "should return" do
-      expect(territory.flag_status).to eql(territory_example.flag_stolen ? "Stolen!" : "Secure")
+      expect(territory.flag_status).to eq(territory_example.flag_stolen ? "Stolen!" : "Secure")
     end
   end
 
   describe "#last_paid_at" do
     it "should return" do
-      expect(territory.last_paid_at).to eql(ESM::Time.parse(territory_example.last_paid_at))
+      expect(territory.last_paid_at).to eq(ESM::Time.parse(territory_example.last_paid_at))
     end
   end
 
   describe "#next_due_date" do
     it "should return" do
       next_due_date = ESM::Time.parse(territory_example.last_paid_at) + settings.territory_lifetime.days
-      expect(territory.next_due_date).to eql(next_due_date)
+      expect(territory.next_due_date).to eq(next_due_date)
     end
   end
 
   describe "#max_object_count" do
     it "should return" do
-      expect(territory.max_object_count).to eql(same_level_territory.territory_object_count)
+      expect(territory.max_object_count).to eq(same_level_territory.territory_object_count)
     end
   end
 
@@ -100,20 +100,20 @@ describe ESM::Arma::Territory do
       settings.update(territory_payment_tax: 0)
 
       expected_price = territory_example.level * territory_example.object_count * settings.territory_price_per_object
-      expect(territory.renew_price).to eql("#{expected_price} poptabs")
+      expect(territory.renew_price).to eq("#{expected_price} poptabs")
     end
 
     it "should return the price (With tax)" do
       expected_price = territory_example.level * territory_example.object_count * settings.territory_price_per_object
       expected_price += (expected_price * (settings.territory_payment_tax.to_f / 100)).round
 
-      expect(territory.renew_price).to eql("#{expected_price} poptabs (#{settings.territory_payment_tax}% tax added)")
+      expect(territory.renew_price).to eq("#{expected_price} poptabs (#{settings.territory_payment_tax}% tax added)")
     end
   end
 
   describe "#upgradeable?" do
     it "should return" do
-      expect(territory.upgradeable?).to eql(next_level_territory.present?)
+      expect(territory.upgradeable?).to eq(next_level_territory.present?)
     end
   end
 
@@ -124,7 +124,7 @@ describe ESM::Arma::Territory do
 
     describe "#upgrade_level" do
       it "should return" do
-        expect(territory.upgrade_level).to eql(next_level_territory.territory_level)
+        expect(territory.upgrade_level).to eq(next_level_territory.territory_level)
       end
     end
 
@@ -132,39 +132,39 @@ describe ESM::Arma::Territory do
       it "should return the price (No tax)" do
         settings.update(territory_upgrade_tax: 0)
 
-        expect(territory.upgrade_price).to eql("#{next_level_territory.territory_purchase_price} poptabs")
+        expect(territory.upgrade_price).to eq("#{next_level_territory.territory_purchase_price} poptabs")
       end
 
       it "should return the price (With tax)" do
         expected_price = next_level_territory.territory_purchase_price
         expected_price += (expected_price * (settings.territory_upgrade_tax.to_f / 100)).round
 
-        expect(territory.upgrade_price).to eql("#{expected_price} poptabs (#{settings.territory_upgrade_tax}% tax added)")
+        expect(territory.upgrade_price).to eq("#{expected_price} poptabs (#{settings.territory_upgrade_tax}% tax added)")
       end
     end
 
     describe "#upgrade_radius" do
       it "should return" do
-        expect(territory.upgrade_radius).to eql(next_level_territory.territory_radius)
+        expect(territory.upgrade_radius).to eq(next_level_territory.territory_radius)
       end
     end
 
     describe "#upgrade_object_count" do
       it "should return" do
-        expect(territory.upgrade_object_count).to eql(next_level_territory.territory_object_count)
+        expect(territory.upgrade_object_count).to eq(next_level_territory.territory_object_count)
       end
     end
   end
 
   describe "#moderators" do
     it "should return" do
-      expect(territory.moderators).to eql(territory_example.moderators.map { |name, uid| "#{name} (#{uid})" })
+      expect(territory.moderators).to eq(territory_example.moderators.map { |name, uid| "#{name} (#{uid})" })
     end
   end
 
   describe "#builders" do
     it "should return" do
-      expect(territory.builders).to eql(territory_example.build_rights.map { |name, uid| "#{name} (#{uid})" })
+      expect(territory.builders).to eq(territory_example.build_rights.map { |name, uid| "#{name} (#{uid})" })
     end
   end
 
@@ -173,7 +173,7 @@ describe ESM::Arma::Territory do
       territory_example.flag_stolen = false
       territory_example.last_paid_at = ::Time.current.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.status_color).to eql(ESM::Color::Toast::GREEN)
+      expect(territory.status_color).to eq(ESM::Color::Toast::GREEN)
     end
 
     it "should be yellow" do
@@ -181,13 +181,13 @@ describe ESM::Arma::Territory do
       last_paid_at = ::Date.today - (settings.territory_lifetime - 3).days
       territory_example.last_paid_at = last_paid_at.to_time.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.status_color).to eql(ESM::Color::Toast::YELLOW)
+      expect(territory.status_color).to eq(ESM::Color::Toast::YELLOW)
     end
 
     it "should be red (Stolen)" do
       territory_example.flag_stolen = true
 
-      expect(territory.status_color).to eql(ESM::Color::Toast::RED)
+      expect(territory.status_color).to eq(ESM::Color::Toast::RED)
     end
 
     it "should be red (Payment due)" do
@@ -195,7 +195,7 @@ describe ESM::Arma::Territory do
       last_paid_at = ::Date.today - (settings.territory_lifetime - 1).days
       territory_example.last_paid_at = last_paid_at.to_time.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.status_color).to eql(ESM::Color::Toast::RED)
+      expect(territory.status_color).to eq(ESM::Color::Toast::RED)
     end
   end
 
@@ -204,21 +204,21 @@ describe ESM::Arma::Territory do
       last_paid_at = ::Time.current
       territory_example.last_paid_at = last_paid_at.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.days_left_until_payment_due).to eql(settings.territory_lifetime)
+      expect(territory.days_left_until_payment_due).to eq(settings.territory_lifetime)
     end
 
     it "should return (Needs payment)" do
       last_paid_at = ::Date.today - (settings.territory_lifetime - 3).days
       territory_example.last_paid_at = last_paid_at.to_time.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.days_left_until_payment_due).to eql(3)
+      expect(territory.days_left_until_payment_due).to eq(3)
     end
 
     it "should return (Payment ASAP)" do
       last_paid_at = ::Date.today - (settings.territory_lifetime - 1).days
       territory_example.last_paid_at = last_paid_at.to_time.strftime(TerritoryGenerator::TIME_FORMAT)
 
-      expect(territory.days_left_until_payment_due).to eql(1)
+      expect(territory.days_left_until_payment_due).to eq(1)
     end
   end
 
@@ -233,19 +233,19 @@ describe ESM::Arma::Territory do
       last_paid_at = ::Time.current
 
       territory_example.last_paid_at = last_paid_at.strftime(TerritoryGenerator::TIME_FORMAT)
-      expect(territory.payment_reminder_message).to eql("")
+      expect(territory.payment_reminder_message).to eq("")
     end
 
     it "should return a message (Needing to pay)" do
       last_paid_at = ::Time.current - (settings.territory_lifetime - 3).days
       territory_example.last_paid_at = last_paid_at.strftime(TerritoryGenerator::TIME_FORMAT)
-      expect(territory.payment_reminder_message).to eql(":warning: **You should consider making a base payment soon.**\n#{time_left_message}")
+      expect(territory.payment_reminder_message).to eq(":warning: **You should consider making a base payment soon.**\n#{time_left_message}")
     end
 
     it "should return a message (pay ASAP)" do
       last_paid_at = ::Time.current - (settings.territory_lifetime - 1).days
       territory_example.last_paid_at = last_paid_at.strftime(TerritoryGenerator::TIME_FORMAT)
-      expect(territory.payment_reminder_message).to eql(":alarm_clock: **You should make a base payment ASAP to avoid losing your base!**\n#{time_left_message}")
+      expect(territory.payment_reminder_message).to eq(":alarm_clock: **You should make a base payment ASAP to avoid losing your base!**\n#{time_left_message}")
     end
   end
 
@@ -254,17 +254,17 @@ describe ESM::Arma::Territory do
     let(:default_flag) { "#{base_path}/flag_white_co.jpg" }
 
     it "should parse arma path" do
-      expect(territory.send(:convert_flag_path, "\\A3\\Data_F\\Flags\\flag_us_co.paa")).to eql("#{base_path}/flag_us_co.jpg")
+      expect(territory.send(:convert_flag_path, "\\A3\\Data_F\\Flags\\flag_us_co.paa")).to eq("#{base_path}/flag_us_co.jpg")
     end
 
     it "should parse exile mod path" do
-      expect(territory.send(:convert_flag_path, "exile_assets\\texture\\flag\\flag_misc_knuckles_co.paa")).to eql("#{base_path}/flag_misc_knuckles_co.jpg")
+      expect(territory.send(:convert_flag_path, "exile_assets\\texture\\flag\\flag_misc_knuckles_co.paa")).to eq("#{base_path}/flag_misc_knuckles_co.jpg")
     end
 
     it "should return default" do
-      expect(territory.send(:convert_flag_path, "")).to eql(default_flag)
-      expect(territory.send(:convert_flag_path, "foo_bar_flag")).to eql(default_flag)
-      expect(territory.send(:convert_flag_path, "\\A3\\SomeDirectory\\flag_something.paa")).to eql(default_flag)
+      expect(territory.send(:convert_flag_path, "")).to eq(default_flag)
+      expect(territory.send(:convert_flag_path, "foo_bar_flag")).to eq(default_flag)
+      expect(territory.send(:convert_flag_path, "\\A3\\SomeDirectory\\flag_something.paa")).to eq(default_flag)
     end
   end
 end

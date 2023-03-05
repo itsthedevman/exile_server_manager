@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Reward, category: "command" do
-  let!(:command) { ESM::Command::Server::Reward.new }
+  let!(:command) { described_class.new }
 
   it "should be valid" do
     expect(command).not_to be_nil
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -47,24 +47,24 @@ describe ESM::Command::Server::Reward, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
+      # So we can track the response
+      ESM::Test.messages.clear
+
       # Respond to the request
       request.respond(true)
-
-      # Reset so we can track the response
-      ESM::Test.reset!
 
       # Wait for the server to respond
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM::Test.messages.first.content
 
       reward = server.server_reward
 
@@ -87,8 +87,8 @@ describe ESM::Command::Server::Reward, category: "command" do
         requestor_user_id: user.id,
         requestee_user_id: user.id,
         requested_from_channel_id: event.channel.id,
-        command_name: command.name,
-        command_arguments: { server_id: server.server_id }
+        command_name: command.instance_variable_get(:@name),
+        command_arguments: {server_id: server.server_id}
       )
 
       expect { command.execute(event) }.to raise_error do |error|
@@ -99,16 +99,16 @@ describe ESM::Command::Server::Reward, category: "command" do
     end
 
     describe "No rewards" do
-      before :each do
-        server.server_reward = ESM::ServerReward.create!(server_id: server.id)
-      end
+      it "errors" do
+        # Remove the default reward and create a blank one
+        server.server_reward.delete
+        server.send(:create_default_reward)
 
-      it "should error" do
         command_statement = command.statement(server_id: server.server_id)
         event = CommandEvent.create(command_statement, user: user, channel_type: :text)
         expect { command.execute(event) }.to raise_error do |error|
           embed = error.data
-          expect(embed.description).to match(/it looks like this server does not have any rewards for you to redeem/i)
+          expect(embed.description).to match(/the selected reward package is not available at this tim/i)
         end
       end
     end

@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class ServerErrorCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -14,11 +14,16 @@ module ESM
 
         argument :server_id
 
-        def discord
-          deliver!
+        def on_execute
+          send_to_arma(
+            type: :echo,
+            data: {type: :empty},
+            errors: [{type: :message, content: "this is an error message"}]
+          )
         end
 
-        def server; end
+        def on_response(_, _)
+        end
       end
     end
   end

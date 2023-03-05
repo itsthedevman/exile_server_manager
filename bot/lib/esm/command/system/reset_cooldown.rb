@@ -5,8 +5,8 @@ module ESM
   module Command
     module System
       class ResetCooldown < ESM::Command::Base
-        type :admin
-        aliases :resetcooldown
+        set_type :admin
+        register_aliases :resetcooldown
         limit_to :text
         requires :registration
 
@@ -21,7 +21,7 @@ module ESM
 
         argument :target, default: nil
         argument :command_name,
-          regex: /[\w]+/,
+          regex: /\w+/,
           description: "commands.reset_cooldown.arguments.command_name",
           default: nil,
           before_store: lambda { |parser|
@@ -34,13 +34,14 @@ module ESM
           }
         argument :server_id, default: nil
 
-        def discord
+        def on_execute
           @checks.owned_server! if @arguments.server_id
           check_for_valid_command!
           @checks.registered_target_user! if target_user
 
           # Send the confirmation request
-          response = ESM.bot.deliver_and_await!(confirmation_embed, to: current_channel, owner: current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
+          reply(confirmation_embed)
+          response = ESM.bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
           return reply(I18n.t("commands.reset_cooldown.cancellation_reply")) if response.nil? || response.downcase == I18n.t("no").downcase
 
           # Reset all cooldowns for that user.

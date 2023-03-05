@@ -1,0 +1,62 @@
+---
+en:
+  commands:
+    reset_cooldown:
+      description: |-
+        Resets a player's cooldowns.
+
+        Admins can preform any of the following:
+          Resets a cooldown for a player.
+          Reset all cooldowns for one server.
+          Reset all cooldowns for every server in their community.
+          Reset all cooldowns for a user on every server in their community.
+          Reset all cooldowns for a user on one server in their community.
+          Reset a single command cooldown for one server.
+          Reset a single command cooldown for every server in their community.
+          Reset a single command cooldown for a user on every server in their community.
+          Or, reset a single command cooldown for a user on one server in their community.
+
+        See examples for more details
+      example: |-
+        **`%{prefix}reset_cooldown`**
+        Resets every command's cooldowns for your community.
+
+        **`%{prefix}reset_cooldown @Bryan`**
+        Resets every command's cooldown for @Bryan on your community.
+
+        **`%{prefix}reset_cooldown @Bryan reward`**
+        Resets the `reward` cooldown for @Bryan on your community.
+
+        **`%{prefix}reset_cooldown @Bryan reward esm_malden`**
+        Resets the `reward` cooldown for @Bryan on `esm_malden` only
+
+        **`%{prefix}reset_cooldown reward esm_malden`**
+        Resets the `reward` cooldown for `esm_malden` only
+
+        **`%{prefix}reset_cooldown reward`**
+        Resets the `reward` cooldown every server your community has registered
+      arguments:
+        command_name: The name of the command to reset the cooldown for
+      confirmation_embed:
+        title: Reset Confirmation
+        description:
+          base: 'Hey %{user}, just to confirm, I will be resetting '
+          one_user: "%{target_user}'s cooldowns for "
+          all_users: 'everyone''s cooldowns for '
+          one_command: "`%{command_name}`. "
+          all_commands: 'all commands. '
+          one_server: This change will only be applied to `%{server_id}`.
+          all_servers: This change will be applied to every server your community
+            has registered with me.
+        field_name: "**Proceed?**"
+        field_value: Reply back `yes` or `no`
+      cancellation_reply: ":thumbsup: I've cancelled your request."
+      success_embed:
+        description:
+          base: ":white_check_mark: Hey %{user}, I have reset "
+          one_user: "%{target_user}'s cooldowns for "
+          all_users: 'everyone''s cooldowns for '
+          one_command: "`%{command_name}` on "
+          all_commands: 'all commands on '
+          one_server: "`%{server_id}`."
+          all_servers: every server your community has registered with me.

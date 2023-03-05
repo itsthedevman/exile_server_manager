@@ -5,18 +5,18 @@ module ESM
   module Command
     module Server
       class Reward < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
         define :whitelisted_role_ids, modifiable: true, default: []
         define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 1.times
+        define :cooldown_time, modifiable: true, default: 1
 
         argument :server_id
 
-        def discord
+        def on_execute
           # Check for pending requests
           @checks.pending_request!
 
@@ -26,7 +26,7 @@ module ESM
           # Add the request
           add_request(
             to: current_user,
-            description: I18n.t("commands.reward.request_description", user: current_user.mention, server: target_server.server_id)
+            description: I18n.t("commands.reward_v1.request_description", user: current_user.mention, server: target_server.server_id)
           )
 
           # Remind them to check their PMs
@@ -34,14 +34,14 @@ module ESM
           reply(embed)
         end
 
-        def server
+        def on_response(_, _)
           # Array<Array<item, quantity>>
           receipt = @response.receipt.to_h
 
           embed = ESM::Embed.build(
             :success,
             description: I18n.t(
-              "commands.reward.receipt",
+              "commands.reward_v1.receipt",
               user: current_user.mention,
               items: receipt.format { |item, quantity| "- #{quantity}x #{item}\n" }
             )
@@ -51,7 +51,7 @@ module ESM
         end
 
         def request_accepted
-          deliver!(function_name: "rewardPlayer", target_uid: current_user.steam_uid)
+          deliver!(command_name: "reward", function_name: "rewardPlayer", target_uid: current_user.steam_uid)
         end
 
         private

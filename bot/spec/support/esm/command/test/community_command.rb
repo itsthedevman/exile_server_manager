@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class CommunityCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -14,9 +14,11 @@ module ESM
 
         argument :community_id
 
-        def discord; end
+        def on_execute
+        end
 
-        def server; end
+        def on_response(_, _)
+        end
       end
     end
   end

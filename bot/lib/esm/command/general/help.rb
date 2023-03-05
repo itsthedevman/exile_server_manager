@@ -4,8 +4,8 @@ module ESM
   module Command
     module General
       class Help < ESM::Command::Base
-        type :player
-        aliases :commands
+        set_type :player
+        register_aliases :commands
 
         define :enabled, modifiable: false, default: true
         define :whitelist_enabled, modifiable: false, default: false
@@ -15,7 +15,7 @@ module ESM
 
         argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
 
-        def discord
+        def on_execute
           case @arguments.category
           when "commands"
             commands
@@ -60,7 +60,7 @@ module ESM
           reply(embed)
         end
 
-        def commands(types: %i[player admin], include_development: ESM.env.development?)
+        def commands(types: ESM::Command::TYPES.dup, include_development: ESM.env.development?)
           types << :development if include_development
 
           # Remove :admin if player mode is enabled for this community

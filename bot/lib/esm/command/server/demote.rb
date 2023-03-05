@@ -5,7 +5,7 @@ module ESM
   module Command
     module Server
       class Demote < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -18,7 +18,7 @@ module ESM
         argument :territory_id
         argument :target
 
-        def discord
+        def on_execute
           # Check for registered target_user. A steam_uid is valid here
           @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
 
@@ -30,7 +30,7 @@ module ESM
           )
         end
 
-        def server
+        def on_response(_, _)
           message = I18n.t(
             "commands.demote.success_message",
             user: current_user.mention,

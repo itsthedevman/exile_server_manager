@@ -3,6 +3,11 @@ set -euo pipefail
 IFS=$'\n\t'
 set -vx
 
+if [[ ! -f ".env" ]]; then
+  echo "Failed - Missing .env file. Did you forget to create/sym link it?"
+  exit 1
+fi
+
 bundle install
 bundle exec rake db:drop
 
@@ -18,3 +23,6 @@ bundle exec rake db:migrate RAILS_ENV=test
 if [[ -z ${TRAVIS+x} ]]; then
   bundle exec ruby db/seeds.rb
 fi
+
+cargo update --package esm_message
+cargo build --release

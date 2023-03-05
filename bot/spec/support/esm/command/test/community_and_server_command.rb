@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class CommunityAndServerCommand < ESM::Command::Base
-        type :player
+        set_type :player
         requires :registration
 
         define :enabled, modifiable: true, default: true
@@ -16,9 +16,11 @@ module ESM
         argument :community_id
         argument :server_id
 
-        def discord; end
+        def on_execute
+        end
 
-        def server; end
+        def on_response(_, _)
+        end
       end
     end
   end

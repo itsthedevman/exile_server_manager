@@ -1,0 +1,23 @@
+---
+en:
+  commands:
+    add:
+      description: Adds the target user as a builder in the provided territory
+      example: |-
+        **`%{prefix}add esm_malden jqjoe @Bryan`**
+        Adds @Bryan to `jqjoe` on `esm_malden`
+
+        **`%{prefix}add esm_malden some_territory @your_username`**
+        If you are a territory admin, you may replace `@your_username` with a tag of yourself to add yourself to this territory.
+      request_description: |-
+        Hi %{target_user}!
+        %{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`
+      requestee_description: |-
+        Hi %{target_user}!
+        %{current_user} wants to add you to their territory `%{territory_id}` on `%{server_id}`
+      requestor_accepted: Request `%{uuid}` has been accepted. Processing your request
+        to add %{target_user} to `%{territory_id}` on `%{server_id}`
+      requestor_success: Hi %{current_user}, %{target_user} has been added to territory
+        `%{territory_id}` on %{server_id}
+      requestee_success: Hi %{user}, you've been added to `%{territory_id}` successfully.
+        Welcome aboard!

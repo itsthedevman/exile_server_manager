@@ -4,7 +4,7 @@ module ESM
   module Command
     module Community
       class Servers < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -14,7 +14,7 @@ module ESM
 
         argument :community_id
 
-        def discord
+        def on_execute
           servers = ESM::Server.where(community_id: target_community.id)
           check_for_no_servers!(servers)
 
@@ -24,7 +24,6 @@ module ESM
             reply(build_server_embed)
           end
         end
-
 
         #########################
         # Command Methods
@@ -39,12 +38,12 @@ module ESM
         def build_server_embed
           ESM::Embed.build do |e|
             e.title = @server.server_name.presence || ""
-            e.color = @server.online? ? :green : :red
+            e.color = @server.connected? ? :green : :red
 
             # Server_id, ip, port
             add_server_connection_info(e)
 
-            if @server.online?
+            if @server.connected?
               e.add_field(name: I18n.t("commands.server.online_for"), value: "```#{@server.uptime}```")
               e.add_field(name: I18n.t("commands.server.restart_in"), value: "```#{@server.time_left_before_restart}```")
             else

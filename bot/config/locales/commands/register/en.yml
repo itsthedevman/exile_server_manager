@@ -1,0 +1,11 @@
+---
+en:
+  commands:
+    register:
+      description: Provides information on how to link a Steam account to ESM
+      example: |-
+        **`%{prefix}register`**
+        Provides information on how to link a Steam account to ESM
+      already_registered: |-
+        Hey %{user}, it looks like you are already registered with me. You can view all of my commands using `%{prefix}help commands`.
+        Looking for the registration link? It's https://www.esmbot.com/register

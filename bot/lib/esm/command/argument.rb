@@ -4,7 +4,7 @@ module ESM
   module Command
     class Argument
       # argument :name, regex: /xxx/, preserve: true, type: :integer, display_as: "", multiline: true, default: nil
-      attr_reader :name, :parser
+      attr_reader :name, :parser, :opts
       attr_accessor :value
 
       def initialize(name, container, opts = {})
@@ -20,10 +20,10 @@ module ESM
 
       def regex
         options = Regexp::IGNORECASE
-        options += Regexp::MULTILINE if self.multiline?
+        options += Regexp::MULTILINE if multiline?
 
         regex = "(#{@opts[:regex].source})"
-        regex += "?" if !self.required?
+        regex += "?" if !required?
 
         Regexp.new(regex, options)
       end
@@ -73,7 +73,7 @@ module ESM
       # Only valid if argument has a value and no default.
       # Allows value to be nil if not required
       def invalid?
-        self.required? && self.value.nil?
+        required? && value.nil?
       end
 
       def description(prefix = ESM.config.prefix || "!")
@@ -85,8 +85,8 @@ module ESM
 
       def to_s
         name =
-          if self.display_as.present?
-            self.display_as.to_s
+          if display_as.present?
+            display_as.to_s
           else
             self.name.to_s
           end

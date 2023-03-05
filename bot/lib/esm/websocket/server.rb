@@ -11,6 +11,8 @@ module ESM
         @server.add_tcp_listener("0.0.0.0", ENV["WEBSOCKET_PORT"])
         @server.run
 
+        info!("Starting server")
+
         @overseer = ESM::Websocket::Connection::Overseer.new
       end
 

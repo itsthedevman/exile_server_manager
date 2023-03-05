@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class SkipServerCheckCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         skip_check :connected_server
 
@@ -16,11 +16,12 @@ module ESM
 
         argument :server_id
 
-        def discord
+        def on_execute
           "Hello"
         end
 
-        def server; end
+        def on_response(_, _)
+        end
       end
     end
   end

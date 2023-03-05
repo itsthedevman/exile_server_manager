@@ -4,7 +4,7 @@ module ESM
   module Command
     module Test
       class PlayerCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -12,9 +12,13 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        def discord; end
+        def on_execute
+          "on_execute"
+        end
 
-        def server; end
+        def on_response(_, _)
+          "on_response"
+        end
       end
     end
   end

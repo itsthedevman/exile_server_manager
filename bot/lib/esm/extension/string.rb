@@ -9,14 +9,13 @@ class String
   end
 
   def to_ostruct
-    JSON.parse(self, object_class: OpenStruct)
+    ESM::JSON.parse(self, as_ostruct: true)
   end
 
   def to_h
-    JSON.parse(self, symbolize_names: true)
-  rescue JSON::ParserError
-    nil
+    ESM::JSON.parse(self)
   end
+  alias_method :to_a, :to_h
 
   def to_poptab
     # Convert from Scientific notation.
@@ -39,7 +38,7 @@ class String
   # Extending active support classify to allow leaving the s on the end
   def classify(keep_plural: false)
     if keep_plural
-      self.sub(/.*\./, "").camelize
+      sub(/.*\./, "").camelize
     else
       ActiveSupport::Inflector.classify(self)
     end

@@ -8,7 +8,7 @@ describe ESM::Command::General::SteamUid, category: "command" do
   end
 
   it "should have 0 argument" do
-    expect(command.arguments.size).to eql(0)
+    expect(command.arguments.size).to eq(0)
   end
 
   it "should have a description" do
@@ -29,10 +29,10 @@ describe ESM::Command::General::SteamUid, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       expect { command.execute(event) }.not_to raise_error
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
 
       embed = ESM::Test.messages.first.second
-      expect(embed.description).to eql("Hey #{user.mention}, your Steam UID is `#{user.steam_uid}`.")
+      expect(embed.description).to eq("Hey #{user.mention}, your Steam UID is `#{user.steam_uid}`.")
     end
   end
 end

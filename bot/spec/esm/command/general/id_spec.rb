@@ -8,7 +8,7 @@ describe ESM::Command::General::Id, category: "command" do
   end
 
   it "should have 0 argument" do
-    expect(command.arguments.size).to eql(0)
+    expect(command.arguments.size).to eq(0)
   end
 
   it "should have a description" do
@@ -32,8 +32,8 @@ describe ESM::Command::General::Id, category: "command" do
       response = ESM::Test.messages.first.second
       expect(response).not_to be_nil
       expect(response.description).to match(/community id is/i)
-      expect(response.fields.size).to eql(1)
-      expect(response.fields.first.name).to eql("Want to list all registered servers for this community?")
+      expect(response.fields.size).to eq(1)
+      expect(response.fields.first.name).to eq("Want to list all registered servers for this community?")
       expect(response.fields.first.value).to match(/~servers/i)
     end
   end

@@ -1,0 +1,18 @@
+---
+en:
+  commands:
+    info:
+      description: Displays information about a particular player or territory. This
+        command is the admin equivalent to the `!territories` and `!me` commands.
+      example: |-
+        **`%{prefix}info esm_malden @Bryan`**
+        Using their mention, return their player stats on `esm_malden`
+
+        **`%{prefix}info esm_tanoa 76561198037177305`**
+        Using their steam uid, return their player stats on `esm_tanoa`
+
+        **`%{prefix}info esm_altis 137709767954137088`**
+        Using their Discord ID, return their player stats on `esm_altis`
+
+        **`%{prefix}info esm_namalsk jquee`**
+        Return the territory information for `jquee`

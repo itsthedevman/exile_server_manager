@@ -8,7 +8,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -50,21 +50,21 @@ describe ESM::Command::Server::Stuck, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you've been reset successfully. please join the server to spawn back in/i)
@@ -84,21 +84,21 @@ describe ESM::Command::Server::Stuck, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eql(2)
+      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
       expect(request).not_to be_nil
 
       # Reset so we can track the response
-      ESM::Test.reset!
+      ESM::Test.messages.clear
 
       # Respond to the request
       request.respond(true)
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/i was not successful at resetting your player on `.+`\. please join the server again, and if you are still stuck, close arma 3 and attempt this command again\./i)

@@ -18,9 +18,9 @@ module ESM
 
     def link
       if ESM.env.production?
-        "https://www.esmbot.com/logs/#{self.uuid}"
+        "https://www.esmbot.com/logs/#{uuid}"
       else
-        "http://localhost:3000/logs/#{self.uuid}"
+        "http://localhost:3000/logs/#{uuid}"
       end
     end
 

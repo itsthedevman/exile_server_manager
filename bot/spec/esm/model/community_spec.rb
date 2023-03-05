@@ -9,7 +9,7 @@ describe ESM::Community do
       community.send(:create_command_configurations)
       community.reload
 
-      expect(community.command_configurations.size).to eql(ESM::Command.all.size)
+      expect(community.command_configurations.size).to eq(ESM::Command.all.size)
 
       ESM::Command.all.each do |command|
         expect(ESM::CommandConfiguration.where(community_id: community.id, command_name: command.name).any?).to be(true)
@@ -24,7 +24,7 @@ describe ESM::Community do
     it "should find the community by a server id" do
       result = ESM::Community.find_by_server_id(server.server_id)
       expect(result).not_to be(nil)
-      expect(result).to eql(community)
+      expect(result).to eq(community)
     end
 
     it "should return nil (no id)" do

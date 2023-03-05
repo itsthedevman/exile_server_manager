@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
 class Array
-  def format(join_with: "", &_block)
-    self.map do |i|
-      yield(i)
-    end.join(join_with)
+  def format(join_with: "", &block)
+    map(&block).join(join_with)
   end
 
   # Adds up all the sizes of every element inside the array
   def total_size
-    self.reduce(0) do |total, i|
+    reduce(0) do |total, i|
       size =
-        if i.is_a?(Array)
+        case i
+        when Array
           i.total_size
-        elsif i.is_a?(Integer)
+        when Integer
           i
         else
           i.size

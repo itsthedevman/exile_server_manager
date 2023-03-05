@@ -2,7 +2,9 @@
 
 module ESM
   class Embed
-    TAB = "\u200B\u200B\u200B\u200B"
+    EMPTY_SPACE = "\u200B"
+    TAB = "#{EMPTY_SPACE}#{EMPTY_SPACE}#{EMPTY_SPACE}#{EMPTY_SPACE}"
+
     module Limit
       TITLE_LENGTH_MAX = 256
       DESCRIPTION_LENGTH_MAX = 2048
@@ -13,16 +15,8 @@ module ESM
     ###########################
     # Class methods
     ###########################
-    def self.build(type = nil, **attributes)
-      embed = ESM::Embed.new
-
-      if block_given?
-        yield(embed)
-      else
-        embed.build_from_template(type, **attributes)
-      end
-
-      embed
+    def self.build(type = nil, **attributes, &block)
+      ESM::Embed.new(type, **attributes, &block)
     end
 
     ###########################
@@ -31,7 +25,7 @@ module ESM
     attr_reader :title, :description, :image, :thumbnail, :footer, :color
     attr_accessor :fields, :author, :url, :timestamp
 
-    def initialize
+    def initialize(type = nil, attributes = {}, &block)
       @title = nil
       @description = nil
       @fields = []
@@ -39,10 +33,15 @@ module ESM
       @author = nil
       @image = nil
       @thumbnail = nil
-      @color = ESM::Color::Toast::BLUE
+      @color = ESM::Color.random
       @url = nil
       @timestamp = DateTime.now
-      super
+
+      if block
+        yield(self)
+      else
+        build_from_template(type, **attributes)
+      end
     end
 
     def title=(text)
@@ -58,12 +57,12 @@ module ESM
       @description = text.truncate(Limit::DESCRIPTION_LENGTH_MAX)
     end
 
-    def add_field(name: nil, value:, inline: false)
+    def add_field(value:, name: nil, inline: false)
       # This will make the name appear empty
-      name = "\u200B" if name.nil?
+      name = EMPTY_SPACE if name.nil?
 
       # Discord won't send messages that have an empty field. This forces the value to be appear empty, and Discord will accept it.
-      value = "\u200B" if value.blank?
+      value = EMPTY_SPACE if value.blank?
 
       return add_field_array(name: name, values: value, inline: inline) if value.is_a?(Array)
 
@@ -101,28 +100,28 @@ module ESM
 
     def transfer(embed)
       # And you can't do `embed = new_embed`
-      embed.title = self.title if self.title
-      embed.description = self.description if self.description
-      embed.url = self.url if self.url
-      embed.timestamp = self.timestamp if self.timestamp
-      embed.color = self.color if self.color
-      embed.footer = self.footer if self.footer
-      embed.image = self.image if self.image
-      embed.thumbnail = self.thumbnail if self.thumbnail
-      embed.author = self.author if self.author
-      embed.fields = self.fields if self.fields
+      embed.title = title if title
+      embed.description = description if description
+      embed.url = url if url
+      embed.timestamp = timestamp if timestamp
+      embed.color = color if color
+      embed.footer = footer if footer
+      embed.image = image if image
+      embed.thumbnail = thumbnail if thumbnail
+      embed.author = author if author
+      embed.fields = fields if fields
 
-      embed
+      self
     end
 
     def to_s
       output = ""
-      output += "Title (#{self.title.size}): #{self.title}\n" if self.title
-      output += "Description (#{self.description.size}): #{self.description}\n" if self.description
+      output += "Title (#{title.size}): #{title}\n" if title
+      output += "Description (#{description.size}): #{description}\n" if description
 
-      if self.fields
+      if fields
         output += "Fields:\n"
-        self.fields.each_with_index do |field, index|
+        fields.each_with_index do |field, index|
           output += "\t##{index + 1}"
           output += " <inline>" if field.inline
 
@@ -134,12 +133,12 @@ module ESM
       # Add the metadata
       if metadata?
         output += "Metadata:\n"
-        output += "\tTimestamp: #{self.timestamp}\n" if self.timestamp
-        output += "\tColor: #{self.color}\n" if self.color
-        output += "\tImage: #{self.image.url}\n" if self.image
-        output += "\tThumbnail: #{self.thumbnail.url}\n" if self.thumbnail
-        output += "\tURL: #{self.url}\n" if self.url
-        output += "\tFooter: #{self.footer.text}" if self.footer
+        output += "\tTimestamp: #{timestamp}\n" if timestamp
+        output += "\tColor: #{color}\n" if color
+        output += "\tImage: #{image.url}\n" if image
+        output += "\tThumbnail: #{thumbnail.url}\n" if thumbnail
+        output += "\tURL: #{url}\n" if url
+        output += "\tFooter: #{footer.text}" if footer
       end
 
       output
@@ -147,16 +146,16 @@ module ESM
 
     def to_h
       {
-        title: self.title,
-        description: self.description,
-        timestamp: self.timestamp,
-        color: self.color,
-        footer: self.footer&.text,
-        fields: self.fields.map { |f| { name: f.name, value: f.value } },
-        author: self.author,
-        thumbnail: self.thumbnail,
-        image: self.image,
-        url: self.url
+        title: title,
+        description: description,
+        timestamp: timestamp,
+        color: color,
+        footer: footer&.text,
+        fields: fields.map { |f| {name: f.name, value: f.value} },
+        author: author,
+        thumbnail: thumbnail,
+        image: image,
+        url: url
       }
     end
 
@@ -171,31 +170,31 @@ module ESM
       end
 
       attributes.each do |attr_name, attr_value|
-        self.send("#{attr_name}=", attr_value)
+        send("#{attr_name}=", attr_value)
       end
     end
 
     private
 
     def metadata?
-      self.timestamp.present? || self.color.present? || self.image.present? || self.thumbnail.present? || self.url.present?
+      timestamp.present? || color.present? || image.present? || thumbnail.present? || url.present?
     end
 
     def add_field_array(name:, values:, inline:)
-      field = { name: name, value: "", inline: inline }
+      field = {name: name, value: "", inline: inline}
 
       values.each do |value|
         value += "\n"
 
         if field[:value].size + value.size >= Limit::FIELD_VALUE_LENGTH_MAX
-          store_field(field)
-          field = { name: "#{name} #{I18n.t(:continued)}", value: "", inline: inline }
+          store_field(**field)
+          field = {name: "#{name} #{I18n.t(:continued)}", value: "", inline: inline}
         end
 
         field[:value] += value
       end
 
-      store_field(field)
+      store_field(**field)
     end
 
     def store_field(name:, value:, inline:)

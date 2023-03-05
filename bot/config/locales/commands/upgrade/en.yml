@@ -1,0 +1,15 @@
+---
+en:
+  commands:
+    upgrade:
+      description: |-
+        **Territory Owner or Moderator Only.**
+        Upgrades a territory to the next level using poptabs from your locker.
+        To see costs, please use the `%{prefix}territories` command
+      example: |-
+        **`%{prefix}upgrade esm_malden awesome`**
+        Upgrades territory `awesome` to the next level on `esm_malden`
+      success_message: |-
+        Hey %{user}, you successfully upgraded territory `%{territory_id}` for **%{cost}**.
+        Your territory has reached level **%{level}** and now has a radius of **%{range}** meters.
+        After this transaction, you have **%{locker}** left in your locker.

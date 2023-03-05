@@ -8,7 +8,7 @@ describe ESM::Command::Entertainment::Doggo, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(0)
+    expect(command.arguments.size).to eq(0)
   end
 
   it "should have a description" do

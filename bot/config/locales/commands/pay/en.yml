@@ -1,0 +1,17 @@
+---
+en:
+  commands:
+    pay:
+      description: |-
+        Pay the territory protection for a territory using poptabs from your locker.
+        Some servers may implement a tax for paying using ESM. You can see how much your territory's protection cost is by using `%{prefix}territories`
+      example: |-
+        **`%{prefix}pay esm_malden qqoej`**
+        Pay the territory protection for `qqoej` on server `esm_malden`
+
+        **`%{prefix}pay esm_malden fort_kickass`**
+        Pay the territory protection for custom territory ID `fort_kickass` on server `esm_malden`
+      embed:
+        description: |-
+          %{user}, `%{server_id}` has successfully received the payment of **%{cost}** for `%{territory_id}`.
+          You have **%{locker_amount}** left in your locker.

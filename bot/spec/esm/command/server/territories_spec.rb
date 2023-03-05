@@ -8,7 +8,7 @@ describe ESM::Command::Server::Territories, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -63,60 +63,60 @@ describe ESM::Command::Server::Territories, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(response.size)
+      expect(ESM::Test.messages.size).to eq(response.size)
 
       ESM::Test.messages.map(&:second).each_with_index do |embed, index|
         territory = ESM::Arma::Territory.new(server: server, territory: response[index])
 
-        expect(embed.title).to eql("Territory \"#{territory.name}\"")
-        expect(embed.thumbnail.url).to eql(territory.flag_path)
-        expect(embed.color).to eql(territory.status_color)
-        expect(embed.description).to eql(territory.payment_reminder_message)
+        expect(embed.title).to eq("Territory \"#{territory.name}\"")
+        expect(embed.thumbnail.url).to eq(territory.flag_path)
+        expect(embed.color).to eq(territory.status_color)
+        expect(embed.description).to eq(territory.payment_reminder_message)
 
         field_info = [
-          { name: "Territory ID", value: "```#{territory.id}```" },
-          { name: "Flag Status", value: "```#{territory.flag_status}```" },
-          { name: "Next Due Date", value: "```#{territory.next_due_date.strftime(ESM::Time::Format::TIME)}```" },
-          { name: "Last Paid", value: "```#{territory.last_paid_at.strftime(ESM::Time::Format::TIME)}```" },
-          { name: "Price to renew protection", value: territory.renew_price },
-          { value: "__Current Territory Stats__" },
-          { name: "Level", value: territory.level },
-          { name: "Radius", value: "#{territory.radius}m" },
-          { name: "Current / Max Objects", value: "#{territory.object_count}/#{territory.max_object_count}" }
+          {name: "Territory ID", value: "```#{territory.id}```"},
+          {name: "Flag Status", value: "```#{territory.flag_status}```"},
+          {name: "Next Due Date", value: "```#{territory.next_due_date.strftime(ESM::Time::Format::TIME)}```"},
+          {name: "Last Paid", value: "```#{territory.last_paid_at.strftime(ESM::Time::Format::TIME)}```"},
+          {name: "Price to renew protection", value: territory.renew_price},
+          {value: "__Current Territory Stats__"},
+          {name: "Level", value: territory.level},
+          {name: "Radius", value: "#{territory.radius}m"},
+          {name: "Current / Max Objects", value: "#{territory.object_count}/#{territory.max_object_count}"}
         ]
 
         if territory.upgradeable?
           field_info.push(
-            { value: "__Next Territory Stats__" },
-            { name: "Level", value: territory.upgrade_level },
-            { name: "Radius", value: "#{territory.upgrade_radius}m" },
-            { name: "Max Objects", value: territory.upgrade_object_count },
-            { name: "Price", value: territory.upgrade_price }
+            {value: "__Next Territory Stats__"},
+            {name: "Level", value: territory.upgrade_level},
+            {name: "Radius", value: "#{territory.upgrade_radius}m"},
+            {name: "Max Objects", value: territory.upgrade_object_count},
+            {name: "Price", value: territory.upgrade_price}
           )
         end
 
-        field_info.push({ value: "__Territory Members__" }, { name: "Owner", value: territory.owner })
+        field_info.push({value: "__Territory Members__"}, {name: "Owner", value: territory.owner})
 
         # Now check the fields
         # Removing them from the embed so we can check moderators/builders easily
         field_info.each do |field|
           embed_field = embed.fields.shift
-          expect(embed_field.name).to eql(field[:name].to_s) if field[:name].present?
-          expect(embed_field.value).to eql(field[:value].to_s)
+          expect(embed_field.name).to eq(field[:name].to_s) if field[:name].present?
+          expect(embed_field.value).to eq(field[:value].to_s)
         end
 
         moderator_fields = build_fields(territory.moderators)
         moderator_fields.each do |moderator_field|
           field = embed.fields.shift
           expect(field.name).to match(/moderator/i)
-          expect(field.value).to eql(moderator_field)
+          expect(field.value).to eq(moderator_field)
         end
 
         builder_fields = build_fields(territory.builders)
         builder_fields.each do |builder_field|
           field = embed.fields.shift
           expect(field.name).to match(/build rights/i)
-          expect(field.value).to eql(builder_field)
+          expect(field.value).to eq(builder_field)
         end
       end
     end
@@ -130,11 +130,11 @@ describe ESM::Command::Server::Territories, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      expect(ESM::Test.messages.size).to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/unable to find any territories/i)
-      expect(embed.color).to eql(ESM::Color::Toast::RED)
+      expect(embed.color).to eq(ESM::Color::Toast::RED)
     end
   end
 end

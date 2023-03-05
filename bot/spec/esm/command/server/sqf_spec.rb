@@ -1,130 +1,124 @@
 # frozen_string_literal: true
 
-describe ESM::Command::Server::Sqf, category: "command" do
-  let!(:command) { ESM::Command::Server::Sqf.new }
+describe ESM::Command::Server::Sqf, category: "command", v2: true do
+  include_context "command"
+  include_examples "command"
 
-  it "should be valid" do
-    expect(command).not_to be_nil
+  it "is an admin command" do
+    expect(command.type).to eql(:admin)
   end
 
-  it "should have 3 argument" do
-    expect(command.arguments.size).to eql(3)
+  it "requires registration" do
+    expect(command.registration_required?).to be(true)
   end
 
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
+  # Change "requires_connection" to true if this command requires the client to be connected
+  describe "#on_execute/#on_response", requires_connection: true do
+    include_context "connection"
 
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
-
-  describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
-    let(:second_user) { ESM::Test.second_user }
-    let!(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-    let(:response) { command.response }
+    let(:second_user) { ESM::Test.user }
 
     before :each do
       grant_command_access!(community, "sqf")
-
-      wait_for { wsc.connected? }.to be(true)
     end
 
-    after :each do
-      wsc.disconnect!
+    it "executes (On server/with result)" do
+      execute!(server_id: server.server_id, code_to_execute: "_test = true;\n_test")
+      wait_for { ESM::Test.messages }.not_to be_empty
+
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
+
+      result_embed = message.content
+      expect(result_embed.description).to eq(command.t("responses.server_with_result", server_id: server.server_id, result: "true", user: user.mention))
     end
 
-    # Flags
-    # WITH_RETURN
-    # ERROR
-    it "should execute (Server/with reply)" do
-      wsc.flags.WITH_RETURN = true
+    it "executes (On server/no result)" do
+      execute!(server_id: server.server_id, code_to_execute: "if (false) then { \"true\" };")
+      wait_for { ESM::Test.messages }.not_to be_empty
 
-      request = nil
-      command_statement = command.statement(server_id: server.server_id, code_to_execute: "_test = true;\n_test")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
-
-      embed = ESM::Test.messages.first.second
-      expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned the following: ```true```/i))
+      result_embed = message.content
+      expect(result_embed.description).to eq(command.t("responses.server", server_id: server.server_id, user: user.mention))
     end
 
-    it "should execute (Server/no reply)" do
-      request = nil
-      command_statement = command.statement(server_id: server.server_id, code_to_execute: "if (false) then { \"true\" };")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    it "executes (On player/no result)" do
+      user.connect
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      execute!(server_id: server.server_id, target: user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
+      wait_for { ESM::Test.messages }.not_to be_empty
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned nothing/i))
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
+
+      result_embed = message.content
+      expect(result_embed.description).to eq(command.t("responses.player", server_id: server.server_id, user: user.mention, target_uid: user.steam_uid))
     end
 
-    it "should execute (Target/no reply)" do
-      request = nil
-      command_statement = command.statement(server_id: server.server_id, target: user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    it "executes (On non-registered steam uid)" do
+      second_user.connect
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      # Deregister the user
+      steam_uid = second_user.steam_uid
+      second_user.update(steam_uid: nil)
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully on `#{user.steam_uid}`/i))
+      execute!(fail_on_raise: false, server_id: server.server_id, target: steam_uid, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
+      wait_for { ESM::Test.messages }.not_to be_empty
+
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
+
+      result_embed = message.content
+      expect(result_embed.description).to eq(command.t("responses.player", server_id: server.server_id, user: user.mention, target_uid: steam_uid))
     end
 
-    it "should raise not online target" do
-      wsc.flags.ERROR = true
+    it "returns a client error (Player is not online)" do
+      execute!(server_id: server.server_id, target: user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
+      wait_for { ESM::Test.messages }.not_to be_empty
 
-      request = nil
-      command_statement = command.statement(server_id: server.server_id, target: user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
 
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
-
-      embed = ESM::Test.messages.first.second
-      expect(embed).to have_attributes(description: a_string_matching(/has informed me that `#{user.steam_uid}` is not online or has not joined the server/i))
+      result_embed = message.content
+      expect(result_embed.description).to eq("Hey #{user.mention}, `#{user.steam_uid}` must be spawned into `#{server.server_id}` before you can execute code on them")
     end
 
-    it "should raise not registered target" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    it "raises (Player is not registered)" do
+      second_user.update(steam_uid: nil)
 
-      second_user.update(steam_uid: "")
+      begin
+        execute!(fail_on_raise: false, server_id: server.server_id, target: second_user.mention, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
 
-      expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.data).to have_attributes(description: a_string_matching(/has not registered with me yet/i))
+        raise "Unreachable"
+      rescue ESM::Exception::CheckFailure => e
+        expect(e.data.description).to eq("Hey #{user.mention}, #{second_user.mention} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!")
       end
     end
 
-    it "should support a non-registered steam uid" do
-      steam_uid = second_user.steam_uid
-      second_user.update(steam_uid: "")
+    it "minifies the code" do
+      execute!(
+        server_id: server.server_id,
+        target: "server",
+        code_to_execute: <<~SQF
+          if (true) exitWith
+          {
+            false
+          };
+        SQF
+      )
 
-      command_statement = command.statement(server_id: server.server_id, target: steam_uid, code_to_execute: "player setVariable [\"This code\", \"does not matter\"];")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      wait_for { ESM::Test.messages }.not_to be_empty
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eql(1)
+      outgoing_message = ESM::Test.outbound_server_messages.first.content
+      expect(outgoing_message.data.code).to eq("if(true)exitWith{false};")
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully on `#{steam_uid}`/i))
+      message = ESM::Test.messages.first
+      expect(message).not_to be_nil
+
+      result_embed = message.content
+      expect(result_embed.description).to eq(command.t("responses.server_with_result", server_id: server.server_id, result: "false", result_type: "BOOL", user: user.mention))
     end
   end
 end

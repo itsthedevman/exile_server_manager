@@ -4,7 +4,7 @@ module ESM
   module Command
     module Development
       class Say < ESM::Command::Base
-        type :development
+        set_type :development
         requires :dev
 
         define :enabled, modifiable: false, default: true
@@ -15,7 +15,7 @@ module ESM
 
         argument :text, regex: /.+/, preserve: true, description: "Text to make the bot say"
 
-        def discord
+        def on_execute
           @event.message.delete if !ESM.env.test?
           reply(@arguments.text)
         end

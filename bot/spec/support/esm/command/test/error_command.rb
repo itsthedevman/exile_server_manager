@@ -5,7 +5,7 @@ module ESM
   module Command
     module Test
       class ErrorCommand < ESM::Command::Base
-        type :player
+        set_type :player
 
         define :enabled, modifiable: true, default: true
         define :whitelist_enabled, modifiable: true, default: false
@@ -13,8 +13,11 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        def discord
+        def on_execute
           raise StandardError, "Oops"
+        end
+
+        def on_response(_, _)
         end
       end
     end

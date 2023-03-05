@@ -84,11 +84,11 @@ module ESM
         def to_h
           {
             config: @config&.attributes,
-            enabled: self.enabled?,
-            allowed: self.allowed?,
-            whitelisted: self.whitelisted?,
-            notify_when_disabled: self.notify_when_disabled?,
-            cooldown_time: self.cooldown_time
+            enabled: enabled?,
+            allowed: allowed?,
+            whitelisted: whitelisted?,
+            notify_when_disabled: notify_when_disabled?,
+            cooldown_time: cooldown_time
           }
         end
       end

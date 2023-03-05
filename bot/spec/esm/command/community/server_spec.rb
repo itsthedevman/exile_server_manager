@@ -8,7 +8,7 @@ describe ESM::Command::Community::Server, category: "command" do
   end
 
   it "should have 1 argument" do
-    expect(command.arguments.size).to eql(1)
+    expect(command.arguments.size).to eq(1)
   end
 
   it "should have a description" do
@@ -49,17 +49,17 @@ describe ESM::Command::Community::Server, category: "command" do
       # Reload because the server updates when the WSC connects
       server.reload
       expect(response).not_to be_nil
-      expect(response.title).to eql(server.server_name)
+      expect(response.title).to eq(server.server_name)
       expect(response.description).to be_nil
       expect(response.fields).not_to be_empty
-      expect(response.fields.first.name).to eql("Server ID")
-      expect(response.fields.first.value).to eql("```#{server.server_id}```")
-      expect(response.fields.second.name).to eql("IP")
-      expect(response.fields.second.value).to eql("```#{server.server_ip}```")
-      expect(response.fields.third.name).to eql("Port")
-      expect(response.fields.third.value).to eql("```#{server.server_port}```")
-      expect(response.fields.fourth.name).to eql("✅ Online for")
-      expect(response.fields.fifth.name).to eql("⏰ Next restart in")
+      expect(response.fields.first.name).to eq("Server ID")
+      expect(response.fields.first.value).to eq("```#{server.server_id}```")
+      expect(response.fields.second.name).to eq("IP")
+      expect(response.fields.second.value).to eq("```#{server.server_ip}```")
+      expect(response.fields.third.name).to eq("Port")
+      expect(response.fields.third.value).to eq("```#{server.server_port}```")
+      expect(response.fields.fourth.name).to eq("✅ Online for")
+      expect(response.fields.fifth.name).to eq("⏰ Next restart in")
     end
   end
 end

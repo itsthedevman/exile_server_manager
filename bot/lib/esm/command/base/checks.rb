@@ -107,6 +107,7 @@ module ESM
 
         def cooldown!
           return if ESM.env.test? && ESM::Test.skip_cooldown
+          return if @skipped_checks.include?(:cooldown)
           return if !@command.on_cooldown?
 
           cooldown = @command.current_cooldown
@@ -128,7 +129,9 @@ module ESM
 
         def connected_server!
           return if @command.arguments.server_id.nil?
-          return if ESM::Websocket.connected?(@command.arguments.server_id)
+
+          # Return if the server is not connected
+          return if @command.target_server.connected?
 
           check_failed!(:server_not_connected, user: current_user.mention, server_id: @command.arguments.server_id)
         end
@@ -141,6 +144,7 @@ module ESM
             provided_server_id = @command.arguments.server_id
 
             # Attempt to correct them
+            # TODO: V1
             corrections = ESM::Websocket.correct(provided_server_id)
 
             ESM::Embed.build do |e|
@@ -275,7 +279,7 @@ module ESM
         # Checks if the target_user is registered
         # This will always raise if the target_user is an instance of TargetUser.
         #
-        # @raises ESM::Exception::CheckFailure
+        # @raise ESM::Exception::CheckFailure
         def registered_target_user!
           return if target_user.nil? || target_user.is_a?(Discordrb::User) && target_user.esm_user.registered?
 

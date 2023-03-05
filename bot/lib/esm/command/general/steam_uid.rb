@@ -5,8 +5,8 @@ module ESM
   module Command
     module General
       class SteamUid < ESM::Command::Base
-        type :player
-        aliases :uid
+        set_type :player
+        register_aliases :uid
         requires :registration
 
         define :enabled, modifiable: false, default: true
@@ -15,7 +15,7 @@ module ESM
         define :allowed_in_text_channels, modifiable: true, default: true
         define :cooldown_time, modifiable: true, default: 2.seconds
 
-        def discord
+        def on_execute
           embed =
             ESM::Embed.build do |e|
               e.description = I18n.t("commands.steam_uid.response", user: current_user.mention, steam_uid: current_user.steam_uid)

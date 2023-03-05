@@ -2,7 +2,7 @@
 
 describe ESM::Request do
   let!(:user_1) { ESM::Test.user }
-  let!(:user_2) { ESM::Test.second_user }
+  let!(:user_2) { ESM::Test.user }
   let(:request) do
     channel_id = [ESM::Community::ESM::SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
 
@@ -18,7 +18,7 @@ describe ESM::Request do
   describe "scope#expired" do
     it "should return expired requests" do
       request.update(expires_at: Time.current - 1.days)
-      expect(ESM::Request.expired.size).to eql(1)
+      expect(ESM::Request.expired.size).to eq(1)
     end
   end
 
@@ -35,7 +35,7 @@ describe ESM::Request do
 
     it "should respond" do
       expect { request.respond(true) }.not_to raise_error
-      expect(ESM::Request.all.size).to eql(0)
+      expect(ESM::Request.all.size).to eq(0)
     end
   end
 end

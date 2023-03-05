@@ -32,6 +32,8 @@ module ESM
 
     alias_attribute :name, :community_name
 
+    attr_accessor :guild_type, :role_ids if ESM.env.test?
+
     module ESM
       ID = "452568470765305866"
       SPAM_CHANNEL = ENV["SPAM_CHANNEL"]
@@ -52,7 +54,11 @@ module ESM
     end
 
     def self.find_by_community_id(id)
-      order(:community_id).where("community_id ilike ?", id).first
+      default_scoped.includes(:servers).order(:community_id).where("community_id ilike ?", id).first
+    end
+
+    def self.find_by_guild_id(id)
+      default_scoped.includes(:servers).order(:guild_id).where(guild_id: id).first
     end
 
     def self.find_by_guild_id(id)
@@ -67,6 +73,12 @@ module ESM
       return if community_id.nil?
 
       find_by_community_id(community_id[1])
+    end
+
+    def logging_channel
+      ::ESM.bot.channel(logging_channel_id)
+    rescue
+      nil
     end
 
     def discord_server
@@ -92,8 +104,12 @@ module ESM
         raise ::ESM::Exception::Error, "Attempted to log :#{event} to #{guild_id} without explicit permission.\nMessage:\n#{message}"
       end
 
-      # This will also handle resending
-      ::ESM.bot.deliver(message, to: logging_channel_id)
+      # Check this first to avoid an infinite loop if the bot cannot send a message to this channel
+      # since this method is called from the #deliver method for this exact reason.
+      channel = logging_channel
+      return if channel.nil?
+
+      ::ESM.bot.deliver(message, to: channel)
     end
 
     def modifiable_by?(guild_member)
@@ -131,31 +147,7 @@ module ESM
     end
 
     def create_command_configurations
-      configurations =
-        ::ESM::Command.all.map do |command|
-          cooldown_default = command.defines.cooldown_time.default
-
-          case cooldown_default
-          when Enumerator
-            cooldown_type = "times"
-            cooldown_quantity = cooldown_default.size
-          when ActiveSupport::Duration
-            # Converts 2.seconds to [:seconds, 2]
-            cooldown_type, cooldown_quantity = cooldown_default.parts.to_a.first
-          end
-
-          {
-            community_id: id,
-            command_name: command.name,
-            enabled: command.defines.enabled.default,
-            cooldown_quantity: cooldown_quantity,
-            cooldown_type: cooldown_type,
-            allowed_in_text_channels: command.defines.allowed_in_text_channels.default,
-            whitelist_enabled: command.defines.whitelist_enabled.default,
-            whitelisted_role_ids: command.defines.whitelisted_role_ids.default
-          }
-        end
-
+      configurations = ::ESM::Command.configurations.map { |c| c.merge(community_id: id) }
       ::ESM::CommandConfiguration.import(configurations)
     end
 

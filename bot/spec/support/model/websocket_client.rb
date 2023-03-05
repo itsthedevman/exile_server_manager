@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'faye/websocket'
-require 'eventmachine'
+require "faye/websocket"
+require "eventmachine"
 require_relative "websocket_client/responses"
 
 # Certain parts of this class are written a particular way as to not disturb the "DLL"'s core functionality
@@ -16,7 +16,7 @@ class WebsocketClient
         @ws = Faye::WebSocket::Client.new(
           "ws://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}",
           [],
-          headers: { "authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}" }
+          headers: {"authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}"}
         )
 
         @ws.on(:message, &method(:on_message))
@@ -43,12 +43,14 @@ class WebsocketClient
     send_ignore_message if command_config[:send_ignore_message]
     # delay(command_config[:delay]) if command_config[:delay]
 
-    self.send("response_#{@data.command}".to_sym)
+    send("response_#{@data.command}".to_sym)
   end
 
-  def on_open(_event); end
+  def on_open(_event)
+  end
 
-  def on_close(_event); end
+  def on_close(_event)
+  end
 
   def on_error(event)
     ESM.logger.debug("#{self.class}##{__method__}") { "#{@logging_server_id} | ON ERROR\nMessage: #{event.message}" }
@@ -58,7 +60,8 @@ class WebsocketClient
     @connected || false
   end
 
-  def on_ping(event); end
+  def on_ping(event)
+  end
 
   def disconnect!
     @ws.close
@@ -67,13 +70,13 @@ class WebsocketClient
 
   def send_response(**args)
     args[:commandID] = @data.commandID if @data
-    @ws.send(DiscordReturn.new(args).to_json)
+    @ws.send(DiscordReturn.new(**args).to_json)
   end
 
   def send_xm8_notification(type:, recipients:, message:, **args)
     notification = {
       type: type,
-      recipients: { r: recipients }.to_json
+      recipients: {r: recipients}.to_json
     }.merge(args)
 
     notification[:message] =
@@ -98,16 +101,16 @@ class WebsocketClient
         server_restart: [3, 30],
         server_start_time: DateTime.now.utc.strftime("%Y-%m-%dT%H:%M:%S"),
         server_version: "2.0.0",
-        territory_level_1: { level: 1, purchase_price: 5000, radius: 15, object_count: 30 },
-        territory_level_2: { level: 2, purchase_price: 10_000, radius: 30, object_count: 60 },
-        territory_level_3: { level: 3, purchase_price: 15_000, radius: 45, object_count: 90 },
-        territory_level_4: { level: 4, purchase_price: 20_000, radius: 60, object_count: 120 },
-        territory_level_5: { level: 5, purchase_price: 25_000, radius: 75, object_count: 150 },
-        territory_level_6: { level: 6, purchase_price: 30_000, radius: 90, object_count: 180 },
-        territory_level_7: { level: 7, purchase_price: 35_000, radius: 105, object_count: 210 },
-        territory_level_8: { level: 8, purchase_price: 40_000, radius: 120, object_count: 240 },
-        territory_level_9: { level: 9, purchase_price: 45_000, radius: 135, object_count: 270 },
-        territory_level_10: { level: 10, purchase_price: 50_000, radius: 150, object_count: 300 }
+        territory_level_1: {level: 1, purchase_price: 5000, radius: 15, object_count: 30},
+        territory_level_2: {level: 2, purchase_price: 10_000, radius: 30, object_count: 60},
+        territory_level_3: {level: 3, purchase_price: 15_000, radius: 45, object_count: 90},
+        territory_level_4: {level: 4, purchase_price: 20_000, radius: 60, object_count: 120},
+        territory_level_5: {level: 5, purchase_price: 25_000, radius: 75, object_count: 150},
+        territory_level_6: {level: 6, purchase_price: 30_000, radius: 90, object_count: 180},
+        territory_level_7: {level: 7, purchase_price: 35_000, radius: 105, object_count: 210},
+        territory_level_8: {level: 8, purchase_price: 40_000, radius: 120, object_count: 240},
+        territory_level_9: {level: 9, purchase_price: 45_000, radius: 135, object_count: 270},
+        territory_level_10: {level: 10, purchase_price: 50_000, radius: 150, object_count: 300}
       }]
     )
   end
