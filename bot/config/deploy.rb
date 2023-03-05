@@ -6,5 +6,5 @@ set :repo_url, "esm_bot:itsthedevman/esm_bot.git"
 set :deploy_to, "/home/wolf/esm_bot"
 
 append :linked_dirs, ".bundle", "tmp", "log"
-set :rbenv_ruby, "2.7.6"
+set :rbenv_ruby, "3.2.0"
 set :branch, "main"
