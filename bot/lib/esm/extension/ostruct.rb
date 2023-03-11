@@ -32,4 +32,24 @@ class OpenStruct
   def to_ostruct
     self
   end
+
+  def to_h
+    table.each_with_object({}) do |(key, value), hash|
+      key =
+        if key.is_a?(OpenStruct)
+          key.to_h
+        else
+          key
+        end
+
+      value =
+        if value.is_a?(OpenStruct)
+          value.to_h
+        else
+          value
+        end
+
+      hash[key] = value
+    end
+  end
 end
