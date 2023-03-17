@@ -27,6 +27,7 @@
   "hashids",
   "httparty",
   "i18n",
+  "neatjson",
   "puma",
   "puma/events",
   "redis",

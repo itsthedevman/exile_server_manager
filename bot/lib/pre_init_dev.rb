@@ -2,7 +2,6 @@
 
 require "active_record_query_trace"
 require "colorize"
-require "neatjson"
 require "pry"
 
 # Allows seeing the backtrace for queries
