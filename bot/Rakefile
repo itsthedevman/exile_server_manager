@@ -1,7 +1,6 @@
 require "bundler/setup"
 # require "bundler/gem_tasks"
 require "standalone_migrations"
-require "standard/rake"
 
 # HOTFIX: StandaloneMigrations 7.1.0 uses #exists?, which is removed in 3.2
 # They have yet to patch it 12023-Mar-04
@@ -23,6 +22,10 @@ if ENV["ESM_ENV"] == "test"
   RSpec::Core::RakeTask.new(:spec)
 
   task default: :spec
+end
+
+if ["development", "test"].include?(ENV["ESM_ENV"])
+  require "standard/rake"
 end
 
 Rake.add_rakelib("tasks/migrations")
