@@ -47,6 +47,7 @@ GEM
     ast (2.4.2)
     awesome_print (1.9.2)
     backport (1.2.0)
+    bcrypt_pbkdf (1.1.0)
     benchmark (0.2.1)
     benchmark-ips (2.11.0)
     builder (3.2.4)
@@ -101,6 +102,7 @@ GEM
       activesupport
       i18n
     e2mmap (0.1.0)
+    ed25519 (1.3.0)
     erubi (1.12.0)
     event_emitter (0.2.6)
     eventmachine (1.2.7)
@@ -334,6 +336,7 @@ DEPENDENCIES
   activerecord-import
   activesupport (~> 6.1, >= 6.1.4.4)
   awesome_print
+  bcrypt_pbkdf
   benchmark-ips
   bundler
   capistrano
@@ -344,6 +347,7 @@ DEPENDENCIES
   discordrb!
   dotenv
   dotiw
+  ed25519
   eye
   factory_bot
   faker
