@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_02_03_031859) do
+ActiveRecord::Schema.define(version: 2023_03_19_214808) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
@@ -240,10 +240,12 @@ ActiveRecord::Schema.define(version: 2022_02_03_031859) do
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.string "server_version"
+    t.integer "server_visibility"
     t.index ["community_id"], name: "index_servers_on_community_id"
     t.index ["deleted_at"], name: "index_servers_on_deleted_at"
     t.index ["server_id"], name: "index_servers_on_server_id", unique: true
     t.index ["server_key"], name: "index_servers_on_server_key", unique: true
+    t.index ["server_visibility"], name: "index_servers_on_server_visibility"
   end
 
   create_table "territories", force: :cascade do |t|

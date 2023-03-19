@@ -1,6 +1,7 @@
 require "bundler/setup"
 # require "bundler/gem_tasks"
 require "standalone_migrations"
+require_relative "lib/esm"
 
 # HOTFIX: StandaloneMigrations 7.1.0 uses #exists?, which is removed in 3.2
 # They have yet to patch it 12023-Mar-04
@@ -37,8 +38,6 @@ task :environment do
 end
 
 task :bot do
-  require_relative "lib/esm"
-
   ESM.console!
   # ESM.run!
 end
