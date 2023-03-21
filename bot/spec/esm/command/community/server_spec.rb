@@ -3,19 +3,19 @@
 describe ESM::Command::Community::Server, category: "command" do
   let!(:command) { ESM::Command::Community::Server.new }
 
-  it "should be valid" do
+  it "is valid" do
     expect(command).not_to be_nil
   end
 
-  it "should have 1 argument" do
+  it "has 1 argument" do
     expect(command.arguments.size).to eq(1)
   end
 
-  it "should have a description" do
+  it "has a description" do
     expect(command.description).not_to be_blank
   end
 
-  it "should have examples" do
+  it "has examples" do
     expect(command.example).not_to be_blank
   end
 
@@ -34,13 +34,13 @@ describe ESM::Command::Community::Server, category: "command" do
       wsc.disconnect!
     end
 
-    it "should return invalid server" do
+    it "returns invalid server" do
       command_statement = command.statement(server_id: "esm_test")
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure)
     end
 
-    it "should return an embed" do
+    it "returns an embed" do
       command_statement = command.statement(server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
@@ -60,6 +60,14 @@ describe ESM::Command::Community::Server, category: "command" do
       expect(response.fields.third.value).to eq("```#{server.server_port}```")
       expect(response.fields.fourth.name).to eq("✅ Online for")
       expect(response.fields.fifth.name).to eq("⏰ Next restart in")
+    end
+
+    it "works on an offline server" do
+      wsc.disconnect!
+
+      command_statement = command.statement(server_id: server.server_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      expect { command.execute(event) }.not_to raise_error
     end
   end
 end
