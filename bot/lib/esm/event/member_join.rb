@@ -48,7 +48,7 @@ module ESM
       end
 
       def send_community_welcome_message
-        servers = @community.servers.map { |server| "#{server.server_name} [#{server.server_ip}:#{server.server_port}]\nServer ID: #{server.server_id}" }.join("\n\n")
+        servers = @community.servers.public_visibility.map { |server| "#{server.server_name} [#{server.server_ip}:#{server.server_port}]\nServer ID: #{server.server_id}" }.join("\n\n")
 
         description = "First off, let me introduce myself. My name is Exile Server Manager, or ESM for short. My purpose is to give you the ability to interact with aspects of Exile that would normally require you to be in game. This includes getting information about your player, managing your territory (paying, upgrading, add/remove members, etc), XM8 notifications, random fun commands, and so much more!"
         description += "\n\n**A message from this community:**\n#{@community.welcome_message}" if @community.welcome_message.present?
