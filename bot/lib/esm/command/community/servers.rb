@@ -15,7 +15,7 @@ module ESM
         argument :community_id
 
         def on_execute
-          servers = ESM::Server.where(community_id: target_community.id)
+          servers = ESM::Server.where(community_id: target_community.id, server_visibility: :public)
           check_for_no_servers!(servers)
 
           servers.each do |server|

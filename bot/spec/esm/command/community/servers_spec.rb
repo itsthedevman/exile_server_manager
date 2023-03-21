@@ -1,23 +1,8 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Community::Servers, category: "command" do
-  let!(:command) { ESM::Command::Community::Servers.new }
-
-  it "should be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "should have 1 argument" do
-    expect(command.arguments.size).to eq(1)
-  end
-
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
     let!(:community) { ESM::Test.community }
@@ -25,7 +10,7 @@ describe ESM::Command::Community::Servers, category: "command" do
     let!(:user) { ESM::Test.user }
     let(:connection) { WebsocketClient.new(server) }
 
-    it "should return no servers" do
+    it "returns no servers" do
       community.servers.destroy_all
 
       command_statement = command.statement(community_id: community.community_id)
@@ -33,7 +18,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect { command.execute(event) }.to raise_error(ESM::Exception::CheckFailure, /i was unable to find any registered servers/i)
     end
 
-    it "should not crash on empty server name" do
+    it "does not crash on empty server name" do
       command_statement = command.statement(community_id: community.community_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       server.server_name = nil
@@ -44,7 +29,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect { command.execute(event) }.not_to raise_error
     end
 
-    it "should return one offline server" do
+    it "returns one offline server" do
       command_statement = command.statement(community_id: community.community_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
@@ -63,7 +48,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.third.value).to eq("```#{server.server_port}```")
     end
 
-    it "should return one online server" do
+    it "returns one online server" do
       connection
 
       wait_for { connection.connected? }.to be(true)
@@ -90,6 +75,17 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.fifth.value).to eq("```#{server.time_left_before_restart}```")
 
       connection.disconnect!
+    end
+
+    it "does not show private servers" do
+      private_server = ESM::Test.server
+      private_server.update!(server_visibility: :private)
+
+      command_statement = command.statement(community_id: community.community_id)
+      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+      expect { command.execute(event) }.not_to raise_error
+
+      expect(ESM::Test.messages.size).to eq(1)
     end
   end
 end
