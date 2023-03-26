@@ -6,6 +6,15 @@
 Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
 
 #############################
+# DB migrations
+#############################
+module Rails
+  def self.root
+    Dir.pwd
+  end
+end
+
+#############################
 # Autoload ESM
 #############################
 loader = Zeitwerk::Loader.for_gem(warn_on_extra_files: false)

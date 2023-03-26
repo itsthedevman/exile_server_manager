@@ -12,13 +12,6 @@ ActiveRecordQueryTrace.backtrace_cleaner = lambda do |trace|
 end
 ActiveRecordQueryTrace.enabled = ENV["TRACE"] == "true"
 
-# ActiveRecordQueryTrace requires Rails.root to be defined
-module Rails
-  def self.root
-    File.expand_path(__dir__)
-  end
-end
-
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false
 
