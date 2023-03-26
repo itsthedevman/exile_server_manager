@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_03_19_214808) do
+ActiveRecord::Schema.define(version: 2023_03_26_003042) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
@@ -228,24 +228,22 @@ ActiveRecord::Schema.define(version: 2023_03_19_214808) do
   end
 
   create_table "servers", force: :cascade do |t|
+    t.uuid "uuid", null: false
     t.string "server_id", null: false
     t.integer "community_id", null: false
-    t.text "server_name"
     t.text "server_key"
+    t.text "server_name"
+    t.integer "server_visibility", default: 1, null: false
     t.string "server_ip"
     t.string "server_port"
+    t.string "server_version"
     t.datetime "server_start_time"
     t.datetime "disconnected_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.datetime "deleted_at"
-    t.string "server_version"
-    t.integer "server_visibility"
-    t.index ["community_id"], name: "index_servers_on_community_id"
-    t.index ["deleted_at"], name: "index_servers_on_deleted_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
     t.index ["server_id"], name: "index_servers_on_server_id", unique: true
     t.index ["server_key"], name: "index_servers_on_server_key", unique: true
-    t.index ["server_visibility"], name: "index_servers_on_server_visibility"
+    t.index ["uuid"], name: "index_servers_on_uuid", unique: true
   end
 
   create_table "territories", force: :cascade do |t|
@@ -367,7 +365,6 @@ ActiveRecord::Schema.define(version: 2023_03_19_214808) do
   add_foreign_key "user_notification_preferences", "servers"
   add_foreign_key "user_notification_preferences", "users"
   add_foreign_key "user_notification_routes", "communities", column: "destination_community_id"
-  add_foreign_key "user_notification_routes", "servers", column: "source_server_id"
   add_foreign_key "user_notification_routes", "users"
   add_foreign_key "user_steam_data", "users"
 end

@@ -2,10 +2,12 @@
 
 module ESM
   class Server < ApplicationRecord
+    before_create :generate_uuid
     before_create :generate_key
     after_create :create_server_setting
     after_create :create_default_reward
 
+    attribute :uuid, :string
     attribute :server_id, :string
     attribute :community_id, :integer
     attribute :server_name, :text
@@ -18,8 +20,6 @@ module ESM
     attribute :disconnected_at, :datetime
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
-
-    default_scope { where(deleted_at: nil) }
 
     belongs_to :community
 
@@ -169,11 +169,17 @@ module ESM
 
     private
 
+    def generate_uuid
+      return if uuid.present?
+
+      self.uuid = SecureRandom.uuid
+    end
+
     def generate_key
-      return if !server_key.blank?
+      return if server_key.present?
 
       self.server_key = Array.new(7).map { SecureRandom.uuid.delete("-") }.join
-      ESM.redis.hmset("server_keys", [server_id, server_key])
+      ESM.redis.hmset("server_keys", [uuid, server_key])
     end
 
     def create_server_setting
