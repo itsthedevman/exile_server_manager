@@ -45,7 +45,7 @@ module ESM
       end
     end
 
-    attr_reader :config, :prefix
+    attr_reader :config, :prefix, :metadata
 
     def initialize
       @waiting_for = {}
@@ -115,10 +115,21 @@ module ESM
     def esm_ready(_event)
       ESM::Notifications.trigger("ready")
 
-      bot_attributes = ESM::BotAttribute.first
+      @metadata = ESM::BotAttribute.first_or_create
 
-      # status, activity, url, since = 0, afk = false, activity_type = 0
-      update_status("online", bot_attributes.status_message, nil, activity_type: STATUS_TYPES[bot_attributes.status_type]) if bot_attributes.present?
+      if metadata.present?
+        update_status(
+          # status
+          "online",
+          # activity
+          metadata.status_message,
+          # url
+          nil,
+          # since: 0
+          # afk: 0
+          activity_type: STATUS_TYPES[metadata.status_type]
+        )
+      end
 
       # Sometimes the bot loses connection with Discord. Upon reconnect, the ready event will be triggered again.
       # Don't restart the websocket server again.
