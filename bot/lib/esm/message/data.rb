@@ -29,7 +29,7 @@ module ESM
 
         content = sanitize_content(content)
         @original_content = content
-        @content = content.to_ostruct
+        @content = content.to_istruct
       end
 
       def to_h(for_arma: false)

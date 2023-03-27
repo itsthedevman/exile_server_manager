@@ -24,7 +24,7 @@ RSpec.shared_context("connection") do
           username: "",
           mention: ""
         }
-      }.to_ostruct
+      }.to_istruct
     ).apply_command_metadata
 
     connection.send_message(message, forget: false)

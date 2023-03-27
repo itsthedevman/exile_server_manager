@@ -57,7 +57,7 @@ module ESM
           #     :protocol_version, :server_name, :map_name, :game_directory, :game_description, :app_id, :number_of_players,
           #     :max_players, :number_of_bots, :dedicated, :operating_system, :password_needed, :secure, :game_version, :server_port,
           #     :server_id, :server_tags, :game_id
-          server.server_info.to_ostruct
+          server.server_info.to_istruct
         rescue
           nil
         end
