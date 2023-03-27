@@ -57,6 +57,10 @@ module ESM
         to_h.to_ostruct
       end
 
+      def to_istruct
+        to_h.to_istruct
+      end
+
       private
 
       # The parameters sent over by Arma can be in a SimpleArray format. This will convert the value if need be.
