@@ -40,7 +40,7 @@ module ESM
             ESM::Embed.build do |e|
               e.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
 
-              commands_by_type = ESM::Command.by_type.to_h
+              commands_by_type = ESM::Command.by_type
               e.description = I18n.t(
                 "commands.help.getting_started.description",
                 command_count_player: commands_by_type[:player].size,

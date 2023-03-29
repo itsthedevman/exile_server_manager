@@ -12,16 +12,8 @@ describe ESM::Command do
     expect(ESM::Command.all).not_to be_empty
   end
 
-  it "organizes by category" do
-    ESM::Command::CATEGORIES.each do |category|
-      expect(ESM::Command.by_category.respond_to?(category.to_sym)).to be(true)
-      expect(ESM::Command.by_category[category]).not_to be_empty
-    end
-  end
-
   it "organizes by type" do
-    %w[player admin].each do |type|
-      expect(ESM::Command.by_type.respond_to?(type.to_sym)).to be(true)
+    %i[player admin].each do |type|
       expect(ESM::Command.by_type[type]).not_to be_empty
     end
   end

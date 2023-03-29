@@ -32,7 +32,7 @@ describe ESM::Command::General::Help, category: "command" do
       embed = ESM::Test.messages.first.second
       expect(embed.title).to match(/well, hello there .+/i)
 
-      commands_by_type = ESM::Command.by_type.to_h
+      commands_by_type = ESM::Command.by_type
       expect(embed.description).to eq(
         I18n.t(
           "commands.help.getting_started.description",
