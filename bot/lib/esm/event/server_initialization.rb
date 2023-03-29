@@ -99,10 +99,10 @@ module ESM
           @message.data.territory_data.map do |data|
             {
               server_id: @server.id,
-              territory_level: data[:level],
-              territory_purchase_price: data[:purchase_price],
-              territory_radius: data[:radius],
-              territory_object_count: data[:object_count]
+              territory_level: data.level,
+              territory_purchase_price: data.purchase_price,
+              territory_radius: data.radius,
+              territory_object_count: data.object_count
             }
           end
 

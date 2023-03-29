@@ -31,7 +31,7 @@ class Hash
     end
 
     data_values = values.map { |value| recurse.call(value) }
-    Data.define(*keys).new(*data_values)
+    ImmutableStruct.define(*keys).new(*data_values)
   end
 
   def format(join_with: "", &block)

@@ -4,8 +4,8 @@ module ESM
   class Message
     class Data
       MAPPING = YAML.safe_load(File.read(File.expand_path("./config/mapping.yml"))).stringify_keys.freeze
-      ARRAY_REGEX = /array<(?<type>.+)>/i.freeze
-      NIL_REGEX = /^\?(?<type>.+)/.freeze
+      ARRAY_REGEX = /array<(?<type>.+)>/i
+      NIL_REGEX = /^\?(?<type>.+)/
 
       attr_reader :type, :content
 
@@ -19,7 +19,7 @@ module ESM
           case content
           when OpenStruct
             content.table
-          when Struct
+          when Struct, ImmutableStruct
             content.to_h
           else
             content
@@ -40,7 +40,7 @@ module ESM
           when Numeric
             # Numbers have to be sent as Strings
             value.to_s
-          when Hash, ESM::Arma::HashMap
+          when Hash, ESM::Arma::HashMap, ImmutableStruct
             value.transform_values(&convert_values)
           when Array
             value.map(&convert_values)

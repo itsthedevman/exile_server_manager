@@ -70,12 +70,12 @@ describe ESM::Event::ServerInitialization, v2: true, requires_connection: true d
     expect(ESM::Territory.where(server_id: server.id).size).to eq(10)
 
     message.data.territory_data.each do |territory_data|
-      territory = ESM::Territory.where(server_id: server.id, territory_level: territory_data[:level]).first
+      territory = ESM::Territory.where(server_id: server.id, territory_level: territory_data.level).first
       expect(territory).not_to be_nil
-      expect(territory.territory_level).to eq(territory_data[:level])
-      expect(territory.territory_purchase_price).to eq(territory_data[:purchase_price])
-      expect(territory.territory_radius).to eq(territory_data[:radius])
-      expect(territory.territory_object_count).to eq(territory_data[:object_count])
+      expect(territory.territory_level).to eq(territory_data.level)
+      expect(territory.territory_purchase_price).to eq(territory_data.purchase_price)
+      expect(territory.territory_radius).to eq(territory_data.radius)
+      expect(territory.territory_object_count).to eq(territory_data.object_count)
     end
   end
 
