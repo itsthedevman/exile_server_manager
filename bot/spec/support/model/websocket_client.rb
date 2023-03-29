@@ -26,6 +26,8 @@ class WebsocketClient
         @logging_server_id = server.server_id
 
         send_initialization_message
+      rescue => e
+        error!(e)
       end
     end
 
