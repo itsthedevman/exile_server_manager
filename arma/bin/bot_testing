@@ -1,3 +1,3 @@
 #!/bin/bash
 
-bin/run --target=linux --env=test
+bin/run --target=linux --env=test "$@"
