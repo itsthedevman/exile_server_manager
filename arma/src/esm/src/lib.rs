@@ -19,7 +19,6 @@ pub use tokio::sync::Mutex;
 
 // Logging
 pub use log::{debug, error, info, trace, warn};
-use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};
 use log4rs::encode::pattern::PatternEncoder;
@@ -50,9 +49,6 @@ lazy_static! {
 
 fn initialize_logger() {
     let log_pattern = "[{d(%Y-%m-%d %H:%M:%S%.3f)(utc)}Z {h({l})} {M}:{L}] {m}{n}";
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(log_pattern)))
-        .build();
 
     let logfile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(log_pattern)))
@@ -68,19 +64,15 @@ fn initialize_logger() {
     };
 
     let config = LogConfig::builder()
-        .appender(Appender::builder().build("stdout", Box::new(stdout)))
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(
-            Root::builder()
-                .appender("logfile")
-                .appender("stdout")
-                .build(log_level),
-        )
-        .unwrap();
+        .build(Root::builder().appender("logfile").build(log_level));
 
-    match log4rs::init_config(config) {
-        Ok(_) => (),
-        Err(e) => println!("[ERROR] Failed to initialize logger - {e}"),
+    match config {
+        Ok(c) => match log4rs::init_config(c) {
+            Ok(_) => (),
+            Err(e) => println!("[ERROR] Failed to initialize logger - {e}"),
+        },
+        Err(e) => println!("[ERROR] Failed to build logger config - {e}"),
     };
 
     info!(
