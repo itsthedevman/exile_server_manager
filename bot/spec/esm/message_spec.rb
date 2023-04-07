@@ -63,17 +63,17 @@ describe ESM::Message, v2: true do
     it "defaults to empty" do
       message = described_class.event
       expect(message.type).to eq("event")
-      expect(message.data_type).to eq("empty")
+      expect(message.data_type).to eq(:empty)
       expect(message.data.to_h).to eq({})
-      expect(message.metadata_type).to eq("empty")
+      expect(message.metadata_type).to eq(:empty)
       expect(message.metadata.to_h).to eq({})
     end
 
     it "converts to strings" do
       message = described_class.test
       expect(message.type).to eq("test")
-      expect(message.data_type).to eq("empty")
-      expect(message.metadata_type).to eq("empty")
+      expect(message.data_type).to eq(:empty)
+      expect(message.metadata_type).to eq(:empty)
     end
   end
 

@@ -3,17 +3,73 @@
 module ESM
   class Message
     class Data
-      MAPPING = YAML.safe_load(File.read(File.expand_path("./config/mapping.yml"))).stringify_keys.freeze
-      ARRAY_REGEX = /array<(?<type>.+)>/i
-      NIL_REGEX = /^\?(?<type>.+)/
+      DATA_TYPES =
+        YAML.safe_load(
+          File.read(File.expand_path("./config/message/data_types.yml"))
+        ).merge(
+          YAML.safe_load(
+            File.read(File.expand_path("./config/message/metadata_types.yml"))
+          )
+        ).deep_symbolize_keys.freeze
+
+      TYPES = {
+        any: {
+          converter: lambda do |value|
+            # Check if it's JSON like
+            result = ESM::JSON.parse(value.to_s)
+            return value if result.nil?
+
+            # Check to see if its a hashmap
+            possible_hashmap = ESM::Arma::HashMap.from(result)
+            return result if possible_hashmap.nil?
+
+            result
+          end
+        },
+        array: {
+          class: Array,
+          converter: ->(value) { value.to_a }
+        },
+        string: {
+          class: String,
+          converter: ->(value) { value.to_s }
+        },
+        integer: {
+          class: Integer,
+          converter: ->(value) { value.to_i }
+        },
+        hash: {
+          class: Hash,
+          converter: ->(value) { value.to_h }
+        },
+        float: {
+          class: Float,
+          converter: ->(value) { value.to_d }
+        },
+        boolean: {
+          converter: ->(value) { value.to_s == "true" }
+        },
+        hash_map: {
+          class: ESM::Arma::HashMap,
+          converter: ->(value) { ESM::Arma::HashMap.from(value) }
+        },
+        date_time: {
+          class: ::Time,
+          converter: ->(value) { ESM::Time.parse(value) }
+        },
+        date: {
+          class: ::Date,
+          converter: ->(value) { ::Date.parse(value) }
+        }
+      }.freeze
 
       attr_reader :type, :content
 
-      def initialize(type = "empty", content = nil)
-        @type = type.to_s
+      def initialize(type = :empty, content = nil)
+        @type = type.to_sym
         @original_content = {}
         @content = {}
-        return if type == "empty"
+        return if type == :empty
 
         content =
           case content
@@ -57,7 +113,7 @@ module ESM
         #   which in turn keeps it from being included in the JSON that is sent to the server
         #   Bonus: Handles invalid data
         if !@original_content.is_a?(Hash) ||
-            (for_arma && type == "empty") ||
+            (for_arma && type == :empty) ||
             (for_arma && @original_content.blank?)
           return hash
         end
@@ -71,96 +127,60 @@ module ESM
       # Sanitizes the provided content in accordance to the data defined in config/mapping.yml
       # Sanitize also ensures the order of the content when exporting
       # @see config/mapping.yml for more information
-      def sanitize_content(content)
-        content.stringify_keys!
-        mapping = MAPPING[@type]
+      def sanitize_content(inbound_content)
+        inbound_content.deep_symbolize_keys!
+        types_mapping = DATA_TYPES[@type]
 
-        # Catches if MAPPINGS does not have type defined
-        raise ESM::Exception::InvalidMessage, "Failed to find type \"#{@type}\" in \"config/mapping.yml\"" if mapping.nil?
-
-        if (difference = mapping.keys - content.keys).any?
-          raise ESM::Exception::InvalidMessage, "Unexpected keys found for #{self.class.to_s.downcase} \"#{@type}\" - #{difference}"
+        # Catches if DATA_TYPES does not have type defined
+        if types_mapping.nil?
+          raise ESM::Exception::InvalidMessage, "Failed to find type \"#{@type}\" in \"config/message/*_types.yml\""
         end
 
-        output = {}
-        mapping.each do |attribute_name, attribute_type|
-          entry = content[attribute_name]
-
-          can_be_nil = attribute_type == "Any" || attribute_type.match?(NIL_REGEX)
-          raise ESM::Exception::InvalidMessage, "\"#{attribute_name}\" is expected for message with data type of \"#{@type}\"" if entry.nil? && !can_be_nil
-
-          # Some classes are not valid ruby classes and need converted
-          klass =
-            case attribute_type
-            when "HashMap"
-              ESM::Arma::HashMap
-            when "Any", "Boolean", ARRAY_REGEX, NIL_REGEX
-              NilClass # Always convert theses
-            when "Decimal"
-              BigDecimal
-            else
-              attribute_type.constantize
-            end
-
-          output[attribute_name] =
-            if entry.is_a?(klass)
-              entry
-            else
-              # Perform the conversion and replace the value
-              convert_type(entry, into_type: attribute_type)
-            end
+        if (difference = types_mapping.keys - inbound_content.keys).any?
+          raise ESM::Exception::InvalidMessage,
+            "Unexpected keys found for #{self.class.to_s.downcase} \"#{@type}\" - #{difference}"
         end
 
-        output
+        types_mapping.each_with_object({}) do |(attribute_name, attribute_hash), output|
+          # Not all items will be converted, it depends on the configs
+          output[attribute_name] = convert(inbound_content[attribute_name.to_sym], **attribute_hash)
+        end
       end
 
-      def convert_type(value, into_type:)
-        return value if value.class.to_s == into_type
+      def convert(inbound_value, **attribute_hash)
+        type = attribute_hash[:type] || :any
 
-        case into_type
-        when "Any"
-          result = ESM::JSON.parse(value.to_s)
-          return value if result.nil?
-
-          # Check to see if its a hashmap
-          possible_hashmap = ESM::Arma::HashMap.from(result)
-          return result if possible_hashmap.nil?
-
-          result
-        when ARRAY_REGEX
-          match = into_type.match(ARRAY_REGEX)
-          raise ESM::Exception::Error, "Failed to parse inner type from \"#{into_type}\"" if match.nil?
-
-          # Convert the inner values to whatever type is configured
-          value.to_a.map { |v| convert_type(v, into_type: match[:type]) }
-        when NIL_REGEX
-          return if value.nil?
-
-          match = into_type.match(NIL_REGEX)
-          raise ESM::Exception::Error, "Failed to parse inner type from \"#{into_type}\"" if match.nil?
-
-          convert_type(value, into_type: match[:type])
-        when "Array"
-          value.to_a
-        when "String"
-          value.to_s
-        when "Integer"
-          value.to_i
-        when "Hash"
-          value.to_h
-        when "Decimal"
-          value.to_d
-        when "Boolean"
-          value.to_s == "true"
-        when "HashMap"
-          ESM::Arma::HashMap.from(value)
-        when "DateTime"
-          ESM::Time.parse(value)
-        when "Date"
-          ::Date.parse(value)
-        else
-          raise ESM::Exception::Error, "\"#{into_type}\" is an unsupported type"
+        # Handle if it can be nil or not
+        can_be_nil = type == :any || attribute_hash[:optional]
+        if inbound_value.nil? && !can_be_nil
+          raise ESM::Exception::InvalidMessage,
+            "Missing attribute \"#{attribute_name}\" for \"#{@type}\""
         end
+
+        # This contains the conversion data
+        type_data = retrieve_type_data(type)
+
+        # NilClass will force it to be converted if needed
+        into_class = type_data[:class] || NilClass
+        return inbound_value if inbound_value.is_a?(into_class)
+
+        converter = type_data[:converter] || -> {}
+        result = converter.call(inbound_value)
+
+        # Subtype only supports Array (as of right now)
+        sub_type = attribute_hash[:subtype]
+        return result unless type == :array && sub_type
+
+        result.map { |v| convert(v, **sub_type) }
+      end
+
+      def retrieve_type_data(type)
+        type_data = TYPES[type.to_sym]
+        if type_data.nil?
+          raise ESM::Exception::InvalidMessage, "\"#{type}\" was not defined in ESM::Message::Data::TYPES"
+        end
+
+        type_data
       end
     end
   end
