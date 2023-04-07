@@ -24,7 +24,6 @@
   "eventmachine",
   "fast_jsonparser",
   "faye/websocket",
-  "hashids",
   "httparty",
   "i18n",
   "neatjson",

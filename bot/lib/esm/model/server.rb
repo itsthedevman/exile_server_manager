@@ -128,30 +128,6 @@ module ESM
       @metadata ||= ESM::Server::Metadata.new(server_id)
     end
 
-    #
-    # Converts a database ID into a unique obfuscated string.
-    #
-    # @param id [Integer] The ID to convert
-    #
-    # @return [String] The obfuscated ID as a string
-    #
-    def encode_id(id)
-      hasher = Hashids.new(server_key, 5, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-      hasher.encode(id.to_i)
-    end
-
-    #
-    # Converts a obfuscated string into a database ID
-    #
-    # @param data [String] The obfuscated database ID
-    #
-    # @return [Integer] The database ID
-    #
-    def decode_id(data)
-      hasher = Hashids.new(server_key, 5, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-      hasher.decode(data.upcase).first
-    end
-
     # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
     def log_error(log_message)
       uuid = SecureRandom.uuid
