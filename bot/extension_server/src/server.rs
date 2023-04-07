@@ -135,7 +135,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                         continue;
                     }
 
-                    info!("[on_connect] \"{}\" - Requesting identity", client.host());
+                    debug!("[on_connect] \"{}\" - Requesting identity", client.host());
 
                     // Connection step 1
                     if let Err(e) = client.request_identity(&handler) {
@@ -181,7 +181,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                             continue;
                         }
 
-                        info!("[on_message] \"{}\" - Requesting init", client.host());
+                        debug!("[on_message] \"{}\" - Requesting init", client.host());
 
                         // Connection step 3
                         if let Err(e) = client.request_init(&handler) {
@@ -211,16 +211,13 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     };
 
                     info!(
-                        "[on_message] {address} - {server_id} - {message_id} - {message_type:?}/{status} - {message_data:?}",
+                        "[on_message] Sending to {server_id} ({address}) with {status} {message:?}",
                         address = endpoint.addr(),
-                        message_id = message.id,
                         server_id = client.server_uuid,
-                        message_type = message.message_type,
-                        message_data = message.data,
                         status = if message.errors.is_empty() {
-                            "Success"
+                            "success"
                         } else {
-                            "Failed"
+                            "failure"
                         }
                     );
 
