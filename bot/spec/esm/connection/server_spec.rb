@@ -51,8 +51,8 @@ describe ESM::Connection::Server, v2: true do
         response = nil
         expect { response = connection_server.fire(outgoing_message, to: server.uuid) }.not_to raise_error
         expect(response).not_to be_nil
-        expect(response.type).to eq("event")
-        expect(response.data_type).to eq("empty")
+        expect(response.type).to eq(:event)
+        expect(response.data_type).to eq(:empty)
       end
 
       sleep(0.2)

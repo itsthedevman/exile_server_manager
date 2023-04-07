@@ -6,7 +6,7 @@ module ESM
       attr_reader :type, :content
 
       def initialize(type, content)
-        @type = type.to_s
+        @type = type.to_sym
         @content = content.to_s
       end
 
@@ -19,7 +19,7 @@ module ESM
 
       def to_s(message)
         case type
-        when "code"
+        when :code
           replacements = {
             user: message.attributes.command&.current_user&.mention,
             target: message.attributes.command&.target_user&.mention,
@@ -45,7 +45,7 @@ module ESM
 
           # Call the exception with the replacements
           I18n.t("exceptions.extension.#{content}", **replacements)
-        when "message"
+        when :message
           content
         else
           I18n.t("exceptions.extension.default", type: type)

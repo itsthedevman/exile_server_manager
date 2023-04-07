@@ -9,14 +9,14 @@ describe "ESMs_object_message_respond_withError", requires_connection: true, v2:
 
     outbound_message.add_callback(:on_error) do |inbound|
       expect(inbound.id).to eq(outbound_message.id)
-      expect(inbound.type).to eq("event")
-      expect(inbound.data_type).to eq("empty")
+      expect(inbound.type).to eq(:event)
+      expect(inbound.data_type).to eq(:empty)
       expect(inbound.data).to eq({})
-      expect(inbound.metadata_type).to eq("empty")
+      expect(inbound.metadata_type).to eq(:empty)
       expect(inbound.metadata).to eq({})
 
       errors = inbound.errors.map(&:to_h)
-      expect(errors).to include({type: "message", content: "An error message"})
+      expect(errors).to include({type: :message, content: "An error message"})
 
       success = true
     end

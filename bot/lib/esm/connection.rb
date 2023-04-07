@@ -30,7 +30,7 @@ module ESM
       @server.reload # Ensure the server is up-to-date
 
       case incoming_message.type
-      when ->(type) { type == "event" && incoming_message.data_type != "empty" }
+      when ->(type) { type == :event && incoming_message.data_type != :empty }
         on_event(incoming_message, outgoing_message)
       else
         outgoing_message&.on_response(incoming_message)
@@ -43,7 +43,7 @@ module ESM
 
     def on_event(incoming_message, _outgoing_message)
       case incoming_message.data_type
-      when "send_to_channel"
+      when :send_to_channel
         ESM::Event::SendToChannel.new(self, incoming_message).run!
       else
         raise "[#{incoming_message.id}] Connection#on_event does not implement this type: \"#{incoming_message.data_type}\""

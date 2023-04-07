@@ -20,7 +20,7 @@ describe ESM::Connection::MessageOverseer, v2: true do
       wait_for { message.delivered? }.to be(true)
 
       expect(message.errors?).to be(true)
-      expect(message.errors.first.type).to eq("code")
+      expect(message.errors.first.type).to eq(:code)
       expect(message.errors.first.content).to eq("message_undeliverable")
     end
   end

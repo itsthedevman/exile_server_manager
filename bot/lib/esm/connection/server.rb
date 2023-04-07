@@ -232,7 +232,7 @@ module ESM
         message = ESM::Message.from_hash(request[:message])
 
         case message.data_type
-        when "init"
+        when :init
           on_connect(server_uuid, message)
         else
           on_message(server_uuid, message)

@@ -80,7 +80,7 @@ module ESM
     # NOTE: Invalid data/metadata attributes will be dropped!
     def initialize
       @id = SecureRandom.uuid
-      @type = "event"
+      @type = :event
       @data = Data.new
       @metadata = Data.new
       @errors = []
@@ -95,7 +95,7 @@ module ESM
     end
 
     def set_type(type)
-      @type = type.to_s
+      @type = type.to_sym
       self
     end
 
@@ -107,7 +107,7 @@ module ESM
 
     # Any extra data that may be needed. For most command messages, this will contain the user's discord and steam data.
     def set_metadata(type, content)
-      @metadata = Data.new(type, content)
+      @metadata = Metadata.new(type, content)
       self
     end
 
