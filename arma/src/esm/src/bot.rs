@@ -116,14 +116,9 @@ fn listener_thread(listener: NodeListener<()>) {
     *lock!(LISTENER_TASK) = Some(task);
 }
 
-fn send_message(mut message: Message) -> ESMResult {
+fn send_message(message: Message) -> ESMResult {
     if !lock!(TOKEN_MANAGER).reload().valid() {
         return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
-    }
-
-    // Add the server ID if there is none
-    if message.server_id.is_none() {
-        message.server_id = Some(lock!(TOKEN_MANAGER).id_bytes().to_vec());
     }
 
     match message.message_type {
@@ -132,7 +127,7 @@ fn send_message(mut message: Message) -> ESMResult {
     }
 
     // Convert the message to bytes so it can be sent
-    let bytes = match message.as_bytes(lock!(TOKEN_MANAGER).key_bytes()) {
+    let bytes = match message.as_bytes(lock!(TOKEN_MANAGER).secret_bytes()) {
         Ok(bytes) => bytes,
         Err(error) => return Err(format!("❌ {error}").into()),
     };
@@ -230,7 +225,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
         // Identify
         "id" => send_request(ServerRequest {
             request_type: "id".into(),
-            content: lock!(TOKEN_MANAGER).id_bytes().to_vec(),
+            content: lock!(TOKEN_MANAGER).access_bytes().to_vec(),
         }),
 
         // Initialize
@@ -251,7 +246,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
             }
 
-            let message = match Message::from_bytes(&request.content, token.key_bytes()) {
+            let message = match Message::from_bytes(&request.content, token.secret_bytes()) {
                 Ok(message) => {
                     if !matches!(message.data, Data::Ping) {
                         info!(

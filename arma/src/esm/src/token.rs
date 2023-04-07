@@ -6,55 +6,27 @@ use serde::{Deserialize, Serialize};
 /// Represents the esm.key file
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Token {
-    pub id: Vec<u8>,
-    pub key: Vec<u8>,
-
-    #[serde(skip)]
-    pub server_id: String,
-
-    #[serde(skip)]
-    pub community_id: String,
+    pub access: String,
+    pub secret: String,
 }
 
 impl Token {
     pub fn update_from(&mut self, token: Token) -> &mut Self {
-        self.id = token.id;
-        self.key = token.key;
-
-        self.server_id = match String::from_utf8(self.id.clone()) {
-            Ok(s) => s,
-            Err(e) => {
-                error!("[server_id] ❌ Failed to parse server ID. Reason: {e}");
-                String::new()
-            }
-        };
-
-        // 95 is _
-        let split_index = self.id.iter().position(|byte| *byte == 95).unwrap();
-        self.community_id = match String::from_utf8(self.id[0..split_index].to_vec()) {
-            Ok(s) => s,
-            Err(e) => {
-                error!("[community_id] ❌ Failed to parse community ID. Reason: {e}");
-                String::new()
-            }
-        };
-
+        self.access = token.access;
+        self.secret = token.secret;
         self
     }
 
     pub fn valid(&self) -> bool {
-        !self.id.is_empty()
-            && !self.key.is_empty()
-            && !self.server_id.is_empty()
-            && !self.community_id.is_empty()
+        !self.access.is_empty() && !self.secret.is_empty() && self.secret.len() >= 32
     }
 }
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Token")
-            .field("server_id", &self.server_id)
-            .field("community_id", &self.community_id)
+            .field("access", &self.access)
+            .field("secret", &self.secret)
             .field("valid", &self.valid())
             .finish()
     }
@@ -67,19 +39,14 @@ mod tests {
     #[test]
     fn test_token() {
         let token = Token {
-            id: "esm_malden".as_bytes().to_vec(),
-            key: "12345".as_bytes().to_vec(),
-            server_id: String::new(),
-            community_id: String::new(),
+            access: "esm_malden".into(),
+            secret: "12345".into(),
         };
 
         assert!(!token.valid());
 
         let mut new_token = token.clone();
         new_token.update_from(token);
-
-        assert_eq!(new_token.community_id, "esm".to_string());
-        assert_eq!(new_token.server_id, "esm_malden".to_string());
 
         assert!(new_token.valid());
     }
@@ -99,20 +66,12 @@ impl TokenManager {
         self.token.valid()
     }
 
-    pub fn id_bytes(&self) -> &[u8] {
-        &self.token.id
+    pub fn access_bytes(&self) -> &[u8] {
+        &self.token.access.as_bytes()
     }
 
-    pub fn key_bytes(&self) -> &[u8] {
-        &self.token.key
-    }
-
-    pub fn server_id(&self) -> &str {
-        &self.token.server_id
-    }
-
-    pub fn community_id(&self) -> &str {
-        &self.token.community_id
+    pub fn secret_bytes(&self) -> &[u8] {
+        &self.token.secret.as_bytes()
     }
 
     /// Loads the esm.key file from the disk and converts it to a Token
@@ -156,10 +115,11 @@ impl TokenManager {
 
     pub fn reload(&mut self) -> &mut Self {
         let reload_file = std::path::Path::new("@esm").join(".RELOAD");
+        let file_exists = reload_file.exists();
 
-        trace!("[reload] File exists - {}", reload_file.exists());
+        trace!("[reload] File exists - {}", file_exists);
 
-        if !reload_file.exists() {
+        if !file_exists {
             return self;
         }
 
@@ -173,7 +133,7 @@ impl TokenManager {
             Err(e) => error!("[reload] ❌ {}", e),
         }
 
-        warn!("[reload] ⚠ Token was reloaded");
+        info!("[reload] ✅ Token was reloaded");
         self
     }
 }
