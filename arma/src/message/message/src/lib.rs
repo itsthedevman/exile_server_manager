@@ -179,15 +179,12 @@ impl Message {
 
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{message_type:?} message - id: {id} - data: {data} - metadata: {meta} - errors: {errors:?}",
-            message_type = self.message_type,
-            id = self.id,
-            data = self.data,
-            meta = self.metadata,
-            errors = self.errors
-        )
+        f.debug_struct("Message")
+            .field("id", &self.id)
+            .field("data", &self.data)
+            .field("metadata", &self.metadata)
+            .field("errors", &self.errors)
+            .finish()
     }
 }
 
