@@ -41,9 +41,6 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub server_id: Option<Vec<u8>>,
-
     #[serde(default, skip_serializing_if = "data_is_empty")]
     pub data: Data,
 
@@ -81,11 +78,6 @@ impl Message {
         self
     }
 
-    pub fn set_server_id(mut self, server_id: &[u8]) -> Message {
-        self.server_id = Some(server_id.to_vec());
-        self
-    }
-
     pub fn set_data(mut self, data: Data) -> Message {
         self.data = data;
         self
@@ -117,14 +109,6 @@ impl Message {
         let error = Error::new(error_type, error_content.into());
         self.errors.push(error);
         self
-    }
-
-    pub fn server_id(&self) -> String {
-        let Some(server_id) = self.server_id.as_ref() else {
-            return String::new();
-        };
-
-        String::from_utf8_lossy(server_id).to_string()
     }
 
     pub fn from_bytes(data: &[u8], key: &[u8]) -> Result<Message, String> {
@@ -197,9 +181,8 @@ impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{message_type:?} message - id: {id} - server_id: {server_id} - data: {data} - metadata: {meta} - errors: {errors:?}",
+            "{message_type:?} message - id: {id} - data: {data} - metadata: {meta} - errors: {errors:?}",
             message_type = self.message_type,
-            server_id = self.server_id(),
             id = self.id,
             data = self.data,
             meta = self.metadata,
@@ -213,7 +196,6 @@ impl Default for Message {
         Message {
             id: Uuid::new_v4(),
             message_type: Type::Event,
-            server_id: None,
             data: Data::Empty,
             metadata: Metadata::Empty,
             errors: Vec::new(),
@@ -254,20 +236,15 @@ fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, Stri
     /*
         Message (as bytes)
         [
-            1 byte -> Size of server id (server_id_bytes)
-            # of server_id_bytes -> The server id
             1 byte -> Size of Nonce (nonce_bytes)
             # of nonce_bytes -> The nonce
             rest -> The encrypted json
         ]
     */
-    // Start the packet off with the id length and itself
-    let server_id = message.server_id.clone().unwrap();
-    let mut packet: Vec<u8> = vec![server_id.len() as u8];
-    packet.extend(&*server_id);
+    // Start the packet off with the nonce length
+    let mut packet: Vec<u8> = vec![nonce_key.len() as u8];
 
-    // Append the nonce length and itself to the packet
-    packet.push(nonce_key.len() as u8);
+    // Append the nonce to the packet
     packet.extend(&*nonce_key);
 
     // Serialize this message
@@ -294,21 +271,13 @@ fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
         return Err("Server key must contain at least 32 bytes".into());
     }
 
-    // The first byte is the length of the server_id so we know how many bytes to extract
-    let id_length = bytes[0] as usize;
-
-    // Extract the server ID and convert to a vec
-    let server_id = bytes[1..=id_length].to_vec();
-
-    // Now to decrypt. First step, extract the nonce
-    let nonce_offset = 1 + id_length;
-    let nonce_size = bytes[nonce_offset] as usize;
-    let nonce_offset = 1 + nonce_offset;
-    let nonce = bytes[nonce_offset..(nonce_offset + nonce_size)].to_vec();
+    // Decrypt. First step, extract the nonce
+    let nonce_length = bytes[0] as usize;
+    let nonce = bytes[1..=nonce_length].to_vec();
     let nonce = Nonce::from_slice(&nonce);
 
     // Next, extract the encrypted bytes
-    let enc_offset = nonce_offset + nonce_size;
+    let enc_offset = 1 + nonce_length;
     let encrypted_bytes = bytes[enc_offset..].to_vec();
 
     // Build the cipher
@@ -325,7 +294,7 @@ fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
     };
 
     // And deserialize into a struct
-    let mut message: Message = match serde_json::from_slice(&decrypted_bytes) {
+    let message: Message = match serde_json::from_slice(&decrypted_bytes) {
         Ok(message) => message,
         Err(e) => {
             return Err(format!(
@@ -336,9 +305,6 @@ fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
             ))
         }
     };
-
-    // Store the server id
-    message.server_id = Some(server_id);
 
     Ok(message)
 }
@@ -365,8 +331,6 @@ mod tests {
 
         let expected = server_init.clone();
 
-        let server_id = String::from("esm_testing");
-        message.server_id = Some(server_id.as_bytes().to_vec());
         message.data = Data::Init(server_init);
 
         let server_key = format!(
@@ -387,9 +351,6 @@ mod tests {
         let decrypted_message = decrypted_message.unwrap();
         assert_eq!(decrypted_message.message_type, Type::Event);
 
-        // Ensure it has a server ID
-        assert!(decrypted_message.server_id.is_some());
-
         match decrypted_message.data {
             Data::Init(data) => {
                 assert_eq!(data.server_name, expected.server_name);
@@ -399,32 +360,6 @@ mod tests {
             }
             _ => panic!("Invalid message data"),
         }
-    }
-
-    #[test]
-    fn test_it_serializes_with_server_id() {
-        let mut message = Message::new();
-        message.server_id = Some("some_server_id".as_bytes().to_vec());
-
-        let serialized_message = serde_json::to_string(&message);
-        assert!(serialized_message.is_ok());
-
-        let serialized_message = serialized_message.unwrap();
-        assert_eq!(serialized_message, format!("{{\"id\":\"{}\",\"type\":\"event\",\"server_id\":[115,111,109,101,95,115,101,114,118,101,114,95,105,100]}}", message.id));
-    }
-
-    #[test]
-    fn test_it_serializes_without_server_id() {
-        let message = Message::new();
-
-        let serialized_message = serde_json::to_string(&message);
-        assert!(serialized_message.is_ok());
-
-        let serialized_message = serialized_message.unwrap();
-        assert_eq!(
-            serialized_message,
-            format!("{{\"id\":\"{}\",\"type\":\"event\"}}", message.id)
-        );
     }
 
     #[test]
