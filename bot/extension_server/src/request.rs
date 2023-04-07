@@ -1,6 +1,7 @@
 use esm_message::Message;
 use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::ESMResult;
 
@@ -18,16 +19,19 @@ pub enum BotRequest {
 
     // esm_bot -> server.rs -> esm_arma
     SendToClient {
-        server_id: Vec<u8>,
+        server_uuid: Uuid,
         message: Box<Message>,
     },
 
     // extension_server -> esm_bot
     #[serde(rename(serialize = "inbound"))]
-    Send(Box<Message>),
+    Send {
+        server_uuid: Option<Uuid>,
+        message: Box<Message>,
+    },
 
     // server.rs -> esm_bot
-    Disconnected(Vec<u8>),
+    Disconnected(Option<Uuid>),
 }
 
 impl BotRequest {
@@ -43,16 +47,19 @@ impl BotRequest {
         crate::ROUTER.route_to_bot(Self::Pong)
     }
 
-    pub fn send_to_client(server_id: &[u8], message: Message) -> ESMResult {
-        ServerRequest::send(server_id, message)
+    pub fn send_to_client(server_uuid: Uuid, message: Message) -> ESMResult {
+        ServerRequest::send(server_uuid, message)
     }
 
-    pub fn send(message: Message) -> ESMResult {
-        crate::ROUTER.route_to_bot(Self::Send(Box::new(message)))
+    pub fn send(message: Message, server_uuid: Option<Uuid>) -> ESMResult {
+        crate::ROUTER.route_to_bot(Self::Send {
+            server_uuid,
+            message: Box::new(message),
+        })
     }
 
-    pub fn disconnected(server_id: &[u8]) -> ESMResult {
-        crate::ROUTER.route_to_bot(Self::Disconnected(server_id.into()))
+    pub fn disconnected(server_uuid: Uuid) -> ESMResult {
+        crate::ROUTER.route_to_bot(Self::Disconnected(Some(server_uuid)))
     }
 }
 
@@ -64,7 +71,7 @@ impl BotRequest {
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum ServerRequest {
     // esm_bot -> server.rs
-    Disconnect(Option<Vec<u8>>),
+    Disconnect(Option<Uuid>),
 
     // esm_bot -> server.rs
     Resume,
@@ -74,7 +81,7 @@ pub enum ServerRequest {
 
     // esm_bot -> server.rs -> esm_arma
     Send {
-        server_id: Vec<u8>,
+        server_uuid: Uuid,
         message: Box<Message>,
     },
 
@@ -103,7 +110,7 @@ pub enum ServerRequest {
 }
 
 impl ServerRequest {
-    pub fn disconnect(server_id: Option<Vec<u8>>) -> ESMResult {
+    pub fn disconnect(server_id: Option<Uuid>) -> ESMResult {
         crate::ROUTER.route_to_server(Self::Disconnect(server_id))
     }
 
@@ -115,9 +122,9 @@ impl ServerRequest {
         crate::ROUTER.route_to_server(Self::Pause)
     }
 
-    pub fn send(server_id: &[u8], message: Message) -> ESMResult {
+    pub fn send(server_uuid: Uuid, message: Message) -> ESMResult {
         crate::ROUTER.route_to_server(Self::Send {
-            server_id: server_id.into(),
+            server_uuid,
             message: Box::new(message),
         })
     }

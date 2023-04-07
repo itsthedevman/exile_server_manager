@@ -80,7 +80,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 
         while let Some(request) = receiver.recv().await {
             if let BotRequest::Disconnected(server_id) = &request {
-                if server_id.is_empty() {
+                if server_id.is_none() {
                     continue;
                 }
             }
@@ -155,10 +155,14 @@ async fn ipc_thread() {
                 BotRequest::Pong => {
                     PONG_RECEIVED.store(true, Ordering::SeqCst);
                 }
-                BotRequest::SendToClient { server_id, message } => {
-                    if let Err(e) =
-                        crate::ROUTER.route_to_server(ServerRequest::Send { server_id, message })
-                    {
+                BotRequest::SendToClient {
+                    server_uuid,
+                    message,
+                } => {
+                    if let Err(e) = crate::ROUTER.route_to_server(ServerRequest::Send {
+                        server_uuid,
+                        message,
+                    }) {
                         return Err(format!("Error while sending message to client. {e}"));
                     }
                 }
@@ -186,6 +190,7 @@ async fn ipc_thread() {
                         Message::new()
                             .add_error_code("system_exception")
                             .add_error_message(format!("```{e}```")),
+                        None,
                     ) {
                         error!("[ipc_thread] System exception send - {e}");
                     };

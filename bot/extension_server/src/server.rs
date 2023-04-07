@@ -66,10 +66,10 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     client_manager.disconnect_all(&handler);
                 }
 
-                ServerRequest::Disconnect(server_id) => match server_id {
-                    Some(id) => {
-                        let Some(client) = client_manager.get_by_id(&id) else {
-                            error!("[disconnect] {} - Failed to retrieve client", String::from_utf8_lossy(&id));
+                ServerRequest::Disconnect(server_uuid) => match server_uuid {
+                    Some(uuid) => {
+                        let Some(client) = client_manager.get_by_uuid(&uuid) else {
+                            error!("[disconnect] {} - Failed to retrieve client", uuid);
                             continue;
                         };
 
@@ -80,14 +80,15 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                 },
 
                 ServerRequest::Send {
-                    server_id,
+                    server_uuid,
                     mut message,
                 } => {
-                    let Some(client) = client_manager.get_by_id(&server_id) else {
-                        error!("[send] {} - Failed to retrieve client", String::from_utf8_lossy(&server_id));
+                    let Some(client) = client_manager.get_by_uuid(&server_uuid) else {
+                        error!("[send] {} - Failed to retrieve client", server_uuid);
 
-                        if let Err(e) = BotRequest::send(message.add_error_code("client_not_connected")) {
-                            error!("[send] {} - Failed to send error - {e}", String::from_utf8_lossy(&server_id));
+                        let message = message.add_error_code("client_not_connected");
+                        if let Err(e) = BotRequest::send(message, Some(server_uuid)) {
+                            error!("[send] {} - Failed to send error - {e}", server_uuid);
                         }
 
                         continue;
@@ -96,13 +97,9 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     if let Err(e) = client.send_message(&handler, message.as_mut()).await {
                         error!("{e}");
 
-                        if let Err(e) =
-                            BotRequest::send(message.add_error_code("client_not_connected"))
-                        {
-                            error!(
-                                "[send] {} - Failed to send error - {e}",
-                                String::from_utf8_lossy(&server_id)
-                            );
+                        let message = message.add_error_code("client_not_connected");
+                        if let Err(e) = BotRequest::send(message, Some(server_uuid)) {
+                            error!("[send] {} - Failed to send error - {e}", server_uuid);
                         }
                     }
                 }
@@ -164,7 +161,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                             error!(
                                 "[on_message] {} - {} - Failed to convert message from bytes - {e}. {bytes:?}",
                                 client.host(),
-                                client.server_id()
+                                client.server_uuid
                             );
 
                             client.disconnect(&handler);
@@ -175,7 +172,14 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
 
                     // Connection step 2
                     if request.request_type.as_str() == "id" {
-                        client.set_token_data(&request.content);
+                        if let Err(e) = client.set_token_data(&request.content) {
+                            error!(
+                                "[on_message] {} - {} - set_token_data - {e}",
+                                client.host(),
+                                String::from_utf8_lossy(&request.content)
+                            );
+                            continue;
+                        }
 
                         info!("[on_message] \"{}\" - Requesting init", client.host());
 
@@ -184,7 +188,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                             error!(
                                 "[on_message] {} - {} - request_init - {e}",
                                 client.host(),
-                                client.server_id()
+                                client.server_uuid
                             );
                         }
                         continue;
@@ -210,7 +214,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                         "[on_message] {address} - {server_id} - {message_id} - {message_type:?}/{status} - {message_data:?}",
                         address = endpoint.addr(),
                         message_id = message.id,
-                        server_id = client.server_id(),
+                        server_id = client.server_uuid,
                         message_type = message.message_type,
                         message_data = message.data,
                         status = if message.errors.is_empty() {
@@ -220,11 +224,11 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                         }
                     );
 
-                    if let Err(e) = BotRequest::send(message) {
+                    if let Err(e) = BotRequest::send(message, Some(client.server_uuid)) {
                         error!(
                             "[on_message] {} - {} - {e}",
                             client.host(),
-                            client.server_id()
+                            client.server_uuid
                         );
 
                         client.disconnect(&handler);
@@ -237,12 +241,12 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                         continue;
                     };
 
-                    debug!("[on_disconnect] {} - {}", client.host(), client.server_id());
+                    debug!("[on_disconnect] {} - {}", client.host(), client.server_uuid);
 
                     // The alive check will remove the client for us
                     client.connected = false;
 
-                    if let Err(e) = BotRequest::disconnected(&client.server_id) {
+                    if let Err(e) = BotRequest::disconnected(client.server_uuid) {
                         error!("{e}");
                     }
                 }
@@ -262,7 +266,7 @@ async fn listener_thread(listener: NodeListener<()>) {
             }
             NetEvent::Disconnected(endpoint) => {
                 if let Err(e) = ServerRequest::on_disconnect(endpoint) {
-                    error!("[listener_thread] Failed to route endpoint to server on Accepted event. {e}")
+                    error!("[listener_thread] Failed to route endpoint to server on Disconnected event. {e}")
                 }
             },
             NetEvent::Message(endpoint, message_bytes) => {

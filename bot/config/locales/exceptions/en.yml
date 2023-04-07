@@ -17,7 +17,7 @@ en:
       Hi there!
       Your server `%{server_id}` has encountered an error that requires your attention. Please open `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path) and search for `%{id}` for the full error.
     extension:
-      test: "%{user} | %{message_id} | %{server_id} | %{type} | %{data_type} | %{mdata_type} | %{data_content_foo} | %{mdata_content_bar}"
+      test: "%{user} | %{message_id} | %{type} | %{data_type} | %{mdata_type} | %{data_content_foo} | %{mdata_content_bar}"
       default: "Error type `%{type}` is not registered as a valid locale"
       account_does_not_exist: "Hey %{user}, you will need to join `%{server_id}` first before you can run **any** commands on it."
       target_account_does_not_exist: "Hey %{user}, %{target} needs to join `%{server_id}` before they can be used in **any** command."

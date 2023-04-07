@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use message_io::network::{Endpoint, ResourceId, SendStatus};
+use uuid::Uuid;
 
 use crate::server::Handler;
 use crate::*;
@@ -11,21 +12,11 @@ pub struct Client {
     pub last_checked_at: DateTime<Utc>,
     pub pong_received: bool,
     pub connected: bool,
-    pub server_id: Vec<u8>,
+    pub server_uuid: Uuid,
 }
 
 impl Client {
-    pub async fn get_server_key(server_id: &[u8]) -> Option<Vec<u8>> {
-        let server_id = match String::from_utf8(server_id.to_owned()) {
-            Ok(id) => id,
-            Err(e) => {
-                error!(
-                    "[get_server_key] {server_id:?} - Failed to convert server_id to string. {e}"
-                );
-                return None;
-            }
-        };
-
+    pub async fn get_server_key(server_uuid: &Uuid) -> Option<Vec<u8>> {
         let database = await_lock!(DATABASE);
         let Some(client) = database.as_ref() else {
             error!("");
@@ -34,8 +25,8 @@ impl Client {
 
         match client
             .query(
-                "SELECT server_key FROM servers WHERE server_id = $1",
-                &[&server_id],
+                "SELECT server_key FROM servers WHERE uuid = $1",
+                &[&server_uuid],
             )
             .await
         {
@@ -48,13 +39,13 @@ impl Client {
                 match rows[0].try_get::<usize, String>(0) {
                     Ok(r) => Some(r.as_bytes().to_owned()),
                     Err(e) => {
-                        error!("[get_server_key] {server_id} - Failed to get server_key - {e}");
+                        error!("[get_server_key] {server_uuid} - Failed to get server_key - {e}");
                         None
                     }
                 }
             }
             Err(e) => {
-                error!("[get_server_key] {server_id} - Error occurred while querying for server_key - {e}");
+                error!("[get_server_key] {server_uuid} - Error occurred while querying for server_key - {e}");
                 None
             }
         }
@@ -64,7 +55,7 @@ impl Client {
         Client {
             endpoint,
             resource_id: endpoint.resource_id(),
-            server_id: vec![],
+            server_uuid: Uuid::new_v4(),
             last_checked_at: Utc::now(),
             pong_received: true,
             connected: true,
@@ -75,16 +66,14 @@ impl Client {
         self.endpoint.addr()
     }
 
-    pub fn server_id(&self) -> String {
-        String::from_utf8_lossy(&self.server_id).to_string()
-    }
-
-    pub fn set_token_data(&mut self, server_id: &[u8]) {
-        self.server_id = server_id.into();
+    pub fn set_token_data(&mut self, server_uuid: &[u8]) -> Result<(), uuid::Error> {
+        let uuid = String::from_utf8_lossy(server_uuid);
+        self.server_uuid = Uuid::parse_str(&uuid)?;
+        Ok(())
     }
 
     pub async fn server_key(&self) -> Vec<u8> {
-        if let Some(server_key) = Self::get_server_key(&self.server_id).await {
+        if let Some(server_key) = Self::get_server_key(&self.server_uuid).await {
             server_key
         } else {
             Vec::new()
@@ -103,10 +92,6 @@ impl Client {
     }
 
     pub async fn send_message(&self, handler: &Handler, message: &mut Message) -> ESMResult {
-        if message.server_id.is_none() {
-            message.server_id = Some(self.server_id.clone());
-        }
-
         let message_bytes = match message.as_bytes(&self.server_key().await) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error),
@@ -124,7 +109,7 @@ impl Client {
             trace!(
                 "[send_message] {} - {} - {} - {:?}/{:?}",
                 self.host(),
-                self.server_id(),
+                self.server_uuid,
                 message.id,
                 message.message_type,
                 message.data,
@@ -133,7 +118,7 @@ impl Client {
             info!(
                 "[send_message] {} - {} - {} - {:?}/{:?}",
                 self.host(),
-                self.server_id(),
+                self.server_uuid,
                 message.id,
                 message.message_type,
                 message.data,
@@ -144,20 +129,15 @@ impl Client {
     }
 
     pub fn disconnect(&self, handler: &Handler) {
-        info!("[disconnect] {} - {}", self.host(), self.server_id());
+        info!("[disconnect] {} - {}", self.host(), self.server_uuid);
         handler.network().remove(self.resource_id);
     }
 
     pub async fn ping(&mut self, handler: &Handler) -> ESMResult {
         self.pong_received = false;
 
-        self.send_message(
-            handler,
-            &mut Message::new()
-                .set_data(Data::Ping)
-                .set_server_id(&self.server_id),
-        )
-        .await
+        self.send_message(handler, &mut Message::new().set_data(Data::Ping))
+            .await
     }
 
     pub fn pong(&mut self) {
@@ -196,13 +176,13 @@ impl Client {
             SendStatus::MaxPacketSizeExceeded => Err(format!(
                 "[send] {} - {} - Cannot send - Message is too large. Size: {} bytes. {bytes:?}",
                 self.host(),
-                self.server_id(),
+                self.server_uuid,
                 bytes.len()
             )),
             s => Err(format!(
                 "[send] {} - {} - Cannot send - {s:?}. {bytes:?}",
                 self.host(),
-                self.server_id(),
+                self.server_uuid,
             )),
         }
     }

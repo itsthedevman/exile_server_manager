@@ -7,7 +7,7 @@ module ESM
     after_create :create_server_setting
     after_create :create_default_reward
 
-    attribute :uuid, :string
+    attribute :uuid, :uuid
     attribute :server_id, :string
     attribute :community_id, :integer
     attribute :server_name, :text
@@ -38,7 +38,7 @@ module ESM
     end
 
     def token
-      @token ||= {id: server_id.bytes, key: server_key.bytes}
+      @token ||= {access: uuid, secret: server_key}
     end
 
     # V1
@@ -52,7 +52,7 @@ module ESM
 
     def connection
       # Don't memoize to avoid holding onto the data
-      ESM::Connection::Server.connection(server_id)
+      ESM::Connection::Server.connection(uuid)
     end
 
     #
@@ -152,8 +152,7 @@ module ESM
       hasher.decode(data.upcase).first
     end
 
-    # Sends a message to the client with a unique ID
-    # Then logs the ID to the community's logging channel
+    # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
     def log_error(log_message)
       uuid = SecureRandom.uuid
 
@@ -175,10 +174,15 @@ module ESM
       self.uuid = SecureRandom.uuid
     end
 
+    # Idk how to store random bytes in redis (Dang you NULL!)
+    KEY_CHARS = [
+      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "", "/", "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "\\", "]", "^", "_", "`", "{", "|", "}", "~"
+    ].shuffle.freeze
+
     def generate_key
       return if server_key.present?
 
-      self.server_key = Array.new(7).map { SecureRandom.uuid.delete("-") }.join
+      self.server_key = Array.new(64).map { KEY_CHARS.sample }.join
       ESM.redis.hmset("server_keys", [uuid, server_key])
     end
 

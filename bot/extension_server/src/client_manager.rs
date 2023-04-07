@@ -30,9 +30,9 @@ impl ClientManager {
         })
     }
 
-    pub fn get_by_id(&self, server_id: &[u8]) -> Option<&Client> {
+    pub fn get_by_uuid(&self, server_uuid: &Uuid) -> Option<&Client> {
         self.0.iter().find_map(|(_addr, client)| {
-            if client.server_id == server_id {
+            if &client.server_uuid == server_uuid {
                 Some(client)
             } else {
                 None
@@ -75,7 +75,7 @@ impl ClientManager {
             trace!(
                 "[alive_check] {} - {} - Last checked: {} - Needs disconnected: {}",
                 client.host(),
-                client.server_id(),
+                client.server_uuid,
                 client.last_checked_at,
                 (client.last_checked_at + Duration::seconds(Self::DISCONNECT_AFTER)) < Utc::now()
             );
@@ -85,7 +85,7 @@ impl ClientManager {
                 warn!(
                     "[alive_check] {} - {} - Timed out",
                     client.host(),
-                    client.server_id()
+                    client.server_uuid
                 );
 
                 client.disconnect(handler);
@@ -101,14 +101,14 @@ impl ClientManager {
                 trace!(
                     "[alive_check] {} - {} - Sending ping",
                     client.host(),
-                    client.server_id()
+                    client.server_uuid
                 );
 
                 if let Err(e) = client.ping(handler).await {
                     error!(
                         "[alive_check] {} - {} - {e}",
                         client.host(),
-                        client.server_id()
+                        client.server_uuid
                     );
                 }
             }

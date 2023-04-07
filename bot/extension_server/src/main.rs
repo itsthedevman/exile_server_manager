@@ -18,6 +18,7 @@ pub use log::{debug, error, info, trace, warn};
 
 pub use request::*;
 pub use router::ROUTER;
+pub use uuid::Uuid;
 
 pub type ESMResult = Result<(), String>;
 

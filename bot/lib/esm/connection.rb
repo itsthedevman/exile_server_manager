@@ -7,18 +7,18 @@ module ESM
     # @return [Boolean] Returns true the connection has been initialized and is ready for use
     attr_accessor :initialized
 
-    def initialize(tcp_server, server_id)
+    def initialize(tcp_server, server_uuid)
       @tcp_server = tcp_server
-      @server = ESM::Server.find_by_server_id(server_id)
+      @server = ESM::Server.find_by_uuid(server_uuid)
     end
 
-    delegate :server_id, to: :@server
+    delegate :uuid, :server_id, to: :@server
 
     # @param message [Hash, ESM::Message] This can be either a hash of arguments for ESM::Message, or an instance of it.
     def send_message(message = nil, opts = {})
       message = ESM::Message.from_hash(message) if message.is_a?(Hash)
 
-      @tcp_server.fire(message, to: server_id, **opts)
+      @tcp_server.fire(message, to: uuid, **opts)
     end
 
     def on_open(message)

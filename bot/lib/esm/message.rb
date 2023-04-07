@@ -29,7 +29,6 @@ module ESM
       message = event
       message = message.set_id(hash[:id]) if hash[:id].present?
       message = message.set_type(hash[:type]) if hash[:type].present?
-      message = message.set_server_id(hash[:server_id]) if hash[:server_id].present?
 
       if hash[:data].present?
         message = message.set_data(hash.dig(:data, :type), hash.dig(:data, :content))
@@ -59,7 +58,7 @@ module ESM
       new.set_type(:arma)
     end
 
-    attr_reader :id, :type, :server_id, :attributes, :errors
+    attr_reader :id, :type, :attributes, :errors
 
     delegate :command, to: :attributes, allow_nil: true
 
@@ -82,11 +81,10 @@ module ESM
     def initialize
       @id = SecureRandom.uuid
       @type = "event"
-      @server_id = nil
       @data = Data.new
       @metadata = Data.new
       @errors = []
-      @attributes = Struct.new(:command).new
+      @attributes = OpenStruct.new
       @delivered = false
       @mutex = Mutex.new
     end
@@ -98,19 +96,6 @@ module ESM
 
     def set_type(type)
       @type = type.to_s
-      self
-    end
-
-    # The ID of the server this messages should be sent to. Array<Integer> will be converted to string automatically
-    def set_server_id(id)
-      # The server provides the server_id as a UTF8 byte array. Convert it to a string
-      @server_id =
-        if id.is_a?(Array)
-          id.pack("U*")
-        elsif id
-          id.to_s
-        end
-
       self
     end
 
@@ -228,10 +213,11 @@ module ESM
     #
     # Converts the message to a Hash
     #
+    # @param for_arma [Boolean] Is this hash arma bound?
+    #
     # @return [Hash] The message as a Hash. It has the following keys
     #   {
     #     id: The ID of this message as a UUID
-    #     server_id: The server ID this message is being sent to or from as a byte array
     #     type: The context of this message
     #     data: {
     #       type: Describes the structure of content
@@ -244,22 +230,14 @@ module ESM
     #     errors: Any errors associated to this message
     #   }
     #
-    def to_h(for_arma: false)
+    def to_h(...)
       {
         id: id,
-        server_id: for_arma ? server_id&.bytes : server_id,
         type: type,
-        data: data_attributes(for_arma: for_arma),
-        metadata: metadata_attributes(for_arma: for_arma),
+        data: data_attributes(...),
+        metadata: metadata_attributes(...),
         errors: errors.map(&:to_h)
       }
-    end
-
-    def to_arma
-      {
-        server_id: server_id&.bytes,
-        message: to_h(for_arma: true)
-      }.deep_stringify_keys
     end
 
     #

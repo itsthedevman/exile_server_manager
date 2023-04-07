@@ -23,10 +23,10 @@ module ESM
           @instance = nil
         end
 
-        def connection(server_id)
+        def connection(server_uuid)
           return if @instance.nil?
 
-          @instance.connections[server_id]
+          @instance.connections[server_uuid]
         end
       end
 
@@ -37,7 +37,7 @@ module ESM
       attr_reader :server, :connections, :message_overseer
 
       def initialize
-        @connections = {} # By server_id
+        @connections = {} # By server_uuid
         @mutex = Mutex.new
         @redis = Redis.new(ESM::REDIS_OPTS)
         @message_overseer = ESM::Connection::MessageOverseer.new
@@ -102,7 +102,7 @@ module ESM
       # Sends a message to a client (a3 server)
       #
       # @param message [ESM::Message] The message to send
-      # @param to [String] The ID of the server to send the message to
+      # @param to [String] The UUID of the server to send the message to
       # @param forget [Boolean] By default (true), the message will be sent asynchronously. Set to false to synchronously send the message. The response message (if any) will be returned from this message
       #
       # @return [ESM::Message] If forget is false, this will be the incoming message containing the response. Otherwise, it will be the outgoing message
@@ -111,13 +111,10 @@ module ESM
         raise ESM::Exception::ServerNotConnected if !tcp_server_alive?
         raise ESM::Exception::CheckFailureNoMessage if !message.is_a?(ESM::Message)
 
-        # Set some internal data for sending
-        message = message.set_server_id(to) if to
-
         info!(
           send_opts: {forget: forget},
-          server_id: to,
-          message: message.to_h.without(:server_id)
+          server: to,
+          message: message.to_h
         )
 
         # Watch the message to see if it's been acknowledged or responded to.
@@ -127,7 +124,9 @@ module ESM
 
         ESM::Test.outbound_server_messages.store(message, to) if ESM.env.test?
 
-        __send_internal({type: :send_to_client, content: message.to_arma}) unless ESM.env.test? && ESM::Test.block_outbound_messages
+        unless ESM.env.test? && ESM::Test.block_outbound_messages
+          __send_internal({type: :send_to_client, content: {server_uuid: to, message: message.to_h(for_arma: true)}})
+        end
 
         return message if forget
 
@@ -140,12 +139,12 @@ module ESM
         @redis.rpush("bot_outbound", request.to_json)
       end
 
-      # Store all of the server_ids and their keys in redis.
-      # This will allow the TCPServer to quickly pull a key by a server_id to decrypt messages
+      # Store all of the server_uuids and their keys in redis.
+      # This will allow the TCPServer to quickly pull a key by a server_uuid to decrypt messages
       def refresh_keys
         @redis.del("server_keys")
 
-        server_keys = ESM::Server.all.pluck(:server_id, :server_key)
+        server_keys = ESM::Server.all.pluck(:uuid, :server_key)
         return if server_keys.blank?
 
         # Store the data in Redis
@@ -214,7 +213,7 @@ module ESM
       end
 
       def process_inbound_request(json)
-        request = ESM::JSON.parse(json)
+        request = json.to_h
 
         case request[:type]
         when "ping"
@@ -227,16 +226,19 @@ module ESM
       end
 
       def on_inbound(request)
-        message = ESM::Message.from_string(request[:content])
+        request = request[:content].to_h
+
+        server_uuid = request[:server_uuid]
+        message = ESM::Message.from_hash(request[:message])
 
         case message.data_type
         when "init"
-          on_connect(message)
+          on_connect(server_uuid, message)
         else
-          on_message(message)
+          on_message(server_uuid, message)
         end
 
-        ESM::Test.inbound_server_messages.store(message, message.server_id) if ESM.env.test?
+        ESM::Test.inbound_server_messages.store(message, server_uuid) if ESM.env.test?
       rescue => e
         uuid = SecureRandom.uuid
         error!(error: e, id: uuid, message_id: message&.id)
@@ -246,27 +248,25 @@ module ESM
           # Reply back to the message
           message = ESM::Message.event
             .set_id(message.id)
-            .set_server_id(message.server_id)
             .add_error("message", I18n.t("exceptions.system", error_code: uuid))
 
-          fire(message, to: message.server_id, forget: true)
+          fire(message, to: server_uuid, forget: true)
         end
       end
 
-      def on_connect(message)
-        info!(incoming_message: message.to_h)
+      def on_connect(server_uuid, message)
+        info!(server_uuid: server_uuid, incoming_message: message.to_h)
 
-        server_id = message.server_id
-        connection = ESM::Connection.new(self, server_id)
+        connection = ESM::Connection.new(self, server_uuid)
 
-        return error!(error: "Server does not exist", server_id: server_id) if connection.server.nil?
+        return error!(error: "Server does not exist", uuid: server_uuid) if connection.server.nil?
         return connection.server.community.log_event(:error, message.errors.join("\n")) if message.errors?
 
-        @connections[server_id] = connection
+        @connections[server_uuid] = connection
         connection.on_open(message)
       end
 
-      def on_message(incoming_message)
+      def on_message(server_uuid, incoming_message)
         # Retrieve the original message. If it's nil, the message originated from the client
         outgoing_message = @message_overseer.retrieve(incoming_message.id)
 
@@ -281,15 +281,15 @@ module ESM
           return
         end
 
-        connection = @connections[incoming_message.server_id]
+        connection = @connections[server_uuid]
         connection&.on_message(incoming_message, outgoing_message)
       end
 
       def on_disconnect(request)
-        server_id = request[:content]
-        connection = @connections.delete(server_id)
+        server_uuid = request[:content]
+        info!(server_uuid: server_uuid)
 
-        info!(server_id: server_id.pack("C*"))
+        connection = @connections.delete(server_uuid)
         return if connection.nil?
 
         connection.on_close
