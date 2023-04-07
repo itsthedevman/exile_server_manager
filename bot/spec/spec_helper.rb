@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 SPEC_TIMEOUT_SECONDS = 5
-EXTENSION_SERVER_LOG_LEVEL = :warn
-PRINT_LOG = false
+LOG_LEVEL = :warn
 
 RSpec.configure do |config|
   require_relative "./spec_helper_pre_init"
@@ -35,7 +34,7 @@ RSpec.configure do |config|
       ESM::Test.reset!
       ESM::Connection::Server.pause
 
-      info!(
+      debug!(
         example_group: example.example_group&.description,
         example: example.description
       )

@@ -8,9 +8,9 @@ describe ESM::Message, v2: true do
   let(:input) do
     {
       id: SecureRandom.uuid,
-      type: "test",
+      type: :test,
       data: {
-        type: "test_mapping",
+        type: :test_mapping,
         content: {
           # Order matters!
           array: [false, true, "2", "3.0"],
@@ -23,7 +23,7 @@ describe ESM::Message, v2: true do
         }
       },
       metadata: {
-        type: "empty",
+        type: :empty,
         content: {}
       },
       errors: []
@@ -62,7 +62,7 @@ describe ESM::Message, v2: true do
 
     it "defaults to empty" do
       message = described_class.event
-      expect(message.type).to eq("event")
+      expect(message.type).to eq(:event)
       expect(message.data_type).to eq(:empty)
       expect(message.data.to_h).to eq({})
       expect(message.metadata_type).to eq(:empty)
@@ -71,7 +71,7 @@ describe ESM::Message, v2: true do
 
     it "converts to strings" do
       message = described_class.test
-      expect(message.type).to eq("test")
+      expect(message.type).to eq(:test)
       expect(message.data_type).to eq(:empty)
       expect(message.metadata_type).to eq(:empty)
     end
@@ -120,6 +120,49 @@ describe ESM::Message, v2: true do
       expect(embed).not_to be_nil
 
       expect(embed.description).to eq("Hello World")
+    end
+  end
+
+  describe "Checking and converting values" do
+    let(:message) do
+      ESM::Message.event
+    end
+
+    it "converts subtypes" do
+      expect {
+        message.set_data(
+          :test_extras,
+          {
+            subtype: [
+              [["foo", "bar"], ["baz", "bah"], ["bong", "bong"]],
+              [["foo", "bar"], ["baz", "bah"], ["bong", "bong"]]
+            ].to_json
+          }
+        )
+      }.not_to raise_error
+
+      expect(message.data.subtype).to be_kind_of(Array)
+      expect(message.data.subtype.first).to be_kind_of(ImmutableStruct)
+    end
+
+    it "allows optional" do
+      expect {
+        message.set_data(
+          :test_extras,
+          {
+            subtype: []
+          }
+        )
+      }.not_to raise_error
+
+      expect(message.data).to respond_to(:optional)
+      expect(message.data.optional).to be_nil
+    end
+
+    it "does not allow optional" do
+      expect {
+        message.set_data(:test_extras, {})
+      }.to raise_error(ESM::Exception::InvalidMessage)
     end
   end
 end

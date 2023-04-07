@@ -27,38 +27,39 @@ module ESM
           end
         },
         array: {
-          class: Array,
+          valid_classes: [Array],
           converter: ->(value) { value.to_a }
         },
         string: {
-          class: String,
+          valid_classes: [String],
           converter: ->(value) { value.to_s }
         },
         integer: {
-          class: Integer,
+          valid_classes: [Integer],
           converter: ->(value) { value.to_i }
         },
         hash: {
-          class: Hash,
+          valid_classes: [Hash],
           converter: ->(value) { value.to_h }
         },
         float: {
-          class: Float,
+          valid_classes: [Float],
           converter: ->(value) { value.to_d }
         },
         boolean: {
+          valid_classes: [TrueClass, FalseClass],
           converter: ->(value) { value.to_s == "true" }
         },
         hash_map: {
-          class: ESM::Arma::HashMap,
+          valid_classes: [ESM::Arma::HashMap],
           converter: ->(value) { ESM::Arma::HashMap.from(value) }
         },
         date_time: {
-          class: ::Time,
+          valid_classes: [::Time, DateTime],
           converter: ->(value) { ESM::Time.parse(value) }
         },
         date: {
-          class: ::Date,
+          valid_classes: [Date],
           converter: ->(value) { ::Date.parse(value) }
         }
       }.freeze
@@ -133,22 +134,23 @@ module ESM
 
         # Catches if DATA_TYPES does not have type defined
         if types_mapping.nil?
-          raise ESM::Exception::InvalidMessage, "Failed to find type \"#{@type}\" in \"config/message/*_types.yml\""
-        end
-
-        if (difference = types_mapping.keys - inbound_content.keys).any?
-          raise ESM::Exception::InvalidMessage,
-            "Unexpected keys found for #{self.class.to_s.downcase} \"#{@type}\" - #{difference}"
+          raise ESM::Exception::InvalidMessage, "Failed to find #{self.class.name} type \"#{@type}\" in \"config/message/*_types.yml\""
         end
 
         types_mapping.each_with_object({}) do |(attribute_name, attribute_hash), output|
+          # Check for missing required attributes
+          if attribute_hash[:optional].blank? && !inbound_content.key?(attribute_name)
+            raise ESM::Exception::InvalidMessage,
+              "Missing required key \"#{attribute_name}\" for #{self.class.name} type \"#{@type}\""
+          end
+
           # Not all items will be converted, it depends on the configs
-          output[attribute_name] = convert(inbound_content[attribute_name.to_sym], **attribute_hash)
+          output[attribute_name] = convert(inbound_content[attribute_name], **attribute_hash)
         end
       end
 
       def convert(inbound_value, **attribute_hash)
-        type = attribute_hash[:type] || :any
+        type = (attribute_hash[:type] || :any).to_sym
 
         # Handle if it can be nil or not
         can_be_nil = type == :any || attribute_hash[:optional]
@@ -160,22 +162,26 @@ module ESM
         # This contains the conversion data
         type_data = retrieve_type_data(type)
 
-        # NilClass will force it to be converted if needed
-        into_class = type_data[:class] || NilClass
-        return inbound_value if inbound_value.is_a?(into_class)
+        optional = attribute_hash[:optional] || false
+        valid_classes = type_data[:valid_classes] || []
+
+        # Check if converting is needed
+        if (optional && inbound_value.nil?) || valid_classes.any? { |c| inbound_value.is_a?(c) }
+          return inbound_value
+        end
 
         converter = type_data[:converter] || -> {}
         result = converter.call(inbound_value)
 
         # Subtype only supports Array (as of right now)
-        sub_type = attribute_hash[:subtype]
-        return result unless type == :array && sub_type
+        subtype = attribute_hash[:subtype]
+        return result unless type == :array && subtype&.key?(:type)
 
-        result.map { |v| convert(v, **sub_type) }
+        result.map { |v| convert(v, **subtype) }
       end
 
       def retrieve_type_data(type)
-        type_data = TYPES[type.to_sym]
+        type_data = TYPES[type]
         if type_data.nil?
           raise ESM::Exception::InvalidMessage, "\"#{type}\" was not defined in ESM::Message::Data::TYPES"
         end

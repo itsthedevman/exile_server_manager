@@ -7,7 +7,6 @@
 #       type: <type_name>
 #       subtype:
 #         type: <type_name>
-#         optional: true/false
 #       optional: true/false
 #
 # Field attributes:
@@ -49,7 +48,7 @@ init:
   server_name:
     type: string
   server_start_time:
-    type: datetime
+    type: date_time
   territory_data:
     type: array
     subtype:
@@ -186,4 +185,13 @@ test_mapping:
     type: hash
   string:
     type: string
+
+test_extras:
+  subtype:
+    type: array
+    subtype:
+      type: hash_map
+  optional:
+    type: integer
+    optional: true
 ###########################
