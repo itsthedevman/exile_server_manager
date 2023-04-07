@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "src/esm",
     "src/build/host",
     "src/build/receiver",
     "src/build/common",
     "src/build/compiler",
+    "src/esm",
     "src/message/message",
     "src/message/message_proc",
 ]

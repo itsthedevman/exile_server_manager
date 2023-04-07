@@ -12,3 +12,5 @@ Powershell as admin:
 
 Windows requires (until I create a windows container):
     - Rust
+
+`cargo install armake2`
