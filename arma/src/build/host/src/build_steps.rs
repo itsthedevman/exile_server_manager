@@ -421,7 +421,11 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -rf "{server_path}/@esm";
 
                 {rebuild_mod} && rm -rf "{build_path}/@esm";
-                {rebuild_extension} && rm -rf "{build_path}/esm";
+                {rebuild_extension} \
+                    && mv "{build_path}/esm/target" "{build_path}/esm_target" \
+                    && rm -rf "{build_path}/esm" \
+                    && mkdir -p "{build_path}/esm" \
+                    && mv "{build_path}/esm_target" "{build_path}/esm/target";
 
                 mkdir -p "{server_path}/@esm/addons";
             "#,
@@ -683,9 +687,9 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         BuildOS::Windows => {
             format!(
                 "
-                    cd '{build_path}\\arma';
+                    cd '{build_path}\\esm';
                     rustup run stable-{build_target} cargo build --target {build_target} --release;
-                    Copy-Item '{build_path}\\arma\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
+                    Copy-Item '{build_path}\\esm\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
                 ",
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,
@@ -698,10 +702,10 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         BuildOS::Linux => {
             format!(
                 r#"
-cd {build_path}/arma;
+cd {build_path}/esm;
 rustup run stable-{build_target} cargo build --target {build_target} --release;
 
-cp "{build_path}/arma/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
+cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
 "#,
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,

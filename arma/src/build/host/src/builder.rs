@@ -243,57 +243,53 @@ impl Builder {
     }
 
     pub fn rebuild_extension(&self) -> bool {
-        // Force? Forced true
-        // Just building the extension? Forced true
-        // Just building just the mod? Forced false
-        // No force, no only? return true only if the files have changed
-        (self.rebuild_extension || self.args.build_only() != "mod")
-            && (self.rebuild_extension
-                || self.args.build_only() == "extension"
-                || has_directory_changed(
-                    &self.file_watcher,
-                    &self.local_git_path.join("src").join("esm"),
-                )
-                || has_directory_changed(
-                    &self.file_watcher,
-                    &self.local_git_path.join("src").join("message"),
-                ))
+        if self.args.build_only() == "mod" {
+            return false;
+        }
+
+        self.rebuild_extension
+            || self.args.build_only() == "extension"
+            || has_directory_changed(
+                &self.file_watcher,
+                &self.local_git_path.join("src").join("esm"),
+            )
+            || has_directory_changed(
+                &self.file_watcher,
+                &self.local_git_path.join("src").join("message"),
+            )
     }
 
     // The entire mod
     pub fn rebuild_mod(&self) -> bool {
-        // Force? Forced true
-        // Just building the mod? Forced true
-        // Just building just the extension? Forced false
-        // No force, no only? return true only if the files have changed
-        (self.rebuild_mod || self.args.build_only() != "extension")
-            && (self.rebuild_mod
-                || self.args.build_only() == "mod"
-                // The mod itself
-                || has_directory_changed(
-                    &self.file_watcher,
-                    &self.local_git_path.join("src").join("@esm"),
-                ))
+        if self.args.build_only() == "extension" {
+            return false;
+        }
+
+        self.rebuild_mod
+            || self.args.build_only() == "mod"
+            || has_directory_changed(
+                &self.file_watcher,
+                &self.local_git_path.join("src").join("@esm"),
+            )
     }
 
     // Single addon
     pub fn rebuild_addon(&self, addon: &str) -> bool {
-        // Force? Forced true
-        // Just building the mod? Forced true
-        // Just building just the extension? Forced false
-        // No force, no only? return true only if the files have changed
-        (self.rebuild_mod || self.args.build_only() != "extension")
-            && (self.rebuild_mod
-                || self.args.build_only() == "mod"
-                || has_directory_changed(
-                    &self.file_watcher,
-                    &self
-                        .local_git_path
-                        .join("src")
-                        .join("@esm")
-                        .join("addons")
-                        .join(addon),
-                ))
+        if self.args.build_only() == "extension" {
+            return false;
+        }
+
+        self.rebuild_mod
+            || self.args.build_only() == "mod"
+            || has_directory_changed(
+                &self.file_watcher,
+                &self
+                    .local_git_path
+                    .join("src")
+                    .join("@esm")
+                    .join("addons")
+                    .join(addon),
+            )
     }
 
     pub fn rebuild_receiver(&self) -> bool {
