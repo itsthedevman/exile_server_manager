@@ -46,7 +46,6 @@ group :development do
   gem "factory_bot"
   gem "faker"
   gem "memory_profiler"
-  gem "rerun"
   gem "ruby-prof"
   gem "solargraph"
   gem "standard"
