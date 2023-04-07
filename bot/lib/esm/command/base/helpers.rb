@@ -241,8 +241,10 @@ module ESM
             end
           end
 
+          outgoing_message.add_attribute(:server_id, target_server.server_id)
           outgoing_message.add_attribute(:command, self)
           outgoing_message.apply_command_metadata
+
           target_server.connection.send_message(outgoing_message, send_opts)
         end
 

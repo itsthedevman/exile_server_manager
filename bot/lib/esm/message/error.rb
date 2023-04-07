@@ -24,7 +24,7 @@ module ESM
             user: message.attributes.command&.current_user&.mention,
             target: message.attributes.command&.target_user&.mention,
             message_id: message.id,
-            server_id: message.server_id,
+            server_id: message.attributes.server_id,
             type: message.type,
             data_type: message.data_type,
             mdata_type: message.metadata_type
