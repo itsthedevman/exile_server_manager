@@ -1,5 +1,4 @@
 ENV["ESM_ENV"] = "test"
-ENV["PRINT_LOG"] = PRINT_LOG.to_s
 
 # Must execute before esm is required
 if ENV["CODE_COVERAGE"] == "true"
@@ -19,6 +18,20 @@ require "rspec/expectations"
 require "rspec/wait"
 require "neatjson"
 require "timecop"
+
+ESM.logger.level =
+  case LOG_LEVEL
+  when :trace
+    Logger::TRACE
+  when :debug
+    Logger::DEBUG
+  when :info
+    Logger::INFO
+  when :warn
+    Logger::WARN
+  else
+    Logger::ERROR
+  end
 
 # Load the spec related files
 require_relative "./spec_helper_methods"
@@ -57,6 +70,6 @@ ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.pres
 build_result = `cargo check; echo $?`.chomp
 raise "Failed to build extension_server" if build_result != "0"
 
-EXTENSION_SERVER = IO.popen("POSTGRES_DATABASE=esm_test RUST_LOG=#{EXTENSION_SERVER_LOG_LEVEL} bin/extension_server")
+EXTENSION_SERVER = IO.popen("POSTGRES_DATABASE=esm_test RUST_LOG=#{LOG_LEVEL} bin/extension_server")
 
 RSpec::Matchers.define_negated_matcher :exclude, :include

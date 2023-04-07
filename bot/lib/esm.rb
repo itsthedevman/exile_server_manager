@@ -129,7 +129,7 @@ module ESM
 
   def self.initialize_logger
     @logger = Logger.new("log/#{env}.log", "daily")
-    @logger.level = Logger::TRACE
+    @logger.level = Logger::INFO
 
     @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
       header = "#{severity} [#{datetime.utc.strftime("%F %H:%M:%S:%L")}] (#{progname})"

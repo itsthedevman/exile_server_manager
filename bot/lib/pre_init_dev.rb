@@ -12,6 +12,8 @@ ActiveRecordQueryTrace.backtrace_cleaner = lambda do |trace|
 end
 ActiveRecordQueryTrace.enabled = ENV["TRACE"] == "true"
 
+ESM.logger.level = Logger::TRACE
+
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false
 
