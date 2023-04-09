@@ -16,6 +16,7 @@ const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
 const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
 const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
+const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -28,6 +29,7 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
         .replace(REGEX_DIG, hash_dig)
+        .replace(REGEX_KEY, hash_key)
         .replace(REGEX_ENV, env)
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
@@ -236,7 +238,7 @@ fn hash_dig(context: &Data, matches: &Captures) -> CompilerResult {
         Some(m) => m.as_str(),
         None => {
             return Err(format!(
-                "{} -> get! - Wrong number of arguments, given 0, expect 1..",
+                "{} -> dig! - Wrong number of arguments, given 0, expect 1..",
                 context.file_path
             )
             .into())
@@ -244,6 +246,21 @@ fn hash_dig(context: &Data, matches: &Captures) -> CompilerResult {
     };
 
     Ok(Some(format!("[{}] call ESMs_util_hashmap_dig", contents)))
+}
+
+fn hash_key(context: &Data, matches: &Captures) -> CompilerResult {
+    let contents = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> key? - Wrong number of arguments, given 0, expect 1..",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("[{}] call ESMs_util_hashmap_key", contents)))
 }
 
 // info!(_my_var) -> ["file_name", format["%1", _my_var], "info"] call ESMs_util_log;
@@ -455,6 +472,38 @@ mod tests {
             [_hash_map, "key_1"] call ESMs_util_hashmap_dig;
             [_hash_map, "key_1", "key_2"] call ESMs_util_hashmap_dig;
             [[] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3"] call ESMs_util_hashmap_dig;
+        "#
+        )
+    }
+
+    #[test]
+    fn it_replaces_hash_key() {
+        let content = r#"
+            private _hash_map = createHashMap;
+
+            key?(_hash_map, "key_1");
+            key?(_hash_map, "key_1", "key_2");
+            key?([] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3");
+        "#;
+
+        let regex = Regex::new(REGEX_KEY).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = hash_key(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(
+            output,
+            r#"
+            private _hash_map = createHashMap;
+
+            [_hash_map, "key_1"] call ESMs_util_hashmap_key;
+            [_hash_map, "key_1", "key_2"] call ESMs_util_hashmap_key;
+            [[] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3"] call ESMs_util_hashmap_key;
         "#
         )
     }
