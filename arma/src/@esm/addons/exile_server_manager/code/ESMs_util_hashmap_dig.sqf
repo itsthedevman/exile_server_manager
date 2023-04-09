@@ -1,9 +1,9 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_util_hashmap_get
+Function: ESMs_util_hashmap_dig
 
 Description:
 	Attempts to retrieve the key(s) from the hashmap. If a key is not found, nil will be returned.
-	Similar to Ruby's hash&.dig(:key_1)&.dig(:key_2)&.dig(:key_n)
+	Functions like Ruby's Hash#dig method: {key_1: {key_2: {key_n: "foo"}}}.dig(:key_1, :key_2, :key_n) => "foo"
 
 Parameters:
 	_hashMap 	- A hashmap to get the data from
@@ -15,8 +15,8 @@ Returns:
 Examples:
 	(begin example)
 
-	[_hashMap, "key_1"] call ESMs_util_hashmap_get;
-	[_hashMap, "key_1", "key_2"] call ESMs_util_hashmap_get;
+	[_hashMap, "key_1"] call ESMs_util_hashmap_dig;
+	[_hashMap, "key_1", "key_2"] call ESMs_util_hashmap_dig;
 
 	(end)
 
@@ -48,4 +48,4 @@ private _result = {
 forEach _keys;
 
 // If a variable is nil, arma WILL NOT let you reference it. Hence why `isNil` only accepts a string ;)
-if (isNil "_result") then { nil } else { _result }
+if (nil?(_result)) then { nil } else { _result }
