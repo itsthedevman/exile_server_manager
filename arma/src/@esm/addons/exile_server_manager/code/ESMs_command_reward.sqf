@@ -46,8 +46,8 @@ if (isNil "_id" || { isNil "_data" } || { isNil "_metadata" }) exitWith { nil };
 try
 {
 	// Here we go! Start off by checking to make sure the player is online and alive
-	private _playerUID = [_metadata, "player", "steam_uid"] call ESMs_util_hashmap_get;
-	private _playerMention = [_metadata, "player", "discord_mention"] call ESMs_util_hashmap_get;
+	private _playerUID = dig!(_metadata, "player", "steam_uid");
+	private _playerMention = dig!(_metadata, "player", "discord_mention");
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
 
 	if (isNull _playerObject) exitWith

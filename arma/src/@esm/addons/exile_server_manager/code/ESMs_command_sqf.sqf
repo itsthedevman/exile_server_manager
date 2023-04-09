@@ -47,8 +47,8 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
 try
 {
-	private _type = [_data, "execute_on"] call ESMs_util_hashmap_get;
-	private _code = compile ([_data, "code"] call ESMs_util_hashmap_get);
+	private _type = get!(_data, "execute_on");
+	private _code = compile(get!(_data, "code"));
 	private _result = nil;
 
 	switch (_type) do
@@ -65,12 +65,12 @@ try
 
 		default
 		{
-			private _targetUID = [_metadata, "target", "steam_uid"] call ESMs_util_hashmap_get;
-			private _targetMention = [_metadata, "target", "discord_mention"] call ESMs_util_hashmap_get;
+			private _targetUID = dig!(_metadata, "target", "steam_uid");
 			private _targetObject = _targetUID call ExileClient_util_player_objectFromPlayerUID;
 
 			if (isNull _targetObject) then
 			{
+				private _targetMention = dig!(_metadata, "target", "discord_mention");
 				throw format[localize "$STR_ESM_Sqf_NullTarget", _targetMention, _targetUID, ESM_ServerID];
 			};
 
