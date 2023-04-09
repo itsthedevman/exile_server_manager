@@ -33,5 +33,11 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
+// Performance
+if ((count(_this) - 1) isEqualTo 1) exitWith
+{
+	(_this select 1) in (_this select 0)
+};
+
 private _result = _this call ESMs_util_hashmap_dig;
 !nil?(_result)
