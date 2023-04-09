@@ -346,6 +346,11 @@ impl Builder {
         .filter_map(|i| if i.1 { Some(i.0) } else { None })
         .collect();
 
+        let mut build_queue = building_section.join(", ");
+        if build_queue.is_empty() {
+            build_queue.push_str("None");
+        }
+
         println!(
             r#"{label} - : {SEPARATOR}
 {label} - : {header:^40}
@@ -364,7 +369,6 @@ impl Builder {
             git_dir_label = "git directory".bold(),
             build_dir_label = "build directory".bold(),
             server_dir_label = "server directory".bold(),
-            build_queue = building_section.join(", "),
             env = self.args.build_env(),
             log = self.args.log_level(),
             git_directory = self.local_git_path.to_string_lossy(),
