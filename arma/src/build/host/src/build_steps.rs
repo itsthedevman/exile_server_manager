@@ -632,11 +632,7 @@ destination_file="{addon}.pbo";
 cd {build_path};
 armake2 pack -v "{addon}" "$destination_file";
 
-if [[ -f "$destination_file" ]]; then
-    rm -rf {addon};
-else
-    echo "Failed to build - $destination_file does not exist";
-fi
+[[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
 "#,
             build_path = build_path.display()
         );
