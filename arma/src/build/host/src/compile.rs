@@ -7,7 +7,7 @@ const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
 const REGEX_EQUAL_TYPE: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_GET: &str = r"get!\((.+)?,\s*(.+)?\)";
+const REGEX_GET: &str = r"get!\((.+)?,\s*(.+[^)])?\)";
 const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.*)*\)";
 const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
 const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
@@ -15,6 +15,7 @@ const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
 const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
 const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
+const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -26,6 +27,7 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_RV_TYPE, rv_type)
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
+        .replace(REGEX_DIG, hash_dig)
         .replace(REGEX_ENV, env)
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
@@ -229,6 +231,21 @@ fn hash_get(context: &Data, matches: &Captures) -> CompilerResult {
     )))
 }
 
+fn hash_dig(context: &Data, matches: &Captures) -> CompilerResult {
+    let contents = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> get! - Wrong number of arguments, given 0, expect 1..",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("[{}] call ESMs_util_hashmap_dig", contents)))
+}
+
 // info!(_my_var) -> ["file_name", format["%1", _my_var], "info"] call ESMs_util_log;
 // debug!("Its %1 me, %2", _a, "mario") -> ["file_name", format["Its %1 me, %2", _a, "mario"], "debug"] call ESMs_util_log;
 fn log(context: &Data, matches: &Captures) -> CompilerResult {
@@ -316,7 +333,7 @@ mod tests {
 
         assert_eq!(
             output,
-            r#"["MY_Awesome_Method", "exile_server_manager/code/MY_Awesome_Method.sqf"]"#
+            r#"["MY_Awesome_Method", "\exile_server_manager\code\MY_Awesome_Method.sqf"]"#
         );
     }
 
@@ -359,7 +376,7 @@ mod tests {
         let content = r#"
             private _hash_map = createHashMap;
 
-            get!(_hash_map, "key");
+            (get!(_hash_map, "key"));
         "#;
 
         let regex = Regex::new(REGEX_GET).unwrap();
@@ -377,7 +394,7 @@ mod tests {
             r#"
             private _hash_map = createHashMap;
 
-            _hash_map getOrDefault ["key", nil];
+            (_hash_map getOrDefault ["key", nil]);
         "#
         )
     }
@@ -406,6 +423,38 @@ mod tests {
             private _hash_map = createHashMap;
 
             _hash_map getOrDefault ["key", "this is the default"];
+        "#
+        )
+    }
+
+    #[test]
+    fn it_replaces_hash_dig() {
+        let content = r#"
+            private _hash_map = createHashMap;
+
+            dig!(_hash_map, "key_1");
+            dig!(_hash_map, "key_1", "key_2");
+            dig!([] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3");
+        "#;
+
+        let regex = Regex::new(REGEX_DIG).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = hash_dig(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(
+            output,
+            r#"
+            private _hash_map = createHashMap;
+
+            [_hash_map, "key_1"] call ESMs_util_hashmap_dig;
+            [_hash_map, "key_1", "key_2"] call ESMs_util_hashmap_dig;
+            [[] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3"] call ESMs_util_hashmap_dig;
         "#
         )
     }
