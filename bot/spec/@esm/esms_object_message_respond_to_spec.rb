@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_object_message_respond_to", requires_connection: true, v2: true do
+describe "ESMs_system_message_respond_to", requires_connection: true, v2: true do
   include_context "connection"
 
   it "acknowledges the message" do
@@ -24,7 +24,7 @@ describe "ESMs_object_message_respond_to", requires_connection: true, v2: true d
 
     execute_sqf!(
       <<~SQF
-        ["#{outbound_message.id}"] call ESMs_object_message_respond_to;
+        ["#{outbound_message.id}"] call ESMs_system_message_respond_to;
       SQF
     )
 
@@ -55,7 +55,7 @@ describe "ESMs_object_message_respond_to", requires_connection: true, v2: true d
 
     execute_sqf!(
       <<~SQF
-        ["#{outbound_message.id}", "event", "empty", [], "empty", [], [["code", "ERROR_CODE"], ["message", "An error message"]]] call ESMs_object_message_respond_to;
+        ["#{outbound_message.id}", "event", "empty", [], "empty", [], [["code", "ERROR_CODE"], ["message", "An error message"]]] call ESMs_system_message_respond_to;
       SQF
     )
 

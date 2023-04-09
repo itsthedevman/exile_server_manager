@@ -21,8 +21,8 @@ describe "ESMs_system_network_discord_send_to", requires_connection: true, v2: t
     channel = server.community.discord_server.channels.sample
     execute_sqf!(
       <<~SQF
-        private _embed = [["title", "This is a title"], ["description", "This is a description"]] call ESMs_object_embed_create;
-        [_embed, "Field name", "Field value"] call ESMs_object_embed_addField;
+        private _embed = [["title", "This is a title"], ["description", "This is a description"]] call ESMs_util_embed_create;
+        [_embed, "Field name", "Field value"] call ESMs_util_embed_addField;
         ["#{channel.name}", _embed] call ESMs_system_network_discord_send_to;
       SQF
     )

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_object_message_respond_withError", requires_connection: true, v2: true do
+describe "ESMs_system_message_respond_withError", requires_connection: true, v2: true do
   include_context "connection"
 
   it "responds with an error" do
@@ -26,7 +26,7 @@ describe "ESMs_object_message_respond_withError", requires_connection: true, v2:
 
     execute_sqf!(
       <<~SQF
-        ["#{outbound_message.id}", "An error message"] call ESMs_object_message_respond_withError;
+        ["#{outbound_message.id}", "An error message"] call ESMs_system_message_respond_withError;
       SQF
     )
 

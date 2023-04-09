@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-describe "ESMs_object_embed_addField", requires_connection: true, v2: true do
+describe "ESMs_util_embed_addField", requires_connection: true, v2: true do
   include_context "connection"
 
   it "returns adds a field to the embed" do
     response = execute_sqf!(
       <<~SQF
-        private _embed = [["title", "This is the title"], ["description", "This is a description"]] call ESMs_object_embed_create;
+        private _embed = [["title", "This is the title"], ["description", "This is a description"]] call ESMs_util_embed_create;
 
-        [_embed, "Field name", "Field value"] call ESMs_object_embed_addField;
+        [_embed, "Field name", "Field value"] call ESMs_util_embed_addField;
 
         _embed
       SQF
