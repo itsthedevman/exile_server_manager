@@ -16,7 +16,7 @@ Examples:
 
 	["discord_id", "Hello world!"] call ESMs_system_network_discord_send;
 
-	private _embed = [["title", "My embed"]] call ESMs_object_embed_create;
+	private _embed = [["title", "My embed"]] call ESMs_util_embed_create;
 	["my-awesome-channel", _embed] call ESMs_system_network_discord_send;
 
 	(end)

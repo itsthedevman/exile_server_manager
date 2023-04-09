@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_object_message_respond_to
+Function: ESMs_system_message_respond_to
 
 Description:
 	Used to respond to a incoming message with data, or to just say "ack". Every incoming message must be acknowledged, at the very least.
@@ -19,7 +19,7 @@ Examples:
 	(begin example)
 
 	// ack the message.
-	["id"] call ESMs_object_message_respond_to;
+	["id"] call ESMs_system_message_respond_to;
 
 	// Or send a message with everything
 	[
@@ -38,7 +38,7 @@ Examples:
 			["code", "ERROR_CODE"],
 			["message", "This is an error message"]
 		]
-	] call ESMs_object_message_respond_to;
+	] call ESMs_system_message_respond_to;
 
 	(end)
 

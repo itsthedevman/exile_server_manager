@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_object_embed_create
+Function: ESMs_util_embed_create
 
 Description:
 	Creates a hashmap representation of an embed.
@@ -13,7 +13,7 @@ Returns:
 Examples:
 	(begin example)
 
-	[["title", "This is the title"], ["description", "This is a description"]] call ESMs_object_embed_create;
+	[["title", "This is the title"], ["description", "This is a description"]] call ESMs_util_embed_create;
 
 	(end)
 

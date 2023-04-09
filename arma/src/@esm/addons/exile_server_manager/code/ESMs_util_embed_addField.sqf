@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_object_embed_addField
+Function: ESMs_util_embed_addField
 
 Description:
 	Adds a field to an embed
@@ -16,7 +16,7 @@ Returns:
 Examples:
 	(begin example)
 
-	[_embed, "Name", "Value", true] call ESMs_object_embed_addField;
+	[_embed, "Name", "Value", true] call ESMs_util_embed_addField;
 
 	(end)
 

@@ -48,7 +48,7 @@ ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
 ESM_Initialized = true;
 
 // Acknowledge the message
-[_id] call ESMs_object_message_respond_to;
+[_id] call ESMs_system_message_respond_to;
 
 info!("%1 (%2) - @esm version %3:%4 loaded - %5 detected", ESM_ServerID, ESM_CommunityID, ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
 

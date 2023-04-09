@@ -1,7 +1,7 @@
 /**
  *
  * Function:
- *      ESMs_object_message_respond_withError
+ *      ESMs_system_message_respond_withError
  *
  * Description:
  *		Responds to a message with the provided error.
@@ -11,7 +11,7 @@
  *		_error	- The error message to send back
  *
  * Examples:
- *      [_id, "Error Message"] call ESMs_object_message_respond_withError;
+ *      [_id, "Error Message"] call ESMs_system_message_respond_withError;
  *
  * * *
  *
@@ -27,4 +27,4 @@
 private _id = _this select 0;
 private _errorMessage = _this select 1;
 
-[_id, "event", "empty", [], "empty", [], [["message", _errorMessage]]] call ESMs_object_message_respond_to
+[_id, "event", "empty", [], "empty", [], [["message", _errorMessage]]] call ESMs_system_message_respond_to

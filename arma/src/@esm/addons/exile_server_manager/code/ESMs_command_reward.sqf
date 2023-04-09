@@ -246,20 +246,20 @@ try
 		forEach _rewardVehicles;
 	};
 
-	[_id, "arma", "reward", _receipt] spawn ESMs_object_message_respond_to;
+	[_id, "arma", "reward", _receipt] spawn ESMs_system_message_respond_to;
 
 	if (ESM_Logging_RewardPlayer) then
 	{
-		private _embed = [["description", format[localize "$STR_ESM_Reward_LogDescription", _playerMention]]] call ESMs_object_embed_create;
-		[_embed, localize "$STR_ESM_Reward_Log_Field1_Name", _playerUID] call ESMs_object_embed_addField;
-		[_embed, localize "$STR_ESM_Reward_Log_Field2_Name", _receipt] call ESMs_object_embed_addField;
+		private _embed = [["description", format[localize "$STR_ESM_Reward_LogDescription", _playerMention]]] call ESMs_util_embed_create;
+		[_embed, localize "$STR_ESM_Reward_Log_Field1_Name", _playerUID] call ESMs_util_embed_addField;
+		[_embed, localize "$STR_ESM_Reward_Log_Field2_Name", _receipt] call ESMs_util_embed_addField;
 
 		_embed spawn ESMs_system_network_discord_log;
 	};
 }
 catch
 {
-	[_id, _exception] spawn ESMs_object_message_respond_withError;
+	[_id, _exception] spawn ESMs_system_message_respond_withError;
 };
 
 nil

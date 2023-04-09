@@ -91,11 +91,11 @@ try
 			["result", if (nil?(_result)) then { nil } else { _result }]
 		]
 	]
-	spawn ESMs_object_message_respond_to;
+	spawn ESMs_system_message_respond_to;
 }
 catch
 {
-	[_id, _exception] spawn ESMs_object_message_respond_withError;
+	[_id, _exception] spawn ESMs_system_message_respond_withError;
 };
 
 nil
