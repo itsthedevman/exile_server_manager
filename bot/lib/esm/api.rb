@@ -295,5 +295,27 @@ module ESM
 
       community_ids.to_json
     end
+
+    #
+    # Deletes a community from the DB and forces ESM to leave it
+    #
+    # @param community_id [String] The community's database ID
+    # @param user_id [String] The user's database ID. Used to check if they have access
+    #
+    delete("/community/:community_id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
+
+      community = ESM::Community.where(id: params[:community_id]).first
+      return halt(404) if community.nil?
+
+      user = ESM::User.where(id: params[:user_id]).first
+      return halt(404) if user.nil?
+
+      discord_server = community.discord_server
+      return halt(401) if !community.modifiable_by?(user.discord_user.on(discord_server))
+
+      discord_server.leave
+      community.destroy
+    end
   end
 end

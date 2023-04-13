@@ -24,10 +24,10 @@ module ESM
     attribute :updated_at, :datetime
     attribute :deleted_at, :datetime
 
-    has_many :command_configurations
-    has_many :cooldowns
-    has_many :notifications
-    has_many :servers
+    has_many :command_configurations, dependent: :destroy
+    has_many :cooldowns, dependent: :destroy
+    has_many :notifications, dependent: :destroy
+    has_many :servers, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :destination_community_id
 
     alias_attribute :name, :community_name
@@ -59,10 +59,6 @@ module ESM
 
     def self.find_by_guild_id(id)
       default_scoped.includes(:servers).order(:guild_id).where(guild_id: id).first
-    end
-
-    def self.find_by_guild_id(id)
-      order(:guild_id).where(guild_id: id).first
     end
 
     def self.find_by_server_id(id)
