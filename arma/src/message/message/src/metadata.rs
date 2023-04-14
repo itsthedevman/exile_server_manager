@@ -1,12 +1,12 @@
 use arma_rs::{FromArma, IntoArma, Value as ArmaValue};
-use message_proc::ImplIntoArma;
+use message_proc::Arma;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Metadata {
     Empty,
-    Test(Test),
+    Test(MetadataTest),
     Command(Command),
 }
 
@@ -42,18 +42,18 @@ impl std::fmt::Display for Metadata {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
-pub struct Test {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+pub struct MetadataTest {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Command {
     pub player: Player,
     pub target: Option<Player>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Player {
     pub discord_id: Option<String>,
     pub discord_mention: Option<String>,
@@ -81,7 +81,7 @@ mod tests {
 
         assert_eq!(
             result.unwrap(),
-            Metadata::Test(Test {
+            Metadata::Test(MetadataTest {
                 foo: "bar".to_string()
             })
         );

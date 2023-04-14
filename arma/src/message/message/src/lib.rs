@@ -427,7 +427,7 @@ mod tests {
             .set_data(Data::Test(data::Test {
                 foo: "test\"ing".into(),
             }))
-            .set_metadata(Metadata::Test(metadata::Test {
+            .set_metadata(Metadata::Test(metadata::MetadataTest {
                 foo: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
             }))
             .add_error(ErrorType::Message, "This is a message")
