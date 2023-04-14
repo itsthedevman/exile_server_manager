@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use crate::NumberString;
 use arma_rs::{FromArma, IntoArma, Value as ArmaValue};
 use chrono::{DateTime, Utc};
-use message_proc::ImplIntoArma;
+use message_proc::Arma;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Arma)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
+    #[default]
     Empty,
     Ping,
     Pong,
@@ -25,33 +26,17 @@ pub enum Data {
     // From Client
     SendToChannel(SendToChannel),
 
+    //////////////
     // Arma
+    #[arma(function = "ESMs_command_add")]
+    Add(Add),
+
+    #[arma(function = "ESMs_command_reward")]
     Reward(Reward),
+
+    #[arma(function = "ESMs_command_sqf")]
     Sqf(Sqf),
     SqfResult(SqfResult),
-}
-
-impl Default for Data {
-    fn default() -> Self {
-        Data::Empty
-    }
-}
-
-impl IntoArma for Data {
-    fn to_arma(&self) -> ArmaValue {
-        match self {
-            Data::Test(t) => t.to_arma(),
-            Data::Init(i) => i.to_arma(),
-            Data::PostInit(pi) => pi.to_arma(),
-            Data::Query(q) => q.to_arma(),
-            Data::QueryResult(qr) => qr.to_arma(),
-            Data::Reward(r) => r.to_arma(),
-            Data::SendToChannel(d) => d.to_arma(),
-            Data::Sqf(s) => s.to_arma(),
-            Data::SqfResult(s) => s.to_arma(),
-            _ => ArmaValue::Null,
-        }
-    }
 }
 
 impl FromArma for Data {
@@ -69,12 +54,12 @@ impl std::fmt::Display for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Init {
     pub extension_version: String,
     pub price_per_object: NumberString,
@@ -218,7 +203,7 @@ impl arma_rs::IntoArma for PostInit {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Reward {
     pub items: Option<HashMap<String, NumberString>>,
     pub locker_poptabs: Option<NumberString>,
@@ -227,18 +212,18 @@ pub struct Reward {
     pub vehicles: Option<Vec<HashMap<String, String>>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Sqf {
     pub execute_on: String,
     pub code: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct SqfResult {
     pub result: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Event {
     pub event_type: String,
     pub triggered_at: DateTime<Utc>,
@@ -262,23 +247,37 @@ pub struct Event {
 // get_payment_count
 // increment_payment_counter
 // reset_payment_counter
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Query {
     pub arguments: HashMap<String, String>,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Arma)]
 pub struct QueryResult {
     pub results: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
+impl QueryResult {
+    pub fn new(results: Vec<String>) -> Self {
+        QueryResult { results }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Arma)]
 pub struct SendToChannel {
     pub id: String,
     pub content: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Arma)]
+pub struct Add {
+    pub territory_id: String,
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Tests
+////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
     use super::*;
