@@ -10,7 +10,7 @@ const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_GET: &str = r"get!\((.+)?,\s*(.+[^)])?\)";
 const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.*)*\)";
 const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,*\s*(.*)*\)"#;
+const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
 const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
@@ -267,6 +267,7 @@ fn hash_key(context: &Data, matches: &Captures) -> CompilerResult {
 // debug!("Its %1 me, %2", _a, "mario") -> ["file_name", format["Its %1 me, %2", _a, "mario"], "debug"] call ESMs_util_log;
 fn log(context: &Data, matches: &Captures) -> CompilerResult {
     let log_level = matches.get(1).unwrap().as_str();
+
     let content = match matches.get(2) {
         Some(m) => m.as_str(),
         None => {
