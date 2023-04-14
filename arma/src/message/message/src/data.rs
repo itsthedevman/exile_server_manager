@@ -9,25 +9,31 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Arma)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
+    ///////////////////
+    /// Internal
+    ///////////////////
     #[default]
     Empty,
     Ping,
     Pong,
     Test(Test), // TODO(Improve or remove)
 
-    // Init
-    Init(Init),
-    PostInit(Box<PostInit>),
-
-    // Query
     Query(Query),
-    QueryResult(QueryResult),
 
-    // From Client
+    ///////////////////
+    /// Bot bound
+    ///////////////////
+    Init(Init),
+    SqfResult(SqfResult),
+    QueryResult(QueryResult),
     SendToChannel(SendToChannel),
 
-    //////////////
-    // Arma
+    ///////////////////
+    /// Arma bound
+    ///////////////////
+    #[arma(function = "ESMs_system_process_postInit")]
+    PostInit(Box<PostInit>),
+
     #[arma(function = "ESMs_command_add")]
     Add(Add),
 
@@ -36,7 +42,6 @@ pub enum Data {
 
     #[arma(function = "ESMs_command_sqf")]
     Sqf(Sqf),
-    SqfResult(SqfResult),
 }
 
 impl FromArma for Data {
