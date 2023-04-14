@@ -1,0 +1,98 @@
+{
+	// Place your esm_arma workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+	"Copyright (ESM)": {
+		"scope": "sqf",
+		"prefix": "copyright",
+		"body": [
+			"/* ----------------------------------------------------------------------------",
+			"Function:",
+			"\t$TM_FILENAME_BASE",
+			"",
+			"Description:",
+			"\t$1",
+			"",
+			"Parameters:",
+			"\t${2:_this} - [${3:Nothing}] $4",
+			"",
+			"Returns:",
+			"\t${5:Nothing}",
+			"",
+			"Examples:",
+			"\t(begin example)",
+			"",
+			"\t\t${6:[]} call $TM_FILENAME_BASE; // $7",
+			"",
+			"\t(end)",
+			"",
+			"Author:",
+			"\tExile Server Manager",
+			"\twww.esmbot.com",
+			"\t© 2018-$CURRENT_YEAR Bryan \"WolfkillArcadia\"",
+			"",
+			"\tThis work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.",
+			"\tTo view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.",
+			"---------------------------------------------------------------------------- */",
+			"",
+		],
+		"description": "Inserts the Exile Server Manager copyright"
+	},
+	"Copyright (ESM/Exile)": {
+		"scope": "sqf",
+		"prefix": "copyright",
+		"body": [
+			"/* ----------------------------------------------------------------------------",
+			"Function:",
+			"\t$TM_FILENAME_BASE",
+			"",
+			"Description:",
+			"\t$1",
+			"",
+			"Parameters:",
+			"\t${2:_this} - [${3:Nothing}] $4",
+			"",
+			"Returns:",
+			"\t${5:Nothing}",
+			"",
+			"Examples:",
+			"\t(begin example)",
+			"",
+			"\t\t${6:[]} call $TM_FILENAME_BASE; // $7",
+			"",
+			"\t(end)",
+			"",
+			"Author:",
+			"\tExile Mod",
+			"\twww.exilemod.com",
+			"\t© 2015-$CURRENT_YEAR Exile Mod Team",
+			"",
+			"\tThis work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.",
+			"\tTo view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.",
+			"",
+			"Co-author:",
+			"\tExile Server Manager",
+			"\twww.esmbot.com",
+			"\t© 2018-$CURRENT_YEAR Bryan \"WolfkillArcadia\"",
+			"",
+			"\tThis work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.",
+			"\tTo view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.",
+			"---------------------------------------------------------------------------- */",
+			"",
+		],
+		"description": "Inserts the Exile Server Manager copyright"
+	}
+}
