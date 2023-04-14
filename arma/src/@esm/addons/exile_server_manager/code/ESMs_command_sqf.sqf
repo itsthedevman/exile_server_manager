@@ -95,7 +95,7 @@ try
 }
 catch
 {
-	[_id, _exception] spawn ESMs_system_message_respond_withError;
+	[_id, _exception] call ESMs_system_message_respond_withError;
 };
 
 nil
