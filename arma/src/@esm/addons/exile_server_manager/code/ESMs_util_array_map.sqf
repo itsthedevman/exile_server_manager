@@ -1,12 +1,13 @@
 /* ----------------------------------------------------------------------------
-Function: ESMs_util_array_map
+Function:
+	ESMs_util_array_map
 
 Description:
 	Iterates over the provided array and returns a new array containing the result of calling the provided function on each item in the array
 
 Parameters:
-	_input - The array to iterate over [Array]
-	_function - The code to execute on each item in the provided array [Code]
+	_input - [Array] The array to iterate over
+	_function - [Code] The code to execute on each item in the provided array
 
 Returns:
 	An new array containing the results
@@ -21,7 +22,7 @@ Examples:
 Author:
 	Exile Server Manager
 	www.esmbot.com
-	© 2018-2022 Bryan "WolfkillArcadia"
+	© 2018-2023 Bryan "WolfkillArcadia"
 
 	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.

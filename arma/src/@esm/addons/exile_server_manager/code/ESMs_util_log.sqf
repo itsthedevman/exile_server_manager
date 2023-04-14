@@ -69,6 +69,7 @@ switch (ESM_LogOutput) do
 
 	default
 	{
+		// Do not use ESMs_system_extension_call
 		"esm" callExtension ["log", [toLowerANSI(_logLevel), _caller, _message]];
 	};
 };
