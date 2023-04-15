@@ -230,6 +230,8 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
         // Initialize
         "i" => {
+            info!("[bot_initialize] Attempting to phone home like its 1982. Please hold...");
+
             let message = Message::new().set_data(Data::Init(lock!(INIT).clone()));
 
             if let Err(e) = BotRequest::send(message) {
@@ -290,6 +292,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                             return Err("❌ Client is already initialized".into());
                         }
 
+                        info!("[bot_initialization] Hand shake complete. Good posture ✅, eye contact ✅, and a firm grip ✅");
                         ArmaRequest::call("post_initialization", message)
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),

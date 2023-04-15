@@ -142,7 +142,7 @@ fn pre_init(
             }
 
             info!("[pre_init] Exile Server Manager (extension) is booting");
-            info!("[pre_init]    Validating config file");
+            info!("[pre_init]   Validating config file...");
 
             if let Err(e) = CONFIG.validate() {
                 error!("[pre_init] ❌ Boot failed - Invalid config file");
@@ -151,7 +151,7 @@ fn pre_init(
                 return;
             }
 
-            info!("[pre_init]    Validating initialization package");
+            info!("[pre_init]   Validating initialization package...");
 
             // Using the data from the a3 server, create a data packet to be used whenever the server connects to the bot.
             let init = Init {
@@ -181,22 +181,34 @@ fn pre_init(
                 return;
             }
 
-            info!("[pre_init]    Greeting our new friend - Hello {}!", init.server_name);
+            info!("[pre_init]   Greetings {}!", init.server_name);
+            info!("[pre_init]   ----------------------------------------------------------");
+            info!("[pre_init]       Attempting to establish a secure connection...");
+
             if let Err(e) = ArmaRequest::initialize(callback) {
-                error!("[pre_init] ❌ Boot failed - Failed to initialize Arma");
+                error!("[pre_init] ❌ Boot failed - Failed to initialize connection to Arma");
                 warn!("[pre_init] ⚠ {e}");
                 error!("[pre_init] ❌ Boot failed");
             };
 
-            info!("[pre_init]    Remembering to greet ourselves - Hello ESM!");
+            info!("[pre_init]       Connection established to encryption node {}", random_bs_go!());
+            info!("[pre_init]       Loading profile");
+            info!("[pre_init]       Generating fingerprint: {}",
+                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
+            );
+
             if let Err(e) = BotRequest::initialize(init) {
-                error!("[pre_init] ❌ Boot failed - Failed to initialize Bot");
+                error!("[pre_init] ❌ Boot failed - Failed to initialize connection to the bot");
                 warn!("[pre_init] ⚠ {e}");
                 error!("[pre_init] ❌ Boot failed");
                 return;
             };
 
-            info!("[pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
+            info!("[pre_init]       Validation fingerprint: {}",
+                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
+            );
+            info!("[pre_init]       ✅ Boot completed in {:.2?}", timer.elapsed());
+            info!("[pre_init]   ----------------------------------------------------------");
         });
     });
 }

@@ -38,6 +38,28 @@ macro_rules! lock {
     }};
 }
 
+#[macro_export]
+macro_rules! random_bs_go {
+    () => {{
+        uuid::Uuid::new_v4().as_simple().to_string()[0..=7].to_string()
+    }};
+}
+
+// #[macro_export]
+// macro_rules! hashmap {
+//     { $($key:expr => $value:expr),* } => {{
+//         use std::collections::HashMap;
+
+//         let mut hash: HashMap<String, String> = HashMap::new();
+
+//         $(
+//             hash.insert($key.to_string(), $value.to_string());
+//         )*
+
+//         hash
+//     }};
+// }
+
 #[cfg(test)]
 mod tests {
     use tokio::sync::Mutex;
