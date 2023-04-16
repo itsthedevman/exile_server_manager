@@ -26,8 +26,20 @@ lazy_static! {
             color: [153, 0, 51],
         },
         Highlight {
-            regex: Regex::new(r"Warning message:.+not found").unwrap(),
+            regex: Regex::new(r"Error in expression").unwrap(),
             color: [153, 0, 51],
+        },
+        Highlight {
+            regex: Regex::new(r"Undefined variable in expression").unwrap(),
+            color: [153, 0, 51],
+        },
+        Highlight {
+            regex: Regex::new(r"CallExtension 'esm' could not be found").unwrap(),
+            color: [153, 0, 51],
+        },
+        Highlight {
+            regex: Regex::new(r"Warning Message:.+").unwrap(),
+            color: [153, 102, 0],
         },
         Highlight {
             regex: Regex::new(r"WARN").unwrap(),

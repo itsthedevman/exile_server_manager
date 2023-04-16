@@ -26,11 +26,31 @@
 
 ;
 
+DROP PROCEDURE IF EXISTS PROC_DROP_FOREIGN_KEY;
+DELIMITER $$
+CREATE PROCEDURE PROC_DROP_FOREIGN_KEY(IN tableName VARCHAR(64), IN constraintName VARCHAR(64))
+BEGIN
+    IF EXISTS(
+        SELECT * FROM information_schema.table_constraints
+        WHERE
+            table_schema    = DATABASE()     AND
+            table_name      = tableName      AND
+            constraint_name = constraintName AND
+            constraint_type = 'FOREIGN KEY')
+    THEN
+        SET @query = CONCAT('ALTER TABLE ', tableName, ' DROP FOREIGN KEY ', constraintName, ';');
+        PREPARE stmt FROM @query;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+DELIMITER ;
+
 -- Dumping database structure for exile
 
 CREATE DATABASE
     IF NOT EXISTS `exile_esm`
-    /*!40100 DEFAULT CHARACTER SET utf8 */
+    /*!40100 DEFAULT CHARACTER SET utf8mb4 */
 ;
 
 USE `exile_esm`;
@@ -52,10 +72,8 @@ CREATE TABLE
         `total_connections` int(11) unsigned NOT NULL DEFAULT '1',
         PRIMARY KEY (`uid`),
         KEY `clan_id` (`clan_id`),
-        CONSTRAINT `account_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE
-        SET
-            NULL
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+        CONSTRAINT `account_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE SET NULL
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -70,7 +88,7 @@ CREATE TABLE
         PRIMARY KEY (`id`),
         KEY `leader_uid` (`leader_uid`),
         CONSTRAINT `clan_ibfk_1` FOREIGN KEY (`leader_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -90,7 +108,7 @@ CREATE TABLE
         PRIMARY KEY (`id`),
         KEY `clan_id` (`clan_id`),
         CONSTRAINT `clan_map_marker_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -122,7 +140,7 @@ CREATE TABLE
         KEY `territory_id` (`territory_id`),
         CONSTRAINT `construction_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE,
         CONSTRAINT `construction_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -159,7 +177,7 @@ CREATE TABLE
         KEY `territory_id` (`territory_id`),
         CONSTRAINT `container_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE,
         CONSTRAINT `container_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8 ROW_FORMAT = COMPACT;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 ROW_FORMAT = COMPACT;
 
 -- Data exporting was unselected.
 
@@ -213,7 +231,7 @@ CREATE TABLE
         PRIMARY KEY (`id`),
         KEY `player_uid` (`account_uid`),
         CONSTRAINT `player_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -229,7 +247,7 @@ CREATE TABLE
         `position_y` double NOT NULL,
         `position_z` double NOT NULL,
         PRIMARY KEY (`id`)
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -252,17 +270,15 @@ CREATE TABLE
         `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         `last_paid_at` datetime DEFAULT CURRENT_TIMESTAMP,
         `xm8_protectionmoney_notified` tinyint(1) NOT NULL DEFAULT '0',
-        `build_rights` varchar(640) NOT NULL DEFAULT '0',
-        `moderators` varchar(320) NOT NULL DEFAULT '0',
+        `build_rights` varchar(4000) NOT NULL DEFAULT '[]',
+        `moderators` varchar(4000) NOT NULL DEFAULT '[]',
         `deleted_at` datetime DEFAULT NULL,
         PRIMARY KEY (`id`),
         KEY `owner_uid` (`owner_uid`),
         KEY `flag_stolen_by_uid` (`flag_stolen_by_uid`),
         CONSTRAINT `territory_ibfk_1` FOREIGN KEY (`owner_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE,
-        CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stolen_by_uid`) REFERENCES `account` (`uid`) ON DELETE
-        SET
-            NULL
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+        CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stolen_by_uid`) REFERENCES `account` (`uid`) ON DELETE SET NULL
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 
@@ -303,7 +319,7 @@ CREATE TABLE
         KEY `vehicle_ibfk_2_idx` (`territory_id`),
         CONSTRAINT `vehicle_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE,
         CONSTRAINT `vehicle_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE
-    ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
 

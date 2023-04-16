@@ -685,7 +685,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
                 "
                     cd '{build_path}\\esm';
                     rustup run stable-{build_target} cargo build --target {build_target} --release;
-                    Copy-Item '{build_path}\\esm\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
+                    Copy-Item '{build_path}\\esm\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\{file_name}.dll';
                 ",
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,
@@ -701,7 +701,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
 cd {build_path}/esm;
 rustup run stable-{build_target} cargo build --target {build_target} --release;
 
-cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
+cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}/{file_name}.so"
 "#,
                 build_path = builder.remote_build_path_str(),
                 build_target = builder.extension_build_target,
@@ -726,6 +726,8 @@ cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}
 
 pub fn seed_database(builder: &mut Builder) -> BuildResult {
     let sql = Database::generate_sql(&builder.config);
+    let mut file = std::fs::File::create("foo.txt")?;
+    std::io::Write::write_all(&mut file, &sql.as_bytes())?;
     match builder.build_server.send(Command::Database(sql)) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
@@ -739,6 +741,7 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 "
                     Remove-Item -Path '{server_path}\\@esm' -Recurse;
                     Copy-Item -Path '{build_path}\\@esm' -Destination '{server_path}\\@esm' -Recurse;
+                    Copy-Item -Path '{build_path}\\{file_name}.dll' -Destination '{server_path}\\@esm\\';
 
                     Start-Process '{server_path}\\{server_executable}' `
                         -ArgumentList '{server_args}' `
@@ -747,7 +750,11 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,
-                server_args = builder.remote.server_args
+                server_args = builder.remote.server_args,
+                file_name = match builder.args.build_arch() {
+                    BuildArch::X32 => "esm",
+                    BuildArch::X64 => "esm_x64",
+                }
             )
         }
         BuildOS::Linux => {
@@ -755,6 +762,7 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 r#"
 rm -rf {server_path}/@esm;
 cp -rf {build_path}/@esm {server_path}/@esm;
+cp {build_path}/{file_name}.so {server_path}/@esm/;
 mkdir -p {ARMA_PATH}/server_profile;
 
 {server_path}/{server_executable} {server_args} &>{ARMA_PATH}/server_profile/server.rpt &
@@ -762,7 +770,11 @@ mkdir -p {ARMA_PATH}/server_profile;
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,
-                server_args = builder.remote.server_args
+                server_args = builder.remote.server_args,
+                file_name = match builder.args.build_arch() {
+                    BuildArch::X32 => "esm",
+                    BuildArch::X64 => "esm_x64",
+                }
             )
         }
     };
