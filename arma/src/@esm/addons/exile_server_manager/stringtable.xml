@@ -9,6 +9,10 @@
 			<Key ID="STR_ESM_AlivePlayer">
 				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
 			</Key>
+
+			<Key ID="STR_ESM_NullFlag">
+				<English>Hey %1, I was unable to find that territory. Please double check that you typed the correct ID, and that you have not failed to make a protection payment</English>
+			</Key>
 		</Container>
 
 		<Container name="ESMs_command_sqf">
@@ -35,6 +39,26 @@
 
 			<Key ID="STR_ESM_Reward_Log_Field2_Name">
 				<English>Receipt</English>
+			</Key>
+		</Container>
+
+		<Container name="ESMs_command_add">
+			<Key ID="STR_ESM_Add_NullFlag_Admin">
+				<English>
+					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not exist. This could be because they typed in the wrong ID or the territory has been deleted
+				</English>
+			</Key>
+
+			<Key ID="STR_ESM_Add_MissingAccess">
+				<English>
+					%1, you do not have permission to add people to this territory
+				</English>
+			</Key>
+
+			<Key ID="STR_ESM_Add_MissingAccess_Admin">
+				<English>
+					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't have permission!
+				</English>
 			</Key>
 		</Container>
 	</Package>
