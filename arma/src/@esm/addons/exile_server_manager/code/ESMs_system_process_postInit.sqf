@@ -28,20 +28,23 @@ private _data = get!(_this, "data");
 
 if (nil?(_id) || { nil?(_data) }) exitWith { nil };
 
+private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")) call ESMs_util_hashmap_fromArray;
+
 // Bind the variables from CfgESM >> globalVariables, retrieving the values from _data
 {
-	private _variableName = _x;
-	private _value = get!(_data, _variableName);
+	private _attributeName = _x;
+	private _variableName = _y;
 
+	private _value = get!(_data, _attributeName);
 	if (nil?(_value)) then {
-		error!("Failed to a value for %1", _variableName);
+		error!("Failed to a value for %1", _attributeName);
 		continue;
 	};
 
 	debug!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
 	missionNameSpace setVariable [_variableName, _value];
 }
-forEach (getArray (configFile >> "CfgESM" >> "globalVariables"));
+forEach _variablesHash;
 
 // Cache which extDB extension is being used. Makes calling extDB easier.
 ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];
