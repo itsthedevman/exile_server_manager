@@ -27,7 +27,6 @@ use config::Config;
 use config::Env;
 
 pub use bot::TOKEN_MANAGER;
-pub use error::*;
 pub use esm_message::*;
 pub use macros::*;
 pub use request::*;

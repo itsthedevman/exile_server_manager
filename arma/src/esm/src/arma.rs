@@ -6,7 +6,7 @@ use std::sync::Mutex as SyncMutex;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
-    static ref DATABASE: Database = Database::new();
+    pub static ref DATABASE: Database = Database::new();
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> = Arc::new(SyncMutex::new(None));
 }
 
@@ -49,7 +49,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
     trace!("[execute] Executing {name} for message id:{message_id}");
 
     let result = match name {
-        "query" => DATABASE.query(message).await,
+        "query" => database_query(message).await,
         "post_initialization" => post_initialization(message).await,
         "call_function" => call_arma_function(message).await,
         n => Err(format!("[execute] Cannot process - Arma does not respond to method {n}").into()),
@@ -69,9 +69,19 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
     }
 }
 
-fn send_to_arma(function: &str, message: Message) -> ESMResult {
+fn send_to_arma(message: Message) -> ESMResult {
+    let function = message.data.sqf_function();
+    if function.is_empty() {
+        error!(
+            "[send_to_arma] Dropping message with data type {:?} since it does not have a registered SQF function",
+            message.data
+        );
+
+        return Err("".into());
+    }
+
     trace!(
-        r#"[send]
+        r#"[send_to_arma]
             function: {}
             message: {}
         "#,
@@ -90,9 +100,10 @@ fn send_to_arma(function: &str, message: Message) -> ESMResult {
             ctx.callback_data("exile_server_manager", function, Some(message));
             Ok(())
         }
-        None => {
-            Err("[send] Cannot send - We are not connected to the Arma server at the moment".into())
-        }
+        None => Err(
+            "[send_to_arma] Cannot send - We are not connected to the Arma server at the moment"
+                .into(),
+        ),
     }
 }
 
@@ -122,7 +133,7 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     data.version = env!("CARGO_PKG_VERSION").to_string();
     data.extdb_version = DATABASE.extdb_version;
 
-    send_to_arma("ESMs_system_process_postInit", message)?;
+    send_to_arma(message)?;
 
     info!("[post_initialization] ✅ Connection established with esm_bot");
     crate::READY.store(true, Ordering::SeqCst);
@@ -130,9 +141,9 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     Ok(None)
 }
 
-async fn call_arma_function(message: Message) -> MessageResult {
+async fn call_arma_function(mut message: Message) -> MessageResult {
     let Metadata::Command(ref metadata) = message.metadata else {
-        return Err("".into());
+        return Err("[call_arma_function] Invalid data type provided".into());
     };
 
     // First, check to make sure the player has joined this server
@@ -159,20 +170,30 @@ async fn call_arma_function(message: Message) -> MessageResult {
         }
     }
 
-    // Now process the message
-    let function_name = match message.data {
-        Data::Reward(_) => "ESMs_command_reward",
-        Data::Sqf(_) => "ESMs_command_sqf",
-        _ => {
-            return Err(format!(
-                "[call_extension] This is a bug. Data type \"{:?}\" has not been implemented yet",
-                message.data
-            )
-            .into())
-        }
-    };
+    // If the data has a territory_id, check it against the database
+    if let Some(territory_id) = message.data.territory_id() {
+        let db_id = DATABASE.decode_territory_id(territory_id).await?;
 
-    send_to_arma(function_name, message)?;
+        warn!("TERRITORY_ID: Replacing {territory_id} with {db_id}");
+
+        territory_id.clear();
+        territory_id.push_str(&db_id);
+    }
+
+    // Now process the message
+    send_to_arma(message)?;
 
     Ok(None)
+}
+
+async fn database_query(message: Message) -> MessageResult {
+    let Data::Query(ref query) = message.data else {
+        return Err("[query] Invalid data type".into());
+    };
+
+    let query_result = DATABASE.query(&query.name, &query.arguments).await;
+    match query_result {
+        Ok(results) => Ok(Some(message.set_data(Data::QueryResult(results)))),
+        Err(e) => Err(e),
+    }
 }

@@ -318,7 +318,7 @@ fn on_disconnect() {
 
     let time_to_wait = Duration::from_secs_f32(time_to_wait);
     warn!(
-        "[on_disconnect] ⚠ Lost connection to the bot - Attempting reconnect in {:?}",
+        "[on_disconnect] ⚠ *Click* Your call with the bot was lost. Attempting to call back in {:?}",
         time_to_wait
     );
 

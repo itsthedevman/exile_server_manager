@@ -1,6 +1,7 @@
 use crate::*;
 use ini::Ini;
 use mysql_async::{params, prelude::Queryable, Conn, Opts, Pool, Result as SQLResult};
+use parking_lot::RwLock;
 use serde::Serialize;
 use std::{collections::HashMap, path::Path};
 
@@ -9,6 +10,7 @@ type DatabaseResult = Result<QueryResult, Error>;
 #[derive(Clone)]
 pub struct Database {
     pub extdb_version: u8,
+    pub hasher: Hasher,
     connection_pool: Arc<Mutex<Option<Pool>>>,
 }
 
@@ -30,11 +32,11 @@ impl Default for Database {
         Database {
             extdb_version,
             connection_pool: Arc::new(Mutex::new(None)),
+            hasher: Hasher::new(),
         }
     }
 }
 
-// Unfortunately, due to the limitation with message-io, this cannot use an async ORM.
 impl Database {
     pub fn new() -> Self {
         Self::default()
@@ -77,31 +79,6 @@ impl Database {
         }
     }
 
-    pub async fn query(&self, message: Message) -> MessageResult {
-        let Data::Query(ref query) = message.data else {
-            return Err("".into());
-        };
-
-        let name = &query.name;
-        let arguments = &query.arguments;
-
-        let query_result = match name.as_str() {
-            "reward_territories" => self.reward_territories(arguments).await,
-            _ => {
-                return Err(format!(
-                    "[query] Unexpected query \"{}\" with arguments {:?}",
-                    name, arguments
-                )
-                .into())
-            }
-        };
-
-        match query_result {
-            Ok(r) => Ok(Some(message.set_data(Data::QueryResult(r)))),
-            Err(e) => Err(e),
-        }
-    }
-
     pub async fn check_account_exists(&self, player_uid: &str) -> Result<bool, Error> {
         let mut connection = self.connection().await?;
 
@@ -119,7 +96,57 @@ impl Database {
         }
     }
 
-    pub async fn reward_territories(&self, arguments: &HashMap<String, String>) -> DatabaseResult {
+    pub async fn decode_territory_id(&self, territory_id: &String) -> Result<String, Error> {
+        let mut connection = self.connection().await?;
+
+        if let Some(id) = self.hasher.decode(&territory_id) {
+            return Ok(id.to_string());
+        }
+
+        let result: SQLResult<Option<String>> = connection
+            .exec_first(
+                r#"
+                SELECT id
+                FROM territory
+                WHERE esm_custom_id = :territory_id
+                ORDER BY esm_custom_id
+                "#,
+                params! { "territory_id" => territory_id },
+            )
+            .await;
+
+        match result {
+            Ok(r) => match r {
+                Some(v) => Ok(v),
+                None => Err(Error {
+                    error_type: ErrorType::Code,
+                    error_content: String::from("territory_id_does_not_exist"),
+                }),
+            },
+            Err(e) => Err(e.to_string().into()),
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Command related queries
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    pub async fn query(&self, name: &str, arguments: &HashMap<String, String>) -> DatabaseResult {
+        let query_result = match name {
+            "reward_territories" => self.reward_territories(arguments).await,
+            _ => {
+                return Err(format!(
+                    "[query] Unexpected query \"{}\" with arguments {:?}",
+                    name, arguments
+                )
+                .into())
+            }
+        };
+
+        query_result
+    }
+
+    async fn reward_territories(&self, arguments: &HashMap<String, String>) -> DatabaseResult {
         let mut connection = self.connection().await?;
 
         let player_uid = match arguments.get("uid") {
@@ -289,5 +316,46 @@ fn extdb_conf_path(base_ini_path: &str) -> String {
     } else {
         // extDB2 is being used
         format!("{}/extdb-conf.ini", base_ini_path)
+    }
+}
+
+#[derive(Clone)]
+pub struct Hasher {
+    builder: Arc<RwLock<harsh::Harsh>>,
+}
+
+impl Hasher {
+    const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
+    const LENGTH: usize = 5;
+
+    pub fn new() -> Self {
+        Hasher {
+            builder: Arc::new(RwLock::new(Self::builder(&random_bs_go!()))),
+        }
+    }
+
+    fn builder(salt: &str) -> harsh::Harsh {
+        harsh::Harsh::builder()
+            .length(Hasher::LENGTH)
+            .alphabet(Hasher::ALPHABET)
+            .salt(salt)
+            .build()
+            .unwrap()
+    }
+
+    pub fn encode(&self, id: u64) -> String {
+        self.builder.read().encode(&[id])
+    }
+
+    pub fn decode(&self, input: &str) -> Option<u64> {
+        let Ok(numbers) = self.builder.read().decode(input) else {
+            return None;
+        };
+
+        numbers.get(0).copied()
+    }
+
+    pub fn set_salt(&self, salt: &str) {
+        *self.builder.write() = Self::builder(salt)
     }
 }

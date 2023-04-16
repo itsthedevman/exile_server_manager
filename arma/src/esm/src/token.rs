@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read};
 
-use crate::*;
+use crate::{arma::DATABASE, *};
 use serde::{Deserialize, Serialize};
 
 /// Represents the esm.key file
@@ -132,6 +132,8 @@ impl TokenManager {
             Ok(_) => {}
             Err(e) => error!("[reload] ❌ {}", e),
         }
+
+        DATABASE.hasher.set_salt(&self.token.secret);
 
         info!("[reload] ✅ Token was reloaded");
         self
