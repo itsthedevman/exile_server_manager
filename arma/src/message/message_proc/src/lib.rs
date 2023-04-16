@@ -37,6 +37,9 @@ struct ArmaVariantReceiver {
 #[darling(attributes(arma))]
 struct ArmaFieldReceiver {
     ident: Option<syn::Ident>,
+
+    #[darling(default)]
+    skip: bool,
 }
 
 impl ToTokens for ArmaReceiver {
@@ -55,8 +58,7 @@ impl ToTokens for ArmaReceiver {
 }
 
 fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVariantReceiver>) {
-    // One set for IntoArma: Data::Add(a) => a.to_arma()
-    // Only matters for variants with value
+    // Creates to_arma() calls for the variants
     let into_arma = variant
         .iter()
         .filter_map(|v| {
@@ -72,6 +74,7 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
         })
         .collect::<Vec<_>>();
 
+    // Links the enum variants to an SQF function, configurable via #[arma(function = "NAME")]
     let sqf_functions = variant
         .iter()
         .filter_map(|v| {
@@ -88,6 +91,39 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
         })
         .collect::<Vec<_>>();
 
+    // Forwards the attributes call to the internal value
+    let attributes = variant
+        .iter()
+        .filter_map(|v| {
+            if v.fields.is_empty() {
+                return None;
+            }
+
+            let variant = &v.ident;
+
+            Some(quote! {
+                #ident::#variant(ref o) => o.attributes()
+            })
+        })
+        .collect::<Vec<_>>();
+
+    // TODO
+    let territory_id = variant
+        .iter()
+        .filter_map(|v| {
+            if v.fields.is_empty() {
+                return None;
+            }
+
+            let variant = &v.ident;
+
+            Some(quote! {
+                #ident::#variant(ref mut o) => o.territory_id()
+            })
+        })
+        .collect::<Vec<_>>();
+
+    // Tokens!
     tokens.extend(quote! {
         impl IntoArma for #ident {
             fn to_arma(&self) -> ArmaValue {
@@ -105,15 +141,44 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
                     _ => "",
                 }
             }
+
+            pub fn attributes(&self) -> &[&str] {
+                match self {
+                    #(#attributes,)*
+                    _ => &[],
+                }
+            }
+
+            pub fn territory_id(&mut self) -> Option<&mut String> {
+                match self {
+                    #(#territory_id,)*
+                    _ => None,
+                }
+            }
         }
     });
 }
 
 fn arma_struct(ident: &Ident, tokens: &mut TokenStream2, fields: &Vec<&ArmaFieldReceiver>) {
-    let arguments = fields
+    let to_arma = fields
         .iter()
-        .enumerate()
-        .filter_map(|(_i, field)| {
+        .filter_map(|field| {
+            if field.ident.is_none() {
+                return None;
+            }
+
+            if field.skip {
+                return None;
+            }
+
+            Some(field.ident.as_ref().unwrap().to_owned())
+        })
+        .collect::<Vec<_>>();
+
+    // For the attributes method. Includes all fields
+    let attributes = fields
+        .iter()
+        .filter_map(|field| {
             if field.ident.is_none() {
                 return None;
             }
@@ -122,16 +187,39 @@ fn arma_struct(ident: &Ident, tokens: &mut TokenStream2, fields: &Vec<&ArmaField
         })
         .collect::<Vec<_>>();
 
+    let mut territory_id = quote! { None };
+
+    fields.iter().for_each(|field| {
+        let Some(i) = field.ident.as_ref() else {
+            return;
+        };
+
+        if i == "territory_id" {
+            territory_id = quote! { Some(&mut self.territory_id) };
+            return;
+        }
+    });
+
     tokens.extend(quote! {
         impl arma_rs::IntoArma for #ident {
             fn to_arma(&self) -> arma_rs::Value {
                 let mut vec: Vec<Vec<arma_rs::Value>> = Vec::new();
 
                 #(
-                    vec.push(vec![stringify!(#arguments).to_arma(), self.#arguments.to_arma()]);
+                    vec.push(vec![stringify!(#to_arma).to_arma(), self.#to_arma.to_arma()]);
                 )*
 
                 vec.to_arma()
+            }
+        }
+
+        impl #ident {
+            pub fn attributes(&self) -> &[&str] {
+                &[#(stringify!(#attributes)),*]
+            }
+
+            pub fn territory_id(&mut self) -> Option<&mut String> {
+                #territory_id
             }
         }
     });

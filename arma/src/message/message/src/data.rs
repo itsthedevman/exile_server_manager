@@ -133,14 +133,15 @@ impl Init {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct PostInit {
     // Set by the client
     #[serde(default)]
     pub build_number: String,
-
     pub community_id: String,
-    pub extdb_path: String, // This is only used internally between esm_bot and esm_arma
+
+    #[arma(skip)] // Skip passing this value through to Arma
+    pub extdb_path: String,
 
     #[serde(default)]
     pub extdb_version: u8,
@@ -171,41 +172,6 @@ pub struct PostInit {
     // Set by the client
     #[serde(default)]
     pub version: String,
-}
-
-impl arma_rs::IntoArma for PostInit {
-    // Custom implementation because it doesn't use all of the fields
-    fn to_arma(&self) -> arma_rs::Value {
-        serde_json::json!({
-            "ESM_BuildNumber": self.build_number,
-            "ESM_CommunityID": self.community_id,
-            "ESM_ExtDBVersion": self.extdb_version,
-            "ESM_Gambling_Modifier": self.gambling_modifier,
-            "ESM_Gambling_PayoutBase": self.gambling_payout_base,
-            "ESM_Gambling_PayoutRandomizerMax": self.gambling_payout_randomizer_max,
-            "ESM_Gambling_PayoutRandomizerMid": self.gambling_payout_randomizer_mid,
-            "ESM_Gambling_PayoutRandomizerMin": self.gambling_payout_randomizer_min,
-            "ESM_Gambling_WinPercentage": self.gambling_win_percentage,
-            "ESM_Logging_AddPlayerToTerritory": self.logging_add_player_to_territory,
-            "ESM_Logging_DemotePlayer": self.logging_demote_player,
-            "ESM_Logging_Exec": self.logging_exec,
-            "ESM_Logging_Gamble": self.logging_gamble,
-            "ESM_Logging_ModifyPlayer": self.logging_modify_player,
-            "ESM_Logging_PayTerritory": self.logging_pay_territory,
-            "ESM_Logging_PromotePlayer": self.logging_promote_player,
-            "ESM_Logging_RemovePlayerFromTerritory": self.logging_remove_player_from_territory,
-            "ESM_Logging_RewardPlayer": self.logging_reward_player,
-            "ESM_Logging_TransferPoptabs": self.logging_transfer_poptabs,
-            "ESM_Logging_UpgradeTerritory": self.logging_upgrade_territory,
-            "ESM_LoggingChannelID": self.logging_channel_id,
-            "ESM_ServerID": self.server_id,
-            "ESM_Taxes_TerritoryPayment": self.taxes_territory_payment,
-            "ESM_Taxes_TerritoryUpgrade": self.taxes_territory_upgrade,
-            "ESM_TerritoryAdminUIDs": self.territory_admin_uids,
-            "ESM_Version": self.version,
-        })
-        .to_arma()
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
