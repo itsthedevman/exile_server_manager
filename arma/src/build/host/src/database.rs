@@ -99,24 +99,51 @@ impl Database {
 
         format!(
             r#"
-                DELETE FROM account;
-                DELETE FROM player;
-                DELETE FROM construction;
-                DELETE FROM container;
-                DELETE FROM territory;
+CALL PROC_DROP_FOREIGN_KEY('account', 'account_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('clan', 'clan_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('clan_map_marker', 'clan_map_marker_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('construction', 'construction_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('construction', 'construction_ibfk_2');
+CALL PROC_DROP_FOREIGN_KEY('container', 'container_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('container', 'container_ibfk_2');
+CALL PROC_DROP_FOREIGN_KEY('player', 'player_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('territory', 'territory_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('territory', 'territory_ibfk_2');
+CALL PROC_DROP_FOREIGN_KEY('vehicle', 'vehicle_ibfk_1');
+CALL PROC_DROP_FOREIGN_KEY('vehicle', 'vehicle_ibfk_2');
 
-                INSERT INTO account VALUES
-                {accounts};
+TRUNCATE TABLE account;
+TRUNCATE TABLE player;
+TRUNCATE TABLE construction;
+TRUNCATE TABLE container;
+TRUNCATE TABLE territory;
 
-                INSERT INTO player VALUES
-                {players};
+ALTER TABLE account ADD CONSTRAINT `account_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE SET NULL;
+ALTER TABLE clan ADD CONSTRAINT `clan_ibfk_1` FOREIGN KEY (`leader_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE clan_map_marker ADD CONSTRAINT `clan_map_marker_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE CASCADE;
+ALTER TABLE construction ADD CONSTRAINT `construction_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE construction ADD CONSTRAINT `construction_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE;
+ALTER TABLE container ADD CONSTRAINT `container_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE container ADD CONSTRAINT `container_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE;
+ALTER TABLE player ADD CONSTRAINT `player_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE territory ADD CONSTRAINT `territory_ibfk_1` FOREIGN KEY (`owner_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE territory ADD CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stolen_by_uid`) REFERENCES `account` (`uid`) ON DELETE SET NULL;
+ALTER TABLE vehicle ADD CONSTRAINT `vehicle_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
+ALTER TABLE vehicle ADD CONSTRAINT `vehicle_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE;
 
-                INSERT INTO territory VALUES
-                {territories};
+INSERT INTO account VALUES
+{accounts};
 
-                INSERT INTO construction VALUES
-                {constructions};
+INSERT INTO player VALUES
+{players};
+
+INSERT INTO territory VALUES
+{territories};
+
+INSERT INTO construction VALUES
+{constructions};
             "#,
+            // db_name = config.mysql_database_name,
             accounts = map_to_string(accounts),
             players = map_to_string(players),
             territories = map_to_string(territories),
