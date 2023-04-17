@@ -726,8 +726,6 @@ cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}
 
 pub fn seed_database(builder: &mut Builder) -> BuildResult {
     let sql = Database::generate_sql(&builder.config);
-    let mut file = std::fs::File::create("foo.txt")?;
-    std::io::Write::write_all(&mut file, &sql.as_bytes())?;
     match builder.build_server.send(Command::Database(sql)) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
