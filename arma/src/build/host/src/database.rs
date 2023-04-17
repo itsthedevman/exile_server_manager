@@ -13,7 +13,7 @@ use crate::config::Config;
 lazy_static! {
     pub static ref FLAG_TEXTURES: &'static [&'static str] = &[
         "exile_assets\\\\texture\\\\flag\\\\flag_mate_bis_co.paa",
-        "exile_assets\\\\texture\\\\flag&\\\\flag_mate_vish_co.paa",
+        "exile_assets\\\\texture\\\\flag\\\\flag_mate_vish_co.paa",
         "exile_assets\\\\texture\\\\flag\\\\flag_mate_hollow_co.paa",
         "exile_assets\\\\texture\\\\flag\\\\flag_mate_legion_ca.paa",
         "exile_assets\\\\texture\\\\flag\\\\flag_mate_21dmd_co.paa",
@@ -131,19 +131,18 @@ ALTER TABLE territory ADD CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stole
 ALTER TABLE vehicle ADD CONSTRAINT `vehicle_ibfk_1` FOREIGN KEY (`account_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE;
 ALTER TABLE vehicle ADD CONSTRAINT `vehicle_ibfk_2` FOREIGN KEY (`territory_id`) REFERENCES `territory` (`id`) ON DELETE CASCADE;
 
-INSERT INTO account VALUES
-{accounts};
+INSERT INTO account
+VALUES {accounts};
 
-INSERT INTO player VALUES
-{players};
+INSERT INTO player
+VALUES {players};
 
-INSERT INTO territory VALUES
-{territories};
+INSERT INTO territory
+VALUES {territories};
 
-INSERT INTO construction VALUES
-{constructions};
+INSERT INTO construction
+VALUES {constructions};
             "#,
-            // db_name = config.mysql_database_name,
             accounts = map_to_string(accounts),
             players = map_to_string(players),
             territories = map_to_string(territories),
@@ -162,7 +161,7 @@ fn map_to_string<T: ToString>(vec: Vec<T>) -> String {
 fn random_timestamp() -> String {
     let current_time = Local::now();
 
-    let start_time = current_time.with_month(1).unwrap().with_day(1).unwrap();
+    let start_time = current_time; // Don't use a time in the past or Exile will error loading the territory
     let end_time = current_time.with_month(12).unwrap().with_day(31).unwrap();
 
     let random_time: DateTime<Utc> =
