@@ -5,7 +5,6 @@ module ESM
     def self.run!
       Thread.new {
         super
-        quit!
       }
     end
 

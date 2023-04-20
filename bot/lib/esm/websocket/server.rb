@@ -36,7 +36,7 @@ module ESM
       def self.stop
         # Trigger a fake on_close event to notify communities that the connection lost is because ESM is rebooting.
         # EventMachine will cause a Ruby SegFault if all connections are closed in a loop.
-        ESM::Websocket.connections { |_server_id, connection| connection.send(:on_close) }
+        ESM::Websocket.connections.each { |_server_id, connection| connection.send(:on_close) }
 
         ESM::Websocket::Request::Overseer.die
         @server&.stop
