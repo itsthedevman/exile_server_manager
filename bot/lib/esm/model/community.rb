@@ -28,7 +28,7 @@ module ESM
     has_many :cooldowns, dependent: :destroy
     has_many :notifications, dependent: :destroy
     has_many :servers, dependent: :destroy
-    has_many :user_notification_routes, dependent: :destroy, foreign_key: :destination_community_id
+    has_many :user_notification_routes, foreign_key: :destination_community_id, dependent: :destroy
 
     alias_attribute :name, :community_name
 

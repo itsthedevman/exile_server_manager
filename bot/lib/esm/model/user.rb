@@ -14,13 +14,14 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
-    has_one :user_steam_data, dependent: :destroy
+    has_many :cooldowns, dependent: :nullify
+    has_many :logs, class_name: "Log", foreign_key: "requestors_user_id", dependent: :destroy
+    has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request", dependent: :destroy
+    has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request", dependent: :destroy
     has_many :user_gamble_stats, dependent: :destroy
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy
-    has_many :cooldowns
-    has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request"
-    has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request"
+    has_one :user_steam_data, dependent: :destroy
 
     attr_accessor :guild_type, :role_id, :connected if ESM.env.test?
 

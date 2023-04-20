@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_03_26_003042) do
+ActiveRecord::Schema.define(version: 2023_04_20_200747) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
@@ -350,21 +350,24 @@ ActiveRecord::Schema.define(version: 2023_03_26_003042) do
     t.index ["steam_uid"], name: "index_users_on_steam_uid"
   end
 
-  add_foreign_key "command_configurations", "communities"
-  add_foreign_key "log_entries", "logs"
-  add_foreign_key "logs", "servers"
-  add_foreign_key "requests", "users", column: "requestee_user_id"
-  add_foreign_key "requests", "users", column: "requestor_user_id"
-  add_foreign_key "server_mods", "servers"
-  add_foreign_key "server_rewards", "servers"
-  add_foreign_key "server_settings", "servers"
-  add_foreign_key "servers", "communities"
-  add_foreign_key "territories", "servers"
-  add_foreign_key "user_gamble_stats", "servers"
-  add_foreign_key "user_gamble_stats", "users"
-  add_foreign_key "user_notification_preferences", "servers"
-  add_foreign_key "user_notification_preferences", "users"
-  add_foreign_key "user_notification_routes", "communities", column: "destination_community_id"
-  add_foreign_key "user_notification_routes", "users"
-  add_foreign_key "user_steam_data", "users"
+  add_foreign_key "command_configurations", "communities", on_delete: :cascade
+  add_foreign_key "cooldowns", "communities", on_delete: :cascade
+  add_foreign_key "cooldowns", "servers", on_delete: :cascade
+  add_foreign_key "cooldowns", "users", on_delete: :nullify
+  add_foreign_key "log_entries", "logs", on_delete: :cascade
+  add_foreign_key "logs", "servers", on_delete: :cascade
+  add_foreign_key "requests", "users", column: "requestee_user_id", on_delete: :cascade
+  add_foreign_key "requests", "users", column: "requestor_user_id", on_delete: :cascade
+  add_foreign_key "server_mods", "servers", on_delete: :cascade
+  add_foreign_key "server_rewards", "servers", on_delete: :cascade
+  add_foreign_key "server_settings", "servers", on_delete: :cascade
+  add_foreign_key "servers", "communities", on_delete: :cascade
+  add_foreign_key "territories", "servers", on_delete: :cascade
+  add_foreign_key "user_gamble_stats", "servers", on_delete: :cascade
+  add_foreign_key "user_gamble_stats", "users", on_delete: :cascade
+  add_foreign_key "user_notification_preferences", "servers", on_delete: :cascade
+  add_foreign_key "user_notification_preferences", "users", on_delete: :cascade
+  add_foreign_key "user_notification_routes", "communities", column: "destination_community_id", on_delete: :cascade
+  add_foreign_key "user_notification_routes", "users", on_delete: :cascade
+  add_foreign_key "user_steam_data", "users", on_delete: :cascade
 end
