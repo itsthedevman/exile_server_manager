@@ -34,6 +34,7 @@ FactoryBot.define do
 
       server.server_setting = create(:server_setting, server_id: server.id)
       server.server_rewards << create(:server_reward, server_id: server.id)
+      server.server_mods << create(:server_mod, server_id: server.id)
 
       server.save!
 
