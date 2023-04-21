@@ -59,12 +59,38 @@ impl std::fmt::Display for Data {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum Territory {
+    Encoded { id: String },
+    Decoded { id: String, database_id: String },
+}
+
+impl IntoArma for Territory {
+    fn to_arma(&self) -> ArmaValue {
+        match self {
+            Territory::Encoded { id } => id.to_arma(),
+            Territory::Decoded { id, database_id } => serde_json::json!({
+                "id": id,
+                "database_id": database_id
+            })
+            .to_arma(),
+        }
+    }
+}
+
+impl Default for Territory {
+    fn default() -> Self {
+        Self::Encoded { id: "".into() }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct Init {
     pub extension_version: String,
     pub price_per_object: NumberString,
@@ -74,21 +100,6 @@ pub struct Init {
     pub territory_lifetime: NumberString,
     pub vg_enabled: bool,
     pub vg_max_sizes: String,
-}
-
-impl Default for Init {
-    fn default() -> Self {
-        Init {
-            extension_version: "".into(),
-            price_per_object: "".into(),
-            server_name: "".into(),
-            server_start_time: Utc::now(),
-            territory_data: "".into(),
-            territory_lifetime: "".into(),
-            vg_enabled: false,
-            vg_max_sizes: "".into(),
-        }
-    }
 }
 
 impl Init {
@@ -133,7 +144,7 @@ impl Init {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct PostInit {
     // Set by the client
     #[serde(default)]
@@ -174,7 +185,7 @@ pub struct PostInit {
     pub version: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct Reward {
     pub items: Option<HashMap<String, NumberString>>,
     pub locker_poptabs: Option<NumberString>,
@@ -183,13 +194,13 @@ pub struct Reward {
     pub vehicles: Option<Vec<HashMap<String, String>>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct Sqf {
     pub execute_on: String,
     pub code: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct SqfResult {
     pub result: Option<String>,
 }
@@ -218,7 +229,7 @@ pub struct Event {
 // get_payment_count
 // increment_payment_counter
 // reset_payment_counter
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct Query {
     pub arguments: HashMap<String, String>,
     pub name: String,
@@ -243,7 +254,7 @@ pub struct SendToChannel {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Arma)]
 pub struct Add {
-    pub territory_id: String,
+    pub territory: Territory,
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -107,8 +107,8 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
         })
         .collect::<Vec<_>>();
 
-    // TODO
-    let territory_id = variant
+    // Forwards territory_id through to the underlying struct
+    let territory = variant
         .iter()
         .filter_map(|v| {
             if v.fields.is_empty() {
@@ -118,7 +118,7 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
             let variant = &v.ident;
 
             Some(quote! {
-                #ident::#variant(ref mut o) => o.territory_id()
+                #ident::#variant(ref mut o) => o.territory()
             })
         })
         .collect::<Vec<_>>();
@@ -149,9 +149,9 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
                 }
             }
 
-            pub fn territory_id(&mut self) -> Option<&mut String> {
+            pub fn territory(&mut self) -> Option<&mut crate::Territory> {
                 match self {
-                    #(#territory_id,)*
+                    #(#territory,)*
                     _ => None,
                 }
             }
@@ -187,15 +187,15 @@ fn arma_struct(ident: &Ident, tokens: &mut TokenStream2, fields: &Vec<&ArmaField
         })
         .collect::<Vec<_>>();
 
-    let mut territory_id = quote! { None };
+    let mut territory = quote! { None };
 
     fields.iter().for_each(|field| {
         let Some(i) = field.ident.as_ref() else {
             return;
         };
 
-        if i == "territory_id" {
-            territory_id = quote! { Some(&mut self.territory_id) };
+        if i == "territory" {
+            territory = quote! { Some(&mut self.territory) };
             return;
         }
     });
@@ -218,8 +218,8 @@ fn arma_struct(ident: &Ident, tokens: &mut TokenStream2, fields: &Vec<&ArmaField
                 &[#(stringify!(#attributes)),*]
             }
 
-            pub fn territory_id(&mut self) -> Option<&mut String> {
-                #territory_id
+            pub fn territory(&mut self) -> Option<&mut crate::Territory> {
+                #territory
             }
         }
     });
