@@ -171,13 +171,18 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     }
 
     // If the data has a territory_id, check it against the database
-    if let Some(territory_id) = message.data.territory_id() {
-        let db_id = DATABASE.decode_territory_id(territory_id).await?;
+    if let Some(territory) = message.data.territory() {
+        let Territory::Encoded { id } = territory else {
+            return Err(format!("[call_arma_function] TerritoryID parsed into {:?}", territory).into());
+        };
 
-        warn!("TERRITORY_ID: Replacing {territory_id} with {db_id}");
+        // Replace with the decoded one
+        *territory = Territory::Decoded {
+            id: id.to_string(),
+            database_id: DATABASE.decode_territory_id(&id).await?,
+        };
 
-        territory_id.clear();
-        territory_id.push_str(&db_id);
+        trace!("[call_arma_function] Decoded territory ID: {territory:#?}");
     }
 
     // Now process the message
