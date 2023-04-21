@@ -33,7 +33,6 @@ private _functionName = _this select 0;
 private _data = _this select 1;
 
 // Make sure the function is compiled
-// TODO: Ensure the function is one of ESMs functions
 private _function = missionNameSpace getVariable [_functionName, ""];
 if (type?(_function, STRING)) exitWith
 {

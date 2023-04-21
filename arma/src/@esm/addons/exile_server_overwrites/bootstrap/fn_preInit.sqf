@@ -42,7 +42,7 @@ forEach
     // OPC!
     ["ExileServer_system_network_event_onPlayerConnected", "exile_server_player_connected"],
 
-    // For testing purposes
+    // For testing purposes and only loads if esm_test.pbo exists and contains this file
     ["ExileClient_util_player_objectFromPlayerUID", "esm_test"]
 ];
 

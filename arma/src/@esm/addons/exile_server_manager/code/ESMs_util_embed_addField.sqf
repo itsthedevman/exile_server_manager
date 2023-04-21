@@ -29,12 +29,10 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-params [
-	["_embed", [rv_type!(HASH)]],
-	["_name", [rv_type!(STRING)]],
-	["_value", [rv_type!(STRING)]],
-	["_inline", [rv_type!(BOOL), rv_type!(NIL)], false]
-];
+private _embed = _this select 0;
+private _name = _this select 1;
+private _value = _this select 2;
+private _inline = param [3, false];
 
 private _fields = get!(_embed, "fields", []);
 _fields pushBack (["name", "value", "inline"] createHashMapFromArray [_name, _value, _inline isEqualTo true]);
