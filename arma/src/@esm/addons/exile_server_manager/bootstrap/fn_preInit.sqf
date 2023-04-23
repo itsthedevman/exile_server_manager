@@ -53,7 +53,7 @@ Co-author:
     {
         diag_log (
             format [
-                "ERROR: Override of %1 in CfgExileCustomCode points to a non-existent file: %2. Defaulting to vanilla Exile Server Manager code!",
+                "ERROR | Override of %1 in CfgExileCustomCode points to a non-existent file: %2. Defaulting to vanilla Exile Server Manager code!",
                 _function,
                 _file
             ]
@@ -84,8 +84,12 @@ forEach
     define_fn!("ESMs_util_array_isValidHashmap"),
     define_fn!("ESMs_util_array_map"),
     define_fn!("ESMs_util_command_handleException"),
+    define_fn!("ESMs_util_command_handleSuccess"),
     define_fn!("ESMs_util_embed_addField"),
     define_fn!("ESMs_util_embed_create"),
+    define_fn!("ESMs_util_embed_setColor"),
+    define_fn!("ESMs_util_embed_setDescription"),
+    define_fn!("ESMs_util_embed_setTitle"),
     define_fn!("ESMs_util_hashmap_dig"),
     define_fn!("ESMs_util_hashmap_fromArray"),
     define_fn!("ESMs_util_hashmap_key"),

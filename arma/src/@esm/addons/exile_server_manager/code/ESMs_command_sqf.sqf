@@ -70,32 +70,57 @@ try
 
 			if (isNull _targetObject) then
 			{
+				private _playerMention = dig!(_metadata, "player", "discord_mention");
 				private _targetMention = dig!(_metadata, "target", "discord_mention");
-				throw format[localize "$STR_ESM_Sqf_NullTarget", _targetMention, _targetUID, ESM_ServerID];
+
+				// This can be executed on a player that is not registered with ESM
+				if (nil?(_targetMention)) then
+				{
+					_targetMention = _targetUID;
+				};
+
+				throw localize!("Sqf_NullTarget", _playerMention, _targetMention, ESM_ServerID);
 			};
 
 			_code remoteExec ["call", owner _targetObject];
 		};
 	};
 
+	// Ensure the result is a string, unless it's nil
 	if (!nil?(_result) && { !type?(_result, STRING) }) then
 	{
 		_result = str(_result);
 	};
 
+	// All done!
 	[
-		_id,
-		"arma",
-		"sqf_result",
+		// Response
 		[
-			["result", if (nil?(_result)) then { nil } else { _result }]
+			_id,
+			"arma",
+			"sqf_result",
+			[
+				["result", returns_nil!(_result)]
+			]
+		],
+
+		// Log the following?
+		ESM_Logging_Exec,
+
+		// Log this shizz
+		[
+			["title", localize!("Success")],
+			["description", [
+				["code", str(_code)],
+				["result", returns_nil!(_result)]
+			]]
 		]
 	]
-	spawn ESMs_system_message_respond_to;
+	call ESMs_util_command_handleSuccess;
 }
 catch
 {
-	[_id, _exception] call ESMs_system_message_respond_withError;
+	[_id, _exception, file_name!(), ESM_Logging_Exec] call ESMs_util_command_handleException;
 };
 
 nil
