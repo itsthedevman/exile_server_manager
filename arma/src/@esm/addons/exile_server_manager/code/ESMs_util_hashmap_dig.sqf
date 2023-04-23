@@ -30,8 +30,9 @@ Author:
 ---------------------------------------------------------------------------- */
 
 private _hashMap = _this select 0;
-private _keys = _this select [1, count(_this)];
-private _lastIndex = count(_keys) - 1;
+private _total = count(_this);
+private _keys = _this select [1, _total];
+private _lastIndex = _total - 2;
 
 private _result = {
 	private _key = _x;
