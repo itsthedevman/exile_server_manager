@@ -123,6 +123,24 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
         })
         .collect::<Vec<_>>();
 
+    // The name of the enum without the content
+    let names = variant
+        .iter()
+        .filter_map(|v| {
+            let variant = &v.ident;
+
+            if v.fields.is_empty() {
+                Some(quote! {
+                    #ident::#variant => stringify!(#variant)
+                })
+            } else {
+                Some(quote! {
+                    #ident::#variant(_) => stringify!(#variant)
+                })
+            }
+        })
+        .collect::<Vec<_>>();
+
     // Tokens!
     tokens.extend(quote! {
         impl IntoArma for #ident {
@@ -153,6 +171,13 @@ fn arma_enum(ident: &Ident, tokens: &mut TokenStream2, variant: &Vec<&ArmaVarian
                 match self {
                     #(#territory,)*
                     _ => None,
+                }
+            }
+
+            pub fn name(&self) -> &str {
+                match self {
+                    #(#names,)*
+                    _ => "",
                 }
             }
         }
