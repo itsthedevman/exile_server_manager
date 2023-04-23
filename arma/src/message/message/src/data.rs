@@ -63,7 +63,7 @@ impl std::fmt::Display for Data {
 #[serde(rename_all = "snake_case")]
 pub enum Territory {
     Encoded { id: String },
-    Decoded { id: String, database_id: String },
+    Decoded { id: String, database_id: u64 },
 }
 
 impl IntoArma for Territory {
@@ -149,6 +149,7 @@ pub struct PostInit {
     // Set by the client
     #[serde(default)]
     pub build_number: String,
+    pub command_prefix: String,
     pub community_id: String,
 
     #[arma(skip)] // Skip passing this value through to Arma

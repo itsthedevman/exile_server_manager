@@ -96,14 +96,14 @@ impl Database {
         }
     }
 
-    pub async fn decode_territory_id(&self, territory_id: &String) -> Result<String, Error> {
+    pub async fn decode_territory_id(&self, territory_id: &String) -> Result<u64, Error> {
         let mut connection = self.connection().await?;
 
         if let Some(id) = self.hasher.decode(&territory_id) {
-            return Ok(id.to_string());
+            return Ok(id);
         }
 
-        let result: SQLResult<Option<String>> = connection
+        let result: SQLResult<Option<u64>> = connection
             .exec_first(
                 r#"
                 SELECT id
