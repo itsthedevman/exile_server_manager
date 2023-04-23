@@ -1,63 +1,200 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project name="ESM">
-	<Package name="exile_server_manager">
+	<Package name="Exile_Server_Manager">
+		<Container name="Words">
+			<!-- None -->
+			<Key ID="STR_ESM_Word_Success">
+				<English>
+					Success
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Word_Territory">
+				<English>
+					Territory
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Word_Player">
+				<English>
+					Player
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Word_Target">
+				<English>
+					Target
+				</English>
+			</Key>
+		</Container>
+
+		<!--
+			General messages
+		-->
 		<Container name="General">
+			<!--
+				%1	- Player mention
+				%2 	- Server ID
+			-->
 			<Key ID="STR_ESM_NullPlayer">
 				<English>Hey %1, you must be spawned into `%2` in order to receive your reward</English>
 			</Key>
 
+			<!--
+				%1	- Player mention
+				%2 	- Server ID
+			-->
 			<Key ID="STR_ESM_AlivePlayer">
-				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
+				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your
+					reward</English>
 			</Key>
 
+			<!--
+				%1	- Player mention
+				%2 	- Territory ID
+				%3 	- Command prefix
+			-->
 			<Key ID="STR_ESM_NullFlag">
-				<English>Hey %1, I was unable to find that territory. Please double check that you typed the correct ID, and that you have not failed to make a protection payment</English>
+				<English>Hey %1, I was unable to find a territory with the ID of `%2`. Please double
+					check that you typed the correct ID, or run `%3me` </English>
 			</Key>
 		</Container>
 
+		<!--
+			ESM Command: SQF
+		-->
 		<Container name="ESMs_command_sqf">
+			<!--
+				%1 	- Player mention
+				%2	- Target mention, or Target UID (If target is not registered with ESM)
+				%3	- Server ID
+			-->
 			<Key ID="STR_ESM_Sqf_NullTarget">
 				<English>Hey %1, `%2` must be spawned into `%3` before you can execute code on them</English>
 			</Key>
 		</Container>
 
+		<!--
+			ESM Command: Reward
+		-->
 		<Container name="ESMs_command_reward">
+			<!--
+				%1	- Item class name
+			-->
 			<Key ID="STR_ESM_Reward_InvalidItem">
 				<English>
-					**WARNING:** You have `%1` listed as an item reward, however, this item's config does not exist on your server
-					Please double check your spelling, add the required mod, or remove this item from the rewards for this server
+					**WARNING:** You have `%1` listed as an item reward, however, this item's config
+					does not exist on your server
+					Please double check your spelling, add the required mod, or remove this item
+					from the rewards for this server
 				</English>
 			</Key>
 
+			<!--
+				%1	- Player mention
+			-->
 			<Key ID="STR_ESM_Reward_LogDescription">
 				<English>%1 received rewards</English>
 			</Key>
 
+			<!-- None -->
 			<Key ID="STR_ESM_Reward_Log_Field1_Name">
 				<English>Player UID</English>
 			</Key>
 
+			<!-- None -->
 			<Key ID="STR_ESM_Reward_Log_Field2_Name">
 				<English>Receipt</English>
 			</Key>
 		</Container>
 
+		<!--
+			ESM Command: Add
+		-->
 		<Container name="ESMs_command_add">
+			<!--
+				%1	- Player mention
+				%2 	- Player UID
+				%3 	- Target UID
+				%4	- Territory ID
+			-->
 			<Key ID="STR_ESM_Add_NullFlag_Admin">
 				<English>
-					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not exist. This could be because they typed in the wrong ID or the territory has been deleted
+					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not
+					exist. This could be because they typed in the wrong ID or the territory has
+					been deleted
 				</English>
 			</Key>
 
+			<!--
+				%1	- Player mention
+				%2 	- Territory ID
+			-->
 			<Key ID="STR_ESM_Add_MissingAccess">
 				<English>
-					%1, you do not have permission to add people to this territory
+					%1, you do not have permission to add people to `%2`.
 				</English>
 			</Key>
 
+			<!--
+				%1 	- Player mention
+				%2	- Player UID
+				%3	- Territory ID
+			-->
 			<Key ID="STR_ESM_Add_MissingAccess_Admin">
 				<English>
-					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't have permission!
+					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't
+					have permission
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Add_InvalidAdd">
+				<English>
+					%1, you cannot add yourself to this territory
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+				%2	- Player UID
+				%3	- Territory ID
+			-->
+			<Key ID="STR_ESM_Add_InvalidAdd_Admin">
+				<English>
+					%1 (`UID:%2`) tried to add themselves to territory `ID:%3`. Time to go laugh at
+					them!
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Add_InvalidAdd_Owner">
+				<English>
+					%1, you are the owner of this territory, you are already part of this territory,
+					silly
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Add_InvalidAdd_Exists">
+				<English>
+					%1, this player already has build rights
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Add_Log_Description">
+				<English>
+					Player added target to territory
 				</English>
 			</Key>
 		</Container>
