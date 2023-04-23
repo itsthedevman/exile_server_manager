@@ -116,6 +116,12 @@ fn pre_init(
     vg_enabled: bool,
     vg_max_sizes: String,
 ) {
+    // Only allow this method to be called properly once
+    if READY.load(Ordering::SeqCst) {
+        error!("[pre_init] ⚠ This endpoint can only be called once. Perhaps your server is boot looping?");
+        return;
+    }
+
     let timer = std::time::Instant::now();
     debug!(
         r#"[pre_init]
@@ -134,12 +140,6 @@ fn pre_init(
         lazy_static::initialize(&ROUTER);
 
         TOKIO_RUNTIME.block_on(async {
-            // Only allow this method to be called properly once
-            if READY.load(Ordering::SeqCst) {
-                warn!("[pre_init] ⚠ This endpoint can only be called once. Perhaps your server is boot looping?");
-                return;
-            }
-
             info!("[pre_init] Exile Server Manager (extension) is booting");
             info!("[pre_init]   Validating config file...");
 
@@ -191,11 +191,11 @@ fn pre_init(
             };
 
             info!("[pre_init]       Connection established to encryption node {}", random_bs_go!());
-            info!("[pre_init]       Loading profile");
-            info!("[pre_init]       Generating fingerprint: {}",
+            info!("[pre_init]       Connection fingerprint: {}",
                 [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
             );
 
+            info!("[pre_init]       Requesting profile");
             if let Err(e) = BotRequest::initialize(init) {
                 error!("[pre_init] ❌ Boot failed - Failed to initialize connection to the bot");
                 warn!("[pre_init] ⚠ {e}");
@@ -203,16 +203,21 @@ fn pre_init(
                 return;
             };
 
-            info!("[pre_init]       Validation fingerprint: {}",
-                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
-            );
-            info!("[pre_init]       ✅ Boot completed in {:.2?}", timer.elapsed());
+            info!("[pre_init]       Profile loaded");
+            info!("[pre_init]    ✅ Boot completed in {:.2?}", timer.elapsed());
             info!("[pre_init]   ----------------------------------------------------------");
         });
     });
 }
 
 fn send_message(id: String, message_type: String, data: String, metadata: String, errors: String) {
+    if !READY.load(Ordering::SeqCst) {
+        error!(
+            "[send_message] ⚠ This endpoint cannot be accessed before \"pre_init\" has completed"
+        );
+        return;
+    }
+
     let timer = std::time::Instant::now();
     trace!(
         "[send_message]\nid: {:?}\ntype: {:?}\ndata: {:?}\nmetadata: {:?}\nerrors: {:?}",
@@ -240,6 +245,11 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
 }
 
 fn send_to_channel(id: String, content: String) {
+    if !READY.load(Ordering::SeqCst) {
+        error!("[send_to_channel] ⚠ This endpoint cannot be accessed before \"pre_init\" has completed");
+        return;
+    }
+
     let timer = std::time::Instant::now();
     trace!("[send_to_channel] id: {:?} - content: {:?}", id, content);
 
