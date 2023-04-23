@@ -26,26 +26,6 @@
 
 ;
 
-DROP PROCEDURE IF EXISTS PROC_DROP_FOREIGN_KEY;
-DELIMITER $$
-CREATE PROCEDURE PROC_DROP_FOREIGN_KEY(IN tableName VARCHAR(64), IN constraintName VARCHAR(64))
-BEGIN
-    IF EXISTS(
-        SELECT * FROM information_schema.table_constraints
-        WHERE
-            table_schema    = DATABASE()     AND
-            table_name      = tableName      AND
-            constraint_name = constraintName AND
-            constraint_type = 'FOREIGN KEY')
-    THEN
-        SET @query = CONCAT('ALTER TABLE ', tableName, ' DROP FOREIGN KEY ', constraintName, ';');
-        PREPARE stmt FROM @query;
-        EXECUTE stmt;
-        DEALLOCATE PREPARE stmt;
-    END IF;
-END$$
-DELIMITER ;
-
 -- Dumping database structure for exile
 
 CREATE DATABASE
@@ -72,7 +52,9 @@ CREATE TABLE
         `total_connections` int(11) unsigned NOT NULL DEFAULT '1',
         PRIMARY KEY (`uid`),
         KEY `clan_id` (`clan_id`),
-        CONSTRAINT `account_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE SET NULL
+        CONSTRAINT `account_ibfk_1` FOREIGN KEY (`clan_id`) REFERENCES `clan` (`id`) ON DELETE
+        SET
+            NULL
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
@@ -277,7 +259,9 @@ CREATE TABLE
         KEY `owner_uid` (`owner_uid`),
         KEY `flag_stolen_by_uid` (`flag_stolen_by_uid`),
         CONSTRAINT `territory_ibfk_1` FOREIGN KEY (`owner_uid`) REFERENCES `account` (`uid`) ON DELETE CASCADE,
-        CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stolen_by_uid`) REFERENCES `account` (`uid`) ON DELETE SET NULL
+        CONSTRAINT `territory_ibfk_2` FOREIGN KEY (`flag_stolen_by_uid`) REFERENCES `account` (`uid`) ON DELETE
+        SET
+            NULL
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Data exporting was unselected.
