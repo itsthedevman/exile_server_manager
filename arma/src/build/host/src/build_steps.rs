@@ -461,14 +461,14 @@ pub fn create_server_config(builder: &mut Builder) -> BuildResult {
         connection_url: String,
         log_level: String,
         env: String,
-        log_output: String,
+        // log_output: String,
     }
 
     let config = Config {
         connection_url: builder.args.bot_host().to_string(),
         log_level: builder.args.log_level().to_string(),
         env: builder.args.build_env().to_string(),
-        log_output: "rpt".into(),
+        // log_output: "extension".into(),
     };
 
     let config_yaml = serde_yaml::to_vec(&config)?;
