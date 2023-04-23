@@ -13,14 +13,19 @@ const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
 const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
 const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
+const REGEX_RETURNS_NIL: &str = r#"returns_nil!\((\w+)\)"#;
 const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
 const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
 const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
 const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
+const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
+const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
     compiler
+        .replace(REGEX_LOCALIZE, localize)
+        .replace(REGEX_FILE_NAME, file_name)
         .replace(REGEX_DEF_FN, define_fn)
         .replace(REGEX_OS_PATH, os_path)
         .replace(REGEX_NOT_EQUAL_TYPE, type_ne)
@@ -33,8 +38,28 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_ENV, env)
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
+        .replace(REGEX_RETURNS_NIL, returns_nil)
         .replace(REGEX_NOT_NIL, not_nil)
         .replace(REGEX_NIL, nil);
+}
+
+fn localize(context: &Data, matches: &Captures) -> CompilerResult {
+    let locale_name = match matches.get(1) {
+        Some(c) => c.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> t! - Wrong number of arguments, given 0, expected 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!(r#"localize "$STR_ESM_{}""#, locale_name)))
+}
+
+fn file_name(context: &Data, _matches: &Captures) -> CompilerResult {
+    Ok(Some(format!("{:?}", context.file_name)))
 }
 
 // define_fn!("ESMs_util_log") -> ["ESMs_util_log", "exile_server_manager\code\ESMs_util_log.sqf"]
@@ -299,6 +324,23 @@ fn env(_context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("ESM_LogLevel isEqualTo \"{log_level}\"")))
 }
 
+fn returns_nil(context: &Data, matches: &Captures) -> CompilerResult {
+    let variable = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> returns_nil! - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!(
+        r#"if (isNil "{variable}") then {{ nil }} else {{ {variable} }}"#
+    )))
+}
+
 fn not_nil(context: &Data, matches: &Captures) -> CompilerResult {
     let context = match matches.get(1) {
         Some(m) => m.as_str(),
@@ -334,6 +376,43 @@ mod tests {
     use super::*;
     use compiler::Data;
     use regex::Regex;
+
+    #[test]
+    fn it_replaces_localize() {
+        let content = r#"localize!("Foo_Barrington")"#;
+
+        let regex = Regex::new(REGEX_LOCALIZE).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = localize(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(output, r#"localize "$STR_ESM_Foo_Barrington""#);
+    }
+
+    #[test]
+    fn it_replaces_file_name() {
+        let content = r#"file_name!()"#;
+
+        let regex = Regex::new(REGEX_FILE_NAME).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            let mut data = Data::default();
+            data.file_name = "ESMs_test".into();
+
+            if let Some(result) = file_name(&data, &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(output, r#""ESMs_test""#);
+    }
 
     #[test]
     fn it_replaces_define_fn() {
@@ -626,6 +705,26 @@ mod tests {
             if (ESM_LogLevel isEqualTo "warn") exitWith {};
             if (ESM_LogLevel isEqualTo "error") exitWith {};
         "#
+        )
+    }
+
+    #[test]
+    fn it_replaces_returns_nil() {
+        let content = r#"returns_nil!(_variable);"#;
+
+        let regex = Regex::new(REGEX_RETURNS_NIL).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = returns_nil(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(
+            output,
+            r#"if (isNil "_variable") then { nil } else { _variable };"#
         )
     }
 
