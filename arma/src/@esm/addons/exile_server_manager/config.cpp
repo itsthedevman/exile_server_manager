@@ -36,6 +36,7 @@ class CfgESM
 	globalVariables[] =
 	{
 		{ "build_number", "ESM_BuildNumber" },
+		{ "command_prefix", "ESM_CommandPrefix" },
 		{ "community_id", "ESM_CommunityID" },
 		{ "extdb_version", "ESM_ExtDBVersion" },
 		{ "gambling_modifier", "ESM_Gambling_Modifier" },
