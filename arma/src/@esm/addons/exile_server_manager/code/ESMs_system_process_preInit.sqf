@@ -1,29 +1,34 @@
-/**
- *
- * Function:
- *      ESMs_system_process_preInit
- *
- * Description:
- *      Preps required variables and starts the client
- *
- * Arguments:
- *      None
- *
- * Examples:
- *      [] call ESMs_system_process_preInit;
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-2021 Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+/* ----------------------------------------------------------------------------
+Function:
+	ESMs_system_process_preInit
+
+Description:
+	Preps required variables and starts the client
+
+Parameters:
+	_this - [Nothing]
+
+Returns:
+	Nothing
+
+Examples:
+	(begin example)
+
+		[] call ESMs_system_process_preInit;
+
+	(end)
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-2023 Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
 
 ESM_BuildNumber = "";
+ESM_CommandPrefix = "!";
 ESM_CommunityID = "";
 ESM_DatabaseExtension = "extDB3";
 ESM_ExtDBVersion = 3;
@@ -48,12 +53,12 @@ ESM_Logging_UpgradeTerritory = true;
 ESM_LoggingChannelID = "";
 ESM_LogLevel = "info";
 ESM_LogLevelLookup = createHashMapFromArray [["error", 0], ["warn", 1], ["info", 2], ["debug", 3], ["trace", 4]];
-ESM_LogOutput = "rpt";
+ESM_LogOutput = "extension";
 ESM_ServerID = "";
 ESM_Taxes_TerritoryPayment = 0;
 ESM_Taxes_TerritoryUpgrade = 0;
 ESM_TerritoryAdminUIDs = [];
-ESM_Version = "";
+ESM_Version = "2.0.0";
 
 info!("Exile Server Manager (mod) is booting");
 ESM_LogLevel = "log_level" call ESMs_system_extension_call;
@@ -104,6 +109,7 @@ addMissionEventHandler ["ExtensionCallback", {
 
 	// vg_max_sizes
 	getArray(missionConfigFile >> "CfgVirtualGarage" >> "numberOfVehicles")
-] spawn ESMs_system_extension_call;
+]
+call ESMs_system_extension_call;
 
 true

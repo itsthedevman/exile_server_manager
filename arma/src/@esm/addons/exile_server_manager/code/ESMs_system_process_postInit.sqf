@@ -41,7 +41,7 @@ private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")
 		continue;
 	};
 
-	debug!("Binding %1 (%2) to %3", _value, typeName(_value), _variableName);
+	info!("Configuring global variable %1 for %2. Value is now set to %3", _variableName, typeName(_value), _value);
 	missionNameSpace setVariable [_variableName, _value];
 }
 forEach _variablesHash;

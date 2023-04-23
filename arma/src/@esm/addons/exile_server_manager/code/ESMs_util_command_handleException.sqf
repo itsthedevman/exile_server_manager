@@ -6,10 +6,10 @@ Description:
 	Handles a command exception by logging and replying to the inbound message
 
 Parameters:
-	_id - 0 [String] The inbound message's ID
-	_commandException - 1 [HashMap] The contents of the exception
-	_callingFunction - 2 [String] The SQF function that called this function
-	_log - 3 [true/false] Should this trigger a log to the discord channel?
+	_id - [String] The inbound message's ID
+	_commandException - [HashMap] The contents of the exception
+	_callingFunction - [String] The SQF function that called this function
+	_log - [true/false] Should this trigger a log to the discord channel?
 
 Returns:
 	Nothing
