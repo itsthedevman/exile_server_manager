@@ -19,7 +19,7 @@ const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
 const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
 const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
 const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
-const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"\)"#;
+const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -48,14 +48,31 @@ fn localize(context: &Data, matches: &Captures) -> CompilerResult {
         Some(c) => c.as_str(),
         None => {
             return Err(format!(
-                "{} -> t! - Wrong number of arguments, given 0, expected 1",
+                "{} -> localize! - Wrong number of arguments, given 0, expected 1",
                 context.file_path
             )
             .into())
         }
     };
 
-    Ok(Some(format!(r#"localize "$STR_ESM_{}""#, locale_name)))
+    let default = format!(r#"localize "$STR_ESM_{locale_name}""#);
+
+    let result = match matches.get(2) {
+        Some(c) => {
+            // arguments string starts with ,\s* if matched
+            let arguments = c.as_str();
+
+            // This will match on nothing
+            if arguments.is_empty() {
+                default
+            } else {
+                format!(r#"format[localize "$STR_ESM_{locale_name}"{arguments}]"#)
+            }
+        }
+        None => default,
+    };
+
+    Ok(Some(result))
 }
 
 fn file_name(context: &Data, _matches: &Captures) -> CompilerResult {
@@ -392,6 +409,26 @@ mod tests {
         }
 
         assert_eq!(output, r#"localize "$STR_ESM_Foo_Barrington""#);
+    }
+
+    #[test]
+    fn it_replaces_localize_format() {
+        let content = r#"localize!("Foo_Barrington", _foo, _bar, "baz", false)"#;
+
+        let regex = Regex::new(REGEX_LOCALIZE).unwrap();
+        let captures: Vec<Captures> = regex.captures_iter(content).collect();
+
+        let mut output = content.to_string();
+        for capture in captures {
+            if let Some(result) = localize(&Data::default(), &capture).unwrap() {
+                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+            }
+        }
+
+        assert_eq!(
+            output,
+            r#"format[localize "$STR_ESM_Foo_Barrington", _foo, _bar, "baz", false]"#
+        );
     }
 
     #[test]
