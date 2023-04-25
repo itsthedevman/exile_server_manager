@@ -81,6 +81,7 @@ module ESM
       @ready = false
       @connection = connection
       @requests = ESM::Websocket::Queue.new
+      @closed = false
 
       # In dev, for whatever reason, this ping causes all messages to be delayed 15 seconds.
       @ping_timer = EventMachine.add_periodic_timer(10) { ping } if ESM.env.production?
@@ -203,10 +204,12 @@ module ESM
     # Websocket event, executes when a A3 server or the WebServer disconnects the connection
     def on_close(_code)
       return if @server.nil?
+      return if @closed
 
       EventMachine.cancel_timer(@ping_timer) if @ping_timer
       ESM::Notifications.trigger("websocket_server_on_close", server: @server)
       ESM::Websocket.remove_connection(self)
+      @closed = true
     end
 
     # @private
