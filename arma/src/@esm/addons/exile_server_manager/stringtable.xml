@@ -3,28 +3,28 @@
 	<Package name="Exile_Server_Manager">
 		<Container name="Words">
 			<!-- None -->
-			<Key ID="STR_ESM_Word_Success">
+			<Key ID="STR_ESM_Success">
 				<English>
 					Success
 				</English>
 			</Key>
 
 			<!-- None -->
-			<Key ID="STR_ESM_Word_Territory">
+			<Key ID="STR_ESM_Territory">
 				<English>
 					Territory
 				</English>
 			</Key>
 
 			<!-- None -->
-			<Key ID="STR_ESM_Word_Player">
+			<Key ID="STR_ESM_Player">
 				<English>
 					Player
 				</English>
 			</Key>
 
 			<!-- None -->
-			<Key ID="STR_ESM_Word_Target">
+			<Key ID="STR_ESM_Target">
 				<English>
 					Target
 				</English>
