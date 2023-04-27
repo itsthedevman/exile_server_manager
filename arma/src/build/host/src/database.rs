@@ -185,7 +185,7 @@ fn generate_players(accounts: &[Account]) -> Vec<Player> {
 
 fn generate_territories(steam_uids: &[String]) -> Vec<Territory> {
     let rng = &mut rand::thread_rng();
-    let number_of_uids = steam_uids.len();
+    let number_of_uids = 5;
 
     steam_uids
         .iter()
