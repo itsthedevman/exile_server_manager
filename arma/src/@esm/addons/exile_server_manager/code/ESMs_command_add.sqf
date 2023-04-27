@@ -22,12 +22,13 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-private _id = dig!(_this, "id");
+private _id = get!(_this, "id");
 
 /*
 	territory_id: Integer
+	territory_database_id:
 */
-private _data = dig!(_this, "data");
+private _data = get!(_this, "data");
 
 /*
 	player: HashMap
@@ -41,99 +42,107 @@ private _data = dig!(_this, "data");
 		discord_name: String,
 		discord_mention: String,
 */
-private _metadata = dig!(_this, "metadata");
+private _metadata = get!(_this, "metadata");
 if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
-private _territoryID = get!(_data, "territory_id");
-private _playerUID = dig!(_metadata, "player", "steam_uid");
-private _playerMention = dig!(_metadata, "player", "discord_mention");
-private _targetUID = dig!(_metadata, "target", "steam_uid");
-private _targetMention = dig!(_metadata, "target", "discord_mention");
+private _territoryData = get!(_data, "territory");
+private _playerMetadata = get!(_metadata, "player");
+private _targetMetadata = get!(_metadata, "target");
+
+private _encodedTerritoryID = get!(_territoryData, "id");
+private _territoryDatabaseID = get!(_territoryData, "database_id");
+private _playerUID = get!(_playerMetadata, "steam_uid");
+private _playerMention = get!(_playerMetadata, "discord_mention");
+private _targetUID = get!(_targetMetadata, "steam_uid");
+private _targetMention = get!(_targetMetadata, "discord_mention");
 
 try
 {
-	private _flagObject = _territoryID call ESMs_object_flag_get;
+	private _territory = _territoryDatabaseID call ESMs_object_flag_get;
 
-	if (isNull _flagObject) then
+	if (isNull _territory) then
 	{
 		throw [
-			[
-				"admin",
-				format[localize "$STR_ESM_Add_NullFlag_Admin", _playerMention, _playerUID, _targetUID, _territoryID]
-			],
-			["player", format[localize "$STR_ESM_NullFlag", _playerMention]]
+			["admin", localize!("Add_NullFlag_Admin", _playerMention, _playerUID, _targetUID, _encodedTerritoryID)],
+			["player", localize!("NullFlag", _playerMention)]
 		];
 	};
 
-	if !([_playerUID, _flagObject, "moderator"] call ESMs_system_territory_checkAccess) then
+	if !([_playerUID, _territory, "moderator"] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
-			format[localize "$STR_ESM_Add_MissingAccess_Admin", _playerMention, _playerUID, _territoryID],
-			format[localize "$STR_ESM_Add_MissingAccess", _playerMention]
+			["admin", localize!("Add_MissingAccess_Admin", _playerMention, _playerUID, _encodedTerritoryID)],
+			["player", localize!("Add_MissingAccess", _playerMention, _encodedTerritoryID)]
 		];
 	};
 
-	private _ownerUID = _flagObject getVariable ["ExileOwnerUID", ""];
+	private _ownerUID = _territory getVariable ["ExileOwnerUID", ""];
 
 	// Ensure they cannot add themselves. Territory admins are exempt
 	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
 	{
 		throw [
-			format["%1 (`UID:%2`) tried to add themselves to territory `ID:%3`. Time to go laugh at them!", _authorTag, _playerUID, _territoryID],
-			format["%1, you cannot add yourself to this territory", _authorTag]
+			["admin", localize!("Add_InvalidAdd_Admin", _playerMention, _playerUID, _encodedTerritoryID)],
+			["player", localize!("Add_InvalidAdd", _playerMention)]
 		];
 	};
 
-	// If the guy we wants to add is the owner, skip here since he has already uber rights
+	// If the guy we want to add is the owner, skip here since he has already uber rights
 	if (_ownerUID isEqualTo _targetUID) then
 	{
-		throw ["", format["%1, you are the owner of this territory, you are already part of this territory, silly", _authorTag]];
+		throw [
+			["player", localize!("Add_InvalidAdd_Owner", _playerMention)]
+		];
 	};
 
 	// Get the current rights
-	private _currentBuildRights = _flagObject getVariable ["ExileTerritoryBuildRights", []];
+	private _currentBuildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
 
 	// Do not add em twice to the build rights
 	if (_targetUID in _currentBuildRights) then
 	{
-		throw ["", format["%1, this player already has build rights", _authorTag]];
+		throw [
+			["player", localize!("Add_InvalidAdd_Exists", _playerMention)]
+		];
 	};
 
-	// Add the build rights to the flag pole
+	// Add the build rights to the flag pole and update it
 	_currentBuildRights pushBack _targetUID;
+	_territory setVariable ["ExileTerritoryBuildRights", _currentBuildRights, true];
 
-	// Update the build rights in the flag pole
-	_flagObject setVariable ["ExileTerritoryBuildRights", _currentBuildRights, true];
-
-	// Update the build rights in the database (NOW!)
-	format["updateTerritoryBuildRights:%1:%2", _currentBuildRights, _flagID] call ExileServer_system_database_query_fireAndForget;
+	// Update the build rights in the database
+	(format [
+		"updateTerritoryBuildRights:%1:%2", _currentBuildRights, _territoryDatabaseID
+	]) call ExileServer_system_database_query_fireAndForget;
 
 	// Respond back to our command
-	[_id] call ESMs_system_message_respond_to;
+	[
+		// Response
+		[_id],
 
-	if (ESM_Logging_AddPlayerToTerritory) then
-	{
-		// Let our logging channel know..
+		// Log the following?
+		ESM_Logging_AddPlayerToTerritory,
+
+		// Log embed
 		[
-			"success",
-			"embed",
-			[
-				"",
-				format["%1 added a player to territory **%2**", _authorTag, _flagObject getVariable ["ExileTerritoryName", "N/A"]],
-				[
-					["Member UID", _playerUID, true],
-					["Target UID", _targetUID, true],
-					["Territory Name", _flagObject getVariable ["ExileTerritoryName", "N/A"], true],
-					["Territory ID", _territoryID, true]
-				]
-			]
+			["title", localize!("Success")],
+			["description", localize!("Add_Log_Description", _playerMention)],
+			["color", "green"],
+			["fields", [
+				[localize!("Territory"), [
+					["name", _territory getVariable ["ExileTerritoryName", "N/A"]],
+					["id", _encodedTerritoryID]
+				]],
+				[localize!("Player"), _playerMetadata],
+				[localize!("Target"), _targetMetadata]
+			]]
 		]
-		call ESM_fnc_logToDiscord;
-	};
+	]
+	call ESMs_util_command_handleSuccess;
 }
 catch
 {
-	[_id, _exception, "ESMs_command_add", ESM_Logging_AddPlayerToTerritory] call ESMs_util_command_handleException;
+	[_id, _exception, file_name!(), ESM_Logging_AddPlayerToTerritory] call ESMs_util_command_handleException;
 };
 
 nil
