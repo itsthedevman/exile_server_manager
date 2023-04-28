@@ -6,6 +6,7 @@ Description:
 
 Parameters:
 	_id				- The ID of the message to respond to. [String]
+	_type			- The type of message [String]
 	_dataType		- The type of data that the outgoing message will hold. Defaults to "empty". [String]
 	_data			- The data to send along with the outgoing message. Defaults to []. [HashMap, Array]
 	_metadataType	- The type of metadata that the outgoing message will hold. Defaults to "empty". [String]
@@ -24,6 +25,7 @@ Examples:
 	// Or send a message with everything
 	[
 		"id",
+		"type",
 		"data_type"
 		[
 			["data_key_1", "data_value_1"],

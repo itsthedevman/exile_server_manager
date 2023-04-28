@@ -130,8 +130,8 @@ try
 			["color", "green"],
 			["fields", [
 				[localize!("Territory"), [
-					["name", _territory getVariable ["ExileTerritoryName", "N/A"]],
-					["id", _encodedTerritoryID]
+					["id", _encodedTerritoryID],
+					["name", _territory getVariable ["ExileTerritoryName", "N/A"]]
 				]],
 				[localize!("Player"), _playerMetadata],
 				[localize!("Target"), _targetMetadata]

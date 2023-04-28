@@ -88,8 +88,7 @@ if ("fields" in _embedData) then
 		]
 		call ESMs_util_embed_addField;
 	}
-	forEach get!(_embedData, "fields");
+	forEach (get!(_embedData, "fields", []));
 };
-
 
 _embed
