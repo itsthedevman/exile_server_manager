@@ -121,9 +121,13 @@ fn send_message(message: Message) -> ESMResult {
         return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
     }
 
-    match message.message_type {
-        Type::Event => (),
-        _ => debug!("[send] {}", message),
+    if !matches!(message.data, Data::Pong) {
+        info!(
+            "[send_message] {} - {:?} - {}",
+            message.id,
+            message.message_type,
+            message.data.name(),
+        );
     }
 
     // Convert the message to bytes so it can be sent
