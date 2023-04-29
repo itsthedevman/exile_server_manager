@@ -40,7 +40,7 @@ Author:
 
 if !(_this select 1) exitWith {};
 
-private _logMessage = _this select 2;
+private _logMessage = _this param [2, []];
 
 if (type?(_logMessage, ARRAY)) then
 {

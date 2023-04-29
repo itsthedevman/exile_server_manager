@@ -25,7 +25,7 @@ Examples:
 		["title", "This is the title"],
 		["description", "This is a description"],
 		["color", "yellow"],
-		["fields", [ ["Field Name", "Field Value", false], ["Name field", "Value field", true] ]
+		["fields", [ ["Field Name", "Field Value", false], ["Name field", "Value field", true] ]]
 	]
 	call ESMs_util_embed_create;
 
@@ -49,11 +49,10 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-
 private _embedData = _this;
 private _embed = createHashMap;
 
-if (isNil "_embedData" || { _embedData isEqualTo [] }) exitWith { _embed };
+if (nil?(_embedData) || { empty?(_embedData) }) exitWith { _embed };
 
 if (type?(_embedData, ARRAY)) then
 {
@@ -82,9 +81,9 @@ if ("fields" in _embedData) then
 	{
 		[
 			_embed,
-			_x select 0, // Name
-			_x select 1, // Value
-			_x params [2, nil] // Inline? Defaulting to nil so it uses addField's default
+			_x select 0, 		// Name
+			_x select 1, 		// Value
+			_x param [2, nil] 	// Is the field inlined? Defaulting to nil so it uses addField's default (of false)
 		]
 		call ESMs_util_embed_addField;
 	}

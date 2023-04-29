@@ -87,7 +87,7 @@ private _validator = {
 	private _data = _this select 1;
 
 	private _package = [["type", _type]];
-	if (_type isEqualTo "empty" || count(_data) isEqualTo 0) exitWith { _package };
+	if (_type isEqualTo "empty" || empty?(_data)) exitWith { _package };
 
 	_package pushBack ["content", _this select 1];
 	_package

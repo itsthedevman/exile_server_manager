@@ -29,7 +29,7 @@ Author:
 ---------------------------------------------------------------------------- */
 
 if (nil?(_this)) exitWith { nil };
-if (count(_this) isEqualTo 0) exitWith { _this };
+if (empty?(_this)) exitWith { _this };
 
 private _result = _this;
 if (type?(_result, STRING)) then
