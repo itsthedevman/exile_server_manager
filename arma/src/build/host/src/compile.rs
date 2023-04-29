@@ -20,6 +20,8 @@ const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
 const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
 const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
 const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
+const REGEX_EMPTY: &str = r#"empty\?\((\S+[^)])\)"#;
+const REGEX_NOT_EMPTY: &str = r#"!empty\?\((\S+[^)])\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -39,6 +41,8 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
         .replace(REGEX_RETURNS_NIL, returns_nil)
+        .replace(REGEX_EMPTY, empty)
+        .replace(REGEX_NOT_EMPTY, not_empty)
         .replace(REGEX_NOT_NIL, not_nil)
         .replace(REGEX_NIL, nil);
 }
@@ -341,6 +345,36 @@ fn env(_context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("ESM_LogLevel isEqualTo \"{log_level}\"")))
 }
 
+fn empty(context: &Data, matches: &Captures) -> CompilerResult {
+    let contents = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> empty? - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("count({}) isEqualTo 0", contents)))
+}
+
+fn not_empty(context: &Data, matches: &Captures) -> CompilerResult {
+    let contents = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> !empty? - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("count({}) isNotEqualTo 0", contents)))
+}
+
 fn returns_nil(context: &Data, matches: &Captures) -> CompilerResult {
     let variable = match matches.get(1) {
         Some(m) => m.as_str(),
@@ -394,36 +428,50 @@ mod tests {
     use compiler::Data;
     use regex::Regex;
 
+    #[macro_export]
+    macro_rules! compile {
+        ($code:expr, $regex:expr, $parsing_method:ident) => {{
+            let regex = Regex::new($regex).unwrap();
+            let captures: Vec<Captures> = regex.captures_iter($code).collect();
+
+            let mut output = $code.to_string();
+            for capture in captures {
+                if let Some(result) = $parsing_method(&Data::default(), &capture).unwrap() {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+            }
+
+            output
+        }};
+
+        ($code:expr, $regex:expr, $parsing_method:ident, $data:expr) => {{
+            let regex = Regex::new($regex).unwrap();
+            let captures: Vec<Captures> = regex.captures_iter($code).collect();
+
+            let mut output = $code.to_string();
+            for capture in captures {
+                if let Some(result) = $parsing_method(&$data, &capture).unwrap() {
+                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                }
+            }
+
+            output
+        }};
+    }
+
     #[test]
     fn it_replaces_localize() {
-        let content = r#"localize!("Foo_Barrington")"#;
-
-        let regex = Regex::new(REGEX_LOCALIZE).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = localize(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"localize!("Foo_Barrington")"#, REGEX_LOCALIZE, localize);
         assert_eq!(output, r#"localize "$STR_ESM_Foo_Barrington""#);
     }
 
     #[test]
     fn it_replaces_localize_format() {
-        let content = r#"localize!("Foo_Barrington", _foo, _bar, "baz", false)"#;
-
-        let regex = Regex::new(REGEX_LOCALIZE).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = localize(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        let output = compile!(
+            r#"localize!("Foo_Barrington", _foo, _bar, "baz", false)"#,
+            REGEX_LOCALIZE,
+            localize
+        );
 
         assert_eq!(
             output,
@@ -433,37 +481,20 @@ mod tests {
 
     #[test]
     fn it_replaces_file_name() {
-        let content = r#"file_name!()"#;
+        let mut data = Data::default();
+        data.file_name = "ESMs_test".into();
 
-        let regex = Regex::new(REGEX_FILE_NAME).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            let mut data = Data::default();
-            data.file_name = "ESMs_test".into();
-
-            if let Some(result) = file_name(&data, &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"file_name!()"#, REGEX_FILE_NAME, file_name, data);
         assert_eq!(output, r#""ESMs_test""#);
     }
 
     #[test]
     fn it_replaces_define_fn() {
-        let content = r#"define_fn!("MY_Awesome_Method")"#;
-
-        let regex = Regex::new(REGEX_DEF_FN).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = define_fn(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        let output = compile!(
+            r#"define_fn!("MY_Awesome_Method")"#,
+            REGEX_DEF_FN,
+            define_fn
+        );
 
         assert_eq!(
             output,
@@ -473,55 +504,27 @@ mod tests {
 
     #[test]
     fn it_replaces_type() {
-        let content = r#"type?(_variable, STRING);"#;
-
-        let regex = Regex::new(REGEX_EQUAL_TYPE).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = type_eq(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"type?(_variable, STRING);"#, REGEX_EQUAL_TYPE, type_eq);
         assert_eq!(output, r#"_variable isEqualType "";"#);
     }
 
     #[test]
     fn it_replaces_not_type() {
-        let content = r#"!type?(VARIABLE, HASH);"#;
-
-        let regex = Regex::new(REGEX_NOT_EQUAL_TYPE).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = type_ne(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"!type?(VARIABLE, HASH);"#, REGEX_NOT_EQUAL_TYPE, type_ne);
         assert_eq!(output, r#"!(VARIABLE isEqualType createHashMap);"#);
     }
 
     #[test]
     fn it_replaces_get() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _hash_map = createHashMap;
 
             (get!(_hash_map, "key"));
-        "#;
-
-        let regex = Regex::new(REGEX_GET).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = hash_get(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        "#,
+            REGEX_GET,
+            hash_get
+        );
 
         assert_eq!(
             output,
@@ -535,21 +538,15 @@ mod tests {
 
     #[test]
     fn it_replaces_get_with_default() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _hash_map = createHashMap;
 
             get!(_hash_map, "key", "this is the default");
-        "#;
-
-        let regex = Regex::new(REGEX_GET_WITH_DEFAULT).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = hash_get(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        "#,
+            REGEX_GET_WITH_DEFAULT,
+            hash_get
+        );
 
         assert_eq!(
             output,
@@ -563,23 +560,17 @@ mod tests {
 
     #[test]
     fn it_replaces_hash_dig() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _hash_map = createHashMap;
 
             dig!(_hash_map, "key_1");
             dig!(_hash_map, "key_1", "key_2");
             dig!([] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3");
-        "#;
-
-        let regex = Regex::new(REGEX_DIG).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = hash_dig(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        "#,
+            REGEX_DIG,
+            hash_dig
+        );
 
         assert_eq!(
             output,
@@ -595,23 +586,17 @@ mod tests {
 
     #[test]
     fn it_replaces_hash_key() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _hash_map = createHashMap;
 
             key?(_hash_map, "key_1");
             key?(_hash_map, "key_1", "key_2");
             key?([] call ESMs_util_hashmap_fromArray, "key1", _key2, "key_3");
-        "#;
-
-        let regex = Regex::new(REGEX_KEY).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = hash_key(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        "#,
+            REGEX_KEY,
+            hash_key
+        );
 
         assert_eq!(
             output,
@@ -627,7 +612,8 @@ mod tests {
 
     #[test]
     fn it_replaces_log() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _testing = "foo";
 
             trace!("Trace");
@@ -635,27 +621,16 @@ mod tests {
             info!("Info");
             warn!(_testing);
             error!([true, false]);
-        "#;
-
-        let regex = Regex::new(REGEX_LOG).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = log(
-                &Data {
-                    target: "".into(),
-                    file_path: "".into(),
-                    file_name: "ESMs_compiler_test".into(),
-                    file_extension: "".into(),
-                },
-                &capture,
-            )
-            .unwrap()
-            {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+        "#,
+            REGEX_LOG,
+            log,
+            Data {
+                target: "".into(),
+                file_path: "".into(),
+                file_name: "ESMs_compiler_test".into(),
+                file_extension: "".into(),
             }
-        }
+        );
 
         assert_eq!(
             output,
@@ -673,33 +648,23 @@ mod tests {
 
     #[test]
     fn it_replaces_log_with_args() {
-        let content = r#"
+        let output = compile!(
+            r#"
             private _testing = "foo";
             private _variables = "bar";
 
             debug!("Testing - %1bar - foo%2", _testing, _variables);
             info!("Logging %1", true);
-        "#;
-
-        let regex = Regex::new(REGEX_LOG_WITH_ARGS).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = log(
-                &Data {
-                    target: "".into(),
-                    file_path: "".into(),
-                    file_name: "ESMs_compiler_test".into(),
-                    file_extension: "".into(),
-                },
-                &capture,
-            )
-            .unwrap()
-            {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
+        "#,
+            REGEX_LOG_WITH_ARGS,
+            log,
+            Data {
+                target: "".into(),
+                file_path: "".into(),
+                file_name: "ESMs_compiler_test".into(),
+                file_extension: "".into(),
             }
-        }
+        );
 
         assert_eq!(
             output,
@@ -715,23 +680,17 @@ mod tests {
 
     #[test]
     fn it_replaces_env() {
-        let content = r#"
+        let output = compile!(
+            r#"
             if (trace?) exitWith {};
             if (debug?) exitWith {};
             if (info?) exitWith {};
             if (warn?) exitWith {};
             if (error?) exitWith {};
-        "#;
-
-        let regex = Regex::new(REGEX_ENV).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = env(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        "#,
+            REGEX_ENV,
+            env
+        );
 
         assert_eq!(
             output,
@@ -746,18 +705,56 @@ mod tests {
     }
 
     #[test]
+    fn it_replaces_empty() {
+        let output = compile!(
+            r#"
+            empty?(_foo)
+            (empty?([]))
+            if ((empty?(foo)) then {};
+        "#,
+            REGEX_EMPTY,
+            empty
+        );
+
+        assert_eq!(
+            output,
+            r#"
+            count(_foo) isEqualTo 0
+            (count([]) isEqualTo 0)
+            if ((count(foo) isEqualTo 0) then {};
+        "#
+        )
+    }
+
+    #[test]
+    fn it_replaces_not_empty() {
+        let output = compile!(
+            r#"
+            !empty?(_foo)
+            (!empty?([]))
+            if ((!empty?(foo)) then {};
+        "#,
+            REGEX_NOT_EMPTY,
+            not_empty
+        );
+
+        assert_eq!(
+            output,
+            r#"
+            count(_foo) isNotEqualTo 0
+            (count([]) isNotEqualTo 0)
+            if ((count(foo) isNotEqualTo 0) then {};
+        "#
+        )
+    }
+
+    #[test]
     fn it_replaces_returns_nil() {
-        let content = r#"returns_nil!(_variable);"#;
-
-        let regex = Regex::new(REGEX_RETURNS_NIL).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = returns_nil(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
+        let output = compile!(
+            r#"returns_nil!(_variable);"#,
+            REGEX_RETURNS_NIL,
+            returns_nil
+        );
 
         assert_eq!(
             output,
@@ -767,35 +764,13 @@ mod tests {
 
     #[test]
     fn it_replaces_nil() {
-        let content = r#"nil?(_variable);"#;
-
-        let regex = Regex::new(REGEX_NIL).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = nil(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"nil?(_variable);"#, REGEX_NIL, nil);
         assert_eq!(output, r#"isNil "_variable";"#)
     }
 
     #[test]
     fn it_replaces_not_nil() {
-        let content = r#"!nil?(_variable);"#;
-
-        let regex = Regex::new(REGEX_NOT_NIL).unwrap();
-        let captures: Vec<Captures> = regex.captures_iter(content).collect();
-
-        let mut output = content.to_string();
-        for capture in captures {
-            if let Some(result) = not_nil(&Data::default(), &capture).unwrap() {
-                output = output.replace(capture.get(0).unwrap().as_str(), &result);
-            }
-        }
-
+        let output = compile!(r#"!nil?(_variable);"#, REGEX_NOT_NIL, not_nil);
         assert_eq!(output, r#"!(isNil "_variable");"#)
     }
 }
