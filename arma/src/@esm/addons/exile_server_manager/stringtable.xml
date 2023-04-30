@@ -48,8 +48,7 @@
 				%2 	- Server ID
 			-->
 			<Key ID="STR_ESM_AlivePlayer">
-				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your
-					reward</English>
+				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
 			</Key>
 
 			<!--
@@ -58,8 +57,9 @@
 				%3 	- Command prefix
 			-->
 			<Key ID="STR_ESM_NullFlag">
-				<English>Hey %1, I was unable to find a territory with the ID of `%2`. Please double
-					check that you typed the correct ID, or run `%3me` </English>
+				<English>
+					Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID, or run `%3me`
+				</English>
 			</Key>
 		</Container>
 
@@ -86,10 +86,9 @@
 			-->
 			<Key ID="STR_ESM_Reward_InvalidItem">
 				<English>
-					**WARNING:** You have `%1` listed as an item reward, however, this item's config
-					does not exist on your server
-					Please double check your spelling, add the required mod, or remove this item
-					from the rewards for this server
+					**WARNING:**
+					You have `%1` listed as an item reward, however, this item's config does not exist on your server
+					Please double check your spelling, add the required mod, or remove this item from the rewards for this server
 				</English>
 			</Key>
 
@@ -123,9 +122,7 @@
 			-->
 			<Key ID="STR_ESM_Add_NullFlag_Admin">
 				<English>
-					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not
-					exist. This could be because they typed in the wrong ID or the territory has
-					been deleted
+					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not exist. This could be because they typed in the wrong ID or the territory has been deleted
 				</English>
 			</Key>
 
@@ -146,8 +143,7 @@
 			-->
 			<Key ID="STR_ESM_Add_MissingAccess_Admin">
 				<English>
-					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't
-					have permission
+					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't have permission
 				</English>
 			</Key>
 
@@ -167,8 +163,7 @@
 			-->
 			<Key ID="STR_ESM_Add_InvalidAdd_Admin">
 				<English>
-					%1 (`UID:%2`) tried to add themselves to territory `ID:%3`. Time to go laugh at
-					them!
+					%1 (`UID:%2`) tried to add themselves to territory `ID:%3`. Time to go laugh at them!
 				</English>
 			</Key>
 
@@ -177,8 +172,7 @@
 			-->
 			<Key ID="STR_ESM_Add_InvalidAdd_Owner">
 				<English>
-					%1, you are the owner of this territory, you are already part of this territory,
-					silly
+					%1, you are the owner of this territory which automatically makes you a member of this territory, silly :stuck_out_tongue_winking_eye:
 				</English>
 			</Key>
 
