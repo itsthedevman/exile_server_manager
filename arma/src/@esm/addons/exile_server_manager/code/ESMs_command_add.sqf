@@ -142,7 +142,7 @@ try
 }
 catch
 {
-	[_id, _exception, file_name!(), ESM_Logging_AddPlayerToTerritory] call ESMs_util_command_handleException;
+	[_id, _exception, file_name!(), ESM_Logging_AddPlayerToTerritory] call ESMs_util_command_handleFailure;
 };
 
 nil

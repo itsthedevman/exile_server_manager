@@ -120,7 +120,7 @@ try
 }
 catch
 {
-	[_id, _exception, file_name!(), ESM_Logging_Exec] call ESMs_util_command_handleException;
+	[_id, _exception, file_name!(), ESM_Logging_Exec] call ESMs_util_command_handleFailure;
 };
 
 nil

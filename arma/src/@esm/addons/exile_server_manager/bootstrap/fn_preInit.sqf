@@ -83,7 +83,7 @@ forEach
     define_fn!("ESMs_util_array_all"),
     define_fn!("ESMs_util_array_isValidHashmap"),
     define_fn!("ESMs_util_array_map"),
-    define_fn!("ESMs_util_command_handleException"),
+    define_fn!("ESMs_util_command_handleFailure"),
     define_fn!("ESMs_util_command_handleSuccess"),
     define_fn!("ESMs_util_embed_addField"),
     define_fn!("ESMs_util_embed_create"),

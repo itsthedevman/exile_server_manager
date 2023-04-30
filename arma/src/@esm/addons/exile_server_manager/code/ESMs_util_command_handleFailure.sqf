@@ -1,9 +1,9 @@
 /* ----------------------------------------------------------------------------
 Function:
-	ESMs_util_command_handleException
+	ESMs_util_command_handleFailure
 
 Description:
-	Handles a command exception by logging and replying to the inbound message
+	Handles a command failure by logging and replying to the inbound message
 
 Parameters:
 	_id - [String] The inbound message's ID
@@ -23,7 +23,7 @@ Examples:
 			"ESMs_command_add",
 			ESM_Logging_AddPlayerToTerritory
 		]
-		call ESMs_util_command_handleException;
+		call ESMs_util_command_handleFailure;
 
 	(end)
 
@@ -39,7 +39,7 @@ Author:
 private _id = _this select 0;
 private _commandException = _this select 1;
 private _callingFunction = _this select 2;
-private	_log = param [3, false];
+private	_log = _this param [3, false];
 
 private _exceptionHash = _commandException call ESMs_util_hashmap_fromArray;
 
