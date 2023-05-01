@@ -27,4 +27,6 @@
 private _id = _this select 0;
 private _errorMessage = _this select 1;
 
+if (empty?(_errorMessage)) exitWith {};
+
 [_id, "event", "empty", [], "empty", [], [["message", _errorMessage]]] call ESMs_system_message_respond_to

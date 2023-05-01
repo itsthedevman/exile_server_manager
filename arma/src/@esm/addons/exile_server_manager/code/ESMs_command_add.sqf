@@ -63,8 +63,15 @@ try
 	if (isNull _territory) then
 	{
 		throw [
-			["admin", localize!("Add_NullFlag_Admin", _playerMention, _playerUID, _targetUID, _encodedTerritoryID)],
-			["player", localize!("NullFlag", _playerMention)]
+			["admin", [
+				["description", localize!("Add_NullFlag_Admin")],
+				["fields", [
+					[localize!("Territory"), _encodedTerritoryID],
+					[localize!("Player"), _playerMetadata],
+					[localize!("Target"), _targetMetadata]
+				]]
+			]],
+			["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_CommandPrefix, ESM_ServerID)]
 		];
 	};
 

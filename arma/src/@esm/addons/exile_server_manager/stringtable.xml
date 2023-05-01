@@ -55,10 +55,11 @@
 				%1	- Player mention
 				%2 	- Territory ID
 				%3 	- Command prefix
+				%4  - Server ID
 			-->
 			<Key ID="STR_ESM_NullFlag">
 				<English>
-					Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID, or run `%3me`
+					Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID. You may also send me `%3territories %4` to see your territories
 				</English>
 			</Key>
 		</Container>
@@ -114,15 +115,10 @@
 			ESM Command: Add
 		-->
 		<Container name="ESMs_command_add">
-			<!--
-				%1	- Player mention
-				%2 	- Player UID
-				%3 	- Target UID
-				%4	- Territory ID
-			-->
+			<!-- None -->
 			<Key ID="STR_ESM_Add_NullFlag_Admin">
 				<English>
-					%1 (`%2`) attempted to add `UID:%3` to territory `ID:%4`, but the flag does not exist. This could be because they typed in the wrong ID or the territory has been deleted
+					Player attempted to add target to territory, but the territory flag was not found in game
 				</English>
 			</Key>
 
@@ -132,14 +128,15 @@
 			-->
 			<Key ID="STR_ESM_Add_MissingAccess">
 				<English>
-					%1, you do not have permission to add people to `%2`.
+					%1, you do not have permission to add people to `%2`
 				</English>
 			</Key>
 
 			<!--
 				%1 	- Player mention
 				%2	- Player UID
-				%3	- Territory ID
+				%3	- Target UID
+				%4  - Territory ID
 			-->
 			<Key ID="STR_ESM_Add_MissingAccess_Admin">
 				<English>

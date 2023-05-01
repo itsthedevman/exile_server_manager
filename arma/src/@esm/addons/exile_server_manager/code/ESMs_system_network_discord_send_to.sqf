@@ -30,10 +30,8 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-params [
-	["_channelIdOrName", [rv_type!(STRING)]],
-	["_messageOrEmbed", [rv_type!(STRING), rv_type!(HASH)]]
-];
+private _channelIdOrName = _this select 0;
+private _messageOrEmbed = _this select 1;
 
 if (type?(_messageOrEmbed, HASH)) then
 {

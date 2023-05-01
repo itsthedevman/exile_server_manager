@@ -41,22 +41,22 @@ private _commandException = _this select 1;
 private _callingFunction = _this select 2;
 private	_log = _this param [3, false];
 
-private _exceptionHash = _commandException call ESMs_util_hashmap_fromArray;
+private _exceptionHash = createHashmapFromArray _commandException;
 
 // Message to the admins
 if (key?(_exceptionHash, "admin")) then
 {
 	private _message = get!(_exceptionHash, "admin", "");
-
 	warn!(_message);
 
 	if (_log) then
 	{
-		private _embed = [["description", _message]] call ESMs_util_embed_create;
-		[_embed, "Server", format["`%1`", ESM_ServerID], true] call ESMs_util_embed_addField;
-		[_embed, "Function", _callingFunction, true] call ESMs_util_embed_addField;
+		if (type?(_message, ARRAY)) then
+		{
+			_message = _message call ESMs_util_embed_create;
+		};
 
-		[_id, _embed] call ESMs_system_network_discord_log;
+		_message call ESMs_system_network_discord_log;
 	};
 };
 
