@@ -69,7 +69,7 @@ forEach
     define_fn!("ESMs_command_add"),
     define_fn!("ESMs_command_reward"),
     define_fn!("ESMs_command_sqf"),
-    define_fn!("ESMs_object_flag_get"),
+    define_fn!("ESMs_system_territory_get"),
     define_fn!("ESMs_system_extension_call"),
     define_fn!("ESMs_system_extension_callback"),
     define_fn!("ESMs_system_extension_processResult"),

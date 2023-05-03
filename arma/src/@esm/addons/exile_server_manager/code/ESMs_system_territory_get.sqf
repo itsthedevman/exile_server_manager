@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 Function:
-	ESMs_object_flag_get
+	ESMs_system_territory_get
 
 Description:
 	Retrieves a flag object via its ExileDatabaseID
