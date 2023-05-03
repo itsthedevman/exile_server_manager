@@ -186,13 +186,13 @@ module ESM
           case error
           when ESM::Exception::CheckFailure, ESM::Exception::FailedArgumentParse
             message = error.data
+          when ESM::Exception::CheckFailureNoMessage
+            return
           when StandardError
             uuid = SecureRandom.uuid
             ESM.logger.error("#{self.class}##{__method__}") { ESM::JSON.pretty_generate(uuid: uuid, message: error.message, backtrace: error.backtrace) }
 
             message = ESM::Embed.build(:error, description: I18n.t("exceptions.system", error_code: uuid))
-          else
-            return
           end
 
           ESM.bot.deliver(message, to: @event&.channel)
