@@ -54,8 +54,7 @@ module ESM
           @target_community ||= lambda do
             return ESM::Community.find_by_community_id(@arguments.community_id) if @arguments.community_id.present?
 
-            # If we have a server ID, we can extract the community ID from it
-            ESM::Community.find_by_server_id(@arguments.server_id) if @arguments.server_id.present?
+            target_server&.community
           end.call
         end
 
