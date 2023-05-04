@@ -45,6 +45,9 @@ private _data = get!(_this, "data");
 private _metadata = get!(_this, "metadata");
 if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
+//////////////////////
+// Initialization
+//////////////////////
 private _territoryData = get!(_data, "territory");
 private _playerMetadata = get!(_metadata, "player");
 private _targetMetadata = get!(_metadata, "target");
@@ -56,10 +59,13 @@ private _playerMention = get!(_playerMetadata, "discord_mention");
 private _targetUID = get!(_targetMetadata, "steam_uid");
 private _targetMention = get!(_targetMetadata, "discord_mention");
 
+private _territory = _territoryDatabaseID call ESMs_system_territory_get;
+
 try
 {
-	private _territory = _territoryDatabaseID call ESMs_object_flag_get;
-
+	//////////////////////
+	// Validation
+	//////////////////////
 	if (isNull _territory) then
 	{
 		throw [
@@ -75,26 +81,22 @@ try
 		];
 	};
 
-	if !([_playerUID, _territory, "moderator"] call ESMs_system_territory_checkAccess) then
-	{
-		throw [
-			["admin", localize!("Add_MissingAccess_Admin", _playerMention, _playerUID, _encodedTerritoryID)],
-			["player", localize!("Add_MissingAccess", _playerMention, _encodedTerritoryID)]
-		];
-	};
-
-	private _ownerUID = _territory getVariable ["ExileOwnerUID", ""];
-
-	// Ensure they cannot add themselves. Territory admins are exempt
 	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
 	{
 		throw [
-			["admin", localize!("Add_InvalidAdd_Admin", _playerMention, _playerUID, _encodedTerritoryID)],
+			["admin", [
+				["description", localize!("Add_InvalidAdd_Admin")],
+				["fields", [
+					[localize!("Territory"), _encodedTerritoryID],
+					[localize!("Player"), _playerMetadata],
+					[localize!("Target"), _targetMetadata]
+				]]
+			]],
 			["player", localize!("Add_InvalidAdd", _playerMention)]
 		];
 	};
 
-	// If the guy we want to add is the owner, skip here since he has already uber rights
+	private _ownerUID = _territory getVariable ["ExileOwnerUID", ""];
 	if (_ownerUID isEqualTo _targetUID) then
 	{
 		throw [
@@ -102,10 +104,22 @@ try
 		];
 	};
 
-	// Get the current rights
-	private _currentBuildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
+	if !([_playerUID, _territory, "moderator"] call ESMs_system_territory_checkAccess) then
+	{
+		throw [
+			["admin", [
+				["description", localize!("Add_MissingAccess_Admin")],
+				["fields", [
+					[localize!("Territory"), _encodedTerritoryID],
+					[localize!("Player"), _playerMetadata],
+					[localize!("Target"), _targetMetadata]
+				]]
+			]],
+			["player", localize!("Add_MissingAccess", _playerMention, _encodedTerritoryID)]
+		];
+	};
 
-	// Do not add em twice to the build rights
+	private _currentBuildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
 	if (_targetUID in _currentBuildRights) then
 	{
 		throw [
@@ -113,16 +127,18 @@ try
 		];
 	};
 
-	// Add the build rights to the flag pole and update it
+	//////////////////////
+	// Modification
+	//////////////////////
 	_currentBuildRights pushBack _targetUID;
 	_territory setVariable ["ExileTerritoryBuildRights", _currentBuildRights, true];
-
-	// Update the build rights in the database
 	(format [
 		"updateTerritoryBuildRights:%1:%2", _currentBuildRights, _territoryDatabaseID
 	]) call ExileServer_system_database_query_fireAndForget;
 
-	// Respond back to our command
+	//////////////////////
+	// Completion
+	//////////////////////
 	[
 		// Response
 		[_id],

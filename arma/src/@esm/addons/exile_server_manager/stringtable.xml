@@ -118,7 +118,7 @@
 			<!-- None -->
 			<Key ID="STR_ESM_Add_NullFlag_Admin">
 				<English>
-					Player attempted to add target to territory, but the territory flag was not found in game
+					Player attempted to add Target to territory, but the territory flag was not found in game
 				</English>
 			</Key>
 
@@ -132,15 +132,10 @@
 				</English>
 			</Key>
 
-			<!--
-				%1 	- Player mention
-				%2	- Player UID
-				%3	- Target UID
-				%4  - Territory ID
-			-->
+			<!-- None -->
 			<Key ID="STR_ESM_Add_MissingAccess_Admin">
 				<English>
-					%1 (`UID:%2`) attempted to add `UID:%3` to territory `ID:%4`, but they don't have permission
+					Player attempted to add Target to territory, but Player does not have permission
 				</English>
 			</Key>
 
@@ -153,14 +148,10 @@
 				</English>
 			</Key>
 
-			<!--
-				%1 	- Player mention
-				%2	- Player UID
-				%3	- Territory ID
-			-->
+			<!-- None -->
 			<Key ID="STR_ESM_Add_InvalidAdd_Admin">
 				<English>
-					%1 (`UID:%2`) tried to add themselves to territory `ID:%3`. Time to go laugh at them!
+					Player attempted to add themselves to the territory. Time to go laugh at them!
 				</English>
 			</Key>
 
@@ -178,14 +169,14 @@
 			-->
 			<Key ID="STR_ESM_Add_InvalidAdd_Exists">
 				<English>
-					%1, this player already has build rights
+					%1, this Player already has build rights
 				</English>
 			</Key>
 
 			<!-- None -->
 			<Key ID="STR_ESM_Add_Log_Description">
 				<English>
-					Player added target to territory
+					Player added Target to territory
 				</English>
 			</Key>
 		</Container>

@@ -42,7 +42,7 @@ Author:
 
 private _caller = _this select 0;
 private _message = _this select 1;
-private _logLevel = _this param [2, "info"];
+private _logLevel = param [2, "info"];
 
 // Make sure it's a string
 if (!type?(_message, STRING)) then
