@@ -34,5 +34,11 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-(_this select 0) set ["color", _this select 1];
+private _embed = _this select 0;
+private _value = _this select 1;
+
+if (nil?(_value) || { empty?(_value) }) exitWith { nil };
+
+_embed set ["color", _value];
+
 nil

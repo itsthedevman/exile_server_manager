@@ -49,33 +49,40 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
+if (nil?(_this) || { empty?(_this) }) exitWith { createHashMap };
+
 private _embedData = _this;
-private _embed = createHashMap;
 
-if (nil?(_embedData) || { empty?(_embedData) }) exitWith { _embed };
-
+// Attempt to convert
 if (type?(_embedData, ARRAY)) then
 {
 	_embedData = createHashmapFromArray _embedData;
 };
 
-if !(type?(_embedData, HASH)) exitWith { _embed };
+// Ensure we're working with a HashMap
+if (!type?(_embedData, HASH)) exitWith { createHashMap };
 
+private _embed = createHashMap;
+
+// Title
 if ("title" in _embedData) then
 {
 	[_embed, get!(_embedData, "title")] call ESMs_util_embed_setTitle;
 };
 
+// Description
 if ("description" in _embedData) then
 {
 	[_embed, get!(_embedData, "description")] call ESMs_util_embed_setDescription;
 };
 
+// Color
 if ("color" in _embedData) then
 {
 	[_embed, get!(_embedData, "color")] call ESMs_util_embed_setColor;
 };
 
+// Fields
 if ("fields" in _embedData) then
 {
 	{
