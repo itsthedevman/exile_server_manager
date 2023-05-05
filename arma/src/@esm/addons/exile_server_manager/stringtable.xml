@@ -160,7 +160,7 @@
 			-->
 			<Key ID="STR_ESM_Add_InvalidAdd_Owner">
 				<English>
-					%1, you are the owner of this territory which automatically makes you a member of this territory, silly :stuck_out_tongue_winking_eye:
+					%1, the Target is the owner of this territory which automatically makes them a member of this territory, silly :stuck_out_tongue_winking_eye:
 				</English>
 			</Key>
 
