@@ -43,6 +43,13 @@ private	_log = _this param [3, false];
 
 private _exceptionHash = createHashmapFromArray _commandException;
 
+// Message to the player
+if (key?(_exceptionHash, "player")) then
+{
+	private _message = get!(_exceptionHash, "player", "");
+	[_id, _message] call ESMs_system_message_respond_withError;
+};
+
 // Message to the admins
 if (key?(_exceptionHash, "admin")) then
 {
@@ -58,13 +65,6 @@ if (key?(_exceptionHash, "admin")) then
 
 		_message call ESMs_system_network_discord_log;
 	};
-};
-
-// Message to the player
-if (key?(_exceptionHash, "player")) then
-{
-	private _message = get!(_exceptionHash, "player", "");
-	[_id, _message] call ESMs_system_message_respond_withError;
 };
 
 nil
