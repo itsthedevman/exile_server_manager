@@ -45,13 +45,18 @@ private _data = get!(_this, "data");
 private _metadata = get!(_this, "metadata");
 if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 
+//////////////////////
+// Initialization
+//////////////////////
+private _code = compile(get!(_data, "code"));
+private _result = nil;
+
 try
 {
-	private _type = get!(_data, "execute_on");
-	private _code = compile(get!(_data, "code"));
-	private _result = nil;
-
-	switch (_type) do
+	//////////////////////
+	// Execution
+	//////////////////////
+	switch (get!(_data, "execute_on")) do
 	{
 		case "all":
 		{
@@ -74,25 +79,32 @@ try
 				private _targetMention = dig!(_metadata, "target", "discord_mention");
 
 				// This can be executed on a player that is not registered with ESM
-				if (nil?(_targetMention)) then
+				if (nil?(_targetMention) || { empty?(_targetMention) }) then
 				{
 					_targetMention = _targetUID;
 				};
 
-				throw localize!("Sqf_NullTarget", _playerMention, _targetMention, ESM_ServerID);
+				throw [
+					["player", localize!("Sqf_NullTarget", _playerMention, _targetMention, ESM_ServerID)]
+				];
 			};
 
 			_code remoteExec ["call", owner _targetObject];
 		};
 	};
 
-	// Ensure the result is a string, unless it's nil
+	//////////////////////
+	// Validation
+	//////////////////////
+	// Result _must_ be a string
 	if (!nil?(_result) && { !type?(_result, STRING) }) then
 	{
 		_result = str(_result);
 	};
 
-	// All done!
+	//////////////////////
+	// Completion
+	//////////////////////
 	[
 		// Response
 		[
