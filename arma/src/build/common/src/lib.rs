@@ -303,7 +303,7 @@ impl System {
                 "stdout" => {
                     if self.print_stdout {
                         print!(
-                            "\n{} -     {} -> {}",
+                            "\n{} - : {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
                             line.trim()
@@ -321,7 +321,7 @@ impl System {
                 "stderr" => {
                     if self.print_stderr {
                         print!(
-                            "\n{} -     {} -> {}",
+                            "\n{} - : {} -> {}",
                             "<esm_bt>".blue().bold(),
                             print_as.bold().underline(),
                             line.trim()
@@ -361,34 +361,57 @@ impl System {
         if (self.print_stdout && !stdout_output.is_empty())
             || (self.print_stderr && !stderr_output.is_empty())
         {
-            println!();
+            print!("\n{} - : ", "<esm_bt>".blue().bold());
         }
 
         if !status.success() {
-            let line_prefix = format!(
-                "{} - {} ->",
-                "<esm_bt>".blue().bold(),
-                print_as.red().bold()
-            );
+            let error_prefix = format!("{} - {} -", "<esm_bt>".blue().bold(), "error".red().bold());
 
-            if !stdout_output.is_empty() && self.print_stdout {
-                for line in stdout_output {
-                    println!("{line_prefix} {}", line);
-                }
+            let mut error: Vec<String> = vec![
+                // Already has prefix
+                format!(
+                    "Uh oh! A system command exited with {} so you know what that means...",
+                    status.code().unwrap_or_default()
+                ),
+                format!(
+                    r#"{error_prefix}
+{error_prefix} ----------------------------------------------------------------------
+{error_prefix} Command executed
+{error_prefix} ----------------------------------------------------------------------
+{error_prefix}{}"#,
+                    self.command_string()
+                ),
+            ];
+
+            // Makes things easier
+            let offset = error.len();
+
+            // Add the output
+            for line in stdout_output {
+                error.push(format!("{error_prefix} {}", line));
             }
 
-            if !stderr_output.is_empty() && self.print_stderr {
-                for line in stderr_output {
-                    println!("{line_prefix} {}", line);
-                }
+            for line in stderr_output {
+                error.push(format!("{error_prefix} {}", line));
             }
 
-            return Err(format!(
-                "Execution for command failed with exit code {:?}\n{}",
-                status.code(),
-                self.command_string().red()
-            )
-            .into());
+            // Sometimes things are printed both to stdout and stderr
+            error.dedup();
+
+            // Don't print this unless we have something from the outputs
+            if error.len() > offset {
+                error.insert(
+                    offset,
+                    format!(
+                        r#"{error_prefix}
+{error_prefix} ----------------------------------------------------------------------
+{error_prefix} Command output
+{error_prefix} ----------------------------------------------------------------------"#
+                    ),
+                );
+            }
+
+            return Err(format!("{}", error.join("\n")).into());
         }
 
         let stdout_output = stdout_output.join("\n");

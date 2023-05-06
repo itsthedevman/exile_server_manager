@@ -70,7 +70,7 @@ pub const LINUX_EXES: &[&str] = &["/arma3server/arma3server", "/arma3server/arma
 pub struct Args {
     /// Build the extension as 32 bit instead of 64 bit
     #[arg(short, long)]
-    build_x32: bool,
+    x32: bool,
 
     /// Set the target build platform for the extension
     #[arg(short, long, value_enum, default_value_t = BuildOS::Linux)]
@@ -103,11 +103,15 @@ pub struct Args {
     /// Updates Arma server (linux target only)
     #[arg(short, long)]
     update: bool,
+
+    /// Builds the code but does not start the server
+    #[arg(short, long)]
+    build: bool,
 }
 
 impl Args {
     pub fn build_arch(&self) -> BuildArch {
-        if self.build_x32 {
+        if self.x32 {
             BuildArch::X32
         } else {
             BuildArch::X64
@@ -126,7 +130,8 @@ impl Args {
         self.release
     }
 
-    pub fn build_only(&self) -> &str {
+    /// Controls which code group (extension, mod) is built for this run
+    pub fn only_build(&self) -> &str {
         match &self.only {
             Some(v) => v,
             None => "",
@@ -142,11 +147,15 @@ impl Args {
     }
 
     pub fn full_rebuild(&self) -> bool {
-        self.full
+        self.full || self.build
     }
 
     pub fn update_arma(&self) -> bool {
         self.update
+    }
+
+    pub fn build_only(&self) -> bool {
+        self.build
     }
 }
 

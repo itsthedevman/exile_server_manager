@@ -149,7 +149,11 @@ impl Builder {
         }
 
         if self.rebuild_extension() {
-            self.print_status("Compiling extension", build_steps::build_extension)?;
+            self.print_status("Building extension", build_steps::build_extension)?;
+        }
+
+        if self.args.build_only() {
+            return Ok(());
         }
 
         self.print_status("Seeding database", build_steps::seed_database)?;
@@ -167,6 +171,12 @@ impl Builder {
             self.print_status("Closing receiver", |_| stop_receiver())?;
         }
 
+        println!(
+            "{} - {}",
+            "<esm_bt>".blue().bold(),
+            "Goodbye".green().bold()
+        );
+
         Ok(())
     }
 
@@ -178,21 +188,15 @@ impl Builder {
     where
         F: Fn(&mut Builder) -> BuildResult,
     {
-        print!("{} - {message} ... ", "<esm_bt>".blue().bold());
-
-        // Forces print to write
-        if let Err(e) = io::stdout().flush() {
-            println!("{}", "failed".red().bold());
-            return Err(e.to_string().into());
-        }
+        print_wait_prefix(&message.to_string())?;
 
         match code(self) {
             Ok(_) => {
-                println!("{}", "done".green().bold());
+                print_wait_success();
                 Ok(())
             }
             Err(e) => {
-                println!("{}", "failed".red().bold());
+                print_wait_failure();
                 Err(e)
             }
         }
@@ -243,12 +247,12 @@ impl Builder {
     }
 
     pub fn rebuild_extension(&self) -> bool {
-        if self.args.build_only() == "mod" {
+        if self.args.only_build() == "mod" {
             return false;
         }
 
         self.rebuild_extension
-            || self.args.build_only() == "extension"
+            || self.args.only_build() == "extension"
             || has_directory_changed(
                 &self.file_watcher,
                 &self.local_git_path.join("src").join("esm"),
@@ -261,12 +265,12 @@ impl Builder {
 
     // The entire mod
     pub fn rebuild_mod(&self) -> bool {
-        if self.args.build_only() == "extension" {
+        if self.args.only_build() == "extension" {
             return false;
         }
 
         self.rebuild_mod
-            || self.args.build_only() == "mod"
+            || self.args.only_build() == "mod"
             || has_directory_changed(
                 &self.file_watcher,
                 &self.local_git_path.join("src").join("@esm"),
@@ -275,12 +279,12 @@ impl Builder {
 
     // Single addon
     pub fn rebuild_addon(&self, addon: &str) -> bool {
-        if self.args.build_only() == "extension" {
+        if self.args.only_build() == "extension" {
             return false;
         }
 
         self.rebuild_mod
-            || self.args.build_only() == "mod"
+            || self.args.only_build() == "mod"
             || has_directory_changed(
                 &self.file_watcher,
                 &self
@@ -376,6 +380,28 @@ impl Builder {
             server_directory = self.remote.server_path
         );
     }
+}
+
+pub fn print_wait_prefix(line: &str) -> BuildResult {
+    print!("{} - {line} ... ", "<esm_bt>".blue().bold());
+
+    // Forces print to write
+    if let Err(e) = io::stdout().flush() {
+        println!("{}", "failed".red().bold());
+        return Err(e.to_string().into());
+    }
+
+    Ok(())
+}
+
+#[inline]
+pub fn print_wait_success() {
+    println!("{}", "done".green().bold());
+}
+
+#[inline]
+pub fn print_wait_failure() {
+    println!("{}", "failed".red().bold());
 }
 
 pub fn git_sha_short() -> String {

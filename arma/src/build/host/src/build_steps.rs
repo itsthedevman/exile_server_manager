@@ -3,6 +3,7 @@ use crate::*;
 use colored::*;
 use common::{BuildResult, Command};
 use compiler::Compiler;
+use glob::glob;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -576,7 +577,7 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn compile_mod(builder: &mut Builder) -> BuildResult {
+fn compile_mod(builder: &mut Builder) -> BuildResult {
     lazy_static! {
         static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
         static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
@@ -590,22 +591,58 @@ pub fn compile_mod(builder: &mut Builder) -> BuildResult {
         .join("addons");
 
     let mod_build_path = builder.local_build_path.join("@esm");
-    let addon_destination_path = mod_build_path.join("addons");
+    let destination_path = mod_build_path.join("addons");
+
+    println!(); // Formatting
+    print_wait_prefix(": Replacing SQF macros")?;
 
     let mut compiler = Compiler::new();
     compiler
         .source(&source_path.to_string_lossy())
-        .destination(&addon_destination_path.to_string_lossy())
+        .destination(&destination_path.to_string_lossy())
         .target(&builder.args.build_os().to_string());
 
     crate::compile::bind_replacements(&mut compiler);
     compiler.compile()?;
+    print_wait_success();
 
-    // Directory::transfer(
-    //     builder,
-    //     mod_build_path,
-    //     builder.remote_build_path().to_owned(),
-    // )?;
+    check_sqf(builder, &destination_path)
+}
+
+fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
+    let Ok(file_paths) = glob(&format!("{}/**/*.sqf", addons_path.to_string_lossy())) else {
+        return Err(format!("Failed to find any SQF files in {}", addons_path.display()).into());
+    };
+
+    print_wait_prefix(": Checking SQF")?;
+    for entry in file_paths {
+        let Ok(sqf_file_path) = entry else {
+            continue;
+        };
+
+        System::new()
+            .command(
+                builder
+                    .local_git_path
+                    .join("tools")
+                    .join("sqfvm")
+                    .to_string_lossy(),
+            )
+            .arguments(&[
+                "--automated",
+                "--parse-only",
+                "--no-spawn-player",
+                "--input-sqf",
+                &sqf_file_path.to_string_lossy(),
+            ])
+            .add_error_detection("Parse Error:")
+            .print_stderr()
+            .print_as("SQFvm")
+            .execute(None)?;
+    }
+
+    // Use the "done" for "Building mod ..." to be used here. Keeps that from being printed on a separate line (and it looks better)
+    // print_wait_success();
 
     Ok(())
 }

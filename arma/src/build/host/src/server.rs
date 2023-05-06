@@ -61,7 +61,7 @@ impl Server {
                             println!();
                         } else {
                             println!(
-                                "{} -     {} -> {}",
+                                "{} - : {} -> {}",
                                 "<esm_bt>".blue().bold(),
                                 label.underline().bold(),
                                 content.trim()
