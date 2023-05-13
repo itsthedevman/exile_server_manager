@@ -45,6 +45,13 @@ macro_rules! random_bs_go {
     }};
 }
 
+#[macro_export]
+macro_rules! load_sql_query {
+    ($name:expr) => {{
+        include_str!(concat!("../sql/", $name, ".sql"))
+    }};
+}
+
 // #[macro_export]
 // macro_rules! hashmap {
 //     { $($key:expr => $value:expr),* } => {{

@@ -58,8 +58,6 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
     match result {
         Ok(m) => m,
         Err(e) => {
-            error!("{e}");
-
             let message = Message::new()
                 .set_id(message_id)
                 .add_error(e.error_type, e.error_content);

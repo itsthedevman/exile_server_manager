@@ -2,8 +2,8 @@ use crate::*;
 use ini::Ini;
 use mysql_async::{params, prelude::Queryable, Conn, Opts, Pool, Result as SQLResult};
 use parking_lot::RwLock;
-use serde::Serialize;
-use std::{collections::HashMap, path::Path};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, convert::TryInto, path::Path};
 
 type DatabaseResult = Result<QueryResult, Error>;
 
@@ -132,8 +132,14 @@ impl Database {
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
     pub async fn query(&self, name: &str, arguments: &HashMap<String, String>) -> DatabaseResult {
+        let mut connection = self.connection().await?;
+
         let query_result = match name {
-            "reward_territories" => self.reward_territories(arguments).await,
+            "reward_territories" => {
+                self.query_reward_territories(&mut connection, arguments)
+                    .await
+            }
+            "me" => self.query_me(&mut connection, arguments).await,
             _ => {
                 return Err(format!(
                     "[query] Unexpected query \"{}\" with arguments {:?}",
@@ -146,13 +152,17 @@ impl Database {
         query_result
     }
 
-    async fn reward_territories(&self, arguments: &HashMap<String, String>) -> DatabaseResult {
-        let mut connection = self.connection().await?;
-
+    async fn query_reward_territories(
+        &self,
+        connection: &mut Conn,
+        arguments: &HashMap<String, String>,
+    ) -> DatabaseResult {
         let player_uid = match arguments.get("uid") {
             Some(uid) => uid,
             None => {
-                error!("[reward_territories] ❌ Missing key `uid` in provided query arguments");
+                error!(
+                    "[query_reward_territories] ❌ Missing key `uid` in provided query arguments"
+                );
                 return Err("error".into());
             }
         };
@@ -169,20 +179,20 @@ impl Database {
         let result = connection
             .exec_map(
                 r#"
-                SELECT
-                    t.id,
-                    esm_custom_id,
-                    name,
-                    level,
-                    (SELECT COUNT(*) FROM vehicle WHERE territory_id = t.id) as vehicle_count
-                FROM
-                    territory t
-                WHERE
-                    deleted_at IS NULL
-                AND
-                    (owner_uid = :uid
-                        OR build_rights LIKE :uid_wildcard
-                        OR moderators LIKE :uid_wildcard)
+SELECT
+    t.id,
+    esm_custom_id,
+    name,
+    level,
+    (SELECT COUNT(*) FROM vehicle WHERE territory_id = t.id) as vehicle_count
+FROM
+    territory t
+WHERE
+    deleted_at IS NULL
+AND
+    (owner_uid = :uid
+        OR build_rights LIKE :uid_wildcard
+        OR moderators LIKE :uid_wildcard)
             "#,
                 params! { "uid" => player_uid, "uid_wildcard" => format!("%{}%", player_uid) },
                 |(id, custom_id, name, level, vehicle_count)| TerritoryResult {
@@ -206,6 +216,111 @@ impl Database {
             }
             Err(e) => {
                 error!("[reward_territories] ❌ Query failed - {}", e);
+                Err("error".into())
+            }
+        }
+    }
+
+    async fn query_me(
+        &self,
+        connection: &mut Conn,
+        arguments: &HashMap<String, String>,
+    ) -> DatabaseResult {
+        let player_uid = match arguments.get("uid") {
+            Some(uid) => uid,
+            None => {
+                error!("[query_me] ❌ Missing key `uid` in provided query arguments");
+                return Err("error".into());
+            }
+        };
+
+        #[derive(Debug, Deserialize, Serialize)]
+        struct TerritoryResult {
+            id: String,
+            name: String,
+        }
+
+        #[derive(Debug, Serialize)]
+        struct PlayerResult {
+            locker: i32,
+            score: i32,
+            name: String,
+            money: Option<i32>,
+            damage: Option<f64>,
+            hunger: Option<f64>,
+            thirst: Option<f64>,
+            kills: i32,
+            deaths: i32,
+            territories: Vec<TerritoryResult>,
+        }
+
+        let result = connection
+            .exec_map(
+                load_sql_query!("me"),
+                params! { "uid" => player_uid, "uid_wildcard" => format!("%{}%", player_uid) },
+                |(
+                    locker,
+                    score,
+                    name,
+                    money,
+                    damage,
+                    hunger,
+                    thirst,
+                    kills,
+                    deaths,
+                    territories,
+                )| {
+                    let territories_json: Option<String> = territories;
+                    let mut territories = vec![];
+
+                    if let Some(territories_json) = territories_json {
+                        #[derive(Debug, Deserialize, Serialize)]
+                        struct TerritoryEntry {
+                            id: i32,
+                            name: String,
+                        }
+
+                        if let Ok(territories_parsed) =
+                            serde_json::from_str::<Vec<TerritoryEntry>>(&territories_json)
+                        {
+                            territories_parsed.into_iter().for_each(|territory| {
+                                territories.push(TerritoryResult {
+                                    id: self
+                                        .hasher
+                                        .encode(territory.id.try_into().unwrap_or_default()),
+                                    name: territory.name,
+                                });
+                            });
+                        }
+                    }
+
+                    PlayerResult {
+                        locker,
+                        score,
+                        name,
+                        money,
+                        damage,
+                        hunger,
+                        thirst,
+                        kills,
+                        deaths,
+                        territories,
+                    }
+                },
+            )
+            .await;
+
+        match result {
+            Ok(players) => {
+                let results: Vec<String> = players
+                    .into_iter()
+                    .map(|player| serde_json::to_string(&player).unwrap())
+                    .collect();
+
+                Ok(QueryResult { results })
+            }
+            Err(e) => {
+                error!("[query_me] ❌ Query failed - {}", e);
                 Err("error".into())
             }
         }
@@ -359,3 +474,125 @@ impl Hasher {
         *self.builder.write() = Self::builder(salt)
     }
 }
+
+/*
+{
+    "list_territories",
+    @"SELECT
+        t.id as id,
+        owner_uid,
+        (SELECT name FROM account WHERE uid = owner_uid) as owner_name,
+        name as territory_name,
+        radius,
+        level,
+        flag_texture,
+        flag_stolen,
+        CONVERT_TZ(`last_paid_at`, @@session.time_zone, '+00:00') AS `last_paid_at`,
+        build_rights,
+        moderators,
+        (SELECT COUNT(*) FROM construction WHERE territory_id = t.id) as object_count,
+        esm_custom_id
+    FROM
+        territory t
+    WHERE
+        deleted_at IS NULL
+    AND
+        (owner_uid = @uid OR build_rights LIKE CONCAT('%', @uid, '%') OR moderators LIKE CONCAT('%', @uid, '%'))"
+},
+{
+    "territory_info",
+    @"SELECT
+        t.id as id,
+        owner_uid,
+        (SELECT name FROM account WHERE uid = owner_uid) as owner_name,
+        name as territory_name,
+        radius,
+        level,
+        flag_texture,
+        flag_stolen,
+        CONVERT_TZ(`last_paid_at`, @@session.time_zone, '+00:00') AS `last_paid_at`,
+        build_rights,
+        moderators,
+        (SELECT COUNT(*) FROM construction WHERE territory_id = t.id) as object_count,
+        esm_custom_id
+    FROM
+        territory t
+    WHERE
+        t.id = @tid"
+},
+{
+    "list_territories_all",
+    "SELECT t.id, owner_uid, a.name as owner_name, t.name, esm_custom_id FROM territory t INNER JOIN account a ON a.uid = owner_uid ORDER BY t.name ASC"
+},
+{
+    "get_name",
+    "SELECT name FROM account WHERE uid = @uid"
+},
+{
+    "player_info_account_only",
+    @"SELECT
+        a.locker,
+        a.score,
+        a.name,
+        a.kills,
+        a.deaths,
+        (
+            SELECT CONCAT("[", GROUP_CONCAT(JSON_OBJECT("id", id, "name", name) SEPARATOR ", "), "]")
+            FROM territory
+            WHERE deleted_at IS NULL AND (owner_uid = @uid OR build_rights LIKE CONCAT('%', @uid, '%') OR moderators LIKE CONCAT('%', @uid, '%'))
+        ) as territories
+    FROM account a
+    WHERE
+        a.uid = @uid"
+},
+{
+    "leaderboard",
+    "SELECT name FROM account ORDER BY kills DESC LIMIT 10"
+},
+{
+    "leaderboard_deaths",
+    "SELECT name FROM account ORDER BY deaths DESC LIMIT 10"
+},
+{
+    "leaderboard_score",
+    "SELECT name FROM account ORDER BY score DESC LIMIT 10"
+},
+{
+    "restore",
+    @"UPDATE territory SET deleted_at = NULL, xm8_protectionmoney_notified = 0, last_paid_at = NOW() WHERE id = @tid;
+    UPDATE construction SET deleted_at = NULL WHERE id = @tid;
+    UPDATE container SET deleted_at = NULL WHERE id = @tid;"
+},
+{
+    "reset_player",
+    "DELETE FROM player WHERE account_uid = @uid"
+},
+{
+    "reset_all",
+    "DELETE FROM player WHERE damage = 1"
+},
+{
+    "get_territory_id_from_hash",
+    "SELECT id FROM territory WHERE esm_custom_id = @tid"
+},
+{
+    "set_custom_territory_id",
+    "UPDATE territory SET esm_custom_id = @tid WHERE id = @id AND owner_uid = @uid"
+},
+{
+    "get_hash_from_id",
+    "SELECT esm_custom_id FROM territory WHERE id = @id"
+},
+{
+    "get_payment_count",
+    "SELECT esm_payment_counter FROM territory WHERE id = @id"
+},
+{
+    "increment_payment_counter",
+    "UPDATE territory SET esm_payment_counter = esm_payment_counter + 1 WHERE id = @id"
+},
+{
+    "reset_payment_counter",
+    "UPDATE territory SET esm_payment_counter = 0 WHERE (owner_uid = @uid OR build_rights LIKE CONCAT('%', @uid, '%') OR moderators LIKE CONCAT('%', @uid, '%'))"
+}
+ */
