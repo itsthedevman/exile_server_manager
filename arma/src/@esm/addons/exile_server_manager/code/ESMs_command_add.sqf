@@ -73,8 +73,8 @@ try
 				["description", localize!("Add_NullFlag_Admin")],
 				["fields", [
 					[localize!("Territory"), _encodedTerritoryID],
-					[localize!("Player"), _playerMetadata],
-					[localize!("Target"), _targetMetadata]
+					[localize!("Player"), _playerMetadata, true],
+					[localize!("Target"), _targetMetadata, true]
 				]]
 			]],
 			["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_CommandPrefix, ESM_ServerID)]
@@ -88,8 +88,8 @@ try
 				["description", localize!("Add_InvalidAdd_Admin")],
 				["fields", [
 					[localize!("Territory"), _encodedTerritoryID],
-					[localize!("Player"), _playerMetadata],
-					[localize!("Target"), _targetMetadata]
+					[localize!("Player"), _playerMetadata, true],
+					[localize!("Target"), _targetMetadata, true]
 				]]
 			]],
 			["player", localize!("Add_InvalidAdd", _playerMention)]
@@ -111,8 +111,8 @@ try
 				["description", localize!("Add_MissingAccess_Admin")],
 				["fields", [
 					[localize!("Territory"), _encodedTerritoryID],
-					[localize!("Player"), _playerMetadata],
-					[localize!("Target"), _targetMetadata]
+					[localize!("Player"), _playerMetadata, true],
+					[localize!("Target"), _targetMetadata, true]
 				]]
 			]],
 			["player", localize!("Add_MissingAccess", _playerMention, _encodedTerritoryID)]
@@ -148,7 +148,7 @@ try
 
 		// Log embed
 		[
-			["title", localize!("Success")],
+			["title", localize!("Add_Log_Title")],
 			["description", localize!("Add_Log_Description", _playerMention)],
 			["color", "green"],
 			["fields", [
@@ -156,8 +156,8 @@ try
 					["id", _encodedTerritoryID],
 					["name", _territory getVariable ["ExileTerritoryName", "N/A"]]
 				]],
-				[localize!("Player"), _playerMetadata],
-				[localize!("Target"), _targetMetadata]
+				[localize!("Player"), _playerMetadata, true],
+				[localize!("Target"), _targetMetadata, true]
 			]]
 		]
 	]
