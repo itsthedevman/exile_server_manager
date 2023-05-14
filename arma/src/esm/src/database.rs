@@ -1,9 +1,9 @@
 use crate::*;
 use ini::Ini;
-use mysql_async::{params, prelude::Queryable, Conn, Opts, Pool, Result as SQLResult};
+use mysql_async::{params, prelude::Queryable, Conn, Opts, Params, Pool, Result as SQLResult};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, convert::TryInto, path::Path};
+use std::{collections::HashMap, path::Path};
 
 type DatabaseResult = Result<QueryResult, Error>;
 
@@ -140,6 +140,7 @@ impl Database {
                     .await
             }
             "me" => self.query_me(&mut connection, arguments).await,
+            "all_territories" => self.query_all_territories(&mut connection, arguments).await,
             _ => {
                 return Err(format!(
                     "[query] Unexpected query \"{}\" with arguments {:?}",
@@ -274,22 +275,12 @@ AND
                     let mut territories = vec![];
 
                     if let Some(territories_json) = territories_json {
-                        #[derive(Debug, Deserialize, Serialize)]
-                        struct TerritoryEntry {
-                            id: i32,
-                            name: String,
-                        }
-
                         if let Ok(territories_parsed) =
-                            serde_json::from_str::<Vec<TerritoryEntry>>(&territories_json)
+                            serde_json::from_str::<Vec<TerritoryResult>>(&territories_json)
                         {
-                            territories_parsed.into_iter().for_each(|territory| {
-                                territories.push(TerritoryResult {
-                                    id: self
-                                        .hasher
-                                        .encode(territory.id.try_into().unwrap_or_default()),
-                                    name: territory.name,
-                                });
+                            territories_parsed.into_iter().for_each(|mut territory| {
+                                territory.id = self.hasher.encode(territory.id);
+                                territories.push(territory);
                             });
                         }
                     }
@@ -315,6 +306,50 @@ AND
                 let results: Vec<String> = players
                     .into_iter()
                     .map(|player| serde_json::to_string(&player).unwrap())
+                    .collect();
+
+                Ok(QueryResult { results })
+            }
+            Err(e) => {
+                error!("[query_me] ❌ Query failed - {}", e);
+                Err("error".into())
+            }
+        }
+    }
+
+    async fn query_all_territories(
+        &self,
+        connection: &mut Conn,
+        _arguments: &HashMap<String, String>,
+    ) -> DatabaseResult {
+        #[derive(Debug, Serialize)]
+        struct TerritoryResult {
+            id: String,
+            esm_custom_id: Option<String>,
+            territory_name: String,
+            owner_uid: String,
+            owner_name: String,
+        }
+
+        let result = connection
+            .exec_map(
+                load_sql_query!("all_territories"),
+                Params::Empty,
+                |(id, esm_custom_id, territory_name, owner_uid, owner_name)| TerritoryResult {
+                    id: self.hasher.encode(id),
+                    esm_custom_id,
+                    territory_name,
+                    owner_uid,
+                    owner_name,
+                },
+            )
+            .await;
+
+        match result {
+            Ok(r) => {
+                let results: Vec<String> = r
+                    .into_iter()
+                    .filter_map(|t| serde_json::to_string(&t).ok())
                     .collect();
 
                 Ok(QueryResult { results })
@@ -458,7 +493,11 @@ impl Hasher {
             .unwrap()
     }
 
-    pub fn encode(&self, id: u64) -> String {
+    pub fn encode(&self, id: String) -> String {
+        let Ok(id) = id.parse() else {
+            return String::new();
+        };
+
         self.builder.read().encode(&[id])
     }
 
