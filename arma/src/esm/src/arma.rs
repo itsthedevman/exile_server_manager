@@ -196,7 +196,12 @@ async fn database_query(message: Message) -> MessageResult {
 
     let query_result = DATABASE.query(&query.name, &query.arguments).await;
     match query_result {
-        Ok(results) => Ok(Some(message.set_data(Data::QueryResult(results)))),
+        Ok(results) => Ok(Some(
+            Message::new()
+                .set_id(message.id)
+                .set_type(Type::Query)
+                .set_data(Data::QueryResult(results)),
+        )),
         Err(e) => Err(e),
     }
 }
