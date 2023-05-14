@@ -10,12 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_04_20_200747) do
+ActiveRecord::Schema.define(version: 2023_05_13_235724) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
   enable_extension "uuid-ossp"
+
+  create_table "api_tokens", force: :cascade do |t|
+    t.string "token", null: false
+    t.boolean "active", default: true
+    t.string "comment"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["token"], name: "index_api_tokens_on_token"
+  end
 
   create_table "bot_attributes", force: :cascade do |t|
     t.boolean "maintenance_mode_enabled", default: false, null: false
