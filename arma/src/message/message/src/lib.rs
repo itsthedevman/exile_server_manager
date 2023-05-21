@@ -179,12 +179,7 @@ impl Message {
 
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Message")
-            .field("id", &self.id)
-            .field("data", &self.data)
-            .field("metadata", &self.metadata)
-            .field("errors", &self.errors)
-            .finish()
+        write!(f, "{}", serde_json::to_string_pretty(&self).unwrap())
     }
 }
 

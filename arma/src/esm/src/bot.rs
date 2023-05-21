@@ -122,12 +122,7 @@ fn send_message(message: Message) -> ESMResult {
     }
 
     if !matches!(message.data, Data::Pong) {
-        info!(
-            "[send_message] {} - {:?} - {}",
-            message.id,
-            message.message_type,
-            message.data.name(),
-        );
+        info!("[send_message] {message}");
     }
 
     // Convert the message to bytes so it can be sent
@@ -255,14 +250,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             let message = match Message::from_bytes(&request.content, token.secret_bytes()) {
                 Ok(message) => {
                     if !matches!(message.data, Data::Ping) {
-                        info!(
-                            "[on_message] {} - {:?} - {}",
-                            message.id,
-                            message.message_type,
-                            message.data.name(),
-                        );
-
-                        debug!("[on_message] {message:?}");
+                        info!("[on_message] {}", message);
                     }
 
                     message

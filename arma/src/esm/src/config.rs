@@ -106,7 +106,7 @@ fn default_extdb_conf_header_name() -> String {
 }
 
 fn default_extdb_version() -> u8 {
-    0
+    3
 }
 
 fn default_log_output() -> String {

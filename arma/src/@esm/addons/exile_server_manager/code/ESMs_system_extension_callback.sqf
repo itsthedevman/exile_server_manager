@@ -40,7 +40,7 @@ if (type?(_function, STRING)) exitWith
 };
 
 private _response = _data call ESMs_system_extension_processResult;
-info!("Calling function ""%1"" with %2", _functionName, _response);
+info!("Calling function ""%1""", _functionName);
 
 // Do not use spawn
 _response call _function;

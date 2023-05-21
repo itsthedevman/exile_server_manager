@@ -94,11 +94,11 @@ private _sanitizer = {
 
 // Using the sanitizer, sanitize the provided arguments
 private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
-debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
+// debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
 
 // Call the extension and process the result
 private _result = "esm" callExtension [_function, _sanitizedArguments];
-debug!("[%1] Endpoint ""%2"" replied with %3: %4", _id, _function, typeName _result, _result);
+// debug!("[%1] Endpoint ""%2"" replied with %3: %4", _id, _function, typeName _result, _result);
 
 // If there is an issue, Arma-rs will return an error code.
 // Possible error codes:

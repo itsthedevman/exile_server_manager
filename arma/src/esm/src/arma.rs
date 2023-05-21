@@ -87,6 +87,8 @@ fn send_to_arma(message: Message) -> ESMResult {
         message
     );
 
+    info!("[send_to_arma] {message}");
+
     let message = vec![
         vec!["id".to_arma(), message.id.to_arma()],
         vec!["data".to_arma(), message.data.to_arma()],
