@@ -34,8 +34,7 @@ config.yml
 build_config.yml
 *.zip
 
-# Don't ignore - Needed for code to compile without build script
-# .build-sha
+.build-sha
 
 # Because it's a big mod
 server/@exile/addons/*.pbo
