@@ -7,5 +7,3 @@ SELECT
 FROM
     territory t
     INNER JOIN account a ON a.uid = t.owner_uid
-ORDER BY
-    t.name ASC

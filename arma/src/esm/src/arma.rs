@@ -148,7 +148,7 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
 
     // First, check to make sure the player has joined this server
     if !DATABASE
-        .check_account_exists(&metadata.player.steam_uid)
+        .account_verification(&metadata.player.steam_uid)
         .await?
     {
         return Ok(Some(message.add_error(
@@ -160,7 +160,7 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     // If the command has a target, check to make sure they've joined the server
     if let Some(target_player) = &metadata.target {
         if !DATABASE
-            .check_account_exists(&target_player.steam_uid)
+            .account_verification(&target_player.steam_uid)
             .await?
         {
             return Ok(Some(message.add_error(

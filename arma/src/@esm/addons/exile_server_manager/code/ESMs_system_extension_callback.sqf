@@ -39,10 +39,9 @@ if (type?(_function, STRING)) exitWith
 	error!("Attempted to call function '%1' but it was not defined. Associated data: %2", _functionName, _data);
 };
 
-private _response = _data call ESMs_system_extension_processResult;
-info!("call %1", _functionName);
+private _arguments = _data call ESMs_system_extension_processResult;
+info!("%1 call %2;", _arguments, _functionName);
 
-// Do not use spawn
-_response call _function;
+_arguments call _function; // Do not use spawn
 
 true

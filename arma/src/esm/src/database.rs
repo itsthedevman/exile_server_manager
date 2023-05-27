@@ -79,13 +79,15 @@ impl Database {
         }
     }
 
-    pub async fn check_account_exists(&self, player_uid: &str) -> Result<bool, Error> {
+    pub async fn account_verification(&self, player_uid: &str) -> Result<bool, Error> {
         let mut connection = self.connection().await?;
 
-        let result: SQLResult<Option<String>> = connection.exec_first(
-            "SELECT CASE WHEN EXISTS(SELECT uid FROM account WHERE uid = :uid) THEN 'true' ELSE 'false' END",
-            params! { "uid" => player_uid }
-        ).await;
+        let result: SQLResult<Option<String>> = connection
+            .exec_first(
+                include_sql!("account_verification"),
+                params! { "uid" => player_uid },
+            )
+            .await;
 
         match result {
             Ok(r) => match r {
@@ -105,12 +107,7 @@ impl Database {
 
         let result: SQLResult<Option<u64>> = connection
             .exec_first(
-                r#"
-                SELECT id
-                FROM territory
-                WHERE esm_custom_id = :territory_id
-                ORDER BY esm_custom_id
-                "#,
+                include_sql!("decode_territory_id"),
                 params! { "territory_id" => territory_id },
             )
             .await;
@@ -136,11 +133,14 @@ impl Database {
 
         let query_result = match name {
             "reward_territories" => {
-                self.query_reward_territories(&mut connection, arguments)
+                self.command_reward_territories(&mut connection, arguments)
                     .await
             }
-            "me" => self.query_me(&mut connection, arguments).await,
-            "all_territories" => self.query_all_territories(&mut connection, arguments).await,
+            "me" => self.command_me(&mut connection, arguments).await,
+            "all_territories" => {
+                self.command_all_territories(&mut connection, arguments)
+                    .await
+            }
             _ => {
                 return Err(format!(
                     "[query] Unexpected query \"{}\" with arguments {:?}",
@@ -153,7 +153,7 @@ impl Database {
         query_result
     }
 
-    async fn query_reward_territories(
+    async fn command_reward_territories(
         &self,
         connection: &mut Conn,
         arguments: &HashMap<String, String>,
@@ -222,7 +222,7 @@ AND
         }
     }
 
-    async fn query_me(
+    async fn command_me(
         &self,
         connection: &mut Conn,
         arguments: &HashMap<String, String>,
@@ -257,8 +257,9 @@ AND
 
         let result = connection
             .exec_map(
-                load_sql_query!("me"),
-                params! { "uid" => player_uid, "uid_wildcard" => format!("%{}%", player_uid) },
+                include_sql!("command_me"),
+                // The "uid" argument must be before "uid_wildcard" since it's a substring of the other
+                params! { "uid_wildcard" => format!("%{}%", player_uid), "uid" => player_uid },
                 |(
                     locker,
                     score,
@@ -317,7 +318,7 @@ AND
         }
     }
 
-    async fn query_all_territories(
+    async fn command_all_territories(
         &self,
         connection: &mut Conn,
         _arguments: &HashMap<String, String>,
@@ -333,7 +334,7 @@ AND
 
         let result = connection
             .exec_map(
-                load_sql_query!("all_territories"),
+                include_sql!("command_all_territories"),
                 Params::Empty,
                 |(id, esm_custom_id, territory_name, owner_uid, owner_name)| TerritoryResult {
                     id: self.hasher.encode(id),

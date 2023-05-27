@@ -13,7 +13,7 @@ SELECT
             CONCAT(
                 "[",
                 GROUP_CONCAT(
-                    JSON_OBJECT("id", id, "name", name) SEPARATOR ", "
+                    JSON_OBJECT("id", CONVERT(id, char), "name", name) SEPARATOR ", "
                 ),
                 "]"
             )
