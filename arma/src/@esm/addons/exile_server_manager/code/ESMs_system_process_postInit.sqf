@@ -41,8 +41,9 @@ private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")
 		continue;
 	};
 
-	info!("Configuring global variable %1 for %2. Value is now set to %3", _variableName, typeName(_value), _value);
 	missionNameSpace setVariable [_variableName, _value];
+
+	info!("%1 = %3; // %2", _variableName, typeName(_value), if (type?(_value, STRING)) then { format["'%1'", _value] } else { _value });
 }
 forEach _variablesHash;
 
@@ -53,6 +54,6 @@ ESM_Initialized = true;
 // Acknowledge the message
 [_id] call ESMs_system_message_respond_to;
 
-info!("%1 (%2) - @esm version %3:%4 loaded - %5 detected", ESM_ServerID, ESM_CommunityID, ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
+info!("Greetings %1. I am connected with @esm version %2:%3, and detected %4 as your database extension", ESM_ServerID, ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
 
 true
