@@ -46,7 +46,7 @@ macro_rules! random_bs_go {
 }
 
 #[macro_export]
-macro_rules! load_sql_query {
+macro_rules! include_sql {
     ($name:expr) => {{
         include_str!(concat!("../sql/", $name, ".sql"))
     }};
