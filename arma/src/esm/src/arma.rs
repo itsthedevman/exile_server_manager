@@ -153,21 +153,8 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     {
         return Ok(Some(message.add_error(
             esm_message::ErrorType::Code,
-            String::from("player_account_does_not_exist"),
+            String::from("account_does_not_exist"),
         )));
-    }
-
-    // If the command has a target, check to make sure they've joined the server
-    if let Some(target_player) = &metadata.target {
-        if !DATABASE
-            .account_verification(&target_player.steam_uid)
-            .await?
-        {
-            return Ok(Some(message.add_error(
-                esm_message::ErrorType::Code,
-                String::from("target_account_does_not_exist"),
-            )));
-        }
     }
 
     // If the data has a territory_id, check it against the database
