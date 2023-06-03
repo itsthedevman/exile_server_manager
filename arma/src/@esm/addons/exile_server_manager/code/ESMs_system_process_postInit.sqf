@@ -54,6 +54,6 @@ ESM_Initialized = true;
 // Acknowledge the message
 [_id] call ESMs_system_message_respond_to;
 
-info!("Greetings %1. I am connected with @esm version %2:%3, and detected %4 as your database extension", ESM_ServerID, ESM_Version, ESM_BuildNumber, ESM_DatabaseExtension);
+info!("Initialization completed");
 
 true

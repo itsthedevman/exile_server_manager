@@ -74,7 +74,7 @@
 				%3	- Server ID
 			-->
 			<Key ID="STR_ESM_Sqf_NullTarget">
-				<English>Hey %1, `%2` must be spawned into `%3` before you can execute code on them</English>
+				<English>Hey %1, %2 **needs to join** `%3` before you can execute code on them</English>
 			</Key>
 		</Container>
 
