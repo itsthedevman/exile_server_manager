@@ -3,6 +3,7 @@ use crate::*;
 
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
+use rand::prelude::*;
 use std::net::ToSocketAddrs;
 use std::sync::atomic::AtomicI64;
 use std::sync::Mutex as SyncMutex;
@@ -300,7 +301,14 @@ fn on_disconnect() {
     let time_to_wait: f32 = match crate::CONFIG.env {
         Env::Test => 0.5,
         Env::Development => 3_f32,
-        _ => (current_count * 15) as f32,
+        _ => {
+            let mut rng = thread_rng();
+
+            // Most servers share the same restart time. This'll spread out the connection requests so the bot isn't slammed all at once, over and over again
+            let offset: f32 = rng.gen();
+
+            ((current_count * 15) as f32) + offset
+        }
     };
 
     let time_to_wait = Duration::from_secs_f32(time_to_wait);
@@ -309,7 +317,7 @@ fn on_disconnect() {
         time_to_wait
     );
 
-    // Sleep a max of 5 minutes
+    // Sleep a max of 5 minutes in between connection attempts
     if current_count <= 20 {
         // Increase the reconnect counter by 1
         RECONNECTION_COUNT.fetch_add(1, Ordering::SeqCst);
