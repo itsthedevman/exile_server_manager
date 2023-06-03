@@ -301,7 +301,7 @@ module ESM
       # Waits 2 minutes. This is a backup in case message overseer doesn't time it out
       counter = 0
       while !delivered? || counter >= 240
-        sleep(0.1)
+        sleep(0.01)
         counter += 1
       end
 

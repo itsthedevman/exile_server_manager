@@ -63,6 +63,8 @@ init:
       type: integer
 
 post_init:
+  command_prefix:
+    type: string
   community_id:
     type: string
   extdb_path:
@@ -162,6 +164,10 @@ sqf:
 sqf_result:
   result:
     type: any
+
+add:
+  territory:
+    type: hash
 
 ###########################
 ## AUTOMATIC TESTS

@@ -38,7 +38,7 @@ module ESM
         end
 
         def territory_embed(territory)
-          @territory = ESM::Arma::Territory.new(server: target_server, territory: territory)
+          @territory = ESM::Exile::Territory.new(server: target_server, territory: territory)
           @territory.to_embed
         end
       end

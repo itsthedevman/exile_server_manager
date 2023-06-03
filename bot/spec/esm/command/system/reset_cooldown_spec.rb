@@ -70,6 +70,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -77,7 +78,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for your community/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for all commands\. this change will be applied to every server your community has registered with me\./i)
@@ -94,6 +94,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -101,7 +102,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for `me` on every server your community has registered with me\./i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for `me`\. this change will be applied to every server your community has registered with me\./i)
@@ -118,6 +118,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -125,7 +126,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for `me` . this change will only be applied to `#{server.server_id}`/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for `me`. this change will only be applied to `#{server.server_id}`/i)
@@ -142,6 +142,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -149,7 +150,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for all commands on `#{server.server_id}`/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for all commands\. this change will only be applied to `#{server.server_id}`/i)
@@ -166,6 +166,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -173,7 +174,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset everyone's cooldowns for `me` on every server your community has registered with me.`/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting everyone's cooldowns for `me`\. this change will be applied to every server your community has registered with me\./i)
@@ -190,6 +190,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "yes"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.first.second
@@ -197,7 +198,6 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
       expect(response.description).to match(/hey #{target_regex}, i have reset everyone's cooldowns for `me` on `#{server.server_id}`/i)
 
       # Check confirmation embed
-      expect(ESM::Test.messages.size).to eq(2)
       confirmation_embed = ESM::Test.messages.first.second
 
       expect(confirmation_embed.description).to match(/just to confirm, i will be resetting everyone's cooldowns for `me`\. this change will only be applied to `#{server.server_id}`/i)
@@ -221,6 +221,7 @@ describe ESM::Command::System::ResetCooldown, category: "command" do
 
       ESM::Test.response = "no"
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Check success message
       response = ESM::Test.messages.second.second

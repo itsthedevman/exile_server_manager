@@ -46,7 +46,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
@@ -66,7 +66,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
@@ -88,7 +88,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
@@ -103,7 +103,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)

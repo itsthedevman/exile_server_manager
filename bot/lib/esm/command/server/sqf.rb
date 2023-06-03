@@ -38,7 +38,7 @@ module ESM
             end
 
           send_to_arma(
-            data: {execute_on: execute_on, code: ESM::Arma::Sqf.minify(args.code_to_execute)}
+            data: {execute_on: execute_on, code: args.code_to_execute}
           )
         end
 

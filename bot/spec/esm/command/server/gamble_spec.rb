@@ -44,7 +44,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
@@ -60,7 +60,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
@@ -76,7 +76,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be(nil)
@@ -94,7 +94,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/not enough poptabs/i)

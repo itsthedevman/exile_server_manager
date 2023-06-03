@@ -68,7 +68,7 @@ describe ESM::Command::Server::Info, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.title).to match(/stats on `#{server.server_id}`/i)
@@ -94,14 +94,14 @@ describe ESM::Command::Server::Info, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.title).to match(/stats on `#{server.server_id}`/i)
 
       field = embed.fields.first
       expect(field.name).to match(/general/i)
-      expect(field.value).to match(/health.+%.+hunger.+%.+thirst.+%/im)
+      expect(field.value).to match("**You are dead**")
 
       field = embed.fields.second
       expect(field.name).to match(/currency/i)
@@ -120,10 +120,10 @@ describe ESM::Command::Server::Info, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
-      territory = ESM::Arma::Territory.new(server: server, territory: response)
+      territory = ESM::Exile::Territory.new(server: server, territory: response)
 
       expect(embed.title).to eq("Territory \"#{territory.name}\"")
       expect(embed.thumbnail.url).to eq(territory.flag_path)

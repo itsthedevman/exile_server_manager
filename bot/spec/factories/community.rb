@@ -34,8 +34,11 @@ FactoryBot.define do
       guild_id { discord_server.id.to_s }
       logging_channel_id { data[:logging_channel_id] }
       player_mode_enabled { false }
+      territory_admin_ids { [] }
       guild_type { :primary }
       role_ids { data[:role_users].map { |u| u[:role_id].to_s } }
+      channel_ids { data[:channels].map(&:to_s) }
+      everyone_role_id { data[:everyone_role].to_s }
     end
 
     factory :secondary_community do
@@ -48,8 +51,11 @@ FactoryBot.define do
       guild_id { discord_server.id.to_s }
       logging_channel_id { data[:logging_channel_id] }
       player_mode_enabled { false }
+      territory_admin_ids { [] }
       guild_type { :secondary }
       role_ids { data[:role_users].map { |u| u[:role_id].to_s } }
+      channel_ids { data[:channels].map(&:to_s) }
+      everyone_role_id { data[:everyone_role].to_s }
     end
 
     trait :player_mode_enabled do

@@ -37,7 +37,9 @@ module ESM
         end
 
       # Respond
-      command.from_request(self)
+      command.timers.time!(:from_request) do
+        command.from_request(self)
+      end
 
       # Remove the request
       destroy

@@ -1,8 +1,9 @@
 RSpec.shared_context("command") do
   let!(:command) { (respond_to?(:command_class) ? command_class : described_class).new }
-  let(:community) { ESM::Test.community }
+  let!(:community) { ESM::Test.community }
+  let!(:user) { ESM::Test.user }
   let(:server) { ESM::Test.server }
-  let(:user) { ESM::Test.user }
+  let(:second_user) { ESM::Test.user }
 
   #
   # Executes the command as a user in a text or pm channel.
@@ -46,5 +47,9 @@ RSpec.shared_context("command") do
     else
       command.execute(event)
     end
+  end
+
+  def wait_for_completion!(event = :on_execute)
+    wait_for { command.timers.public_send(event.to_sym).finished? }.to be(true)
   end
 end

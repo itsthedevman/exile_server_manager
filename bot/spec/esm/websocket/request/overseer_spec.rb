@@ -40,7 +40,7 @@ describe ESM::Websocket::Request::Overseer do
       expect(server_connection.requests.size).to eq(iterations + 1)
       sleep(1)
       expect(server_connection.requests.size).to eq(iterations)
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       expect(ESM::Test.messages.first.content.description).to match(/never replied to your command/i)
     end
   end

@@ -22,9 +22,9 @@ module ESM
           return request_accepted if same_user?
 
           # Checks for a registered target user. This also keeps people from adding via steam_uid only
-          @checks.registered_target_user!
+          checks.registered_target_user!
+          checks.pending_request!
 
-          @checks.pending_request!
           add_request(
             to: target_user,
             description: I18n.t(
@@ -65,9 +65,13 @@ module ESM
 
         def request_accepted
           if v2_target_server?
-            # send_to_arma(
-            #   data_type:
-            # )
+            send_to_arma(
+              data: {
+                territory: {
+                  encoded: {id: @arguments.territory_id}
+                }
+              }
+            )
           else
             # Request the arma server to add the user
             deliver!(
@@ -77,7 +81,6 @@ module ESM
               uid: current_user.steam_uid
             )
           end
-
 
           # # Don't send the request accepted message if the requestor is the requestee
           # return if same_user?

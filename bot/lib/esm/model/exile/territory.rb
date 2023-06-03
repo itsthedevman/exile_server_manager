@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  module Arma
+  module Exile
     class Territory
       # So I don't build a bad URL
       VALID_FLAGS = %w[

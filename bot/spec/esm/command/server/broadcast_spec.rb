@@ -58,7 +58,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 3: Confirmation
       # 4: Success message
       # 5: Message to first user
-      expect(ESM::Test.messages.size).to eq(5)
+      wait_for { ESM::Test.messages.size }.to eq(5)
     end
 
     it "should send message to users on all servers" do
@@ -74,7 +74,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 4: Success message
       # 5: Message to first user
       # 6: Message to second user
-      expect(ESM::Test.messages.size).to eq(6)
+      wait_for { ESM::Test.messages.size }.to eq(6)
     end
 
     it "should preview the message" do
@@ -84,7 +84,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       expect { command.execute(event) }.not_to raise_error
 
       # 1: Preview Message
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
     end
 
     it "should not send the message" do
@@ -98,7 +98,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 2: Spacer
       # 3: Confirmation
       # 4: Cancel message
-      expect(ESM::Test.messages.size).to eq(4)
+      wait_for { ESM::Test.messages.size }.to eq(4)
     end
 
     it "should accept a partial server_id" do
@@ -117,7 +117,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
       # 3: Confirmation
       # 4: Success message
       # 5: Message to first user
-      expect(ESM::Test.messages.size).to eq(5)
+      wait_for { ESM::Test.messages.size }.to eq(5)
     end
 
     it "should not error when executed in a text channel" do

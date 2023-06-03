@@ -40,6 +40,7 @@ describe ESM::Command::Server::Reward, category: "command" do
       command_statement = command.statement(server_id: server.server_id)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       embed = ESM::Test.messages.first.second
 
@@ -47,7 +48,6 @@ describe ESM::Command::Server::Reward, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
@@ -62,7 +62,7 @@ describe ESM::Command::Server::Reward, category: "command" do
       # Wait for the server to respond
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.content
 

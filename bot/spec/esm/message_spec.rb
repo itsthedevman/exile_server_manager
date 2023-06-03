@@ -102,24 +102,32 @@ describe ESM::Message, v2: true do
     end
 
     it "handles codes" do
-      message.add_error(:code, "test").send(:on_error, nil)
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      message.add_error(:code, "test")
+      message.add_callback(:on_error) do |_|
+        raise message.errors.first.to_s(message)
+      end
 
-      embed = ESM::Test.messages.shift&.content
-      expect(embed).not_to be_nil
-
-      # See config/locales/exceptions/en.yml -> exceptions.extension.test
-      expect(embed.description).to eq("#{user.mention} | #{message.id} | #{message.type} | #{message.data_type} | #{message.metadata_type} | #{message.data.foo} | #{message.metadata.bar}")
+      expect {
+        message.on_error(nil)
+      }.to raise_error do |error|
+        expect(error.message).to eq(
+          # See config/locales/exceptions/en.yml -> exceptions.extension.test
+          "#{user.mention} | #{message.id} | #{message.type} | #{message.data_type} | #{message.metadata_type} | #{message.data.foo} | #{message.metadata.bar}"
+        )
+      end
     end
 
     it "handles messages" do
-      message.add_error("message", "Hello World").send(:on_error, nil)
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      message.add_error("message", "Hello World")
+      message.add_callback(:on_error) do |_|
+        raise message.errors.first.to_s(message)
+      end
 
-      embed = ESM::Test.messages.shift&.content
-      expect(embed).not_to be_nil
-
-      expect(embed.description).to eq("Hello World")
+      expect {
+        message.on_error(nil)
+      }.to raise_error do |error|
+        expect(error.message).to eq("Hello World")
+      end
     end
   end
 

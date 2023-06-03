@@ -46,6 +46,14 @@ def wait_for_inbound_message
   message.content
 end
 
+def enable_log_printing
+  ENV["PRINT_LOG"] = "true"
+end
+
+def disable_log_printing
+  ENV["PRINT_LOG"] = "false"
+end
+
 def spawn_test_user(user, **attrs)
   attributes = {
     damage: 0,
@@ -129,4 +137,8 @@ def spawn_test_user(user, **attrs)
 
   user.connected = true
   net_id
+end
+
+def before_connection(&block)
+  ESM::Test.callbacks.add_callback(:before_connection, &block)
 end

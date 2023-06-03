@@ -50,6 +50,7 @@ module ESM
     def initialize
       @waiting_for = {}
       @mutex = Mutex.new
+      @delivery_overseer = ESM::Bot::DeliveryOverseer.new
 
       @prefixes = {}
       @prefixes.default = ESM.config.prefix
@@ -218,15 +219,7 @@ module ESM
         raise ESM::Exception::ChannelAccessDenied if !channel_permission?(:send_messages, delivery_channel)
       end
 
-      ESM::Notifications.trigger("bot_deliver", message: message, channel: delivery_channel)
-
-      if message.is_a?(ESM::Embed)
-        # Send the embed
-        delivery_channel.send_embed(embed_message, nil, nil, false, nil, replying_to) { |embed| message.transfer(embed) }
-      else
-        # Send the text message
-        delivery_channel.send_message(message, false, nil, nil, nil, replying_to)
-      end
+      @delivery_overseer.add(message, delivery_channel, embed_message: embed_message, replying_to: replying_to)
     rescue ESM::Exception::ChannelAccessDenied
       embed = ESM::Embed.build(
         :error,
@@ -237,6 +230,22 @@ module ESM
       community.log_event(:error, embed)
 
       nil
+    rescue => e
+      warn!(error: e)
+
+      nil
+    end
+
+    def __deliver(message, delivery_channel, embed_message: "", replying_to: nil)
+      ESM::Notifications.trigger("bot_deliver", message: message, channel: delivery_channel)
+
+      if message.is_a?(ESM::Embed)
+        # Send the embed
+        delivery_channel.send_embed(embed_message, nil, nil, false, nil, replying_to) { |embed| message.transfer(embed) }
+      else
+        # Send the text message
+        delivery_channel.send_message(message, false, nil, nil, nil, replying_to)
+      end
     rescue => e
       warn!(error: e)
 

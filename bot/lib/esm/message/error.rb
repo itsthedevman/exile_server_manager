@@ -20,27 +20,31 @@ module ESM
       def to_s(message)
         case type
         when :code
+          command = message.attributes.command
+
           replacements = {
-            user: message.attributes.command&.current_user&.mention,
-            target: message.attributes.command&.target_user&.mention,
+            user: command&.current_user&.mention,
+            target: command&.target_user&.mention,
+            prefix: command&.prefix,
             message_id: message.id,
             server_id: message.attributes.server_id,
             type: message.type,
             data_type: message.data_type,
-            mdata_type: message.metadata_type
+            mdata_type: message.metadata_type,
+            data_territory_id: message.data_attributes[:content].dig(:territory, :encoded, :id)
           }
 
           # Add the data and metadata to the replacements
           # For example, if data has two attributes: "steam_uid" and "discord_id", this will define two replacements:
-          #     "data_content_steam_uid", and "data_content_discord_id"
+          #     "data_steam_uid", and "data_discord_id"
           #
-          # Same for metadata's attributes. Except the key prefix is "mdata_content_"
+          # Same for metadata's attributes. Except the key prefix is "mdata_"
           message.data_attributes[:content].each do |key, value|
-            replacements["data_content_#{key}".to_sym] = value
+            replacements["data_#{key}".to_sym] = value
           end
 
           message.metadata_attributes[:content].each do |key, value|
-            replacements["mdata_content_#{key}".to_sym] = value
+            replacements["mdata_#{key}".to_sym] = value
           end
 
           # Call the exception with the replacements

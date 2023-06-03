@@ -3,12 +3,14 @@
 module ESM
   class Server
     class Metadata
-      KEYS = [
-        "vg_enabled", "vg_max_sizes"
+      KEYS = %i[
+        vg_enabled
+        vg_max_sizes
+        initialized
       ].freeze
 
-      def initialize(server_id)
-        @server_id = server_id
+      def initialize(uuid)
+        @uuid = uuid
 
         KEYS.each do |key|
           class_eval <<-METHODS, __FILE__, __LINE__ + 1
@@ -26,7 +28,7 @@ module ESM
       end
 
       def redis_hash_key
-        "metadata_#{@server_id}"
+        "metadata_#{@uuid}"
       end
 
       def clear!

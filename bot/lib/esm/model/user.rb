@@ -23,8 +23,6 @@ module ESM
     has_many :user_notification_routes, dependent: :destroy
     has_one :user_steam_data, dependent: :destroy
 
-    attr_accessor :guild_type, :role_id, :connected if ESM.env.test?
-
     validates :discord_id, uniqueness: true, presence: true
     validates :steam_uid, uniqueness: true
 

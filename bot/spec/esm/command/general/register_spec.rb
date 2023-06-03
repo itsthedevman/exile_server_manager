@@ -31,7 +31,7 @@ describe ESM::Command::General::Register, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       expect { command.execute(event) }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
 
@@ -55,7 +55,7 @@ describe ESM::Command::General::Register, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       expect { command.execute(event) }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to eq("Hey #{user.mention}, it looks like you are already registered with me. You can view all of my commands using `#{command.prefix}help commands`.\nLooking for the registration link? It's https://www.esmbot.com/register")

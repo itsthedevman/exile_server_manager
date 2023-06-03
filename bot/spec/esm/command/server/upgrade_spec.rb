@@ -48,7 +48,7 @@ describe ESM::Command::Server::Upgrade, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to eq("Hey #{user.mention}, you successfully upgraded territory `#{territory_id}` for **#{response.cost.to_poptab}**.\nYour territory has reached level **#{response.level}** and now has a radius of **#{response.range}** meters.\nAfter this transaction, you have **#{response.locker.to_poptab}** left in your locker.")

@@ -3,7 +3,8 @@
 module ESM
   class Database
     def self.connect!
-      ActiveRecord::Base.establish_connection(config)
+      ActiveRecord::Base.configurations = config
+      ActiveRecord::Base.establish_connection(ESM.env.to_sym)
     end
 
     def self.connected?
@@ -11,7 +12,7 @@ module ESM
     end
 
     def self.config
-      @config ||= YAML.safe_load(ERB.new(File.read(File.expand_path("./config/database.yml"))).result, aliases: true)[ESM.env]
+      @config ||= YAML.safe_load(ERB.new(File.read(File.expand_path("./config/database.yml"))).result, aliases: true)
     end
   end
 end

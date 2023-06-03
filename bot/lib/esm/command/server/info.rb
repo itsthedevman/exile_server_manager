@@ -37,10 +37,10 @@ module ESM
 
           # The fact that it has an ID indicates it was a territory...
           if @response.id
-            territory = ESM::Arma::Territory.new(server: target_server, territory: @response)
+            territory = ESM::Exile::Territory.new(server: target_server, territory: @response)
             reply(territory.to_embed)
           else
-            player = ESM::Arma::Player.new(server: target_server, player: @response)
+            player = ESM::Exile::Player.new(server: target_server, player_data: @response)
             reply(player.to_embed)
           end
         end

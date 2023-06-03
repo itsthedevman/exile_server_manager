@@ -14,7 +14,7 @@ describe ESM::Event::ServerCreate do
 
   it "should send server owner welcome" do
     expect { event.run! }.not_to raise_error
-    expect(ESM::Test.messages.size).to eq(1)
+    wait_for { ESM::Test.messages.size }.to eq(1)
 
     embed = ESM::Test.messages.first.second
     expect(embed.title).to match(/thank you for inviting me/i)

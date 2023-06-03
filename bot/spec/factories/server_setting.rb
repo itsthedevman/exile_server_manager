@@ -15,23 +15,23 @@ FactoryBot.define do
 
     gambling_payout_randomizer_max do
       value = (rand + 0.75).round(3)
-      value > 1 ? 1 : value
+      (value > 1) ? 1 : value
     end
 
     gambling_win_percentage { Faker::Number.between(from: 1, to: 100) }
-    logging_add_player_to_territory { rand > 0.5 }
-    logging_demote_player { rand > 0.5 }
-    logging_exec { rand > 0.5 }
-    logging_gamble { rand > 0.5 }
-    logging_modify_player { rand > 0.5 }
-    logging_pay_territory { rand > 0.5 }
-    logging_promote_player { rand > 0.5 }
-    logging_remove_player_from_territory { rand > 0.5 }
-    logging_reward_player { rand > 0.5 }
-    logging_transfer_poptabs { rand > 0.5 }
-    logging_upgrade_territory { rand > 0.5 }
+    logging_add_player_to_territory { true }
+    logging_demote_player { true }
+    logging_exec { false }
+    logging_gamble { true }
+    logging_modify_player { true }
+    logging_pay_territory { true }
+    logging_promote_player { true }
+    logging_remove_player_from_territory { true }
+    logging_reward_player { true }
+    logging_transfer_poptabs { true }
+    logging_upgrade_territory { true }
     max_payment_count { Faker::Number.number(digits: 1) }
-    request_thread_type { rand > 0.5 ? "exile" : "arma" }
+    request_thread_type { "exile" }
     request_thread_tick { 0.1 }
     territory_payment_tax { Faker::Number.between(from: 1, to: 100) }
     territory_upgrade_tax { Faker::Number.between(from: 1, to: 100) }

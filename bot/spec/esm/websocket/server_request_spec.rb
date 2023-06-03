@@ -75,7 +75,7 @@ describe ESM::Websocket::ServerRequest do
       message = OpenStruct.new(commandID: request.id, error: "This is an error")
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/this is an error/i)
@@ -85,7 +85,7 @@ describe ESM::Websocket::ServerRequest do
       message = {commandID: request.id, error: "", parameters: [{error: "This is an error"}]}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/this is an error/i)
@@ -98,7 +98,7 @@ describe ESM::Websocket::ServerRequest do
       command.defines.FLAG_RAISE_ERROR = true
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/this failed a check/i)

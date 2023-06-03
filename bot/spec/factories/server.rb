@@ -12,7 +12,7 @@ FactoryBot.define do
     # attribute :created_at, :datetime
     # attribute :updated_at, :datetime
 
-    server_name { Faker::FunnyName.name }
+    server_name { "Server - #{Faker::FunnyName.name}" }
     server_ip { Faker::Internet.public_ip_v4_address }
     server_port { "2302" }
 
@@ -39,7 +39,7 @@ FactoryBot.define do
       server.save!
 
       # Store the server key so the build tool can pick it up and write it
-      Redis.new.set("server_key", server.token.to_json)
+      ESM.redis.set("server_key", server.token.to_json)
     end
 
     factory :esm_malden do

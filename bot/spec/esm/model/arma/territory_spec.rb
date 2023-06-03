@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Arma::Territory do
+describe ESM::Exile::Territory do
   let!(:community) { ESM::Test.community }
   let!(:server) { ESM::Test.server }
   let!(:settings) { server.server_setting }
@@ -8,7 +8,7 @@ describe ESM::Arma::Territory do
   let!(:wsc) { WebsocketClient.new(server) }
 
   # Not loaded every time so we can change the values of our example
-  let(:territory) { ESM::Arma::Territory.new(server: server, territory: territory_example) }
+  let(:territory) { ESM::Exile::Territory.new(server: server, territory: territory_example) }
   let(:same_level_territory) { ESM::Territory.where(territory_level: territory_example.level, server_id: server.id).first }
   let(:next_level_territory) { ESM::Territory.where(territory_level: territory_example.level + 1, server_id: server.id).first }
 

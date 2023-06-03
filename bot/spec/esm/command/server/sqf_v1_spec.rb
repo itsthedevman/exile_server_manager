@@ -51,7 +51,7 @@ describe ESM::Command::Server::SqfV1, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned the following: ```true```/i))
@@ -65,7 +65,7 @@ describe ESM::Command::Server::SqfV1, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned nothing/i))
@@ -79,7 +79,7 @@ describe ESM::Command::Server::SqfV1, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully on `#{user.steam_uid}`/i))
@@ -95,7 +95,7 @@ describe ESM::Command::Server::SqfV1, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).to have_attributes(description: a_string_matching(/has informed me that `#{user.steam_uid}` is not online or has not joined the server/i))
@@ -121,7 +121,7 @@ describe ESM::Command::Server::SqfV1, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully on `#{steam_uid}`/i))

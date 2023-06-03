@@ -20,7 +20,7 @@ describe "ESMs_system_message_respond_to", requires_connection: true, v2: true d
     end
 
     # Needed for the message cycle to properly complete
-    connection.tcp_server.message_overseer.watch(outbound_message)
+    connection_server.message_overseer.watch(outbound_message)
 
     execute_sqf!(
       <<~SQF
@@ -51,7 +51,7 @@ describe "ESMs_system_message_respond_to", requires_connection: true, v2: true d
     end
 
     # Needed for the message cycle to properly complete
-    connection.tcp_server.message_overseer.watch(outbound_message)
+    connection_server.message_overseer.watch(outbound_message)
 
     execute_sqf!(
       <<~SQF

@@ -27,7 +27,7 @@ describe ESM::Event::Xm8NotificationV1 do
 
     # To ensure all messages have been sent
     sleep(1)
-    expect(ESM::Test.messages.size).to eql(expected_messages.size)
+    wait_for { ESM::Test.messages.size }.to eql(expected_messages.size)
 
     # Check the embeds
     expected_messages.each_with_index do |message, index|

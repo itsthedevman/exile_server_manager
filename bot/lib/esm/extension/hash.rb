@@ -1,6 +1,24 @@
 # frozen_string_literal: true
 
 class Hash
+  def to_struct
+    recurse = lambda do |value|
+      case value
+      when Hash, ESM::Arma::HashMap
+        value.to_struct
+      when Array
+        value.map(&recurse)
+      else
+        value
+      end
+    end
+
+    struct = Struct.new(*keys)
+    each.with_object(struct.new) do |(key, value), struct|
+      struct.send("#{key}=", recurse.call(value))
+    end
+  end
+
   def to_ostruct
     recurse = lambda do |value|
       case value

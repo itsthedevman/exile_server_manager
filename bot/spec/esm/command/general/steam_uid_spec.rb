@@ -29,7 +29,7 @@ describe ESM::Command::General::SteamUid, category: "command" do
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)
 
       expect { command.execute(event) }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to eq("Hey #{user.mention}, your Steam UID is `#{user.steam_uid}`.")

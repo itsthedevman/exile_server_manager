@@ -32,16 +32,8 @@ module ESM
 
     alias_attribute :name, :community_name
 
-    attr_accessor :guild_type, :role_ids if ESM.env.test?
-
     module ESM
       ID = "452568470765305866"
-      SPAM_CHANNEL = ENV["SPAM_CHANNEL"]
-    end
-
-    module Secondary
-      ID = ENV["SECONDARY_COMMUNITY_ID"]
-      SPAM_CHANNEL = ENV["SECONDARY_SPAM_CHANNEL"]
     end
 
     def self.community_ids

@@ -43,6 +43,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
       # If the command is for a server
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       embed = ESM::Test.messages.first.second
 
@@ -50,7 +51,6 @@ describe ESM::Command::Server::Stuck, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
@@ -64,7 +64,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/you've been reset successfully. please join the server to spawn back in/i)
@@ -77,6 +77,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
       # If the command is for a server
       expect { command.execute(event) }.not_to raise_error
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       embed = ESM::Test.messages.first.second
 
@@ -84,7 +85,6 @@ describe ESM::Command::Server::Stuck, category: "command" do
       expect(embed).not_to be_nil
 
       # Checks for requestees message
-      expect(ESM::Test.messages.size).to eq(2)
 
       # Process the request
       request = command.request
@@ -98,7 +98,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
       wait_for { connection.requests }.to be_blank
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to match(/i was not successful at resetting your player on `.+`\. please join the server again, and if you are still stuck, close arma 3 and attempt this command again\./i)

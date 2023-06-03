@@ -10,6 +10,52 @@ module ESM
       DATE = "%F"
     end
 
+    class Timer
+      attr_reader :started_at, :stopped_at
+
+      def initialize
+        @started_at = nil
+        @stopped_at = nil
+      end
+
+      def start!
+        @started_at ||= Time.current
+      end
+
+      def stop!
+        return if @started_at.nil?
+
+        @stopped_at ||= Time.current
+      end
+
+      def reset!
+        @started_at = nil
+        @stopped_at = nil
+      end
+
+      def started?
+        !started_at.nil?
+      end
+
+      def finished?
+        !stopped_at.nil?
+      end
+
+      def time_elapsed
+        return 0 if started_at.nil?
+
+        (stopped_at || Time.current) - started_at
+      end
+
+      def to_h
+        {
+          started_at: started_at,
+          stopped_at: stopped_at,
+          time_elapsed: time_elapsed
+        }
+      end
+    end
+
     def self.distance_of_time_in_words(to_time, from_time: ESM::Time.current, precise: true)
       distance = new.distance_of_time_in_words(from_time.utc, to_time.utc, include_seconds: precise)
       singularize(distance)

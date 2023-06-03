@@ -20,12 +20,23 @@ module ESM
 
         def on_execute
           @checks.owned_server!
-          deliver!(command_name: "allterritories", query: "list_territories_all")
+
+          if v2_target_server?
+            query_arma("all_territories")
+          else
+            deliver!(command_name: "allterritories", query: "list_territories_all") # V1
+          end
         end
 
-        def on_response(_, _)
-          # The data must an array if its not already.
-          @response = [@response] if !@response.is_a?(Array)
+        def on_response(incoming_message, _outgoing_message)
+          @territories =
+            if v2_target_server?
+              incoming_message.data.results.map(&:to_istruct)
+            else
+              # The data must an array if its not already.
+              @response = [@response] if !@response.is_a?(Array) # V1
+              @response
+            end
 
           check_for_no_territories!
 
@@ -37,13 +48,13 @@ module ESM
           tables = []
 
           # Sorted here on purpose. Makes it so I can test this functionality
-          @response.sort_by!(&@arguments.order_by)
+          @territories.sort_by!(&@arguments.order_by)
 
           # Two challenges for this code.
           # 1: The width of each row had to be less than 67 (10 characters per line reserved for spacing/separating)
           # 2: The overall size of the table (including spaces and separators) HAS to be under 1992 characters due to Discord's message limit
-          @response.in_groups_of(20, false).each do |territories|
-            table = Terminal::Table.new(headings: ["ID", "Name", "Owner UID"], style: {width: 67})
+          @territories.in_groups_of(20, false).each do |territories|
+            table = Terminal::Table.new(headings: ["ID", "Name", "Owner UID"], style: {border: :unicode_round, width: 67})
 
             territories.each do |territory|
               table << [
@@ -62,7 +73,7 @@ module ESM
         end
 
         def check_for_no_territories!
-          check_failed!(:no_server_territories, user: current_user.mention) if @response.blank?
+          check_failed!(:no_server_territories, user: current_user.mention, server_id: target_server.server_id) if @territories.blank?
         end
       end
     end

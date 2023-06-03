@@ -86,7 +86,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     let Some(client) = client_manager.get_by_uuid(&server_uuid) else {
                         error!("[send] {} - Failed to retrieve client", server_uuid);
 
-                        let message = message.add_error_code("client_not_connected");
+                        let message = Message::new().set_id(message.id).add_error_code("client_not_connected");
                         if let Err(e) = BotRequest::send(message, Some(server_uuid)) {
                             error!("[send] {} - Failed to send error - {e}", server_uuid);
                         }
@@ -97,7 +97,9 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     if let Err(e) = client.send_message(&handler, message.as_mut()).await {
                         error!("{e}");
 
-                        let message = message.add_error_code("client_not_connected");
+                        let message = Message::new()
+                            .set_id(message.id)
+                            .add_error_code("client_not_connected");
                         if let Err(e) = BotRequest::send(message, Some(server_uuid)) {
                             error!("[send] {} - Failed to send error - {e}", server_uuid);
                         }
@@ -211,14 +213,9 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
                     };
 
                     info!(
-                        "[on_message] Sending to {server_id} ({address}) with {status} {message:?}",
+                        "[on_message] {address} - {server_id} - {message}",
                         address = endpoint.addr(),
-                        server_id = client.server_uuid,
-                        status = if message.errors.is_empty() {
-                            "success"
-                        } else {
-                            "failure"
-                        }
+                        server_id = client.server_uuid
                     );
 
                     if let Err(e) = BotRequest::send(message, Some(client.server_uuid)) {

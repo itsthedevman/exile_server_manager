@@ -13,7 +13,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       params = OpenStruct.new(channelID: ESM::Community::Secondary::SPAM_CHANNEL, message: "TESTING!")
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first.second
 
       expect(message).to eq("**[`ESM_fnc_sendToChannel`]**\nYour Discord Server does not have a channel with ID `#{params.channelID}`. Please provide `ESM_fnc_sendToChannel` a channel ID that belongs to your Discord Server.")
@@ -23,7 +23,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       params = OpenStruct.new(channelID: community.logging_channel_id, message: '["title", "description"]')
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first.second
 
       expect(message).to eq("**[`ESM_fnc_sendToChannel`]**\nThe provided message is malformed and unable to be delivered.\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to send: ```#{params.message}```")
@@ -35,7 +35,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       params = OpenStruct.new(channelID: community.logging_channel_id, message: "TESTING!")
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first
 
       expect(message.destination.id.to_s).to eq(params.channelID)
@@ -56,7 +56,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       )
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first
 
       expect(message.destination.id.to_s).to eq(params.channelID)
@@ -83,7 +83,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       )
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first
 
       expect(message.destination.id.to_s).to eq(params.channelID)
@@ -110,7 +110,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       )
 
       expect { event(params).run! }.not_to raise_error
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message = ESM::Test.messages.first
 
       expect(message.destination.id.to_s).to eq(params.channelID)

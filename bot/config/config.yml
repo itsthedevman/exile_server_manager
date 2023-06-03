@@ -16,18 +16,22 @@ default: &default
 
     # ESM::Connection::MessageOverseer
     connection_message_overseer:
-      check_every: 5
+      check_every: 0.1
 
     # ESM::Websocket::Connection::Overseer
     websocket_connection_overseer:
       check_every: 3
 
+    # ESM::Bot::DeliveryOverseer
+    bot_delivery_overseer:
+      check_every: 0.1
+
 development:
-  <<: *default
+  !!merge <<: *default
   prefix: "~"
 
 test:
-  <<: *default
+  !!merge <<: *default
   prefix: "~"
   loops:
     # ESM::Request::Overseer
@@ -39,11 +43,15 @@ test:
       check_every: 0.5
 
     connection_message_overseer:
-      check_every: 0.5
+      check_every: 0.01
 
     # ESM::Websocket::Connection::Overseer
     websocket_connection_overseer:
       check_every: 0.5
+
+    # ESM::Bot::DeliveryOverseer
+    bot_delivery_overseer:
+      check_every: 0.01
 
   # ESM::Request::Overseer
   request_overseer:
@@ -53,20 +61,6 @@ test:
   websocket_request_overseer:
     check_every: 0.5
 
-  # ESM::Bot::ResendQueue
-  bot_resend_queue:
-    check_every: 0.5
-    max_attempts: 3
-
-  # ESM::Connection::Manager
-  connection_manager:
-    check_every: 0.5
-    unauthenticated:
-      time_to_live: 5
-    authenticated:
-      check_every: 15
-
-
 production:
-  <<: *default
+  !!merge <<: *default
   prefix: "!"

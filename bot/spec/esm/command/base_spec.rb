@@ -283,9 +283,6 @@ describe ESM::Command::Base do
       let!(:command_class) { ESM::Command::Test::ServerSuccessCommand }
     end
 
-    let(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-
     it "is defined" do
       expect(command.respond_to?(:execute)).to be(true)
     end
@@ -303,6 +300,7 @@ describe ESM::Command::Base do
     end
 
     it "switches to a v1 command for v1 servers" do
+      wsc = WebsocketClient.new(server)
       wait_for { wsc.connected? }.to be(true)
 
       expect(
@@ -320,13 +318,13 @@ describe ESM::Command::Base do
       wait_for { ESM::Test.messages }.not_to be_empty
     end
 
-    describe "Handles Errors" do
+    describe "Handles Errors", :error_testing do
       it "send error (CheckFailure)" do
         test_command = ESM::Command::Test::DirectMessageCommand.new
         event = CommandEvent.create(test_command.statement, channel_type: :text, user: user)
 
         expect { test_command.execute(event, raise_error: false) }.not_to raise_error
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         error = ESM::Test.messages.first.second
         expect(error.description).to eq("Hey #{user.mention}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there")
@@ -337,7 +335,7 @@ describe ESM::Command::Base do
         event = CommandEvent.create(test_command.statement, channel_type: :text, user: user)
 
         expect { test_command.execute(event, raise_error: false) }.not_to raise_error
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         error = ESM::Test.messages.first.second
         expect(error.description).to include("Well, this is awkward.\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this code:\n```")
@@ -579,7 +577,7 @@ describe ESM::Command::Base do
       expect(query_hash).to include(
         command_name: command.name, user_id: user.id, server_id: server.id
       ).and exclude(
-        :steam_uid, :community_id
+        :steam_uid
       )
     end
   end
@@ -633,14 +631,12 @@ describe ESM::Command::Base do
     end
 
     it "delivers" do
-      request = nil
       server_command = ESM::Command::Test::ServerSuccessCommandV1.new
       event = CommandEvent.create(server_command.statement(server_id: server.server_id), channel_type: :text, user: user)
 
-      expect { request = server_command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
+      expect { server_command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
     end
   end
 
@@ -651,7 +647,7 @@ describe ESM::Command::Base do
       server_command.event = event
 
       server_command.reply("Hello")
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       message_array = ESM::Test.messages.first
       expect(message_array.first.id).to eq(event.channel.id)
@@ -1095,7 +1091,7 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(true)
 
-      expect(ESM::Test.messages.size).to eq(2)
+      wait_for { ESM::Test.messages.size }.to eq(2)
       expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
       expect(ESM::Test.messages.second.second).to eq("accepted")
     end
@@ -1108,7 +1104,7 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(false)
 
-      expect(ESM::Test.messages.size).to eq(2)
+      wait_for { ESM::Test.messages.size }.to eq(2)
       expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
       expect(ESM::Test.messages.second.second).to eq("declined")
     end

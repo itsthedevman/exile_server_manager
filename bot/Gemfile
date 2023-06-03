@@ -40,7 +40,6 @@ group :development do
   gem "capistrano-bundler"
   gem "capistrano"
   gem "colorize"
-  gem "database_cleaner"
   gem "ed25519"
   gem "factory_bot"
   gem "faker"
@@ -52,8 +51,11 @@ group :development do
 end
 
 group :test do
+  gem "database_cleaner-active_record"
   gem "simplecov", require: false
   gem "timecop"
+  gem "mysql2"
+  gem "hashids"
 end
 
 group :development, :test do

@@ -10,9 +10,19 @@ development:
   !!merge <<: *default
   database: esm_development
 
-test: &test
+test:
   !!merge <<: *default
+  adapter: postgresql
   database: esm_test
+
+arma_test:
+  !!merge <<: *default
+  adapter: mysql2
+  encoding: utf8mb4
+  host: "0.0.0.0"
+  username: root
+  database: exile_esm
+  database_tasks: false
 
 production:
   !!merge <<: *default

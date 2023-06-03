@@ -79,12 +79,6 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
         };
 
         while let Some(request) = receiver.recv().await {
-            if let BotRequest::Disconnected(server_id) = &request {
-                if server_id.is_none() {
-                    continue;
-                }
-            }
-
             let json: String = match serde_json::to_string(&request) {
                 Ok(s) => s,
                 Err(e) => {

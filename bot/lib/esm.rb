@@ -138,9 +138,9 @@ module ESM
         header =
           case severity
           when "TRACE"
-            header.colorize(:light_green)
-          when "INFO"
             header.colorize(:light_blue)
+          when "INFO"
+            header.colorize(:light_green)
           when "DEBUG"
             header.colorize(:magenta)
           when "WARN"
@@ -155,7 +155,7 @@ module ESM
           case severity
           when "TRACE"
             body.colorize(:light_green)
-          when "INFO", "DEBUG"
+          when "DEBUG"
             body.colorize(:light_black)
           when "WARN"
             body.colorize(:yellow)

@@ -3,9 +3,8 @@
 module ESM
   module Event
     class SendToChannel
-      def initialize(connection, message)
-        @connection = connection
-        @server = connection.server
+      def initialize(server, message)
+        @server = server
         @message = message
       end
 
@@ -34,7 +33,6 @@ module ESM
 
         discord_server = @server.community.discord_server
         @channel = discord_server.channels.find do |channel|
-          puts "Finding #{@message.data.id} - Testing #{channel.name} (#{channel.id})"
           channel.id.to_s == @message.data.id || channel.name.match?(/#{@message.data.id}/i)
         end
 
@@ -63,7 +61,20 @@ module ESM
 
           fields = embed_data[:fields] || []
           fields.each do |field|
-            e.add_field(name: field[:name].to_s, value: field[:value].to_s, inline: field[:inline] || false)
+            value =
+              if field[:value].is_a?(Hash)
+                field[:value].format(join_with: "\n") do |key, value|
+                  "**#{key.humanize(keep_id_suffix: true)}:** #{value}"
+                end
+              else
+                field[:value].to_s
+              end
+
+            e.add_field(
+              name: field[:name].to_s,
+              value: value,
+              inline: field[:inline] || false
+            )
           end
         end
       end

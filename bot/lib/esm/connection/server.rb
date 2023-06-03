@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class Connection
+  module Connection
     class Server
       ################################
       # Class methods
@@ -22,22 +22,15 @@ module ESM
           @instance.stop
           @instance = nil
         end
-
-        def connection(server_uuid)
-          return if @instance.nil?
-
-          @instance.connections[server_uuid]
-        end
       end
 
       ################################
       # Instance methods
       ################################
 
-      attr_reader :server, :connections, :message_overseer
+      attr_reader :server, :message_overseer
 
       def initialize
-        @connections = {} # By server_uuid
         @mutex = Mutex.new
         @redis = Redis.new(ESM::REDIS_OPTS)
         @message_overseer = ESM::Connection::MessageOverseer.new
@@ -48,7 +41,7 @@ module ESM
 
         self.tcp_server_alive = false
         self.server_ping_received = false
-        refresh_keys
+
         health_check
         delegate_inbound_messages
         process_inbound_messages
@@ -139,18 +132,6 @@ module ESM
         @redis.rpush("bot_outbound", request.to_json)
       end
 
-      # Store all of the server_uuids and their keys in redis.
-      # This will allow the TCPServer to quickly pull a key by a server_uuid to decrypt messages
-      def refresh_keys
-        @redis.del("server_keys")
-
-        server_keys = ESM::Server.all.pluck(:uuid, :server_key)
-        return if server_keys.blank?
-
-        # Store the data in Redis
-        @redis.hmset("server_keys", *server_keys)
-      end
-
       def delegate_inbound_messages
         @redis_delegate_inbound_messages = Redis.new(ESM::REDIS_OPTS)
 
@@ -208,6 +189,15 @@ module ESM
         @mutex.synchronize { @server_ping_received = value }
       end
 
+      def on_ping
+        self.server_ping_received = true
+
+        @thread_health_check.join
+        health_check
+
+        __send_internal({type: "pong"})
+      end
+
       def tcp_server_alive=(value)
         @mutex.synchronize { @tcp_server_alive = value }
       end
@@ -257,13 +247,11 @@ module ESM
       def on_connect(server_uuid, message)
         info!(server_uuid: server_uuid, incoming_message: message.to_h)
 
-        connection = ESM::Connection.new(self, server_uuid)
+        server = ESM::Server.find_by_uuid(server_uuid)
+        return error!(error: "Server does not exist", uuid: server_uuid) if server.nil?
+        return server.community.log_event(:error, message.errors.join("\n")) if message.errors?
 
-        return error!(error: "Server does not exist", uuid: server_uuid) if connection.server.nil?
-        return connection.server.community.log_event(:error, message.errors.join("\n")) if message.errors?
-
-        @connections[server_uuid] = connection
-        connection.on_open(message)
+        ESM::Event::ServerInitialization.new(server, message).run!
       end
 
       def on_message(server_uuid, incoming_message)
@@ -281,27 +269,29 @@ module ESM
           return
         end
 
-        connection = @connections[server_uuid]
-        connection&.on_message(incoming_message, outgoing_message)
+        # Currently, :send_to_channel is the only inbound event. If adding another, convert this code
+        if incoming_message.type == :event && incoming_message.data_type == :send_to_channel
+          server = ESM::Server.find_by_uuid(server_uuid)
+          ESM::Event::SendToChannel.new(server, incoming_message).run!
+          return
+        end
+
+        outgoing_message&.on_response(incoming_message)
+      rescue => e
+        if (command = outgoing_message&.command)
+          command.handle_error(e, raise_error: false) # Force not raising errors for every env
+        else
+          raise e # Bubble up to #on_inbound
+        end
       end
 
       def on_disconnect(request)
         server_uuid = request[:content]
-        info!(server_uuid: server_uuid)
 
-        connection = @connections.delete(server_uuid)
-        return if connection.nil?
+        server = ESM::Server.find_by_uuid(server_uuid)
+        server.metadata.clear!
 
-        connection.on_close
-      end
-
-      def on_ping
-        self.server_ping_received = true
-
-        @thread_health_check.join
-        health_check
-
-        __send_internal({type: "pong"})
+        info!(uuid: server.uuid, name: server.server_name, server_id: server.server_id)
       end
     end
   end

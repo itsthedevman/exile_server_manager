@@ -31,7 +31,7 @@ pub enum BotRequest {
     },
 
     // server.rs -> esm_bot
-    Disconnected(Option<Uuid>),
+    Disconnected(Uuid),
 }
 
 impl BotRequest {
@@ -59,7 +59,7 @@ impl BotRequest {
     }
 
     pub fn disconnected(server_uuid: Uuid) -> ESMResult {
-        crate::ROUTER.route_to_bot(Self::Disconnected(Some(server_uuid)))
+        crate::ROUTER.route_to_bot(Self::Disconnected(server_uuid))
     }
 }
 

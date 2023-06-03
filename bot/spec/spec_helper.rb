@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-SPEC_TIMEOUT_SECONDS = 5
+# Set to zero for indefinite
+SPEC_TIMEOUT_SECONDS = 3
 LOG_LEVEL = :warn
 
 RSpec.configure do |config|
@@ -20,8 +21,10 @@ RSpec.configure do |config|
 
   config.before :suite do
     FactoryBot.find_definitions
-    DatabaseCleaner.clean_with :deletion
-    DatabaseCleaner.strategy = :deletion
+    DatabaseCleaner.strategy = :truncation
+
+    # Build script generates territories
+    ESM::ExileTerritory.delete_all
   end
 
   config.after :suite do
@@ -32,6 +35,8 @@ RSpec.configure do |config|
   config.around(:each) do |example|
     DatabaseCleaner.cleaning do
       ESM::Test.reset!
+
+      # Ensure the server is paused. This can be resumed on demand (see spec_context/connection_context.rb)
       ESM::Connection::Server.pause
 
       debug!(
@@ -43,20 +48,39 @@ RSpec.configure do |config|
       example.run
 
       # Ensure every message is either replied to or timed out
+      connection_server = ESM::Connection::Server.instance
       if example.metadata[:requires_connection]
         wait_for {
-          ESM::Connection::Server.instance.message_overseer.size
-        }.to eq(0)
+          connection_server.message_overseer.size
+        }.to(eq(0), connection_server.message_overseer.mailbox.to_s)
       end
 
+      # Pause the server in case it was started in the test
       ESM::Connection::Server.pause
 
-      server = ESM::Connection::Server.instance
-      server&.disconnect_all!
-      server&.message_overseer&.remove_all!
+      connection_server&.disconnect_all!
+      connection_server&.message_overseer&.remove_all!
 
       ESM::Websocket.remove_all_connections!
     end
+  end
+
+  config.before(:context, :territory_admin_bypass) do
+    before_connection do
+      community.update!(territory_admin_ids: [community.everyone_role_id])
+    end
+  end
+
+  config.after(:context, :territory_admin_bypass) do
+    ESM::Test.callbacks.remove_all_callbacks!
+  end
+
+  config.before(:context, :error_testing) do
+    disable_log_printing
+  end
+
+  config.after(:context, :error_testing) do
+    enable_log_printing
   end
 end
 

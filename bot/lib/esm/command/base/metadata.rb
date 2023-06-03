@@ -4,15 +4,6 @@ module ESM
   module Command
     class Base
       module Metadata
-        # V1: name is defined in the migrations file, but will need to be added here once v1 has been deprecated
-        attr_reader :category, :type, :aliases, :limit_to,
-          :requires, :response, :cooldown_time,
-          :defines, :permissions, :checks, :skip_flags
-
-        attr_writer :current_community
-
-        attr_accessor :executed_at, :event, :arguments
-
         def usage
           @usage ||= "#{distinct} #{@arguments.map(&:to_s).join(" ")}"
         end
@@ -38,6 +29,28 @@ module ESM
           return ESM.config.prefix if current_community&.command_prefix.nil?
 
           current_community.command_prefix
+        end
+
+        def to_h
+          {
+            name: name,
+            current_community: current_community&.attributes,
+            current_channel: current_channel.inspect,
+            current_user: current_user.inspect,
+            current_cooldown: current_cooldown&.attributes,
+            target_community: target_community&.attributes,
+            target_server: target_server&.attributes,
+            target_user: target_user.respond_to?(:attributes) ? target_user.attributes : target_user.inspect,
+            target_uid: target_uid,
+            same_user: same_user?,
+            dm_only: dm_only?,
+            text_only: text_only?,
+            dev_only: dev_only?,
+            registration_required: registration_required?,
+            whitelist_enabled: whitelist_enabled?,
+            on_cooldown: on_cooldown?,
+            permissions: @permissions.to_h
+          }
         end
       end
     end

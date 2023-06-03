@@ -63,10 +63,10 @@ describe ESM::Command::Server::Territories, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(response.size)
+      wait_for { ESM::Test.messages.size }.to eq(response.size)
 
       ESM::Test.messages.map(&:second).each_with_index do |embed, index|
-        territory = ESM::Arma::Territory.new(server: server, territory: response[index])
+        territory = ESM::Exile::Territory.new(server: server, territory: response[index])
 
         expect(embed.title).to eq("Territory \"#{territory.name}\"")
         expect(embed.thumbnail.url).to eq(territory.flag_path)
@@ -130,7 +130,7 @@ describe ESM::Command::Server::Territories, category: "command" do
       expect { request = command.execute(event) }.not_to raise_error
       expect(request).not_to be_nil
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed.description).to match(/unable to find any territories/i)

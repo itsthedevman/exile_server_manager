@@ -3,8 +3,6 @@
 describe ESM::Event::ServerInitialization, v2: true, requires_connection: true do
   include_context "connection"
 
-  let(:community) { ESM::Test.community }
-  let(:server) { ESM::Test.server }
   let(:user) { ESM::Test.user(:with_role) }
   let(:setting) { server.server_setting }
   let(:reward) { server.server_reward }
@@ -36,14 +34,14 @@ describe ESM::Event::ServerInitialization, v2: true, requires_connection: true d
     )
   end
 
-  let(:event) { described_class.new(connection, message) }
+  let(:event) { described_class.new(server, message) }
 
   before :each do
     ESM::Test.block_outbound_messages = true
 
     # Update the data stored in the connection object, NOT the one in the test.
-    connection.server.community.update!(territory_admin_ids: [user.role_id.to_s])
-    connection.server.server_setting.update!(extdb_path: Faker::File.dir, logging_path: Faker::File.dir)
+    server.community.update!(territory_admin_ids: [user.role_id.to_s])
+    server.server_setting.update!(extdb_path: Faker::File.dir, logging_path: Faker::File.dir)
 
     expect do
       message = event.run!
@@ -53,7 +51,7 @@ describe ESM::Event::ServerInitialization, v2: true, requires_connection: true d
     server.reload
 
     # Clear the message sent from the event
-    ESM::Connection::Server.instance.message_overseer.remove_all!
+    connection_server.message_overseer.remove_all!
   end
 
   it "updates the server" do

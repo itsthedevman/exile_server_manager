@@ -16,7 +16,7 @@ describe ESM::Bot do
     describe "Sending a string message" do
       it "sends (Channel)" do
         ESM.bot.deliver("Hello!", to: channel.id.to_s)
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         message_array = ESM::Test.messages.first
 
@@ -33,7 +33,7 @@ describe ESM::Bot do
 
       it "sends (User)" do
         ESM.bot.deliver("Hello!", to: user.discord_id)
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         message_array = ESM::Test.messages.first
 
@@ -58,7 +58,7 @@ describe ESM::Bot do
           end
 
         ESM.bot.deliver(embed, to: channel.id.to_s)
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         message_array = ESM::Test.messages.first
 
@@ -76,7 +76,7 @@ describe ESM::Bot do
 
       it "sends (User)" do
         ESM.bot.deliver("Hello!", to: user.discord_id)
-        expect(ESM::Test.messages.size).to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
         message_array = ESM::Test.messages.first
 
@@ -99,7 +99,7 @@ describe ESM::Bot do
       ESM.bot.deliver("Hello, how are you today?", to: user)
       ESM.bot.await_response(user.discord_id, expected: %w[good bad])
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       message_array = ESM::Test.messages.first
 
       # Channel
@@ -125,7 +125,7 @@ describe ESM::Bot do
       # Start the request (this is blocking)
       ESM.bot.await_response(user.discord_id, expected: ["i do", "i don't"])
 
-      expect(ESM::Test.messages.size).to eq(2)
+      wait_for { ESM::Test.messages.size }.to eq(2)
 
       # Channel
       message_array = ESM::Test.messages.first

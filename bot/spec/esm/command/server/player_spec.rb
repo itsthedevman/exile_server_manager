@@ -45,7 +45,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
@@ -57,7 +57,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
@@ -69,7 +69,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
@@ -81,7 +81,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
@@ -93,7 +93,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
@@ -105,7 +105,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
@@ -117,7 +117,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -129,7 +129,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -141,7 +141,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -153,7 +153,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank
@@ -175,7 +175,7 @@ describe ESM::Command::Server::Player, category: "command" do
 
       expect { command.execute(event) }.not_to raise_error
       wait_for { connection.requests }.to be_blank
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
       embed = ESM::Test.messages.first.second
 
       expect(embed.description).not_to be_blank

@@ -8,26 +8,26 @@ describe ESM::Callbacks do
   end
 
   describe "#register_callbacks" do
-    it "should have registered callbacks" do
+    it "has registered callbacks" do
       callbacks = object.class.__callbacks
       expect(callbacks).not_to be_blank
 
-      expect(callbacks).to eq({before_execute: [:method_to_call_from_class], after_execute: []})
+      expect(callbacks).to eq({before_execute: [{code: :method_to_call_from_class, on_instance: nil}], after_execute: []})
     end
   end
 
   describe "#add_callback" do
-    it "should add a callback (method)" do
+    it "adds a callback (method)" do
       object.add_callback(:before_execute, :method_to_call_on_before_execute)
       callbacks = object.__callbacks[:before_execute]
       expect(callbacks).not_to be_blank
       expect(callbacks.size).to eq(2)
-      expect(callbacks).to eq([:method_to_call_from_class, :method_to_call_on_before_execute])
+      expect(callbacks).to eq([{code: :method_to_call_from_class, on_instance: nil}, {code: :method_to_call_on_before_execute, on_instance: nil}])
     end
 
-    it "should add a callback (block)" do
+    it "adds a callback (block)" do
       object.add_callback(:before_execute) do
-        puts "hello"
+        true
       end
 
       callbacks = object.__callbacks[:before_execute]
@@ -35,13 +35,13 @@ describe ESM::Callbacks do
       expect(callbacks).not_to be_blank
     end
 
-    it "should support adding callbacks on the class level" do
+    it "supports adding callbacks on the class level" do
       expect(object.class.respond_to?(:add_callback)).to eq(true)
     end
   end
 
   describe "#run_callback" do
-    it "should add and run the callbacks" do
+    it "adds and run the callbacks" do
       tracker = object.instance_variable_get(:@tracker)
       object.add_callback(:before_execute, :method_to_call_on_before_execute)
       object.add_callback(:after_execute, :method_to_call_on_after_execute)

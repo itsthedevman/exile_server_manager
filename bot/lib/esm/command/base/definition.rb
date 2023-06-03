@@ -92,6 +92,17 @@ module ESM
           end
         end
 
+        ############################################################
+        ############################################################
+
+        # V1: name is defined in the migrations file, but will need to be added here once v1 has been deprecated
+        attr_reader :category, :type, :aliases, :limit_to,
+          :requires, :response, :cooldown_time,
+          :defines, :permissions, :checks, :skip_flags,
+          :timers, :event, :arguments
+
+        attr_writer :current_community # Used in commands/general/help.rb
+
         def initialize
           attributes = self.class.attributes
 
@@ -103,6 +114,9 @@ module ESM
           @limit_to = attributes.limit_to
           @defines = attributes.defines
           @requires = attributes.requires
+
+          # Mainly for specs, but does give performance analytics (which is a nice bonus)
+          @timers = Timers.new(name)
 
           # Flags for skipping anything else
           @skip_flags = Set.new

@@ -7,12 +7,12 @@ module ESM
         # The user that executed the command
         def current_user
           return @current_user if defined?(@current_user) && @current_user.present?
-          return if @event&.user.nil?
+          return if event&.user.nil?
 
-          user = ESM::User.where(discord_id: @event&.user&.id).first_or_initialize
+          user = ESM::User.where(discord_id: event&.user&.id).first_or_initialize
           user.update(
-            discord_username: @event&.user&.name,
-            discord_discriminator: @event&.user&.discriminator
+            discord_username: event&.user&.name,
+            discord_discriminator: event&.user&.discriminator
           )
 
           # Save some cycles
@@ -26,9 +26,9 @@ module ESM
         # @return [ESM::Community, nil] The community the command was executed from. Nil if sent from Direct Message
         def current_community
           return @current_community if defined?(@current_community) && @current_community.present?
-          return if @event&.server.nil?
+          return if event&.server.nil?
 
-          @current_community = ESM::Community.find_by_guild_id(@event&.server&.id)
+          @current_community = ESM::Community.find_by_guild_id(event&.server&.id)
         end
 
         # @return [ESM::Cooldown] The cooldown for this command and user
@@ -37,22 +37,22 @@ module ESM
         end
 
         def current_channel
-          @current_channel ||= @event&.channel
+          @current_channel ||= event&.channel
         end
 
         # @return [ESM::Server, nil] The server that the command was executed for
         def target_server
           @target_server ||= begin
-            return nil if @arguments.server_id.blank?
+            return nil if arguments.server_id.blank?
 
-            ESM::Server.find_by_server_id(@arguments.server_id)
+            ESM::Server.find_by_server_id(arguments.server_id)
           end
         end
 
         # @return [ESM::Community, nil] The community that the command was executed for
         def target_community
           @target_community ||= lambda do
-            return ESM::Community.find_by_community_id(@arguments.community_id) if @arguments.community_id.present?
+            return ESM::Community.find_by_community_id(arguments.community_id) if arguments.community_id.present?
 
             target_server&.community
           end.call
@@ -61,10 +61,10 @@ module ESM
         # @return [ESM::User, nil] The user that the command was executed against
         def target_user
           return @target_user if defined?(@target_user) && @target_user.present?
-          return if @arguments.target.nil?
+          return if arguments.target.nil?
 
           # Store for later
-          target = @arguments.target
+          target = arguments.target
 
           # Attempt to parse first. Target could be steam_uid, discord id, or mention
           user = ESM::User.parse(target)
@@ -103,10 +103,10 @@ module ESM
         #
         # @return [String, nil] The steam uid from given argument or the steam uid registered to the target_user (which may be nil)
         def target_uid
-          return if @arguments.target.nil?
+          return if arguments.target.nil?
 
           @target_uid ||= lambda do
-            @arguments.target.steam_uid? ? @arguments.target : target_user&.steam_uid
+            arguments.target.steam_uid? ? arguments.target : target_user&.steam_uid
           end.call
         end
 
@@ -183,28 +183,6 @@ module ESM
           raise exception_class || ESM::Exception::CheckFailure, reason
         end
 
-        def to_h
-          {
-            name: name,
-            current_community: current_community&.attributes,
-            current_channel: current_channel.inspect,
-            current_user: current_user.inspect,
-            current_cooldown: current_cooldown&.attributes,
-            target_community: target_community&.attributes,
-            target_server: target_server&.attributes,
-            target_user: target_user.respond_to?(:attributes) ? target_user.attributes : target_user.inspect,
-            target_uid: target_uid,
-            same_user: same_user?,
-            dm_only: dm_only?,
-            text_only: text_only?,
-            dev_only: dev_only?,
-            registration_required: registration_required?,
-            whitelist_enabled: whitelist_enabled?,
-            on_cooldown: on_cooldown?,
-            permissions: @permissions.to_h
-          }
-        end
-
         def skip(*flags)
           flags.each { |flag| @skip_flags << flag }
         end
@@ -233,10 +211,13 @@ module ESM
             end
 
             outgoing_message[:type] = :arma unless outgoing_message.key?(:type)
-
             outgoing_message = ESM::Message.from_hash(outgoing_message)
-            outgoing_message.add_callback(:on_response) do |incoming_message|
-              on_response(incoming_message, outgoing_message)
+
+            # This is how the message gets back to the command
+            outgoing_message.add_callback(:on_response, on_instance: self) do |incoming_message|
+              timers.time!(:on_response) do
+                on_response(incoming_message, outgoing_message)
+              end
             end
           end
 
@@ -244,7 +225,28 @@ module ESM
           outgoing_message.add_attribute(:command, self)
           outgoing_message.apply_command_metadata
 
-          target_server.connection.send_message(outgoing_message, send_opts)
+          target_server.send_message(outgoing_message, send_opts)
+        end
+
+        #
+        # Shorthand method for sending a query message to Arma
+        #
+        # @param name [String, Symbol] The name of the query
+        # @param **arguments [Hash] The query arguments
+        #
+        # @return [ESM::Message] The outbound message
+        #
+        def query_arma(name, **arguments)
+          send_to_arma(
+            type: :query,
+            data: {
+              type: :query,
+              content: {
+                name: name,
+                arguments: arguments
+              }
+            }
+          )
         end
 
         # Convenience method for replying back to the event's channel

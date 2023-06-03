@@ -10,6 +10,10 @@ module ESM
       attr_writer :messages
       attr_accessor :skip_cooldown, :block_outbound_messages
 
+      def callbacks
+        @callbacks ||= CallbackHandler.new
+      end
+
       def messages
         @messages ||= Messages.new
       end
@@ -59,7 +63,8 @@ module ESM
             ap ESM::User.all.to_a
             raise "Failed to create unique user. Decrease number of calls to ESM::Test.user or add more users to test_data.yml"
           end
-          break user if user.valid? && user.save
+
+          return user if user.save
         end
       end
 
@@ -72,11 +77,8 @@ module ESM
       end
 
       def channel(opts = {})
-        community = opts.delete(:in) || community
-        guild_type = community&.guild_type || :primary
-
-        id = data[guild_type][:channels].sample
-        ESM.bot.channel(id)
+        channel_community = opts.delete(:in) || community
+        ESM.bot.channel(channel_community.channel_ids.sample)
       end
 
       def redis
@@ -92,7 +94,7 @@ module ESM
       end
 
       def steam_uid
-        data[:steam_uids].delete(data[:steam_uids].sample)
+        data[:steam_uids].delete(data[:steam_uids].sample).to_s
       end
 
       def reset!
@@ -114,6 +116,8 @@ module ESM
 
         # Clear the test list in Redis
         redis.del("test")
+
+        ESM.bot.delivery_overseer.queue.clear # Otherwise messages from other tests may leak between each other
       end
 
       def wait_for_response(timeout: nil)
@@ -155,6 +159,32 @@ module ESM
         end
 
         raise StandardError, "Timeout!"
+      end
+
+      #
+      # Sends the provided SQF code to the linked connection.
+      #
+      # @param code [String] Valid and error free SQF code as a string
+      #
+      # @return [Any] The result of the SQF code.
+      #
+      # @note: The result is ran through a JSON parser during the communication process. The type may not be what you expect, but it will be consistent
+      #
+      def execute_sqf!(server, code, steam_uid: nil)
+        message = ESM::Message.arma.set_data(:sqf, {execute_on: "server", code: code})
+
+        message.add_attribute(
+          :command, {
+            current_user: {
+              steam_uid: steam_uid || "",
+              id: "",
+              username: "",
+              mention: ""
+            }
+          }.to_ostruct
+        ).apply_command_metadata
+
+        server.send_message(message, forget: false)
       end
     end
   end

@@ -101,7 +101,7 @@ describe ESM::Command::General::Help, category: "command" do
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil
@@ -114,7 +114,7 @@ describe ESM::Command::General::Help, category: "command" do
       event = CommandEvent.create(command_statement, user: user)
       expect { command.execute(event) }.not_to raise_error
 
-      expect(ESM::Test.messages.size).to eq(1)
+      wait_for { ESM::Test.messages.size }.to eq(1)
 
       embed = ESM::Test.messages.first.second
       expect(embed).not_to be_nil

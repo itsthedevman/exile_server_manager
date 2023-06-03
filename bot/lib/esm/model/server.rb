@@ -50,9 +50,10 @@ module ESM
       ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
 
-    def connection
-      # Don't memoize to avoid holding onto the data
-      ESM::Connection::Server.connection(uuid)
+    def send_message(message = nil, opts = {})
+      message = ESM::Message.from_hash(message) if message.is_a?(Hash)
+
+      ESM::Connection::Server.instance.fire(message, to: uuid, **opts)
     end
 
     #
@@ -61,7 +62,7 @@ module ESM
     # @return [Semantic::Version] Returns a version 2.0.0 or greater if there is a connection. If there is no connection, 1.0.0 is assumed.
     #
     def version
-      @version ||= Semantic::Version.new(server_version || "1.0.0")
+      Semantic::Version.new(server_version || "1.0.0")
     end
 
     def version?(expected_version)
@@ -73,14 +74,9 @@ module ESM
     end
 
     def connected?
-      # If, for some reason, someone were to run both versions of ESM at once, their server would not register as online.
-      (!connection.nil? && connection.initialized) ^ ESM::Websocket.connected?(server_id)
-    end
+      return ESM::Websocket.connected?(server_id) unless v2? # V1
 
-    def disconnect
-      return true if !connected?
-
-      connection.disconnect
+      metadata.initialized == "true"
     end
 
     def uptime
@@ -124,8 +120,10 @@ module ESM
 
     # vg_enabled
     # vg_max_sizes
+    # version
+    # initialized
     def metadata
-      @metadata ||= ESM::Server::Metadata.new(server_id)
+      @metadata ||= ESM::Server::Metadata.new(uuid)
     end
 
     # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
@@ -133,7 +131,8 @@ module ESM
       uuid = SecureRandom.uuid
 
       message = ESM::Message.event.add_error("message", "[#{uuid}] #{log_message}")
-      connection&.send_message(message)
+      send_message(message)
+
       return if community.logging_channel_id.blank?
 
       ESM.bot.deliver(
@@ -159,7 +158,6 @@ module ESM
       return if server_key.present?
 
       self.server_key = Array.new(64).map { KEY_CHARS.sample }.join
-      ESM.redis.hmset("server_keys", [uuid, server_key])
     end
 
     def create_server_setting
