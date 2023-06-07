@@ -667,11 +667,16 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
 destination_file="{addon}.pbo";
 
 cd {build_path};
-armake2 pack -v "{addon}" "$destination_file";
+{armake2} pack -v "{addon}" "$destination_file";
 
 [[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
 "#,
-            build_path = build_path.display()
+            build_path = build_path.display(),
+            armake2 = builder
+                .local_git_path
+                .join("tools")
+                .join("armake2")
+                .display()
         );
 
         System::new()
