@@ -6,7 +6,6 @@ module ESM
   class Notifications
     EVENTS = %w[
       ready
-      argument_parse
       server_on_connect
       websocket_server_on_close
       websocket_server_deliver
@@ -87,24 +86,6 @@ module ESM
           channel: "#{Discordrb::Channel::TYPE_NAMES[command.event.channel.type]} (#{command.event.channel.id})",
           response: payload[:response],
           command: command.to_h
-        )
-      end
-    end
-
-    def self.argument_parse(name, _start, _finish, _id, payload)
-      return if ESM.env.production?
-
-      ESM.logger.debug(name) do
-        parser = payload[:parser]
-
-        ESM::JSON.pretty_generate(
-          argument: payload[:argument].to_s,
-          message: payload[:message],
-          regex: payload[:regex],
-          parser: {
-            original: parser.original,
-            value: parser.value
-          }
         )
       end
     end
