@@ -20,18 +20,21 @@ module ESM
         define :cooldown_time, modifiable: true, default: 2.seconds
 
         argument :target, default: nil
-        argument :command_name,
+        argument(
+          :command_name,
           regex: /\w+/,
           description: "commands.reset_cooldown.arguments.command_name",
           default: nil,
-          before_store: lambda { |parser|
-            return if parser.value.nil?
-            return if ESM::Command.include?(parser.value)
+          modifier: lambda do |argument|
+            return if argument.content.nil?
+            return if ESM::Command.include?(argument.content)
 
             # This allows "passing" the value for the command_name argument onto the server_id argument.
-            parser.argument.skip_removal = true
-            parser.value = nil
-          }
+            argument.skip_removal = true
+            argument.content = nil
+          end
+        )
+
         argument :server_id, default: nil
 
         def on_execute

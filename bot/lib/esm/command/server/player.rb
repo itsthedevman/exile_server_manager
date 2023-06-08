@@ -22,13 +22,13 @@ module ESM
           :value,
           regex: /-?\d+/,
           description: "commands.player.arguments.value",
-          before_store: lambda do |parser|
-            return unless @arguments.type&.match(/^h(?:eal)?|^k(?:ill)?/i)
+          modifier: lambda do |argument|
+            return unless arguments.type&.match(/^h(?:eal)?|^k(?:ill)?/i)
 
             # The types `heal` and `kill` don't require the value argument.
-            # This is done this way because setting `value` to have a default of nil makes the help text confusing
-            parser.argument.default = nil
-            parser.value = nil
+            # This is done this way because setting `content` to have a default of nil makes the help text confusing
+            argument.optional!
+            argument.content = nil
           end
         )
 

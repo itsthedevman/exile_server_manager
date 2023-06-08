@@ -198,7 +198,7 @@ describe ESM::Command::Server::Player, category: "command" do
       expect(command.arguments.value).to be_nil
     end
 
-    # Ensures the `before_store` does not cause a crash due to the change to how arguments are parsed.
+    # Ensures the `modifier` does not cause a crash due to the change to how arguments are parsed.
     it "displays missing argument" do
       command_statement = command.statement(server_id: server.server_id, target: second_user.mention)
       event = CommandEvent.create(command_statement, user: user, channel_type: :text)

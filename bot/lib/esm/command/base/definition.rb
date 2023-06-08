@@ -7,6 +7,19 @@ module ESM
       module Definition
         extend ActiveSupport::Concern
 
+        ATTRIBUTES = ImmutableStruct.define(*%i[
+          name
+          category
+          aliases
+          arguments
+          type
+          limit_to
+          defines
+          requires
+          skipped_checks
+        ])
+        private_constant :ATTRIBUTES
+
         class_methods do
           attr_reader :defines, :type, :category, :aliases
 
@@ -71,18 +84,17 @@ module ESM
           end
 
           def attributes
-            @attributes ||=
-              OpenStruct.new(
-                name: @command_name,
-                category: @category,
-                aliases: @aliases,
-                arguments: @arguments,
-                type: @type,
-                limit_to: @limit_to,
-                defines: @defines,
-                requires: @requires,
-                skipped_checks: @skipped_checks
-              )
+            ATTRIBUTES.new(
+              name: @command_name.dup,
+              category: @category.dup,
+              aliases: @aliases.deep_dup,
+              arguments: @arguments.deep_dup,
+              type: @type,
+              limit_to: @limit_to,
+              defines: @defines.deep_dup,
+              requires: @requires.deep_dup,
+              skipped_checks: @skipped_checks.deep_dup
+            )
           end
 
           def skip_check(*checks)
@@ -109,7 +121,7 @@ module ESM
           @name = attributes.name
           @category = attributes.category
           @aliases = attributes.aliases
-          @arguments = ESM::Command::ArgumentContainer.new(attributes.arguments)
+          @arguments = ESM::Command::ArgumentContainer.new(self, attributes.arguments)
           @type = attributes.type
           @limit_to = attributes.limit_to
           @defines = attributes.defines
@@ -120,9 +132,6 @@ module ESM
 
           # Flags for skipping anything else
           @skip_flags = Set.new
-
-          # Store the command on the arguments, so we can access for error reporting
-          @arguments.command = self
 
           # Pre load
           @permissions = Base::Permissions.new(self)

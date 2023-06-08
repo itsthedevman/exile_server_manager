@@ -19,15 +19,15 @@ module ESM
           :broadcast_to,
           regex: ESM::Regex::BROADCAST,
           description: "commands.broadcast.arguments.broadcast_to",
-          before_store: lambda do |parser|
-            return if parser.value.blank?
-            return if %w[all preview].include?(parser.value)
+          modifier: lambda do |argument|
+            return if argument.content.blank?
+            return if %w[all preview].include?(argument.content)
 
             # If we start with a community ID, just accept the match
-            return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
+            return if argument.content.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
 
             # Add the community ID to the front of the match
-            parser.value = "#{current_community.community_id}_#{parser.value}"
+            argument.content = "#{current_community.community_id}_#{argument.content}"
           end
         )
 

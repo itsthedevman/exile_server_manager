@@ -13,7 +13,7 @@ module ESM
             # The event has to be stored before argument parsing because of callbacks referencing event data
             # Still have to pass the even through to from_discord for V1
             @event = event
-            arguments.parse!(event)
+            arguments.parse!(event.content)
 
             # V1
             command =
