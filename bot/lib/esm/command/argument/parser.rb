@@ -4,59 +4,61 @@ module ESM
   module Command
     class Argument
       class Parser
-        attr_reader :original, :argument
-        attr_accessor :value
+        attr_reader :match, :argument
 
-        def initialize(argument, message)
+        delegate :regex, :preserve_case?, :type, :default, to: :@argument
+
+        def initialize(argument)
           @argument = argument
-          @message = message.strip
         end
 
-        def parse!
+        #
+        # Applies the argument regex against the message and attempts to extract the value
+        #
+        # @return [Array(String, (Any | Nil))] Returns [matched text, parsed and converted text]
+        #
+        def parse(message)
+          message = message.strip
+
           # Take in the message and try to match the regex to the message
-          match_object = @argument.regex.match(@message)
-          return self if match_object.nil?
+          match_object = regex.match(message)
+          @match, value = match_object&.values_at(0, 1)
 
-          @original = match_object[0]
-          @match = match_object[1]
+          value = extract_value_or_default(value)
 
-          @value = cast_value_type(extract_value_or_default)
-
-          self
+          [@match, cast_value_type(value)]
         end
 
         private
 
         def cast_value_type(value)
-          return value if @argument.type == :string
+          return value if type == :string
 
-          begin
-            case @argument.type
-            when :integer
-              value.to_i
-            when :float
-              value.to_f
-            when :json
-              ESM::JSON.parse(value)
-            when :symbol
-              value.to_sym
-            else
-              value
-            end
-          rescue
+          case type
+          when :integer
+            value.to_i
+          when :float
+            value.to_f
+          when :json
+            ESM::JSON.parse(value)
+          when :symbol
+            value.to_sym
+          else
             value
           end
+        rescue
+          value
         end
 
-        def extract_value_or_default
+        def extract_value_or_default(match)
           # There is a match and if we don't want to preserve the case, convert it to lowercase
-          return @argument.preserve_case? ? @match.strip : @match.downcase.strip if @match.present?
+          return preserve_case? ? match.strip : match.downcase.strip if match.present?
 
           # No default, just return nil
-          return if @argument.default.blank?
+          return if default.blank?
 
           # Return the default
-          @argument.default
+          default
         end
       end
     end

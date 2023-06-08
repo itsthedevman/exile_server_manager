@@ -3,30 +3,29 @@
 module ESM
   module Command
     class ArgumentContainer < Array
-      attr_accessor :command
-      attr_reader :matches
+      attr_reader :matches, :command
 
-      def initialize(arguments = [])
-        super(arguments.map { |name, opts| ESM::Command::Argument.new(name, self, opts) })
+      def initialize(command, arguments = [])
+        super(arguments.map { |name, opts| ESM::Command::Argument.new(name, opts) })
+
         @matches = []
+        @command = command
       end
 
       def get(argument_name)
         find { |argument| argument.name == argument_name.to_sym }
       end
 
-      def parse!(event)
-        @event = event
-
+      def parse!(content)
         # Reset all the values of our arguments
         clear!
 
         # Remove the prefix and command name from the message
-        @message = extract_argument_string(@event.message.content)
+        message = extract_argument_string(content)
 
         # Loop through each match
         each do |argument|
-          parse_and_remove!(argument)
+          parse_and_remove!(message, argument)
         end
       end
 
@@ -51,11 +50,7 @@ module ESM
 
       def clear!
         @matches = []
-        each do |argument|
-          next if argument.parser.nil?
-
-          argument.value = nil
-        end
+        each { |argument| argument.content = nil }
       end
 
       def community_id?
@@ -66,7 +61,7 @@ module ESM
         hash = {}
 
         each do |argument|
-          hash[argument.name] = argument.value
+          hash[argument.name] = argument.content
         end
 
         hash
@@ -75,7 +70,7 @@ module ESM
       # Pulls the values for arguments from a hash with the key being the argument name
       def from_hash(hash)
         each do |argument|
-          argument.value = hash[argument.name.to_s]
+          argument.content = hash[argument.name.to_s]
           create_getter(argument)
         end
       end
@@ -107,63 +102,25 @@ module ESM
         raise ESM::Exception::FailedArgumentParse, embed
       end
 
-      def defaults
-        @defaults ||= {
-          community_id: {
-            regex: ESM::Regex::COMMUNITY_ID_OPTIONAL,
-            description: "default_arguments.community_id",
-            before_store: lambda do |parser|
-              return if parser.value.present?
-              return if !@event&.channel&.text?
-
-              parser.value = current_community.community_id
-            end
-          },
-          target: {
-            regex: ESM::Regex::TARGET,
-            description: "default_arguments.target"
-          },
-          server_id: {
-            regex: ESM::Regex::SERVER_ID_OPTIONAL_COMMUNITY,
-            description: "default_arguments.server_id",
-            preserve: true,
-            before_store: lambda do |parser|
-              return if parser.value.blank?
-              return if !@event&.channel&.text?
-
-              # If we start with a community ID, just accept the match
-              return if parser.value.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
-
-              # Add the community ID to the front of the match
-              parser.value = "#{current_community.community_id}_#{parser.value}"
-            end
-          },
-          territory_id: {
-            regex: ESM::Regex::TERRITORY_ID,
-            description: "default_arguments.territory_id"
-          }
-        }
-      end
-
       private
 
-      def parse_and_remove!(argument)
-        argument.parse(command, @message)
+      def parse_and_remove!(message, argument)
+        argument.parse(message, command)
 
         # Store the match
-        @matches << argument.value
+        @matches << argument.content
 
         # Create a getter on our container
         create_getter(argument)
 
         # Now we need to return the message without our match
-        @message.sub!(argument.parser.original, "").strip! unless argument.value.nil? || argument.skip_removal?
+        message.sub!(argument.match, "").strip! unless argument.content.nil? || argument.skip_removal?
       end
 
       def create_getter(argument)
         # Creates a method on this instance that returns the value of the argument
         define_singleton_method(argument.name) do
-          argument.value
+          argument.content
         end
       end
 
@@ -172,13 +129,7 @@ module ESM
         # but replacing out arguments, already captured by the container, with their values
         # !test <foo> <bar>
         # !test foo <bar>
-        self.format do |argument|
-          if argument.parser.nil? || argument.value.nil?
-            "#{argument} "
-          else
-            "#{argument.value} "
-          end
-        end
+        self.format { |argument| "#{argument.content || argument} " }
       end
 
       # Aliases may be of different lengths, this accounts for the different lengths when parsing the command string

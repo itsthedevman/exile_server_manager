@@ -29,7 +29,7 @@ describe ESM::Command::ArgumentContainer do
   describe "Valid Argument Container (Preserve)" do
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -56,7 +56,7 @@ describe ESM::Command::ArgumentContainer do
     end
 
     it "raises an error with a embed" do
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
       expect { container.validate! }.to raise_error do |error|
         embed = error.data
 
@@ -84,7 +84,7 @@ describe ESM::Command::ArgumentContainer do
 
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -112,7 +112,7 @@ describe ESM::Command::ArgumentContainer do
 
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -140,7 +140,7 @@ describe ESM::Command::ArgumentContainer do
 
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -172,7 +172,7 @@ describe ESM::Command::ArgumentContainer do
 
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -198,7 +198,7 @@ describe ESM::Command::ArgumentContainer do
 
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has #{ESM::Command::Test::BaseV1::ARGUMENT_COUNT} matches" do
@@ -217,26 +217,26 @@ describe ESM::Command::ArgumentContainer do
   describe "#clear!" do
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "clear the values of all arguments" do
-      expect(container.map(&:value).reject(&:nil?)).not_to be_empty
+      expect(container.map(&:content).reject(&:nil?)).not_to be_empty
       container.clear!
-      expect(container.map(&:value).reject(&:nil?)).to be_empty
+      expect(container.map(&:content).reject(&:nil?)).to be_empty
     end
   end
 
   describe "#to_h" do
     before :each do
       expect(event).not_to be_nil
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
 
     it "has all attributes and values" do
       hash = container.to_h
       expect(hash.keys).to match_array(container.map(&:name))
-      expect(hash.values).to match_array(container.map(&:value))
+      expect(hash.values).to match_array(container.map(&:content))
     end
   end
 
@@ -254,7 +254,7 @@ describe ESM::Command::ArgumentContainer do
     end
 
     it "properly slices out alias correctly" do
-      expect { container.parse!(event) }.not_to raise_error
+      expect { container.parse!(event.content) }.not_to raise_error
     end
   end
 end

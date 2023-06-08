@@ -1,73 +1,68 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Argument::Parser do
-  let!(:container_klass) { ESM::Command::ArgumentContainer }
+  let!(:command) { ESM::Command::Test::PlayerCommand.new }
 
   describe "Parsing" do
-    it "1" do
-      container = container_klass.new([[:test, {regex: /test/, description: "d"}]])
-      argument = container.first
-      parser = described_class.new(argument, "test").parse!
-      expect(parser.value).to eq("test")
+    it "parses successfully" do
+      argument = ESM::Command::Argument.new(:test, {regex: /test/, description: "d"})
+      parser = described_class.new(argument)
+
+      expect(parser.parse("foo test bar")).to eq(["test", "test"])
     end
 
-    it "2" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d"}]])
-      argument = container.first
+    it "parses successfully" do
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d"})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, "12345").parse!
-      expect(parser.value).to eq("12345")
+      expect(parser.parse("12345")).to eq(["12345", "12345"])
     end
   end
 
-  it "should default" do
-    container = container_klass.new([[:test, {regex: /.*/, description: "d", default: "testing"}]])
-    argument = container.first
+  it "defaults" do
+    argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d", default: "testing"})
+    parser = described_class.new(argument)
 
-    parser = described_class.new(argument, "").parse!
-    expect(parser.value).to eq("testing")
+    expect(parser.parse("")).to eq(["", "testing"])
   end
 
   describe "Type-casting" do
-    it "should be string" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d"}]])
-      argument = container.first
+    it "parses string" do
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d"})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, "testing").parse!
-      expect(parser.value).to eq("testing")
+      expect(parser.parse("testing")).to eq(["testing", "testing"])
     end
 
-    it "should be integer" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d", type: :integer}]])
-      argument = container.first
+    it "parses integer" do
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d", type: :integer})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, "1").parse!
-      expect(parser.value).to eq(1)
+      expect(parser.parse("1")).to eq(["1", 1])
     end
 
-    it "should be float" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d", type: :float}]])
-      argument = container.first
+    it "parses float" do
+      # container = container_klass.new\(command, \[\[(.+)\]\]\)
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d", type: :float})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, "2.5").parse!
-      expect(parser.value).to eq(2.5)
+      expect(parser.parse("2.5")).to eq(["2.5", 2.5])
     end
 
-    it "should be json" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d", type: :json}]])
-      argument = container.first
+    it "parses json" do
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d", type: :json})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, '{ "foo": "bar" }').parse!
-      expect(parser.value).to have_key(:foo)
-      expect(parser.value[:foo]).to eq("bar")
+      _match, value = parser.parse('{ "foo": "bar" }')
+      expect(value).to have_key(:foo)
+      expect(value[:foo]).to eq("bar")
     end
 
-    it "should be symbol" do
-      container = container_klass.new([[:test, {regex: /.*/, description: "d", type: :symbol}]])
-      argument = container.first
+    it "parses symbol" do
+      argument = ESM::Command::Argument.new(:test, {regex: /.*/, description: "d", type: :symbol})
+      parser = described_class.new(argument)
 
-      parser = described_class.new(argument, "testing").parse!
-      expect(parser.value).to eq(:testing)
+      expect(described_class.new(argument).parse("testing")).to eq(["testing", :testing])
     end
   end
 end
