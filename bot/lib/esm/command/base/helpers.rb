@@ -254,6 +254,10 @@ module ESM
           ESM.bot.deliver(message, to: current_channel, replying_to: @event&.message)
         end
 
+        def reply_sync(message)
+          ESM.bot.deliver(message, to: current_channel, replying_to: @event&.message, async: false)
+        end
+
         def edit_message(message, content)
           if content.is_a?(ESM::Embed)
             embed = Discordrb::Webhooks::Embed.new

@@ -54,7 +54,7 @@ module ESM
         end
 
         def send_waiting_message
-          @message = reply(I18n.t("commands.meow.waiting"))
+          @message = reply_sync(I18n.t("commands.meow.waiting"))
         end
 
         # Remove the "Waiting..." message

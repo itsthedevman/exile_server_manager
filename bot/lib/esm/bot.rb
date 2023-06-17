@@ -202,10 +202,11 @@ module ESM
     # @param to [String, Discordrb::Commands::CommandEvent, Discordrb::Channel, Discordrb::Member, Discordrb::User] Where should the message be sent? This ultimately will end up as a channel
     # @param embed_message [String] An optional message to attach with an embed. Only works if `message` is an embed
     # @param replying_to [Discordrb::Message] A message to "reply" to. Discord will reference the previous message
+    # @param async [true/false] Controls if this should block and wait for the message to send and discord to reply, or send it async and immediately return
     #
-    # @return [Discordrb::Message, nil] The message response or nil if it failed
+    # @return [Discordrb::Message, nil] Nil if async: true or if there was an error.
     #
-    def deliver(message, to:, embed_message: "", replying_to: nil)
+    def deliver(message, to:, embed_message: "", replying_to: nil, async: true)
       return if message.blank?
 
       replying_to = nil if replying_to.present? && !replying_to.is_a?(Discordrb::Message)
@@ -219,7 +220,19 @@ module ESM
         raise ESM::Exception::ChannelAccessDenied if !channel_permission?(:send_messages, delivery_channel)
       end
 
-      @delivery_overseer.add(message, delivery_channel, embed_message: embed_message, replying_to: replying_to)
+      id = @delivery_overseer.add(
+        message,
+        delivery_channel,
+        embed_message: embed_message,
+        replying_to: replying_to,
+        wait: !async
+      )
+
+      # The Discord response message is none of our concern
+      return if async
+
+      # Blocking until the message has been sent and Discord replies
+      @delivery_overseer.wait_for_delivery(id)
     rescue ESM::Exception::ChannelAccessDenied
       embed = ESM::Embed.build(
         :error,

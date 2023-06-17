@@ -215,7 +215,7 @@ module ESM
             @nearby_vehicles << vehicle if vehicle[:spawn_location] == "nearby"
           end
 
-          @vehicle_message = reply(vehicle_embed)
+          @vehicle_message = reply_sync(vehicle_embed)
         end
 
         def selected_reward
