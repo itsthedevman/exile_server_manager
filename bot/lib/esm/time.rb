@@ -76,5 +76,9 @@ module ESM
     def self.current
       ::Time.find_zone("UTC").now
     end
+
+    def self.now
+      ::Time.now
+    end
   end
 end
