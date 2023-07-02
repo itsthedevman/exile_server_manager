@@ -24,7 +24,7 @@ default: &default
 
     # ESM::Bot::DeliveryOverseer
     bot_delivery_overseer:
-      check_every: 0.1
+      check_every: 0.5
 
 development:
   !!merge <<: *default

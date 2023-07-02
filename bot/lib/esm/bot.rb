@@ -38,14 +38,16 @@ module ESM
       ESM.bot&.command(command_class.name.to_sym, aliases: command_class.aliases) do |event|
         # Execute the command.
         # Threaded since I handle everything in the commands
-        Thread.new { command_class.new.execute(event) }
+        Thread.new do
+          command_class.new.execute(event)
+        end
 
         # Don't send anything back
         nil
       end
     end
 
-    attr_reader :config, :prefix, :metadata
+    attr_reader :config, :prefix, :metadata, :delivery_overseer
 
     def initialize
       @waiting_for = {}
@@ -220,19 +222,13 @@ module ESM
         raise ESM::Exception::ChannelAccessDenied if !channel_permission?(:send_messages, delivery_channel)
       end
 
-      id = @delivery_overseer.add(
+      @delivery_overseer.add(
         message,
         delivery_channel,
         embed_message: embed_message,
         replying_to: replying_to,
         wait: !async
       )
-
-      # The Discord response message is none of our concern
-      return if async
-
-      # Blocking until the message has been sent and Discord replies
-      @delivery_overseer.wait_for_delivery(id)
     rescue ESM::Exception::ChannelAccessDenied
       embed = ESM::Embed.build(
         :error,

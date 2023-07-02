@@ -255,7 +255,8 @@ module ESM
         end
 
         def reply_sync(message)
-          ESM.bot.deliver(message, to: current_channel, replying_to: @event&.message, async: false)
+          pending_delivery = ESM.bot.deliver(message, to: current_channel, replying_to: @event&.message, async: false)
+          pending_delivery.wait_for_delivery
         end
 
         def edit_message(message, content)

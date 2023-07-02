@@ -3,26 +3,62 @@
 module ESM
   class Bot
     class DeliveryOverseer
-      TIMEOUT = 5 # seconds
-
-      Envelope = ImmutableStruct.define(
-        :id, :message, :delivery_channel, :embed_message, :replying_to, :wait
-      ) do
+      class Envelope < ImmutableStruct.define(:id, :message, :delivery_channel, :embed_message, :replying_to, :wait)
         def initialize(**args)
           defaults = {id: nil, wait: false}
 
-          defaults.merge!(id: SecureRandom.uuid, wait: true) if args[:wait]
+          if args[:wait]
+            defaults[:id] = SecureRandom.uuid
+            defaults[:wait] = true
+          end
+
           super(**defaults.merge(args))
         end
       end
 
+      class PendingDelivery < ImmutableStruct.define(:id)
+        SLEEP = 0.2 # Seconds
+        TIMEOUT = 2.minutes.to_i / SLEEP
+
+        def wait_for_delivery
+          counter = 0
+
+          while counter < TIMEOUT
+            sleep(SLEEP)
+            return retrieve_message if ESM.redis.exists?(id)
+
+            counter += 1
+          end
+        end
+
+        def retrieve_message
+          ESM.bot.delivery_overseer.get(id)
+        end
+      end
+
+      class Delivery < ImmutableStruct.define(:id, :message, :timeout)
+        def initialize(id:, message:, timeout: 2.minutes)
+          super(id: id, message: message, timeout: timeout.from_now)
+        end
+
+        def timed_out?
+          timeout < Time.now
+        end
+
+        def delivered
+          ESM.redis.set(id, "1", ex: timeout.to_i)
+        end
+      end
+
       def initialize
-        @deliveries = {}
-        @mutex = Mutex.new
         @queue = Queue.new
+        @deliveries = {}
+        @deliveries_mutex = Mutex.new
         @check_every = ESM.config.loops.bot_delivery_overseer.check_every.freeze
 
-        oversee!
+        @deliveries_thread = oversee_deliveries!
+        @sender_thread_one = oversee!
+        @sender_thread_two = oversee!
       end
 
       def add(message, delivery_channel, embed_message: "", replying_to: nil, wait: false)
@@ -35,39 +71,28 @@ module ESM
         )
 
         @queue << envelope
-        return envelope.id if wait
+        return PendingDelivery.new(envelope.id) if wait
 
         nil
       end
 
-      def wait_for_delivery(id)
-        counter = 0
-
-        loop do
-          sleep(@check_every)
-
-          counter += 1
-          result = @mutex.synchronize { @deliveries.delete(id) }
-
-          return result&.first if result || counter > TIMEOUT
+      def get(id)
+        @deliveries_mutex.synchronize do
+          delivery = @deliveries.delete(id)
+          delivery&.message
         end
-
-        nil
       end
 
       private
 
       def oversee!
-        @watch_thread = Thread.new do
+        Thread.new do
+          sleep(rand(@check_every))
+
           loop do
-            sleep(@check_every)
+            sleep(@check_every + rand(@check_every))
 
-            # Ensure the @deliveries does not become a memory leak
-            @mutex.synchronize do
-              @deliveries.delete_if { |(_, timeout)| timeout < Time.now }
-            end
-
-            envelope = @queue.pop
+            envelope = @queue.pop(timeout: 0)
             next if envelope.nil?
 
             message = ESM.bot.__deliver(
@@ -79,8 +104,25 @@ module ESM
 
             next unless envelope.wait
 
-            @mutex.synchronize do
-              @deliveries[envelope.id] = [message, TIMEOUT.seconds.from_now]
+            @deliveries_mutex.synchronize do
+              delivery = Delivery.new(envelope.id, message)
+              @deliveries[envelope.id] = delivery
+              delivery.delivered
+            end
+          rescue => e
+            error!(e)
+          end
+        end
+      end
+
+      def oversee_deliveries!
+        Thread.new do
+          loop do
+            sleep(20.seconds)
+
+            # Clear any timed out messages
+            @deliveries_mutex.synchronize do
+              @deliveries.delete_if { |_id, delivery| delivery.timed_out? }
             end
           end
         end
