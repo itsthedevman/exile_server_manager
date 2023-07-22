@@ -35,6 +35,7 @@ group :development do
   gem "awesome_print"
   gem "bcrypt_pbkdf"
   gem "benchmark-ips"
+  gem "bundle-audit"
   gem "bundler"
   gem "capistrano-asdf"
   gem "capistrano-bundler"
