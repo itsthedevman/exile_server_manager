@@ -48,6 +48,9 @@ group :development do
   gem "ruby-prof"
   gem "solargraph"
   gem "standard"
+  gem "rubocop-performance"
+  gem "rubocop-rails"
+  gem "rubocop-rspec"
   gem "yard"
 end
 
