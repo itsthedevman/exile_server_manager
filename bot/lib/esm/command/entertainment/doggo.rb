@@ -53,7 +53,7 @@ module ESM
         end
 
         def send_waiting_message
-          @message = reply_sync(I18n.t("commands.doggo.waiting"))
+          @message = reply(I18n.t("commands.doggo.waiting"))
         end
 
         # Remove the "Waiting..." message

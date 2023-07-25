@@ -62,7 +62,7 @@ module ESM
         end
 
         def send_waiting_message
-          @message = reply_sync(I18n.t("commands.birb.waiting"))
+          @message = reply(I18n.t("commands.birb.waiting"))
         end
 
         # Remove the "Waiting..." message
