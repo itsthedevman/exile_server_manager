@@ -1,6 +1,6 @@
 append :linked_files, ".env.prod"
 
-role :app, %w[esm_prod]
+role :app, %w[esm]
 
 set :default_env, {
   RAILS_ENV: "production",
