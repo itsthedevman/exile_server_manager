@@ -50,7 +50,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
 
 # Install PBO library
-RUN cargo install armake2
+RUN rustup update && cargo install armake2
 
 # SteamCMD
 RUN mkdir -p /steamcmd \
