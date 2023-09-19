@@ -159,7 +159,7 @@ module ESM
           next unless dm_allowed
 
           pending_delivery = ESM.bot.deliver(embed, to: user.discord_user, async: false)
-          message = pending_delivery.wait_for_delivery
+          message = pending_delivery&.wait_for_delivery
           status[:direct_message] = message.nil? ? :failure : :success
         end
       end
