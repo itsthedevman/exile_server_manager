@@ -149,7 +149,6 @@ pub struct PostInit {
     // Set by the client
     #[serde(default)]
     pub build_number: String,
-    pub command_prefix: String,
     pub community_id: String,
 
     #[arma(skip)] // Skip passing this value through to Arma
