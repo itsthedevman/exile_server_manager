@@ -2,7 +2,7 @@ default: &default
   token: <%= ENV["DISCORD_TOKEN"] %>
   steam_api_key: <%= ENV["STEAM_TOKEN"] %>
   dev_user_whitelist:
-    <% JSON.parse(ENV["DEV_WHITELIST"]).each do |discord_id| %>
+    <% JSON.parse(ENV["DEV_ALLOWLIST"]).each do |discord_id| %>
       - "<%= discord_id %>"
     <% end %>
   loops:
