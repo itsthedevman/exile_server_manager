@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+#
+# This entire file is dedicated to the migration methods from @esm v1 to @esm v2
+# This file will be deleted once the migration has been completed
+#
 module ESM
   module Command
     class Base
@@ -7,14 +11,12 @@ module ESM
       module Migration
         extend ActiveSupport::Concern
 
-        class_methods do
-          def has_v1_variant!
-            @has_v1_variant = true
-          end
+        def v1_code_needed?
+          defined?(self.class::V1) && !v2_target_server?
+        end
 
-          def has_v1_variant?
-            @has_v1_variant == true
-          end
+        def load_v1_code!
+          extend(self.class::V1) # Overwrites V2 logic
         end
 
         # V1
@@ -30,33 +32,15 @@ module ESM
         #
         # V1: This is called when the message is received from the server
         #
-        def from_server(parameters)
-          # Parameters is always an array. 90% of the time, parameters size will only be 1
+        def from_server(response)
+          load_v1_code! if v1_code_needed?
+
+          # Event is always an array. 90% of the time, event size will only be 1
           # This just makes typing a little easier when writing commands
-          @response = (parameters.size == 1) ? parameters.first : parameters
+          @response = (response.size == 1) ? response.first : response
 
           # Trigger the callback
           on_response(nil, nil)
-        end
-
-        # Raises an exception of the given class or ESM::Exception::CheckFailure.
-        # If a block is given, the return of that block will be message to raise
-        # Otherwise, it will build an error embed
-        #
-        # @deprecated
-        # @see #raise_error!
-        def check_failed!(name = nil, **args, &block)
-          message =
-            if block
-              yield
-            elsif name.present?
-              ESM::Embed.build(:error, description: I18n.t("command_errors.#{name}", **args.except(:exception_class)))
-            end
-
-          # Logging
-          ESM::Notifications.trigger("command_check_failed", command: self, reason: message)
-
-          raise args[:exception_class] || ESM::Exception::CheckFailure, message
         end
 
         # V1: Send a request to the DLL
@@ -80,17 +64,8 @@ module ESM
           ESM::Websocket.deliver!(target_server.server_id, request)
         end
 
-        # Using method because requests need the v1 name stored in @name
-        def name
-          @name.sub("_v1", "")
-        end
-
         def v2_target_server?
-          target_server&.v2? || false
-        end
-
-        def v2?
-          !@name.ends_with?("_v1")
+          !!target_server&.v2?
         end
       end
     end

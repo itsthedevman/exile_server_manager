@@ -14,9 +14,7 @@ module ESM
       summary.avatar_full
     end
 
-    def profile_url
-      summary.profile_url
-    end
+    delegate :profile_url, to: :summary
 
     def profile_visibility
       {
@@ -31,7 +29,7 @@ module ESM
         # Apparently steam doesn't always give that information
         return if summary.time_created.nil?
 
-        ::Time.at(summary.time_created)
+        ::Time.zone.at(summary.time_created)
       end.call
     end
 
@@ -43,13 +41,8 @@ module ESM
       bans.vac_banned
     end
 
-    def number_of_vac_bans
-      bans.number_of_vac_bans
-    end
+    delegate :number_of_vac_bans, :days_since_last_ban, to: :bans
 
-    def days_since_last_ban
-      bans.days_since_last_ban
-    end
 
     private
 
@@ -85,7 +78,7 @@ module ESM
       end.call
     end
 
-    #          "SteamId" => "76561198037177305",
+    #          "SteamId" => "76561234567890123",
     #  "CommunityBanned" => false,
     #        "VACBanned" => false,
     #  "NumberOfVACBans" => 0,

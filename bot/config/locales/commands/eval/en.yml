@@ -3,6 +3,7 @@ en:
   commands:
     eval:
       description: Executes the provided string in ruby
-      example: |-
-        **`%{prefix}eval true`**
-        Returns true
+      examples:
+        - description: Returns true
+          arguments:
+            code: "true"

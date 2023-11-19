@@ -1,32 +1,37 @@
----
 en:
   commands:
     preferences:
-      description: View, allow, or deny notifications on a per server basis. All notifications
-        are enabled by default, this command allows for fine grained tuning.
-      example: |-
-        **`%{prefix}preferences esm_malden`**
-        Displays your notification preferences for `esm_malden`
-
-        **`%{prefix}preferences esm_malden allow`**
-        Allows `esm_malden` to send you all notification types
-
-        **`%{prefix}preferences esm_altis deny protection-money-paid`**
-        Blocks `esm_altis` from sending you the `protection-money-paid` XM8 notification
+      description: View, allow, or deny notifications on a per server basis.
+      description_extra: All notifications are enabled by default, this command allows for fine grained tuning.
+      examples:
+      - description: Displays your notification preferences for `esm_malden`
+        arguments:
+          for: esm_malden
+      - description: Allows `esm_malden` to send you all notification types
+        arguments:
+          for: esm_malden
+          action: Allow
+      - description: Blocks `esm_altis` from sending you the Protection money paid XM8 notification
+        arguments:
+          for: esm_altis
+          action: Deny
+          type: Protection money paid
       arguments:
-        state: Controls if the notification will be sent to you. Valid options are
-          `allow` and `deny`
-        type: |-
-          The notification type. Valid options are:
-          - `all`
-          - `custom`
-          - `base-raid`
-          - `flag-stolen`
-          - `flag-restored`
-          - `flag-steal-started`
-          - `protection-money-due`
-          - `protection-money-paid`
-          - `grind-started`
-          - `hack-started`
-          - `charge-plant-started`
-          - `marxet-item-sold`
+        action:
+          description: Controls if the notification will be sent to you. Valid options are `Allow` and `Deny`
+        type:
+          description: The notification type. See `/help with:/my preferences` for more information.
+          description_extra: |-
+            Valid options are:
+            - All
+            - Custom
+            - Base raid
+            - Flag stolen
+            - Flag restored
+            - Flag steal started
+            - Protection money due
+            - Protection money paid
+            - Grind started
+            - Hack started
+            - Charge plant started
+            - Marxet item sold

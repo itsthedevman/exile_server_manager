@@ -1,24 +1,30 @@
 # frozen_string_literal: true
 
-# New command? Make sure to create a migration to add the configuration to all communities
 module ESM
   module Command
     module Server
-      class Reward < ESM::Command::Base
-        set_type :player
-        requires :registration
+      class Reward < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 1
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
 
-        argument :server_id
+        #
+        # Configuration
+        #
+
+        change_attribute :cooldown_time, default: 1.second
+
+        command_type :player
+
+        #################################
 
         def on_execute
           # Check for pending requests
-          @checks.pending_request!
+          check_for_pending_request!
 
           # Check to see if the server has any rewards for the user before even sending the request
           check_for_reward_items!
@@ -60,7 +66,7 @@ module ESM
           reward = target_server.server_reward
           return if reward.reward_items.present? || reward.locker_poptabs.positive? || reward.player_poptabs.positive? || reward.respect.positive?
 
-          check_failed!(:no_reward_items, user: current_user.mention)
+          raise_error!(:no_reward_items, user: current_user.mention)
         end
       end
     end

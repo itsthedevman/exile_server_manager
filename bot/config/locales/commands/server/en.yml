@@ -2,10 +2,10 @@
 en:
   commands:
     server:
-      description: Displays connection, up time, next restart and other miscellanous
-        information about the provided server ID
-      example: |-
-        **`%{prefix}server esm_malden`**
-        Returns information about the server `esm_malden`
+      description: Displays connection, up time, next restart and other information about the provided server ID
+      examples:
+        - description: Returns information about the server `esm_malden`
+          arguments:
+            for: esm_malden
       online_for: "✅ Online for"
       restart_in: "⏰ Next restart in"

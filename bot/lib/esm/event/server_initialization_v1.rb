@@ -138,8 +138,11 @@ module ESM
 
         # After the server has replied to this request, notify the community and allow commands.
         request.on_reply = lambda do |connection|
+          server = connection.server
+          info!(server_id: server.server_id, uptime: server.uptime)
+
           # Trigger a connect notification
-          ESM::Notifications.trigger("server_on_connect", server: connection.server)
+          server.community.log_event(:reconnect, I18n.t("server_connected", server: server.server_id, uptime: server.uptime))
 
           # Set the connection to be available for commands
           connection.ready = true

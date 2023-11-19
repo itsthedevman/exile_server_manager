@@ -3,7 +3,8 @@ en:
   commands:
     meow:
       description: It's so fluffy I'm going to die!!!
-      example: |-
-        **`%{prefix}meow`**
-        Returns a random cat image
+      examples:
+        - description: Returns a random cat image
       waiting: pispispispispispispispis
+      errors:
+        meow_not_found: Hey %{user}, all of the cats were hiding. Please wait a few moments before trying again

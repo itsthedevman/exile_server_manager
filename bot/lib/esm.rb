@@ -18,6 +18,7 @@
   "active_support/all",
   "activerecord-import",
   "base64",
+  "colorize",
   "discordrb",
   "dotenv",
   "dotiw",
@@ -29,6 +30,7 @@
   "neatjson",
   "puma",
   "puma/events",
+  "pry",
   "redis",
   "securerandom",
   "semantic",
@@ -40,12 +42,19 @@
   "zeitwerk"
 ].each { |gem| require gem }
 
+#############################
+# Load extensions and other useful classes to have
+Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
+
 require "otr-activerecord" if ENV["ESM_ENV"] != "production"
 
 # Load Dotenv variables; overwriting any that already exist
 Dotenv.overload
 Dotenv.overload(".env.test") if ENV["ESM_ENV"] == "test"
 Dotenv.overload(".env.prod") if ENV["ESM_ENV"] == "production"
+
+# Default timezone to UTC
+Time.zone_default = Time.find_zone!("UTC")
 
 #################################
 # Logging methods!
@@ -87,98 +96,120 @@ end
 
 module ESM
   REDIS_OPTS = {
+    host: ENV.fetch("REDIS_HOST", "localhost"),
     reconnect_attempts: 10
   }.freeze
 
   class << self
-    attr_reader :bot, :config, :logger, :env, :redis
-  end
-
-  def self.run!
-    # Start the bot
-    @bot = ESM::Bot.new
-
-    if @console
-      # Allow RSpec to continue
-      Thread.new { @bot.run }
-    else
-      @bot.run
+    def bot
+      @bot ||= ESM::Bot.new
     end
-  end
 
-  def self.root
-    @root ||= Pathname.new(File.expand_path("."))
-  end
+    def run!
+      require_relative "post_init"
 
-  # Allow IRB to be not-blocked by ESM's main thread
-  def self.console!
-    @console = true
-  end
-
-  def self.initialize_i18n
-    I18n.load_path += Dir[File.expand_path("config/locales/**/*.yml")]
-    I18n.reload!
-  end
-
-  def self.initialize_steam
-    SteamWebApi.configure do |config|
-      config.api_key = @config.steam_api_key
-    end
-  end
-
-  def self.initialize_logger
-    @logger = Logger.new("log/#{env}.log", "daily")
-    @logger.level = Logger::INFO
-
-    @logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
-      header = "#{severity} [#{datetime.utc.strftime("%F %H:%M:%S:%L")}] (#{progname})"
-      body = "\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
-
-      if ENV["PRINT_LOG"] == "true"
-        header =
-          case severity
-          when "TRACE"
-            header.colorize(:cyan)
-          when "INFO"
-            header.colorize(:light_green)
-          when "DEBUG"
-            header.colorize(:magenta)
-          when "WARN"
-            header.colorize(:yellow)
-          when "ERROR", "FATAL"
-            header.colorize(:red)
-          else
-            header
-          end
-
-        body =
-          case severity
-          when "WARN"
-            body.colorize(:yellow)
-          when "ERROR", "FATAL"
-            body.colorize(:red)
-          else
-            body
-          end
-
-        puts "#{header}#{body}"
+      # Start the bot
+      if @console
+        # Allow RSpec to continue
+        Thread.new { bot.run }
+      else
+        bot.run
       end
+    end
 
-      "#{header}#{body}"
+    # Load everything right meow
+    def load!
+      loader.setup
+      loader.eager_load
+    end
+
+    def root
+      @root ||= Pathname.new(File.expand_path("."))
+    end
+
+    # Allow IRB to be not-blocked by ESM's main thread
+    def console!
+      @console = true
+    end
+
+    def logger
+      @logger ||= begin
+        logger = Logger.new("log/#{env}.log", "daily")
+        logger.level = Logger::INFO
+
+        logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
+          header = "#{severity} [#{datetime.utc.strftime("%F %H:%M:%S:%L")}] (#{progname})"
+          body = "\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
+
+          if ENV["PRINT_LOG"] == "true"
+            styled_header =
+              case severity
+              when "TRACE"
+                header.colorize(:cyan)
+              when "INFO"
+                header.colorize(:light_blue)
+              when "DEBUG"
+                header.colorize(:magenta)
+              when "WARN"
+                header.colorize(:yellow)
+              when "ERROR", "FATAL"
+                header.colorize(:red)
+              else
+                header
+              end
+
+            styled_body =
+              case severity
+              when "WARN"
+                body.colorize(:yellow)
+              when "ERROR", "FATAL"
+                body.colorize(:red)
+              else
+                body
+              end
+
+            puts "#{styled_header}#{styled_body}" # rubocop:disable Rails/Output
+          end
+
+          "#{header}#{body}"
+        end
+
+        logger
+      end
+    end
+
+    def redis
+      @redis ||= ConnectionPool::Wrapper.new do
+        Redis.new(**REDIS_OPTS)
+      end
+    end
+
+    def cache
+      @cache ||= ActiveSupport::Cache::RedisCacheStore.new(namespace: "esm_bot", redis: redis)
+    end
+
+    def env
+      @env ||= Inquirer.new(:production, :staging, :test, :development).set(ENV["ESM_ENV"].presence || :development)
+    end
+
+    def config
+      @config ||= begin
+        config = YAML.safe_load(
+          ERB.new(File.read(File.expand_path("config/config.yml"))).result,
+          aliases: true
+        )[env.to_s]
+
+        config.to_istruct
+      end
+    end
+
+    def loader
+      @loader ||= begin
+        Zeitwerk::Loader.attr_predicate(:setup, :eager_loaded)
+        Zeitwerk::Loader.for_gem(warn_on_extra_files: false)
+      end
     end
   end
-
-  def self.initialize_redis
-    @redis = Redis.new(REDIS_OPTS)
-  end
-
-  # Borrowed from Rails, load the ENV
-  # https://github.com/rails/rails/blob/master/railties/lib/rails.rb:72
-  @env ||= ActiveSupport::StringInquirer.new(ENV["ESM_ENV"].presence || "development")
-
-  # Load the config
-  config = YAML.safe_load(ERB.new(File.read(File.expand_path("config/config.yml"))).result, aliases: true)[env]
-  @config = JSON.parse(config.to_json, object_class: OpenStruct)
 end
 
 # Required ahead of time, ignored in autoloader

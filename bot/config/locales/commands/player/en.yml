@@ -1,25 +1,34 @@
----
 en:
   commands:
     player:
-      description: Modifies a player on a server, regardless of them being online
-        or not.
-      example: |-
-        **`%{prefix}player esm_malden @Bryan money 1500`**
-        Gives @Bryan's player on `esm_malden` 1500 poptabs
-
-        **`%{prefix}player esm_altis @Bryan locker -50`**
-        Removes 50 poptabs from @Bryan's locker on `esm_altis`
-
-        **`%{prefix}player esm_namalsk 76561198037177305 k`**
-        RIP @Bryan. Kills @Bryan's player on `esm_namalsk`
+      description: Modifies a player on a server, regardless of them being online or not.
+      examples:
+      - description: Gives @discord_mention's player on `esm_malden` 1500 poptabs
+        arguments:
+          whom: "@discord_mention"
+          action: Change player poptabs
+          "on": esm_malden
+          amount: "1500"
+      - description: Removes 50 poptabs from @discord_mention's locker on `esm_altis`
+        arguments:
+          whom: "@discord_mention"
+          action: Change locker poptabs
+          "on": esm_altis
+          amount: "-50"
+      - description: RIP @discord_mention. Kills @discord_mention's player on `esm_namalsk`
+        arguments:
+          whom: "76561234567890123"
+          action: Kill player
+          "on": esm_namalsk
       arguments:
-        type: 'Valid types: `money`/`m`, `respect`/`r`, `locker`/`l`, `heal`/`h`,
-          `kill`/`k`'
-        value: |-
-          For types `money`, `respect`, and `locker`:
-            - This argument is required and must be a positive or negative number.
-            - Positive numbers will add the given amount of that type
-            - Negative numbers will remove the given amount of that type
-          For types `heal` and `kill`:
-            - This argument is optional
+        action:
+          description: "What action do you want to take?"
+        amount:
+          description: The amount to adjust. This is optional for healing or killing a player
+          description_extra: |-
+            For actions `Change player poptabs`, `Change player respect`, and `Change player locker`:
+              - This argument is required and must be a positive or negative number
+              - Positive numbers will add the given amount of that type
+              - Negative numbers will remove the given amount of that type
+            For types `Heal player` and `Kill player`:
+              - This argument is ignored

@@ -53,7 +53,7 @@ async fn routing_thread(handler: Handler, mut receiver: UnboundedReceiver<Server
             };
 
             if !matches!(request, ServerRequest::AliveCheck) {
-                debug!("[routing_thread] Processing request: {:?}", request);
+                trace!("[routing_thread] Processing request: {:?}", request);
             }
 
             match request {

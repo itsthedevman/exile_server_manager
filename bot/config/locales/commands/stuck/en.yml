@@ -2,19 +2,16 @@
 en:
   commands:
     stuck:
-      description: Deletes your player on the provided server in an attempt to fix
-        the spawning glitch. You will be required to confirm the request before any
-        deletion takes place.
-      example: |-
-        **`%{prefix}stuck esm_malden`**
-        Deletes your player on `esm_malden`
+      description: Deletes your player on the provided server in an attempt to fix the spawning glitch.
+      description_extra: You will be required to confirm the request before any deletion takes place.
+      examples:
+        - description: Deletes your player on `esm_malden`
+          arguments:
+            "on": esm_malden
       request_description: |-
         Hey %{user}, you have requested to have your player reset to get out of the "rabbit" or stuck state when spawning in. In order for the process to work, your player needs to have been spawned in at least once and you cannot be logged into the server when you confirm this.
 
         **Warning, this process is destructive.**
         If you confirm, your player on `%{server}` will be deleted and any items or poptabs on your player will be lost.
-      success_message: "%{user}, you've been reset successfully. Please join the server
-        to spawn back in"
-      failure_message: "%{user}, I was not successful at resetting your player on
-        `%{server}`. Please join the server again, and if you are still stuck, close
-        Arma 3 and attempt this command again."
+      success_message: "%{user}, you've been reset successfully. Please join the server to spawn back in"
+      failure_message: "%{user}, I was not successful at resetting your player on `%{server}`. Please join the server again, and if you are still stuck, close Arma 3 and attempt this command again."

@@ -213,7 +213,7 @@ describe ESM::Embed do
           expect { e.add_field(name: "Testing", value: ["Line one", "Line two"]) }.not_to raise_error
         end
 
-      expect(embed.fields.first.value).to match(/line one\sline two/i)
+      expect(embed.fields.first.value).to eq("Line one\n\nLine two")
     end
 
     it "supports string when adding a field value" do

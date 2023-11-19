@@ -34,6 +34,9 @@ primary:
   # The ID of the "@everyone" role. Used for generalized role testing
   everyone_role: 100000001111111111
 
+  # The ID of the owner of this discord
+  owner_id: 111110000000000000
+
 # Another Discord server that is different from the primary above
 # All of the following IDs must belong to that Discord server
 secondary:
@@ -47,6 +50,7 @@ secondary:
   - id: 111110000000000000
     role_id: 100001111111111111
   everyone_role: 100000001011111111
+  owner_id: 111110000000000000
 
 # A list of Steam64 UIDs that are assigned to users when needed
 steam_uids:

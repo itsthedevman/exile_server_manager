@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-describe ESM::Event::SendToChannel, v2: true, requires_connection: true do
+describe ESM::Event::SendToChannel, :requires_connection, v2: true do
   include_context "connection"
 
-  after :each do
+  after do
     community.update!(logging_channel_id: nil)
     connection_server.message_overseer.remove_all!
   end
@@ -49,9 +49,9 @@ describe ESM::Event::SendToChannel, v2: true, requires_connection: true do
     expect(embed_field).not_to be_nil
     expect(hash_field).not_to be_nil
 
-    expect(embed_field.name).to eql(hash_field[:name])
-    expect(embed_field.value).to eql(hash_field[:value])
-    expect(embed_field.inline).to eql(hash_field[:inline])
+    expect(embed_field.name).to eq(hash_field[:name])
+    expect(embed_field.value).to eq(hash_field[:value])
+    expect(embed_field.inline).to eq(hash_field[:inline])
   end
 
   it "only allows sending messages to that community's discord channels", :error_testing do
@@ -92,7 +92,7 @@ describe ESM::Event::SendToChannel, v2: true, requires_connection: true do
     expect(embed_field).not_to be_nil
     expect(hash_field).not_to be_nil
 
-    expect(embed_field.value).to eql("**Discord ID:** discord_id_1\n**Steam UID:** steam_uid_2\n**User name:** user_name_3")
+    expect(embed_field.value).to eq("**Discord ID:** discord_id_1\n**Steam UID:** steam_uid_2\n**User name:** user_name_3")
   end
 
   it "logs when there is an error"

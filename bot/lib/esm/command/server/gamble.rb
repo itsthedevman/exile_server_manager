@@ -3,34 +3,41 @@
 module ESM
   module Command
     module Server
-      class Gamble < ESM::Command::Base
-        set_type :player
-        requires :registration
+      class Gamble < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        # Skipped because of `stats` argument. This is manually checked in `#discord`
-        skip_check :connected_server
+        # Required: Needed by command
+        argument :amount, checked_against: /(?!-\d+$)\d+|half|all|stats/
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
 
-        argument :server_id
-        argument :amount, regex: /^(?!-\d+$)\d+|half|all|stats/, description: "commands.gamble.arguments.amount"
+        #
+        # Configuration
+        #
+
+        command_type :player
+
+        # Skipped because of amount:stats argument
+        skip_action :connected_server
+
+        #################################
 
         def on_execute
-          return reply(send_stats) if @arguments.amount == "stats"
+          return reply(send_stats) if arguments.amount.nil? || arguments.amount == "stats"
 
-          @checks.connected_server!
+          check_for_connected_server!
           check_for_bad_amount!
 
           deliver!(
             function_name: "gamble",
-            uid: current_user.esm_user.steam_uid,
-            amount: @arguments.amount,
-            id: current_user.id,
-            name: current_user.name
+            uid: current_user.steam_uid,
+            amount: arguments.amount,
+            id: current_user.discord_id,
+            name: current_user.username
           )
         end
 
@@ -39,23 +46,21 @@ module ESM
           send_results
         end
 
-        #########################
-        # Command Methods
-        #########################
+        private
 
         def check_for_bad_amount!
-          return if %w[half all].include?(@arguments.amount)
+          return if %w[half all].include?(arguments.amount)
 
-          check_failed!(:bad_amount, user: current_user.mention) if @arguments.amount.to_i <= 0
+          raise_error!(:bad_amount, user: current_user.mention) if arguments.amount.to_i <= 0
         end
 
         def gamble_stat
-          @gamble_stat ||= ESM::UserGambleStat.where(server_id: target_server.id, user_id: current_user.esm_user.id).first_or_create
+          @gamble_stat ||= ESM::UserGambleStat.where(server_id: target_server.id, user_id: current_user.id).first_or_create
         end
 
         def send_stats
           # Don't set a cooldown
-          skip(:cooldown)
+          skip_action(:cooldown)
 
           ESM::Embed.build do |e|
             e.title = I18n.t("commands.gamble.stats.title", server_id: target_server.server_id)
@@ -172,7 +177,7 @@ module ESM
             username: current_user.username,
             usertag: current_user.mention,
             amountchanged: @response.amount,
-            amountgambled: @arguments.amount,
+            amountgambled: arguments.amount,
             lockerbefore: @response.locker_before,
             lockerafter: @response.locker_after
           )

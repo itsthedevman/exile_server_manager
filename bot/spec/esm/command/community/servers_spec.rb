@@ -12,24 +12,24 @@ describe ESM::Command::Community::Servers, category: "command" do
     it "returns no servers" do
       community.servers.destroy_all
 
-      expect { execute!(fail_on_raise: false, community_id: community.community_id) }.to raise_error(
+      expect { execute!(arguments: {community_id: community.community_id}) }.to raise_error(
         ESM::Exception::CheckFailure, /i was unable to find any registered servers/i
       )
     end
 
     it "does not crash on empty server name" do
       server.server_name = nil
-      execute!(community_id: community.community_id)
+      execute!(arguments: {community_id: community.community_id})
 
       server.server_name = nil
-      command.current_cooldown.reset!
-      execute!(community_id: community.community_id)
+      previous_command.current_cooldown.reset!
+      execute!(arguments: {community_id: community.community_id})
 
       wait_for_completion!
     end
 
     it "returns one offline server" do
-      execute!(community_id: community.community_id)
+      execute!(arguments: {community_id: community.community_id})
 
       wait_for_completion!
       embed = ESM::Test.messages.first.second
@@ -45,8 +45,8 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.third.value).to eq("```#{server.server_port}```")
     end
 
-    it "returns one online server", requires_connection: true do
-      execute!(community_id: community.community_id)
+    it "returns one online server", :requires_connection do
+      execute!(arguments: {community_id: community.community_id})
       wait_for_completion!
 
       embed = ESM::Test.messages.first.second
@@ -69,7 +69,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       private_server = ESM::Test.server
       private_server.update!(server_visibility: :private)
 
-      execute!(community_id: community.community_id)
+      execute!(arguments: {community_id: community.community_id})
       wait_for_completion!
 
       expect(ESM::Test.messages.size).to eq(1)

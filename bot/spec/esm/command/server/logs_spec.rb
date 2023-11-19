@@ -1,119 +1,93 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Logs, category: "command" do
-  let!(:command) { ESM::Command::Server::Logs.new }
-
-  it "should be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "should have 2 argument" do
-    expect(command.arguments.size).to eq(2)
-  end
-
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
+    include_context "connection_v1"
 
-    let(:second_user) { ESM::Test.user }
-
-    let!(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-    let(:response) { command.response }
-
-    before :each do
-      wait_for { wsc.connected? }.to be(true)
-
+    before do
       grant_command_access!(community, "logs")
     end
 
-    after :each do
-      wsc.disconnect!
-    end
+    context "when the target is a steam uid" do
+      it "returns a link to the results" do
+        execute!(arguments: {server_id: server.server_id, target: second_user.steam_uid})
 
-    it "!logs <server_id> <target>" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.steam_uid)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        embed = ESM::Test.messages.first.content
+        expect(embed.description).to match(
+          /you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i
+        )
 
-      expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
+        expect(ESM::Log.all.size).to eq(1)
+        expect(ESM::Log.all.first.search_text).to eq(second_user.steam_uid)
+        expect(ESM::LogEntry.all.size).not_to eq(0)
 
-      expect(ESM::Log.all.size).to eq(1)
-      expect(ESM::Log.all.first.search_text).to eq(second_user.steam_uid)
-      expect(ESM::LogEntry.all.size).not_to eq(0)
-
-      ESM::LogEntry.all.each do |entry|
-        expect(entry.entries).not_to be_empty
+        ESM::LogEntry.all.each do |entry|
+          expect(entry.entries).not_to be_empty
+        end
       end
     end
 
-    it "!logs <server_id> <query>" do
-      command_statement = command.statement(server_id: server.server_id, target: "testing")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when the target is a text query" do
+      it "returns a link to the results" do
+        execute!(arguments: {server_id: server.server_id, target: "testing"})
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
+        embed = ESM::Test.messages.first.content
+        expect(embed.description).to match(
+          /you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i
+        )
 
-      expect(ESM::Log.all.size).to eq(1)
-      expect(ESM::Log.all.first.search_text).to eq("testing")
-      expect(ESM::LogEntry.all.size).not_to eq(0)
+        expect(ESM::Log.all.size).to eq(1)
+        expect(ESM::Log.all.first.search_text).to eq("testing")
+        expect(ESM::LogEntry.all.size).not_to eq(0)
 
-      ESM::LogEntry.all.each do |entry|
-        expect(entry.entries).not_to be_empty
+        ESM::LogEntry.all.each do |entry|
+          expect(entry.entries).not_to be_empty
+        end
       end
     end
 
-    it "should handle no logs" do
-      wsc.flags.NO_LOGS = true
+    context "when there are no results" do
+      it "sends a message to the user telling them" do
+        wsc.flags.NO_LOGS = true
 
-      command_statement = command.statement(server_id: server.server_id, target: "testing")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+        execute!(arguments: {server_id: server.server_id, target: "testing"})
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
+        embed = ESM::Test.messages.first.content
+        expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
+      end
     end
 
-    it "should work with a non-registered steam uid" do
-      steam_uid = second_user.steam_uid
-      second_user.update(steam_uid: "")
+    context "when the target is an un-registered steam uid" do
+      it "should work with a non-registered steam uid" do
+        steam_uid = second_user.steam_uid
+        second_user.update(steam_uid: "")
 
-      command_statement = command.statement(server_id: server.server_id, target: steam_uid)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+        execute!(arguments: {server_id: server.server_id, target: steam_uid})
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
+        embed = ESM::Test.messages.first.content
+        expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
 
-      expect(ESM::Log.all.size).to eq(1)
-      expect(ESM::Log.all.first.search_text).to eq(steam_uid)
-      expect(ESM::LogEntry.all.size).not_to eq(0)
+        expect(ESM::Log.all.size).to eq(1)
+        expect(ESM::Log.all.first.search_text).to eq(steam_uid)
+        expect(ESM::LogEntry.all.size).not_to eq(0)
 
-      ESM::LogEntry.all.each do |entry|
-        expect(entry.entries).not_to be_empty
+        ESM::LogEntry.all.each do |entry|
+          expect(entry.entries).not_to be_empty
+        end
       end
     end
   end
@@ -133,19 +107,19 @@ describe ESM::Command::Server::Logs, category: "command" do
       end
     end
 
-    it "should parse German months" do
+    it "parses German months" do
       checker(german_months)
     end
 
-    it "should parse Italian months" do
+    it "parses Italian months" do
       checker(italian_months)
     end
 
-    it "should parse Spanish months" do
+    it "parses Spanish months" do
       checker(spanish_months)
     end
 
-    it "should parse French months" do
+    it "parses French months" do
       checker(french_months)
     end
   end

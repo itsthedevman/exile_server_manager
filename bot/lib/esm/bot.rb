@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class Bot < Discordrb::Commands::CommandBot
+  class Bot < Discordrb::Bot
     # View Channels
     # Send Messages
     # Embed Links
@@ -34,46 +34,25 @@ module ESM
       :direct_message_typing
     ).keys.freeze
 
-    def self.register_command(command_class)
-      ESM.bot&.command(command_class.name.to_sym, aliases: command_class.aliases) do |event|
-        # Execute the command.
-        # Threaded since I handle everything in the commands
-        Thread.new do
-          command_class.new.execute(event)
-        end
-
-        # Don't send anything back
-        nil
-      end
-    end
-
-    attr_reader :config, :prefix, :metadata, :delivery_overseer
+    attr_reader :config, :metadata, :delivery_overseer
 
     def initialize
+      @timer = Timer.new
       @waiting_for = {}
       @mutex = Mutex.new
       @delivery_overseer = ESM::Bot::DeliveryOverseer.new
 
-      @prefixes = {}
-      @prefixes.default = ESM.config.prefix
-
-      load_community_prefixes
-
-      super(
-        token: ESM.config.token,
-        prefix: method(:determine_activation_prefix),
-        help_command: false,
-        intents: INTENTS
-      )
+      super(token: ESM.config.token, intents: INTENTS)
     end
 
     def run
-      ESM::Command.load unless ESM.env.test?
+      @timer.start!
+
+      ESM::Command.load
 
       # Binds the Discord Events
       bind_events!
 
-      # Call Discordrb::Commands::Commandbot.run
       super
     end
 
@@ -103,12 +82,12 @@ module ESM
     # These all have to have unique-to-ESM names since we are inheriting
     ###########################
     def bind_events!
-      mention { |event| esm_mention(event) }
-      ready { |event| esm_ready(event) }
-      server_create { |event| esm_server_create(event) }
-      user_ban { |event| esm_user_ban(event) }
-      user_unban { |event| esm_user_unban(event) }
-      member_join { |event| esm_member_join(event) }
+      mention(&method(:esm_mention))
+      ready(&method(:esm_ready))
+      server_create(&method(:esm_server_create))
+      user_ban(&method(:esm_user_ban))
+      user_unban(&method(:esm_user_unban))
+      member_join(&method(:esm_member_join))
     end
 
     def esm_mention(_event)
@@ -116,8 +95,6 @@ module ESM
     end
 
     def esm_ready(_event)
-      ESM::Notifications.trigger("ready")
-
       @metadata = ESM::BotAttribute.first_or_create
 
       if metadata.present?
@@ -136,7 +113,10 @@ module ESM
 
       # Sometimes the bot loses connection with Discord. Upon reconnect, the ready event will be triggered again.
       # Don't restart the websocket server again.
-      return if ready?
+      if ready?
+        warn!("ESM::Bot#esm_ready called after bot was ready")
+        return
+      end
 
       # Wait until the bot has connected before starting the websocket.
       # This is to avoid servers connecting before the bot is ready
@@ -148,8 +128,15 @@ module ESM
       # V1
 
       ESM::Connection::Server.run!
+      ESM::Command.setup_event_hooks!
 
       @esm_status = :ready
+
+      info!(
+        status: @esm_status,
+        invite_url: invite_url(permission_bits: ESM::Bot::PERMISSION_BITS),
+        started_in: "#{@timer.stop!}s"
+      )
     end
 
     def esm_server_create(event)
@@ -168,7 +155,7 @@ module ESM
 
     # Fires when a member joins a Discord server
     def esm_member_join(event)
-      return if ESM.env.development? && ESM.config.dev_user_whitelist.include?(event.user.id.to_s)
+      return if ESM.env.development? && ESM.config.dev_user_allowlist.include?(event.user.id.to_s)
 
       ESM::Event::MemberJoin.new(event).run!
     end
@@ -246,7 +233,10 @@ module ESM
     end
 
     def __deliver(message, delivery_channel, embed_message: "", replying_to: nil)
-      ESM::Notifications.trigger("bot_deliver", message: message, channel: delivery_channel)
+      info!(
+        channel: "#{delivery_channel.name} (#{delivery_channel.id})",
+        message: message.is_a?(ESM::Embed) ? message.to_h : message
+      )
 
       if message.is_a?(ESM::Embed)
         # Send the embed
@@ -266,7 +256,15 @@ module ESM
       counter = 0
       match = nil
       invalid_response = format_invalid_response(expected)
-      responding_user = user(responding_user)
+
+      responding_user =
+        if responding_user.is_a?(String)
+          user(responding_user)
+        elsif responding_user.is_a?(ESM::User)
+          responding_user.discord_user
+        else
+          responding_user
+        end
 
       while match.nil? && counter < 99
         response =
@@ -281,7 +279,12 @@ module ESM
         break if response.nil?
 
         # Parse the match from the event
-        match = response.message.content.match(Regexp.new("(#{expected.map(&:downcase).join("|")})", Regexp::IGNORECASE))
+        match = response.message.content.match(
+          Regexp.new(
+            "(#{expected.map(&:downcase).join("|")})",
+            Regexp::IGNORECASE
+          )
+        )
 
         # We found what we were looking for
         break if !match.nil?
@@ -296,10 +299,6 @@ module ESM
 
       # Return the match
       match[1]
-    end
-
-    def update_community_prefix(community)
-      @prefixes[community.guild_id] = community.command_prefix
     end
 
     # Channel can be any of the following: An CommandEvent, a Channel, a User/Member, or a String (Channel, or user)
@@ -328,10 +327,6 @@ module ESM
       end
     end
 
-    def update_prefix(community)
-      @prefixes[community.guild_id] = community.command_prefix || ESM.config.prefix
-    end
-
     #
     # Successor to #await_response. Waits for an event from user_id and channel_id
     #
@@ -349,7 +344,7 @@ module ESM
       end
 
       # Event will be nil if it times out
-      timeout = expires_at - ::Time.now
+      timeout = expires_at - ::Time.zone.now
       event =
         if ESM.env.test?
           ESM::Test.wait_for_response(timeout: timeout)
@@ -376,23 +371,15 @@ module ESM
       end
     end
 
+    def log_error(error_hash)
+      error!(error_hash)
+      return if ESM.config.error_logging_channel_id.blank?
+
+      error_message = JSON.pretty_generate(error_hash).tr("`", "\\\\`")
+      ESM.bot.deliver("```#{error_message}```", to: ESM.config.error_logging_channel_id)
+    end
+
     private
-
-    def load_community_prefixes
-      ESM::Community.all.each do |community|
-        next if community.command_prefix.nil?
-
-        @prefixes[community.guild_id] = community.command_prefix
-      end
-    end
-
-    def determine_activation_prefix(message)
-      # The default for @prefixes is the config prefix (NOT NIL)
-      prefix = @prefixes[message.channel&.server&.id.to_s]
-      return if !message.content.start_with?(prefix)
-
-      message.content[prefix.size..]
-    end
 
     def format_invalid_response(expected)
       expected_string = expected.map { |value| "`#{value}`" }.join(" or ")

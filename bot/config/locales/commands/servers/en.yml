@@ -2,10 +2,14 @@
 en:
   commands:
     servers:
-      description: Displays all registered servers for a given community ID, regardless
-        if they are online or not
-      example: |-
-        **`%{prefix}servers esm`**
-        Returns all registered servers for `esm`.
+      description: Displays all registered servers for a given community ID, regardless if they are online or not
+      examples:
+        - description: Returns all registered servers for `esm`.
+          arguments:
+            for: esm
       offline: "❌ Offline"
       offline_for: "❌ Offline for %{time}"
+      errors:
+        no_servers: |-
+          I was unable to find any registered servers for `%{community_id}`.
+          If you are the owner, you can them via the Admin Dashboard

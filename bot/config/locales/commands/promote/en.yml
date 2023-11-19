@@ -2,15 +2,17 @@
 en:
   commands:
     promote:
-      description: |-
-        **Territory Owner Only.**
-        Promotes a player to moderator in a territory. They must be a member of the territory first before they can be promoted.
-        You may add a player to territory using `%{prefix}add`
-      example: |-
-        **`%{prefix}promote esm_malden awesome @Bryan`**
-        Promotes @Bryan to moderator in territory `awesome` on `esm_malden`
-
-        **`%{prefix}promote esm_malden fort_a 76561198037177305`**
-        Promotes `76561198037177305` to moderator in territory `fort_a` on `esm_malden`
-      success_message: Hey %{user}, `%{target_uid}` has been promoted to moderator
-        in territory `%{territory_id}` on `%{server}`
+      description: Promotes a player to moderator in a territory.
+      description_extra: This command is only available for the territory owner. The player must be a member of the territory first before they can be promoted, which can be done by using `/territory add_player`
+      examples:
+        - description: Promotes @discord_mention to moderator in territory `awesome` on `esm_malden`
+          arguments:
+            whom: "@discord_mention"
+            in: awesome
+            "on": esm_malden
+        - description: Promotes `76561234567890123` to moderator in territory `fort_a` on `esm_malden`
+          arguments:
+            whom: "76561234567890123"
+            in: fort_a
+            "on": esm_malden
+      success_message: Hey %{user}, `%{target_uid}` has been promoted to moderator in territory `%{territory_id}` on `%{server}`

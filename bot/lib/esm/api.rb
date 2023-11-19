@@ -80,18 +80,6 @@ module ESM
       connection.connection.close(1000, "Server ID changed, reconnecting")
     end
 
-    # If a community changes their prefix, update the bot
-    # params[:id] => ID of community
-    put("/community/:id/update_command_prefix") do
-      ESM.logger.info("#{self.class}##{__method__}") { params }
-
-      community = ESM::Community.where(id: params[:id]).first
-      return halt(404) if community.nil?
-
-      # Update the prefix for this community
-      ESM.bot.update_prefix(community)
-    end
-
     #
     # Gets a channel by its ID. The bot must have send access to this channel
     #
@@ -106,13 +94,13 @@ module ESM
       return halt(422) unless ESM.bot.channel_permission?(:send_messages, channel)
 
       if params[:community_id]
-        community = ESM::Community.find_by_id(params[:community_id])
+        community = ESM::Community.find_by(id: params[:community_id])
         return halt(404) if community.nil?
         return halt(422) unless channel.server.id.to_s == community.guild_id
       end
 
       if params[:user_id]
-        user = ESM::User.find_by_id(params[:user_id])
+        user = ESM::User.find_by(id: params[:user_id])
         return halt(404) if user.nil?
         return halt(422) unless user.channel_permission?(:read_messages, channel)
       end
@@ -136,7 +124,7 @@ module ESM
           ESM::Embed.build do |e|
             e.set_author(name: message.dig(:author, :name), icon_url: message.dig(:author, :icon_url)) if message[:author].present?
 
-            e.title = message[:title] if message[:title]
+            e.title = messagpe[:title] if message[:title]
             e.description = message[:description] if message[:description]
             e.color = message[:color] if message[:color]
 
@@ -158,12 +146,12 @@ module ESM
     get("/community/:id/channels") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.find_by_id(params[:id])
+      community = ESM::Community.find_by(id: params[:id])
       return halt(404) if community.nil?
 
       server = community.discord_server
 
-      user = ESM::User.find_by_id(params[:user_id])
+      user = ESM::User.find_by(id: params[:user_id])
 
       # Get the channels the bot (and user if applicable) has access to
       channels = server.channels.filter_map do |channel|
@@ -213,7 +201,7 @@ module ESM
       community = ESM::Community.find_by_id(params[:id])
       return halt(404) if community.nil?
 
-      user = ESM::User.find_by_id(params[:user_id])
+      user = ESM::User.find_by(id: params[:user_id])
       return halt(404) if user.nil?
 
       result = community.modifiable_by?(user.discord_user.on(community.discord_server))
@@ -228,7 +216,7 @@ module ESM
     get("/community/:id/roles") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.find_by_id(params[:id])
+      community = ESM::Community.find_by(id: params[:id])
       return halt(404) if community.nil?
 
       server_roles = community.discord_server.roles
@@ -274,7 +262,7 @@ module ESM
     get("/user/:id/communities") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      user = ESM::User.find_by_id(params[:id])
+      user = ESM::User.find_by(id: params[:id])
       return halt(404) if user.nil?
 
       communities = ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled).where(guild_id: params[:guild_ids])

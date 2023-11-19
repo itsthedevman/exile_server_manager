@@ -6,11 +6,11 @@ describe ESM::Websocket do
   let!(:esm_malden) { create(:esm_malden, community_id: esm_community.id) }
   let!(:esm_malden_wsc) { WebsocketClient.new(esm_malden) }
 
-  before :each do
+  before do
     wait_for { esm_malden_wsc.connected? }.to be(true)
   end
 
-  after :each do
+  after do
     esm_malden_wsc.disconnect!
   end
 
@@ -25,11 +25,11 @@ describe ESM::Websocket do
     let!(:second_server) { create(:server, community_id: second_community.id) }
     let!(:second_connection) { WebsocketClient.new(second_server) }
 
-    before :each do
+    before do
       wait_for { second_connection.connected? }.to be(true)
     end
 
-    after :each do
+    after do
       second_connection.disconnect!
     end
 
@@ -67,53 +67,19 @@ describe ESM::Websocket do
     end
   end
 
-  describe "#correct" do
-    it "should provide no corrections" do
-      server = ESM::Server.all.sample(1).first
-      correction = ESM::Websocket.correct(server.server_id)
-
-      expect(correction).to be_blank
-    end
-
-    it "should provide a correction" do
-      server = ESM::Server.all.sample(1).first
-      correction = ESM::Websocket.correct(server.server_id[0..-3])
-
-      expect(correction).not_to be_blank
-      expect(correction.first).to eq(server.server_id)
-    end
-  end
-
   describe "#on_message" do
-    let!(:user) { create(:user) }
+    include_context "command" do
+      let!(:command_class) { ESM::Command::Test::BaseV1 }
+      let!(:community) {}
+    end
+
     let!(:ws_connection) { ESM::Websocket.connections[esm_malden.server_id] }
     let!(:channel) { ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL) }
     let!(:discord_user) { user.discord_user }
 
-    let!(:command) do
-      command = ESM::Command::Test::BaseV1.new
-
-      command_statement = command.statement(
-        community_id: esm_community.community_id,
-        server_id: esm_malden.server_id,
-        target: user.discord_id,
-        _integer: "1",
-        _preserve: "PRESERVE",
-        _display_as: "display_as",
-        _default: "default",
-        _multiline: "multi\nline"
-      )
-
-      event = CommandEvent.create(command_statement, user: user)
-
-      # Execute the command to set up all of the required variables
-      expect { command.execute(event) }.not_to raise_error
-      command
-    end
-
     let(:request) do
       request = ESM::Websocket::Request.new(
-        command: command,
+        command: previous_command,
         user: user,
         channel: channel,
         parameters: [],
@@ -122,6 +88,21 @@ describe ESM::Websocket do
 
       ws_connection.requests << request
       request
+    end
+
+    before do
+      execute!(
+        channel: channel,
+        arguments: {
+          community_id: esm_community.community_id,
+          server_id: esm_malden.server_id,
+          target: user.discord_id,
+          _integer: "1",
+          _preserve: "PRESERVE",
+          _display_as: "display_name",
+          _default: "default"
+        }
+      )
     end
 
     # Ignored commands do not remove the request.
@@ -171,13 +152,5 @@ describe ESM::Websocket do
       expect(error_message.description).to eq("#{discord_user.mention}, #{message.parameters.first.error}")
       expect(error_message.color).to eq("#C62551")
     end
-  end
-
-  describe "#on_open" do
-    it "should send connect message"
-  end
-
-  describe "#on_close" do
-    it "should send disconnect message"
   end
 end

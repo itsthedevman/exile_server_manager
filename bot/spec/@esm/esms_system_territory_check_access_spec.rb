@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_system_territory_checkAccess", requires_connection: true, v2: true do
+describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
   include_context "connection"
 
   let!(:territory) do

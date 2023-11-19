@@ -1,18 +1,24 @@
----
 en:
   commands:
     info:
-      description: Displays information about a particular player or territory. This
-        command is the admin equivalent to the `!territories` and `!me` commands.
-      example: |-
-        **`%{prefix}info esm_malden @Bryan`**
-        Using their mention, return their player stats on `esm_malden`
-
-        **`%{prefix}info esm_tanoa 76561198037177305`**
-        Using their steam uid, return their player stats on `esm_tanoa`
-
-        **`%{prefix}info esm_altis 137709767954137088`**
-        Using their Discord ID, return their player stats on `esm_altis`
-
-        **`%{prefix}info esm_namalsk jquee`**
-        Return the territory information for `jquee`
+      description: Displays information about the provided player or territory
+      examples:
+      - description: Using their mention, return their player stats on `esm_malden`
+        arguments:
+          "on": esm_malden
+          whom: "@discord_mention"
+      - description: Using their steam uid, return their player stats on `esm_tanoa`
+        arguments:
+          "on": esm_tanoa
+          whom: "76561234567890123"
+      - description: Using their Discord ID, return their player stats on `esm_altis`
+        arguments:
+          "on": esm_altis
+          whom: "137456789012345678"
+      - description: Return the territory information for `jquee`
+        arguments:
+          "on": esm_namalsk
+          territory: jquee
+      errors:
+        no_target: Hey %{user}, you must provide either a territory ID, Discord ID, steam uid, or @user discord mention.
+        no_response: I'm sorry %{user}, I didn't find any information related to your request.

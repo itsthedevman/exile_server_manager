@@ -1,26 +1,28 @@
----
 en:
   commands:
     sqf:
-      description: Executes the given codes on a server or a target. If the code is
-        executed on the server and has a return value, the value will be returned.
-      example: |-
-        **`%{prefix}sqf esm_malden isServer`**
-        Executes `isServer` on `esm_malden` and returns `true` back.
-
-        **`%{prefix}sqf esm_tanoa @Bryan player setDamage 1;`**
-        Executes `player setDamage 1` on @Bryan's player in game. If the player is not in game, an error will be returned.
+      description: Executes the given codes on a server (returning any results), or a target.
+      examples:
+      - description: Executes `isServer` on `esm_malden` and returns `true` back.
+        arguments:
+          execute: isServer
+          "on": esm_malden
+      - description: Executes `player setDamage 1` on @discord_mention's player in game. If the player is not in game, an error will be returned.
+        arguments:
+          execute: player setDamage 1
+          "on": esm_tanoa
+          target: "@discord_mention"
       arguments:
-        execution_target: The target to execute the codes on. This can be any valid target (Discord ID, Steam UID, @mention) or leave blank to execute on the server.
-        code_to_execute: |-
-          The SQF code to execute. The given code can be all one line or span multi-lines.
-          **Note:** This code needs to be valid or the server will not return a response.
+        target:
+          description: The target to execute the codes on.
+          description_extra: This can be any valid target (Discord ID, Steam UID, @mention) or leave blank to execute on the server.
+        code_to_execute:
+          description: The SQF code to execute.
+          description_extra: |-
+            The given code can be all one line or span multi-lines.
+            **Note:** This code needs to be valid or the server will not return a response.
       responses:
-        server_with_result: |-
-          Hey %{user}, `%{server_id}` executed your code successfully and the code returned the following: ```%{result}```
-        server: |-
-          Hey %{user}, `%{server_id}` executed your code successfully and the code returned nothing.
-        player: |-
-          Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`
-        all: |-
-          Hey %{user}, `%{server_id}` executed your code successfully on everyone
+        server_with_result: "Hey %{user}, `%{server_id}` executed your code successfully and the code returned the following: ```%{result}```"
+        server: Hey %{user}, `%{server_id}` executed your code successfully and the code returned nothing.
+        player: Hey %{user}, `%{server_id}` executed your code successfully on `%{target_uid}`
+        all: Hey %{user}, `%{server_id}` executed your code successfully on everyone

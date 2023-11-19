@@ -3,20 +3,28 @@
 module ESM
   module Command
     module Server
-      class Territories < ESM::Command::Base
-        set_type :player
-        requires :registration
+      class Territories < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: false
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :for
 
-        argument :server_id
+        #
+        # Configuration
+        #
+
+        change_attribute :allowed_in_text_channels, default: false
+
+        command_namespace :server, :my, command_name: :territories
+        command_type :player
+
+        #################################
 
         def on_execute
-          deliver!(query: "list_territories", uid: current_user.esm_user.steam_uid)
+          deliver!(query: "list_territories", uid: current_user.steam_uid)
         end
 
         def on_response(_, _)
@@ -30,11 +38,10 @@ module ESM
           end
         end
 
-        #########################
-        # Command Methods
-        #########################
+        private
+
         def check_for_no_territories!
-          check_failed!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
+          raise_error!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
         end
 
         def territory_embed(territory)

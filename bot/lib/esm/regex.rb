@@ -2,17 +2,17 @@
 
 module ESM
   module Regex
-    COMMUNITY_ID_OPTIONAL = /[^\s]*/i
-    COMMUNITY_ID = /[^\s]+/i
+    COMMUNITY_ID_OPTIONAL = /\S*/i
+    COMMUNITY_ID = /\S+/i
     DISCORD_TAG = /<@[&!]?\d+>/
     DISCORD_TAG_ONLY = /^#{DISCORD_TAG.source}$/
-    DISCORD_ID = /\d{18,19}/
+    DISCORD_ID = /[^0]\d{17,}/
     DISCORD_ID_ONLY = /^#{DISCORD_ID.source}$/
-    STEAM_UID = /\d{17}/
+    STEAM_UID = /7656\d+/
     STEAM_UID_ONLY = /^#{STEAM_UID.source}$/
     TARGET = /#{DISCORD_TAG.source}|#{DISCORD_ID.source}|#{STEAM_UID.source}/
-    SERVER_ID_OPTIONAL_COMMUNITY = /(?:[^\s]+_)*[^\s]+/
-    SERVER_ID = /[^\s]+_[^\s]+/
+    SERVER_ID_OPTIONAL_COMMUNITY = /(?:\S+_)?\S+/
+    SERVER_ID = /\S+_\S+/
     SERVER_ID_ONLY = /^#{SERVER_ID.source}$/
     TERRITORY_ID = /\w+/
     TERRITORY_ID_ONLY = /^#{TERRITORY_ID.source}$/
@@ -20,7 +20,7 @@ module ESM
     BROADCAST = /#{SERVER_ID_OPTIONAL_COMMUNITY.source}|all|preview/
     HEX_COLOR = /^\#[a-fA-F0-9]{6}$/
     TARGET_OR_TERRITORY_ID = /#{TARGET.source}|#{TERRITORY_ID.source}/
-    REWARD_ID = /[^\s]+/
+    REWARD_ID = /\S+/
     REWARD_ID_ONLY = /^#{REWARD_ID.source}$/
 
     # Log Parsing

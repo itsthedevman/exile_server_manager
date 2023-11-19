@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 describe ESM::Websocket::ServerRequest do
-  # This test needs esm_community/esm_server in order to function
-  let!(:community) { create(:esm_community) }
-  let!(:server) { create(:esm_malden, community_id: community.id) }
-  let!(:user) { create(:user) }
+  include_context "command" do
+    let!(:command_class) { ESM::Command::Test::BaseV1 }
+
+    # This test needs esm_community/esm_server in order to function
+    let!(:community) { create(:esm_community) }
+    let!(:server) { create(:esm_malden, community_id: community.id) }
+  end
 
   let!(:client) { WebsocketClient.new(server) }
   let!(:channel) { ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL) }
@@ -12,30 +15,9 @@ describe ESM::Websocket::ServerRequest do
   # Wait before pulling this value
   let(:connection) { ESM::Websocket.connections[server.server_id] }
 
-  let(:command) do
-    command = ESM::Command::Test::BaseV1.new
-
-    command_statement = command.statement(
-      community_id: community.community_id,
-      server_id: server.server_id,
-      target: user.discord_id,
-      _integer: "1",
-      _preserve: "PRESERVE",
-      _display_as: "display_as",
-      _default: "default",
-      _multiline: "multi\nline"
-    )
-
-    event = CommandEvent.create(command_statement, user: user)
-
-    # Execute the command to set up all of the required variables
-    expect { command.execute(event) }.not_to raise_error
-    command
-  end
-
   let(:request) do
     request = ESM::Websocket::Request.new(
-      command: command,
+      command: previous_command,
       user: user,
       channel: channel,
       parameters: [],
@@ -47,14 +29,25 @@ describe ESM::Websocket::ServerRequest do
     request
   end
 
-  before :each do
+  before do
     wait_for { client.connected? }.to be(true)
 
     # Wait for the client to connect before executing the command
-    command
+    execute!(
+      channel: channel,
+      arguments: {
+        community_id: community.community_id,
+        server_id: server.server_id,
+        target: user.discord_id,
+        _integer: "1",
+        _preserve: "PRESERVE",
+        _display_as: "display_name",
+        _default: "default"
+      }
+    )
   end
 
-  after :each do
+  after do
     client.disconnect!
   end
 
@@ -92,10 +85,10 @@ describe ESM::Websocket::ServerRequest do
     end
 
     it "should send the error (command error)" do
-      message = {commandID: request.id, parameters: []}.to_ostruct
-
       # Set a flag so our command raises an error
-      command.defines.FLAG_RAISE_ERROR = true
+      previous_command.instance_variable_set(:@raise_error, true)
+
+      message = {commandID: request.id, parameters: []}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
       wait_for { ESM::Test.messages.size }.to eq(1)

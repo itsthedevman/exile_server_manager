@@ -3,12 +3,10 @@
 class OpenStruct
   attr_reader :table
 
-  def blank?
-    table.blank?
-  end
+  delegate :blank?, to: :table
 
   def each(&block)
-    return self if !block.present?
+    return self if block.blank?
 
     # Loop over each key and call the passed block with the key and the original value
     # This means nested OpenStructs stay as OpenStructs
@@ -20,7 +18,7 @@ class OpenStruct
   end
 
   def map(&block)
-    return [] if !block.present?
+    return [] if block.blank?
 
     # Loop over each key and call the passed block with the key and the original value
     # This means nested OpenStructs stay as OpenStructs

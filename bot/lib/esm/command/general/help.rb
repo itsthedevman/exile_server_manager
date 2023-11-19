@@ -3,28 +3,41 @@
 module ESM
   module Command
     module General
-      class Help < ESM::Command::Base
-        set_type :player
-        register_aliases :commands
+      class Help < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: false, default: true
-        define :whitelist_enabled, modifiable: false, default: false
-        define :whitelisted_role_ids, modifiable: false, default: []
-        define :allowed_in_text_channels, modifiable: false, default: true
-        define :cooldown_time, modifiable: false, default: 2.seconds
+        # Optional: Command expects this
+        argument :category, display_name: :with
 
-        argument :category, regex: /.*/, default: nil, description: "commands.help.arguments.category"
+        #
+        # Configuration
+        #
+
+        change_attribute :allowed_in_text_channels, modifiable: false
+        change_attribute :cooldown_time, modifiable: false
+        change_attribute :enabled, modifiable: false
+        change_attribute :allowlist_enabled, modifiable: false
+        change_attribute :allowlisted_role_ids, modifiable: false
+
+        command_type :player
+
+        does_not_require :registration
+
+        use_root_namespace
+
+        #################################
 
         def on_execute
-          case @arguments.category
+          case arguments.category
           when "commands"
             commands
           when "player commands"
             commands(types: [:player], include_development: false)
           when "admin commands"
             commands(types: [:admin], include_development: false)
-          # when "esm history"
-          #   esm_history
           when ->(category) { ESM::Command.include?(category) }
             command
           else
@@ -32,27 +45,25 @@ module ESM
           end
         end
 
-        #########################
-        # Command Methods
-        #########################
+        private
+
         def getting_started
           embed =
             ESM::Embed.build do |e|
-              e.title = I18n.t("commands.help.getting_started.title", user: @event.author.username)
+              e.title = I18n.t("commands.help.getting_started.title", user: current_user.username)
 
               commands_by_type = ESM::Command.by_type
               e.description = I18n.t(
                 "commands.help.getting_started.description",
                 command_count_player: commands_by_type[:player].size,
-                command_count_total: commands_by_type.values.flatten.size,
-                prefix: prefix
+                command_count_total: commands_by_type.values.flatten.size
               )
 
               # history
               %w[commands command privacy].each do |field_type|
                 e.add_field(
                   name: I18n.t("commands.help.getting_started.fields.#{field_type}.name"),
-                  value: I18n.t("commands.help.getting_started.fields.#{field_type}.value", prefix: prefix)
+                  value: I18n.t("commands.help.getting_started.fields.#{field_type}.value")
                 )
               end
             end
@@ -73,7 +84,7 @@ module ESM
             embed =
               ESM::Embed.build do |e|
                 e.title = I18n.t("commands.help.commands.#{type}.title")
-                e.description = I18n.t("commands.help.commands.#{type}.description", prefix: prefix)
+                e.description = I18n.t("commands.help.commands.#{type}.description")
                 e.color = ESM::Color.random
 
                 categories(type).each do |category, commands|
@@ -88,26 +99,6 @@ module ESM
           end
         end
 
-        def esm_history
-          embed =
-            ESM::Embed.build do |e|
-              e.title = I18n.t("commands.help.esm_history.title")
-              e.description = I18n.t(
-                "commands.help.esm_history.description",
-                prefix: prefix
-              )
-
-              %w[what_next when_done why].each do |field_type|
-                e.add_field(
-                  name: I18n.t("commands.help.esm_history.fields.#{field_type}.name"),
-                  value: I18n.t("commands.help.esm_history.fields.#{field_type}.value", prefix: prefix)
-                )
-              end
-            end
-
-          reply(embed)
-        end
-
         def categories(type)
           return [] if ESM::Command.by_type[type].nil?
 
@@ -116,31 +107,25 @@ module ESM
 
         # Return an array so ESM::Embed field logic will handle overflow correctly
         def format_commands(commands)
-          commands.map do |command|
-            "**`#{prefix}#{command.name}`**\n#{command.description(prefix)}\n"
+          commands.sort_by(&:usage).map do |command|
+            description = command.description
+            description += "\n#{command.description_extra}" if command.description_extra.present?
+
+            "**`#{command.usage}`**\n#{description}"
           end
         end
 
         def command
-          command = ESM::Command[@arguments.category].new
-
-          if current_community
-            # For prefix
-            command.current_community = current_community
-
-            # For whitelisted permission
-            command.permissions.load
-          end
-
+          command = ESM::Command[arguments.category].new
           embed =
             ESM::Embed.build do |e|
-              e.title = I18n.t("commands.help.command.title", prefix: prefix, name: command.name)
-              description = [command.description, ""]
+              e.title = I18n.t("commands.help.command.title", name: command.usage)
+              description = ["*This command used to be `!#{command.command_name}`*", command.description, ""]
 
               # Adds a note about being limited to DM or Text
-              description << I18n.t("commands.help.command.note") if command.limit_to || command.whitelist_enabled?
-              description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limit_to)) if command.limit_to
-              description << I18n.t("commands.help.command.whitelist_enabled") if command.whitelist_enabled?
+              description << I18n.t("commands.help.command.note") if command.limited_to || command.command_allowlist_enabled?
+              description << I18n.t("commands.help.command.limited_to", channel_type: I18n.t(command.limited_to)) if command.limited_to
+              description << I18n.t("commands.help.command.allowlist_enabled") if command.command_allowlist_enabled?
               e.description = description
 
               # Usage
@@ -153,25 +138,15 @@ module ESM
               if command.arguments.present?
                 e.add_field(
                   name: I18n.t("commands.help.command.arguments"),
-                  value: command.arguments.to_s
+                  value: command.arguments.templates.map { |_, argument| argument.help_documentation }
                 )
               end
 
               # Examples
-              if command.example.present?
+              if command.examples.present?
                 e.add_field(
                   name: I18n.t("commands.help.command.examples"),
-                  value: command.example
-                )
-              end
-
-              # Aliases
-              if command.aliases.present?
-                aliases = "```\n#{command.aliases.map { |a| "#{prefix}#{a}" }.join("\n")}\n```"
-
-                e.add_field(
-                  name: I18n.t("commands.help.command.aliases.name"),
-                  value: I18n.t("commands.help.command.aliases.value", aliases: aliases, prefix: prefix, name: command.name)
+                  value: command.examples
                 )
               end
             end

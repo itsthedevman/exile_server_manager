@@ -1,20 +1,26 @@
 # frozen_string_literal: true
 
-# New command? Make sure to create a migration to add the configuration to all communities
 module ESM
   module Command
     module Server
-      class Uptime < ESM::Command::Base
-        set_type :player
-        register_aliases :up, :up_time
+      class Uptime < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :for
 
-        argument :server_id
+        #
+        # Configuration
+        #
+
+        command_type :player
+
+        does_not_require :registration
+
+        #################################
 
         def on_execute
           embed =

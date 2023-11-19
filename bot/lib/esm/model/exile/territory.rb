@@ -28,7 +28,7 @@ module ESM
       end
 
       def id
-        @territory.esm_custom_id.present? ? @territory.esm_custom_id : @territory.id
+        (@territory.esm_custom_id.presence || @territory.id)
       end
 
       def name
@@ -131,7 +131,7 @@ module ESM
       end
 
       def days_left_until_payment_due
-        @days_left_until_payment_due ||= (next_due_date.to_date - ::Date.today).to_i
+        @days_left_until_payment_due ||= (next_due_date.to_date - ::Time.zone.today).to_i
       end
 
       def payment_reminder_message

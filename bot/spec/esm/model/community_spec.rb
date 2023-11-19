@@ -12,11 +12,12 @@ describe ESM::Community do
       expect(community.command_configurations.size).to eq(ESM::Command.all.size)
 
       ESM::Command.all.each do |command|
-        expect(ESM::CommandConfiguration.where(community_id: community.id, command_name: command.name).any?).to be(true)
+        expect(ESM::CommandConfiguration.where(community_id: community.id, command_name: command.command_name).any?).to be(true)
       end
     end
   end
 
+  # rubocop:disable Rails/DynamicFindBy
   describe "#find_by_server_id" do
     let(:community) { ESM::Test.community }
     let(:server) { ESM::Test.server }
@@ -43,4 +44,5 @@ describe ESM::Community do
       expect(result).to be(nil)
     end
   end
+  # rubocop:enable Rails/DynamicFindBy
 end

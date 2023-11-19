@@ -1,5 +1,0 @@
-#!/bin/bash
-
-kill -9 $(pgrep -f esm_extension_server) > /dev/null 2>&1
-
-cargo run -q

@@ -1,127 +1,97 @@
----
 en:
   commands:
     help:
       arguments:
-        category: The categories can be found by just using `%{prefix}help`
+        category:
+          description: The categories can be found by just using `/help`
       description: A helpful command. An unhelpful description
-      example: |-
-        **`%{prefix}help`**
-        Displays information about getting started with Exile Server Manager
-
-        **`%{prefix}help player commands`**
-        Displays all player commands
-
-        **`%{prefix}help admin commands`**
-        Displays all admin commands
-
-        **`%{prefix}help commands`**
-        Displays all commands
-
-        **`%{prefix}help set_id`**
-        Displays detailed information about the `set_id` command
+      examples:
+      - description: Displays information about getting started with Exile Server Manager
+      - description: Displays all player commands
+        arguments:
+          with: player commands
+      - description: Displays all admin commands
+        arguments:
+          with: admin commands
+      - description: Displays all commands
+        arguments:
+          with: commands
+      - description: Displays detailed information about the `/territory set_id` command
+        arguments:
+          with: "/territory set_id"
       categories:
         name: Categories
         value: |-
-          **`%{prefix}help commands`**
-          List all commands
+          ```
+          /help with:commands
+          ```List all commands
 
-          **`%{prefix}help <command_name>`**
-          Get information about the provided command
+          ```
+          /help with:<command_name>
+          ```Get information about the provided command
       getting_started:
-        title: "Well, hello there %{user}!"
+        title: Well, hello there %{user}!
         description: |-
           It looks like you found my help command! One of %{command_count_player} player commands that I respond to, %{command_count_total} in total.
-          _Oh, where are my manners?_ My name is **Exile Server Manager**, or ESM for short. I am a command bot that allows you to interact with any Arma 3 server that is registered with me!
+          _Oh, where are my manners?_
+          My name is **Exile Server Manager**, or ESM for short. I am a command bot that allows you to interact with any Arma 3 server that is registered with me!
         fields:
           commands:
             name: "**Looking for my commands?**"
             value: |-
-              `%{prefix}help player commands` for my player commands
-              `%{prefix}help admin commands` for my admin commands _(commands available to certain roles only!)_,
-              `%{prefix}help commands` for all commands
+              List player commands:
+              ```/help with:player commands```
+              List admin commands _(commands available to certain roles only!)_:
+              ```/help with:admin commands```
+              List all commands:
+              ```/help with:commands```
+              Commands and their details are also available in an easier to read format on my website: https://esmbot.com/wiki/commands
 
-              Commands and details about them are also available on my website: https://esmbot.com/wiki/commands
           command:
             name: "**Want to see examples or more information about a command?**"
-            value: "Just send me `%{prefix}help <command_name>`, replacing `<command_name>` with the name of the command! For example: `%{prefix}help register`"
-          history:
-            name: "**Interested in my history?**"
-            value: "You can find out more by sending me `%{prefix}help esm history`"
+            value: |-
+              Just send me ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+              For example:
+              ```/help with:/community servers``` _(Note: The slash for the command you are searching for may be omitted)_
           privacy:
             name: "**Privacy Policy**"
             value: |-
-              Hi, ESM's developer here.
-
-              Your privacy is important and I want to make sure you are aware of what information ESM has access to.
-              In short, when you use ESM, I have access to the following information:
-
-                - Your public Discord information
-                - Your public Steam information when you register on my website
-                - Your Discord message's content when you execute a command
-                - Your game data stored on an Arma 3 Exile server
-                - Any information inputted on my website
-
-              **This information is used for the functionality and maintenance of ESM only**.
-              Please read the full privacy policy for more details: https://www.esmbot.com/wiki/privacy
+              By using ESM or any of its services, you are agreeing to its [Privacy Policy](https://www.esmbot.com/wiki/privacy).
+              _TL;DR - it is one of those "no duh" type of policies:
+              ESM has access to your publicly accessible Discord and Steam information, and information you provide ESM and its services.
+              Your information is used for the functionality of the bot only._
       commands:
         player:
           title: Player Commands
           description: |-
-            These commands are for players to interact with their character in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode Enabled.
-            Please note, communities have the ability to disable or whitelist commands for their servers, regardless of where the command is used.
-            More information about a particular command can be found by using the `%{prefix}help command_name` command. For example: `%{prefix}help servers`
+            These commands are for players to interact with their character in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode enabled.
+
+            _**Note:** Communities have the ability to disable or limit access to commands for their servers, regardless of where the command is used_
+
+            More information about a particular command can be found by using:
+            ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+            For example:
+            ```/help with:/community servers``` _(Note: The slash for the command you are searching for may be omitted)_
         admin:
           title: Admin Commands
-          description: These commands are locked by default and may only be used by
-            a community's admins and the whitelisted roles.
+          description: |-
+            These commands are locked by default and may only be used by a community's admins and any allowed roles.
+
+            More information about a particular command can be found by using:
+            ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+            For example:
+            ```/help with:/community admin find_player``` _(Note: The slash for the command you are searching for may be omitted)_
         development:
           title: Development Commands
           description: These commands are only available in development mode.
       command:
-        title: "`%{prefix}%{name}` Documentation"
+        title: "`%{name}` Documentation"
         note: "**Note:**"
-        limited_to: This command is available only in a %{channel_type} channel with
-          me.
-        whitelist_enabled: This command may be available only to certain roles.
+        limited_to: This command is available only in a %{channel_type} channel with me.
+        allowlist_enabled: This command may be only available to certain roles.
         usage: "**__Usage__**"
-        aliases:
-          name: "**__Aliases__**"
-          value: 'This command can also be accessed by the following aliases: %{aliases}'
         arguments: "**__Arguments__**"
         examples: "**__Examples__**"
-      esm_history:
-        title: "Exile Server Manager's History"
-        description: |-
-          Hi, Bryan here - I'm the sole developer of Exile Server Manager.
-
-          First, I just want to say thank you. Thank you for using this bot, and thank you for being curious.
-
-          ESM is a passion project of mine. I originally created ESM for my end of semester project during university in Dec 2017. Back then it was just a tiny website written in PHP (_cringe_) and it had very little functionality. It list the server's territories and that was it. After the semester was over, I continued to expand its functionality and soon it outgrew the website and took on a new shell as a Discord bot written in JavaScript with a C# Arma 3 server extension.
-
-          Released for public use on June 6th 2018, ESM launched with a **total of 13 player commands**. The `%{prefix}reward` command wasn't even one of them! Over the next year I continued to release updates to the bot, server extension, and website with more features, more commands, and even more bug fixes. _Oh so many bug fixes..._
-          Come March 2019, ESM would reach version `1.0.0` and would gain that glorious reward command.
-          _Oh, while I'm here, huge shout out to the Mafia Bosses on ESM's Discord. They supported ESM through thick and thin and I am so grateful for them._
-
-          Not much happened after 1.0.0 became "stable". At this point ESM was functioning, but it was slowly failing. The lack of knowledge and experience when I started this project meant that ESM had some design flaws within its core systems. It was working, but it had reached the point of diminishing returns.
-
-          By Oct 2019, I was working full time as a Ruby developer and had a year or so work experience under my belt. Armed with more knowledge, I set out to re-imagine ESM.
-
-          _And this time, it was made out of Ruby._
-
-          On Jan 2nd 2021, version 2.0.0 was released. I was rewritten in MRI Ruby, but still using my original server extension. This update brought improvements to every one of my commands and features. But most importantly, it laid a foundation for new features in the future.
-
-        fields:
-          what_next:
-            name: "**What's next?**"
-            value: |-
-              I'm still running strong and my author is still working on me. As I mentioned above, I am still using my original Arma 3 server extension. This piece of me is old, outdated, and unfortunately is blocking my author from adding a lot of new and exciting features.
-              Good news though, my author is currently working on completely rewriting the Arma 3 server extension from the ground up. New commands, improvements to the reward command (_among others_), speed improvements, possible linux support (_waaaaat?_), and more!
-          when_done:
-            name: "**So when will it be done?**"
-            value: |-
-              My author is hoping sometime late 2022
-          why:
-            name: "**Why?**"
-            value: |-
-              Well, aren't you the curious one.

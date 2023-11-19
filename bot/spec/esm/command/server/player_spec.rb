@@ -1,209 +1,226 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Player, category: "command" do
-  let!(:command) { ESM::Command::Server::Player.new }
-
-  it "should be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "should have 4 argument" do
-    expect(command.arguments.size).to eq(4)
-  end
-
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
-    let!(:second_user) { ESM::Test.user }
+    include_context "connection_v1"
 
-    let!(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-    let(:response) { command.response }
-
-    before :each do
-      wait_for { wsc.connected? }.to be(true)
-
+    before do
       grant_command_access!(community, "player")
     end
 
-    after :each do
-      wsc.disconnect!
+    describe "Money" do
+      let!(:action) { "money" }
+
+      def check!
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
+
+        expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      end
+
+      context "when the action is 'Change player poptabs'" do
+        it "modifies the player's money" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action,
+              amount: Faker::Number.between(from: -500, to: 500)
+            }
+          )
+
+          check!
+        end
+
+        it "requires an amount" do
+          execution_args = {
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action
+            }
+          }
+
+          expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+        end
+      end
     end
 
-    it "!player money" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "money", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    describe "Locker" do
+      let!(:action) { "locker" }
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+      def check!
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+        expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+      end
+
+      context "when the action is 'Change locker poptabs'" do
+        it "modifies the player's locker" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action,
+              amount: Faker::Number.between(from: -500, to: 500)
+            }
+          )
+
+          check!
+        end
+
+        it "requires an amount" do
+          execution_args = {
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action
+            }
+          }
+
+          expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+        end
+      end
     end
 
-    it "!player m" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "m", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    describe "Respect" do
+      let!(:action) { "respect" }
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+      def check!
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+        expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
+      end
+
+      context "when the action is 'Change player respect'" do
+        it "modifies the player's respect" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action,
+              amount: Faker::Number.between(from: -500, to: 500)
+            }
+          )
+
+          check!
+        end
+
+        it "requires an amount" do
+          execution_args = {
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action
+            }
+          }
+
+          expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+        end
+      end
     end
 
-    it "!player locker" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "locker", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    describe "Heal" do
+      let!(:action) { "heal" }
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+      def check!
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+        expect(embed.description).not_to be_blank
+      end
+
+      context "when the action is 'Heal player'" do
+        it "heals the player" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action
+            }
+          )
+
+          check!
+        end
+
+        it "will ignore the amount argument" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action,
+              amount: 55
+            }
+          )
+
+          expect(previous_command.arguments.amount).to be_nil
+        end
+      end
     end
 
-    it "!player l" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "l", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    describe "Kill" do
+      let!(:action) { "kill" }
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+      def check!
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
 
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
+        expect(embed.description).not_to be_blank
+      end
+
+      context "when the action is 'Kill player'" do
+        it "kills the player" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action
+            }
+          )
+
+          check!
+        end
+
+        it "will ignore the amount argument" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              action: action,
+              amount: 55
+            }
+          )
+
+          expect(previous_command.arguments.amount).to be_nil
+        end
+      end
     end
 
-    it "!player respect" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "respect", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when the target is a non-registered steam uid" do
+      it "works as expected" do
+        steam_uid = second_user.steam_uid
+        second_user.update(steam_uid: "")
 
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        execute!(
+          arguments: {server_id: server.server_id, target: steam_uid, action: "heal"}
+        )
 
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
-    end
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.second
 
-    it "!player r" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "r", value: Faker::Number.between(from: -500, to: 500))
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
-    end
-
-    it "!player heal" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "heal")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).not_to be_blank
-    end
-
-    it "!player h" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "h")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).not_to be_blank
-    end
-
-    it "!player kill" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "kill")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).not_to be_blank
-    end
-
-    it "!player k" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "k")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).not_to be_blank
-    end
-
-    it "should require a value" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "money")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.to raise_error(ESM::Exception::FailedArgumentParse)
-    end
-
-    it "should work with a non-registered steam uid" do
-      steam_uid = second_user.steam_uid
-      second_user.update(steam_uid: "")
-
-      command_statement = command.statement(server_id: server.server_id, target: steam_uid, type: "h")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).not_to be_blank
-    end
-
-    it "sets the default value to nil if the type is kill or heal" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "k", value: 55)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      expect(command.arguments.value).to be_nil
-
-      # Since we just executed the command
-      command.current_cooldown.reset!
-
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention, type: "h", value: 55)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.not_to raise_error
-      expect(command.arguments.value).to be_nil
-    end
-
-    # Ensures the `modifier` does not cause a crash due to the change to how arguments are parsed.
-    it "displays missing argument" do
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      expect { command.execute(event) }.to raise_error(ESM::Exception::FailedArgumentParse)
+        expect(embed.description).not_to be_blank
+      end
     end
   end
 end

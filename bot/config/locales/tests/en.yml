@@ -5,4 +5,21 @@ en:
     _preserve: "two"
     _display_as: "three"
     _default: "default"
-    _multiline: "wild"
+  commands:
+    argument_descriptions:
+      examples:
+      - description: "testing"
+      arguments:
+        with_locale:
+          description: "An argument description"
+          description_extra: "An argument description extra"
+          optional_text: "An argument optional text"
+    argument_required:
+      examples:
+      - description: "testing"
+    server_command:
+      examples:
+      - description: "testing"
+    target_command:
+      examples:
+      - description: "testing"

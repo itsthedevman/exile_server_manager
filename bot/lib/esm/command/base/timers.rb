@@ -3,49 +3,71 @@
 module ESM
   module Command
     class Base
-      class Timers
+      class Timers < Hash
+        include ActionView::Helpers::NumberHelper
+
         def initialize(command_name)
           @command_name = command_name
-
-          @timers = {
-            on_execute: ESM::Time::Timer.new,
-            on_response: ESM::Time::Timer.new,
-            from_discord: ESM::Time::Timer.new,
-            from_server: ESM::Time::Timer.new,
-            from_request: ESM::Time::Timer.new
-          }
+          super
         end
 
         def reset_all!
-          @timers.values.each(&:reset!)
+          values.each(&:reset!)
         end
 
         def stop_all!
-          @timers.values.each(&:stop!)
+          values.each(&:stop!)
         end
 
         def to_h
-          @timers.transform_values(&:to_h)
+          transform_values(&:to_h)
         end
 
         def time!(timer_name, &block)
-          timer = @timers[timer_name.to_sym]
-          raise "Invalid timer name: #{timer_name}. Expected one of #{@timers.keys.to_sentence(last_word_connector: ", or ")}" if timer.nil?
+          timer = create_timer(timer_name)
 
           timer.start!
           yield
           timer.stop!
 
-          info!(timer: timer_name, command: @command_name, time_elapsed: "#{timer.time_elapsed * 1000} ms")
+          info!(
+            timer: timer_name,
+            command: @command_name,
+            time_elapsed: "#{timer.time_elapsed * 1000} ms"
+          )
+
           nil
         end
 
-        def method_missing(method_name, *_arguments, &_block)
-          @timers[method_name.to_sym]
+        def humanized_total
+          time_elapsed = values.sum(&:time_elapsed)
+
+          # Milliseconds
+          if (milliseconds = (time_elapsed * 1_000).round) && milliseconds <= 1_000
+            return "#{number_with_delimiter(milliseconds)} #{"millisecond".pluralize(milliseconds)}"
+          end
+
+          # Microseconds
+          if (microseconds = (time_elapsed * 1_000_000).round) && microseconds <= 1_000_000
+            return "#{number_with_delimiter(microseconds)} #{"microsecond".pluralize(microseconds)}"
+          end
+
+          # Seconds and above
+          start_time = values.map(&:started_at).min
+          ESM::Time.distance_of_time_in_words(start_time + time_elapsed.seconds, from_time: start_time)
         end
 
-        def respond_to_missing?(method_name, _include_private = false)
-          @timer.key?(method_name.to_sym)
+        private
+
+        def create_timer(name)
+          name = name.to_sym
+
+          timer = Timer.new
+
+          self[name] = timer
+          self.class.define_method(name) { self[name] }
+
+          timer
         end
       end
     end

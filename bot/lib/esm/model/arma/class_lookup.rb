@@ -62,7 +62,7 @@ module ESM
         # All classes are stored as YAML files in config/arma_classes
         # Convert the YAML file into a lookup table where the key is the class name and the value is an instance of CLASS_ENTRY
         Dir["#{File.expand_path("config/arma_classes")}/*.yml"].each do |file_path|
-          yml = YAML.safe_load(File.read(file_path))
+          yml = YAML.safe_load_file(file_path)
 
           yml.each do |mod, mod_data|
             mod_name = mod_data["name"]

@@ -3,7 +3,8 @@ en:
   commands:
     birb:
       description: Who doesn't like some high quality birbs?
-      example: |-
-        **`%{prefix}birb`**
-        Returns a random bird image
+      examples:
+        - description: Returns a random bird image
       waiting: Tossing bird seed...
+      errors:
+        birb_not_found: Hey %{user}, it looks like all of the birbs flew away. Please wait a few moments before trying again

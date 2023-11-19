@@ -3,4 +3,8 @@ en:
   commands:
     base_v1:
       description: A test command
-      example: A test example
+      examples:
+        - description: A test example
+        - description: An example with args
+          arguments:
+            target: foo

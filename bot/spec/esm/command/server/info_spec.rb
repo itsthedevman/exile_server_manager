@@ -1,179 +1,138 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Info, category: "command" do
-  let!(:command) { ESM::Command::Server::Info.new }
-
-  it "should be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "should have 3 argument" do
-    expect(command.arguments.size).to eq(3)
-  end
-
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
+    include_context "connection_v1"
 
-    # If you need to connect to a server
-    let!(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-    let(:response) { command.response }
-
-    def build_fields(values)
-      output = []
-      temp = ""
-      values.each do |value|
-        value += "\n"
-
-        if temp.size + value.size >= ESM::Embed::Limit::FIELD_VALUE_LENGTH_MAX
-          output << temp
-          temp = ""
-        end
-
-        temp += value
-      end
-      output << temp
-    end
-
-    before :each do
+    before do
       grant_command_access!(community, "info")
-
-      wait_for { wsc.connected? }.to be(true)
 
       # IMPORTANT!
       # If we don't reload the server model after WSC connection, the server settings will be wrong!
       server.reload
     end
 
-    after :each do
-      wsc.disconnect!
+    context "when the mentioned target is alive" do
+      it "returns information on the player" do
+        wsc.flags.PLAYER_ALIVE = true
+
+        request = execute!(arguments: {server_id: server.server_id, target: user.mention})
+        expect(request).not_to be_nil
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+
+        embed = ESM::Test.messages.first.content
+        expect(embed.title).to match(/stats on `#{server.server_id}`/i)
+
+        field = embed.fields.first
+        expect(field.name).to match(/general/i)
+        expect(field.value).to match(/health.+%.+hunger.+%.+thirst.+%/im)
+
+        field = embed.fields.second
+        expect(field.name).to match(/currency/i)
+        expect(field.value).to match(/money.+poptabs.+locker.+poptabs.+respect.+/im)
+
+        field = embed.fields.third
+        expect(field.name).to match(/scoreboard/i)
+        expect(field.value).to match(/kills.+deaths.+kd ratio.+/im)
+      end
     end
 
-    it "!info <server_id> <tag> (Player/Alive)" do
-      wsc.flags.PLAYER_ALIVE = true
-      command_statement = command.statement(server_id: server.server_id, target: user.mention)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when the steam uid target is a dead player" do
+      it "returns information on the player" do
+        request = execute!(arguments: {server_id: server.server_id, target: user.steam_uid})
+        expect(request).not_to be_nil
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      request = nil
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        embed = ESM::Test.messages.first.content
+        expect(embed.title).to match(/stats on `#{server.server_id}`/i)
 
-      expect(embed.title).to match(/stats on `#{server.server_id}`/i)
+        field = embed.fields.first
+        expect(field.name).to match(/general/i)
+        expect(field.value).to match("**You are dead**")
 
-      field = embed.fields.first
-      expect(field.name).to match(/general/i)
-      expect(field.value).to match(/health.+%.+hunger.+%.+thirst.+%/im)
+        field = embed.fields.second
+        expect(field.name).to match(/currency/i)
+        expect(field.value).to match(/money.+you are dead.+locker.+poptabs.+respect.+/im)
 
-      field = embed.fields.second
-      expect(field.name).to match(/currency/i)
-      expect(field.value).to match(/money.+poptabs.+locker.+poptabs.+respect.+/im)
-
-      field = embed.fields.third
-      expect(field.name).to match(/scoreboard/i)
-      expect(field.value).to match(/kills.+deaths.+kd ratio.+/im)
+        field = embed.fields.third
+        expect(field.name).to match(/scoreboard/i)
+        expect(field.value).to match(/kills.+deaths.+kd ratio.+/im)
+      end
     end
 
-    it "!info <server_id> <steam_uid> (Player/Dead)" do
-      command_statement = command.statement(server_id: server.server_id, target: user.steam_uid)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when the target is a territory ID" do
+      it "returns information on the territory" do
+        request = execute!(arguments: {server_id: server.server_id, territory_id: "12345"})
+        expect(request).not_to be_nil
+        wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      request = nil
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        embed = ESM::Test.messages.first.content
+        territory = ESM::Exile::Territory.new(server: server, territory: response)
 
-      expect(embed.title).to match(/stats on `#{server.server_id}`/i)
+        expect(embed.title).to eq("Territory \"#{territory.name}\"")
+        expect(embed.thumbnail.url).to eq(territory.flag_path)
+        expect(embed.color).to eq(territory.status_color)
+        expect(embed.description).to eq(territory.payment_reminder_message)
 
-      field = embed.fields.first
-      expect(field.name).to match(/general/i)
-      expect(field.value).to match("**You are dead**")
+        field_info = [
+          {name: "Territory ID", value: "```#{territory.id}```"},
+          {name: "Flag Status", value: "```#{territory.flag_status}```"},
+          {name: "Next Due Date", value: "```#{territory.next_due_date.strftime(ESM::Time::Format::TIME)}```"},
+          {name: "Last Paid", value: "```#{territory.last_paid_at.strftime(ESM::Time::Format::TIME)}```"},
+          {name: "Price to renew protection", value: territory.renew_price},
+          {value: "__Current Territory Stats__"},
+          {name: "Level", value: territory.level},
+          {name: "Radius", value: "#{territory.radius}m"},
+          {name: "Current / Max Objects", value: "#{territory.object_count}/#{territory.max_object_count}"}
+        ]
 
-      field = embed.fields.second
-      expect(field.name).to match(/currency/i)
-      expect(field.value).to match(/money.+poptabs.+locker.+poptabs.+respect.+/im)
+        if territory.upgradeable?
+          field_info.push(
+            {value: "__Next Territory Stats__"},
+            {name: "Level", value: territory.upgrade_level},
+            {name: "Radius", value: "#{territory.upgrade_radius}m"},
+            {name: "Max Objects", value: territory.upgrade_object_count},
+            {name: "Price", value: territory.upgrade_price}
+          )
+        end
 
-      field = embed.fields.third
-      expect(field.name).to match(/scoreboard/i)
-      expect(field.value).to match(/kills.+deaths.+kd ratio.+/im)
-    end
+        field_info.push({value: "__Territory Members__"}, {name: "Owner", value: territory.owner})
 
-    it "!info <server_id> <territory_id> (Territory)" do
-      command_statement = command.statement(server_id: server.server_id, territory_id: "12345")
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+        # Now check the fields
+        # Removing them from the embed so we can check moderators/builders easily
+        field_info.each do |field|
+          embed_field = embed.fields.shift
+          expect(embed_field.name).to eq(field[:name].to_s) if field[:name].present?
+          expect(embed_field.value).to eq(field[:value].to_s)
+        end
 
-      request = nil
-      expect { request = command.execute(event) }.not_to raise_error
-      expect(request).not_to be_nil
-      wait_for { connection.requests }.to be_blank
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        moderator_fields = ESM::Embed.new
+          .add_field(value: territory.moderators)
+          .fields
+          .map(&:value)
 
-      territory = ESM::Exile::Territory.new(server: server, territory: response)
+        moderator_fields.each do |moderator_field|
+          field = embed.fields.shift
+          expect(field.name).to match(/moderator/i)
+          expect(field.value).to eq(moderator_field)
+        end
 
-      expect(embed.title).to eq("Territory \"#{territory.name}\"")
-      expect(embed.thumbnail.url).to eq(territory.flag_path)
-      expect(embed.color).to eq(territory.status_color)
-      expect(embed.description).to eq(territory.payment_reminder_message)
+        builder_fields = ESM::Embed.new
+          .add_field(value: territory.builders)
+          .fields
+          .map(&:value)
 
-      field_info = [
-        {name: "Territory ID", value: "```#{territory.id}```"},
-        {name: "Flag Status", value: "```#{territory.flag_status}```"},
-        {name: "Next Due Date", value: "```#{territory.next_due_date.strftime(ESM::Time::Format::TIME)}```"},
-        {name: "Last Paid", value: "```#{territory.last_paid_at.strftime(ESM::Time::Format::TIME)}```"},
-        {name: "Price to renew protection", value: territory.renew_price},
-        {value: "__Current Territory Stats__"},
-        {name: "Level", value: territory.level},
-        {name: "Radius", value: "#{territory.radius}m"},
-        {name: "Current / Max Objects", value: "#{territory.object_count}/#{territory.max_object_count}"}
-      ]
-
-      if territory.upgradeable?
-        field_info.push(
-          {value: "__Next Territory Stats__"},
-          {name: "Level", value: territory.upgrade_level},
-          {name: "Radius", value: "#{territory.upgrade_radius}m"},
-          {name: "Max Objects", value: territory.upgrade_object_count},
-          {name: "Price", value: territory.upgrade_price}
-        )
-      end
-
-      field_info.push({value: "__Territory Members__"}, {name: "Owner", value: territory.owner})
-
-      # Now check the fields
-      # Removing them from the embed so we can check moderators/builders easily
-      field_info.each do |field|
-        embed_field = embed.fields.shift
-        expect(embed_field.name).to eq(field[:name].to_s) if field[:name].present?
-        expect(embed_field.value).to eq(field[:value].to_s)
-      end
-
-      moderator_fields = build_fields(territory.moderators)
-      moderator_fields.each do |moderator_field|
-        field = embed.fields.shift
-        expect(field.name).to match(/moderator/i)
-        expect(field.value).to eq(moderator_field)
-      end
-
-      builder_fields = build_fields(territory.builders)
-      builder_fields.each do |builder_field|
-        field = embed.fields.shift
-        expect(field.name).to match(/build rights/i)
-        expect(field.value).to eq(builder_field)
+        builder_fields.each do |builder_field|
+          field = embed.fields.shift
+          expect(field.name).to match(/build rights/i)
+          expect(field.value).to eq(builder_field)
+        end
       end
     end
   end

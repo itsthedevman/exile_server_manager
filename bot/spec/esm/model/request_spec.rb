@@ -17,7 +17,7 @@ describe ESM::Request do
 
   describe "scope#expired" do
     it "should return expired requests" do
-      request.update(expires_at: Time.current - 1.days)
+      request.update(expires_at: Time.current - 1.day)
       expect(ESM::Request.expired.size).to eq(1)
     end
   end

@@ -3,7 +3,7 @@
 describe ESM::Callbacks do
   let(:object) { Callback.new }
 
-  before :each do
+  before do
     object.instance_variable_set(:@tracker, [])
   end
 

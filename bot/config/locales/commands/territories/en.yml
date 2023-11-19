@@ -2,11 +2,13 @@
 en:
   commands:
     territories:
-      description: Displays all territories that you own or have joined for the provided
-        server ID
-      example: |-
-        **`%{prefix}territories esm_malden`**
-        Returns all owned or joined territories for server `esm_malden`
+      description: Displays all territories that you own or have joined for the provided server ID
+      examples:
+        - description: Returns all owned or joined territories for server `esm_malden`
+          arguments:
+            for: esm_malden
       current_territory_stats: __Current Territory Stats__
       next_territory_stats: __Next Territory Stats__
       territory_members: __Territory Members__
+      errors:
+        no_territories: Hey %{user}, I was unable to find any territories for you on `%{server_id}`

@@ -42,7 +42,7 @@ module ESM
         end
 
         def timed_out?
-          timeout < Time.now
+          timeout < ::Time.current
         end
 
         def delivered

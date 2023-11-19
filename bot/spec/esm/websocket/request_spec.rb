@@ -24,7 +24,7 @@ describe ESM::Websocket::Request do
     )
 
     expect(request).not_to be_nil
-    expect(request.command_name).to eq("base")
+    expect(request.command_name).to eq("base_v1")
   end
 
   it "accepts nil for user" do
@@ -66,7 +66,7 @@ describe ESM::Websocket::Request do
       user = request.user
 
       valid_hash_string = {
-        "command" => "base",
+        "command" => "base_v1",
         "commandID" => request.id,
         "authorInfo" => [user.mention, user.id],
         "parameters" => params

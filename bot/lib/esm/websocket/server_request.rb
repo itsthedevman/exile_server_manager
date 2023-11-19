@@ -3,7 +3,7 @@
 module ESM
   class Websocket
     class ServerRequest
-      WHITELISTED_SERVER_COMMANDS = %w[
+      ALLOWLISTED_SERVER_COMMANDS = %w[
         server_initialization
         xm8_notification
         discord_log
@@ -50,17 +50,18 @@ module ESM
         @request.response = @message.parameters
 
         # Logging
-        ESM::Notifications.trigger("command_from_server", command: @request.command, response: @message)
+        command = @request.command
+        info!(command: command.to_h, response: @message) if command
 
         # We have an error from the DLL
         check_for_command_error!
 
         # Execute the command
         begin
-          @request.command.execute(@message.parameters)
+          command.from_server(@message.parameters)
         rescue ESM::Exception::CheckFailure => e
           # This catches any errors from the command.
-          @request.command.reply(e.data)
+          command.reply(e.data)
         end
 
       # This catches the check_for_command_error
@@ -74,7 +75,7 @@ module ESM
       # @private
       # Processes server command that doesn't come from a request.
       def process_server_command
-        return if !WHITELISTED_SERVER_COMMANDS.include?(@message.command)
+        return if !ALLOWLISTED_SERVER_COMMANDS.include?(@message.command)
 
         # Build the class and call it
         "ESM::Event::#{@message.command.classify}V1".constantize.new(
@@ -94,6 +95,13 @@ module ESM
 
         # Some errors from the dll already have a mention in them...
         error = "#{@request.user.mention}, #{error}" if !error.start_with?("<")
+
+        # Some errors have commands hardcoded...
+        territories_command = ESM::Command.get(:territories)
+        error = error.gsub(
+          /!territories (#{Regex::SERVER_ID.source})/,
+          territories_command.usage(arguments: {server_id: "\\1"}) # \1 will be replaced with the server_id by gsub
+        )
 
         # Send the error message
         embed = ESM::Embed.build(:error, description: error)

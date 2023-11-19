@@ -247,7 +247,7 @@ module ESM
       def on_connect(server_uuid, message)
         info!(server_uuid: server_uuid, incoming_message: message.to_h)
 
-        server = ESM::Server.find_by_uuid(server_uuid)
+        server = ESM::Server.find_by(uuid: server_uuid)
         return error!(error: "Server does not exist", uuid: server_uuid) if server.nil?
         return server.community.log_event(:error, message.errors.join("\n")) if message.errors?
 
@@ -271,27 +271,28 @@ module ESM
 
         # Currently, :send_to_channel is the only inbound event. If adding another, convert this code
         if incoming_message.type == :event && incoming_message.data_type == :send_to_channel
-          server = ESM::Server.find_by_uuid(server_uuid)
+          server = ESM::Server.find_by(uuid: server_uuid)
           ESM::Event::SendToChannel.new(server, incoming_message).run!
           return
         end
 
         outgoing_message&.on_response(incoming_message)
       rescue => e
-        if (command = outgoing_message&.command)
-          command.handle_error(e, raise_error: false) # Force not raising errors for every env
-        else
-          raise e # Bubble up to #on_inbound
-        end
+        command = outgoing_message&.command
+
+        # Bubble up to #on_inbound
+        raise e if command.nil?
+
+        raise "Replace!! command.handle_error(e)"
       end
 
       def on_disconnect(request)
         server_uuid = request[:content]
 
-        server = ESM::Server.find_by_uuid(server_uuid)
+        server = ESM::Server.find_by(uuid: server_uuid)
         server.metadata.clear!
 
-        info!(uuid: server.uuid, name: server.server_name, server_id: server.server_id)
+        info!(uuid: server.public_id, name: server.server_name, server_id: server.server_id)
       end
     end
   end

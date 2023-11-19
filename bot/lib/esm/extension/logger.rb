@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Logger
   send :remove_const, "SEV_LABEL"
 

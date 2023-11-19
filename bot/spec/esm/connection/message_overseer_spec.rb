@@ -15,7 +15,7 @@ describe ESM::Connection::MessageOverseer, v2: true do
         expect(incoming).to be_nil
       end
 
-      expect { overseer.watch(message, expires_at: Time.now) }.not_to raise_error
+      expect { overseer.watch(message, expires_at: Time.zone.now) }.not_to raise_error
 
       wait_for { message.delivered? }.to be(true)
 

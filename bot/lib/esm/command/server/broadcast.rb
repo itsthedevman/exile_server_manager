@@ -1,50 +1,60 @@
 # frozen_string_literal: true
 
-# New command? Make sure to create a migration to add the configuration to all communities
 module ESM
   module Command
     module Server
-      class Broadcast < ESM::Command::Base
-        set_type :admin
-        limit_to :text
-        requires :registration
+      class Broadcast < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # Required: All variants require a message
+        argument :message, required: true, preserve: true
 
+        # Optional: Omitting defaults to "preview"
         argument(
           :broadcast_to,
-          regex: ESM::Regex::BROADCAST,
-          description: "commands.broadcast.arguments.broadcast_to",
-          modifier: lambda do |argument|
-            return if argument.content.blank?
-            return if %w[all preview].include?(argument.content)
+          display_name: :to,
+          checked_against: ESM::Regex::BROADCAST,
+          modifier: lambda do |content|
+            return if content.blank?
+            return content if %w[all preview].include?(content)
 
             # If we start with a community ID, just accept the match
-            return if argument.content.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
+            return content if content.match("^#{ESM::Regex::COMMUNITY_ID_OPTIONAL.source}_")
 
             # Add the community ID to the front of the match
-            argument.content = "#{current_community.community_id}_#{argument.content}"
+            "#{current_community.community_id}_#{content}"
           end
         )
 
-        argument :message, regex: /(.|[\r\n])+/, description: "commands.broadcast.arguments.message", preserve: true, multiline: true
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin
+        command_type :admin
+
+        limit_to :text
+
+        #################################
 
         def on_execute
           check_for_message_length!
 
           # Send just the preview
-          return reply(broadcast_embed) if @arguments.broadcast_to == "preview"
+          return reply(broadcast_embed) if arguments.broadcast_to == "preview" || arguments.broadcast_to.blank?
 
           # Preload the servers
           load_servers
 
           # Send a preview of the embed
           reply(broadcast_embed(server_ids: @server_id_sentence))
-          reply("`------------------------------------------------------------------`")
+          reply("`---------------------------------`")
+
           embed =
             ESM::Embed.build do |e|
               e.title = I18n.t("commands.broadcast.confirmation_embed.title")
@@ -55,16 +65,26 @@ module ESM
 
           # Send the confirmation request
           reply(embed)
+
           response = ESM.bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
-          return reply(I18n.t("commands.broadcast.cancelation_reply")) if response.nil? || response.downcase == I18n.t("no").downcase
+          if response.nil? || response.downcase == I18n.t("no").downcase
+            return reply(I18n.t("commands.broadcast.cancellation_reply"))
+          end
 
           # Get all of the users to broadcast to
           users = load_users
           users.each { |user| ESM.bot.deliver(broadcast_embed(server_ids: @server_id_sentence), to: user.discord_id) }
 
           # Send the success message back
-          reply(ESM::Embed.build(:success, description: I18n.t("commands.broadcast.success_message", user: current_user.mention)))
+          reply(
+            ESM::Embed.build(
+              :success,
+              description: I18n.t("commands.broadcast.success_message", user: current_user.mention)
+            )
+          )
         end
+
+        private
 
         def broadcast_embed(server_ids: nil)
           # For the preview
@@ -75,19 +95,19 @@ module ESM
 
           ESM::Embed.build do |e|
             e.title = I18n.t("commands.broadcast.broadcast_embed.title", community_name: current_community.community_name, server_ids: server_ids)
-            e.description = @arguments.message
+            e.description = arguments.message
             e.color = :orange
-            e.footer = I18n.t("commands.broadcast.broadcast_embed.footer", prefix: prefix)
+            e.footer = I18n.t("commands.broadcast.broadcast_embed.footer")
           end
         end
 
         def load_servers
           @servers =
-            if @arguments.broadcast_to == "all"
+            if arguments.broadcast_to == "all"
               current_community.servers
             else
               # Find the server, but check existence and if the server belongs to this community
-              server = ESM::Server.find_by_server_id(@arguments.broadcast_to)
+              server = ESM::Server.find_by_server_id(arguments.broadcast_to)
 
               raise_invalid_server_id! if server.nil?
               raise_no_server_access! if server.community_id != current_community.id
@@ -125,15 +145,15 @@ module ESM
         end
 
         def check_for_message_length!
-          check_failed!(:message_length, user: current_user.mention) if @arguments.message.size > 2000
+          raise_error!(:message_length, user: current_user.mention) if arguments.message.size > 2000
         end
 
         def raise_no_server_access!
-          check_failed!(:no_server_access, user: current_user.mention, community_id: current_community.community_id)
+          raise_error!(:no_server_access, user: current_user.mention, community_id: current_community.community_id)
         end
 
         def raise_invalid_server_id!
-          check_failed!(:invalid_server_id, user: current_user.mention, provided_server_id: @arguments.broadcast_to)
+          raise_error!(:invalid_server_id, user: current_user.mention, provided_server_id: arguments.broadcast_to)
         end
       end
     end

@@ -47,19 +47,14 @@ module ESM
         map { |key, value| [key, convert_value.call(value)] }
       end
 
-      def to_json(*args)
-        ::JSON.generate(to_a, *args)
+      def to_json(*)
+        ::JSON.generate(to_a, *)
       end
 
       alias_method :to_s, :to_json
 
-      def to_ostruct
-        to_h.to_ostruct
-      end
+      delegate :to_ostruct, :to_istruct, to: :to_h
 
-      def to_istruct
-        to_h.to_istruct
-      end
 
       private
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_util_embed_addField", requires_connection: true, v2: true do
+describe "ESMs_util_embed_addField", :requires_connection, v2: true do
   include_context "connection"
 
   it "returns adds a field to the embed" do

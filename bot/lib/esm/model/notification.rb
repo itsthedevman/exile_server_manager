@@ -15,7 +15,7 @@ module ESM
 
     belongs_to :community
 
-    def self.build_random(community_id:, type:, category:, **templates)
+    def self.build_random(community_id:, type:, category:, **)
       notification = where(
         community_id: community_id,
         notification_type: type,
@@ -25,7 +25,7 @@ module ESM
       # Grab a default if one was not found
       notification = DEFAULTS[category][type].sample(1).first if notification.nil?
 
-      notification.build_embed(**templates)
+      notification.build_embed(**)
     end
 
     def build_embed(**templates)

@@ -2,9 +2,9 @@
 en:
   commands:
     snek:
-      description: Nope rope, danger noodle, whatever you want to call them. One thing
-        for sure is that they are cute.
-      example: |-
-        **`%{prefix}snek`**
-        Returns a random snake image
+      description: Nope rope, danger noodle, whatever you want to call them. One thing for sure is that they are cute.
+      examples:
+        - description: Returns a random snake image
       waiting: Slithering...
+      errors:
+        snek_not_found: Hey %{user}, all of the sneks slithered away. Please wait a few moments before trying again

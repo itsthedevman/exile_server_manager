@@ -3,23 +3,29 @@
 module ESM
   module Command
     module Server
-      class Me < ESM::Command::Base
-        set_type :player
-        requires :registration
+      class Me < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
 
-        argument :server_id
+        #
+        # Configuration
+        #
+
+        command_namespace :server, :my, command_name: :player
+        command_type :player
+
+        #################################
 
         def on_execute
           if v2_target_server?
             query_arma("me", uid: current_user.steam_uid)
           else
-            deliver!(query: "player_info", uid: current_user.esm_user.steam_uid)
+            deliver!(query: "player_info", uid: current_user.steam_uid)
           end
         end
 

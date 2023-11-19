@@ -1,53 +1,72 @@
 # frozen_string_literal: true
 
-# New command? Make sure to create a migration to add the configuration to all communities
 module ESM
   module Command
     module Server
-      class Player < ESM::Command::Base
-        set_type :admin
-        limit_to :text
-        requires :registration
+      class Player < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:target]
+        argument :target, display_name: :whom
 
-        argument :server_id
-        argument :target
-        argument :type, regex: /^m(?:oney)?|^r(?:espect)?|^l(?:ocker)?|^h(?:eal)?|^k(?:ill)?/, description: "commands.player.arguments.type"
+        # Required: Needed by command
+        argument :action, required: true, choices: {
+          money: "Change player poptabs",
+          locker: "Change locker poptabs",
+          respect: "Change player respect",
+          heal: "Heal player",
+          kill: "Kill player"
+        }
+
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
+
+        # Optional: Not required by heal or kill
         argument(
-          :value,
-          regex: /-?\d+/,
-          description: "commands.player.arguments.value",
-          modifier: lambda do |argument|
-            return unless arguments.type&.match(/^h(?:eal)?|^k(?:ill)?/i)
+          :amount,
+          type: :integer,
+          checked_against: ->(content) { !content.nil? },
+          checked_against_if: ->(_a, _c) { %w[money respect locker].include?(arguments.action) },
+          modifier: lambda do |content|
+            return content unless %w[heal kill].include?(arguments.action)
 
-            # The types `heal` and `kill` don't require the value argument.
-            # This is done this way because setting `content` to have a default of nil makes the help text confusing
-            argument.optional!
-            argument.content = nil
+            # The actions `heal` and `kill` don't require this argument.
+            nil
           end
         )
 
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin, command_name: :modify_player
+        command_type :admin
+
+        limit_to :text
+
+        #################################
+
         def on_execute
-          @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
           deliver!(
             function_name: "modifyPlayer",
             discord_tag: current_user.mention,
             target_uid: target_uid,
-            type: expand_type,
-            value: @arguments.value
+            type: arguments.action,
+            value: arguments.amount
           )
         end
 
         def on_response(_, _)
           embed = ESM::Notification.build_random(
             community_id: target_community.id,
-            type: expand_type,
+            type: arguments.action,
             category: "player",
             serverid: target_server.server_id,
             servername: target_server.server_name,
@@ -63,27 +82,6 @@ module ESM
           )
 
           reply(embed)
-        end
-
-        private
-
-        def expand_type
-          @expand_type ||= lambda do
-            case @arguments.type
-            when "m"
-              "money"
-            when "r"
-              "respect"
-            when "l"
-              "locker"
-            when "h"
-              "heal"
-            when "k"
-              "kill"
-            else
-              @arguments.type
-            end
-          end.call
         end
       end
     end

@@ -1,25 +1,22 @@
----
 en:
   commands:
     reset:
-      description: Deletes a single player or all players on a server in an attempt
-        to fix the spawning glitch. This command is the admin equivalent to the `%{prefix}stuck`
-        command
-      example: |-
-        **`%{prefix}reset esm_malden`**
-        Deletes all players on `esm_malden`
-
-        **`%{prefix}reset esm_malden @Bryan`**
-        Deletes @Bryan's player on `esm_malden`
+      description: Deletes a single player or all players on a server in an attempt to fix the spawning glitch
+      description_extra: This command is the admin equivalent to the `/server stuck` command
+      examples:
+      - description: Deletes all players on `esm_malden`
+        arguments:
+          "on": esm_malden
+      - description: Deletes @discord_mention's player on `esm_malden`
+        arguments:
+          "on": esm_malden
+          whom: "@discord_mention"
       request_description: |-
         Hey %{user}, you have requested to have one or all players reset on `%{server}`. In order for the process to work, the player(s) needs to have been spawned in at least once and they cannot be logged into the server when you confirm this.
 
         **Warning, this process is destructive.**
         If you confirm, one or all players on `%{server}` will be deleted and any items or poptabs on their players will be lost.
-      success_message_target: "%{user}, %{target} has been reset successfully. Please
-        instruct them to join the server again to confirm."
+      success_message_target: "%{user}, %{target} has been reset successfully. Please instruct them to join the server again to confirm."
       success_message_all: "%{user}, I've reset all stuck players."
-      failure_message_target: "%{user}, %{target} is not stuck. Please have them join
-        the server again, and if they are still stuck, instruct them to close Arma
-        3 and then attempt this command again."
+      failure_message_target: "%{user}, %{target} is not stuck. Please have them join the server again, and if they are still stuck, instruct them to close Arma 3 and then attempt this command again."
       failure_message_all: "%{user}, I was unable to find anyone who was stuck."

@@ -4,12 +4,8 @@ module ESM
   class Message
     class Data
       DATA_TYPES =
-        YAML.safe_load(
-          File.read(File.expand_path("./config/message/data_types.yml"))
-        ).merge(
-          YAML.safe_load(
-            File.read(File.expand_path("./config/message/metadata_types.yml"))
-          )
+        YAML.safe_load_file(File.expand_path("./config/message/data_types.yml")).merge(
+          YAML.safe_load_file(File.expand_path("./config/message/metadata_types.yml"))
         ).deep_symbolize_keys.freeze
 
       RUBY_TYPE_LOOKUP = {
@@ -168,6 +164,8 @@ module ESM
               "Missing required key \"#{attribute_name}\" for #{self.class.name} type \"#{@type}\""
           end
 
+          attribute_hash[:attribute_name] = attribute_name
+
           # Not all items will be converted, it depends on the configs
           output[attribute_name] = convert_into_ruby(inbound_content[attribute_name], **attribute_hash)
         end
@@ -180,7 +178,7 @@ module ESM
         can_be_nil = type == :any || attribute_hash[:optional]
         if inbound_value.nil? && !can_be_nil
           raise ESM::Exception::InvalidMessage,
-            "Missing attribute \"#{attribute_name}\" for \"#{@type}\""
+            "Missing attribute \"#{attribute_hash[:attribute_name]}\" for \"#{@type}\""
         end
 
         # This contains the conversion data
@@ -201,6 +199,7 @@ module ESM
         subtype = attribute_hash[:subtype]
         return result unless type == :array && subtype&.key?(:type)
 
+        subtype[:attribute_name] = attribute_hash[:attribute_name]
         result.map { |v| convert_into_ruby(v, **subtype) }
       end
 

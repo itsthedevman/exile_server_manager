@@ -3,21 +3,27 @@
 module ESM
   module Command
     module Server
-      class Stuck < ESM::Command::Base
-        set_type :player
-        requires :registration
+      class Stuck < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
 
-        argument :server_id
+        #
+        # Configuration
+        #
+
+        command_type :player
+
+        #################################
 
         def on_execute
           # Create a confirmation request to the requestee
-          @checks.pending_request!
+          check_for_pending_request!
+
           add_request(
             to: current_user,
             description: I18n.t(
@@ -28,7 +34,11 @@ module ESM
           )
 
           # Remind them to check their PMs
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.request.check_pm", user: current_user.mention))
+          embed = ESM::Embed.build(
+            :success,
+            description: I18n.t("commands.request.check_pm", user: current_user.mention)
+          )
+
           reply(embed)
         end
 

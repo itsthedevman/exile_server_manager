@@ -3,20 +3,37 @@
 module ESM
   module Command
     module Server
-      class Info < ESM::Command::Base
-        set_type :admin
+      class Info < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
+
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
+
+        # See Argument::TEMPLATES[:target]
+        # Optional: This command works for players or territories
+        argument :target, display_name: :whom, required: false
+
+        # See Argument::TEMPLATES[:territory_id]
+        # Optional: This command works for players or territories
+        argument :territory_id, display_name: :territory, required: false
+
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin, command_name: :find
+        command_type :admin
+
         limit_to :text
-        requires :registration
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        skip_action :nil_target_user
 
-        argument :server_id
-        argument :target, default: nil
-        argument :territory_id, default: nil
+        #################################
 
         def on_execute
           # Ensure we were given a target or territory ID
@@ -24,8 +41,8 @@ module ESM
 
           # Territory ID takes priority since both arguments are optional, and both can be provided
           # Reasoning: Given the weird scenario, user gives a mention plus a territory ID thinking that it will do some filter...
-          if @arguments.territory_id.present?
-            deliver!(query: "territory_info", territory_id: @arguments.territory_id)
+          if arguments.territory_id.present?
+            deliver!(query: "territory_info", territory_id: arguments.territory_id)
           else
             deliver!(query: "player_info", uid: target_user.steam_uid)
           end
@@ -48,13 +65,13 @@ module ESM
         private
 
         def check_for_no_target!
-          check_failed!(:no_target, user: current_user.mention) if @arguments.target.nil? && @arguments.territory_id.nil?
+          raise_error!(:no_target, user: current_user.mention) if arguments.target.nil? && arguments.territory_id.nil?
         end
 
         def check_for_response!
           return if @response.present?
 
-          check_failed!(:no_response, user: current_user.mention)
+          raise_error!(:no_response, user: current_user.mention)
         end
       end
     end

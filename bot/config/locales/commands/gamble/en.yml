@@ -2,28 +2,31 @@
 en:
   commands:
     gamble:
-      description: Feeling lucky? This command will gamble the specified amount of
-        poptabs for the provided server ID. Poptabs are taken from your locker on
-        that server.
-      example: |-
-        **`%{prefix}gamble esm_malden 50`**
-        Gambles 50 poptabs from the locker on server `esm_malden`
-
-        **`%{prefix}gamble esm_altis half`**
-        Gambles half of the poptabs in the locker on server `esm_altis`
-
-        **`%{prefix}gamble esm_tanoa all`**
-        Gambles all of the poptabs in the locker on server `esm_tanoa`
-
-        **`%{prefix}gamble esm_namalsk stats`**
-        Displays gambling statistics for server `esm_namalsk`
+      description: Feeling lucky? Gamble poptabs on a server for a chance to win
+      examples:
+        - description: Gambles 50 poptabs from the locker on server `esm_malden`
+          arguments:
+            amount: "50"
+            "on": esm_malden
+        - description: Gambles half of the poptabs in the locker on server `esm_altis`
+          arguments:
+            amount: half
+            "on": esm_altis
+        - description: Gambles all of the poptabs in the locker on server `esm_tanoa`
+          arguments:
+            amount: all
+            "on": esm_tanoa
+        - description: Displays gambling statistics for server `esm_namalsk`
+          arguments:
+            "on": esm_namalsk
       arguments:
-        amount: |-
-          The amount of poptabs to gamble. Poptabs are withdrawled from your locker.
-          The following options can be provided instead of a number:
-          - `all`: Gambles all of your poptabs in your locker.
-          - `half`: Gambles half of your poptabs in your locker
-          - `stats`: Returns win/loss statistics for the provided server
+        amount:
+          description: The amount of poptabs to gamble. Poptabs are withdrawn from your locker.
+          description_extra: |-
+            The following options can be provided instead of a number:
+            - `all`: Gambles all of your poptabs in your locker.
+            - `half`: Gambles half of your poptabs in your locker
+            - `stats`: Returns win/loss statistics for the provided server
       stats:
         title: Gambling statistics for `%{server_id}`
         user_stats: "**%{user}'s stats**"
@@ -39,3 +42,5 @@ en:
         longest_losing_streak: Longest Losing Streak
         longest_current_streak: Longest Current Streak
         user_with: "%{user} with %{value}"
+      errors:
+        bad_amount: I'm sorry %{user}, but you simply cannot gamble nothing.

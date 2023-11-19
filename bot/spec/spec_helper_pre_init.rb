@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ENV["ESM_ENV"] = "test"
 ENV["RAILS_ENV"] = "test"
 
@@ -11,28 +13,51 @@ require "bundler/setup"
 require "awesome_print"
 require "colorize"
 require "database_cleaner/active_record"
-require "pry"
+require "esm"
 require "factory_bot"
 require "faker"
 require "hashids"
+require "neatjson"
+require "pry"
 require "rspec/expectations"
 require "rspec/wait"
-require "neatjson"
 require "timecop"
 
-###########
-# Reload the extension server before starting ESM
-`kill -9 $(pgrep -f esm_bot)`
-`kill -9 $(pgrep -f extension_server)`
+# Load the spec related files
+require_relative "spec_helper_methods"
 
-build_result = `cargo check; echo $?`.chomp
-raise "Failed to build extension_server" if build_result != "0"
+# Files that have to be loaded before ESM
+Dir["#{__dir__}/support/pre_load/**/*.rb"]
+  .sort
+  .each { |extension| require extension }
 
-EXTENSION_SERVER = IO.popen("POSTGRES_DATABASE=esm_test RUST_LOG=#{LOG_LEVEL} bin/extension_server")
+# Load the rest of our support files
+ESM.loader.tap do |loader|
+  loader.push_dir(ESM.root.join("spec", "support"))
+  loader.collapse(ESM.root.join("spec", "support", "additions"))
 
-###########
-# This starts ESM
-require "esm"
+  # Handled by FactoryBot
+  loader.ignore(ESM.root.join("spec", "support", "factories"))
+
+  # Loaded below
+  loader.ignore(ESM.root.join("spec", "support", "spec_*"))
+  loader.ignore(ESM.root.join("spec", "support", "extensions"))
+end
+
+ESM.load!
+
+# Spec related files
+Dir[ESM.root.join("spec", "support", "spec_*", "**", "*.rb")]
+  .sort
+  .each { |extension| require extension }
+
+# ESM overrides and other support files
+Dir[ESM.root.join("spec", "support", "extensions", "**", "*.rb")]
+  .sort
+  .each { |extension| require extension }
+
+# Load the commands after they've been auto-loaded
+ESM::Command.load
 
 ESM.logger.level =
   case LOG_LEVEL
@@ -47,34 +72,6 @@ ESM.logger.level =
   else
     Logger::ERROR
   end
-
-# Load the spec related files
-require_relative "./spec_helper_methods"
-
-# Spec related files
-Dir["#{__dir__}/spec_*/**/*.rb"]
-  .sort
-  .each { |extension| require extension }
-
-# ESM overrides and other support files
-Dir["#{__dir__}/support/esm/**/*.rb"]
-  .sort
-  .each { |extension| require extension }
-
-# Load the rest of our support files
-loader = Zeitwerk::Loader.new
-loader.inflector.inflect("esm" => "ESM")
-loader.push_dir("#{__dir__}/support")
-
-loader.collapse("#{__dir__}/support/model")
-loader.ignore("#{__dir__}/support/esm")
-
-# Load everything right meow
-loader.setup
-loader.eager_load
-
-# Load the commands after they've been auto-loaded
-ESM::Command.load
 
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false

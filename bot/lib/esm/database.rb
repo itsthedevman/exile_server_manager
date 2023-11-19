@@ -12,7 +12,12 @@ module ESM
     end
 
     def self.config
-      @config ||= YAML.safe_load(ERB.new(File.read(File.expand_path("./config/database.yml"))).result, aliases: true)
+      @config ||= YAML.safe_load(
+        ERB.new(
+          File.read(ESM.root.join("config", "database.yml"))
+        ).result,
+        aliases: true
+      )
     end
   end
 end

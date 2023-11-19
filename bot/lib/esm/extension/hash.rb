@@ -4,7 +4,7 @@ class Hash
   def to_struct
     recurse = lambda do |value|
       case value
-      when Hash, ESM::Arma::HashMap
+      when Hash
         value.to_struct
       when Array
         value.map(&recurse)
@@ -22,7 +22,7 @@ class Hash
   def to_ostruct
     recurse = lambda do |value|
       case value
-      when Hash, ESM::Arma::HashMap
+      when Hash
         value.to_ostruct
       when Array
         value.map(&recurse)
@@ -39,7 +39,7 @@ class Hash
   def to_istruct
     recurse = lambda do |input|
       case input
-      when Hash, ESM::Arma::HashMap
+      when Hash
         input.to_istruct
       when Array
         input.map(&recurse)

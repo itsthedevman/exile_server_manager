@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_util_array_isValidHashmap", requires_connection: true, v2: true do
+describe "ESMs_util_array_isValidHashmap", :requires_connection, v2: true do
   include_context "connection"
 
   it "is not a valid hash map" do

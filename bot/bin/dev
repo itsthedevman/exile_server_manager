@@ -4,20 +4,5 @@ export RUBYOPT='-W:no-deprecated -W:no-experimental'
 export PRINT_LOG='true'
 export ESM_ENV='development'
 
-kill -9 $(pgrep -f extension_server) > /dev/null 2>&1
-
-cargo build
-
-# Failed to build, don't start
-if [ $? -ne 0 ]
-then
-  exit $?
-fi
-
-# Start the extension_server
-bin/extension_server &
-
 # Start the bot
 bundle exec ruby bin/esm.rb
-
-kill -9 $(pgrep -f extension_server) > /dev/null 2>&1

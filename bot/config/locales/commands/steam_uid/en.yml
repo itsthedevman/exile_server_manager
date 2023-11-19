@@ -1,9 +1,7 @@
----
 en:
   commands:
     steam_uid:
       description: Displays the registered Steam UID for your account
-      example: |-
-        **`%{prefix}steam_uid`**
-        Displays the registered Steam UID for your account
-      response: Hey %{user}, your Steam UID is `%{steam_uid}`.
+      examples:
+      - description: Displays the registered Steam UID for your account
+      response: "Hey %{user}, your Steam UID is: ```%{steam_uid}```"

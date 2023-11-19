@@ -2,14 +2,17 @@
 en:
   commands:
     remove:
-      description: |-
-        **Territory Owner or Moderator Only.**
-        Removes a player from a territory.
-      example: |-
-        **`%{prefix}remove esm_malden awesome @Bryan`**
-        Removes @Bryan from territory `awesome` on `esm_malden`
-
-        **`%{prefix}remove esm_malden fort_a 76561198037177305`**
-        Removes `76561198037177305` from territory `fort_a` on `esm_malden`
-      success_message: Hey %{user}, `%{target_uid}` has been removed from territory
-        `%{territory_id}` on `%{server}`
+      description: Removes a player from a territory
+      description_extra: This command is only available for the territory owner or moderator
+      examples:
+        - description: Removes @discord_mention from territory `awesome` on `esm_malden`
+          arguments:
+            whom: "@discord_mention"
+            from: awesome
+            "on": esm_malden
+        - description: Removes `76561234567890123` from territory `fort_a` on `esm_malden`
+          arguments:
+            whom: "76561234567890123"
+            from: fort_a
+            "on": esm_malden
+      success_message: Hey %{user}, `%{target_uid}` has been removed from territory `%{territory_id}` on `%{server}`

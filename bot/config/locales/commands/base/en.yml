@@ -3,4 +3,5 @@ en:
   commands:
     base:
       description: A test command
-      example: A test example
+      examples:
+        - description: A test example

@@ -2,12 +2,12 @@
 
 module ESM
   class Server < ApplicationRecord
-    before_create :generate_uuid
+    before_create :generate_public_id
     before_create :generate_key
     after_create :create_server_setting
     after_create :create_default_reward
 
-    attribute :uuid, :uuid
+    attribute :public_id, :uuid
     attribute :server_id, :string
     attribute :community_id, :integer
     attribute :server_name, :text
@@ -33,12 +33,24 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
 
+    scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
+
     def self.find_by_server_id(id)
       includes(:community).order(:server_id).where("server_id ilike ?", id).first
     end
 
+    def self.server_ids
+      ESM.cache.fetch("server_ids", expires_in: ESM.config.cache.server_ids) { pluck(:server_id) }
+    end
+
+    # Checks to see if there are any corrections and provides them for the server id
+    def self.correct_id(server_id)
+      checker = DidYouMean::SpellChecker.new(dictionary: server_ids)
+      checker.correct(server_id)
+    end
+
     def token
-      @token ||= {access: uuid, secret: server_key}
+      @token ||= {access: public_id, secret: server_key}
     end
 
     # V1
@@ -143,10 +155,10 @@ module ESM
 
     private
 
-    def generate_uuid
-      return if uuid.present?
+    def generate_public_id
+      return if public_id.present?
 
-      self.uuid = SecureRandom.uuid
+      self.public_id = SecureRandom.uuid
     end
 
     # Idk how to store random bytes in redis (Dang you NULL!)

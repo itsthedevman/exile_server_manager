@@ -28,14 +28,17 @@ module ESM
     # Raised to keep me in my place and ensure I define arguments correctly
     class InvalidCommandArgument < Error; end
 
+    # Raised when a command attempts to set its namespace with more than one subgroups
+    class InvalidCommandNamespace < Error; end
+
     # Raised if a server fails to authenticate to the Websocket server
     class FailedAuthentication < Error; end
 
     # Raised when a message fails validation or fails to create
     class InvalidMessage < Error; end
 
-    # Raised if the parser failed to find the argument in a message from a user
-    class FailedArgumentParse < DataError; end
+    # Raised if the provided argument value from the user is invalid
+    class InvalidArgument < DataError; end
 
     # Generic exception for any checks
     class CheckFailure < DataError; end
@@ -61,11 +64,11 @@ module ESM
       # In normal workflow, this method will be passed the following arguments:
       # @option [String] :user The mention for the user that ran the command
       # @option [String] :server_id The ID of the server the command was ran on
-      def translate(**args)
+      def translate(**)
         I18n.t(
           "exceptions.extension.#{@error_code}",
           default: I18n.t("exceptions.extension.default", error_code: @error_code),
-          **args
+          **
         )
       end
     end
@@ -74,30 +77,6 @@ module ESM
     class CheckFailureNoMessage < Error
       def initialize(_message)
         super("")
-      end
-    end
-
-    # exception embed for when the user tries to run a Text only command in PM
-    class CommandTextOnly < DataError
-      def initialize(user)
-        super("")
-        @data =
-          ESM::Embed.build do |e|
-            e.description = I18n.t("exceptions.text_only", user: user)
-            e.color = :red
-          end
-      end
-    end
-
-    # exception embed for when the user tries to run a PM only command in Text channel
-    class CommandDMOnly < DataError
-      def initialize(user)
-        super("")
-        @data =
-          ESM::Embed.build do |e|
-            e.description = I18n.t("exceptions.dm_only", user: user)
-            e.color = :red
-          end
       end
     end
 

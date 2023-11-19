@@ -14,11 +14,7 @@ module ESM
 
         # String for direct calls, Otherwise its a command
         @command_name =
-          if args[:command_name].present?
-            args[:command_name]
-          else
-            @command.name
-          end
+          (args[:command_name].presence || @command.name)
 
         @user_info =
           if @user.nil?
@@ -31,7 +27,7 @@ module ESM
         @parameters = args[:parameters]
         @id = SecureRandom.uuid
         @timeout = args[:timeout] || 30
-        @created_at = ::Time.now
+        @created_at = ::Time.zone.now
 
         # This controls if the request should be removed on the first reply back from Arma.
         @remove_on_ignore = args[:remove_on_ignore] || false
@@ -52,7 +48,7 @@ module ESM
       end
 
       def timed_out?
-        (::Time.now - @created_at) >= @timeout
+        (::Time.zone.now - @created_at) >= @timeout
       end
 
       def on_reply=(callback)

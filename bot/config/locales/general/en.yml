@@ -1,14 +1,39 @@
 en:
+  commands:
+    arguments:
+      community_id:
+        description: "The ID, or alias, for the community that you want to run this command on"
+        description_extra: |-
+          Community IDs are composed of a few characters that are configured by the server owner
+          You may find this by by using the `/community id` on the Discord server for that community
+          You may omit this argument if you have a default community set
+        optional_text: This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
+      target:
+        description: "The user that you want to run this command on"
+        description_extra: |-
+          This argument accepts any of the following:
+          A Discord mention, e.g. `@discord_mention`
+          A Discord ID, e.g. `123456789012345678`
+          or a Steam 64 ID (Steam UID), e.g. `76561234567890123`
+      server_id:
+        description: "The ID, or alias, for the server that you want to run this command on"
+        description_extra: |-
+          Server IDs are composed of a community ID and a custom name, separated by an underscore
+          For example: `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`
+          You may omit this argument if you have a default server set
+        optional_text: This argument may be excluded if a server is set as a default for you, or the Discord community if you are using this command in a text channel
+      territory_id:
+        description: "The ID for the territory that you want to run this command on"
+        description_extra: |-
+          Territory IDs are often 3-6 characters long, or a custom one set using the `/territory set_id` command.
+          Want to see all of your territories? Try using the `/server my territories` command
+      command:
+        description: A slash command (e.g. `/server reward` with or without the `/`)
   "yes": "Yes"
   "no": "No"
   invalid_response: "I'm sorry, I don't know how to reply to your response.\nI was expecting %{expected}"
   failure_to_communicate: "Looks like what we've got here is failure to communicate. I am unable to help you. Goodbye"
   request_timed_out: "I'm sorry %{user}, `%{server_id}` never replied to your command\nHere was the command you ran: ```%{command_message}``` Please wait a few minutes and try again."
-  default_arguments:
-    community_id: "The community ID for the community that you want to run this command on. Community IDs are often 3 to 4 characters long and can be found by using the `%{prefix}id` command on that community's discord"
-    target: "A user that you want to run this command on. This argument accepts any of the following:\nA Discord mention, e.g. `@Bryan`\nA Discord ID, e.g. `137709767954137088`\nor a Steam 64 ID (Steam UID), e.g. `76561198037177305`"
-    server_id: "The ID for the server that you want to run this command on. Server IDs are composed of a community ID and a custom name, separated by an underscore.\nFor example: `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`"
-    territory_id: "The ID for the territory that you want to run this command on. Territory IDs are often 3-6 characters long, or a custom one set using the `%{prefix}set_id` command.\nWant to see all of your territories? Try using the `%{prefix}territories` command"
   # Time
   datetime:
     dotiw:

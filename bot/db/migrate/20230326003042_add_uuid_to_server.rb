@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddUuidToServer < ActiveRecord::Migration[6.1]
   # All of this just so uuid would be closer to the front...
   def change

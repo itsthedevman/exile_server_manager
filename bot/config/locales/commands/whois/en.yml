@@ -2,17 +2,17 @@
 en:
   commands:
     whois:
-      description: Displays all available information about a player via their Steam
-        UID, Discord ID, or Mention
-      example: |-
-        **`%{prefix}whois @Bryan`**
-        Using their mention, get all available information about this player
-
-        **`%{prefix}whois 76561198037177305`**
-        Using their steam uid, get all available information about this player
-
-        **`%{prefix}whois 137709767954137088`**
-        Using their Discord ID, get all available information about this player
+      description: Displays all available information about a player via their Steam UID, Discord ID, or Mention
+      examples:
+        - description: Using their mention, get all available information about this player
+          arguments:
+            whom: "@discord_mention"
+        - description: Using their steam uid, get all available information about this player
+          arguments:
+            whom: "76561234567890123"
+        - description: Using their Discord ID, get all available information about this player
+          arguments:
+            whom: "137456789012345678"
       discord:
         header: __Discord Information__
         id: ID

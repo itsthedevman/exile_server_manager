@@ -7,7 +7,7 @@ module ESM
         delegate :delivered?, to: :message
 
         def expired?
-          expires_at <= ::Time.now
+          expires_at <= ::Time.zone.now
         end
       end
 

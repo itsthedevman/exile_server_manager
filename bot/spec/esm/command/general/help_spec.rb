@@ -1,125 +1,118 @@
 # frozen_string_literal: true
 
 describe ESM::Command::General::Help, category: "command" do
-  let!(:command) { ESM::Command::General::Help.new }
-
-  it "be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "has 1 argument" do
-    expect(command.arguments.size).to eql(1)
-  end
-
-  it "has a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "has examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
+    context "when there is no category provided" do
+      it "sends the 'getting started' information" do
+        execute!
 
-    it "executes with default getting started" do
-      command_statement = command.statement
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+        embed = ESM::Test.messages.first.content
+        expect(embed.title).to match(/well, hello there .+/i)
 
-      embed = ESM::Test.messages.first.second
-      expect(embed.title).to match(/well, hello there .+/i)
-
-      commands_by_type = ESM::Command.by_type
-      expect(embed.description).to eq(
-        I18n.t(
-          "commands.help.getting_started.description",
-          command_count_player: commands_by_type[:player].size,
-          command_count_total: commands_by_type.values.flatten.size,
-          prefix: command.prefix
+        commands_by_type = ESM::Command.by_type
+        expect(embed.description).to eq(
+          I18n.t(
+            "commands.help.getting_started.description",
+            command_count_player: commands_by_type[:player].size,
+            command_count_total: commands_by_type.values.flatten.size
+          )
         )
-      )
 
-      expect(embed.fields.size).to eq(3)
+        expect(embed.fields.size).to eq(3)
 
-      %w[commands command privacy].each_with_index do |field_type, index|
-        expect(embed.fields[index].name).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.name"))
-        expect(embed.fields[index].value).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.value", prefix: command.prefix))
+        %w[commands command privacy].each_with_index do |field_type, index|
+          expect(embed.fields[index].name).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.name"))
+          expect(embed.fields[index].value).to eq(I18n.t("commands.help.getting_started.fields.#{field_type}.value"))
+        end
       end
     end
 
-    it "returns a valid embed (commands)" do
-      command_statement = command.statement(category: "commands")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+    context "when the category is 'commands'" do
+      subject(:command_execution) { execute!(arguments: {category: "commands"}) }
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
-    end
+      it "shows the commands" do
+        command_execution
 
-    it "returns a valid embed (command)" do
-      command_statement = command.statement(category: "help")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+      end
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
-    end
+      it "does not show development commands" do
+        command_execution
 
-    it "does not show admin commands if in player mode (commands)" do
-      community.update(player_mode_enabled: true)
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
 
-      command_statement = command.statement(category: "commands")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
-
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
-
-      embed.fields.each do |field|
-        expect(field.value).not_to match(/admin|development/i)
+        embed.fields.each do |field|
+          expect(field.value).not_to match(/development/i)
+        end
       end
     end
 
-    it "does not show development commands" do
-      command_statement = command.statement(category: "commands")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+    context "when the category is 'admin commands'" do
+      it "shows only admin commands" do
+        execute!(arguments: {category: "admin commands"})
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      embed.fields.each do |field|
-        expect(field.value).not_to match(/development/i)
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+        expect(embed.title).to match(/admin commands/i)
+        expect(embed.title).not_to match(/player commands/i)
       end
     end
 
-    it "shows only player commands" do
-      command_statement = command.statement(category: "player commands")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+    context "when the category is 'player commands'" do
+      it "shows only player commands" do
+        execute!(arguments: {category: "player commands"})
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
+        wait_for { ESM::Test.messages.size }.to eq(1)
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
-      expect(embed.title).to match(/player commands/i)
-      expect(embed.title).not_to match(/admin commands/i)
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+        expect(embed.title).to match(/player commands/i)
+        expect(embed.title).not_to match(/admin commands/i)
+      end
     end
 
-    it "shows only admin commands" do
-      command_statement = command.statement(category: "admin commands")
-      event = CommandEvent.create(command_statement, user: user)
-      expect { command.execute(event) }.not_to raise_error
+    context "when the category is a command name" do
+      it "returns the command's information" do
+        execute!(arguments: {category: "help"})
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+        expect(embed.title).to match(/help/i)
+      end
+    end
 
-      embed = ESM::Test.messages.first.second
-      expect(embed).not_to be_nil
-      expect(embed.title).to match(/admin commands/i)
-      expect(embed.title).not_to match(/player commands/i)
+    context "when the category is a slash command" do
+      it "returns the command's information" do
+        execute!(arguments: {category: "/server my player"})
+
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+        expect(embed.title).to match(/my player/i)
+      end
+    end
+
+    context "when the current community is in player mode" do
+      before do
+        community.update!(player_mode_enabled: true)
+      end
+
+      it "does not show admin commands" do
+        execute!(arguments: {category: "commands"})
+
+        embed = ESM::Test.messages.first.content
+        expect(embed).not_to be_nil
+
+        embed.fields.each do |field|
+          expect(field.value).not_to match(/admin|development/i)
+        end
+      end
     end
   end
 end

@@ -1,39 +1,30 @@
 # frozen_string_literal: true
 
 describe ESM::Event::Xm8NotificationV1 do
+  include_context "connection_v1"
+
   let!(:community) { ESM::Test.community }
   let!(:server) { ESM::Test.server }
   let!(:user) { ESM::Test.user }
   let!(:second_user) { ESM::Test.user }
-
-  let!(:wsc) { WebsocketClient.new(server) }
   let!(:recipients) { [user.steam_uid, second_user.steam_uid] }
-
   let(:territory) { TerritoryGenerator.generate.to_ostruct }
-
-  before :each do
-    wait_for { wsc.connected? }.to be(true)
-  end
-
-  after :each do
-    wsc.disconnect!
-  end
 
   def run_test(log_xm8_event: false, expected_messages: [])
     community.update(log_xm8_event: log_xm8_event)
 
     expect { wsc.send_xm8_notification(**attributes) }.not_to raise_error
-    wait_for { ESM::Test.messages.size }.to eql(expected_messages.size)
+    wait_for { ESM::Test.messages.size }.to eq(expected_messages.size)
 
     # To ensure all messages have been sent
     sleep(1)
-    wait_for { ESM::Test.messages.size }.to eql(expected_messages.size)
+    wait_for { ESM::Test.messages.size }.to eq(expected_messages.size)
 
     # Check the embeds
     expected_messages.each_with_index do |message, index|
       embed = ESM::Test.messages[index].second
-      expect(embed.title).to eql(message[:title])
-      expect(embed.description).to eql(message[:description])
+      expect(embed.title).to eq(message[:title])
+      expect(embed.description).to eq(message[:description])
     end
   end
 

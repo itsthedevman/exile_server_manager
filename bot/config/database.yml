@@ -2,9 +2,11 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: 50
-  host: 'localhost'
-  username: esm
-  password: password12345
+  host: <%= ENV.fetch("POSTGRES_HOST", "localhost") %>
+  port: <%= ENV.fetch("POSTGRES_PORT", "5432") %>
+  database: <%= ENV.fetch("POSTGRES_DATABASE", "esm_development") %>
+  username: <%= ENV.fetch("POSTGRES_USERNAME", "esm") %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD", "password12345") %>
 
 development:
   !!merge <<: *default
@@ -26,8 +28,3 @@ arma_test:
 
 production:
   !!merge <<: *default
-  host: <%= ENV["POSTGRES_HOST"] %>
-  port: <%= ENV["POSTGRES_PORT"] %>
-  database: <%= ENV["POSTGRES_DATABASE"] %>
-  username: <%= ENV["POSTGRES_USERNAME"] %>
-  password: <%= ENV["POSTGRES_PASSWORD"] %>

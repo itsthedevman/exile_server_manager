@@ -15,8 +15,8 @@ module ESM
     ###########################
     # Class methods
     ###########################
-    def self.build(type = nil, **attributes, &block)
-      ESM::Embed.new(type, **attributes, &block)
+    def self.build(type = nil, **, &block)
+      ESM::Embed.new(type, **, &block)
     end
 
     ###########################
@@ -64,9 +64,13 @@ module ESM
       # Discord won't send messages that have an empty field. This forces the value to be appear empty, and Discord will accept it.
       value = EMPTY_SPACE if value.blank?
 
-      return add_field_array(name: name, values: value, inline: inline) if value.is_a?(Array)
+      if value.is_a?(Array)
+        add_field_array(name: name, values: value, inline: inline)
+      else
+        store_field(name: name, value: value, inline: inline)
+      end
 
-      store_field(name: name, value: value, inline: inline)
+      self
     end
 
     def set_footer(text: nil, icon_url: nil)
@@ -159,6 +163,21 @@ module ESM
       }
     end
 
+    def for_discord_embed
+      {
+        title: title,
+        description: description,
+        timestamp: timestamp.to_s,
+        color: color&.sub("#", "")&.to_i(16),
+        footer: footer&.to_hash,
+        fields: fields.map(&:to_hash),
+        author: author&.to_hash,
+        thumbnail: thumbnail&.to_hash,
+        image: image&.to_hash,
+        url: url&.to_hash
+      }
+    end
+
     def build_from_template(type, **attributes)
       case type
       when :info
@@ -181,27 +200,37 @@ module ESM
     end
 
     def add_field_array(name:, values:, inline:)
-      field = {name: name, value: "", inline: inline}
+      field_values = if values.sum(&:size) < Limit::FIELD_VALUE_LENGTH_MAX
+        [values]
+      else
+        field_values = []
+        field_counter = 0
 
-      values.each do |value|
-        value += "\n"
+        values.each do |value|
+          field_content = field_values[field_counter] ||= []
 
-        if field[:value].size + value.size >= Limit::FIELD_VALUE_LENGTH_MAX
-          store_field(**field)
-          field = {name: "#{name} #{I18n.t(:continued)}", value: "", inline: inline}
+          # If this value is too large for the current field, redo this iteration again but with a new field
+          if (field_content.total_size + value.size) >= Limit::FIELD_VALUE_LENGTH_MAX
+            field_counter += 1
+            redo
+          end
+
+          field_content << value
         end
 
-        field[:value] += value
+        field_values
       end
 
-      store_field(**field)
+      field_values.each_with_index do |values, index|
+        store_field(name: index.zero? ? name : EMPTY_SPACE, value: values.join("\n\n"), inline: inline)
+      end
     end
 
     def store_field(name:, value:, inline:)
       # to_s to ensure a string
       @fields << Discordrb::Webhooks::EmbedField.new(
-        name: name.to_s.truncate(Limit::FIELD_NAME_LENGTH_MAX, separator: " "),
-        value: value.to_s.truncate(Limit::FIELD_VALUE_LENGTH_MAX, separator: " "),
+        name: name.to_s.truncate(Limit::FIELD_NAME_LENGTH_MAX, separator: "\n"),
+        value: value.to_s.truncate(Limit::FIELD_VALUE_LENGTH_MAX, separator: "\n"),
         inline: inline
       )
     end

@@ -1,217 +1,179 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Reset, category: "command" do
-  let!(:command) { ESM::Command::Server::Reset.new }
-
-  it "should be valid" do
-    expect(command).not_to be_nil
-  end
-
-  it "should have 2 argument" do
-    expect(command.arguments.size).to eq(2)
-  end
-
-  it "should have a description" do
-    expect(command.description).not_to be_blank
-  end
-
-  it "should have examples" do
-    expect(command.example).not_to be_blank
-  end
+  include_context "command"
+  include_examples "validate_command"
 
   describe "#execute" do
-    let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
-    let!(:user) { ESM::Test.user }
-    let(:second_user) { ESM::Test.user }
+    include_context "connection_v1"
 
-    # If you need to connect to a server
-    let!(:wsc) { WebsocketClient.new(server) }
-    let(:connection) { ESM::Websocket.connections[server.server_id] }
-    let(:response) { command.response }
-
-    before :each do
+    before do
       grant_command_access!(community, "reset")
-
-      wait_for { wsc.connected? }.to be(true)
     end
 
-    after :each do
-      wsc.disconnect!
+    context "when only a server ID is provided and there are stuck players" do
+      it "resets all players" do
+        wsc.flags.SUCCESS = true
+
+        execute!(arguments: {server_id: server.server_id})
+        wait_for { ESM::Test.messages.size }.to eq(2)
+
+        embed = ESM::Test.messages.first.content
+
+        # Checks for requestors message
+        expect(embed).not_to be_nil
+
+        # Checks for requestees message
+        expect(ESM::Test.messages.size).to eq(2)
+
+        # Process the request
+        request = previous_command.request
+        expect(request).not_to be_nil
+
+        # Reset so we can track the response
+        ESM::Test.messages.clear
+
+        # Respond to the request
+        request.respond(true)
+
+        wait_for { connection.requests }.to be_blank
+
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
+
+        expect(embed.description).to match(/i've reset all stuck players\./i)
+      end
     end
 
-    it "!reset <server_id> (Success)" do
-      wsc.flags.SUCCESS = true
-      command_statement = command.statement(server_id: server.server_id)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when only the server ID is provided and there are no stuck players" do
+      it "does not reset anyone and it returns a general message" do
+        wsc.flags.SUCCESS = false
 
-      # If the command is for a server
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(2)
+        execute!(arguments: {server_id: server.server_id})
+        wait_for { ESM::Test.messages.size }.to eq(2)
 
-      embed = ESM::Test.messages.first.second
+        embed = ESM::Test.messages.first.content
 
-      # Checks for requestors message
-      expect(embed).not_to be_nil
+        # Checks for requestors message
+        expect(embed).not_to be_nil
 
-      # Checks for requestees message
-      expect(ESM::Test.messages.size).to eq(2)
+        # Checks for requestees message
+        expect(ESM::Test.messages.size).to eq(2)
 
-      # Process the request
-      request = command.request
-      expect(request).not_to be_nil
+        # Process the request
+        request = previous_command.request
+        expect(request).not_to be_nil
 
-      # Reset so we can track the response
-      ESM::Test.messages.clear
+        # Reset so we can track the response
+        ESM::Test.messages.clear
 
-      # Respond to the request
-      request.respond(true)
+        # Respond to the request
+        request.respond(true)
 
-      wait_for { connection.requests }.to be_blank
+        wait_for { connection.requests }.to be_blank
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
 
-      expect(embed.description).to match(/i've reset all stuck players\./i)
+        expect(embed.description).to match(/i was unable to find anyone who was stuck\./i)
+      end
     end
 
-    it "!reset <server_id> (Failure)" do
-      wsc.flags.SUCCESS = false
-      command_statement = command.statement(server_id: server.server_id)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when a target is provided and player is stuck" do
+      it "resets the player" do
+        wsc.flags.SUCCESS = true
 
-      # If the command is for a server
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(2)
+        execute!(arguments: {server_id: server.server_id, target: second_user.steam_uid})
+        wait_for { ESM::Test.messages.size }.to eq(2)
 
-      embed = ESM::Test.messages.first.second
+        embed = ESM::Test.messages.first.content
 
-      # Checks for requestors message
-      expect(embed).not_to be_nil
+        # Checks for requestors message
+        # Checks for requestees message
+        expect(embed).not_to be_nil
 
-      # Checks for requestees message
-      expect(ESM::Test.messages.size).to eq(2)
+        # Process the request
+        request = previous_command.request
+        expect(request).not_to be_nil
 
-      # Process the request
-      request = command.request
-      expect(request).not_to be_nil
+        # Reset so we can track the response
+        ESM::Test.messages.clear
 
-      # Reset so we can track the response
-      ESM::Test.messages.clear
+        # Respond to the request
+        request.respond(true)
 
-      # Respond to the request
-      request.respond(true)
+        wait_for { connection.requests }.to be_blank
 
-      wait_for { connection.requests }.to be_blank
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).to match(/i was unable to find anyone who was stuck\./i)
+        expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
+      end
     end
 
-    it "!reset <server_id> <target> (Success)" do
-      wsc.flags.SUCCESS = true
-      command_statement = command.statement(server_id: server.server_id, target: second_user.steam_uid)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+    context "when the target is an unregistered steam uid" do
+      it "resets the player" do
+        wsc.flags.SUCCESS = true
 
-      # If the command is for a server
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(2)
+        steam_uid = second_user.steam_uid
+        second_user.destroy
 
-      embed = ESM::Test.messages.first.second
+        execute!(arguments: {server_id: server.server_id, target: steam_uid})
+        wait_for { ESM::Test.messages.size }.to eq(2)
 
-      # Checks for requestors message
-      # Checks for requestees message
-      expect(embed).not_to be_nil
+        embed = ESM::Test.messages.first.content
 
-      # Process the request
-      request = command.request
-      expect(request).not_to be_nil
+        # Checks for requestors message
+        expect(embed).not_to be_nil
 
-      # Reset so we can track the response
-      ESM::Test.messages.clear
+        # Process the request
+        request = previous_command.request
+        expect(request).not_to be_nil
 
-      # Respond to the request
-      request.respond(true)
+        # Reset so we can track the response
+        ESM::Test.messages.clear
 
-      wait_for { connection.requests }.to be_blank
+        # Respond to the request
+        request.respond(true)
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
+        wait_for { connection.requests }.to be_blank
 
-      expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
+
+        expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
+      end
     end
 
-    it "!reset <server_id> <target> (Success/No attached user SteamUID)" do
-      wsc.flags.SUCCESS = true
-      command_statement = command.statement(server_id: server.server_id, target: second_user.steam_uid)
+    context "when the target is not stuck" do
+      it "does not reset the user and returns a general message" do
+        wsc.flags.SUCCESS = false
 
-      second_user.destroy
+        execute!(arguments: {server_id: server.server_id, target: second_user.mention})
+        wait_for { ESM::Test.messages.size }.to eq(2)
 
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
+        embed = ESM::Test.messages.first.content
 
-      # If the command is for a server
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(2)
+        # Checks for requestors message
+        expect(embed).not_to be_nil
 
-      embed = ESM::Test.messages.first.second
+        # Process the request
+        request = previous_command.request
+        expect(request).not_to be_nil
 
-      # Checks for requestors message
-      expect(embed).not_to be_nil
+        # Reset so we can track the response
+        ESM::Test.messages.clear
 
-      # Checks for requestees message
+        # Respond to the request
+        request.respond(true)
 
-      # Process the request
-      request = command.request
-      expect(request).not_to be_nil
+        wait_for { connection.requests }.to be_blank
 
-      # Reset so we can track the response
-      ESM::Test.messages.clear
+        wait_for { ESM::Test.messages.size }.to eq(1)
+        embed = ESM::Test.messages.first.content
 
-      # Respond to the request
-      request.respond(true)
-
-      wait_for { connection.requests }.to be_blank
-
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
-    end
-
-    it "!reset <server_id> <target> (Failure)" do
-      wsc.flags.SUCCESS = false
-      command_statement = command.statement(server_id: server.server_id, target: second_user.mention)
-      event = CommandEvent.create(command_statement, user: user, channel_type: :text)
-
-      # If the command is for a server
-      expect { command.execute(event) }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(2)
-
-      embed = ESM::Test.messages.first.second
-
-      # Checks for requestors message
-      expect(embed).not_to be_nil
-
-      # Checks for requestees message
-
-      # Process the request
-      request = command.request
-      expect(request).not_to be_nil
-
-      # Reset so we can track the response
-      ESM::Test.messages.clear
-
-      # Respond to the request
-      request.respond(true)
-
-      wait_for { connection.requests }.to be_blank
-
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      embed = ESM::Test.messages.first.second
-
-      expect(embed.description).to match(/is not stuck\. please have them join the server again, and if they are still stuck, instruct them to close arma 3 and then attempt this command again\./i)
+        expect(embed.description).to match(/is not stuck\. please have them join the server again, and if they are still stuck, instruct them to close arma 3 and then attempt this command again\./i)
+      end
     end
   end
 end

@@ -25,7 +25,7 @@ impl Client {
 
         match client
             .query(
-                "SELECT server_key FROM servers WHERE uuid = $1",
+                "SELECT server_key FROM servers WHERE public_id = $1",
                 &[&server_uuid],
             )
             .await
@@ -125,7 +125,7 @@ impl Client {
     }
 
     pub fn disconnect(&self, handler: &Handler) {
-        debug!("[disconnect] {} - {}", self.host(), self.server_uuid);
+        trace!("[disconnect] {} - {}", self.host(), self.server_uuid);
         handler.network().remove(self.resource_id);
     }
 

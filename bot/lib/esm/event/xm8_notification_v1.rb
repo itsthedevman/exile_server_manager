@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ESM
   module Event
     class Xm8NotificationV1
@@ -83,27 +85,19 @@ module ESM
         send_to_users(embed)
         send_to_custom_routes(embed)
 
-        # Trigger a notification event
-        ESM::Notifications.trigger(
-          "xm8_notification_on_send",
-          type: @xm8_type,
-          server: @server,
-          embed: embed,
-          statuses: @statuses_by_user,
-          unregistered_steam_uids: unregistered_steam_uids
-        )
-
+        notify_on_send!(embed)
         @statuses_by_user
       rescue ESM::Exception::CheckFailure => e
-        ESM::Notifications.trigger(e.data, server: @server, recipients: @recipients, message: @message, type: @xm8_type)
+        send(e.data) # notify_invalid_type!, notify_invalid_attributes!
         raise ESM::Exception::Error if ESM.env.test?
       end
 
       # Returns the steam uids of the players who are not registered with ESM
       def unregistered_steam_uids
-        steam_uids = @users.pluck(:steam_uid)
-
-        @recipients.reject { |steam_uid| steam_uids.include?(steam_uid) }
+        @unregistered_steam_uids ||= begin
+          steam_uids = @users.pluck(:steam_uid)
+          @recipients.reject { |steam_uid| steam_uids.include?(steam_uid) }
+        end
       end
 
       private
@@ -111,19 +105,19 @@ module ESM
       def check_for_valid_type!
         return if UserNotificationRoute::TYPES.include?(@xm8_type)
 
-        raise ESM::Exception::CheckFailure, "xm8_notification_invalid_type"
+        raise ESM::Exception::CheckFailure, :notify_invalid_type!
       end
 
       def check_for_invalid_custom_attributes!
         return if @message.present? && (@message.title.present? || @message.body.present?)
 
-        raise ESM::Exception::CheckFailure, "xm8_notification_invalid_attributes"
+        raise ESM::Exception::CheckFailure, :notify_invalid_attributes!
       end
 
       def check_for_invalid_marxet_attributes!
         return if @message.present? && @message.item.present? && @message.amount.present?
 
-        raise ESM::Exception::CheckFailure, "xm8_notification_invalid_attributes"
+        raise ESM::Exception::CheckFailure, :notify_invalid_attributes!
       end
 
       def custom_embed
@@ -189,6 +183,125 @@ module ESM
             status[:expected] += 1
           end
         end
+      end
+
+      def notify_invalid_type!
+        embed =
+          ESM::Embed.build do |e|
+            e.title = I18n.t("xm8_notifications.invalid_type.title", server: @server.server_id)
+            e.description = I18n.t("xm8_notifications.invalid_type.description", type: @xm8_type)
+
+            e.add_field(name: I18n.t(:message), value: "```#{@message}```")
+            e.add_field(name: I18n.t("xm8_notifications.recipient_steam_uids"), value: "```#{@recipients.join("\n")}```")
+
+            e.color = :red
+            e.footer = I18n.t("xm8_notifications.footer")
+          end
+
+        @server.community.log_event(:xm8, embed)
+      end
+
+      def notify_invalid_attributes!
+        case @xm8_type
+        when "custom"
+          error = I18n.t("xm8_notifications.invalid_attributes.custom.error")
+          remedy = I18n.t("xm8_notifications.invalid_attributes.custom.remedy")
+        when "marxet-item-sold"
+          error = I18n.t("xm8_notifications.invalid_attributes.marxet_item_sold.error")
+          remedy = I18n.t("xm8_notifications.invalid_attributes.marxet_item_sold.remedy")
+        end
+
+        embed =
+          ESM::Embed.build do |e|
+            e.title = I18n.t("xm8_notifications.invalid_attributes.title", server: @server.server_id)
+            e.description = I18n.t("xm8_notifications.invalid_attributes.description", error: error, remedy: remedy) if error && remedy
+
+            log_message = I18n.t("xm8_notifications.invalid_attributes.log_message.base")
+            log_message += I18n.t("xm8_notifications.invalid_attributes.log_message.title", title: @message.title) if @message.title.present?
+            log_message += I18n.t("xm8_notifications.invalid_attributes.log_message.title", message: @message.description) if @message.description.present?
+
+            e.add_field(name: I18n.t(:message), value: log_message)
+            e.add_field(name: I18n.t("xm8_notifications.recipient_steam_uids"), value: "```#{@recipients.join("\n")}```")
+
+            e.color = :red
+            e.footer = I18n.t("xm8_notifications.footer")
+          end
+
+        @server.community.log_event(:xm8, embed)
+      end
+
+      # type: @xm8_type,
+      # server: @server,
+      # embed: embed,
+      # statuses: @statuses_by_user,
+      # unregistered_steam_uids: unregistered_steam_uids
+      def notify_on_send!(notification)
+        message_statuses =
+          @statuses_by_user.map do |user, hash|
+            # { direct_message: :ignored, custom_routes: { sent: 0, expected: 0 } }
+            direct_message = hash[:direct_message]
+            custom_routes =
+              case hash[:custom_routes]
+              when ->(v) { v[:sent].zero? && v[:expected].zero? }
+                :none
+              when ->(v) { v[:expected].positive? && v[:sent] == v[:expected] }
+                :success
+              else
+                :failure
+              end
+
+            direct_message_status = I18n.t(
+              "xm8_notifications.log.message_statuses.values.direct_message.#{direct_message}",
+              user: user.discord_username,
+              steam_uid: user.steam_uid
+            )
+
+            custom_route_status = I18n.t(
+              "xm8_notifications.log.message_statuses.values.custom_routes.#{custom_routes}",
+              number_sent: hash[:custom_routes][:sent],
+              number_expected: hash[:custom_routes][:expected]
+            )
+
+            status = "**#{user.distinct}** (`#{user.steam_uid}`)\n **-** #{direct_message_status}"
+            status += "\n **-** #{custom_route_status}" if custom_route_status.present?
+            status
+          end
+
+        # For debugging
+        info!(
+          type: @xm8_type,
+          server: @server.server_id,
+          notification: notification.to_h,
+          message_statuses: message_statuses,
+          unregistered_steam_uids: unregistered_steam_uids,
+          log: @server.community.log_xm8_event?
+        )
+
+        # Notify the community if they subscribe to this notification
+        embed =
+          ESM::Embed.build do |e|
+            e.title = I18n.t("xm8_notifications.log.title", type: @xm8_type, server: @server.server_id)
+            e.description = I18n.t("xm8_notifications.log.description", title: notification.title, description: notification.description)
+
+            if message_statuses.present?
+              e.add_field(
+                name: I18n.t("xm8_notifications.log.message_statuses.name"),
+                value: message_statuses.join("\n\n")
+              )
+            end
+
+            if unregistered_steam_uids.present?
+              e.add_field(
+                name: I18n.t("xm8_notifications.log.unregistered_steam_uids"),
+                value: unregistered_steam_uids
+              )
+            end
+
+            e.color = ESM::Color.random
+            e.footer = I18n.t("xm8_notifications.footer")
+          end
+
+        @server.community&.log_event(:xm8, embed)
       end
     end
   end

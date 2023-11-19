@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 append :linked_files, ".env.prod"
 
 role :app, %w[esm]

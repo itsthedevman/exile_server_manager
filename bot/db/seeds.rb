@@ -1,40 +1,76 @@
 # frozen_string_literal: true
 
+# rubocop:disable Rails/Output
+
 require_relative "../lib/esm"
-require_relative "../spec/support/esm/test"
+require_relative "../spec/support/additions/esm/test"
 
-ESM::Command.load
+puts "Waiting for ESM to start..."
+ESM.console!
+ESM.run!
 
+until ESM.bot.ready?
+  sleep 1
+end
+puts " done"
+
+print "Checking commands for invalid configurations..."
+ESM::Command.all.each(&:check_for_valid_configuration!)
+puts " done"
+
+print "Deleting all global commands..."
+::ESM.bot.get_application_commands.each(&:delete)
+puts " done"
+
+print "Configuring bot..."
 ESM::BotAttribute.create!(
   maintenance_mode_enabled: false,
   maintenance_message: "",
   status_type: "PLAYING",
   status_message: "Extension V2 development"
 )
+puts " done"
 
-community = ESM::Community.create!(
-  community_id: "esm",
-  community_name: "ESM Test Server 1",
-  guild_id: "452568470765305866",
-  logging_channel_id: "901965726305382400",
-  command_prefix: "~",
-  player_mode_enabled: false
-)
+puts "Creating communities..."
+communities = [
+  {
+    community_id: "esm",
+    community_name: "ESM Test Server 1",
+    guild_id: "452568470765305866",
+    logging_channel_id: "901965726305382400",
+    player_mode_enabled: false
+  },
+  {
+    community_id: "esm2",
+    community_name: "ESM Test Server 2",
+    guild_id: "901967248653189180"
+  }
+  # {
+  #   community_id: "zdt",
+  #   community_name: "ZDT",
+  #   guild_id: "421111581267591168",
+  #   player_mode_enabled: false
+  # }
+].map do |community|
+  print "  Creating community for #{community[:community_id]}..."
+  community = ESM::Community.create!(community)
+  puts " done"
 
-ESM::Community.create!(
-  community_id: "esm2",
-  community_name: "ESM Test Server 2",
-  guild_id: "901967248653189180",
-  command_prefix: "pls "
-)
+  print "  Deleting commands for #{community.community_id}..."
+  ::ESM.bot.get_application_commands(server_id: community.guild_id).each(&:delete)
+  puts " done"
 
-community2 = ESM::Community.create!(
-  community_id: "zdt",
-  community_name: "ZDT",
-  guild_id: "421111581267591168",
-  player_mode_enabled: false
-)
+  print "  Registering commands for #{community.community_id}..."
+  ESM::Command.register_commands(community.guild_id)
+  puts " done"
 
+  community
+end
+
+community = communities.first
+puts " done"
+
+print "Creating servers..."
 server = ESM::Server.create!(
   community_id: community.id,
   server_id: "esm_malden",
@@ -106,32 +142,23 @@ server.server_rewards.create!(
   locker_poptabs: 0,
   respect: 0
 )
+puts " done"
 
-ESM::Server.create!(
-  community_id: community2.id,
-  server_id: "zdt_namalsk",
-  server_name: "ZDT Namalsk",
-  server_key: "zdt_namalsk_key",
-  server_ip: "127.0.0.1",
-  server_port: "2302"
-)
-
-ESM::Server.create!(
-  community_id: community2.id,
-  server_id: "zdt_tanoa",
-  server_name: "ZDT Tanoa",
-  server_key: "zdt_tanoa_key",
-  server_ip: "127.0.0.1",
-  server_port: "2302"
-)
-
+print "Creating users..."
 [
-  {discord_id: "137709767954137088", discord_username: "Bryan", discord_discriminator: "9876", steam_uid: "76561198037177305"},
-  {discord_id: "477847544521687040", discord_username: "Bryan V2", discord_discriminator: "2145", steam_uid: ESM::Test.data[:steam_uids].sample},
-  {discord_id: "683476391664156700", discord_username: "Bryan V3", discord_discriminator: "2369", steam_uid: ESM::Test.data[:steam_uids].sample}
+  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: "76561198037177305"},
+  {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: ESM::Test.data[:steam_uids].sample},
+  {discord_id: "683476391664156700", discord_username: "Bryan V3", steam_uid: ESM::Test.data[:steam_uids].sample}
 ].each do |user_info|
   user = ESM::User.create!(**user_info)
   ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)
 end
 
+ESM::UserDefault.where(user_id: 1).update(server_id: server.id, community_id: community.id)
+ESM::UserAlias.create!(user_id: 1, server_id: server.id, value: "s")
+ESM::UserAlias.create!(user_id: 1, community_id: community.id, value: "c")
+puts " done"
+
 Redis.new.set("server_key", server.token.to_json)
+
+# rubocop:enable Rails/Output

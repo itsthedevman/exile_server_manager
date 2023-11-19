@@ -2,23 +2,19 @@
 en:
   commands:
     reward:
-      description: |-
-        Requests a reward package to be deployed on the provided server. After running this command, you will be sent a confirmation message in your PMs with me. From here, you'll confirm you are online and alive before I send deliver the rewards to you.
-
-        **IMPORTANT**
-        If the provided server is still running v1, this command will ignore `<reward_id>` and use the default reward package.
-      example: |-
-        **`%{prefix}reward esm_malden`**
-        Requests the default reward to be delivered to you on `esm_malden`.
-
-        **`%{prefix}reward esm_altis base_kit`**
-        Requests the `base_kit` reward package to be delivered to you on `esm_altis`
+      description: Requests a reward package to be deployed on the provided server
+      description_extra: After running this command, you will be sent a confirmation message in your PMs with me. From here, you'll confirm you are online and alive before I send deliver the rewards to you.
+      examples:
+        - description: Requests the default reward to be delivered to you on `esm_malden`.
+          arguments:
+            "on": esm_malden
       arguments:
-        reward_id: "The ID of the reward you would like to receive. If omitted, the default reward will be given"
+        reward_id:
+          description: The ID of the reward you would like to receive. If omitted, the default reward will be given
       errors:
         check_pm: "Hey %{user}. Before I can process your request, I need to confirm a few things. Please reply to the message in your Direct Messages to continue."
         no_reply: "Hey %{user}, I haven't heard from you in awhile so I cancelled your request. Please re-run the previous command when you're ready to continue"
-        waiting_for_reply: "Hey %{user}, I am already processing a reward request for you. If you would like to start over, just reply back with \"cancel\" and then you may use this command"
+        waiting_for_reply: 'Hey %{user}, I am already processing a reward request for you. If you would like to start over, just reply back with "cancel" and then you may use this command'
         incorrect_reward_id: "I'm sorry %{user}, I was unable to find a reward with the ID of `%{reward_id}`"
         no_reward_items: "I'm sorry %{user}, the selected reward package is not available at this time"
         territory_query: "I'm sorry %{user}, I ran into an issue syncing territory data. Please wait a moment before trying again"
@@ -36,38 +32,38 @@ en:
           Reward `%{reward_id}` contains the following:
         fields:
           player_poptabs:
-            name: "Poptabs given to you"
+            name: Poptabs given to you
             value: "```%{poptabs}```"
           locker_poptabs:
-            name: "Poptabs added to locker"
+            name: Poptabs added to locker
             value: "```%{poptabs}```"
           respect:
-            name: "Respect given to you"
+            name: Respect given to you
             value: "```%{respect}```"
           items:
-            name: "Items given to you"
+            name: Items given to you
             value: "%{items}"
           vehicles:
-            name: "Vehicles given to you"
+            name: Vehicles given to you
             value: "%{vehicles}"
-          accept: "Once you are ready to receive the reward, just reply with `accept`"
-        footer: "You can cancel this request by replying with `cancel` at any time"
+          accept: Once you are ready to receive the reward, just reply with `accept`
+        footer: You can cancel this request by replying with `cancel` at any time
       receipt_embed:
-        title: "Reward get!"
-        description: "You may now return to your game and enjoy your gifts!"
+        title: Reward get!
+        description: You may now return to your game and enjoy your gifts!
         fields:
           player_poptabs:
-            name: "Current poptabs"
+            name: Current poptabs
             value: "```%{poptabs}```"
           locker_poptabs:
-            name: "Current locker poptabs"
+            name: Current locker poptabs
             value: "```%{poptabs}```"
           respect:
-            name: "Current respect"
+            name: Current respect
             value: "```%{respect}```"
           vehicles:
-            name: "Vehicles"
+            name: Vehicles
           cooldown:
-            name: "Can I receive this reward again?"
-            value_single_use: "Unfortunately no. `%{reward_id}` was a single use reward and cannot be used again"
-            value_cooldown: "Yes, however, you have **%{uses_left}** left before it can be used again"
+            name: Can I receive this reward again?
+            value_single_use: Unfortunately no. `%{reward_id}` was a single use reward and cannot be used again
+            value_cooldown: Yes, however, you have **%{uses_left}** left before it can be used again

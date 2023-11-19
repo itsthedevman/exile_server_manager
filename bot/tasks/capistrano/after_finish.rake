@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 namespace :deploy do
   after :finished, :restart_bot do
     on roles(:app) do

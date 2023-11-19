@@ -3,7 +3,7 @@
 module ESM
   module Command
     module Server
-      class Logs < ESM::Command::Base
+      class Logs < ApplicationCommand
         # Handles German, Italian, Spanish, and French
         TRANSLATED_MONTHS = {
           "gen" => "jan",
@@ -28,34 +28,45 @@ module ESM
           "déc" => "dec"
         }.freeze
 
-        set_type :admin
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
+
+        # See Argument::TEMPLATES[:target]
+        # Checked against: This is removed because target can be a standard target or anything else
+        argument :target, display_name: :for, checked_against: nil
+
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
+
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin, command_name: :search_logs
+        command_type :admin
+
         limit_to :text
-        requires :registration
 
         # Since the argument is a modified target, the logic for nil_target_user will trigger
-        skip_check :nil_target_user
+        skip_action :nil_target_user
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
-
-        argument :server_id
-
-        # In order to utilize the `#target_user` logic, the argument must have a name as target.
-        argument :target, regex: /.+/, description: "commands.logs.arguments.query", multiline: true, display_as: :query
+        #################################
 
         def on_execute
           query = ""
 
           # If the target was given, check to make sure they're registered and then set the steam_uid
           if target_user
-            @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
+            check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
             query = target_user.steam_uid
           else
             # Escape any regex in the "query"
-            query = Regexp.quote(@arguments.target)
+            query = Regexp.quote(arguments.target)
           end
 
           deliver!(search: query, length: 14)
@@ -72,7 +83,7 @@ module ESM
         def on_response(_, _)
           check_for_no_logs!
 
-          @log = ESM::Log.create!(server_id: target_server.id, search_text: @arguments.target, requestors_user_id: current_user.esm_user.id)
+          @log = ESM::Log.create!(server_id: target_server.id, search_text: arguments.target, requestors_user_id: current_user.id)
 
           parse_logs
 
@@ -88,7 +99,7 @@ module ESM
         private
 
         def check_for_no_logs!
-          check_failed!(:no_logs, user: current_user.mention) if @response.second.blank?
+          raise_error!(:no_logs, user: current_user.mention) if @response.second.blank?
         end
 
         def parse_logs

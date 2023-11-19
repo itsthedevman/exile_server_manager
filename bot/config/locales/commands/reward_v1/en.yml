@@ -2,17 +2,12 @@
 en:
   commands:
     reward_v1:
-      description: Requests a reward on the given server. After requesting a reward,
-        you will be sent a confirmation message in your PMs with me. From here, you
-        can confirm you are logged into the server and alive before accepting the
-        rewards.
-      example: |-
-        **`%{prefix}reward esm_malden`**
-        Requests a reward on `esm_malden`
-      request_description: Hey %{user}, you have requested a rewards on `%{server}`.
-        In order to receive the rewards on the server, you must be spawned in and
-        alive. Any items given will be added to your inventory automatically, and
-        if you do not have space, **they will be dropped on the ground**.
+      description: After requesting a reward, you will be sent a confirmation message in your PMs with me. From here, you can confirm you are logged into the server and alive before accepting the rewards.
+      request_description: Hey %{user}, you have requested a rewards on `%{server}`. In order to receive the rewards on the server, you must be spawned in and alive. Any items given will be added to your inventory automatically, and if you do not have space, **they will be dropped on the ground**.
       receipt: |-
         Hi %{user}, the following goodies have been delivered to you!
         %{items}
+      examples:
+        - description: Requests a reward on `esm_malden`
+          arguments:
+            "on": esm_malden

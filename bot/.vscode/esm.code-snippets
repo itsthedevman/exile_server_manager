@@ -1,244 +1,184 @@
 {
-	// Place your esm_bot workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
-	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
-	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
-	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
-	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
-	// Placeholders with the same ids are connected.
-	// Example:
-	// "Print to console": {
-	// 	"scope": "javascript,typescript",
-	// 	"prefix": "log",
-	// 	"body": [
-	// 		"console.log('$1');",
-	// 		"$2"
-	// 	],
-	// 	"description": "Log output to console"
-	// }
-	"Binding.pry": {
-		"scope": "ruby",
-		"prefix": [
-			"bd"
-		],
-		"body": "binding.pry",
-		"description": "Inserts a pry breakpoint"
-	},
-	"# frozen_string_literal: true": {
-		"scope": "ruby",
-		"prefix": "fsl",
-		"body": [
-			"# frozen_string_literal: true",
-			"",
-			"$0"
-		],
-		"description": "Inserts the magic ruby comment to freeze all string literals"
-	},
-	"ESM Log (Trace)": {
-		"scope": "ruby",
-		"prefix": [
-			"trace",
-			"ESM.logger.trace"
-		],
-		"body": [
-			"trace!(${0})"
-		],
-		"description": "Create an trace logger with ESM"
-	},
-	"ESM Log (Debug)": {
-		"scope": "ruby",
-		"prefix": [
-			"debug",
-			"ESM.logger.debug"
-		],
-		"body": [
-			"debug!(${0})"
-		],
-		"description": "Create an debug logger with ESM"
-	},
-	"ESM Log (Info)": {
-		"scope": "ruby",
-		"prefix": [
-			"info",
-			"ESM.logger.info"
-		],
-		"body": [
-			"info!(${0})"
-		],
-		"description": "Create an info logger with ESM"
-	},
-	"ESM Log (Warn)": {
-		"scope": "ruby",
-		"prefix": [
-			"warn",
-			"ESM.logger.warn"
-		],
-		"body": [
-			"warn!(${0})"
-		],
-		"description": "Create an warn logger with ESM"
-	},
-	"ESM Log (Error)": {
-		"scope": "ruby",
-		"prefix": [
-			"error",
-			"ESM.logger.error"
-		],
-		"body": [
-			"error!(${0})"
-		],
-		"description": "Create an error logger with ESM"
-	},
-	"ESM Log (Fatal)": {
-		"scope": "ruby",
-		"prefix": [
-			"fatal",
-			"ESM.logger.fatal"
-		],
-		"body": [
-			"fatal!(${0})"
-		],
-		"description": "Create an fatal logger with ESM"
-	},
-	"Ruby Prof (Start)": {
-		"scope": "ruby",
-		"prefix": [
-			"prof-start"
-		],
-		"body": [
-			"RubyProf.start"
-		],
-		"description": "Inserts a ruby prof start command"
-	},
-	"Ruby Prof (Stop)": {
-		"scope": "ruby",
-		"prefix": [
-			"prof-stop"
-		],
-		"body": [
-			"RubyProf::FlatPrinter.new(RubyProf.stop).print(STDOUT)"
-		],
-		"description": "Inserts a ruby prof stop command"
-	},
-	"ESM Command Test": {
-		"scope": "ruby",
-		"prefix": [
-			"Command Test"
-		],
-		"body": [
-			"# frozen_string_literal: true",
-			"",
-			"describe ${1:command}, category: \"command\" do",
-			"\tinclude_context \"command\", described_class",
-			"\tinclude_examples \"validate_command\"",
-			"",
-			"\t# Delete one, keep the other",
-			"\tit \"is a player command\" do",
-			"\t\texpect(command.type).to eql(:player)",
-			"\tend",
-			"",
-			"\tit \"is an admin command\" do",
-			"\t\texpect(command.type).to eql(:admin)",
-			"\tend",
-			"",
-			"\t# Delete one, keep the other",
-			"\tit \"requires registration\" do",
-			"\t\texpect(command.registration_required?).to be(true)",
-			"\tend",
-			"",
-			"\tit \"does not require registration\" do",
-			"\t\texpect(command.registration_required?).to be(false)",
-			"\tend",
-			"",
-			"\t# Change \"requires_connection\" to true if this command requires the client to be connected",
-			"\tdescribe \"#on_execute/#on_response\", requires_connection: false do",
-			"\t\t# Uncomment if \"requires_connection\" is true",
-			"\t\t# include_context \"connection\"",
-			"",
-			"\t\tit \"!${2:command_name} ${3:arguments}\" do",
-			"\t\t\texecute!(${4:arguments})",
-			"\t\tend",
-			"\tend",
-			"end"
-		],
-		"description": "Create a rspec test for a ESM::Command"
-	},
-	"ESM Command": {
-		"scope": "ruby",
-		"prefix": [
-			"Command Class (New)"
-		],
-		"body": [
-			"# frozen_string_literal: true",
-			"",
-			"module ESM",
-			"\tmodule Command",
-			"\t\tmodule ${1:Category}",
-			"\t\t\tclass ${TM_FILENAME_BASE/(.*)/${1:/pascalcase}/} < ESM::Command::Base",
-			"\t\t\t\tset_type :${3|admin,player,development|}",
-			"\t\t\t\tregister_aliases :${4:aliases}",
-			"\t\t\t\tlimit_to :${6|text,dm|}",
-			"\t\t\t\trequires :registration",
-			"",
-			"\t\t\t\tdefine :enabled, modifiable: true, default: ${7|true,false|}",
-			"\t\t\t\tdefine :whitelist_enabled, modifiable: true, default: ${8|false,true|}",
-			"\t\t\t\tdefine :whitelisted_role_ids, modifiable: true, default: []",
-			"\t\t\t\tdefine :allowed_in_text_channels, modifiable: true, default: ${9|true,false|}",
-			"\t\t\t\tdefine :cooldown_time, modifiable: true, default: 2.seconds",
-			"",
-			"\t\t\t\t# Use snippet \"argument\" for an example argument",
-			"\t\t\t\targument :community_id",
-			"\t\t\t\targument :server_id",
-			"\t\t\t\targument :territory_id",
-			"\t\t\t\targument :target",
-			"",
-			"\t\t\t\tdef on_execute; end",
-			"",
-			"\t\t\t\tdef on_response; end",
-			"",
-			"\t\t\t\tdef on_accept; end",
-			"",
-			"\t\t\t\tdef on_decline; end",
-			"\t\t\tend",
-			"\t\tend",
-			"\tend",
-			"end"
-		],
-		"description": "Create an empty command"
-	},
-	"ESM Command Argument": {
-		"scope": "ruby",
-		"prefix": "argument",
-		"body": [
-			"# @param name [symbol] The name of the argument. This can be anything include one of the templates",
-			"# @param regex [RegExp] Regex that matches the value you expect for this argument ",
-			"# @param description [String] A short description of this argument. Make sure to include how to use it, and any other helpful tips.",
-			"# @param preserve [Boolean] Preserve the case when parsing this argument. Otherwise, the value is stored as lowercase (Optional. Default: false)",
-			"# @param default [Any] The default value for this argument if the user did not provide it. Also makes this argument optional (Optional. Default: nil)",
-			"# @param type [Symbol] What type should this argument be stored as? Valid Options: :integer, :string, :float, :json (Optional. Default: :string)",
-			"# @param display_as [String, nil] What name should this argument have when displayed to the user. (Optional. Default: Name of argument)",
-			"# @param multiline [Boolean] Does the value of this argument span multiple lines? Enables multiline on regex",
-			"# @param template [Symbol] The name of one of the templates to use for this command.",
-			"argument :${1:name}, regex: /${2:regex}/, description: \"commands.$TM_FILENAME_BASE.arguments.${1:name}\", preserve: true, default: nil, type: nil, display_as: nil, multiline: true, template: nil"
-		],
-		"description": "Creates a new command argument"
-	},
-	"Embed": {
-		"scope": "ruby",
-		"prefix": "embed",
-		"body": [
-			"embed =",
-			"\tESM::Embed.build do |e|",
-			"\t\t# e.set_author(name:, url: nil, icon_url: nil)",
-			"\t\t# e.title=(text)",
-			"\t\t# e.description=(text)",
-			"\t\t# e.add_field(name: nil, value:, inline: false)",
-			"\t\t# e.thumbnail=(url)",
-			"\t\t# e.image=(url)",
-			"\t\t# e.color=(color)",
-			"\t\t# e.footer=(text)",
-			"\t\t# e.set_footer(text: nil, icon_url: nil)",
-			"\tend",
-		],
-		"description": "Inserts an embed with documentation"
-	}
+  // Place your esm_bot workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+  // }
+  "Binding.pry": {
+    "scope": "ruby",
+    "prefix": [
+      "bd"
+    ],
+    "body": "binding.pry",
+    "description": "Inserts a pry breakpoint"
+  },
+  "# frozen_string_literal: true": {
+    "scope": "ruby",
+    "prefix": "fsl",
+    "body": [
+      "# frozen_string_literal: true",
+      "",
+      "$0"
+    ],
+    "description": "Inserts the magic ruby comment to freeze all string literals"
+  },
+  "ESM Log (Trace)": {
+    "scope": "ruby",
+    "prefix": [
+      "trace",
+      "ESM.logger.trace"
+    ],
+    "body": [
+      "trace!(${0})"
+    ],
+    "description": "Create an trace logger with ESM"
+  },
+  "ESM Log (Debug)": {
+    "scope": "ruby",
+    "prefix": [
+      "debug",
+      "ESM.logger.debug"
+    ],
+    "body": [
+      "debug!(${0})"
+    ],
+    "description": "Create an debug logger with ESM"
+  },
+  "ESM Log (Info)": {
+    "scope": "ruby",
+    "prefix": [
+      "info",
+      "ESM.logger.info"
+    ],
+    "body": [
+      "info!(${0})"
+    ],
+    "description": "Create an info logger with ESM"
+  },
+  "ESM Log (Warn)": {
+    "scope": "ruby",
+    "prefix": [
+      "warn",
+      "ESM.logger.warn"
+    ],
+    "body": [
+      "warn!(${0})"
+    ],
+    "description": "Create an warn logger with ESM"
+  },
+  "ESM Log (Error)": {
+    "scope": "ruby",
+    "prefix": [
+      "error",
+      "ESM.logger.error"
+    ],
+    "body": [
+      "error!(${0})"
+    ],
+    "description": "Create an error logger with ESM"
+  },
+  "ESM Log (Fatal)": {
+    "scope": "ruby",
+    "prefix": [
+      "fatal",
+      "ESM.logger.fatal"
+    ],
+    "body": [
+      "fatal!(${0})"
+    ],
+    "description": "Create an fatal logger with ESM"
+  },
+  "Ruby Prof (Start)": {
+    "scope": "ruby",
+    "prefix": [
+      "prof-start"
+    ],
+    "body": [
+      "RubyProf.start"
+    ],
+    "description": "Inserts a ruby prof start command"
+  },
+  "Ruby Prof (Stop)": {
+    "scope": "ruby",
+    "prefix": [
+      "prof-stop"
+    ],
+    "body": [
+      "RubyProf::FlatPrinter.new(RubyProf.stop).print(STDOUT)"
+    ],
+    "description": "Inserts a ruby prof stop command"
+  },
+  "ESM Command Test": {
+    "scope": "ruby",
+    "prefix": [
+      "Command Test"
+    ],
+    "body": [
+      "# frozen_string_literal: true",
+      "",
+      "describe ${1:command}, category: \"command\" do",
+      "\tinclude_context \"command\", described_class",
+      "\tinclude_examples \"validate_command\"",
+      "",
+      "\t# Delete one, keep the other",
+      "\tit \"is a player command\" do",
+      "\t\texpect(command.type).to eq(:player)",
+      "\tend",
+      "",
+      "\tit \"is an admin command\" do",
+      "\t\texpect(command.type).to eq(:admin)",
+      "\tend",
+      "",
+      "\t# Delete one, keep the other",
+      "\tit \"requires registration\" do",
+      "\t\texpect(command.registration_required?).to be(true)",
+      "\tend",
+      "",
+      "\tit \"does not require registration\" do",
+      "\t\texpect(command.registration_required?).to be(false)",
+      "\tend",
+      "",
+      "\t# Change \"requires_connection\" to true if this command requires the client to be connected",
+      "\tdescribe \"#on_execute/#on_response\", requires_connection: false do",
+      "\t\t# Uncomment if \"requires_connection\" is true",
+      "\t\t# include_context \"connection\"",
+      "",
+      "\t\tit \"!${2:command_name} ${3:arguments}\" do",
+      "\t\t\texecute!(${4:arguments})",
+      "\t\tend",
+      "\tend",
+      "end"
+    ],
+    "description": "Create a rspec test for a ESM::Command"
+  },
+  "Embed": {
+    "scope": "ruby",
+    "prefix": "embed",
+    "body": [
+      "embed =",
+      "\tESM::Embed.build do |e|",
+      "\t\t# e.set_author(name:, url: nil, icon_url: nil)",
+      "\t\t# e.title=(text)",
+      "\t\t# e.description=(text)",
+      "\t\t# e.add_field(name: nil, value:, inline: false)",
+      "\t\t# e.thumbnail=(url)",
+      "\t\t# e.image=(url)",
+      "\t\t# e.color=(color)",
+      "\t\t# e.footer=(text)",
+      "\t\t# e.set_footer(text: nil, icon_url: nil)",
+      "\tend"
+    ],
+    "description": "Inserts an embed with documentation"
+  }
 }

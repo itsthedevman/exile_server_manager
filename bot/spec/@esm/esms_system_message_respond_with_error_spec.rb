@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_system_message_respond_withError", requires_connection: true, v2: true do
+describe "ESMs_system_message_respond_withError", :requires_connection, v2: true do
   include_context "connection"
 
   it "responds with an error" do

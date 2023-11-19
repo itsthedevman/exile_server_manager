@@ -2,7 +2,7 @@
 
 describe ESM::Cooldown do
   before do
-    Timecop.freeze(Time.parse("1990-01-01"))
+    Timecop.freeze(Time.zone.parse("1990-01-01"))
   end
 
   after do

@@ -4,7 +4,7 @@
 module ESM
   module Command
     module Server
-      class Reward < ESM::Command::Base
+      class Reward < ApplicationCommand
         SPAWN_LOCATIONS = ["virtual_garage", "player_decides"].freeze
 
         # TODO:
@@ -28,20 +28,15 @@ module ESM
         #   3. Server response back (#on_response)
         #         TODO
         #
-        set_type :player
-        requires :registration
+        command_type :player
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: false
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: false, default: 2.seconds # Don't allow adjusting this cooldown. Each reward has it's own cooldown
+        change_attribute :cooldown_time, modifiable: false, default: 2.seconds # Don't allow adjusting this cooldown. Each reward has it's own cooldown
 
         argument :server_id
-        argument :reward_id, description: "commands.reward.arguments.reward_id", regex: ESM::Regex::REWARD_ID, default: nil
+        argument :reward_id, regex: ESM::Regex::REWARD_ID, default: nil
 
         # FOR DEV ONLY
-        # skip_check :cooldown, :connected_server
+        # skip_action :cooldown, :connected_server
 
         #
         # The entry point for when the bot first receives a command
@@ -219,11 +214,11 @@ module ESM
         end
 
         def selected_reward
-          @selected_reward ||= target_server.server_rewards.where(reward_id: @arguments.reward_id).first
+          @selected_reward ||= target_server.server_rewards.where(reward_id: arguments.reward_id).first
         end
 
         def check_for_in_progress!
-          return if !ESM.bot.waiting_for_reply?(user_id: current_user.id, channel_id: current_channel.id)
+          return if !ESM.bot.waiting_for_reply?(user_id: current_user.discord_id, channel_id: current_channel.id)
 
           raise_error!(:waiting_for_reply, user: current_user.mention, command_name: name)
         end
@@ -231,7 +226,7 @@ module ESM
         def check_for_valid_reward_id!
           return if selected_reward.present?
 
-          raise_error!(:incorrect_reward_id, user: current_user.mention, reward_id: @arguments.reward_id)
+          raise_error!(:incorrect_reward_id, user: current_user.mention, reward_id: arguments.reward_id)
         end
 
         def check_for_reward_items!
@@ -246,7 +241,7 @@ module ESM
 
         def await_for_reply
           Thread.new do
-            ESM.bot.wait_for_reply(user_id: current_user.id, channel_id: current_channel.id) { |event| on_reply(event) }
+            ESM.bot.wait_for_reply(user_id: current_user.discord_id, channel_id: current_channel.id) { |event| on_reply(event) }
           end
         end
 

@@ -2,11 +2,12 @@
 en:
   commands:
     restore:
-      description: Restores a territory if marked for deletion for missing a territory
-        payment. This will not restore a territory if it has been deleted from the
-        database
-      example: |-
-        **`%{prefix}restore esm_malden jquee`**
-        Restores territory `jquee` on esm_malden
+      description: Restores a territory if marked for deletion for missing a territory payment
+      description_extra: This will not restore a territory if it has been deleted from the database
+      examples:
+        - description: Restores territory `jquee` on esm_malden
+          arguments:
+            territory: jquee
+            "on": esm_malden
       success_message: Hey %{user}, `%{territory_id}` has been restored
       failure_message: I'm sorry %{user}, `%{territory_id}` no longer exists on `%{server}`.

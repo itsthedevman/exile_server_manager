@@ -15,7 +15,7 @@ describe ESM::Message, v2: true do
           # Order matters!
           array: [false, true, "2", "3.0"],
           date_time: ESM::Time.current,
-          date: Date.today,
+          date: Time.zone.today,
           hash_map: ESM::Arma::HashMap.from(key_0: false, key_1: true),
           integer: "1",
           rhash: {foo: "bar"},

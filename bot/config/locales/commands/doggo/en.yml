@@ -1,9 +1,9 @@
----
 en:
   commands:
     doggo:
       description: Humanity's best friend
-      example: |-
-        **`%{prefix}doggo`**
-        Returns a random dog image
+      examples:
+      - description: Returns a random dog image
       waiting: Shaking treat jar...
+      errors:
+        doggo_not_found: Hey %{user}, all of the doggos were asleep. Please wait a few moments before trying again

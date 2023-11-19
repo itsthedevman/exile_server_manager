@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_system_network_discord_send_to", requires_connection: true, v2: true do
+describe "ESMs_system_network_discord_send_to", :requires_connection, v2: true do
   include_context "connection"
 
   it "sends to a channel (ID/message)" do

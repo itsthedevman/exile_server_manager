@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_util_array_all", requires_connection: true, v2: true do
+describe "ESMs_util_array_all", :requires_connection, v2: true do
   include_context "connection"
 
   it "returns true" do

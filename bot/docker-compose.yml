@@ -1,7 +1,27 @@
-version: '3.9'
+version: "3.9"
 
 services:
-  postgres_db:
+  bot:
+    container_name: ESM_BOT
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+    depends_on:
+      - postgres-db
+      - redis-db
+    environment:
+      POSTGRES_HOST: "postgres-db"
+      REDIS_HOST: "redis-db"
+    stdin_open: true
+    tty: true
+    networks:
+      - esm
+    profiles:
+      - bot
+  postgres-db:
     image: postgres
     container_name: ESM_DB_POSTGRES
     restart: always
@@ -14,12 +34,12 @@ services:
       - postgres-data:/var/lib/postgresql/data/
     networks:
       - esm
-  redis_db:
+  redis-db:
     image: redis
     container_name: ESM_DB_REDIS
     restart: always
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis-data:/data
     networks:

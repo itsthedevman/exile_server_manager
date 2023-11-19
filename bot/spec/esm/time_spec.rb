@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 describe ESM::Time do
-
-
   describe "#singularize" do
     it "should make the time singular" do
       expect(ESM::Time.singularize("1 days")).to eq("1 day")

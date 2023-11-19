@@ -56,7 +56,7 @@ module ESM
             ESM::Embed.build do |e|
               e.description = I18n.t(
                 "request_timed_out",
-                command_message: request.command.event.message.content,
+                command_message: request.command.usage,
                 server_id: @connection.server.server_id,
                 user: request.user.mention
               )

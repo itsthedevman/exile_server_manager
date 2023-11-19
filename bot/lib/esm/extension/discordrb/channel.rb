@@ -19,5 +19,7 @@ module Discordrb
         category: category&.to_h
       }
     end
+
+    alias_method :attributes, :to_h
   end
 end

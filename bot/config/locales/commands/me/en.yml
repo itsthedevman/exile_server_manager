@@ -2,10 +2,10 @@
 en:
   commands:
     me:
-      description: Displays information about your player (money, health, poptabs,
-        territories, etc.) on the requested server
-      example: |-
-        **`%{prefix}me esm_malden`**
-        Returns my player information on `esm_malden`
+      description: Displays information (money, health, poptabs, territories, etc.) about your player on the server
+      examples:
+        - description: Returns my player information on `esm_malden`
+          arguments:
+            "on": esm_malden
       embed:
         title: "%{user}'s stats on `%{server_id}`"

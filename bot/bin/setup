@@ -18,11 +18,4 @@ fi
 bundle exec rake db:create
 bundle exec rake db:migrate
 bundle exec rake db:migrate RAILS_ENV=test
-
-# https://stackoverflow.com/a/13864829/13063817
-if [[ -z ${TRAVIS+x} ]]; then
-  bundle exec ruby db/seeds.rb
-fi
-
-cargo update --package esm_message
-cargo build --release
+bundle exec ruby db/seeds.rb

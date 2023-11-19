@@ -40,7 +40,7 @@ module ESM
     end
 
     def reset!
-      update!(expires_at: 5.second.ago, cooldown_amount: 0)
+      update!(expires_at: 5.seconds.ago, cooldown_amount: 0)
     end
 
     def update_expiry!(executed_at, cooldown_time)

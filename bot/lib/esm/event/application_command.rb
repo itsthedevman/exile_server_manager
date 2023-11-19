@@ -1,0 +1,106 @@
+# frozen_string_literal: true
+
+module ESM
+  module Event
+    #
+    # Delegator over Discordrb::Events::ApplicationCommandEvent
+    #
+    class ApplicationCommand
+      delegate :user, :channel, :options, :respond, :edit_response, :delete_response, to: :@event
+
+      def initialize(event)
+        @event = event
+
+        @tip_key = "tip_counter"
+        @tip = ESM.config.tips.sample
+
+        @embed_template =
+          ESM::Embed.build do |e|
+            e.color = Color::BLUE
+          end
+      end
+
+      #
+      # Discordrb's ApplicationCommandEvent code does not appear to handle if there is no server_id and crashes
+      #
+      def server
+        return if @event.server_id.nil?
+
+        @event.server
+      end
+
+      def on_execution(command_class)
+        @command = command_class.new(user: user, server: server, channel: channel, arguments: options)
+
+        respond(content: "Processing your request...")
+
+        @command.from_discord!
+
+        on_completion
+      rescue => error
+        on_error(error)
+      end
+
+      def on_completion
+        content = ":stopwatch: Completed in #{@command.timers.humanized_total}: #{usage}"
+        content = add_tip(content)
+
+        edit_response(content: content)
+
+        @command
+      end
+
+      private
+
+      def on_error(error)
+        return delete_response if error.is_a?(Exception::CheckFailureNoMessage)
+
+        content =
+          if error.is_a?(Exception::CheckFailure)
+            ":warning: I was unable to complete your request :warning:\n#{usage}"
+          else
+            ":grimacing: Well, this is awkward... :grimacing:\n#{usage}"
+          end
+
+        edit_response(content: content)
+
+        message =
+          case error
+          when ESM::Exception::CheckFailure
+            error.data
+          when StandardError
+            uuid = SecureRandom.uuid.split("-")[0..1].join("")
+
+            ESM.bot.log_error(uuid: uuid, message: error.message, backtrace: error.backtrace)
+
+            ESM::Embed.build(:error, description: I18n.t("exceptions.system", error_code: uuid))
+          end
+
+        ESM.bot.deliver(message, to: channel)
+
+        @command
+      end
+
+      def send_tip?
+        @send_tip ||= lambda do
+          counter = ESM.cache.increment(@tip_key)
+          send_tip = counter > (1 + (1 + rand + rand).round)
+
+          ESM.cache.delete(@tip_key) if send_tip # Reset the counter
+
+          send_tip
+        end.call
+      end
+
+      def usage
+        "||`#{@command.usage}`||"
+      end
+
+      def add_tip(content)
+        return content unless send_tip?
+
+        content + "\n:information_source: **Did you know?** *#{@tip}*"
+      end
+    end
+  end
+end

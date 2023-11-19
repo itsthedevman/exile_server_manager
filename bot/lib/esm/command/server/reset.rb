@@ -3,25 +3,39 @@
 module ESM
   module Command
     module Server
-      class Reset < ESM::Command::Base
-        set_type :admin
+      class Reset < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
+
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
+
+        # See Argument::TEMPLATES[:target]
+        # Optional: Omitting resets all
+        argument :target, display_name: :whom, required: false
+
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin, command_name: :reset_player
+        command_type :admin
+
         limit_to :text
-        requires :registration
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        skip_action :nil_target_user
 
-        argument :server_id
-        argument :target, default: nil
+        #################################
 
         def on_execute
-          @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
           # Create a confirmation request to the requestee
-          @checks.pending_request!
+          check_for_pending_request!
           add_request(
             to: current_user,
             description: I18n.t(
@@ -32,7 +46,11 @@ module ESM
           )
 
           # Remind them to check their PMs
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.request.check_pm", user: current_user.mention))
+          embed = ESM::Embed.build(
+            :success,
+            description: I18n.t("commands.request.check_pm", user: current_user.mention)
+          )
+
           reply(embed)
         end
 

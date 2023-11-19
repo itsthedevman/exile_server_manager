@@ -1,32 +1,36 @@
----
 en:
   commands:
     broadcast:
-      description: |-
-        Sends the provided message to all servers or the provided server ID in your community.
-        Registered players on these servers will receive the message via Direct Message if they have `custom` notification allowed for the server.
-      example: |-
-        **`%{prefix}broadcast esm_malden This is an emergency announcement`**
-        Broadcasts `This is an emergency announcement` to every registered player on `esm_malden`.
-
-        **`%{prefix}broadcast all Admin event going on right meow. More information on our Discord!`**
-        Brodcasts `Admin event going on right meow. More information on our Discord!` to registered player on every server for this community.
-
-        **`%{prefix}broadcast preview Testing`**
-        Provides a preview of the message without sending it.
+      description: Sends the provided message to all servers or the provided server ID in your community
+      description_extra: Registered players on these servers will receive the message via Direct Message if they have `custom` notification allowed for the server.
+      examples:
+      - description: Broadcasts `This is an emergency announcement` to every registered player on `esm_malden`.
+        arguments:
+          message: This is an emergency announcement
+          to: esm_malden
+      - description: Broadcasts `Admin event going on right meow. More information on our Discord!` to registered player on every server for this community.
+        arguments:
+          message: Admin event going on right meow. More information on our Discord!
+          to: all
+      - description: Omitting `to` will provide a preview of the message without sending it.
+        arguments:
+          message: Testing
       arguments:
-        broadcast_to: This can be either a valid `server_id` to send to just that
-          server, `all` to send to all of your community's servers, or `preview` to
-          just preview the message without sending it
-        message: The message to send or preview. This supports Discord Markdown and
-          cannot be more than 2000 characters long
+        broadcast_to:
+          description: Where the broadcast should go? It can be a server, "all", or omit for a preview of the message
+          description_extra: This can be either a valid `server_id` to send to just that server, `all` to send to all of your community's servers, or `preview` or omit to just preview the message without sending it
+        message:
+          description: The message to send or preview. Supports Discord Markdown and must be less than 2000 characters
       confirmation_embed:
         title: Broadcast Confirmation
         description: I will be sending the above message to the players on `%{server_ids}`
         field_name: "**Are you sure you want to send?**"
         field_value: Reply back `yes` or `no`
-      cancelation_reply: ":thumbsup: I've cancelled your request."
+      cancellation_reply: ":thumbsup: I've cancelled your request."
       success_message: ":mailbox: %{user}, they've got mail!"
       broadcast_embed:
         title: Broadcast message from %{community_name} regarding `%{server_ids}`
-        footer: You may opt out of these messages by using `%{prefix}preferences`
+        footer: You may opt out of these messages by using `/my preferences`
+      errors:
+        no_server_access: "%{user}, you do not access to that server. You may only run this command for servers that belong to `%{community_id}`"
+        message_length: I'm sorry %{user}, the provided message is too long. It needs to be less than 2000 characters long.

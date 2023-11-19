@@ -2,7 +2,7 @@
 
 class Array
   def format(join_with: "", &block)
-    map(&block).join(join_with)
+    filter_map(&block).join(join_with)
   end
 
   # Adds up all the sizes of every element inside the array

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 def create_request(**params)
   user = ESM::Test.user.discord_user
   command = ESM::Command::Test::BaseV1.new
@@ -10,9 +12,9 @@ def create_request(**params)
   )
 end
 
-# Disables the whitelist on admin commands so the tests can use them
+# Disables the allowlist on admin commands so the tests can use them
 def grant_command_access!(community, command)
-  community.command_configurations.where(command_name: command).update_all(whitelist_enabled: false)
+  community.command_configurations.where(command_name: command).update_all(allowlist_enabled: false)
 end
 
 #
@@ -141,4 +143,16 @@ end
 
 def before_connection(&block)
   ESM::Test.callbacks.add_callback(:before_connection, &block)
+end
+
+def messages
+  ESM::Test.messages.contents
+end
+
+def earliest_message
+  ESM::Test.messages.earliest
+end
+
+def latest_message
+  ESM::Test.messages.latest
 end

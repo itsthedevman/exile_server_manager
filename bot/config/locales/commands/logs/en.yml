@@ -2,15 +2,18 @@
 en:
   commands:
     logs:
-      description: Parses the last 14 days worth of Trading, Territory, and Death
-        logs for the given query and returns those lines.
-      example: |-
-        **`%{prefix}logs esm_malden @Bryan`**
-        Parses the logs on `esm_malden` for @Bryan's Steam UID and returns any matched lines
-
-        **`%{prefix}logs esm_altis Exile_Chopper_Hummingbird_Green`**
-        Parses the logs on `esm_altis` for `Exile_Chopper_Hummingbird_Green` and returns any matched lines
+      description: Searches the last 14 days worth of Trading, Territory, and Death logs
+      examples:
+        - description: Parses the logs on `esm_malden` for @some_player's Steam UID and returns any matched lines
+          arguments:
+            for: "@some_player"
+            "on": esm_malden
+        - description: Parses the logs on `esm_altis` for `Exile_Chopper_Hummingbird_Green` and returns any matched lines
+          arguments:
+            for: Exile_Chopper_Hummingbird_Green
+            "on": esm_altis
       arguments:
-        query: Can be a target (Discord Mention, Discord ID, or Steam UID) which will
-          be automatically converted to a Steam UID. Otherwise, interpreted as a search
-          term.
+        query:
+          description: This be a target (Discord Mention, Discord ID, or Steam UID) or a search term.
+      errors:
+        no_logs: Hey %{user}, I was unable to find any logs that match your query.

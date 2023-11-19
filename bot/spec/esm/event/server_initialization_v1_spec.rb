@@ -33,12 +33,12 @@ describe ESM::Event::ServerInitializationV1 do
     let(:connection) { ESM::Websocket.connections[server.server_id] }
     let(:event) { ESM::Event::ServerInitializationV1.new(server: server, parameters: packet, connection: connection) }
 
-    before :each do
+    before do
       wait_for { wsc.connected? }.to eq(true)
       expect { event.run! }.not_to raise_error
     end
 
-    after :each do
+    after do
       wsc.disconnect!
     end
 
@@ -47,7 +47,7 @@ describe ESM::Event::ServerInitializationV1 do
     end
 
     describe "#initialize_server!" do
-      before :each do
+      before do
         server.reload
       end
 
@@ -82,7 +82,7 @@ describe ESM::Event::ServerInitializationV1 do
     end
 
     describe "#build_settings_packet" do
-      before :each do
+      before do
         server.reload
         setting.reload
         reward.reload

@@ -2,18 +2,27 @@
 en:
   commands:
     set_id:
-      description: |-
-        **Territory Owner Only.**
-        Sets a custom territory ID for the provide server ID. Once set, this custom territory ID can be used whenever a command requires a territory ID argument.
-      example: |-
-        **`%{prefix}set_id esm_malden jqjoe no_u`**
-        Sets territory `jqjoe` to be `no_u`
-
-        **`%{prefix}set_id esm_altis fort_awesome tent_sadness`**
-        Changes territory `fort_awesome` to be `tent_sadness`
+      description: Changes your territory ID to the provided ID
+      description_extra: |-
+        This command is only available for the territory owner.
+        Once set, this custom territory ID can be used whenever a command requires a territory ID argument.
+      examples:
+        - description: Sets territory `jqjoe` to be `no_u`
+          arguments:
+            from: jqjoe
+            to: no_u
+            "on": esm_malden
+        - description: Changes territory `fort_awesome` to be `tent_sadness`
+          arguments:
+            from: fort_awesome
+            to: tent_sadness
+            "on": esm_altis
       arguments:
-        new_territory_id: The new territory ID to use. This ID can be 3 to 20 characters
-          long and can **only contain letters, numbers, and underscores**.
-      success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is
-        now `%{new_territory_id}`. You can now use this ID wherever a command requires
-        `<territory_id>`\nFor example: ```%{prefix}pay %{server_id} %{new_territory_id}```"
+        new_territory_id:
+          description: The new territory ID to use.
+          description_extra: This ID can be 3 to 20 characters long and can **only contain letters, numbers, and underscores**.
+      success_message: ":confetti_ball: \nTerritory `%{old_territory_id}`'s ID is now `%{new_territory_id}`. You can now use this ID wherever a command requires `<territory_id>`\nFor example: ```/territory pay %{server_id} %{new_territory_id}```"
+      errors:
+        minimum_characters: I'm sorry %{user}, the new territory ID must be at least 3 characters long
+        maximum_characters: I'm sorry %{user}, the new territory ID cannot be longer than 20 characters
+        access_denied: I'm sorry %{user}, you are not allowed to do that.

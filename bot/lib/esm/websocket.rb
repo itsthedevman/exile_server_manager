@@ -42,7 +42,7 @@ module ESM
 
     # Removes a connection from the connections
     def self.remove_connection(connection)
-      connection.server.update(disconnected_at: ::Time.now) if !ESM.env.test?
+      connection.server.update(disconnected_at: ::Time.zone.now) if !ESM.env.test?
       @server_ids.delete(connection.server.server_id)
       @connections.delete(connection.server.server_id)
     end
@@ -50,12 +50,6 @@ module ESM
     # Removes all connections
     def self.remove_all_connections!
       @connections.each { |_server_id, connection| remove_connection(connection) }
-    end
-
-    # Checks to see if there are any corrections and provides them for the server id
-    def self.correct(server_id)
-      checker = DidYouMean::SpellChecker.new(dictionary: @server_ids)
-      checker.correct(server_id)
     end
 
     def self.connected?(server_id)
@@ -90,7 +84,8 @@ module ESM
     end
 
     def deliver!(request)
-      ESM::Notifications.trigger("websocket_server_deliver", request: request)
+      info!(request.to_h)
+
       @requests << request
 
       # Send the message
@@ -207,7 +202,18 @@ module ESM
       return if @closed
 
       EventMachine.cancel_timer(@ping_timer) if @ping_timer
-      ESM::Notifications.trigger("websocket_server_on_close", server: @server)
+
+      info!(bot_stopping: ESM.bot.stopping?, server_id: @server.server_id, uptime: @server.uptime)
+
+      message =
+        if ESM.bot.stopping?
+          I18n.t("server_disconnected_esm_stopping", server: @server.server_id, uptime: @server.uptime)
+        else
+          I18n.t("server_disconnected", server: @server.server_id, uptime: @server.uptime)
+        end
+
+      @server.community&.log_event(:reconnect, message)
+
       ESM::Websocket.remove_connection(self)
       @closed = true
     end
@@ -215,7 +221,7 @@ module ESM
     # @private
     # Websocket event, executes when the A3 server replies to a pong? IDK yet, untested.
     def on_pong(message)
-      puts "[WS on_pong] #{message}"
+      Rails.logger.debug "[WS on_pong] #{message}"
     end
 
     def on_error(event)

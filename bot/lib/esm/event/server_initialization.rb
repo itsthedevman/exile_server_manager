@@ -4,7 +4,6 @@ module ESM
   module Event
     class ServerInitialization
       DATA_ATTRIBUTES = %i[
-        command_prefix
         community_id
         extdb_path
         gambling_modifier
@@ -127,7 +126,6 @@ module ESM
         ).symbolize_keys
 
         data = data.merge(
-          command_prefix: @community.command_prefix,
           community_id: @community.community_id,
           extdb_path: settings.extdb_path || "",
           logging_channel_id: @community.logging_channel_id,
@@ -159,8 +157,10 @@ module ESM
       def send_response
         message = ESM::Message.event.set_data("post_init", @data)
         message.add_callback(:on_response, on_instance: self) do |_incoming|
+          info!(server_id: @server.server_id, uptime: @server.uptime)
+
           # Trigger a connect notification
-          ESM::Notifications.trigger("server_on_connect", server: @server)
+          @server.community.log_event(:reconnect, I18n.t("server_connected", server: @server.server_id, uptime: @server.uptime))
 
           # Set the connection to be available for commands
           @server.metadata.initialized = true

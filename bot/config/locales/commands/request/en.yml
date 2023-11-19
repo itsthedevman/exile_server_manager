@@ -1,15 +1,11 @@
----
 en:
   commands:
     request:
-      sent: 'A request has been sent to this player. They have 1 day to respond to
-        this request. '
+      sent: 'A request has been sent to this player. They have 1 day to respond to this request. '
       accept_name: To **accept** this request
       accept_value: "[ACCEPT](%{url})"
       decline_name: To **decline** this request
       decline_value: "[DECLINE](%{url})"
       command_usage_name: Don't feel safe going to my website?
-      command_usage_value: That's okay! You can accept or decline this request by
-        using ```%{prefix}accept %{uuid}``` or ```%{prefix}decline %{uuid}```
-      check_pm: Hi %{user}, you'll need to confirm this request. I've sent you a confirmation
-        message in a direct message with you.
+      command_usage_value: That's okay! You can accept or decline this request by using ```/request accept uuid:%{uuid}``` or ```/request decline uuid:%{uuid}```
+      check_pm: Hi %{user}, you'll need to confirm this request. I've sent you a confirmation message in a direct message with you.

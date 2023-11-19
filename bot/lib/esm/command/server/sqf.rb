@@ -3,32 +3,46 @@
 module ESM
   module Command
     module Server
-      class Sqf < ESM::Command::Base
-        has_v1_variant!
+      class Sqf < ApplicationCommand
+        #################################
+        #
+        # Arguments (required first, then order matters)
+        #
 
-        set_type :admin
-        register_aliases :exec, :execute
+        # Required: Needed by command
+        argument :code_to_execute, display_name: :execute, required: true, preserve: true
+
+        # See Argument::TEMPLATES[:server_id]
+        argument :server_id, display_name: :on
+
+        # Optional: Has default
+        argument :target,
+          required: false,
+          checked_against: /#{ESM::Regex::TARGET.source}|server|all|everyone/i,
+          default: "server"
+
+        #
+        # Configuration
+        #
+
+        change_attribute :allowlist_enabled, default: true
+
+        command_namespace :server, :admin, command_name: :execute_code
+        command_type :admin
+
         limit_to :text
-        requires :registration
 
-        define :enabled, modifiable: true, default: true
-        define :whitelist_enabled, modifiable: true, default: true
-        define :whitelisted_role_ids, modifiable: true, default: []
-        define :allowed_in_text_channels, modifiable: true, default: true
-        define :cooldown_time, modifiable: true, default: 2.seconds
+        # Argument 'target' will trigger this check, but not all values are 'target' values
+        skip_action :nil_target_user
 
-        argument :server_id
-        argument :target, regex: /#{ESM::Regex::TARGET.source}|server|all|everyone/i, description: "commands.sqf.arguments.execution_target", default: nil, display_as: :execution_target
-        argument :code_to_execute, regex: /[\s\S]+/, description: "commands.sqf.arguments.code_to_execute", preserve: true, multiline: true
-
-        skip_check :nil_target_user
+        ################################
 
         def on_execute
-          @checks.owned_server!
-          @checks.registered_target_user! if target_user.is_a?(Discordrb::User)
+          check_for_owned_server!
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
           execute_on =
-            case args.target
+            case arguments.target
             when "all", "everyone"
               "all"
             when ->(_type) { target_user }
@@ -38,7 +52,7 @@ module ESM
             end
 
           send_to_arma(
-            data: {execute_on: execute_on, code: args.code_to_execute}
+            data: {execute_on: execute_on, code: arguments.code_to_execute}
           )
         end
 
@@ -61,6 +75,95 @@ module ESM
           )
 
           reply(embed)
+        end
+
+        module V1
+          def on_execute
+            check_for_owned_server!
+
+            execute_on =
+              if target_user
+                check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+                # Return their steam uid
+                target_uid
+              else
+                "server"
+              end
+
+            deliver!(command_name: "exec", function_name: "exec", target: execute_on, code: minify_sqf(arguments.code_to_execute))
+          end
+
+          def on_response(_, _)
+            return if @response.message.blank?
+
+            reply(response_message)
+          end
+
+          def minify_sqf(sqf)
+            [
+              [/\s*;\s*/, ";"], [/\s*:\s*/, ":"], [/\s*,\s*/, ","], [/\s*\[\s*/, "["],
+              [/\s*\]\s*/, "]"], [/\s*\(\s*/, "("], [/\s*\)\s*/, ")"], [/\s*-\s*/, "-"],
+              [/\s*\+\s*/, "+"], [/\s*\/\s*/, "/"], [/\s*\*\s*/, "*"], [/\s*%\s*/, "%"],
+              [/\s*=\s*/, "="], [/\s*!\s*/, "!"], [/\s*>\s*/, ">"], [/\s*<\s*/, "<"],
+              [/\s*>>\s*/, ">>"], [/\s*&&\s*/, "&&"], [/\s*\|\|\s*/, "||"], [/\s*\}\s*/, "}"],
+              [/\s*\{\s*/, "{"], [/\s+/, " "], [/\n+/, ""], [/\r+/, ""], [/\t+/, ""]
+            ].each do |group|
+              sqf = sqf.gsub(group.first, group.second)
+            end
+
+            sqf
+          end
+
+          # Unfortunately, the SQF sends back a formatted string.
+          # Match the response from the server and then reply back to the user with a new message
+          def response_message
+            case @response.message
+            when /executed on server successfully/i
+              match = @response.message.match(/```(.*)```/)
+
+              ESM::Embed.build(
+                :success,
+                description: I18n.t(
+                  "commands.sqf_v1.responses.server_success_with_return",
+                  user: current_user.mention,
+                  response: match[1],
+                  server_id: target_server.server_id
+                )
+              )
+            when /executed code on server/i
+              ESM::Embed.build(
+                :success,
+                description: I18n.t(
+                  "commands.sqf_v1.responses.server_success",
+                  user: current_user.mention,
+                  server_id: target_server.server_id
+                )
+              )
+            when /executed code on target/i
+              ESM::Embed.build(
+                :success,
+                description: I18n.t(
+                  "commands.sqf_v1.responses.target_success",
+                  user: current_user.mention,
+                  server_id: target_server.server_id,
+                  target_uid: target_user.steam_uid
+                )
+              )
+            when /invalid target/i
+              ESM::Embed.build(
+                :error,
+                description: I18n.t(
+                  "commands.sqf_v1.responses.invalid_target",
+                  user: current_user.mention,
+                  server_id: target_server.server_id,
+                  target_uid: target_user.steam_uid
+                )
+              )
+            else
+              @response.message
+            end
+          end
         end
       end
     end

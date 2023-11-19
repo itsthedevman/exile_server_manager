@@ -2,11 +2,14 @@
 
 module ESM
   class Community < ApplicationRecord
+    ALPHABET = ("a".."z").to_a.freeze
+
     before_create :generate_community_id
-    before_create :set_command_prefix
+    before_create :generate_public_id
     after_create :create_command_configurations
     after_create :create_notifications
 
+    attribute :public_id, :uuid
     attribute :community_id, :string
     attribute :community_name, :text
     attribute :guild_id, :string
@@ -17,17 +20,18 @@ module ESM
     attribute :log_error_event, :boolean, default: true
     attribute :player_mode_enabled, :boolean, default: true
     attribute :territory_admin_ids, :json, default: []
-    attribute :command_prefix, :string, default: nil
     attribute :welcome_message_enabled, :boolean, default: true
     attribute :welcome_message, :string, default: ""
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
-    attribute :deleted_at, :datetime
 
     has_many :command_configurations, dependent: :destroy
     has_many :cooldowns, dependent: :destroy
+    has_many :id_defaults, class_name: "CommunityDefault", dependent: :destroy
     has_many :notifications, dependent: :destroy
     has_many :servers, dependent: :destroy
+    has_many :user_aliases, dependent: :nullify
+    has_many :user_defaults, dependent: :nullify
     has_many :user_notification_routes, foreign_key: :destination_community_id, dependent: :destroy
 
     alias_attribute :name, :community_name
@@ -61,6 +65,14 @@ module ESM
       return if community_id.nil?
 
       find_by_community_id(community_id[1])
+    end
+
+    def self.from_discord(discord_server)
+      return if discord_server.nil?
+
+      community = order(:guild_id).where(guild_id: discord_server.id).first_or_initialize
+      community.update!(community_name: discord_server.name)
+      community
     end
 
     def logging_channel
@@ -109,10 +121,6 @@ module ESM
 
     private
 
-    def set_command_prefix
-      self.command_prefix = ::ESM.config.prefix
-    end
-
     def generate_community_id
       return if community_id.present?
 
@@ -121,7 +129,7 @@ module ESM
 
       loop do
         # Attempt to generate an id. Top rated comment from this answer: https://stackoverflow.com/a/88341
-        new_id = ("a".."z").to_a.sample(4).join
+        new_id = ALPHABET.sample(4).join
         count += 1
 
         # Our only saviors
@@ -132,6 +140,12 @@ module ESM
       # Yup. Add to the community_ids so our spell checker works
       self.class.community_ids << new_id
       self.community_id = new_id
+    end
+
+    def generate_public_id
+      return if public_id.present?
+
+      self.public_id = SecureRandom.uuid
     end
 
     def create_command_configurations

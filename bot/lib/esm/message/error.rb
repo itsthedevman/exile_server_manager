@@ -25,7 +25,6 @@ module ESM
           replacements = {
             user: command&.current_user&.mention,
             target: command&.target_user&.mention,
-            prefix: command&.prefix,
             message_id: message.id,
             server_id: message.attributes.server_id,
             type: message.type,

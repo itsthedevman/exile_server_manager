@@ -18,7 +18,7 @@ module ESM
     belongs_to :user
 
     def refresh
-      return if user.steam_uid.blank?
+      return self if user.steam_uid.blank?
 
       player_data = ESM::SteamAccount.new(user.steam_uid)
       update(
@@ -32,11 +32,13 @@ module ESM
         number_of_vac_bans: player_data.number_of_vac_bans,
         days_since_last_ban: player_data.days_since_last_ban
       )
+
+      self
     end
 
     # A refresh can happen every 15 minutes
     def needs_refresh?
-      ((Time.now - updated_at) / 1.minute) >= 15
+      ((Time.zone.now - updated_at) / 1.minute) >= 15
     end
   end
 end

@@ -176,7 +176,7 @@ module ESM
       if current_user
         metadata.player = {
           steam_uid: current_user.steam_uid,
-          discord_id: current_user.id.to_s,
+          discord_id: current_user.discord_id,
           discord_name: current_user.username,
           discord_mention: current_user.mention
         }
@@ -186,10 +186,10 @@ module ESM
       if target_user
         target = {steam_uid: target_user.steam_uid}
 
-        # Instances of TargetUser do not contain discord information
-        if !target_user.is_a?(ESM::TargetUser)
+        # Instances of User::Ephemeral do not contain discord information
+        if !target_user.is_a?(ESM::User::Ephemeral)
           target.merge!(
-            discord_id: target_user.id.to_s,
+            discord_id: target_user.discord_id,
             discord_name: target_user.username,
             discord_mention: target_user.mention
           )
