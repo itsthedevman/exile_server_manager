@@ -6,10 +6,10 @@
 <br>
 <p align="center">
   <a href="https://www.ruby-lang.org/en/">
-    <img src="https://img.shields.io/badge/Ruby-v2.7.2-green.svg" alt="ruby version">
+    <img src="https://img.shields.io/badge/Ruby-v3.2.2-green.svg" alt="ruby version">
   </a>
-  <a href="https://www.esmbot.com/releases">
-    <img src="https://img.shields.io/badge/ESM-v2.0-blue.svg" alt="ruby version">
+  <a href="https://www.esmbot.com/">
+    <img src="https://img.shields.io/badge/ESM-v2.3.0-blue.svg" alt="ruby version">
   </a>
 </p>
 
