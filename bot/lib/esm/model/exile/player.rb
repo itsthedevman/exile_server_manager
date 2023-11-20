@@ -64,10 +64,10 @@ module ESM
         @territories ||= begin
           territories = @data.territories
 
-          # V1
-          if !@server.v2?
+          # V1 - Wtf? Why did I send this as a hash?? And using the name as the key?? lol
+          if territories.is_a?(String)
             territory = ImmutableStruct.define(:id, :name)
-            territories = territories.map { |name, id| territory.new(id, name) }
+            territories = territories.to_h.map { |name, id| territory.new(id, name) }
           end
 
           territories.sort_by { |t| t.name.downcase }
