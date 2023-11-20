@@ -124,7 +124,7 @@ module ESM
           ESM::Embed.build do |e|
             e.set_author(name: message.dig(:author, :name), icon_url: message.dig(:author, :icon_url)) if message[:author].present?
 
-            e.title = messagpe[:title] if message[:title]
+            e.title = message[:title] if message[:title]
             e.description = message[:description] if message[:description]
             e.color = message[:color] if message[:color]
 
