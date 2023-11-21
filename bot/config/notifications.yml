@@ -73,7 +73,7 @@ xm8:
     type: "flag-restored"
 
   - color: "random"
-    description: "**{{ territoryName }}'s** protection money is due today!\nUse `!pay {{ serverID }} {{ territoryID }}` to make a payment!"
+    description: "**{{ territoryName }}'s** protection money is due today!\nUse `/territory pay on:{{ serverID }} territory:{{ territoryID }}` to make a payment!"
     title: "Protection Money Due `({{ territoryID }})`"
     type: "protection-money-due"
 
