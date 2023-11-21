@@ -114,9 +114,10 @@ module ESM
     post("/channel/:id/send") do
       ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      channel = ESM.bot.channel(params[:id])
+      channel = ESM.bot.channel(params[:id]) || ESM.bot.user(params[:id])
+      channel = channel.pm if channel.is_a?(Discordrb::User)
       return halt(404) if channel.nil?
-      return halt(404) unless ESM.bot.channel_permission?(:send_messages, channel)
+      return halt(404) if channel.text? && !ESM.bot.channel_permission?(:send_messages, channel)
 
       message = params[:message].to_h || params[:message]
       if message.is_a?(Hash)
