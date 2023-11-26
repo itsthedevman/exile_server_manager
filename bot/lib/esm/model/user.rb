@@ -31,8 +31,8 @@ module ESM
     has_many :user_notification_routes, dependent: :destroy
     has_one :user_steam_data, dependent: :destroy
 
-    validates :discord_id, uniqueness: true, presence: true
-    validates :steam_uid, uniqueness: true
+    # validates :discord_id, uniqueness: true, presence: true
+    # validates :steam_uid, uniqueness: true
 
     delegate :on, to: :discord_user, allow_nil: true
 
