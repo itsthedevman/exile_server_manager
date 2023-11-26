@@ -18,6 +18,10 @@ module ESM
           ESM::Embed.build do |e|
             e.color = Color::BLUE
           end
+
+        @backtrace_cleaner = ActiveSupport::BacktraceCleaner.new
+        @backtrace_cleaner.add_filter { |line| line.gsub(ESM.root.to_s, "") }
+        @backtrace_cleaner.add_silencer { |line| /gems/.match?(line) }
       end
 
       #
@@ -71,7 +75,12 @@ module ESM
           when StandardError
             uuid = SecureRandom.uuid.split("-")[0..1].join("")
 
-            ESM.bot.log_error(uuid: uuid, message: error.message, backtrace: error.backtrace)
+            ESM.bot.log_error(
+              uuid: uuid,
+              user: @command&.current_user&.attributes_for_logging,
+              message: error.message,
+              backtrace: @backtrace_cleaner.clean(error.backtrace)
+            )
 
             ESM::Embed.build(:error, description: I18n.t("exceptions.system", error_code: uuid))
           end

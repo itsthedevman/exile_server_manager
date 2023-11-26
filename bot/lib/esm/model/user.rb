@@ -85,6 +85,10 @@ module ESM
     # Instance Methods
     #########################
 
+    def attributes_for_logging
+      attributes.except("id", "discord_avatar", "discord_access_token", "discord_refresh_token", "updated_at")
+    end
+
     def steam_data
       @steam_data ||= user_steam_data&.refresh
     end
