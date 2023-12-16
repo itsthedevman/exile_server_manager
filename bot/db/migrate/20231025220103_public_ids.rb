@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 class PublicIds < ActiveRecord::Migration[6.1]
+  # !!!!!IMPORTANT!!!!!
+  #
+  # Doing this type of migration will RESET the PK's auto-increment counter back to 0 on the new table
+  # It MUST be set back to the highest number manually using this SQL:
+  #
+  #   ALTER SEQUENCE <table_name>_id_seq RESTART WITH <count>;
+  #
+  # Failure to do so will result in broken functionality that may or may not be apparent at the time.
+  #
   def change
     enable_extension "hstore" unless extension_enabled?("hstore")
     enable_extension "uuid-ossp" unless extension_enabled?("uuid-ossp")

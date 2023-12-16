@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_27_175108) do
+ActiveRecord::Schema[7.0].define(version: 2023_12_16_163927) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -254,7 +254,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_27_175108) do
     t.string "server_id", null: false
     t.integer "community_id", null: false
     t.text "server_key"
-    t.text "server_name"
+    t.text "server_name", default: "", null: false
     t.integer "server_visibility", default: 1, null: false
     t.string "server_ip"
     t.string "server_port"
