@@ -43,7 +43,6 @@ module ESM
 
     delegate :number_of_vac_bans, :days_since_last_ban, to: :bans
 
-
     private
 
     def query
@@ -58,7 +57,12 @@ module ESM
           return
         end
 
-        data = response["response"]["players"].first
+        data = response.dig("response", "players")&.first
+        if data.blank?
+          error!("Steam players response is blank! UID: #{@steam_uid}\nResponse: #{response}")
+          return
+        end
+
         {
           steam_id: data["steamid"],
           community_visibility_state: data["communityvisibilitystate"],
