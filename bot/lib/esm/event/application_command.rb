@@ -46,7 +46,7 @@ module ESM
       end
 
       def on_completion
-        content = ":stopwatch: Completed in #{@command.timers.humanized_total}: #{usage}"
+        content = ":stopwatch: Completed in #{@command.timers.humanized_total}"
         content = add_tip(content)
 
         edit_response(content: content)
@@ -61,9 +61,9 @@ module ESM
 
         content =
           if error.is_a?(Exception::CheckFailure)
-            ":warning: I was unable to complete your request :warning:\n#{usage}"
+            ":warning: I was unable to complete your request :warning:\n"
           else
-            ":grimacing: Well, this is awkward... :grimacing:\n#{usage}"
+            ":grimacing: Well, this is awkward... :grimacing:\n"
           end
 
         edit_response(content: content)
@@ -99,10 +99,6 @@ module ESM
 
           send_tip
         end.call
-      end
-
-      def usage
-        "||`#{@command.usage}`||"
       end
 
       def add_tip(content)
