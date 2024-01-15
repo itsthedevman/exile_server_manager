@@ -136,6 +136,7 @@ module ESM
       raise NOT_FOUND if community.nil?
 
       server = community.discord_server
+      raise NOT_FOUND if server.nil?
 
       user = ESM::User.find_by(id: params[:user_id])
 
