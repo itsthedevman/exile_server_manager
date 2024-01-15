@@ -78,7 +78,7 @@ module ESM
         def from_request(request)
           @request = request
           @current_channel = ESM.bot.channel(request.requested_from_channel_id)
-          @current_user = request.requestor.discord_user
+          @current_user = request.requestor
 
           # Initialize our command from the request
           arguments.merge!(request.command_arguments.symbolize_keys) if request.command_arguments.present?

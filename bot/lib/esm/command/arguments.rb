@@ -114,7 +114,7 @@ module ESM
           define_method(argument.display_name) { self[name] }
 
           # self.server_id = value
-          define_method("#{name}=") { |value| self[name] = value }
+          define_method(:"#{name}=") { |value| self[name] = value }
         end
       end
     end
