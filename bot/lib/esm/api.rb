@@ -1,46 +1,61 @@
 # frozen_string_literal: true
 
 module ESM
-  class API < RedisIPC::Channel
-    ERRORS = [
-      NOT_FOUND = "not found",
-      MISSING_PERMISSION = "missing permission"
-    ].freeze
+  class API < Sinatra::Base
+    def self.run!
+      Thread.new {
+        super
+      }
+    end
 
-    stream "ipc::esm"
-    channel "bot"
+    # Sinatra hooks the Ctrl-C event.
+    # This method is now in charge of killing everything. yaay /s
+    def self.quit!
+      super
+
+      # Stop the bot
+      ESM.bot.stop
+    end
+
+    ######################################
+    set(:port, ENV["API_PORT"])
+
+    # Every request must be authorized
+    before do
+      halt(401) if request.env["HTTP_AUTHORIZATION"] != "Bearer #{ENV["API_AUTH_KEY"]}"
+    end
 
     # Accepts a request and triggers any logic that is required by the command
-    event("requests:accept", params: [:id]) do
-      info!(event: "requests:accept", params: params)
+    put("/requests/:id/accept") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       request = ESM::Request.where(id: params[:id]).first
-      raise NOT_FOUND if request.nil?
+      return halt(404) if request.nil?
 
       # Respond to the request
       request.respond(true)
     end
 
     # Declines a request and triggers any logic that is required by the command
-    event("requests:decline", params: [:id]) do
-      info!(event: "requests:decline", params: params)
+    put("/requests/:id/decline") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       request = ESM::Request.where(id: params[:id]).first
-      raise NOT_FOUND if request.nil?
+      return halt(404) if request.nil?
 
       # Respond to the request
       request.respond(false)
     end
 
     # Updates a server by sending it the initialization package again
-    event("servers:update", params: [:id]) do
-      info!(event: "servers:update", params: params)
+    put("/servers/:id/update") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       server = ESM::Server.where(id: params[:id]).first
-      raise NOT_FOUND if server.nil?
+      return halt(404) if server.nil?
 
       connection = ESM::Websocket.connection(server.server_id)
-      return true if connection.nil?
+      return halt(200) if connection.nil?
 
       # Tell ESM to update the server with the new details
       ESM::Event::ServerInitialization.new(connection: connection, server: server, parameters: {}).update
@@ -49,16 +64,16 @@ module ESM
     # If a community changes their ID, their servers need to disconnect and reconnect
     # params[:id] => New ID
     # params[:old_id] => Old ID
-    event("servers:reconnect", params: [:id, :old_id]) do
-      info!(event: "servers:reconnect", params: params)
+    put("/servers/:id/reconnect") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       server = ESM::Server.where(id: params[:id]).first
-      raise NOT_FOUND if server.nil?
-      raise NOT_FOUND if params[:old_id].blank?
+      return halt(404) if server.nil?
+      return halt(404) if params[:old_id].blank?
 
       # Grab the old server connection
       connection = ESM::Websocket.connection(params[:old_id])
-      return if connection.nil?
+      return halt(200) if connection.nil?
 
       # Disconnect the old server. The DLL will automatically reconnect in 30 seconds
       # ESM::Websocket.remove_connection(connection)
@@ -71,38 +86,38 @@ module ESM
     # @param id [String] The discord channel ID
     # @param community_id [String] Restricts the search to this community's guild
     # @param user_id [String] Requires the channel to be readable by this user's discord member
-    event("channel", params: [:id, :community_id, :user_id]) do
-      info!(event: "channel", params: params)
+    get("/channel/:id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       channel = ESM.bot.channel(params[:id])
-      raise NOT_FOUND if channel.nil?
-      raise MISSING_PERMISSION unless ESM.bot.channel_permission?(:send_messages, channel)
+      return halt(404) if channel.nil?
+      return halt(422) unless ESM.bot.channel_permission?(:send_messages, channel)
 
       if params[:community_id]
         community = ESM::Community.find_by(id: params[:community_id])
-        raise NOT_FOUND if community.nil?
-        raise NOT_FOUND unless channel.server.id.to_s == community.guild_id
+        return halt(404) if community.nil?
+        return halt(422) unless channel.server.id.to_s == community.guild_id
       end
 
       if params[:user_id]
         user = ESM::User.find_by(id: params[:user_id])
-        raise NOT_FOUND if user.nil?
-        raise MISSING_PERMISSION unless user.channel_permission?(:read_messages, channel)
+        return halt(404) if user.nil?
+        return halt(422) unless user.channel_permission?(:read_messages, channel)
       end
 
-      channel.to_h
+      channel.to_h.to_json
     end
 
     # Sends a message to a channel
     # params[:id] => ID of the channel to send
     # params[:message] => The message to send encoded as JSON
-    event("channel:send", params: [:id, :message]) do
-      info!(event: "channel:send", params: params)
+    post("/channel/:id/send") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       channel = ESM.bot.channel(params[:id]) || ESM.bot.user(params[:id])
       channel = channel.pm if channel.is_a?(Discordrb::User)
-      raise NOT_FOUND if channel.nil?
-      raise NOT_FOUND if channel.text? && !ESM.bot.channel_permission?(:send_messages, channel)
+      return halt(404) if channel.nil?
+      return halt(404) if channel.text? && !ESM.bot.channel_permission?(:send_messages, channel)
 
       message = params[:message].to_h || params[:message]
       if message.is_a?(Hash)
@@ -129,14 +144,13 @@ module ESM
     # @param id [String] The database ID for the community
     # @param user_id [String] The database ID for a user to check if they have read permissions
     #
-    event("community:channels", params: [:id, :user_id]) do
-      info!(event: "community:channels", params: params)
+    get("/community/:id/channels") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       community = ESM::Community.find_by(id: params[:id])
-      raise NOT_FOUND if community.nil?
+      return halt(404) if community.nil?
 
       server = community.discord_server
-      raise NOT_FOUND if server.nil?
 
       user = ESM::User.find_by(id: params[:user_id])
 
@@ -171,7 +185,7 @@ module ESM
       grouped_channels.unshift([{name: community.community_name}, not_categorized_channels])
 
       # Return the results
-      grouped_channels
+      grouped_channels.to_json
     end
 
     #
@@ -180,16 +194,19 @@ module ESM
     # @param id [String] The community's database ID
     # @param user_id [String] The user's database ID
     #
-    event("community:modifiable_by?", params: [:id, :user_id]) do
-      info!(event: "community:modifiable_by?", params: params)
+    # @return [true/false]
+    #
+    get("/community/:id/is_modifiable_by/:user_id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.find_by(id: params[:id])
-      raise NOT_FOUND if community.nil?
+      community = ESM::Community.find_by_id(params[:id])
+      return halt(404) if community.nil?
 
       user = ESM::User.find_by(id: params[:user_id])
-      raise NOT_FOUND if user.nil?
+      return halt(404) if user.nil?
 
-      return community.modifiable_by?(user.discord_user.on(community.discord_server))
+      result = community.modifiable_by?(user.discord_user.on(community.discord_server))
+      result.to_s
     end
 
     #
@@ -197,11 +214,11 @@ module ESM
     #
     # @param id [String] The community's database ID
     #
-    event("community:roles", params: [:id]) do
-      info!(event: "community:roles", params: params)
+    get("/community/:id/roles") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       community = ESM::Community.find_by(id: params[:id])
-      raise NOT_FOUND if community.nil?
+      return halt(404) if community.nil?
 
       server_roles = community.discord_server.roles
       return if server_roles.blank?
@@ -217,7 +234,7 @@ module ESM
         }
       end
 
-      roles
+      roles.to_json
     end
 
     #
@@ -225,16 +242,16 @@ module ESM
     #
     # @param id [String] The community's database ID
     #
-    event("community:users", params: [:id]) do
-      info!(event: "community:users", params: params)
+    get("/community/:id/users") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.find_by(id: params[:id])
-      raise NOT_FOUND if community.nil?
+      community = ESM::Community.find_by_id(params[:id])
+      return halt(404) if community.nil?
 
       users = community.discord_server.users
       return if users.blank?
 
-      users.map(&:to_h)
+      users.map(&:to_h).to_json
     end
 
     #
@@ -243,14 +260,14 @@ module ESM
     # @param id [String] The user's database ID
     # @param guild_ids [true/false] The IDs of the guilds to check permissions
     #
-    event("user:communities", params: [:id, :guild_ids]) do
-      info!(event: "user:communities", params: params)
+    get("/user/:id/communities") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
       user = ESM::User.find_by(id: params[:id])
-      raise NOT_FOUND if user.nil?
+      return halt(404) if user.nil?
 
       communities = ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled).where(guild_id: params[:guild_ids])
-      return [] if communities.blank?
+      return "[]" if communities.blank?
 
       discord_user = user.discord_user
       community_ids = communities.filter_map do |community|
@@ -264,26 +281,26 @@ module ESM
         community.id
       end
 
-      community_ids
+      community_ids.to_json
     end
 
     #
     # Deletes a community from the DB and forces ESM to leave it
     #
-    # @param id [String] The community's database ID
+    # @param community_id [String] The community's database ID
     # @param user_id [String] The user's database ID. Used to check if they have access
     #
-    event("community:delete", params: [:id, :user_id]) do
-      info!(event: "community:delete", params: params)
+    delete("/community/:community_id") do
+      ESM.logger.info("#{self.class}##{__method__}") { params }
 
-      community = ESM::Community.where(id: params[:id]).first
-      raise NOT_FOUND if community.nil?
+      community = ESM::Community.where(id: params[:community_id]).first
+      return halt(404) if community.nil?
 
       user = ESM::User.where(id: params[:user_id]).first
-      raise NOT_FOUND if user.nil?
+      return halt(404) if user.nil?
 
       discord_server = community.discord_server
-      raise MISSING_PERMISSION if !community.modifiable_by?(user.discord_user.on(discord_server))
+      return halt(401) if !community.modifiable_by?(user.discord_user.on(discord_server))
 
       discord_server.leave
       community.destroy
