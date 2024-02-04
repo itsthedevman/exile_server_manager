@@ -70,7 +70,7 @@ impl Transfers {
                 }
             };
 
-            let mut chunk = &mut transfer.chunks[incoming_chunk.index];
+            let chunk = &mut transfer.chunks[incoming_chunk.index];
             let bytes = incoming_chunk.bytes.clone();
 
             let path = transfer.path.parent().unwrap();

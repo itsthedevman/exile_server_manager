@@ -3,10 +3,8 @@ pub mod error;
 pub mod metadata;
 pub mod parser;
 
-use aes_gcm::aead::{Aead, NewAead};
-use aes_gcm::{Aes256Gcm, Key, Nonce};
+
 use arma_rs::FromArma;
-use rand::random;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -111,12 +109,15 @@ impl Message {
         self
     }
 
-    pub fn from_bytes(data: &[u8], key: &[u8]) -> Result<Message, String> {
-        decrypt_message(data, key)
-    }
-
-    pub fn as_bytes(&self, key: &[u8]) -> Result<Vec<u8>, String> {
-        encrypt_message(self, key)
+    pub fn from_bytes(data: &[u8]) -> Result<Message, String> {
+        match serde_json::from_slice(&data) {
+            Ok(message) => Ok(message),
+            Err(e) => Err(format!(
+                "Failed to deserialize. Reason: {:?}. Message: {:#?}",
+                e,
+                String::from_utf8(data.to_vec()).unwrap_or(format!("Bytes: {:?}", data))
+            )),
+        }
     }
 
     //  [
@@ -198,161 +199,28 @@ impl Default for Message {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
-    // Events, such as Init, PostInit, etc.
-    Event,
+    // Execute a Arma function
+    Arma,
 
     // Bounces the message back
     Echo,
 
+    // Regular events, such as Init, PostInit, etc.
+    Event,
+
     // Database query
     Query,
 
-    // Execute a Arma function
-    Arma,
+    // System events, such as Handshake
+    System,
 }
 
 ////////////////////////////////////////////////////////////
-
-#[allow(clippy::ptr_arg)]
-fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, String> {
-    if server_key.len() < 32 {
-        return Err("Server key must contain at least 32 bytes".into());
-    }
-
-    // Setup everything for encryption
-    let encryption_key = Key::from_slice(&server_key[0..32]); // server_key has to be exactly 32 bytes
-    let encryption_cipher = Aes256Gcm::new(encryption_key);
-    let nonce_key: Vec<u8> = (0..12).map(|_| random::<u8>()).collect();
-    let encryption_nonce = Nonce::from_slice(&nonce_key);
-
-    /*
-        Message (as bytes)
-        [
-            1 byte -> Size of Nonce (nonce_bytes)
-            # of nonce_bytes -> The nonce
-            rest -> The encrypted json
-        ]
-    */
-    // Start the packet off with the nonce length
-    let mut packet: Vec<u8> = vec![nonce_key.len() as u8];
-
-    // Append the nonce to the packet
-    packet.extend(&*nonce_key);
-
-    // Serialize this message
-    let message_bytes = match serde_json::to_vec(&message) {
-        Ok(bytes) => bytes,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    // Encrypt the message
-    let encrypted_message =
-        match encryption_cipher.encrypt(encryption_nonce, message_bytes.as_ref()) {
-            Ok(bytes) => bytes,
-            Err(e) => return Err(e.to_string()),
-        };
-
-    // Now add the encrypted message to the end. This completes the packet
-    packet.extend(&*encrypted_message);
-
-    Ok(packet)
-}
-
-fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
-    if server_key.len() < 32 {
-        return Err("Server key must contain at least 32 bytes".into());
-    }
-
-    // Decrypt. First step, extract the nonce
-    let nonce_length = bytes[0] as usize;
-    let nonce = bytes[1..=nonce_length].to_vec();
-    let nonce = Nonce::from_slice(&nonce);
-
-    // Next, extract the encrypted bytes
-    let enc_offset = 1 + nonce_length;
-    let encrypted_bytes = bytes[enc_offset..].to_vec();
-
-    // Build the cipher
-    let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
-    let key = Key::from_slice(server_key);
-    let cipher = Aes256Gcm::new(key);
-
-    // Decrypt! This also ensures the message has been encrypted using this server's key.
-    let decrypted_bytes = match cipher.decrypt(nonce, encrypted_bytes.as_ref()) {
-        Ok(message) => message,
-        Err(e) => {
-            return Err(format!("Failed to decrypt. Reason: {}", e));
-        }
-    };
-
-    // And deserialize into a struct
-    let message: Message = match serde_json::from_slice(&decrypted_bytes) {
-        Ok(message) => message,
-        Err(e) => {
-            return Err(format!(
-                "Failed to deserialize. Reason: {:?}. Message: {:#?}",
-                e,
-                String::from_utf8(decrypted_bytes.clone())
-                    .unwrap_or(format!("Bytes: {:?}", decrypted_bytes))
-            ))
-        }
-    };
-
-    Ok(message)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::data::Init;
-
-    #[test]
-    fn test_encrypt_and_decrypt_message() {
-        let mut message = Message::new();
-
-        let server_init = Init {
-            server_name: "server_name".into(),
-            price_per_object: "10".into(),
-            territory_lifetime: "7".into(),
-            territory_data: "[]".into(),
-            server_start_time: chrono::Utc::now(),
-            extension_version: "2.0.0".into(),
-            vg_enabled: false,
-            vg_max_sizes: String::new(),
-        };
-
-        let expected = server_init.clone();
-
-        message.data = Data::Init(server_init);
-
-        let server_key = format!(
-            "{}-{}-{}-{}",
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4()
-        );
-        let server_key = server_key.as_bytes();
-
-        let encrypted_bytes = encrypt_message(&message, server_key);
-        assert!(encrypted_bytes.is_ok());
-
-        let decrypted_message = decrypt_message(&encrypted_bytes.unwrap(), server_key);
-        assert!(decrypted_message.is_ok());
-
-        let decrypted_message = decrypted_message.unwrap();
-        assert_eq!(decrypted_message.message_type, Type::Event);
-
-        match decrypted_message.data {
-            Data::Init(data) => {
-                assert_eq!(data.server_name, expected.server_name);
-                assert_eq!(data.price_per_object, expected.price_per_object);
-                assert_eq!(data.territory_lifetime, expected.territory_lifetime);
-                assert_eq!(data.territory_data, expected.territory_data);
-            }
-            _ => panic!("Invalid message data"),
-        }
-    }
 
     #[test]
     fn test_data_is_empty() {

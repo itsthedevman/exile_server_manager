@@ -476,7 +476,7 @@ pub struct Hasher {
 }
 
 impl Hasher {
-    const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
+    const ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
     const LENGTH: usize = 5;
 
     pub fn new() -> Self {
