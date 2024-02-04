@@ -9,3 +9,4 @@ members = [
     "src/message/message_proc",
 ]
 default-members = ["src/esm"]
+resolver = "2"
