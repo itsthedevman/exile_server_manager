@@ -10,14 +10,18 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
     ///////////////////
-    /// Internal
+    /// System
     ///////////////////
     #[default]
     Empty,
     Ping,
     Pong,
-    Test(Test), // TODO(Improve or remove)
+    Test(Test),
+    Handshake(Handshake),
 
+    ///////////////////
+    /// Extension bound
+    ///////////////////
     Query(Query),
 
     ///////////////////
@@ -88,6 +92,11 @@ impl Default for Territory {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Arma)]
 pub struct Test {
     pub foo: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
+pub struct Handshake {
+    pub indices: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]

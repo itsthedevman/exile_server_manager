@@ -1,6 +1,8 @@
 use arma_rs::Context;
 use esm_message::{Init, Message};
 use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use uuid::Uuid;
 
 use crate::ESMResult;
 
@@ -78,12 +80,51 @@ impl std::fmt::Display for BotRequest {
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
+#[derive(Serialize_repr, Deserialize_repr, Debug)]
+#[repr(u8)]
+// repr turns the enums to u8
+pub enum RequestType {
+    Noop = 0,
+    Error = 1,
+    Identification = 2,
+    Handshake = 3,
+    Initialize = 4,
+    Message = 5,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ServerRequest {
+pub struct Request {
+    #[serde(rename = "i")]
+    pub id: Uuid,
+
     #[serde(rename = "t")]
-    pub request_type: String,
+    pub request_type: RequestType,
 
     #[serde(rename = "c", default, skip_serializing_if = "Vec::is_empty")]
     pub content: Vec<u8>,
+}
+
+impl Request {
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            request_type: RequestType::Noop,
+            content: vec![],
+        }
+    }
+
+    pub fn set_id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
+    pub fn set_type(mut self, request_type: RequestType) -> Self {
+        self.request_type = request_type;
+        self
+    }
+
+    pub fn set_content(mut self, content: Vec<u8>) -> Self {
+        self.content = content;
+        self
+    }
 }

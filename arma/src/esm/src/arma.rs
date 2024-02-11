@@ -109,7 +109,7 @@ fn send_to_arma(message: Message) -> ESMResult {
 
 async fn post_initialization(mut message: Message) -> MessageResult {
     let Data::PostInit(ref mut data) = message.data else {
-        return Err("".into());
+        return Err("Unexpected message data type provided".into());
     };
 
     // Get the base path to figure out where to look for the ini
@@ -160,7 +160,11 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     // If the data has a territory_id, check it against the database
     if let Some(territory) = message.data.territory() {
         let Territory::Encoded { id } = territory else {
-            return Err(format!("[call_arma_function] TerritoryID parsed into {:?}", territory).into());
+            return Err(format!(
+                "[call_arma_function] TerritoryID parsed into {:?}",
+                territory
+            )
+            .into());
         };
 
         // Replace with the decoded one

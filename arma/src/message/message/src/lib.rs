@@ -3,7 +3,6 @@ pub mod error;
 pub mod metadata;
 pub mod parser;
 
-
 use arma_rs::FromArma;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -210,9 +209,6 @@ pub enum Type {
 
     // Database query
     Query,
-
-    // System events, such as Handshake
-    System,
 }
 
 ////////////////////////////////////////////////////////////
