@@ -124,18 +124,15 @@ fn send_message(message: Message) -> ESMResult {
 
     info!("[send_message] {message}");
 
-    // // Convert the message to bytes so it can be sent
-    // let bytes = match message.as_bytes(lock!(TOKEN_MANAGER).secret_bytes()) {
-    //     Ok(bytes) => bytes,
-    //     Err(error) => return Err(format!("❌ {error}").into()),
-    // };
+    // Convert the message to bytes so it can be sent
+    let bytes = encrypt_message(&message, lock!(TOKEN_MANAGER).secret_bytes())?;
 
-    // send_request(
-    //     Request::new()
-    //         .set_id(message.id)
-    //         .set_type(RequestType::Message)
-    //         .set_content(bytes),
-    // )?;
+    send_request(
+        Request::new()
+            .set_id(message.id)
+            .set_type(RequestType::Message)
+            .set_value(bytes),
+    )?;
 
     trace!("[send] {} - Sent", message.id);
 
@@ -216,7 +213,7 @@ fn on_connect(connected: bool) {
 
     let request = Request::new()
         .set_type(RequestType::Identification)
-        .set_content(lock!(TOKEN_MANAGER).access_bytes().to_vec());
+        .set_value(lock!(TOKEN_MANAGER).access_bytes().to_vec());
 
     debug!("Identifying...");
     if let Err(e) = send_request(request) {
@@ -234,7 +231,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
     match request.request_type {
         RequestType::Error => {
-            let s = match std::str::from_utf8(&request.content) {
+            let s = match std::str::from_utf8(&request.value) {
                 Ok(v) => v,
                 Err(_) => return Err("[on_message#error] Expected String, got not a String".into()),
             };
@@ -245,7 +242,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
         }
 
         RequestType::Handshake => {
-            let message = message_from_bytes(&request.content)?;
+            let message = message_from_bytes(&request.value)?;
 
             info!("[on_message#handshake] {:?}", message);
 
@@ -262,26 +259,23 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
             // Like now! Send back an encrypted message for the server to validate everything was set correctly here
             let message = message.set_data(Data::Empty);
-            request.content = encrypt_message(&message, lock!(TOKEN_MANAGER).secret_bytes())?;
+            request.value = encrypt_message(&message, lock!(TOKEN_MANAGER).secret_bytes())?;
             send_request(request)
         }
 
         RequestType::Initialize => {
             info!("[bot_initialize] Attempting to phone home like its 1982. Please hold...");
 
-            let message = Message::new().set_data(Data::Init(lock!(INIT).clone()));
+            let message = Message::new()
+                .set_id(request.id)
+                .set_data(Data::Init(lock!(INIT).clone()));
 
-            if let Err(e) = BotRequest::send(message) {
-                error!("[listener_thread] Error while sending init message. {e}")
-                // TODO: Close
-            }
-
-            Ok(())
+            BotRequest::send(message)
         }
 
         // Message
         _ => {
-            let message = message_from_bytes(&request.content)?;
+            let message = message_from_bytes(&request.value)?;
 
             info!("[on_message] {}", message);
 

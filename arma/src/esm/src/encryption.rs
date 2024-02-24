@@ -12,7 +12,12 @@ lazy_static! {
         Arc::new(SyncMutex::new(DEFAULT_INDICES.to_owned()));
 }
 
-pub fn set_indices(mut new_indices: Vec<u8>) -> Result<(), String> {
+pub fn set_indices(new_indices: Vec<String>) -> Result<(), String> {
+    let mut new_indices = new_indices
+        .into_iter()
+        .map(|i| i.parse::<u8>().unwrap_or_default())
+        .collect::<Vec<u8>>();
+
     new_indices.dedup();
     new_indices.sort();
 
@@ -109,15 +114,14 @@ pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, S
         packet.push(*byte);
     }
 
-    info!("[decrypt_message] Packet: {packet:?}");
+    if nonce.len() < NONCE_SIZE as usize {
+        return Err(format!(
+            "Nonce key must contain at least {NONCE_SIZE} bytes"
+        ));
+    }
 
     // Build the cipher
     let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
-    info!(
-        "[decrypt_message] Server key: {server_key:?} | nonce: {nonce:?} | size: {}",
-        nonce.len()
-    );
-
     let cipher = Cipher::aes_256_cbc();
 
     // Decrypt! This also ensures the message has been encrypted using this server's key.
@@ -161,9 +165,12 @@ mod tests {
         );
         let server_key = server_key.as_bytes();
 
-        let _ = set_indices(vec![
-            3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33,
-        ]);
+        let _ = set_indices(
+            vec![3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33]
+                .into_iter()
+                .map(|i| i.to_string())
+                .collect(),
+        );
 
         let encrypted_bytes = encrypt_message(&message, server_key);
         assert!(encrypted_bytes.is_ok());

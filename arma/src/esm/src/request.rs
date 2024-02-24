@@ -101,7 +101,7 @@ pub struct Request {
     pub request_type: RequestType,
 
     #[serde(rename = "c", default, skip_serializing_if = "Vec::is_empty")]
-    pub content: Vec<u8>,
+    pub value: Vec<u8>,
 }
 
 impl Request {
@@ -109,7 +109,7 @@ impl Request {
         Self {
             id: Uuid::new_v4(),
             request_type: RequestType::Noop,
-            content: vec![],
+            value: vec![],
         }
     }
 
@@ -123,8 +123,8 @@ impl Request {
         self
     }
 
-    pub fn set_content(mut self, content: Vec<u8>) -> Self {
-        self.content = content;
+    pub fn set_value(mut self, content: Vec<u8>) -> Self {
+        self.value = content;
         self
     }
 }

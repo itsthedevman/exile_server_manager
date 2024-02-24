@@ -96,7 +96,7 @@ pub struct Test {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
 pub struct Handshake {
-    pub indices: Vec<u8>,
+    pub indices: Vec<NumberString>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Arma)]
