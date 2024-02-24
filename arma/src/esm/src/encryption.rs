@@ -1,15 +1,36 @@
 use crate::*;
-use aes_gcm::aead::{Aead, NewAead};
-use aes_gcm::{Aes256Gcm, Key, Nonce};
-use rand::random;
+use base64::prelude::*;
+use openssl::{
+    rand::rand_bytes,
+    symm::{decrypt, encrypt, Cipher},
+};
 
+const NONCE_SIZE: u8 = 16;
 lazy_static! {
+    static ref DEFAULT_INDICES: Vec<u8> = (0..NONCE_SIZE).map(|i| i).collect();
     static ref INDICES: Arc<SyncMutex<Vec<u8>>> =
-        Arc::new(SyncMutex::new(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]));
+        Arc::new(SyncMutex::new(DEFAULT_INDICES.to_owned()));
 }
 
-pub fn set_indices(new_indices: &[u8]) {
-    *lock!(INDICES) = new_indices.to_vec();
+pub fn set_indices(mut new_indices: Vec<u8>) -> Result<(), String> {
+    new_indices.dedup();
+    new_indices.sort();
+
+    if new_indices.len() != NONCE_SIZE as usize {
+        return Err(format!(
+            "[set_indices] Expected {}, got {} indices",
+            NONCE_SIZE,
+            new_indices.len()
+        ));
+    }
+
+    *lock!(INDICES) = new_indices;
+
+    Ok(())
+}
+
+pub fn reset_indices() {
+    *lock!(INDICES) = DEFAULT_INDICES.to_owned();
 }
 
 pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, String> {
@@ -17,21 +38,28 @@ pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, 
         return Err("Server key must contain at least 32 bytes".into());
     }
 
-    // Setup everything for encryption
-    // server_key has to be exactly 32 bytes
-    let encryption_key = Key::from_slice(&server_key[0..=31]);
-    let encryption_cipher = Aes256Gcm::new(encryption_key);
-    let nonce_key: Vec<u8> = (0..=11).map(|_| random::<u8>()).collect();
-    let encryption_nonce = Nonce::from_slice(&nonce_key);
-
-    // Start with the message data
     let message_bytes: Vec<u8> = match serde_json::to_vec(&message) {
         Ok(bytes) => bytes,
         Err(e) => return Err(e.to_string()),
     };
 
+    // encryption_key has to be exactly 32 bytes
+    let encryption_key = &server_key[0..32];
+
+    let mut nonce_key = [0; NONCE_SIZE as usize];
+    if let Err(e) = rand_bytes(&mut nonce_key) {
+        error!("[encrypt_message] Failed to generate nonce. {e:?}");
+    }
+
+    let cipher = Cipher::aes_256_cbc();
+
     // and encrypt it
-    let mut packet = match encryption_cipher.encrypt(encryption_nonce, message_bytes.as_ref()) {
+    let mut packet: Vec<u8> = match encrypt(
+        cipher,
+        encryption_key,
+        Some(&nonce_key),
+        message_bytes.as_ref(),
+    ) {
         Ok(bytes) => bytes,
         Err(e) => return Err(e.to_string()),
     };
@@ -42,13 +70,22 @@ pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, 
         packet.insert(*nonce_index as usize, nonce_key[loop_index])
     }
 
-    Ok(packet)
+    Ok(BASE64_STANDARD.encode(packet).into_bytes())
 }
 
 pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
     if server_key.len() < 32 {
         return Err("Server key must contain at least 32 bytes".into());
     }
+
+    let Ok(encoded_message) = String::from_utf8(bytes.to_vec()) else {
+        return Err("Failed to convert to string".into());
+    };
+
+    let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
+        Ok(p) => p,
+        Err(e) => return Err(format!("[decrypt_message] {e:?}")),
+    };
 
     let nonce_indices = lock!(INDICES).clone();
 
@@ -60,7 +97,7 @@ pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, S
     // issue for this, but I did come up with another way to do it.
     // To avoid re-indexing the bytes array 12 times (plus a copy since I'd need it to be mut), I'll go through
     // each byte and rebuild the packet without the nonce in it. This _should_ be good on perf
-    for (index, byte) in bytes.iter().enumerate() {
+    for (index, byte) in encoded_message.iter().enumerate() {
         if nonce_indices
             .get(nonce.len())
             .is_some_and(|i| *i as usize == index)
@@ -76,16 +113,17 @@ pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, S
 
     // Build the cipher
     let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
-    info!("[decrypt_message] Server key: {server_key:?} | nonce: {nonce:?}");
+    info!(
+        "[decrypt_message] Server key: {server_key:?} | nonce: {nonce:?} | size: {}",
+        nonce.len()
+    );
 
-    let key = Key::from_slice(server_key);
-    let cipher = Aes256Gcm::new(key);
-    let nonce = Nonce::from_slice(&nonce);
+    let cipher = Cipher::aes_256_cbc();
 
     // Decrypt! This also ensures the message has been encrypted using this server's key.
-    match cipher.decrypt(nonce, packet.as_ref()) {
+    match decrypt(cipher, server_key, Some(&nonce), packet.as_ref()) {
         Ok(message) => Ok(message),
-        Err(_) => Err(format!("Failed to decrypt")), // The error gives us fuck all
+        Err(e) => Err(format!("Failed to decrypt. {e:?}")),
     }
 }
 
@@ -123,7 +161,9 @@ mod tests {
         );
         let server_key = server_key.as_bytes();
 
-        set_indices(&vec![3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]);
+        let _ = set_indices(vec![
+            3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33,
+        ]);
 
         let encrypted_bytes = encrypt_message(&message, server_key);
         assert!(encrypted_bytes.is_ok());

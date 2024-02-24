@@ -16,7 +16,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 arma-rs = { version = "1.9", features = ["uuid", "serde_json", "chrono"] }
-base64 = "0.21"
 chrono = { version = "0.4", features = ["serde"] }
 esm_message = { path = "../message/message" }
 harsh = "0.2.2"
@@ -34,7 +33,8 @@ serde_yaml = "0.9"
 serde_repr = "0.1"
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.3", features = ["serde", "v4", "fast-rng"] }
-aes-gcm = "0.9.1"
+openssl = "0.10"
+base64 = "0.21"
 
 [dev-dependencies]
 pretty_assertions = "1.3"

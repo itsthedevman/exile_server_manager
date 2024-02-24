@@ -250,11 +250,15 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
             info!("[on_message#handshake] {:?}", message);
 
             let Data::Handshake(ref data) = message.data else {
+                // TODO: Close
                 return Err("Unexpected message data type provided".into());
             };
 
             // Store the new indices for future use
-            set_indices(&data.indices);
+            if let Err(e) = set_indices(data.indices.to_owned()) {
+                // TODO: Close
+                return Err(e.into());
+            }
 
             // Like now! Send back an encrypted message for the server to validate everything was set correctly here
             let message = message.set_data(Data::Empty);
@@ -269,6 +273,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
             if let Err(e) = BotRequest::send(message) {
                 error!("[listener_thread] Error while sending init message. {e}")
+                // TODO: Close
             }
 
             Ok(())
@@ -314,6 +319,8 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 }
 
 fn on_disconnect() {
+    reset_indices();
+
     CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
 
