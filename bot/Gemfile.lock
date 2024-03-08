@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/itsthedevman/discordrb.git
-  revision: 3fc283e8f21cb1bb79303ea96edfa6637ec72850
+  revision: ebb5e8da004b6bc6114b5ff8859cc825de8c0702
   branch: fix/group-subcommand-mixing
   specs:
     discordrb (3.5.0)
