@@ -35,7 +35,7 @@
   "redis_ipc",
   "securerandom",
   "semantic",
-  "sinatra",
+  "sinatra/base",
   "steam_web_api",
   "steam-condenser",
   "terminal-table",
