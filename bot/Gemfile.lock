@@ -12,18 +12,6 @@ GIT
     discordrb-webhooks (3.5.0)
       rest-client (>= 2.0.0)
 
-GIT
-  remote: https://github.com/itsthedevman/redis_ipc
-  revision: c3e17a98a9e8a9730ff40093f05b43ed02e8e087
-  specs:
-    redis_ipc (1.0.2)
-      activesupport (>= 6.1)
-      concurrent-ruby (~> 1.2)
-      concurrent-ruby-ext (~> 1.2)
-      connection_pool (~> 2.4)
-      rake (~> 13.0)
-      redis (~> 5.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -113,8 +101,6 @@ GEM
     coderay (1.1.3)
     colorize (1.1.0)
     concurrent-ruby (1.2.3)
-    concurrent-ruby-ext (1.2.3)
-      concurrent-ruby (= 1.2.3)
     connection_pool (2.4.1)
     crass (1.0.6)
     database_cleaner-active_record (2.1.0)
@@ -189,8 +175,6 @@ GEM
     multi_json (1.15.0)
     multi_xml (0.6.0)
     multipart-post (2.4.0)
-    mustermann (3.0.0)
-      ruby2_keywords (~> 0.0.1)
     mutex_m (0.2.0)
     mysql2 (0.5.6)
     neatjson (0.10.5)
@@ -224,9 +208,6 @@ GEM
       nio4r (~> 2.0)
     racc (1.7.3)
     rack (3.0.9.1)
-    rack-protection (4.0.0)
-      base64 (>= 0.1.0)
-      rack (>= 3.0.0, < 4)
     rack-session (2.0.0)
       rack (>= 3.0.0)
     rack-test (2.1.0)
@@ -315,7 +296,6 @@ GEM
       rubocop-factory_bot (~> 2.22)
     ruby-prof (1.7.0)
     ruby-progressbar (1.13.0)
-    ruby2_keywords (0.0.5)
     semantic (1.6.1)
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -323,12 +303,6 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sinatra (4.0.0)
-      mustermann (~> 3.0)
-      rack (>= 3.0.0, < 4)
-      rack-protection (= 4.0.0)
-      rack-session (>= 2.0.0, < 3)
-      tilt (~> 2.0)
     solargraph (0.50.0)
       backport (~> 1.2)
       benchmark
@@ -439,7 +413,6 @@ DEPENDENCIES
   puma
   rake
   redis
-  redis_ipc!
   rspec
   rspec-wait
   rubocop-performance
@@ -448,7 +421,6 @@ DEPENDENCIES
   ruby-prof
   semantic
   simplecov
-  sinatra
   solargraph
   standalone_migrations (~> 7.1, >= 7.1.1)
   standard

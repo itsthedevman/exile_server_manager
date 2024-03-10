@@ -60,6 +60,7 @@ module ESM
       return if stopping?
 
       @esm_status = :stopping
+      ESM::API.stop!
       ESM::Websocket::Server.stop
       ESM::Connection::Server.stop!
       ESM::Request::Overseer.die
@@ -127,7 +128,6 @@ module ESM
 
       # Wait until after the bot is connected before allowing servers to connect
       ESM::Connection::Server.run!
-
       ESM::API.run!
 
       # Once everything is set up, the commands can be hooked
