@@ -184,7 +184,7 @@ module ESM
       info!(event: "community:modifiable_by?", id: id, user_id: user_id)
 
       community = ESM::Community.find_by(id: id)
-      return if community.nil?
+      return if community.nil? || community.discord_server.nil?
 
       user = ESM::User.find_by(id: user_id)
       return if user.nil?
@@ -241,13 +241,15 @@ module ESM
     # @param id [String] The user's database ID
     # @param guild_ids [true/false] The IDs of the guilds to check permissions
     #
-    def user_communities(id:, guild_ids:)
-      info!(event: "user:communities", id: id, guild_ids: guild_ids)
+    def user_communities(id:, guild_ids:, check_for_perms: false)
+      info!(event: "user:communities", id:, guild_ids:, check_for_perms:)
 
       user = ESM::User.find_by(id: id)
       return if user.nil?
 
-      communities = ESM::Community.select(:id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled).where(guild_id: guild_ids)
+      communities = ESM::Community.select(
+        :id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled
+      ).where(guild_id: guild_ids)
       return [] if communities.blank?
 
       discord_user = user.discord_user
@@ -257,7 +259,10 @@ module ESM
 
         # Keeps the community metadata up to date
         community.update(community_name: server.name) if community.community_name != server.name
-        next unless community.modifiable_by?(discord_user.on(server))
+
+        discord_member = discord_user.on(server)
+        next if discord_member.nil?
+        next if check_for_perms && !community.modifiable_by?(discord_member)
 
         community.id
       end
