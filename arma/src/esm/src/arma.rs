@@ -135,7 +135,8 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 
     send_to_arma(message)?;
 
-    info!("[post_initialization] ✅ Connection established with esm_bot");
+    info!("[on_connect] ✅ Connection established");
+
     crate::READY.store(true, Ordering::SeqCst);
 
     Ok(None)

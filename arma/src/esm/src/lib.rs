@@ -183,19 +183,12 @@ fn pre_init(
             }
 
             info!("[pre_init]   Greetings {}!", init.server_name);
-            info!("[pre_init]   ----------------------------------------------------------");
-            info!("[pre_init]       Attempting to establish a secure connection...");
 
             if let Err(e) = ArmaRequest::initialize(callback) {
                 error!("[pre_init] ❌ Boot failed - Failed to initialize connection to Arma");
                 warn!("[pre_init] ⚠ {e}");
                 error!("[pre_init] ❌ Boot failed");
             };
-
-            info!("[pre_init]       Connection established to encryption node {}", random_bs_go!());
-            info!("[pre_init]       Connection fingerprint: {}",
-                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
-            );
 
             info!("[pre_init]       Requesting profile");
             if let Err(e) = BotRequest::initialize(init) {
@@ -205,9 +198,7 @@ fn pre_init(
                 return;
             };
 
-            info!("[pre_init]       Profile loaded");
-            info!("[pre_init]    ✅ Boot completed in {:.2?}", timer.elapsed());
-            info!("[pre_init]   ----------------------------------------------------------");
+            info!("[pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
         });
     });
 }

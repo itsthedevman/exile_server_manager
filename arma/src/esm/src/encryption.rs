@@ -1,5 +1,5 @@
 use crate::*;
-use base64::prelude::*;
+pub use base64::prelude::*;
 use openssl::{
     rand::rand_bytes,
     symm::{decrypt, encrypt, Cipher},
@@ -38,15 +38,10 @@ pub fn reset_indices() {
     *lock!(INDICES) = DEFAULT_INDICES.to_owned();
 }
 
-pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, String> {
+pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
     if server_key.len() < 32 {
         return Err("Server key must contain at least 32 bytes".into());
     }
-
-    let message_bytes: Vec<u8> = match serde_json::to_vec(&message) {
-        Ok(bytes) => bytes,
-        Err(e) => return Err(e.to_string()),
-    };
 
     // encryption_key has to be exactly 32 bytes
     let encryption_key = &server_key[0..32];
@@ -59,12 +54,8 @@ pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, 
     let cipher = Cipher::aes_256_cbc();
 
     // and encrypt it
-    let mut packet: Vec<u8> = match encrypt(
-        cipher,
-        encryption_key,
-        Some(&nonce_key),
-        message_bytes.as_ref(),
-    ) {
+    let mut packet: Vec<u8> = match encrypt(cipher, encryption_key, Some(&nonce_key), data.as_ref())
+    {
         Ok(bytes) => bytes,
         Err(e) => return Err(e.to_string()),
     };
@@ -75,10 +66,10 @@ pub fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, 
         packet.insert(*nonce_index as usize, nonce_key[loop_index])
     }
 
-    Ok(BASE64_STANDARD.encode(packet).into_bytes())
+    Ok(packet)
 }
 
-pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
+pub fn decrypt_request(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
     if server_key.len() < 32 {
         return Err("Server key must contain at least 32 bytes".into());
     }
@@ -119,6 +110,8 @@ pub fn decrypt_message<'a>(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, S
             "Nonce key must contain at least {NONCE_SIZE} bytes"
         ));
     }
+
+    debug!("[decrypt_request] Extracted nonce: {:?}", nonce);
 
     // Build the cipher
     let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
@@ -172,10 +165,11 @@ mod tests {
                 .collect(),
         );
 
-        let encrypted_bytes = encrypt_message(&message, server_key);
+        let bytes = message.as_bytes().unwrap();
+        let encrypted_bytes = encrypt_request(&bytes, server_key);
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message = decrypt_message(&encrypted_bytes.unwrap(), server_key);
+        let decrypted_message = encrypt_request(&encrypted_bytes.unwrap(), server_key);
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();

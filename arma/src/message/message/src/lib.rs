@@ -108,6 +108,16 @@ impl Message {
         self
     }
 
+    pub fn as_bytes(&self) -> Result<Vec<u8>, String> {
+        match serde_json::to_vec(&self) {
+            Ok(vec) => Ok(vec),
+            Err(e) => Err(format!(
+                "Failed to deserialize. Reason: {:?}. Message: {:#?}",
+                e, self
+            )),
+        }
+    }
+
     pub fn from_bytes(data: &[u8]) -> Result<Message, String> {
         match serde_json::from_slice(&data) {
             Ok(message) => Ok(message),

@@ -15,6 +15,7 @@ lazy_static! {
     pub static ref TOKEN_MANAGER: Arc<SyncMutex<TokenManager>> =
         Arc::new(SyncMutex::new(TokenManager::new()));
     static ref INIT: Arc<SyncMutex<Init>> = Arc::new(SyncMutex::new(Init::default()));
+    static ref ENCRYPTION_ENABLED: AtomicBool = AtomicBool::new(false);
     static ref CONNECTED: AtomicBool = AtomicBool::new(false);
     static ref ENDPOINT: Arc<SyncMutex<Option<Endpoint>>> = Arc::new(SyncMutex::new(None));
     static ref HANDLER: Arc<SyncMutex<NodeHandler<()>>> = {
@@ -53,7 +54,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
             match request {
                 BotRequest::Connect => {
                     if let Err(errors) = lock!(INIT).validate() {
-                        error!("[connect] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
+                        error!("[on_connect] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
                         return;
                     }
 
@@ -65,7 +66,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                         .unwrap();
 
                     if !matches!(crate::CONFIG.env, Env::Test) {
-                        warn!("[connect] Attempting to connect to esm_bot at {server_address}");
+                        info!("[on_connect] Call connected");
                     }
 
                     match lock!(HANDLER)
@@ -76,7 +77,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                             *lock!(ENDPOINT) = Some(e);
                         }
                         Err(e) => {
-                            error!("[connect] ❌ Failed to connect to esm_bot - {e}")
+                            error!("[on_connect] ❌ Failed to connect to bot - {e}")
                         }
                     }
                 }
@@ -124,14 +125,11 @@ fn send_message(message: Message) -> ESMResult {
 
     info!("[send_message] {message}");
 
-    // Convert the message to bytes so it can be sent
-    let bytes = encrypt_message(&message, lock!(TOKEN_MANAGER).secret_bytes())?;
-
     send_request(
         Request::new()
             .set_id(message.id)
             .set_type(RequestType::Message)
-            .set_value(bytes),
+            .set_value(message.as_bytes()?),
     )?;
 
     trace!("[send] {} - Sent", message.id);
@@ -151,6 +149,14 @@ fn send_request(request: Request) -> ESMResult {
         Ok(r) => r,
         Err(e) => return Err(format!("❌ Cannot send message - Failed to convert - {e}").into()),
     };
+
+    let request = if ENCRYPTION_ENABLED.load(Ordering::SeqCst) {
+        encrypt_request(&request, lock!(TOKEN_MANAGER).secret_bytes())?
+    } else {
+        request
+    };
+
+    let request = encryption::BASE64_STANDARD.encode(request).into_bytes();
 
     match lock!(HANDLER)
         .network()
@@ -208,6 +214,11 @@ fn on_connect(connected: bool) {
         return;
     };
 
+    if !lock!(TOKEN_MANAGER).reload().valid() {
+        error!("❌ Cannot start connection process - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
+        return;
+    }
+
     CONNECTED.store(true, Ordering::SeqCst);
     RECONNECTION_COUNT.store(0, Ordering::SeqCst);
 
@@ -215,22 +226,28 @@ fn on_connect(connected: bool) {
         .set_type(RequestType::Identification)
         .set_value(lock!(TOKEN_MANAGER).access_bytes().to_vec());
 
-    debug!("Identifying...");
+    info!("[on_connect] Attempting to establish a secure connection...");
+
     if let Err(e) = send_request(request) {
         error!("[on_connect] Error while sending identify request. {e}")
     }
 }
 
 fn on_message(incoming_data: Vec<u8>) -> ESMResult {
+    let incoming_data = decrypt_request(&incoming_data, lock!(TOKEN_MANAGER).secret_bytes())?;
+
     let mut request: Request = match serde_json::from_slice(&incoming_data) {
         Ok(r) => r,
         Err(e) => return Err(format!("❌ {e}").into()),
     };
 
-    info!("[on_message] {:?}", request);
-
     match request.request_type {
         RequestType::Error => {
+            debug!(
+                "[on_message] <{}> Received Error: {:?}",
+                request.id, request.value
+            );
+
             let s = match std::str::from_utf8(&request.value) {
                 Ok(v) => v,
                 Err(_) => return Err("[on_message#error] Expected String, got not a String".into()),
@@ -242,9 +259,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
         }
 
         RequestType::Handshake => {
-            let message = message_from_bytes(&request.value)?;
-
-            info!("[on_message#handshake] {:?}", message);
+            let message = Message::from_bytes(&request.value)?;
 
             let Data::Handshake(ref data) = message.data else {
                 // TODO: Close
@@ -257,14 +272,27 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 return Err(e.into());
             }
 
-            // Like now! Send back an encrypted message for the server to validate everything was set correctly here
             let message = message.set_data(Data::Empty);
-            request.value = encrypt_message(&message, lock!(TOKEN_MANAGER).secret_bytes())?;
+            request.value = message.as_bytes()?;
+
+            // Since we've successfully set the nonce indices, we're good to start sending encrypted data
+            ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
+
+            info!(
+                "[on_connect] Connection established to encryption node {}",
+                random_bs_go!()
+            );
+
+            info!(
+                "[on_connect] Connection fingerprint: {}",
+                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
+            );
+
             send_request(request)
         }
 
         RequestType::Initialize => {
-            info!("[bot_initialize] Attempting to phone home like its 1982. Please hold...");
+            info!("[on_connect] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅");
 
             let message = Message::new()
                 .set_id(request.id)
@@ -275,7 +303,12 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 
         // Message
         _ => {
-            let message = message_from_bytes(&request.value)?;
+            debug!(
+                "[on_message] <{}> Received Message: {:?}",
+                request.id, request.value
+            );
+
+            let message = Message::from_bytes(&request.value)?;
 
             info!("[on_message] {}", message);
 
@@ -297,10 +330,13 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
                 Type::Event => match message.data {
                     Data::PostInit(_) => {
                         if crate::READY.load(Ordering::SeqCst) {
-                            return Err("❌ Client is already initialized".into());
+                            return Err(
+                                "[on_connect]       ❌ Client is already initialized".into()
+                            );
                         }
 
-                        info!("[bot_initialization] Hand shake complete. Good posture ✅, eye contact ✅, and a firm grip ✅");
+                        info!("[on_connect] Building profile...");
+
                         ArmaRequest::call("post_initialization", message)
                     }
                     Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
@@ -315,6 +351,7 @@ fn on_message(incoming_data: Vec<u8>) -> ESMResult {
 fn on_disconnect() {
     reset_indices();
 
+    ENCRYPTION_ENABLED.store(false, Ordering::SeqCst);
     CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
 
@@ -350,14 +387,4 @@ fn on_disconnect() {
     if let Err(e) = BotRequest::connect() {
         error!("[on_disconnect] ❌ {e}");
     }
-}
-
-fn message_from_bytes(message_bytes: &[u8]) -> Result<Message, String> {
-    let mut token = lock!(TOKEN_MANAGER);
-    if !token.reload().valid() {
-        return Err("❌ Cannot process inbound message - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
-    }
-
-    let decrypted_bytes = decrypt_message(message_bytes, token.secret_bytes())?;
-    Message::from_bytes(&decrypted_bytes)
 }
