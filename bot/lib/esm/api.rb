@@ -72,20 +72,20 @@ module ESM
     # @param id [String] The discord channel ID
     # @param community_id [String] Restricts the search to this community's guild
     # @param user_id [String] Requires the channel to be readable by this user's discord member
-    def channel(id:, community_id:, user_id:)
-      info!(event: "channel", id: id, community_id: community_id, user_id: user_id)
+    def channel(id:, **filters)
+      info!(event: "channel", id:, filters:)
 
       channel = ESM.bot.channel(id)
       return if channel.nil?
       return unless ESM.bot.channel_permission?(:send_messages, channel)
 
-      if community_id
+      if (community_id = filters[:community_id])
         community = ESM::Community.find_by(id: community_id)
         return if community.nil?
         return unless channel.server.id.to_s == community.guild_id
       end
 
-      if user_id
+      if (user_id = filters[:user_id])
         user = ESM::User.find_by(id: user_id)
         return if user.nil?
         return unless user.channel_permission?(:read_messages, channel)
