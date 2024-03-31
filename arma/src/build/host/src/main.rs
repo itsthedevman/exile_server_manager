@@ -38,6 +38,7 @@ lazy_static! {
 }
 
 pub const REDIS_SERVER_KEY: &str = "server_key";
+pub const REDIS_SERVER_KEY_CONFIRM: &str = "server_key_set";
 
 pub const ADDONS: &[&str] = &[
     "exile_server_manager",

@@ -69,19 +69,16 @@ pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String
     Ok(packet)
 }
 
-pub fn decrypt_request(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
+pub fn decrypt_request(encoded_bytes: Vec<u8>, server_key: &[u8]) -> Result<Vec<u8>, String> {
     if server_key.len() < 32 {
         return Err("Server key must contain at least 32 bytes".into());
     }
 
-    let Ok(encoded_message) = String::from_utf8(bytes.to_vec()) else {
-        return Err("Failed to convert to string".into());
-    };
-
-    let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
-        Ok(p) => p,
-        Err(e) => return Err(format!("[decrypt_message] {e:?}")),
-    };
+    // Errors are not encrypted
+    // This is so we can send back errors before the handshake succeeds
+    if check_for_error_request(&encoded_bytes) {
+        return Ok(encoded_bytes);
+    }
 
     let nonce_indices = lock!(INDICES).clone();
 
@@ -93,7 +90,7 @@ pub fn decrypt_request(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, Strin
     // issue for this, but I did come up with another way to do it.
     // To avoid re-indexing the bytes array 12 times (plus a copy since I'd need it to be mut), I'll go through
     // each byte and rebuild the packet without the nonce in it. This _should_ be good on perf
-    for (index, byte) in encoded_message.iter().enumerate() {
+    for (index, byte) in encoded_bytes.iter().enumerate() {
         if nonce_indices
             .get(nonce.len())
             .is_some_and(|i| *i as usize == index)
@@ -111,8 +108,6 @@ pub fn decrypt_request(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, Strin
         ));
     }
 
-    debug!("[decrypt_request] Extracted nonce: {:?}", nonce);
-
     // Build the cipher
     let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
     let cipher = Cipher::aes_256_cbc();
@@ -122,6 +117,21 @@ pub fn decrypt_request(bytes: &[u8], server_key: &[u8]) -> Result<Vec<u8>, Strin
         Ok(message) => Ok(message),
         Err(e) => Err(format!("Failed to decrypt. {e:?}")),
     }
+}
+
+fn check_for_error_request(bytes: &[u8]) -> bool {
+    // Simple sanity check to filter out 99% of the data without having to deserialize
+    // 123 == '{'
+    if !bytes.starts_with(&[123]) {
+        return false;
+    }
+
+    let request: Request = match serde_json::from_slice(bytes) {
+        Ok(r) => r,
+        Err(_e) => return false,
+    };
+
+    return matches!(request.request_type, RequestType::Error);
 }
 
 #[cfg(test)]
@@ -169,7 +179,8 @@ mod tests {
         let encrypted_bytes = encrypt_request(&bytes, server_key);
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message = encrypt_request(&encrypted_bytes.unwrap(), server_key);
+        let decrypted_message = decrypt_request(encrypted_bytes.unwrap(), server_key);
+
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();

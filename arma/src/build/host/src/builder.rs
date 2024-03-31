@@ -110,7 +110,7 @@ impl Builder {
             extension_build_target,
             local_build_path,
             remote: Remote::new(),
-            redis: redis::Client::open("redis://127.0.0.1/0")?,
+            redis: redis::Client::open("redis://127.0.0.1/0").unwrap(),
             file_watcher,
             config: crate::config::parse(config_path)?,
             server_executable,
@@ -471,7 +471,9 @@ pub fn is_container_running() -> bool {
             "\"{{.State.Status}}\"",
             ARMA_CONTAINER,
         ])
-        .add_detection("running").execute(None) else {
+        .add_detection("running")
+        .execute(None)
+    else {
         return false;
     };
 
@@ -487,9 +489,14 @@ pub fn docker_dir_exists(file_path: &Path) -> bool {
             ARMA_CONTAINER,
             "/bin/bash",
             "-c",
-            &format!("[ -d {file_path} ] && echo 'exists'", file_path = file_path.display())
+            &format!(
+                "[ -d {file_path} ] && echo 'exists'",
+                file_path = file_path.display()
+            ),
         ])
-        .add_detection("exists").execute(None) else {
+        .add_detection("exists")
+        .execute(None)
+    else {
         return false;
     };
 

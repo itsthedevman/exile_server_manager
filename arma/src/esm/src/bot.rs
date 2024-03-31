@@ -66,7 +66,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                         .unwrap();
 
                     if !matches!(crate::CONFIG.env, Env::Test) {
-                        info!("[on_connect] Call connected");
+                        warn!("[on_connect] Calling...");
                     }
 
                     match lock!(HANDLER)
@@ -109,7 +109,7 @@ fn listener_thread(listener: NodeListener<()>) {
         NetEvent::Message(_, incoming_data) => {
             let incoming_data = incoming_data.to_owned();
 
-            if let Err(e) = on_message(incoming_data) {
+            if let Err(e) = on_request(incoming_data) {
                 error!("[on_message] {e}");
             }
         }
@@ -119,10 +119,6 @@ fn listener_thread(listener: NodeListener<()>) {
 }
 
 fn send_message(message: Message) -> ESMResult {
-    if !lock!(TOKEN_MANAGER).reload().valid() {
-        return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).".into());
-    }
-
     info!("[send_message] {message}");
 
     send_request(
@@ -138,6 +134,10 @@ fn send_message(message: Message) -> ESMResult {
 }
 
 fn send_request(request: Request) -> ESMResult {
+    if !lock!(TOKEN_MANAGER).reload().valid() {
+        return Err("❌ Cannot send - Invalid \"esm.key\" detected - Please download your server key from the admin dashboard (https://esmbot.com/dashboard) and place it in \"@esm\"".into());
+    }
+
     // Make sure we are connected first
     if !ready(&*lock!(HANDLER), *lock!(ENDPOINT)) {
         return Err(
@@ -233,118 +233,33 @@ fn on_connect(connected: bool) {
     }
 }
 
-fn on_message(incoming_data: Vec<u8>) -> ESMResult {
-    let incoming_data = decrypt_request(&incoming_data, lock!(TOKEN_MANAGER).secret_bytes())?;
+fn on_request(incoming_data: Vec<u8>) -> ESMResult {
+    let Ok(encoded_message) = String::from_utf8(incoming_data.to_vec()) else {
+        return Err("[on_request] ❌ Invalid data received. This is a bug!".into());
+    };
 
-    let mut request: Request = match serde_json::from_slice(&incoming_data) {
+    let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
+        Ok(p) => p,
+        Err(e) => return Err(format!("[on_request] ❌ {e:?}").into()),
+    };
+
+    let incoming_data = decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
+
+    let request: Request = match serde_json::from_slice(&incoming_data) {
         Ok(r) => r,
-        Err(e) => return Err(format!("❌ {e}").into()),
+        Err(e) => return Err(format!("[on_request] ❌ {e}").into()),
     };
 
     match request.request_type {
-        RequestType::Error => {
-            debug!(
-                "[on_message] <{}> Received Error: {:?}",
-                request.id, request.value
-            );
+        RequestType::Error => on_error(request),
 
-            let s = match std::str::from_utf8(&request.value) {
-                Ok(v) => v,
-                Err(_) => return Err("[on_message#error] Expected String, got not a String".into()),
-            };
+        RequestType::Handshake => on_handshake(request),
 
-            error!("[on_message#error] {s}");
+        RequestType::Initialize => on_initialize(request),
 
-            Ok(())
-        }
+        RequestType::Message => on_message(request),
 
-        RequestType::Handshake => {
-            let message = Message::from_bytes(&request.value)?;
-
-            let Data::Handshake(ref data) = message.data else {
-                // TODO: Close
-                return Err("Unexpected message data type provided".into());
-            };
-
-            // Store the new indices for future use
-            if let Err(e) = set_indices(data.indices.to_owned()) {
-                // TODO: Close
-                return Err(e.into());
-            }
-
-            let message = message.set_data(Data::Empty);
-            request.value = message.as_bytes()?;
-
-            // Since we've successfully set the nonce indices, we're good to start sending encrypted data
-            ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
-
-            info!(
-                "[on_connect] Connection established to encryption node {}",
-                random_bs_go!()
-            );
-
-            info!(
-                "[on_connect] Connection fingerprint: {}",
-                [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
-            );
-
-            send_request(request)
-        }
-
-        RequestType::Initialize => {
-            info!("[on_connect] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅");
-
-            let message = Message::new()
-                .set_id(request.id)
-                .set_data(Data::Init(lock!(INIT).clone()));
-
-            BotRequest::send(message)
-        }
-
-        // Message
-        _ => {
-            debug!(
-                "[on_message] <{}> Received Message: {:?}",
-                request.id, request.value
-            );
-
-            let message = Message::from_bytes(&request.value)?;
-
-            info!("[on_message] {}", message);
-
-            // Echo bypasses this so errors can be triggered on the round trip
-            if !matches!(message.message_type, Type::Echo) && !message.errors.is_empty() {
-                let error = message
-                    .errors
-                    .iter()
-                    .map(|e| format!("❌ {}", e.error_content))
-                    .collect::<Vec<String>>()
-                    .join("\n");
-
-                return Err(error.into());
-            }
-
-            match message.message_type {
-                Type::Query => ArmaRequest::query(message),
-                Type::Arma => ArmaRequest::call("call_function", message),
-                Type::Event => match message.data {
-                    Data::PostInit(_) => {
-                        if crate::READY.load(Ordering::SeqCst) {
-                            return Err(
-                                "[on_connect]       ❌ Client is already initialized".into()
-                            );
-                        }
-
-                        info!("[on_connect] Building profile...");
-
-                        ArmaRequest::call("post_initialization", message)
-                    }
-                    Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
-                    t => Err(format!("❌ Unexpected event type: {t:?}").into()),
-                },
-                Type::Echo => BotRequest::send(message),
-            }
-        }
+        _ => Ok(()),
     }
 }
 
@@ -358,7 +273,7 @@ fn on_disconnect() {
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
     let time_to_wait: f32 = match crate::CONFIG.env {
-        Env::Test => 0.5,
+        Env::Test => 1_f32,
         Env::Development => 3_f32,
         _ => {
             let mut rng = thread_rng();
@@ -386,5 +301,103 @@ fn on_disconnect() {
 
     if let Err(e) = BotRequest::connect() {
         error!("[on_disconnect] ❌ {e}");
+    }
+}
+
+fn on_error(request: Request) -> ESMResult {
+    let s = match std::str::from_utf8(&request.value) {
+        Ok(v) => v,
+        Err(_) => return Err("[on_error] Expected String, got not a String".into()),
+    };
+
+    error!("[on_error] ❌ {s}");
+
+    Ok(())
+}
+
+fn on_handshake(mut request: Request) -> ESMResult {
+    let message = Message::from_bytes(&request.value)?;
+
+    let Data::Handshake(ref data) = message.data else {
+        // TODO: Close
+        return Err("Unexpected message data type provided".into());
+    };
+
+    // Store the new indices for future use
+    if let Err(e) = set_indices(data.indices.to_owned()) {
+        // TODO: Close
+        return Err(e.into());
+    }
+
+    let message = message.set_data(Data::Empty);
+    request.value = message.as_bytes()?;
+
+    // Since we've successfully set the nonce indices, we're good to start sending encrypted data
+    ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
+
+    info!(
+        "[on_handshake] Connection established to encryption node {}",
+        random_bs_go!()
+    );
+
+    info!(
+        "[on_handshake] Connection fingerprint: {}",
+        [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
+    );
+
+    send_request(request)
+}
+
+fn on_initialize(request: Request) -> ESMResult {
+    info!(
+        "[on_initialize] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅"
+    );
+
+    let message = Message::new()
+        .set_id(request.id)
+        .set_data(Data::Init(lock!(INIT).clone()));
+
+    BotRequest::send(message)
+}
+
+fn on_message(request: Request) -> ESMResult {
+    debug!(
+        "[on_message] <{}> Received Message: {:?}",
+        request.id, request.value
+    );
+
+    let message = Message::from_bytes(&request.value)?;
+
+    info!("[on_message] {}", message);
+
+    // Echo bypasses this so errors can be triggered on the round trip
+    if !matches!(message.message_type, Type::Echo) && !message.errors.is_empty() {
+        let error = message
+            .errors
+            .iter()
+            .map(|e| format!("❌ {}", e.error_content))
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        return Err(error.into());
+    }
+
+    match message.message_type {
+        Type::Query => ArmaRequest::query(message),
+        Type::Arma => ArmaRequest::call("call_function", message),
+        Type::Event => match message.data {
+            Data::PostInit(_) => {
+                if crate::READY.load(Ordering::SeqCst) {
+                    return Err("[on_connect]       ❌ Client is already initialized".into());
+                }
+
+                info!("[on_connect] Building profile...");
+
+                ArmaRequest::call("post_initialization", message)
+            }
+            Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
+            t => Err(format!("❌ Unexpected event type: {t:?}").into()),
+        },
+        Type::Echo => BotRequest::send(message),
     }
 }

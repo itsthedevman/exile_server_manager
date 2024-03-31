@@ -5,6 +5,7 @@ use common::{BuildResult, Command};
 use compiler::Compiler;
 use glob::glob;
 use lazy_static::lazy_static;
+use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, thread, time::Duration};
@@ -472,7 +473,7 @@ pub fn create_server_config(builder: &mut Builder) -> BuildResult {
         // log_output: "extension".into(),
     };
 
-    let config_yaml = serde_yaml::to_vec(&config)?;
+    let config_yaml = serde_yaml::to_string(&config)?;
     fs::write(
         builder
             .local_build_path
@@ -493,27 +494,28 @@ pub fn create_server_config(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
-    let mut connection = builder.redis.get_connection()?;
+    let mut connection = builder.redis.get_connection().unwrap();
     let mut last_key_received = String::new();
 
     // Moved to a thread so this can happen over and over again for testing purposes
     let build_server = builder.build_server.clone();
     thread::spawn(move || loop {
-        let key: Option<String> = redis::cmd("GET")
-            .arg(REDIS_SERVER_KEY)
-            .query(&mut connection)
-            .unwrap();
+        let Ok(key) = connection.get_del(REDIS_SERVER_KEY) else {
+            thread::sleep(Duration::from_millis(100));
+            continue;
+        };
 
-        let Some(key) = key else {
-                thread::sleep(Duration::from_millis(500));
-                continue;
-            };
+        let Some(key): Option<String> = key else {
+            thread::sleep(Duration::from_millis(100));
+            continue;
+        };
 
         if key == last_key_received {
-            thread::sleep(Duration::from_millis(500));
+            thread::sleep(Duration::from_millis(100));
             continue;
-        }
+        };
 
+        println!("Updating key {}", key);
         if let Err(e) = build_server.send(Command::Key(key.to_owned())) {
             println!(
                 "{} - {} - {}",
@@ -526,6 +528,10 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
         };
 
         last_key_received = key.to_owned();
+
+        let _: Option<isize> = connection
+            .set(REDIS_SERVER_KEY_CONFIRM, "true")
+            .unwrap_or_default();
     });
 
     Ok(())

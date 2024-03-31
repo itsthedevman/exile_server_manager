@@ -38,17 +38,22 @@ mod tests {
 
     #[test]
     fn test_token() {
-        let token = Token {
+        let mut token = Token {
             access: "esm_malden".into(),
-            secret: "12345".into(),
+            secret: "1234567890".into(),
         };
 
         assert!(!token.valid());
 
-        let mut new_token = token.clone();
-        new_token.update_from(token);
+        let new_token = Token {
+            access: "add76285-8a22-4618-9897-fa0a85d50975".into(),
+            secret: "Xhaum^Ft>RLEFEja`-=D~Bot`q*D_R;kjsNKkb#y?ySkflBhnKivb!M,?xml%:C*".into(),
+        };
 
-        assert!(new_token.valid());
+        token.update_from(new_token);
+
+        println!("Token: {}", token);
+        assert!(token.valid());
     }
 }
 

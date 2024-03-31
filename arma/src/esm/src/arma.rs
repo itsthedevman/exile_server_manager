@@ -97,7 +97,7 @@ fn send_to_arma(message: Message) -> ESMResult {
 
     match &*lock!(CALLBACK) {
         Some(ctx) => {
-            ctx.callback_data("exile_server_manager", function, Some(message));
+            let _ = ctx.callback_data("exile_server_manager", function, Some(message));
             Ok(())
         }
         None => Err(

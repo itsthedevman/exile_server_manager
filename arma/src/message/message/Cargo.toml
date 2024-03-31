@@ -14,4 +14,4 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.1", features = ["serde", "v4", "fast-rng"] }
 arma-rs = { version = "1.7.0", features = ["uuid", "serde_json", "chrono"] }
 message_proc = { path = "../message_proc" }
-unicode-segmentation = "1.9.0"
+unicode-segmentation = "1.11.0"
