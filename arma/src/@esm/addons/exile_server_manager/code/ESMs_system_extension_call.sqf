@@ -96,6 +96,23 @@ private _sanitizer = {
 private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
 // debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
 
+// Convert any arrays to string
+// As of arma-rs 1.10, Array and Hashmap types are supported. However, I have my own parser that expects Strings
+_sanitizedArguments = [
+	_sanitizedArguments,
+	{
+		if (type?(_this, ARRAY)) then
+		{
+			str(_this)
+		}
+		else
+		{
+			_this
+		}
+	}
+]
+call ESMs_util_array_map;
+
 // Call the extension and process the result
 private _result = "esm" callExtension [_function, _sanitizedArguments];
 // debug!("[%1] Endpoint ""%2"" replied with %3: %4", _id, _function, typeName _result, _result);

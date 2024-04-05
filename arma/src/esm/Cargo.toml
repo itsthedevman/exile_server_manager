@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arma-rs = { version = "1.9", features = ["uuid", "serde_json", "chrono"] }
+arma-rs = { version = "1.10", features = ["uuid", "serde_json", "chrono"] }
 chrono = { version = "0.4", features = ["serde"] }
 esm_message = { path = "../message/message" }
 harsh = "0.2.2"

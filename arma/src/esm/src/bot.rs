@@ -110,7 +110,7 @@ fn listener_thread(listener: NodeListener<()>) {
             let incoming_data = incoming_data.to_owned();
 
             if let Err(e) = on_request(incoming_data) {
-                error!("[on_message] {e}");
+                error!("[on_request] {e}");
             }
         }
     });
