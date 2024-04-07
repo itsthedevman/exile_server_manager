@@ -273,8 +273,8 @@ fn on_disconnect() {
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
     let time_to_wait: f32 = match crate::CONFIG.env {
-        Env::Test => 1_f32,
-        Env::Development => 3_f32,
+        Env::Test => 1.0,
+        Env::Development => 3.0,
         _ => {
             let mut rng = thread_rng();
 

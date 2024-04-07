@@ -30,7 +30,6 @@ use config::Env;
 
 pub use bot::TOKEN_MANAGER;
 pub use esm_message::*;
-pub use macros::*;
 pub use request::*;
 pub use router::ROUTER;
 
