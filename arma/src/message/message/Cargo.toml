@@ -12,6 +12,6 @@ serde_derive = "1.0"
 serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.1", features = ["serde", "v4", "fast-rng"] }
-arma-rs = { version = "1.7.0", features = ["uuid", "serde_json", "chrono"] }
+arma-rs = { version = "1.10", features = ["uuid", "serde_json", "chrono"] }
 message_proc = { path = "../message_proc" }
 unicode-segmentation = "1.11.0"

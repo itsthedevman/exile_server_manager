@@ -53,7 +53,7 @@ fn data_is_empty(data: &Data) -> bool {
 }
 
 fn metadata_is_empty(metadata: &Metadata) -> bool {
-    matches!(metadata, Metadata::Empty)
+    metadata.player.is_none() && metadata.target.is_none()
 }
 
 fn errors_is_empty(errors: &[Error]) -> bool {
@@ -199,7 +199,7 @@ impl Default for Message {
             id: Uuid::new_v4(),
             message_type: Type::Event,
             data: Data::Empty,
-            metadata: Metadata::Empty,
+            metadata: Metadata::default(),
             errors: Vec::new(),
         }
     }
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_metadata_is_empty() {
-        let result = metadata_is_empty(&Metadata::Empty);
+        let result = metadata_is_empty(&Metadata::default());
         assert!(result);
     }
 
@@ -281,7 +281,7 @@ mod tests {
 
         assert_eq!(message.id, uuid);
         assert!(matches!(message.data, Data::Empty));
-        assert!(matches!(message.metadata, Metadata::Empty));
+        assert_eq!(message.metadata, Metadata::default());
         assert!(message.errors.is_empty());
     }
 
@@ -290,15 +290,23 @@ mod tests {
         use data::Data;
 
         let id = Uuid::new_v4();
+
+        // This is never the case, but a great place to test some weird text
+        let mut metadata = Metadata::default();
+        metadata.player = Some(Player {
+            discord_id: None,
+            discord_mention: None,
+            discord_name: None,
+            steam_uid: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
+        });
+
         let expectation = Message::new()
             .set_id(id)
             .set_type(Type::Event)
             .set_data(Data::Test(data::Test {
                 foo: "test\"ing".into(),
             }))
-            .set_metadata(Metadata::Test(metadata::MetadataTest {
-                foo: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
-            }))
+            .set_metadata(metadata)
             .add_error(ErrorType::Message, "This is a message")
             .add_error(ErrorType::Code, "CODING");
 
@@ -307,7 +315,7 @@ mod tests {
             "event".into(),
             r#"[["type","test"],["content",[["foo","test""ing"]]]]"#
             .to_string(),
-            r#"[["type","test"],["content",[["foo","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
+            r#"[["player",[["steam_uid","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
             .to_string(),
             r#"[[["type","message"],["content","This is a message"]],[["type","code"],["content","CODING"]]]"#
             .to_string(),

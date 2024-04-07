@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn it_returns_current_timestamp() {
         let extension = init().testing();
-        let (result, _) = unsafe { extension.call("utc_timestamp", None) };
+        let (result, _) = extension.call("utc_timestamp", None);
 
         // "2021-01-01T00:00:00.000000000+00:00"
         let re =
@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn it_returns_log_level() {
         let extension = init().testing();
-        let (result, _) = unsafe { extension.call("log_level", None) };
+        let (result, _) = extension.call("log_level", None);
         assert_eq!(result, "info");
     }
 }

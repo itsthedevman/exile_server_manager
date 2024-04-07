@@ -143,15 +143,15 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 }
 
 async fn call_arma_function(mut message: Message) -> MessageResult {
-    let Metadata::Command(ref metadata) = message.metadata else {
-        return Err("[call_arma_function] Invalid data type provided".into());
+    let Some(ref player) = message.metadata.player else {
+        return Err(
+            "[call_arma_function] Player metadata must be provided when calling an Arma function"
+                .into(),
+        );
     };
 
     // First, check to make sure the player has joined this server
-    if !DATABASE
-        .account_verification(&metadata.player.steam_uid)
-        .await?
-    {
+    if !DATABASE.account_verification(&player.steam_uid).await? {
         return Ok(Some(message.add_error(
             esm_message::ErrorType::Code,
             String::from("account_does_not_exist"),

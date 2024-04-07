@@ -12,20 +12,15 @@ impl Parser {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
-                    "[esm_message::parser::from_arma] Failed to convert input into JSON. Reason: {e}. Input: {input}"
+                    "[parser::from_arma] Failed to convert input into JSON. Reason: {e}. Input: {input}"
                 ))
             }
         };
 
-        let json = validate_content(&input);
-        let json = match serde_json::to_string(&json) {
-            Ok(j) => j,
-            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert to final JSON. Reason: {e}. Input: \"{input}\"")),
-        };
-
-        let output: T = match serde_json::from_str(&json) {
+        let content = validate_content(&input);
+        let output: T = match serde_json::from_value(content) {
             Ok(t) => t,
-            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert to Data/Metadata. Reason: {e}. Input: \"{input}\" ")),
+            Err(e) => return Err(format!("[parser::from_arma] Failed to convert to Data/Metadata. Reason: {e}. Input: \"{input}\" ")),
         };
 
         Ok(output)
@@ -53,28 +48,31 @@ fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, Str
         .iter()
         .all(|i| i.is_array() && i.as_array().unwrap().len() == 2)
     {
-        return Err(format!("[esm_message::parser::convert_arma_array_to_object] Input must consist of key/value pairs. Input: {input:?}"));
+        return Err(format!("[parser::convert_arma_array_to_object] Input must consist of key/value pairs. Input: {input:?}"));
     }
 
     let mut object = serde_json::map::Map::new();
     for pair in input {
         let pair = match pair.as_array() {
             Some(a) => a,
-            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to convert key/value pair. Pair: {pair:?}")),
+            None => return Err(format!("[parser::convert_arma_array_to_object] Failed to convert key/value pair. Pair: {pair:?}")),
         };
 
         let key = match pair.get(0) {
             Some(k) => match k.as_str() {
                 Some(k) => k,
-                None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to convert key to string. Pair: {pair:?}"))
+                None => return Err(format!("[parser::convert_arma_array_to_object] Failed to convert key to string. Pair: {pair:?}"))
             },
-            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract key from {pair:?}"))
+            None => return Err(format!("[parser::convert_arma_array_to_object] Failed to extract key from {pair:?}"))
         };
 
-        let value = match pair.get(1) {
-            Some(v) => v,
-            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract value from {pair:?}"))
-        };
+        let value =
+            match pair.get(1) {
+                Some(v) => v,
+                None => return Err(format!(
+                    "[parser::convert_arma_array_to_object] Failed to extract value from {pair:?}"
+                )),
+            };
 
         object.insert(key.to_string(), validate_content(value));
     }
