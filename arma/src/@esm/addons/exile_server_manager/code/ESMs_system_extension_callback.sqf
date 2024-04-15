@@ -40,7 +40,7 @@ if (type?(_function, STRING)) exitWith
 };
 
 private _arguments = _data call ESMs_system_extension_processResult;
-info!("%1 call %2;", _arguments, _functionName);
+// debug!("%1 call %2;", _arguments, _functionName);
 
 _arguments call _function; // Do not use spawn
 

@@ -515,7 +515,6 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
             continue;
         };
 
-        println!("Updating key {}", key);
         if let Err(e) = build_server.send(Command::Key(key.to_owned())) {
             println!(
                 "{} - {} - {}",

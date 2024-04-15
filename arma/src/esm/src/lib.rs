@@ -231,7 +231,7 @@ fn send_message(id: String, message_type: String, data: String, metadata: String
                 error!("[send_message] ❌ {}", e);
             };
 
-            info!("[send_message] ⏲ Took {:.2?}", timer.elapsed());
+            debug!("[send_message] ⏲ Took {:.2?}", timer.elapsed());
         });
     });
 }

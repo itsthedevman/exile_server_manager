@@ -87,7 +87,7 @@ fn send_to_arma(message: Message) -> ESMResult {
         message
     );
 
-    info!("[send_to_arma] {message}");
+    debug!("[send_to_arma] {} is being routed to arma", message.id);
 
     let message = vec![
         vec!["id".to_arma(), message.id.to_arma()],

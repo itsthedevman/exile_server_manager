@@ -119,7 +119,7 @@ fn listener_thread(listener: NodeListener<()>) {
 }
 
 fn send_message(message: Message) -> ESMResult {
-    info!("[send_message] {message}");
+    debug!("[send_message] {message}");
 
     send_request(
         Request::new()
@@ -128,7 +128,7 @@ fn send_message(message: Message) -> ESMResult {
             .set_value(message.as_bytes()?),
     )?;
 
-    trace!("[send] {} - Sent", message.id);
+    trace!("[send_message] {} - Sent", message.id);
 
     Ok(())
 }
@@ -336,13 +336,7 @@ fn on_handshake(mut request: Request) -> ESMResult {
     ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
 
     info!(
-        "[on_handshake] Connection established to encryption node {}",
-        random_bs_go!()
-    );
-
-    info!(
-        "[on_handshake] Connection fingerprint: {}",
-        [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
+        "[on_handshake] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅"
     );
 
     send_request(request)
@@ -350,7 +344,13 @@ fn on_handshake(mut request: Request) -> ESMResult {
 
 fn on_initialize(request: Request) -> ESMResult {
     info!(
-        "[on_initialize] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅"
+        "[on_initialize] Connection established to encryption node {}",
+        random_bs_go!()
+    );
+
+    info!(
+        "[on_initialize] Connection fingerprint: {}",
+        [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
     );
 
     let message = Message::new()
@@ -361,14 +361,9 @@ fn on_initialize(request: Request) -> ESMResult {
 }
 
 fn on_message(request: Request) -> ESMResult {
-    debug!(
-        "[on_message] <{}> Received Message: {:?}",
-        request.id, request.value
-    );
-
     let message = Message::from_bytes(&request.value)?;
 
-    info!("[on_message] {}", message);
+    debug!("[on_message] {}", message);
 
     // Echo bypasses this so errors can be triggered on the round trip
     if !matches!(message.message_type, Type::Echo) && !message.errors.is_empty() {
