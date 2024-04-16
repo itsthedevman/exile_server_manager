@@ -91,7 +91,7 @@ module ESM
         return if @request.user.nil?
 
         # Reset the current cooldown
-        @request.command.current_cooldown.reset!
+        @request.command.current_cooldown&.reset!
 
         # Some errors from the dll already have a mention in them...
         error = "#{@request.user.mention}, #{error}" if !error.start_with?("<")
