@@ -44,7 +44,7 @@ module ESM
       return true if connection.nil?
 
       # Tell ESM to update the server with the new details
-      ESM::Event::ServerInitialization.new(connection: connection, server: server, parameters: {}).update
+      ESM::Event::ServerInitializationV1.new(connection: connection, server: server, parameters: {}).update
     end
 
     # If a community changes their ID, their servers need to disconnect and reconnect
