@@ -2,9 +2,13 @@ use crate::token::TokenManager;
 use crate::*;
 
 use encryption::*;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
 use rand::prelude::*;
+use std::io::prelude::*;
 use std::net::ToSocketAddrs;
 use std::sync::atomic::AtomicI64;
 use std::sync::Mutex as SyncMutex;
@@ -150,24 +154,35 @@ fn send_request(request: Request) -> ESMResult {
         Err(e) => return Err(format!("❌ Cannot send message - Failed to convert - {e}").into()),
     };
 
+    // Compress
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+
+    if let Err(e) = encoder.write_all(&request[..]) {
+        return Err(format!("❌ Cannot send message - Failed to write to buffer - {e}").into());
+    };
+
+    let Ok(request) = encoder.finish() else {
+        return Err(format!("❌ Cannot send message - Failed to compress").into());
+    };
+
+    debug!("Compress: {:?}", request);
+
+    // Encrypt
     let request = if ENCRYPTION_ENABLED.load(Ordering::SeqCst) {
         encrypt_request(&request, lock!(TOKEN_MANAGER).secret_bytes())?
     } else {
         request
     };
 
+    // Encode
     let request = encryption::BASE64_STANDARD.encode(request).into_bytes();
 
+    // Send
     match lock!(HANDLER)
         .network()
         .send(lock!(ENDPOINT).unwrap(), &request)
     {
         SendStatus::Sent => Ok(()),
-        SendStatus::MaxPacketSizeExceeded => Err(format!(
-            "❌ Cannot send - Message is too large - Size: {}",
-            request.len()
-        )
-        .into()),
         s => Err(
             format!("❌ Cannot send - We are not connected to the bot at the moment: {s:?}").into(),
         ),
@@ -238,14 +253,22 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
         return Err("[on_request] ❌ Invalid data received. This is a bug!".into());
     };
 
+    // Decode
     let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
         Ok(p) => p,
         Err(e) => return Err(format!("[on_request] ❌ {e:?}").into()),
     };
 
-    let incoming_data = decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
+    let decrypted_message = decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
 
-    let request: Request = match serde_json::from_slice(&incoming_data) {
+    // Decompress
+    let mut decoder = GzDecoder::new(decrypted_message.as_slice());
+    let mut decoded_message = Vec::new();
+    if let Err(e) = decoder.read_to_end(&mut decoded_message) {
+        return Err(format!("[on_request] ❌ Failed to decompress: {e:?}").into());
+    }
+
+    let request: Request = match serde_json::from_slice(&decoded_message) {
         Ok(r) => r,
         Err(e) => return Err(format!("[on_request] ❌ {e}").into()),
     };
@@ -264,11 +287,11 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
 }
 
 fn on_disconnect() {
-    reset_indices();
-
-    ENCRYPTION_ENABLED.store(false, Ordering::SeqCst);
-    CONNECTED.store(false, Ordering::SeqCst);
     crate::READY.store(false, Ordering::SeqCst);
+    CONNECTED.store(false, Ordering::SeqCst);
+
+    reset_indices();
+    ENCRYPTION_ENABLED.store(false, Ordering::SeqCst);
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
