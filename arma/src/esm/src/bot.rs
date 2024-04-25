@@ -165,8 +165,6 @@ fn send_request(request: Request) -> ESMResult {
         return Err(format!("❌ Cannot send message - Failed to compress").into());
     };
 
-    debug!("Compress: {:?}", request);
-
     // Encrypt
     let request = if ENCRYPTION_ENABLED.load(Ordering::SeqCst) {
         encrypt_request(&request, lock!(TOKEN_MANAGER).secret_bytes())?
