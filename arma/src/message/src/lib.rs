@@ -1,19 +1,15 @@
-pub mod data;
 pub mod error;
-pub mod metadata;
 pub mod parser;
 
-use arma_rs::FromArma;
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
 
-pub use data::*;
 pub use error::*;
-pub use metadata::*;
 
-// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
-// Use this type for any numbers
-pub type NumberString = String;
+pub type Data = HashMap<String, Value>;
 
 /*
     {
@@ -38,26 +34,14 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
 
-    #[serde(default, skip_serializing_if = "data_is_empty")]
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub data: Data,
 
-    #[serde(default, skip_serializing_if = "metadata_is_empty")]
-    pub metadata: Metadata,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub metadata: Data,
 
-    #[serde(default, skip_serializing_if = "errors_is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub errors: Vec<Error>,
-}
-
-fn data_is_empty(data: &Data) -> bool {
-    matches!(data, Data::Empty)
-}
-
-fn metadata_is_empty(metadata: &Metadata) -> bool {
-    metadata.player.is_none() && metadata.target.is_none()
-}
-
-fn errors_is_empty(errors: &[Error]) -> bool {
-    errors.is_empty()
 }
 
 impl Message {
@@ -80,7 +64,7 @@ impl Message {
         self
     }
 
-    pub fn set_metadata(mut self, metadata: Metadata) -> Message {
+    pub fn set_metadata(mut self, metadata: Data) -> Message {
         self.metadata = metadata;
         self
     }
@@ -168,12 +152,12 @@ impl Message {
             Err(e) => return Err(format!("Failed to extract ID from {:?}. {}", id, e)),
         };
 
-        match Data::from_arma(data) {
+        match crate::parser::Parser::from_arma(&data) {
             Ok(d) => message.data = d,
             Err(e) => return Err(e),
         };
 
-        match Metadata::from_arma(metadata) {
+        match crate::parser::Parser::from_arma(&metadata) {
             Ok(d) => message.metadata = d,
             Err(e) => return Err(e),
         };
@@ -198,8 +182,8 @@ impl Default for Message {
         Message {
             id: Uuid::new_v4(),
             message_type: Type::Event,
-            data: Data::Empty,
-            metadata: Metadata::default(),
+            data: Data::default(),
+            metadata: Data::default(),
             errors: Vec::new(),
         }
     }
@@ -225,44 +209,9 @@ pub enum Type {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
-    use crate::data::Init;
-
-    #[test]
-    fn test_data_is_empty() {
-        let result = data_is_empty(&Data::Empty);
-        assert!(result);
-
-        let server_init = Init {
-            server_name: "server_name".into(),
-            price_per_object: "10".into(),
-            territory_lifetime: "7".into(),
-            territory_data: "[]".into(),
-            server_start_time: chrono::Utc::now(),
-            extension_version: "2.0.0".into(),
-            vg_enabled: false,
-            vg_max_sizes: String::new(),
-        };
-
-        let result = data_is_empty(&Data::Init(server_init));
-        assert!(!result);
-    }
-
-    #[test]
-    fn test_metadata_is_empty() {
-        let result = metadata_is_empty(&Metadata::default());
-        assert!(result);
-    }
-
-    #[test]
-    fn test_errors_is_empty() {
-        let result = errors_is_empty(&Vec::new());
-        assert!(result);
-
-        let error = Error::new(ErrorType::Code, "1".into());
-        let result = errors_is_empty(&[error]);
-        assert!(!result);
-    }
 
     #[test]
     fn test_serializing_empty_message() {
@@ -280,42 +229,39 @@ mod tests {
         let message: Message = serde_json::from_str(&input).unwrap();
 
         assert_eq!(message.id, uuid);
-        assert!(matches!(message.data, Data::Empty));
-        assert_eq!(message.metadata, Metadata::default());
+        assert!(message.data.is_empty());
+        assert!(message.metadata.is_empty());
         assert!(message.errors.is_empty());
     }
 
     #[test]
     fn test_from_str() {
-        use data::Data;
-
         let id = Uuid::new_v4();
-
-        // This is never the case, but a great place to test some weird text
-        let mut metadata = Metadata::default();
-        metadata.player = Some(Player {
-            discord_id: None,
-            discord_mention: None,
-            discord_name: None,
-            steam_uid: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
-        });
 
         let expectation = Message::new()
             .set_id(id)
             .set_type(Type::Event)
-            .set_data(Data::Test(data::Test {
-                foo: "test\"ing".into(),
-            }))
-            .set_metadata(metadata)
+            .set_data(Data::from([
+                (String::from("key_1"), json!("value_1")),
+                (String::from("key_2"), json!([json!("value_2")])),
+            ]))
+            .set_metadata(Data::from([
+                (String::from("discord_id"), json!(null)),
+                // This is never the case, but a great place to test some weird text
+                (
+                    String::from("discord_name"),
+                    json!("\"testing\" \\(* \\\\\" *)/ - \"nested\""),
+                ),
+            ]))
             .add_error(ErrorType::Message, "This is a message")
             .add_error(ErrorType::Code, "CODING");
 
         let result = Message::from_arma(
             id.to_string(),
             "event".into(),
-            r#"[["type","test"],["content",[["foo","test""ing"]]]]"#
+            r#"[["key_1","value_1"],["key_2", ["value_2"]]]"#
             .to_string(),
-            r#"[["player",[["steam_uid","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
+            r#"[["discord_id",null],["discord_name","""testing"" \(* """""" *)/ - ""nested"""]]"#
             .to_string(),
             r#"[[["type","message"],["content","This is a message"]],[["type","code"],["content","CODING"]]]"#
             .to_string(),

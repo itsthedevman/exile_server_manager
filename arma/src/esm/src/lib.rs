@@ -312,6 +312,60 @@ fn log(log_level: String, caller: String, content: String) {
 // END Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
+pub struct Init {
+    pub extension_version: String,
+    pub price_per_object: NumberString,
+    pub server_name: String,
+    pub server_start_time: DateTime<Utc>,
+    pub territory_data: String,
+    pub territory_lifetime: NumberString,
+    pub vg_enabled: bool,
+    pub vg_max_sizes: String,
+}
+
+impl Init {
+    pub fn validate(&self) -> Result<(), Vec<String>> {
+        let mut errors = vec![];
+
+        if self.extension_version.is_empty() {
+            errors.push("\"extension_version\" was not provided".into());
+        }
+
+        if let Err(e) = self.price_per_object.parse::<usize>() {
+            errors.push(format!(
+                "Could not parse \"{}\" provided to \"price_per_object\" - {}",
+                self.price_per_object, e
+            ));
+        }
+
+        if self.server_name.is_empty() {
+            errors.push("\"server_name\" was not provided".into());
+        }
+
+        if self.territory_data.is_empty() {
+            errors.push("\"territory_data\" was not provided".into());
+        }
+
+        if let Err(e) = self.territory_lifetime.parse::<usize>() {
+            errors.push(format!(
+                "Could not parse \"{}\" provided to \"territory_lifetime\" - {}",
+                self.territory_lifetime, e
+            ));
+        }
+
+        if self.vg_max_sizes.is_empty() {
+            errors.push("\"vg_max_sizes\" was not provided".into());
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::init;

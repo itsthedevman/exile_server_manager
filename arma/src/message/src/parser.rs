@@ -5,7 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct Parser {}
 
 impl Parser {
-    pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
+    pub fn from_arma<T: DeserializeOwned + Default>(input: &str) -> Result<T, String> {
         let input = replace_arma_characters(input);
 
         let input: JSONValue = match serde_json::from_str(&input) {
@@ -18,6 +18,15 @@ impl Parser {
         };
 
         let content = validate_content(&input);
+
+        if content.is_array() && content.as_array().is_some_and(|a| a.is_empty()) {
+            return Ok(T::default());
+        }
+
+        if content.is_object() && content.as_object().is_some_and(|a| a.is_empty()) {
+            return Ok(T::default());
+        }
+
         let output: T = match serde_json::from_value(content) {
             Ok(t) => t,
             Err(e) => return Err(format!("[parser::from_arma] Failed to convert to Data/Metadata. Reason: {e}. Input: \"{input}\" ")),
@@ -66,13 +75,14 @@ fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, Str
             None => return Err(format!("[parser::convert_arma_array_to_object] Failed to extract key from {pair:?}"))
         };
 
-        let value =
-            match pair.get(1) {
-                Some(v) => v,
-                None => return Err(format!(
+        let value = match pair.get(1) {
+            Some(v) => v,
+            None => {
+                return Err(format!(
                     "[parser::convert_arma_array_to_object] Failed to extract value from {pair:?}"
-                )),
-            };
+                ))
+            }
+        };
 
         object.insert(key.to_string(), validate_content(value));
     }
@@ -169,10 +179,13 @@ fn replace_arma_characters(input: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
-    use crate::{data, Data};
     use arma_rs::IntoArma;
     use serde_json::json;
+
+    type Data = HashMap<String, JSONValue>;
 
     #[test]
     fn it_converts_arma_hash_correctly() {
@@ -215,16 +228,20 @@ mod tests {
 
         assert_eq!(
             result.unwrap(),
-            Data::Test(data::Test {
-                foo: "bar".to_string()
-            })
+            HashMap::from([
+                (String::from("type"), json!("test")),
+                (
+                    String::from("content"),
+                    json!({ String::from("foo"): json!("bar")})
+                )
+            ])
         );
 
-        let input = json!([json!(["type", "empty"])]).to_arma().to_string();
+        let input = json!([]).to_arma().to_string();
 
         let result: Result<Data, String> = Parser::from_arma(&input);
 
-        assert_eq!(result.unwrap(), Data::Empty);
+        assert_eq!(result.unwrap(), HashMap::default());
     }
 
     #[test]
@@ -235,25 +252,34 @@ mod tests {
 
         assert_eq!(
             result.unwrap(),
-            Data::SqfResult(data::SqfResult {
-                result: Some("[[\"key_1\",\"value_1\"],[\"key_2\",true],[\"key_3\",[[\"key_4\",false],[\"key_5\",[[\"key_6\",any],[\"key_7\",<null>]]]]]]".to_string())
-            })
-        );
+            HashMap::from([
+                (String::from("type"), json!("sqf_result")),
+                (
+                    String::from("content"),
+                    json!({
+                        String::from("result"): json!("[[\"key_1\",\"value_1\"],[\"key_2\",true],[\"key_3\",[[\"key_4\",false],[\"key_5\",[[\"key_6\",any],[\"key_7\",<null>]]]]]]"),
+                    })
+                )
+            ])
+        )
     }
 
     #[test]
     fn it_handles_null_characters() {
-        let input = r#"[["type","reward"],["content",[["items",<null>],["locker_poptabs",nil],["player_poptabs",any],["respect","1"],["vehicles",[]]]]]"#;
+        let input = r#"[["items",<null>],["locker_poptabs",nil],["player_poptabs",any],["respect","1"],["vehicles",[]]]"#;
+
         let result: Result<Data, String> = Parser::from_arma(input);
+
         assert_eq!(
             result.unwrap(),
-            Data::Reward(data::Reward {
-                items: None,
-                locker_poptabs: None,
-                player_poptabs: None,
-                respect: Some("1".to_string()),
-                vehicles: Some(vec![])
-            })
-        );
+            HashMap::from([
+                (String::from("items"), json!(null)),
+                (String::from("locker_poptabs"), json!(null)),
+                (String::from("player_poptabs"), json!(null)),
+                (String::from("respect"), json!("1")),
+                (String::from("vehicles"), json!([])),
+
+            ])
+        )
     }
 }

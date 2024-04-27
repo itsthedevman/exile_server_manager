@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 arma-rs = { version = "1.10", features = ["uuid", "serde_json", "chrono"] }
 chrono = { version = "0.4", features = ["serde"] }
-esm_message = { path = "../message/message" }
+esm_message = { path = "../message" }
 harsh = "0.2.2"
 lazy_static = "1.4.0"
 log = "*"

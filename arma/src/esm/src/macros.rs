@@ -64,21 +64,6 @@ macro_rules! include_sql {
     }};
 }
 
-// #[macro_export]
-// macro_rules! hashmap {
-//     { $($key:expr => $value:expr),* } => {{
-//         use std::collections::HashMap;
-
-//         let mut hash: HashMap<String, String> = HashMap::new();
-
-//         $(
-//             hash.insert($key.to_string(), $value.to_string());
-//         )*
-
-//         hash
-//     }};
-// }
-
 #[cfg(test)]
 mod tests {
     use tokio::sync::Mutex;
