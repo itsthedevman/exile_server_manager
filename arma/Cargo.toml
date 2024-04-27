@@ -5,8 +5,7 @@ members = [
     "src/build/common",
     "src/build/compiler",
     "src/esm",
-    "src/message/message",
-    "src/message/message_proc",
+    "src/message",
 ]
 default-members = ["src/esm"]
 resolver = "2"
