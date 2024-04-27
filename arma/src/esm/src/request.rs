@@ -1,10 +1,11 @@
 use arma_rs::Context;
-use esm_message::{Init, Message};
+use esm_message::Message;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use uuid::Uuid;
 
 use crate::ESMResult;
+use crate::Init;
 
 pub enum ArmaRequest {
     Query(Box<Message>),

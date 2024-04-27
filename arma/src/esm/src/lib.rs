@@ -1,17 +1,9 @@
-mod arma;
-mod bot;
-mod config;
-mod database;
-mod encryption;
-mod macros;
-mod request;
-mod router;
-mod token;
-
 // Various Packages
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
+pub use serde_json::{json, Value as JSONValue};
+pub use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 pub use std::sync::Arc;
 pub use std::sync::Mutex as SyncMutex;
@@ -28,13 +20,24 @@ use log4rs::encode::pattern::PatternEncoder;
 use config::Config;
 use config::Env;
 
+pub type ESMResult = Result<(), Error>;
+pub type MessageResult = Result<Option<Message>, Error>;
+pub type NumberString = String;
+
+mod arma;
+mod bot;
+mod config;
+mod database;
+mod encryption;
+mod macros;
+mod request;
+mod router;
+mod token;
+
 pub use bot::TOKEN_MANAGER;
 pub use esm_message::*;
 pub use request::*;
 pub use router::ROUTER;
-
-pub type ESMResult = Result<(), Error>;
-pub type MessageResult = Result<Option<Message>, Error>;
 
 lazy_static! {
     /// Represents @esm/config.yml
@@ -247,8 +250,10 @@ fn send_to_channel(id: String, content: String) {
 
     std::thread::spawn(move || {
         TOKIO_RUNTIME.block_on(async {
-            let mut message = Message::new();
-            message.data = Data::SendToChannel(data::SendToChannel { id, content });
+            let message = Message::new().set_data(Data::from([
+                ("id".to_owned(), json!(id)),
+                ("content".to_owned(), json!(content)),
+            ]));
 
             if let Err(e) = BotRequest::send(message) {
                 error!("[send_to_channel] ❌ {}", e);
@@ -312,7 +317,7 @@ fn log(log_level: String, caller: String, content: String) {
 // END Arma accessible functions
 ///////////////////////////////////////////////////////////////////////
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Init {
     pub extension_version: String,
     pub price_per_object: NumberString,
@@ -363,6 +368,28 @@ impl Init {
         } else {
             Err(errors)
         }
+    }
+
+    pub fn to_data(&self) -> Data {
+        Data::from([
+            (
+                "extension_version".to_owned(),
+                json!(self.extension_version),
+            ),
+            ("price_per_object".to_owned(), json!(self.price_per_object)),
+            ("server_name".to_owned(), json!(self.server_name)),
+            (
+                "server_start_time".to_owned(),
+                json!(self.server_start_time),
+            ),
+            ("territory_data".to_owned(), json!(self.territory_data)),
+            (
+                "territory_lifetime".to_owned(),
+                json!(self.territory_lifetime),
+            ),
+            ("vg_enabled".to_owned(), json!(self.vg_enabled)),
+            ("vg_max_sizes".to_owned(), json!(self.vg_max_sizes)),
+        ])
     }
 }
 

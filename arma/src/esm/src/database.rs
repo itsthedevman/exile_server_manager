@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
 
-type DatabaseResult = Result<QueryResult, Error>;
+type DatabaseResult = Result<Vec<String>, Error>;
 
 #[derive(Clone)]
 pub struct Database {
@@ -83,7 +83,7 @@ impl Database {
         }
     }
 
-    pub async fn decode_territory_id(&self, territory_id: &String) -> Result<u64, Error> {
+    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
         let mut connection = self.connection().await?;
 
         if let Some(id) = self.hasher.decode(&territory_id) {
@@ -113,17 +113,17 @@ impl Database {
     /// Command related queries
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
-    pub async fn query(&self, name: &str, arguments: &HashMap<String, String>) -> DatabaseResult {
+    pub async fn query(&self, name: &str, arguments: HashMap<String, String>) -> DatabaseResult {
         let mut connection = self.connection().await?;
 
         let query_result = match name {
             "reward_territories" => {
-                self.command_reward_territories(&mut connection, arguments)
+                self.command_reward_territories(&mut connection, &arguments)
                     .await
             }
-            "me" => self.command_me(&mut connection, arguments).await,
+            "me" => self.command_me(&mut connection, &arguments).await,
             "all_territories" => {
-                self.command_all_territories(&mut connection, arguments)
+                self.command_all_territories(&mut connection, &arguments)
                     .await
             }
             _ => {
@@ -198,7 +198,7 @@ AND
                     .map(|t| serde_json::to_string(&t).unwrap())
                     .collect();
 
-                Ok(QueryResult { results })
+                Ok(results)
             }
             Err(e) => {
                 error!("[reward_territories] ❌ Query failed - {}", e);
@@ -294,7 +294,7 @@ AND
                     .map(|player| serde_json::to_string(&player).unwrap())
                     .collect();
 
-                Ok(QueryResult { results })
+                Ok(results)
             }
             Err(e) => {
                 error!("[query_me] ❌ Query failed - {}", e);
@@ -338,7 +338,7 @@ AND
                     .filter_map(|t| serde_json::to_string(&t).ok())
                     .collect();
 
-                Ok(QueryResult { results })
+                Ok(results)
             }
             Err(e) => {
                 error!("[query_me] ❌ Query failed - {}", e);

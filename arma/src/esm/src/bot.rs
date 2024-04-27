@@ -339,18 +339,28 @@ fn on_error(request: Request) -> ESMResult {
 fn on_handshake(mut request: Request) -> ESMResult {
     let message = Message::from_bytes(&request.value)?;
 
-    let Data::Handshake(ref data) = message.data else {
-        // TODO: Close
-        return Err("Unexpected message data type provided".into());
-    };
+    // Weeeeeeeee! I have no idea what I'm doing! ;)
+    let indices: Vec<String> = message
+        .data
+        .get("indices")
+        .unwrap_or(&json!([]))
+        .as_array()
+        .unwrap_or(&Vec::new())
+        .into_iter()
+        .map(|i| i.as_str().unwrap_or("").to_owned())
+        .collect();
+
+    if indices.is_empty() {
+        return Err("Received invalid handshake. This is a bug!".into());
+    }
 
     // Store the new indices for future use
-    if let Err(e) = set_indices(data.indices.to_owned()) {
+    if let Err(e) = set_indices(indices.to_owned()) {
         // TODO: Close
         return Err(e.into());
     }
 
-    let message = message.set_data(Data::Empty);
+    let message = message.set_data(Data::default());
     request.value = message.as_bytes()?;
 
     // Since we've successfully set the nonce indices, we're good to start sending encrypted data
@@ -376,7 +386,8 @@ fn on_initialize(request: Request) -> ESMResult {
 
     let message = Message::new()
         .set_id(request.id)
-        .set_data(Data::Init(lock!(INIT).clone()));
+        .set_type(Type::Init)
+        .set_data(lock!(INIT).to_data());
 
     BotRequest::send(message)
 }
@@ -400,20 +411,17 @@ fn on_message(request: Request) -> ESMResult {
 
     match message.message_type {
         Type::Query => ArmaRequest::query(message),
-        Type::Arma => ArmaRequest::call("call_function", message),
-        Type::Event => match message.data {
-            Data::PostInit(_) => {
-                if crate::READY.load(Ordering::SeqCst) {
-                    return Err("[on_connect]       ❌ Client is already initialized".into());
-                }
-
-                info!("[on_connect] Building profile...");
-
-                ArmaRequest::call("post_initialization", message)
+        Type::Call => ArmaRequest::call("call_function", message),
+        Type::PostInit => {
+            if crate::READY.load(Ordering::SeqCst) {
+                return Err("[on_connect]       ❌ Client is already initialized".into());
             }
-            Data::Ping => BotRequest::send(message.set_data(Data::Pong)),
-            t => Err(format!("❌ Unexpected event type: {t:?}").into()),
-        },
+
+            info!("[on_connect] Building profile...");
+
+            ArmaRequest::call("post_initialization", message)
+        }
         Type::Echo => BotRequest::send(message),
+        t => Err(format!("❌ Unexpected message type: {t:?}").into()),
     }
 }

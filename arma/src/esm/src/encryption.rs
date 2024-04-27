@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_and_decrypt_message() {
-        let mut message = Message::new();
+        let mut message = Message::new().set_type(Type::Init);
 
         let server_init = Init {
             server_name: "server_name".into(),
@@ -156,8 +156,7 @@ mod tests {
         };
 
         let expected = server_init.clone();
-
-        message.data = Data::Init(server_init);
+        message.data = server_init.to_data();
 
         let server_key = format!(
             "{}-{}-{}-{}",
@@ -186,16 +185,28 @@ mod tests {
         let decrypted_message = decrypted_message.unwrap();
         let message = Message::from_bytes(&decrypted_message).unwrap();
 
-        assert_eq!(message.message_type, Type::Event);
+        assert_eq!(message.message_type, Type::Init);
 
-        match message.data {
-            Data::Init(data) => {
-                assert_eq!(data.server_name, expected.server_name);
-                assert_eq!(data.price_per_object, expected.price_per_object);
-                assert_eq!(data.territory_lifetime, expected.territory_lifetime);
-                assert_eq!(data.territory_data, expected.territory_data);
-            }
-            _ => panic!("Invalid message data"),
-        }
+        let data = message.data;
+
+        assert_eq!(
+            data.get("server_name").unwrap().as_str().unwrap(),
+            expected.server_name
+        );
+
+        assert_eq!(
+            data.get("price_per_object").unwrap().as_str().unwrap(),
+            expected.price_per_object
+        );
+
+        assert_eq!(
+            data.get("territory_lifetime").unwrap().as_str().unwrap(),
+            expected.territory_lifetime
+        );
+
+        assert_eq!(
+            data.get("territory_data").unwrap().as_str().unwrap(),
+            expected.territory_data
+        );
     }
 }

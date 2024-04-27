@@ -181,7 +181,7 @@ impl Default for Message {
     fn default() -> Self {
         Message {
             id: Uuid::new_v4(),
-            message_type: Type::Event,
+            message_type: Type::Ack,
             data: Data::default(),
             metadata: Data::default(),
             errors: Vec::new(),
@@ -192,16 +192,11 @@ impl Default for Message {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
-    // Execute a Arma function
-    Arma,
-
-    // Bounces the message back
     Echo,
-
-    // Regular events, such as Init, PostInit, etc.
-    Event,
-
-    // Database query
+    Init,
+    PostInit,
+    Ack,
+    Call,
     Query,
 }
 
@@ -218,14 +213,14 @@ mod tests {
         let message = Message::new();
         let json = serde_json::to_string(&message).unwrap();
 
-        let expected = format!("{{\"id\":\"{}\",\"type\":\"event\"}}", message.id);
+        let expected = format!("{{\"id\":\"{}\",\"type\":\"ack\"}}", message.id);
         assert_eq!(json, expected);
     }
 
     #[test]
     fn test_deserializing_empty_message() {
         let uuid = Uuid::new_v4();
-        let input = format!("{{\"id\":\"{}\",\"type\":\"event\"}}", uuid);
+        let input = format!("{{\"id\":\"{}\",\"type\":\"ack\"}}", uuid);
         let message: Message = serde_json::from_str(&input).unwrap();
 
         assert_eq!(message.id, uuid);
@@ -240,16 +235,16 @@ mod tests {
 
         let expectation = Message::new()
             .set_id(id)
-            .set_type(Type::Event)
+            .set_type(Type::Ack)
             .set_data(Data::from([
-                (String::from("key_1"), json!("value_1")),
-                (String::from("key_2"), json!([json!("value_2")])),
+                ("key_1".to_owned(), json!("value_1")),
+                ("key_2".to_owned(), json!([json!("value_2")])),
             ]))
             .set_metadata(Data::from([
-                (String::from("discord_id"), json!(null)),
-                // This is never the case, but a great place to test some weird text
+                ("discord_id".to_owned(), json!(null)),
                 (
-                    String::from("discord_name"),
+                    "discord_name".to_owned(),
+                    // This is never the case, but a great place to test some weird text
                     json!("\"testing\" \\(* \\\\\" *)/ - \"nested\""),
                 ),
             ]))
@@ -258,7 +253,7 @@ mod tests {
 
         let result = Message::from_arma(
             id.to_string(),
-            "event".into(),
+            "ack".into(),
             r#"[["key_1","value_1"],["key_2", ["value_2"]]]"#
             .to_string(),
             r#"[["discord_id",null],["discord_name","""testing"" \(* """""" *)/ - ""nested"""]]"#
