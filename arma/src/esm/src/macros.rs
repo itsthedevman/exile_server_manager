@@ -48,7 +48,19 @@ macro_rules! random_bs_go {
 #[macro_export]
 macro_rules! include_sql {
     ($name:expr) => {{
-        include_str!(concat!("../sql/", $name, ".sql"))
+        let path = concat!("./@esm/sql/queries/", $name, ".sql");
+
+        match fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => {
+                error!(
+                    "Failed to load file at @esm/sql/queries/{}.sql. Reason: {e}",
+                    $name
+                );
+
+                String::new()
+            }
+        }
     }};
 }
 

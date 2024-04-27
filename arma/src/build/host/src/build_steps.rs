@@ -415,6 +415,8 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
             )
         }
         BuildOS::Linux => format!(
+            // The weird moving of the target folder is to avoid having to redownload
+            // all dependencies every time
             r#"
                 rm -f "{server_path}/{profile_name}/*.log";
                 rm -f "{server_path}/{profile_name}/*.rpt";
@@ -583,11 +585,6 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
 }
 
 fn compile_mod(builder: &mut Builder) -> BuildResult {
-    lazy_static! {
-        static ref DIRECTORIES: Vec<&'static str> = vec!["optionals", "sql"];
-        static ref FILES: Vec<&'static str> = vec!["Licenses.txt"];
-    }
-
     // Set up all the paths needed
     let source_path = builder
         .local_git_path
@@ -692,11 +689,27 @@ cd {build_path};
             .execute(None)?;
     }
 
-    Directory::transfer(
-        builder,
-        build_path,
-        builder.remote_build_path().join("@esm"),
-    )?;
+    let destination_path = builder.remote_build_path().join("@esm");
+    Directory::transfer(builder, build_path, destination_path.to_owned())?;
+
+    // Copy extra directories and files
+    let source_path = builder.local_git_path.join("src").join("@esm");
+    for directory in ["optionals", "sql"].iter() {
+        Directory::transfer(
+            builder,
+            source_path.join(directory),
+            destination_path.to_owned(),
+        )?;
+    }
+
+    for file in ["Licenses.txt"].iter() {
+        File::transfer(
+            builder,
+            source_path.to_owned(),
+            destination_path.to_owned(),
+            file,
+        )?;
+    }
 
     Ok(())
 }

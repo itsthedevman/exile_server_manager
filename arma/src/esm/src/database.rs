@@ -12,6 +12,7 @@ pub struct Database {
     pub extdb_version: u8,
     pub hasher: Hasher,
     connection_pool: Arc<Mutex<Option<Pool>>>,
+    statements: Statements,
 }
 
 impl Default for Database {
@@ -33,6 +34,7 @@ impl Default for Database {
             extdb_version,
             connection_pool: Arc::new(Mutex::new(None)),
             hasher: Hasher::new(),
+            statements: Statements::new(),
         }
     }
 }
@@ -43,6 +45,8 @@ impl Database {
     }
 
     pub async fn connect(&self, base_ini_path: &str) -> ESMResult {
+        self.statements.validate()?;
+
         // Build the connection URI
         let database_url = match connection_string(base_ini_path, self.extdb_version) {
             Ok(url) => url,
@@ -79,25 +83,6 @@ impl Database {
         }
     }
 
-    pub async fn account_verification(&self, player_uid: &str) -> Result<bool, Error> {
-        let mut connection = self.connection().await?;
-
-        let result: SQLResult<Option<String>> = connection
-            .exec_first(
-                include_sql!("account_verification"),
-                params! { "uid" => player_uid },
-            )
-            .await;
-
-        match result {
-            Ok(r) => match r {
-                Some(v) => Ok(v == "true"),
-                None => Ok(false),
-            },
-            Err(_e) => Ok(false),
-        }
-    }
-
     pub async fn decode_territory_id(&self, territory_id: &String) -> Result<u64, Error> {
         let mut connection = self.connection().await?;
 
@@ -107,7 +92,7 @@ impl Database {
 
         let result: SQLResult<Option<u64>> = connection
             .exec_first(
-                include_sql!("decode_territory_id"),
+                &self.statements.decode_territory_id,
                 params! { "territory_id" => territory_id },
             )
             .await;
@@ -143,7 +128,7 @@ impl Database {
             }
             _ => {
                 return Err(format!(
-                    "[query] Unexpected query \"{}\" with arguments {:?}",
+                    "[query] ❌ Unexpected query \"{}\" with arguments {:?}",
                     name, arguments
                 )
                 .into())
@@ -257,7 +242,7 @@ AND
 
         let result = connection
             .exec_map(
-                include_sql!("command_me"),
+                &self.statements.command_me,
                 // The "uid" argument must be before "uid_wildcard" since it's a substring of the other
                 params! { "uid_wildcard" => format!("%{}%", player_uid), "uid" => player_uid },
                 |(
@@ -334,7 +319,7 @@ AND
 
         let result = connection
             .exec_map(
-                include_sql!("command_all_territories"),
+                &self.statements.command_all_territories,
                 Params::Empty,
                 |(id, esm_custom_id, territory_name, owner_uid, owner_name)| TerritoryResult {
                     id: self.hasher.encode(id),
@@ -512,6 +497,50 @@ impl Hasher {
 
     pub fn set_salt(&self, salt: &str) {
         *self.builder.write() = Self::builder(salt)
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct Statements {
+    decode_territory_id: String,
+
+    // Command queries
+    command_me: String,
+    command_all_territories: String,
+}
+
+// I would much rather this to be a macro so I don't have to manually add
+// all of this extra code
+impl Statements {
+    pub fn new() -> Self {
+        Statements {
+            decode_territory_id: include_sql!("decode_territory_id"),
+            command_me: include_sql!("command_me"),
+            command_all_territories: include_sql!("command_all_territories"),
+        }
+    }
+
+    pub fn validate(&self) -> ESMResult {
+        if self.decode_territory_id.is_empty() {
+            return Self::format_error("decode_territory_id");
+        }
+
+        if self.command_me.is_empty() {
+            return Self::format_error("command_me");
+        }
+
+        if self.command_all_territories.is_empty() {
+            return Self::format_error("command_all_territories");
+        }
+
+        Ok(())
+    }
+
+    fn format_error(name: &str) -> ESMResult {
+        Err(format!(
+            "Failed to load {name}.sql. Please ensure @esm/sql/queries/{name}.sql exists and contains valid SQL"
+        )
+        .into())
     }
 }
 

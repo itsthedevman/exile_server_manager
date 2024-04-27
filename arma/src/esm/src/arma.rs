@@ -83,7 +83,8 @@ fn send_to_arma(message: Message) -> ESMResult {
             function: {}
             message: {}
         "#,
-        function, message
+        function,
+        message
     );
 
     debug!("[send_to_arma] {} is being routed to arma", message.id);
