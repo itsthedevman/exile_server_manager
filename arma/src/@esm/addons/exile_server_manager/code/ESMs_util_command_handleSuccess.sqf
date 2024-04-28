@@ -36,7 +36,8 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-(_this select 0) call ESMs_system_message_respond_to;
+private _message = _this select 0;
+[_message select 0, "ack", _message select 1] call ESMs_system_message_respond_to;
 
 if !(_this select 1) exitWith {};
 

@@ -340,14 +340,14 @@ fn on_handshake(mut request: Request) -> ESMResult {
     let message = Message::from_bytes(&request.value)?;
 
     // Weeeeeeeee! I have no idea what I'm doing! ;)
-    let indices: Vec<String> = message
+    let indices: Vec<u8> = message
         .data
         .get("indices")
         .unwrap_or(&json!([]))
         .as_array()
         .unwrap_or(&Vec::new())
         .into_iter()
-        .map(|i| i.as_str().unwrap_or("").to_owned())
+        .map(|i| i.as_u64().unwrap_or(0) as u8)
         .collect();
 
     if indices.is_empty() {

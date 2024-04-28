@@ -246,7 +246,7 @@ try
 		forEach _rewardVehicles;
 	};
 
-	[_id, "arma", "reward", _receipt] spawn ESMs_system_message_respond_to;
+	[_id, _receipt] spawn ESMs_system_message_respond_to;
 
 	if (ESM_Logging_RewardPlayer) then
 	{

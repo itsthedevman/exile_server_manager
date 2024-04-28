@@ -12,12 +12,7 @@ lazy_static! {
         Arc::new(SyncMutex::new(DEFAULT_INDICES.to_owned()));
 }
 
-pub fn set_indices(new_indices: Vec<String>) -> Result<(), String> {
-    let mut new_indices = new_indices
-        .into_iter()
-        .map(|i| i.parse::<u8>().unwrap_or_default())
-        .collect::<Vec<u8>>();
-
+pub fn set_indices(mut new_indices: Vec<u8>) -> Result<(), String> {
     new_indices.dedup();
     new_indices.sort();
 
@@ -167,12 +162,9 @@ mod tests {
         );
         let server_key = server_key.as_bytes();
 
-        let _ = set_indices(
-            vec![3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33]
-                .into_iter()
-                .map(|i| i.to_string())
-                .collect(),
-        );
+        let _ = set_indices(vec![
+            3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33,
+        ]);
 
         let bytes = message.as_bytes().unwrap();
         let encrypted_bytes = encrypt_request(&bytes, server_key);

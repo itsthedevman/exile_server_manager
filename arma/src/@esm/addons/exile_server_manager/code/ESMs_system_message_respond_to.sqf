@@ -7,9 +7,7 @@ Description:
 Parameters:
 	_id				- The ID of the message to respond to. [String]
 	_type			- The type of message [String]
-	_dataType		- The type of data that the outgoing message will hold. Defaults to "empty". [String]
 	_data			- The data to send along with the outgoing message. Defaults to []. [HashMap, Array]
-	_metadataType	- The type of metadata that the outgoing message will hold. Defaults to "empty". [String]
 	_metadata		- The metadata to send along with the outgoing message. Defaults to []. [HashMap, Array]
 	_errors		 	- An array of error objects. Defaults to []. See example [Array<Array<String>>]
 
@@ -26,12 +24,10 @@ Examples:
 	[
 		"id",
 		"type",
-		"data_type"
 		[
 			["data_key_1", "data_value_1"],
 			["data_key_2", "data_value_2"]
 		],
-		"metadata_type",
 		[
 			["metadata_key_1", "metadata_value_1"],
 			["metadata_key_2", "metadata_value_2"]
@@ -55,10 +51,8 @@ Author:
 
 params [
 	"_id",
-	["_type", "event", [rv_type!(STRING)]],
-	["_dataType", "empty", [rv_type!(STRING)]],
+	["_type", "call", [rv_type!(STRING)]],
 	["_data", [], [rv_type!(ARRAY), rv_type!(HASH)]],
-	["_metadataType", "empty", [rv_type!(STRING)]],
 	["_metadata", [], [rv_type!(ARRAY), rv_type!(HASH)]],
 	["_errors", [], [rv_type!(ARRAY)]]
 ];
@@ -83,11 +77,10 @@ forEach _errors;
 
 // Inserts the "content" section of Data/Metadata only if it is needed
 private _validator = {
-	private _type = _this select 0;
-	private _data = _this select 1;
+	private _data = _this;
+	private _package = [];
 
-	private _package = [["type", _type]];
-	if (_type isEqualTo "empty" || empty?(_data)) exitWith { _package };
+	if (empty?(_data)) exitWith { _package };
 
 	_package pushBack ["content", _this select 1];
 	_package
@@ -99,8 +92,8 @@ private _validator = {
 	"send_message",
 	_id,
 	_type,
-	[_dataType, _data] call _validator,
-	[_metadataType, _metadata] call _validator,
+	_data,
+	_metadata,
 	_errorPackage
 ]
 call ESMs_system_extension_call

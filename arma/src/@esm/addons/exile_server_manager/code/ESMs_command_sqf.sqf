@@ -109,11 +109,7 @@ try
 		// Response
 		[
 			_id,
-			"arma",
-			"sqf_result",
-			[
-				["result", returns_nil!(_result)]
-			]
+			[["result", returns_nil!(_result)]]
 		],
 
 		// Log the following?

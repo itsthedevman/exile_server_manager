@@ -113,22 +113,6 @@ impl Message {
         }
     }
 
-    //  [
-    //      "id",
-    //      "type",
-    //      [
-    //          ["type", "content"],
-    //          ["data_type", [["key_1", "key_2"], ["value_1", "value_2"]]
-    //      ],
-    //      [
-    //          ["type", "content"],
-    //          ["metadata_type", [["key_1", "key_2"], ["value_1", "value_2"]]
-    //      ],
-    //      [
-    //          [["type", "content"], ["code", "1"]],
-    //          [["type", "content"], ["message", "This is an error"]]
-    //      ]
-    //  ]
     pub fn from_arma(
         id: String,
         message_type: String,
@@ -181,7 +165,7 @@ impl Default for Message {
     fn default() -> Self {
         Message {
             id: Uuid::new_v4(),
-            message_type: Type::Ack,
+            message_type: Type::Call,
             data: Data::default(),
             metadata: Data::default(),
             errors: Vec::new(),
@@ -235,7 +219,7 @@ mod tests {
 
         let expectation = Message::new()
             .set_id(id)
-            .set_type(Type::Ack)
+            .set_type(Type::Call)
             .set_data(Data::from([
                 ("key_1".to_owned(), json!("value_1")),
                 ("key_2".to_owned(), json!([json!("value_2")])),
@@ -253,7 +237,7 @@ mod tests {
 
         let result = Message::from_arma(
             id.to_string(),
-            "ack".into(),
+            "call".into(),
             r#"[["key_1","value_1"],["key_2", ["value_2"]]]"#
             .to_string(),
             r#"[["discord_id",null],["discord_name","""testing"" \(* """""" *)/ - ""nested"""]]"#
