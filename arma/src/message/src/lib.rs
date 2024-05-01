@@ -165,7 +165,7 @@ impl Default for Message {
     fn default() -> Self {
         Message {
             id: Uuid::new_v4(),
-            message_type: Type::Call,
+            message_type: Type::Ack,
             data: Data::default(),
             metadata: Data::default(),
             errors: Vec::new(),

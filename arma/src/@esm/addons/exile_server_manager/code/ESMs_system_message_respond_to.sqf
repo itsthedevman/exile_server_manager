@@ -51,7 +51,7 @@ Author:
 
 params [
 	"_id",
-	["_type", "call", [rv_type!(STRING)]],
+	["_type", "ack", [rv_type!(STRING)]],
 	["_data", [], [rv_type!(ARRAY), rv_type!(HASH)]],
 	["_metadata", [], [rv_type!(ARRAY), rv_type!(HASH)]],
 	["_errors", [], [rv_type!(ARRAY)]]
