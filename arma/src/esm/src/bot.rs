@@ -337,6 +337,14 @@ fn on_error(request: Request) -> ESMResult {
 }
 
 fn on_handshake(mut request: Request) -> ESMResult {
+    if request.value.is_empty() {
+        return Err(format!(
+            "[on_handshake] Request {:?} contained no data. This is a bug!",
+            request
+        )
+        .into());
+    }
+
     let message = Message::from_bytes(&request.value)?;
 
     // Weeeeeeeee! I have no idea what I'm doing! ;)
@@ -393,6 +401,14 @@ fn on_initialize(request: Request) -> ESMResult {
 }
 
 fn on_message(request: Request) -> ESMResult {
+    if request.value.is_empty() {
+        return Err(format!(
+            "[on_message] Request {:?} contained no data. This is a bug!",
+            request
+        )
+        .into());
+    }
+
     let message = Message::from_bytes(&request.value)?;
 
     debug!("[on_message] {}", message);

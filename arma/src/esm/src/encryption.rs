@@ -69,12 +69,6 @@ pub fn decrypt_request(encoded_bytes: Vec<u8>, server_key: &[u8]) -> Result<Vec<
         return Err("Server key must contain at least 32 bytes".into());
     }
 
-    // Errors are not encrypted
-    // This is so we can send back errors before the handshake succeeds
-    if check_for_error_request(&encoded_bytes) {
-        return Ok(encoded_bytes);
-    }
-
     let nonce_indices = lock!(INDICES).clone();
 
     let mut nonce: Vec<u8> = vec![];
@@ -112,21 +106,6 @@ pub fn decrypt_request(encoded_bytes: Vec<u8>, server_key: &[u8]) -> Result<Vec<
         Ok(message) => Ok(message),
         Err(e) => Err(format!("Failed to decrypt. {e:?}")),
     }
-}
-
-fn check_for_error_request(bytes: &[u8]) -> bool {
-    // Simple sanity check to filter out 99% of the data without having to deserialize
-    // 123 == '{'
-    if !bytes.starts_with(&[123]) {
-        return false;
-    }
-
-    let request: Request = match serde_json::from_slice(bytes) {
-        Ok(r) => r,
-        Err(_e) => return false,
-    };
-
-    return matches!(request.request_type, RequestType::Error);
 }
 
 #[cfg(test)]
