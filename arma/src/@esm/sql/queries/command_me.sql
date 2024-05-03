@@ -22,13 +22,13 @@ SELECT
         WHERE
             deleted_at IS NULL
             AND (
-                owner_uid = :uid
-                OR build_rights LIKE :uid_wildcard
-                OR moderators LIKE :uid_wildcard
+                owner_uid = :player_uid
+                OR build_rights LIKE :wildcard_uid
+                OR moderators LIKE :wildcard_uid
             )
     ) as territories
 FROM
     account a
     LEFT JOIN player p ON p.account_uid = a.uid
 WHERE
-    a.uid = :uid
+    a.uid = :player_uid

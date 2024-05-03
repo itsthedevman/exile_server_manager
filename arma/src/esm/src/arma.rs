@@ -187,11 +187,15 @@ async fn database_query(message: Message) -> MessageResult {
     let arguments = match query.get("arguments") {
         Some(arguments) => {
             let Some(arguments) = arguments.as_object() else {
-                return Err("".into());
+                return Err("Failed to convert database arguments to object".into());
             };
 
             let mut transformed_args: HashMap<String, String> = HashMap::new();
             for (key, value) in arguments {
+                let Some(value) = value.as_str() else {
+                    return Err("Failed to convert argument value to string".into());
+                };
+
                 transformed_args.insert(key.to_string(), value.to_string());
             }
 

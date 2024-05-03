@@ -1,5 +1,25 @@
 use super::*;
 
+#[derive(Debug, Deserialize, Serialize)]
+struct TerritoryResult {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Serialize)]
+struct PlayerResult {
+    locker: i32,
+    score: i32,
+    name: String,
+    money: Option<i32>,
+    damage: Option<f64>,
+    hunger: Option<f64>,
+    thirst: Option<f64>,
+    kills: i32,
+    deaths: i32,
+    territories: Vec<TerritoryResult>,
+}
+
 pub async fn command_me(
     context: &Database,
     connection: &mut Conn,
@@ -13,31 +33,10 @@ pub async fn command_me(
         }
     };
 
-    #[derive(Debug, Deserialize, Serialize)]
-    struct TerritoryResult {
-        id: String,
-        name: String,
-    }
-
-    #[derive(Debug, Serialize)]
-    struct PlayerResult {
-        locker: i32,
-        score: i32,
-        name: String,
-        money: Option<i32>,
-        damage: Option<f64>,
-        hunger: Option<f64>,
-        thirst: Option<f64>,
-        kills: i32,
-        deaths: i32,
-        territories: Vec<TerritoryResult>,
-    }
-
     let result = connection
         .exec_map(
             &context.statements.command_me,
-            // The "uid" argument must be before "uid_wildcard" since it's a substring of the other
-            params! { "uid_wildcard" => format!("%{}%", player_uid), "uid" => player_uid },
+            params! { "player_uid" => player_uid, "wildcard_uid" => format!("%{}%", player_uid) },
             |(locker, score, name, money, damage, hunger, thirst, kills, deaths, territories)| {
                 let territories_json: Option<String> = territories;
                 let mut territories = vec![];
