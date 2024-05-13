@@ -151,7 +151,7 @@ module ESM
       end
 
       # Now, we're going to make the order matter
-      channels.sort_by! { |c| c[:position] }
+      channels.sort_by! { |c| c[:position] || 0 }
 
       # Load all of the category channels into a hash where the key is their ID and the value is an empty array
       grouped_channels = channels.filter_map do |category_channel|
