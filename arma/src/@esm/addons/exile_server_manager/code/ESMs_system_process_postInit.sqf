@@ -43,7 +43,7 @@ private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")
 
 	missionNameSpace setVariable [_variableName, _value];
 
-	info!("%1 = %3; // %2", _variableName, typeName(_value), if (type?(_value, STRING)) then { format["'%1'", _value] } else { _value });
+	debug!("%1 = %3; // %2", _variableName, typeName(_value), if (type?(_value, STRING)) then { format["'%1'", _value] } else { _value });
 }
 forEach _variablesHash;
 

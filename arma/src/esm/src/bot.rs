@@ -337,6 +337,8 @@ fn on_error(request: Request) -> ESMResult {
 }
 
 fn on_handshake(mut request: Request) -> ESMResult {
+    info!("[on_handshake] Performing handshake...");
+
     if request.value.is_empty() {
         return Err(format!(
             "[on_handshake] Request {:?} contained no data. This is a bug!",
@@ -362,40 +364,38 @@ fn on_handshake(mut request: Request) -> ESMResult {
         return Err("Received invalid handshake. This is a bug!".into());
     }
 
+    info!("[on_handshake] Good posture ✅");
+
     // Store the new indices for future use
     if let Err(e) = set_indices(indices.to_owned()) {
-        // TODO: Close
         return Err(e.into());
     }
 
     let message = message.set_data(Data::default());
     request.value = message.as_bytes()?;
 
+    info!("[on_handshake] Eye contact ✅");
+
     // Since we've successfully set the nonce indices, we're good to start sending encrypted data
     ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
 
-    info!(
-        "[on_handshake] Performing handshake. Good posture ✅, eye contact ✅, and a firm grip ✅"
-    );
+    info!("[on_handshake] And a firm grip ✅");
 
     send_request(request)
 }
 
 fn on_initialize(request: Request) -> ESMResult {
-    info!(
-        "[on_initialize] Connection established to encryption node {}",
-        random_bs_go!()
-    );
-
-    info!(
-        "[on_initialize] Connection fingerprint: {}",
-        [random_bs_go!(), random_bs_go!(), random_bs_go!()].join("")
-    );
+    let init = lock!(INIT).clone();
 
     let message = Message::new()
         .set_id(request.id)
         .set_type(Type::Init)
-        .set_data(lock!(INIT).to_data());
+        .set_data(init.to_data());
+
+    info!(
+        "[on_initialize] Introducing ourselves as {}",
+        init.server_name
+    );
 
     BotRequest::send(message)
 }
@@ -430,10 +430,10 @@ fn on_message(request: Request) -> ESMResult {
         Type::Call => ArmaRequest::call("call_function", message),
         Type::PostInit => {
             if crate::READY.load(Ordering::SeqCst) {
-                return Err("[on_connect]       ❌ Client is already initialized".into());
+                return Err("[post_init] ❌ Client is already initialized".into());
             }
 
-            info!("[on_connect] Building profile...");
+            info!("[post_init] Handshake accepted");
 
             ArmaRequest::call("post_initialization", message)
         }

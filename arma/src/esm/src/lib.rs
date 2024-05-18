@@ -144,7 +144,7 @@ fn pre_init(
         lazy_static::initialize(&ROUTER);
 
         TOKIO_RUNTIME.block_on(async {
-            info!("[pre_init] Exile Server Manager (extension) is booting");
+            info!("[pre_init] Exile Server Manager (extension) is initializing");
             info!("[pre_init]   Validating config file...");
 
             if let Err(e) = CONFIG.validate() {
@@ -184,7 +184,7 @@ fn pre_init(
                 return;
             }
 
-            info!("[pre_init]   Greetings {}!", init.server_name);
+            info!("[pre_init]   Initializing...");
 
             if let Err(e) = ArmaRequest::initialize(callback) {
                 error!("[pre_init] ❌ Boot failed - Failed to initialize connection to Arma");
@@ -192,7 +192,6 @@ fn pre_init(
                 error!("[pre_init] ❌ Boot failed");
             };
 
-            info!("[pre_init]       Requesting profile");
             if let Err(e) = BotRequest::initialize(init) {
                 error!("[pre_init] ❌ Boot failed - Failed to initialize connection to the bot");
                 warn!("[pre_init] ⚠ {e}");
@@ -200,7 +199,7 @@ fn pre_init(
                 return;
             };
 
-            info!("[pre_init] ✅ Boot completed in {:.2?}", timer.elapsed());
+            info!("[pre_init] ✅ Initialization completed in {:.2?}", timer.elapsed());
         });
     });
 }

@@ -81,9 +81,12 @@ fn send_to_arma(message: Message) -> ESMResult {
         ).into());
     }
 
-    debug!(
-        "[send_to_arma] {} is being routed to {}.sqf",
-        message.id, function_name
+    info!(
+        "[send_to_arma] {} - Calling {} with\ndata: {}\nmetadata: {}",
+        message.id,
+        function_name,
+        serde_json::to_string_pretty(&message.data).unwrap_or_default(),
+        serde_json::to_string_pretty(&message.metadata).unwrap_or_default()
     );
 
     let message = vec![
@@ -105,6 +108,8 @@ fn send_to_arma(message: Message) -> ESMResult {
 }
 
 async fn post_initialization(mut message: Message) -> MessageResult {
+    info!("[post_init] Validating post initialization...");
+
     let data = &mut message.data;
 
     // Get the base path to figure out where to look for the ini
@@ -141,9 +146,11 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 
     data.insert("extdb_version".to_owned(), json!(DATABASE.extdb_version));
 
+    info!("[post_init] Updating Arma global variables...");
+
     send_to_arma(message)?;
 
-    info!("[on_connect] ✅ Connection established");
+    info!("[post_init] ✅ Connection established");
 
     crate::READY.store(true, Ordering::SeqCst);
 
