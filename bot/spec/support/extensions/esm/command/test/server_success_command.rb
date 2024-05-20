@@ -11,11 +11,11 @@ module ESM
         argument :nullable, regex: /.*/, default: nil
 
         def on_execute
-          send_to_arma(type: :echo, data: {type: :empty})
-          self
+          message = ESM::Message.new.set_type(:echo)
+          send_to_target_server(message)
         end
 
-        def on_response(_, _)
+        def on_response
           reply("Yaay")
         end
       end

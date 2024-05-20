@@ -20,42 +20,44 @@ module ESM
         command_type :player
 
         #################################
-
         def on_execute
-          if v2_target_server?
-            query_arma("me", uid: current_user.steam_uid)
-          else
+          response = query_exile_database("me", uid: current_user.steam_uid)
+          player_data = response.first&.to_struct
+
+          reply(build_embed(player_data))
+        end
+
+        module V1
+          def on_execute
             deliver!(query: "player_info", uid: current_user.steam_uid)
+          end
+
+          def on_response
+            # V1
+            # @response will be an empty array if the user has not joined the server
+            # Converting to nil for compatibility
+            player_data = @response.presence
+
+            reply(build_embed(player_data))
           end
         end
 
-        def on_response(incoming_message, _outgoing_message)
-          player_data =
-            if v2_target_server?
-              incoming_message.data.results.first&.to_struct
-            else
-              # V1
-              # @response will be an empty array if the user has not joined the server
-              # Converting to nil for compatibility
-              @response.presence
-            end
+        private
 
-          if player_data.nil?
-            embed = ESM::Embed.build(
-              :error,
-              description: I18n.t(
-                "exceptions.extension.account_does_not_exist",
-                user: current_user.mention,
-                server_id: target_server.server_id
-              )
-            )
-
-            reply(embed)
-            return
+        def build_embed(player_data)
+          if player_data
+            player = ESM::Exile::Player.new(server: target_server, player_data: player_data)
+            return player.to_embed
           end
 
-          player = ESM::Exile::Player.new(server: target_server, player_data: player_data)
-          reply(player.to_embed)
+          ESM::Embed.build(
+            :error,
+            description: I18n.t(
+              "exceptions.extension.account_does_not_exist",
+              user: current_user.mention,
+              server_id: target_server.server_id
+            )
+          )
         end
       end
     end

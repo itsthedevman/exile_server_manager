@@ -20,6 +20,9 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.acronym("UID")
 end
 
+# Make active support happy
+ActiveSupport::Cache.format_version = 7.1
+
 # Required by standalone_migrations
 module Rails
   def self.root

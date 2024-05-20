@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Sqf, category: "command" do
-  describe "V1" do
-    include_context "command"
-    include_examples "validate_command"
+  include_context "command"
+  include_examples "validate_command"
 
+  describe "V1" do
     describe "#execute" do
       include_context "connection_v1"
 
@@ -144,9 +144,6 @@ describe ESM::Command::Server::Sqf, category: "command" do
   end
 
   describe "V2", v2: true do
-    include_context "command"
-    include_examples "validate_command"
-
     it "is an admin command" do
       expect(command.type).to eq(:admin)
     end
@@ -156,121 +153,170 @@ describe ESM::Command::Server::Sqf, category: "command" do
     end
 
     # Change "requires_connection" to true if this command requires the client to be connected
-    describe "#on_execute/#on_response", :requires_connection do
+    describe "#on_execute", :requires_connection do
       include_context "connection"
 
       before do
         grant_command_access!(community, "sqf")
+        user.create_account
       end
 
-      it "executes (On server/with result)" do
-        execute!(server_id: server.server_id, code_to_execute: "_test = true;\n_test")
-        wait_for { ESM::Test.messages }.not_to be_empty
+      context "when the code is executed on the server and the code returns a result" do
+        it "executes the code and a success embed is sent containing the result" do
+          execute!(
+            arguments: {server_id: server.server_id, code_to_execute: "_test = true;\n_test"}
+          )
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          previous_command.t("responses.server_with_result", server_id: server.server_id, result: "true", user: user.mention)
-        )
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
+
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            previous_command.t("responses.server_with_result", server_id: server.server_id, result: "true", user: user.mention)
+          )
+        end
       end
 
-      it "executes (On server/no result)" do
-        execute!(server_id: server.server_id, code_to_execute: "if (false) then { \"true\" };")
-        wait_for { ESM::Test.messages }.not_to be_empty
+      context "when the code is executed on the server and the code does not return a result" do
+        it "executes the code and a success embed is sent without the result" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              code_to_execute: "if (false) then { \"true\" };"
+            }
+          )
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          previous_command.t("responses.server", server_id: server.server_id, user: user.mention)
-        )
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
+
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            previous_command.t("responses.server", server_id: server.server_id, user: user.mention)
+          )
+        end
       end
 
-      it "executes (On player/no result)" do
-        user.connect
+      context "when the code is executed on the player" do
+        it "executes the code and a success embed is sent without the result" do
+          user.connect
 
-        execute!(
-          server_id: server.server_id,
-          target: user.mention,
-          code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
-        )
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: user.mention,
+              code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
+            }
+          )
 
-        wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          previous_command.t("responses.player", server_id: server.server_id, user: user.mention, target_uid: user.steam_uid)
-        )
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            previous_command.t(
+              "responses.player",
+              server_id: server.server_id,
+              user: user.mention,
+              target_uid: user.steam_uid
+            )
+          )
+        end
       end
 
-      it "executes (On non-registered steam uid)" do
-        second_user.connect
+      context "when the code is executed on a non-registered steam uid" do
+        it "executes the code and a success embed is sent without the result" do
+          second_user.connect
 
-        # Deregister the user
-        steam_uid = second_user.steam_uid
-        second_user.update(steam_uid: nil)
+          # Deregister the user
+          steam_uid = second_user.steam_uid
+          second_user.update(steam_uid: nil)
 
-        execute!(
-          fail_on_raise: false,
-          server_id: server.server_id,
-          target: steam_uid,
-          code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
-        )
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              target: steam_uid,
+              code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
+            }
+          )
 
-        wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          previous_command.t("responses.player", server_id: server.server_id, user: user.mention, target_uid: steam_uid)
-        )
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            previous_command.t(
+              "responses.player",
+              server_id: server.server_id,
+              user: user.mention,
+              target_uid: steam_uid
+            )
+          )
+        end
       end
 
-      it "handles NullTarget error. Registered Target is mentioned", :error_testing do
-        execute!(
-          server_id: server.server_id,
-          target: second_user.mention,
-          code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
-        )
+      context "when the registered target player is not spawned on the server" do
+        before do
+          second_user.exile_account&.delete
+        end
 
-        wait_for { ESM::Test.messages }.not_to be_empty
+        it "raises NullTarget error code with the target's discord mention" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              target: second_user.mention,
+              code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
+            }
+          )
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          "Hey #{user.mention}, #{second_user.mention} **needs to join** `#{server.server_id}` before you can execute code on them"
-        )
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
+
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            "Hey #{user.mention}, #{second_user.mention} **needs to join** `#{server.server_id}` before you can execute code on them"
+          )
+        end
       end
 
-      it "handles NullTarget error. Unregistered Target is referred to by steam UID", :error_testing do
-        steam_uid = second_user.steam_uid
-        second_user.deregister!
+      context "when the target is an unregistered steam uid that is not spawned on the server" do
+        before do
+          second_user.exile_account&.delete
+        end
 
-        execute!(
-          server_id: server.server_id,
-          target: steam_uid,
-          code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
-        )
+        it "raises NullTarget error with the steam uid" do
+          steam_uid = second_user.steam_uid
+          second_user.deregister!
 
-        wait_for { ESM::Test.messages }.not_to be_empty
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              target: steam_uid,
+              code_to_execute: "player setVariable [\"This code\", \"does not matter\"];"
+            }
+          )
 
-        message = ESM::Test.messages.first
-        expect(message).not_to be_nil
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        result_embed = message.content
-        expect(result_embed.description).to eq(
-          "Hey #{user.mention}, #{steam_uid} **needs to join** `#{server.server_id}` before you can execute code on them"
-        )
+          message = ESM::Test.messages.first
+          expect(message).not_to be_nil
+
+          result_embed = message.content
+          expect(result_embed.description).to eq(
+            "Hey #{user.mention}, #{steam_uid} **needs to join** `#{server.server_id}` before you can execute code on them"
+          )
+        end
       end
     end
   end

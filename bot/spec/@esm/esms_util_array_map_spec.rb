@@ -13,7 +13,6 @@ describe "ESMs_util_array_map", :requires_connection, v2: true do
       SQF
     )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq([2, 4, 6, 8])
+    expect(response).to eq([2, 4, 6, 8])
   end
 end

@@ -8,6 +8,10 @@ class String
     ESM::Regex::STEAM_UID_ONLY.match?(self)
   end
 
+  def discord_id?
+    ESM::Regex::DISCORD_ID_ONLY.match?(self)
+  end
+
   def to_ostruct
     ESM::JSON.parse(self, as_ostruct: true)
   end

@@ -7,7 +7,7 @@ module ESM
       class Overseer
         # Starts a thread that loops over all connections requests and times them out if they are taking too long
         def self.watch!
-          check_every = ESM.config.loops.websocket_request_overseer.check_every
+          check_every = ESM.config.websocket_request_overseer.check_every
 
           @thread = Thread.new do
             loop do

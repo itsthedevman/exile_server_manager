@@ -4,7 +4,7 @@ describe Array do
   describe "#format" do
     it "should return a formatted string" do
       string =
-        [1, true, ["hello"]].format do |item|
+        [1, true, ["hello"]].map_join do |item|
           expect(item).not_to be_nil
           item.to_s
         end

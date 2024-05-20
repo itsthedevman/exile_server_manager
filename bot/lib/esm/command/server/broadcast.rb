@@ -153,7 +153,12 @@ module ESM
         end
 
         def raise_invalid_server_id!
-          raise_error!(:invalid_server_id, user: current_user.mention, provided_server_id: arguments.broadcast_to)
+          raise_error!(
+            :invalid_server_id,
+            path_prefix: "command_errors",
+            user: current_user.mention,
+            provided_server_id: arguments.broadcast_to
+          )
         end
       end
     end

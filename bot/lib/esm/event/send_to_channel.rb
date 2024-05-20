@@ -22,7 +22,6 @@ module ESM
 
         ESM.bot.deliver(message, to: @channel)
       rescue ESM::Exception::CheckFailure => e
-        error!(error: e, message_id: @message.id)
         @server.log_error(e.message)
       end
 
@@ -63,7 +62,7 @@ module ESM
           fields.each do |field|
             value =
               if field[:value].is_a?(Hash)
-                field[:value].format(join_with: "\n") do |key, value|
+                field[:value].map_join("\n") do |key, value|
                   "**#{key.humanize(keep_id_suffix: true)}:** #{value}"
                 end
               else

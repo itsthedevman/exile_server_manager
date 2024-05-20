@@ -49,11 +49,15 @@ module ESM
     attribute :last_updated_at, :datetime, default: -> { Time.current }
 
     def self.from(user)
-      where(account_uid: user.steam_uid).first_or_initialize.tap do |player|
-        ExileAccount.from(user) # This'll create the account if it doesn't exist
+      model =
+        where(account_uid: user.steam_uid).first_or_initialize.tap do |player|
+          ExileAccount.from(user) # This'll create the account if it doesn't exist
 
-        player.name = user.discord_username
-      end
+          player.name = user.discord_username
+        end
+
+      model.save!
+      model
     end
 
     alias_method :kill!, :destroy!

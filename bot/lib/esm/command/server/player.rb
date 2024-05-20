@@ -63,7 +63,7 @@ module ESM
           )
         end
 
-        def on_response(_, _)
+        def on_response
           embed = ESM::Notification.build_random(
             community_id: target_community.id,
             type: arguments.action,

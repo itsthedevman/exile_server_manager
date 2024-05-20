@@ -144,7 +144,7 @@ module ESM
       def add_territories_field(embed)
         embed.add_field(
           name: "__#{I18n.t("territories")}__",
-          value: territories.format(join_with: "\n") { |territory| "**#{territory.name}**: `#{territory.id}`" }
+          value: territories.map_join("\n") { |territory| "**#{territory.name}**: `#{territory.id}`" }
         )
       end
     end

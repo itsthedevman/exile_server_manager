@@ -7,5 +7,9 @@ module ESM
     def deregister!
       update!(steam_uid: nil)
     end
+
+    def exile_account
+      ESM::ExileAccount.find_by(uid: steam_uid)
+    end
   end
 end

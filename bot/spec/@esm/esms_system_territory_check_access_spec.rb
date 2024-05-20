@@ -14,47 +14,61 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
     )
   end
 
-  it "returns true because the Player has correct permissions" do
-    response = execute_sqf!(
-      <<~SQF
-        private _territory = #{territory.id} call ESMs_system_territory_get;
-        [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
-      SQF
-    )
-
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(true)
+  before do
+    user.create_account
+    territory.create_flag
   end
 
-  it "returns true because the Player is a Territory Admin", :territory_admin_bypass do
-    territory.revoke_membership(user.steam_uid)
+  context "when the player is a moderator" do
+    it "returns true" do
+      response = execute_sqf!(
+        <<~SQF
+          private _territory = #{territory.id} call ESMs_system_territory_get;
+          [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
+        SQF
+      )
 
-    response = execute_sqf!(
-      <<~SQF
-        private _territory = #{territory.id} call ESMs_system_territory_get;
-        [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
-      SQF
-    )
-
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(true)
+      expect(response).to be(true)
+    end
   end
 
-  it "returns false because the Player is missing rights" do
-    territory.revoke_membership(user.steam_uid)
+  context "when the player is a territory admin" do
+    before do
+      make_territory_admin!(user)
+      territory.revoke_membership(user.steam_uid)
+    end
 
-    response = execute_sqf!(
-      <<~SQF
-        private _territory = #{territory.id} call ESMs_system_territory_get;
-        [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
-      SQF
-    )
+    it "returns true" do
+      response = execute_sqf!(
+        <<~SQF
+          private _territory = #{territory.id} call ESMs_system_territory_get;
+          [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
+        SQF
+      )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(false)
+      expect(response).to be(true)
+    end
   end
 
-  it "returns false because the Player has lower than required permissions" do
+  context "when the player is not a member of the territory" do
+    before do
+      territory.revoke_membership(user.steam_uid)
+    end
+
+    it "returns false" do
+      response = execute_sqf!(
+        <<~SQF
+          private _territory = #{territory.id} call ESMs_system_territory_get;
+          [#{user.steam_uid.quoted}, _territory, "moderator"] call ESMs_system_territory_checkAccess
+        SQF
+      )
+
+      expect(response).to be(false)
+    end
+  end
+
+  context "when the player does not have high enough permissions"
+  it "returns false" do
     response = execute_sqf!(
       <<~SQF
         private _territory = #{territory.id} call ESMs_system_territory_get;
@@ -62,7 +76,6 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
       SQF
     )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(false)
+    expect(response).to be(false)
   end
 end

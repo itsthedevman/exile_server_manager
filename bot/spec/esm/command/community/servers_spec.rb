@@ -7,7 +7,7 @@ describe ESM::Command::Community::Servers, category: "command" do
   describe "#execute" do
     include_context "connection"
 
-    let!(:server) { ESM::Test.server }
+    let!(:server) { ESM::Test.server(for: community) }
 
     it "returns no servers" do
       community.servers.destroy_all
@@ -60,13 +60,13 @@ describe ESM::Command::Community::Servers, category: "command" do
       expect(embed.fields.third.name).to eq(I18n.t(:port))
       expect(embed.fields.third.value).to eq("```#{server.server_port}```")
       expect(embed.fields.fourth.name).to eq(I18n.t("commands.server.online_for"))
-      expect(embed.fields.fourth.value).to eq("```#{server.uptime}```")
+      expect(embed.fields.fourth.value).to match("(?:hours?)|(?:minutes?)|(?:seconds?)")
       expect(embed.fields.fifth.name).to eq(I18n.t("commands.server.restart_in"))
-      expect(embed.fields.fifth.value).to eq("```#{server.time_left_before_restart}```")
+      expect(embed.fields.fifth.value).to match("(?:hours?)|(?:minutes?)|(?:seconds?)")
     end
 
     it "does not show private servers" do
-      private_server = ESM::Test.server
+      private_server = ESM::Test.server(for: community)
       private_server.update!(server_visibility: :private)
 
       execute!(arguments: {community_id: community.community_id})

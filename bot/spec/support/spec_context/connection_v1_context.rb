@@ -2,7 +2,7 @@
 
 RSpec.shared_context("connection_v1") do
   let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server }
+  let!(:server) { ESM::Test.server(for: community) }
   let!(:wsc) { WebsocketClient.new(server) }
   let(:connection) { ESM::Websocket.connections[server.server_id] }
   let(:response) { previous_command.response }
@@ -13,5 +13,7 @@ RSpec.shared_context("connection_v1") do
 
   after do
     wsc.disconnect!
+
+    ESM::Websocket.remove_all_connections!
   end
 end

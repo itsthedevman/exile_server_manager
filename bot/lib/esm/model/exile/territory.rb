@@ -28,7 +28,7 @@ module ESM
       end
 
       def id
-        (@territory.esm_custom_id.presence || @territory.id)
+        @territory.esm_custom_id.presence || @territory.id
       end
 
       def name

@@ -13,8 +13,7 @@ module ESM
         @user = args[:user]
 
         # String for direct calls, Otherwise its a command
-        @command_name =
-          (args[:command_name].presence || @command.name)
+        @command_name = args[:command_name].presence || @command.name
 
         @user_info =
           if @user.nil?

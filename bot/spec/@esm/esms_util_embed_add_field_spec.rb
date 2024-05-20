@@ -14,7 +14,6 @@ describe "ESMs_util_embed_addField", :requires_connection, v2: true do
       SQF
     )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq([["fields", [[["name", "Field name"], ["inline", false], ["value", "Field value"]]]], ["description", "This is a description"], ["title", "This is the title"]])
+    expect(response).to eq([["fields", [[["name", "Field name"], ["inline", false], ["value", "Field value"]]]], ["description", "This is a description"], ["title", "This is the title"]])
   end
 end

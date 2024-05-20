@@ -8,9 +8,9 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   let(:reward) { server.server_reward }
 
   let!(:message) do
-    ESM::Message.event.set_data(
-      :init,
-      {
+    ESM::Message.new
+      .set_type(:init)
+      .set_data(
         extension_version: "2.0.0",
         server_name: server.server_name,
         price_per_object: Faker::Number.between(from: 0, to: 1_000_000_000),
@@ -30,29 +30,22 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
         server_start_time: Time.now.utc.to_s,
         vg_enabled: true,
         vg_max_sizes: "[\"-1\",\"5\",\"8\",\"11\",\"13\",\"15\",\"18\",\"21\",\"25\",\"28\"]"
-      }
-    )
+      )
   end
 
-  let(:event) { described_class.new(server, message) }
+  let(:event) { described_class.new(server.connection, server, message) }
 
   before do
-    ESM::Test.block_outbound_messages = true
+    # The server will auto connect and the code we're testing will initialize the server again
+    allow_any_instance_of(ESM::Connection::Client).to receive(:send_message)
 
     # Update the data stored in the connection object, NOT the one in the test.
     server.community.update!(territory_admin_ids: [user.role_id.to_s])
     server.server_setting.update!(extdb_path: Faker::File.dir, logging_path: Faker::File.dir)
-
-    expect do
-      message = event.run!
-      message.on_response(nil)
-    end.not_to raise_error
-
     server.reload
-
-    # Clear the message sent from the event
-    connection_server.message_overseer.remove_all!
   end
+
+  subject!(:run_event) { event.run! }
 
   it "updates the server" do
     expect(server.server_name).to eq(message.data.server_name)
@@ -67,7 +60,8 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   it "creates territories" do
     expect(ESM::Territory.where(server_id: server.id).size).to eq(10)
 
-    message.data.territory_data.each do |territory_data|
+    data = message.data.territory_data.to_a.map { |t| t.to_arma_hashmap.to_istruct }
+    data.each do |territory_data|
       territory = ESM::Territory.where(server_id: server.id, territory_level: territory_data.level).first
       expect(territory).not_to be_nil
       expect(territory.territory_level).to eq(territory_data.level)
@@ -78,32 +72,34 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   end
 
   it "settings data is valid" do
+    data = event.data.to_istruct
+
     if user.steam_uid.present?
-      expect(event.data.territory_admin_uids).to eq([user.steam_uid])
+      expect(data.territory_admin_uids).to eq([user.steam_uid])
     else
-      expect(event.data.territory_admin_uids).to eq([])
+      expect(data.territory_admin_uids).to eq([])
     end
 
-    expect(event.data.extdb_path).to eq(setting.extdb_path || "")
-    expect(event.data.gambling_modifier).to eq(setting.gambling_modifier)
-    expect(event.data.gambling_payout_base).to eq(setting.gambling_payout_base)
-    expect(event.data.gambling_payout_randomizer_max).to eq(setting.gambling_payout_randomizer_max)
-    expect(event.data.gambling_payout_randomizer_mid).to eq(setting.gambling_payout_randomizer_mid)
-    expect(event.data.gambling_payout_randomizer_min).to eq(setting.gambling_payout_randomizer_min)
-    expect(event.data.gambling_win_percentage).to eq(setting.gambling_win_percentage)
-    expect(event.data.logging_add_player_to_territory).to eq(setting.logging_add_player_to_territory)
-    expect(event.data.logging_demote_player).to eq(setting.logging_demote_player)
-    expect(event.data.logging_exec).to eq(setting.logging_exec)
-    expect(event.data.logging_gamble).to eq(setting.logging_gamble)
-    expect(event.data.logging_modify_player).to eq(setting.logging_modify_player)
-    expect(event.data.logging_pay_territory).to eq(setting.logging_pay_territory)
-    expect(event.data.logging_promote_player).to eq(setting.logging_promote_player)
-    expect(event.data.logging_remove_player_from_territory).to eq(setting.logging_remove_player_from_territory)
-    expect(event.data.logging_reward_player).to eq(setting.logging_reward_player)
-    expect(event.data.logging_transfer_poptabs).to eq(setting.logging_transfer_poptabs)
-    expect(event.data.logging_upgrade_territory).to eq(setting.logging_upgrade_territory)
-    expect(event.data.max_payment_count).to eq(setting.max_payment_count)
-    expect(event.data.taxes_territory_payment).to eq(setting.territory_payment_tax / 100)
-    expect(event.data.taxes_territory_upgrade).to eq(setting.territory_upgrade_tax / 100)
+    expect(data.extdb_path).to eq(setting.extdb_path || "")
+    expect(data.gambling_modifier).to eq(setting.gambling_modifier)
+    expect(data.gambling_payout_base).to eq(setting.gambling_payout_base)
+    expect(data.gambling_payout_randomizer_max).to eq(setting.gambling_payout_randomizer_max)
+    expect(data.gambling_payout_randomizer_mid).to eq(setting.gambling_payout_randomizer_mid)
+    expect(data.gambling_payout_randomizer_min).to eq(setting.gambling_payout_randomizer_min)
+    expect(data.gambling_win_percentage).to eq(setting.gambling_win_percentage)
+    expect(data.logging_add_player_to_territory).to eq(setting.logging_add_player_to_territory)
+    expect(data.logging_demote_player).to eq(setting.logging_demote_player)
+    expect(data.logging_exec).to eq(setting.logging_exec)
+    expect(data.logging_gamble).to eq(setting.logging_gamble)
+    expect(data.logging_modify_player).to eq(setting.logging_modify_player)
+    expect(data.logging_pay_territory).to eq(setting.logging_pay_territory)
+    expect(data.logging_promote_player).to eq(setting.logging_promote_player)
+    expect(data.logging_remove_player_from_territory).to eq(setting.logging_remove_player_from_territory)
+    expect(data.logging_reward_player).to eq(setting.logging_reward_player)
+    expect(data.logging_transfer_poptabs).to eq(setting.logging_transfer_poptabs)
+    expect(data.logging_upgrade_territory).to eq(setting.logging_upgrade_territory)
+    expect(data.max_payment_count).to eq(setting.max_payment_count)
+    expect(data.taxes_territory_payment).to eq(setting.territory_payment_tax / 100)
+    expect(data.taxes_territory_upgrade).to eq(setting.territory_upgrade_tax / 100)
   end
 end

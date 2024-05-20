@@ -39,27 +39,33 @@ module ESM
         def on_execute
           check_for_owned_server!
 
-          if v2_target_server?
-            query_arma("all_territories")
-          else
-            deliver!(command_name: "allterritories", query: "list_territories_all") # V1
-          end
-        end
-
-        def on_response(incoming_message, _outgoing_message)
-          @territories =
-            if v2_target_server?
-              incoming_message.data.results.map(&:to_istruct)
-            else
-              # The data must an array if its not already.
-              @response = [@response] if !@response.is_a?(Array) # V1
-              @response
-            end
-
+          @territories = query_exile_database("all_territories").map(&:to_istruct)
           check_for_no_territories!
 
           tables = build_territory_tables
           tables.each { |table| reply("```\n#{table}\n```") }
+        end
+
+        module V1
+          def on_execute
+            check_for_owned_server!
+            deliver!(command_name: "allterritories", query: "list_territories_all")
+          end
+
+          def on_response
+            # The data must an array if its not already.
+            @territories =
+              if @response.is_a?(Array)
+                @response
+              else
+                [@response]
+              end
+
+            check_for_no_territories!
+
+            tables = build_territory_tables
+            tables.each { |table| reply("```\n#{table}\n```") }
+          end
         end
 
         private

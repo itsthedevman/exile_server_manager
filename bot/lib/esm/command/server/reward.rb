@@ -40,7 +40,7 @@ module ESM
           reply(embed)
         end
 
-        def on_response(_, _)
+        def on_response
           # Array<Array<item, quantity>>
           receipt = @response.receipt.to_h
 
@@ -49,14 +49,14 @@ module ESM
             description: I18n.t(
               "commands.reward_v1.receipt",
               user: current_user.mention,
-              items: receipt.format { |item, quantity| "- #{quantity}x #{item}\n" }
+              items: receipt.map_join { |item, quantity| "- #{quantity}x #{item}\n" }
             )
           )
 
           reply(embed)
         end
 
-        def request_accepted
+        def on_request_accepted
           deliver!(command_name: "reward", function_name: "rewardPlayer", target_uid: current_user.steam_uid)
         end
 

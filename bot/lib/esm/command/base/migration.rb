@@ -25,8 +25,13 @@ module ESM
         end
 
         # V1
-        # @deprecated Use on_response instead
+        # @deprecated
         def server
+        end
+
+        # V1
+        # @deprecated
+        def on_response
         end
 
         #
@@ -40,7 +45,7 @@ module ESM
           @response = (response.size == 1) ? response.first : response
 
           # Trigger the callback
-          on_response(nil, nil)
+          on_response
         end
 
         # V1: Send a request to the DLL

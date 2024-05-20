@@ -111,27 +111,29 @@ module ESM
           @target_user ||= lambda do
             return if arguments.target.nil?
 
-            # This could be a steam_uid, discord id, or mention
+            # This could be a steam_uid, discord id, or discord mention
             # Automatically remove the mention characters
-            target = arguments.target.gsub(/[<@!&>]/, "").strip
+            target_string = arguments.target.gsub(/[<@!&>]/, "").strip
 
             # Attempt to find the target within ESM
-            user = ESM::User.parse(target)
+            user = ESM::User.parse(target_string)
 
             # This validates that the user exists and we get a discord user back
-            if (_discord_user = user&.discord_user)
-              return user
+            return user if user&.discord_user
+
+            if target_string.discord_id?
+              discord_user = ESM.bot.user(target_string)
+
+              # The target_string does not exist in the database
+              # but it is a valid discord user
+              return ESM::User.from_discord(discord_user) if discord_user
             end
 
-            # We didn't find a user and a steam uid can't be used to find a Discord user
-            # Ephemeral user represents a user that doesn't have a ESM::User
-            return ESM::User::Ephemeral.new(target) if target.steam_uid?
+            # The target_string does not exist in the database, nor in discord
+            return ESM::User::Ephemeral.new(target_string) if target_string.steam_uid?
 
-            # target is a discord ID and user is nil
-            discord_user = ESM.bot.user(target) if target.match?(ESM::Regex::DISCORD_ID_ONLY)
-            return ESM::User::Ephemeral.new(target) if discord_user.nil?
-
-            ESM::User.from_discord(discord_user)
+            # The provided text was gibberish
+            nil
           end.call
         end
 
@@ -325,66 +327,42 @@ module ESM
           skipped_actions.set(*)
         end
 
-        #
-        # Sends a message to the target_server
-        #
-        # @param outgoing_message [ESM::Message, Hash] If a ESM::Message is provided, this message will be sent as is. If a Hash is provided, a message will be built from it
-        # @param send_opts [Hash] Passed into #send_message. @see ESM::Connection::Server.fire
-        # @return [ESM::Message] The message that was sent
-        #
-        def send_to_arma(outgoing_message = {}, send_opts = {})
-          raise ESM::Exception::CheckFailure, "Command #{name} must define the `server_id` argument in order to use #send_to_arma" if target_server.nil?
+        def send_to_target_server(message, block: true)
+          raise ArgumentError, "Message must be a ESM::Message" unless message.is_a?(ESM::Message)
 
-          # Allows overwriting the outbound message. Otherwise, build a message from the data
-          if outgoing_message.is_a?(Hash)
-            # Allows providing `data: content` or,
-            #                  `data: { type: :different }` or,
-            #                  `data: { type: :different, content: different_content }`
-            data = outgoing_message[:data] || {}
-            unless data.key?(:type) && (data.key?(:content) || data.size == 1)
-              outgoing_message[:data] = {
-                type: name,
-                content: outgoing_message[:data]
-              }
-            end
-
-            outgoing_message[:type] = :arma unless outgoing_message.key?(:type)
-            outgoing_message = ESM::Message.from_hash(outgoing_message)
-
-            # This is how the message gets back to the command
-            outgoing_message.add_callback(:on_response, on_instance: self) do |incoming_message|
-              timers.time!(:on_response) do
-                on_response(incoming_message, outgoing_message)
-              end
-            end
+          if target_server.nil?
+            raise ESM::Exception::CheckFailure,
+              "Command #{name} must define the `server_id` argument in order to use #send_to_target_server"
           end
 
-          outgoing_message.add_attribute(:server_id, target_server.server_id)
-          outgoing_message.add_attribute(:command, self)
-          outgoing_message.apply_command_metadata
+          message.set_metadata(player: current_user, target: target_user)
 
-          target_server.send_message(outgoing_message, send_opts)
+          target_server.send_message(message, block:)
         end
 
         #
-        # Shorthand method for sending a query message to Arma
+        # Shorthand method for sending a query message to the Exile database
         #
         # @param name [String, Symbol] The name of the query
         # @param **arguments [Hash] The query arguments
         #
         # @return [ESM::Message] The outbound message
         #
-        def query_arma(name, **arguments)
-          send_to_arma(
-            type: :query,
-            data: {
-              type: :query,
-              content: {
-                name: name,
-                arguments: arguments
-              }
-            }
-          )
+        def query_exile_database(name, **arguments)
+          message = ESM::Message.new
+            .set_type(:query)
+            .set_data(name:, arguments:)
+
+          response = send_to_target_server(message)
+          response.data.results
+        end
+
+        def call_sqf_function(function_name, **arguments)
+          message = ESM::Message.new
+            .set_type(:call)
+            .set_data(function_name:, **arguments)
+
+          send_to_target_server(message)
         end
 
         # Convenience method for replying back to the event's channel

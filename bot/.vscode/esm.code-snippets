@@ -150,7 +150,7 @@
       "\tend",
       "",
       "\t# Change \"requires_connection\" to true if this command requires the client to be connected",
-      "\tdescribe \"#on_execute/#on_response\", requires_connection: false do",
+      "\tdescribe \"#on_execute\", requires_connection: false do",
       "\t\t# Uncomment if \"requires_connection\" is true",
       "\t\t# include_context \"connection\"",
       "",

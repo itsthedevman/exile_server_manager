@@ -8,22 +8,10 @@ module ESM
 
       attr_reader :response
       attr_writer :messages
-      attr_accessor :skip_cooldown, :block_outbound_messages
-
-      def callbacks
-        @callbacks ||= CallbackHandler.new
-      end
+      attr_accessor :skip_cooldown
 
       def messages
         @messages ||= Messages.new
-      end
-
-      def outbound_server_messages
-        @outbound_server_messages ||= Messages.new
-      end
-
-      def inbound_server_messages
-        @inbound_server_messages ||= Messages.new
       end
 
       def data
@@ -35,22 +23,14 @@ module ESM
         end.call
       end
 
-      # Attempt to simulate a random community for tests
-      #
-      # @note The type of community controls what user type is selected
-      # @see #reset!
       def community(*, type: @community_type)
-        @community ||= FactoryBot.create(type, :player_mode_disabled, *)
+        FactoryBot.create(type, :player_mode_disabled, *)
       end
 
       def second_community(*)
-        @second_community ||= FactoryBot.create(@second_community_type, :player_mode_disabled, *)
+        FactoryBot.create(@second_community_type, :player_mode_disabled, *)
       end
 
-      # Attempt to simulate random users for tests
-      #
-      # @note The type of community controls what user type is selected
-      # @see #reset!
       def user(*args, type: @user_type)
         args = [type] + args
 
@@ -74,17 +54,12 @@ module ESM
         end
       end
 
-      def server
-        FactoryBot.create(:server, community_id: community.id)
-      end
-
-      def second_server
-        FactoryBot.create(:server, community_id: second_community.id)
+      def server(opts = {})
+        FactoryBot.create(:server, community_id: opts[:for].id)
       end
 
       def channel(opts = {})
-        channel_community = opts.delete(:in) || community
-        ESM.bot.channel(channel_community.channel_ids.sample)
+        ESM.bot.channel(opts[:in].channel_ids.sample)
       end
 
       def redis
@@ -113,7 +88,6 @@ module ESM
         @second_community = nil
 
         @skip_cooldown = false
-        @block_outbound_messages = false
 
         @communities = %i[primary_community secondary_community]
         @community_type = @communities.sample
@@ -122,8 +96,11 @@ module ESM
 
         # Clear the test list in Redis
         redis.del("test")
+        redis.del("server_key")
 
         ESM.bot.delivery_overseer.queue.clear # Otherwise messages from other tests may leak between each other
+
+        ESM.connection_server.pause
       end
 
       def wait_for_response(timeout: nil)
@@ -165,32 +142,6 @@ module ESM
         end
 
         raise StandardError, "Timeout!"
-      end
-
-      #
-      # Sends the provided SQF code to the linked connection.
-      #
-      # @param code [String] Valid and error free SQF code as a string
-      #
-      # @return [Any] The result of the SQF code.
-      #
-      # @note: The result is ran through a JSON parser during the communication process. The type may not be what you expect, but it will be consistent
-      #
-      def execute_sqf!(server, code, steam_uid: nil)
-        message = ESM::Message.arma.set_data(:sqf, {execute_on: "server", code: code})
-
-        message.add_attribute(
-          :command, {
-            current_user: {
-              steam_uid: steam_uid || "",
-              id: "",
-              username: "",
-              mention: ""
-            }
-          }.to_ostruct
-        ).apply_command_metadata
-
-        server.send_message(message, forget: false)
       end
     end
   end

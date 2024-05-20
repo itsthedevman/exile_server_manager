@@ -10,7 +10,7 @@ module ESM
           skip_action(:cooldown)
         end
 
-        def on_response(_, _)
+        def on_response
         end
       end
     end

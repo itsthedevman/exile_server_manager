@@ -14,7 +14,7 @@ module ESM
           "Hello"
         end
 
-        def on_response(_, _)
+        def on_response
         end
       end
     end

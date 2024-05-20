@@ -80,7 +80,7 @@ module ESM
         #     line: <Integer>
         #     entry: <String>
         #     date: <String 2020-10-11>
-        def on_response(_, _)
+        def on_response
           check_for_no_logs!
 
           @log = ESM::Log.create!(server_id: target_server.id, search_text: arguments.target, requestors_user_id: current_user.id)

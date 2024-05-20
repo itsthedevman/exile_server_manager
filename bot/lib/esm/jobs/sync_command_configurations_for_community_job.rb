@@ -5,7 +5,7 @@ class SyncCommandConfigurationsForCommunityJob
   workers 5
 
   def perform(community_id, configurations)
-    ActiveRecord::Base.connection_pool.with_connection do
+    ESM::ApplicationRecord.connection_pool.with_connection do
       # Get all existing configurations by command_name
       existing_configuration_names = ESM::CommandConfiguration.where(community_id: community_id).pluck(:command_name)
 

@@ -54,7 +54,7 @@ module ESM
           reply(embed)
         end
 
-        def on_response(_, _)
+        def on_response
           embed =
             if target_user.present?
               if @response.success
@@ -71,7 +71,7 @@ module ESM
           reply(embed)
         end
 
-        def request_accepted
+        def on_request_accepted
           deliver!(
             query: target_user.present? ? "reset_player" : "reset_all",
             targetUID: target_user&.steam_uid

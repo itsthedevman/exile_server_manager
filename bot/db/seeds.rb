@@ -6,8 +6,7 @@ require_relative "../lib/esm"
 require_relative "../spec/support/additions/esm/test"
 
 puts "Waiting for ESM to start..."
-ESM.console!
-ESM.run!
+ESM.run!(async: true)
 
 until ESM.bot.ready?
   sleep 1

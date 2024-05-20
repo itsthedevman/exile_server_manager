@@ -33,7 +33,7 @@ module ESM
 
         embed =
           ESM::Embed.build do |e|
-            help_documentation = invalid_arguments.format(join_with: "\n\n", &:help_documentation)
+            help_documentation = invalid_arguments.map_join("\n\n", &:help_documentation)
 
             help_usage = ESM::Command.get(:help).usage(
               with_args: true,

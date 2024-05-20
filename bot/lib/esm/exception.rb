@@ -43,35 +43,8 @@ module ESM
     # Generic exception for any checks
     class CheckFailure < DataError; end
 
-    # Raised when attempting to send a message the tcp_server when it's not online
-    class ServerNotConnected < Error; end
-
-    # Raised when a message times out during a sync operation. This should rarely be raised
-    class MessageSyncTimeout < Error; end
-
     # When the bot does not have access to send a message to a particular channel
     class ChannelAccessDenied < Error; end
-
-    # Handles an error code response from the extension
-    class ExtensionError < Error
-      def initialize(error_code)
-        @error_code = error_code
-
-        super("")
-      end
-
-      # Translates the underlying error code.
-      # In normal workflow, this method will be passed the following arguments:
-      # @option [String] :user The mention for the user that ran the command
-      # @option [String] :server_id The ID of the server the command was ran on
-      def translate(**)
-        I18n.t(
-          "exceptions.extension.#{@error_code}",
-          default: I18n.t("exceptions.extension.default", error_code: @error_code),
-          **
-        )
-      end
-    end
 
     # Check failure, but no message is sent
     class CheckFailureNoMessage < Error
@@ -88,6 +61,45 @@ module ESM
 
         super(error_message)
       end
+    end
+
+    ###########################################################
+    # Connection and extension related errors
+    #
+
+    # Base type that causes a connection close
+    class ClosableError < Error
+    end
+
+    #
+    # Base type that will send the error back to the client
+    #
+    class SendableError < DataError
+    end
+
+    class ExtensionError < DataError
+    end
+
+    class DecryptionError < ClosableError
+    end
+
+    class InvalidRequest < SendableError
+    end
+
+    class RequestTimeout < DataError
+      def initialize = super("Request timed out")
+    end
+
+    class ExistingConnection < ClosableError
+      def initialize = super("Client already connected")
+    end
+
+    class InvalidAccessKey < ClosableError
+      def initialize = super("Access denied")
+    end
+
+    class RejectedPromise < ClosableError
+      def initialize(reason = "") = super(reason)
     end
   end
 end

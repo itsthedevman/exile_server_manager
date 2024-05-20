@@ -15,8 +15,8 @@ module ESM
     ###########################
     # Class methods
     ###########################
-    def self.build(type = nil, **, &block)
-      ESM::Embed.new(type, **, &block)
+    def self.build(type = nil, **, &)
+      ESM::Embed.new(type, **, &)
     end
 
     ###########################
@@ -189,7 +189,7 @@ module ESM
       end
 
       attributes.each do |attr_name, attr_value|
-        send("#{attr_name}=", attr_value)
+        send(:"#{attr_name}=", attr_value)
       end
     end
 

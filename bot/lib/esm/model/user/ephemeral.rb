@@ -21,6 +21,8 @@ module ESM
       end
 
       def steam_data
+        return unless steam_uid?
+
         @steam_data ||= ESM::SteamAccount.new(steam_uid)
       end
 
@@ -33,6 +35,10 @@ module ESM
           id: id,
           ephemeral: true
         }
+      end
+
+      def steam_uid?
+        id.match?(ESM::Regex::STEAM_UID)
       end
 
       class DiscordUser

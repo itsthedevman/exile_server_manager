@@ -4,7 +4,7 @@ describe ESM::Event::Xm8NotificationV1 do
   include_context "connection_v1"
 
   let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server }
+  let!(:server) { ESM::Test.server(for: community) }
   let!(:user) { ESM::Test.user }
   let!(:second_user) { ESM::Test.user }
   let!(:recipients) { [user.steam_uid, second_user.steam_uid] }
@@ -129,7 +129,7 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        source_server_id: ESM::Test.second_server.id,
+        source_server_id: ESM::Test.server(for: community).id,
         channel_id: ESM::Community::ESM::SPAM_CHANNEL
       )
 

@@ -4,8 +4,8 @@ module ESM
   module Command
     class Base
       module Checks
-        def check_failed!(error_name = nil, **args, &block)
-          raise_error!(error_name, **args.merge(path_prefix: "command_errors"), &block)
+        def check_failed!(error_name = nil, **args, &)
+          raise_error!(error_name, **args.merge(path_prefix: "command_errors"), &)
         end
 
         def check_for_text_only!
@@ -120,7 +120,7 @@ module ESM
                       provided_server_id: provided_server_id
                     )
                   else
-                    corrections = corrections.format(join_with: ", ") { |correction| "`#{correction}`" }
+                    corrections = corrections.map_join(", ") { |correction| "`#{correction}`" }
 
                     I18n.t(
                       "command_errors.invalid_server_id_with_correction",
@@ -155,7 +155,7 @@ module ESM
                     provided_community_id: provided_community_id
                   )
                 else
-                  corrections = corrections.format(join_with: ", ") { |correction| "`#{correction}`" }
+                  corrections = corrections.map_join(", ") { |correction| "`#{correction}`" }
 
                   I18n.t(
                     "command_errors.invalid_community_id_with_correction",

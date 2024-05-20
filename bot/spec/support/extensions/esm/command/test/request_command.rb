@@ -12,14 +12,14 @@ module ESM
           add_request(to: target_user)
         end
 
-        def on_response(_, _)
+        def on_response
         end
 
-        def request_accepted
+        def on_request_accepted
           ESM.bot.deliver("accepted", to: @request.requestor.discord_user)
         end
 
-        def request_declined
+        def on_request_declined
           ESM.bot.deliver("declined", to: @request.requestor.discord_user)
         end
       end

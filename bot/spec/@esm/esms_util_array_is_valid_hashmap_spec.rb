@@ -3,61 +3,63 @@
 describe "ESMs_util_array_isValidHashmap", :requires_connection, v2: true do
   include_context "connection"
 
-  it "is not a valid hash map" do
-    response = execute_sqf!(
-      <<~SQF
-        private _result = [
-          ["key_1", "key_2", "key_3"],
-          [
-            "value_1",
-            true,
+  context "when the array is not a valid hash map" do
+    it "returns false" do
+      response = execute_sqf!(
+        <<~SQF
+          private _result = [
+            ["key_1", "key_2", "key_3"],
             [
-              ["key_4", "key_5"],
+              "value_1",
+              true,
               [
-                false,
+                ["key_4", "key_5"],
                 [
-                  ["key_6", "key_7"],
-                  [6, nil]
+                  false,
+                  [
+                    ["key_6", "key_7"],
+                    [6, nil]
+                  ]
                 ]
               ]
             ]
-          ]
-        ] call ESMs_util_array_isValidHashmap;
+          ] call ESMs_util_array_isValidHashmap;
 
-        _result
-      SQF
-    )
+          _result
+        SQF
+      )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(false)
+      expect(response).to be(false)
+    end
   end
 
-  it "is a valid hash map" do
-    response = execute_sqf!(
-      <<~SQF
-        private _result = [
-          ["key_1", "value_1"],
-          ["key_2", true],
-          [
-            "key_3",
+  context "when the array is a valid hash map" do
+    it "returns true" do
+      response = execute_sqf!(
+        <<~SQF
+          private _result = [
+            ["key_1", "value_1"],
+            ["key_2", true],
             [
-              ["key_4", false],
+              "key_3",
               [
-                "key_5",
+                ["key_4", false],
                 [
-                  ["key_6", 6],
-                  ["key_7", nil]
+                  "key_5",
+                  [
+                    ["key_6", 6],
+                    ["key_7", nil]
+                  ]
                 ]
               ]
             ]
-          ]
-        ] call ESMs_util_array_isValidHashmap;
+          ] call ESMs_util_array_isValidHashmap;
 
-        _result
-      SQF
-    )
+          _result
+        SQF
+      )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq(true)
+      expect(response).to be(true)
+    end
   end
 end

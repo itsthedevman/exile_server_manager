@@ -27,7 +27,7 @@ module ESM
           deliver!(function_name: "payTerritory", territory_id: arguments.territory_id, uid: current_user.steam_uid)
         end
 
-        def on_response(_, _)
+        def on_response
           embed =
             ESM::Embed.build do |e|
               e.description = I18n.t(

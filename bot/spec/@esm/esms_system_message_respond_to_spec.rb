@@ -4,61 +4,33 @@ describe "ESMs_system_message_respond_to", :requires_connection, v2: true do
   include_context "connection"
 
   it "acknowledges the message" do
-    success = false
-    outbound_message = ESM::Message.event
+    original_message = ESM::Message.new
 
-    outbound_message.add_callback(:on_response) do |inbound|
-      expect(inbound.type).to eq(:event)
-      expect(inbound.id).to eq(outbound_message.id)
-      expect(inbound.data_type).to eq(:empty)
-      expect(inbound.data).to eq({})
-      expect(inbound.metadata_type).to eq(:empty)
-      expect(inbound.metadata).to eq({})
-      expect(inbound.errors).to eq([])
-
-      success = true
-    end
-
-    # Needed for the message cycle to properly complete
-    connection_server.message_overseer.watch(outbound_message)
+    # Resetting the promise back to the start removes any "#then" method chains
+    # The reason why this is important is to ensure the spec can handle the incoming
+    # data.
+    promise = server.connection
+      .write(type: :message, id: original_message.id, content: nil)
+      .reset_promise
 
     execute_sqf!(
       <<~SQF
-        ["#{outbound_message.id}"] call ESMs_system_message_respond_to;
+        ["#{original_message.id}"] call ESMs_system_message_respond_to;
       SQF
     )
 
-    expect(success).to be(true)
-  end
+    # Now we can read the response from the SQF
+    response = promise.wait_for_response
+    expect(response.fulfilled?).to be(true)
 
-  it "on_error is triggered when errors" do
-    success = false
-    outbound_message = ESM::Message.event
+    message = ESM::Message.from_string(response.value)
 
-    outbound_message.add_callback(:on_error) do |inbound|
-      expect(inbound.type).to eq(:event)
-      expect(inbound.id).to eq(outbound_message.id)
-      expect(inbound.data_type).to eq(:empty)
-      expect(inbound.data).to eq({})
-      expect(inbound.metadata_type).to eq(:empty)
-      expect(inbound.metadata).to eq({})
-
-      errors = inbound.errors.map(&:to_h)
-      expect(errors).to include({type: :code, content: "ERROR_CODE"})
-      expect(errors).to include({type: :message, content: "An error message"})
-
-      success = true
-    end
-
-    # Needed for the message cycle to properly complete
-    connection_server.message_overseer.watch(outbound_message)
-
-    execute_sqf!(
-      <<~SQF
-        ["#{outbound_message.id}", "event", "empty", [], "empty", [], [["code", "ERROR_CODE"], ["message", "An error message"]]] call ESMs_system_message_respond_to;
-      SQF
-    )
-
-    expect(success).to be(true)
+    expect(message.id).to eq(original_message.id)
+    expect(message.type).to eq(:ack)
+    expect(message.data).to be_kind_of(ESM::Message::Data)
+    expect(message.data.to_h).to eq({})
+    expect(message.metadata).to be_kind_of(ESM::Message::Metadata)
+    expect(message.metadata.to_h).to eq({})
+    expect(message.errors).to eq([])
   end
 end

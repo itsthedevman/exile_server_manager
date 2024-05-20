@@ -34,15 +34,16 @@ module ESM
       end
 
       def on_execution(command_class)
-        @command = command_class.new(user: user, server: server, channel: channel, arguments: options)
-
         respond(content: "Processing your request...")
 
-        @command.from_discord!
+        @command = command_class.new(user:, server:, channel:, arguments: options)
 
-        on_completion
-      rescue => error
-        on_error(error)
+        ESM::ApplicationRecord.connection_pool.with_connection do
+          @command.from_discord!
+          on_completion
+        rescue => error
+          on_error(error)
+        end
       end
 
       def on_completion
@@ -53,8 +54,6 @@ module ESM
 
         @command
       end
-
-      private
 
       def on_error(error)
         return delete_response if error.is_a?(Exception::CheckFailureNoMessage)
@@ -70,7 +69,7 @@ module ESM
 
         message =
           case error
-          when ESM::Exception::CheckFailure
+          when ESM::Exception::DataError
             error.data
           when StandardError
             uuid = SecureRandom.uuid.split("-")[0..1].join("")

@@ -35,12 +35,18 @@ module ESM
 
     scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
 
+    def self.find_by_public_id(id)
+      includes(:community).order(:public_id).where(public_id: id).first
+    end
+
     def self.find_by_server_id(id)
       includes(:community).order(:server_id).where("server_id ilike ?", id).first
     end
 
     def self.server_ids
-      ESM.cache.fetch("server_ids", expires_in: ESM.config.cache.server_ids) { pluck(:server_id) }
+      ::ESM.cache.fetch("server_ids", expires_in: ESM.config.cache.server_ids) do
+        ApplicationRecord.connection_pool.with_connection { pluck(:server_id) }
+      end
     end
 
     # Checks to see if there are any corrections and provides them for the server id
@@ -62,11 +68,7 @@ module ESM
       ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
 
-    def send_message(message = nil, opts = {})
-      message = ESM::Message.from_hash(message) if message.is_a?(Hash)
-
-      ESM::Connection::Server.instance.fire(message, to: uuid, **opts)
-    end
+    delegate :send_message, :send_error, to: :connection
 
     #
     # Returns the server's current version
@@ -85,10 +87,14 @@ module ESM
       version?("2.0.0")
     end
 
+    def connection
+      ESM.connection_server.client(public_id)
+    end
+
     def connected?
       return ESM::Websocket.connected?(server_id) unless v2? # V1
 
-      metadata.initialized == "true"
+      !connection.nil?
     end
 
     def uptime
@@ -130,20 +136,12 @@ module ESM
       user_gamble_stats.order(total_poptabs_loss: :desc).first
     end
 
-    # vg_enabled
-    # vg_max_sizes
-    # version
-    # initialized
-    def metadata
-      @metadata ||= ESM::Server::Metadata.new(uuid)
-    end
-
     # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
     def log_error(log_message)
       uuid = SecureRandom.uuid
 
-      message = ESM::Message.event.add_error("message", "[#{uuid}] #{log_message}")
-      send_message(message)
+      message = ESM::Message.new.add_error("message", "[#{uuid}] #{log_message}")
+      send_error(message)
 
       return if community.logging_channel_id.blank?
 
@@ -151,6 +149,44 @@ module ESM
         I18n.t("exceptions.extension_error", server_id: server_id, id: uuid),
         to: community.logging_channel_id
       )
+    end
+
+    #
+    # Sends the provided SQF code to the linked connection.
+    #
+    # @param code [String] Valid and error free SQF code as a string
+    # @param execute_on [String] Valid options: "server", "player", "all"
+    # @param player [ESM::User, nil] The player who initiated the request
+    #   Note: This technically can be `nil` but errors triggered by this function may look weird
+    # @param target [ESM::User, ESM::User::Ephemeral, nil]
+    #   The user to execute the code on if execute_on is "player"
+    #
+    # @return [Any] The result of the SQF code.
+    #
+    # @note: The result is ran through a JSON parser.
+    #   The type may not be what you expect, but it will be consistent.
+    #   For example, an empty hash map will always be represented by an empty array []
+    #
+    def execute_sqf!(code, execute_on: "server", player: nil, target: nil)
+      message = ESM::Message.new.set_type(:call)
+        .set_data(
+          function_name: "ESMs_command_sqf",
+          execute_on: "server",
+          code: code
+        )
+        .set_metadata(player:, target:)
+
+      response = send_message(message).data.result
+
+      # Check if it's JSON like
+      result = ESM::JSON.parse(response.to_s)
+      return response if result.nil?
+
+      # Check to see if its a hashmap
+      possible_hashmap = ESM::Arma::HashMap.from(result)
+      return result if possible_hashmap.nil?
+
+      result
     end
 
     private
@@ -163,7 +199,7 @@ module ESM
 
     # Idk how to store random bytes in redis (Dang you NULL!)
     KEY_CHARS = [
-      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "", "/", "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "\\", "]", "^", "_", "`", "{", "|", "}", "~"
+      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"
     ].shuffle.freeze
 
     def generate_key

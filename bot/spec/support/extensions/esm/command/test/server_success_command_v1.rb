@@ -15,7 +15,7 @@ module ESM
           self
         end
 
-        def on_response(_, _)
+        def on_response
           reply("Yaay")
         end
       end

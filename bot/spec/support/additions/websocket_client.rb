@@ -45,7 +45,7 @@ class WebsocketClient
     send_ignore_message if command_config[:send_ignore_message]
     # delay(command_config[:delay]) if command_config[:delay]
 
-    send("response_#{@data.command}".to_sym)
+    send(:"response_#{@data.command}")
   end
 
   def on_open(_event)

@@ -17,8 +17,8 @@ class Logger
     TRACE = -1
   end
 
-  def trace(progname = nil, &block)
-    add(TRACE, nil, progname, &block)
+  def trace(progname = nil, &)
+    add(TRACE, nil, progname, &)
   end
 
   def trace?

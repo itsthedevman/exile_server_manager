@@ -8,7 +8,7 @@ describe ESM::Database do
   describe "It deletes entries properly (FK check)" do
     let!(:user) { ESM::Test.user }
     let!(:community) { ESM::Test.community }
-    let!(:server) { ESM::Test.server }
+    let!(:server) { ESM::Test.server(for: community) }
 
     before do
       # Cooldown

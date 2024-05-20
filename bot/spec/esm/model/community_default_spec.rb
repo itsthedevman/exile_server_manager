@@ -2,8 +2,8 @@
 
 describe ESM::CommunityDefault do
   let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server }
-  let(:channel) { ESM::Test.channel }
+  let!(:server) { ESM::Test.server(for: community) }
+  let(:channel) { ESM::Test.channel(in: community) }
 
   it "is valid" do
     expect {

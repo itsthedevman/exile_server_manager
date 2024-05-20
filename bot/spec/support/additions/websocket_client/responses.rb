@@ -65,7 +65,7 @@ class WebsocketClient
           thirst: Faker::Number.within(range: 1..100),
           kills: Faker::Number.within(range: 1..100),
           deaths: Faker::Number.within(range: 1..100),
-          territories: territories
+          territories: territories.to_json
         }
       )
     end

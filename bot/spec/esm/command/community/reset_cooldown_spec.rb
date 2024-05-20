@@ -6,7 +6,7 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
 
   describe "#execute" do
     let(:second_community) { ESM::Test.second_community }
-    let(:second_server) { ESM::Test.second_server }
+    let(:second_server) { ESM::Test.server(for: second_community) }
     let!(:target_regex) { ESM::Regex::TARGET.source }
 
     let!(:cooldown_one) do

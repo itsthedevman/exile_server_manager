@@ -29,7 +29,7 @@ module ESM
 
         def on_execute
           # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
-          return request_accepted if same_user?
+          return on_request_accepted if same_user?
 
           # Checks for a registered target user. This also keeps people from adding via steam_uid only
           check_for_registered_target_user!
@@ -50,7 +50,14 @@ module ESM
           reply(embed)
         end
 
-        def on_response(_, _)
+        def on_request_accepted
+          call_sqf_function("ESMs_command_add", territory: arguments.territory_id)
+          on_response
+        end
+
+        # V1
+        # This code could stay, or it could be moved into `#on_request_accepted`
+        def on_response
           # Send the success message to the requestee (which can be the requestor)
           embed = ESM::Embed.build(
             :success,
@@ -81,16 +88,8 @@ module ESM
           reply(embed)
         end
 
-        def request_accepted
-          if v2_target_server?
-            send_to_arma(
-              data: {
-                territory: {
-                  encoded: {id: arguments.territory_id}
-                }
-              }
-            )
-          else
+        module V1
+          def on_request_accepted
             # Request the arma server to add the user
             deliver!(
               function_name: "addPlayerToTerritory",

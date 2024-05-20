@@ -7,7 +7,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
   describe "#execute" do
     include_context "connection_v1"
 
-    let!(:second_server) { create(:server, community_id: community.id) }
+    let!(:second_server) { ESM::Test.server(for: community) }
     let!(:second_wsc) { WebsocketClient.new(second_server) }
     let(:response) { previous_command.response }
 

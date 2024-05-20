@@ -18,7 +18,7 @@ module ESM
         private
 
         def oversee!
-          check_every = ESM.config.loops.websocket_connection_overseer.check_every
+          check_every = ESM.config.websocket_connection_overseer.check_every
 
           @watch_thread = Thread.new do
             loop do

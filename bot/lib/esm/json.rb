@@ -33,7 +33,7 @@ module ESM
             value
           end
 
-        return value
+        value
       end
 
       input_hash = input_hash.transform_values { |v| transform_value.call(v) }

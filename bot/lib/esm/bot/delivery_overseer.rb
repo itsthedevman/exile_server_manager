@@ -54,7 +54,7 @@ module ESM
         @queue = Queue.new
         @deliveries = {}
         @deliveries_mutex = Mutex.new
-        @check_every = ESM.config.loops.bot_delivery_overseer.check_every.freeze
+        @check_every = ESM.config.bot_delivery_overseer.check_every.freeze
 
         @deliveries_thread = oversee_deliveries!
         @sender_thread_one = oversee!

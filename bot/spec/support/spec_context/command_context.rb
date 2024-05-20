@@ -7,7 +7,7 @@ RSpec.shared_context("command") do
   let!(:user) { ESM::Test.user(*(respond_to?(:user_args) ? user_args : [])) }
   let(:command_class) { described_class } # This can be overwritten
   let(:command) { @previous_command || command_class.new }
-  let(:server) { ESM::Test.server }
+  let(:server) { ESM::Test.server(for: community) }
   let(:second_user) { ESM::Test.user }
 
   #
@@ -31,6 +31,7 @@ RSpec.shared_context("command") do
     arguments = opts.delete(:arguments) || {}
     prompt_response = opts.delete(:prompt_response)
     handle_error = opts.delete(:handle_error)
+    command = command_class.new
 
     channel =
       if (channel = opts.delete(:channel))
@@ -105,7 +106,9 @@ RSpec.shared_context("command") do
       arguments: event.options
     )
 
-    @previous_command.from_discord!
+    ESM::ApplicationRecord.connection_pool.with_connection do
+      @previous_command.from_discord!
+    end
   end
 
   def wait_for_completion!(event = :on_execute)
@@ -114,5 +117,20 @@ RSpec.shared_context("command") do
 
   def respond_to_prompt(response)
     ESM::Test.response = response
+  end
+
+  def accept_request
+    previous_command.request.respond(true)
+  rescue => e
+    return if e.is_a?(ESM::Exception::CheckFailureNoMessage)
+
+    message =
+      if e.respond_to?(:data)
+        e.data
+      else
+        e.message
+      end
+
+    ESM.bot.deliver(message, to: ESM::Test.channel(in: community))
   end
 end

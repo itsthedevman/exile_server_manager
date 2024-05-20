@@ -31,7 +31,7 @@ module ESM
           )
         end
 
-        def on_response(_, _)
+        def on_response
           return if @response.blank?
 
           message = I18n.t(

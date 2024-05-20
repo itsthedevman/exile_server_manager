@@ -11,7 +11,7 @@ describe ESM::Command::Argument do
   end
 
   def new_argument(name = :with_locale, type = nil, **opts)
-    described_class.new(name, type, **{command_class: command_class}.merge(opts))
+    described_class.new(name, type, command_class: command_class, **opts)
   end
 
   describe "DEFAULT_TEMPLATE" do

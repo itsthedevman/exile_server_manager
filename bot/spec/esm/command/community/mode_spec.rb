@@ -58,7 +58,7 @@ describe ESM::Command::Community::Mode, category: "command" do
       context "when there are servers" do
         before do
           # Create a server so there is one
-          ESM::Test.server
+          ESM::Test.server(for: community)
         end
 
         it "raises an exception" do

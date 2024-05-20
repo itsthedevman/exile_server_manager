@@ -13,8 +13,8 @@ module ESM
         names.each { |name| __callbacks[name.to_sym] ||= [] }
       end
 
-      def add_callback(name, method = nil, &block)
-        __add_to_callback(__callbacks, name, method, &block)
+      def add_callback(name, method = nil, &)
+        __add_to_callback(__callbacks, name, method, &)
         nil
       end
 
@@ -41,9 +41,9 @@ module ESM
       end
     end
 
-    def add_callback(name, method = nil, on_instance: nil, &block)
+    def add_callback(name, method = nil, on_instance: nil, &)
       disconnect_callbacks!
-      self.class.__add_to_callback(__callbacks, name, method, on_instance: on_instance, &block)
+      self.class.__add_to_callback(__callbacks, name, method, on_instance: on_instance, &)
       nil
     end
 

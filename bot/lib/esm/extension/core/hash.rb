@@ -13,10 +13,7 @@ class Hash
       end
     end
 
-    struct = Struct.new(*keys)
-    each.with_object(struct.new) do |(key, value), struct|
-      struct.send("#{key}=", recurse.call(value))
-    end
+    Struct.new(*keys.map(&:to_sym)).new(*values.map { |value| recurse.call(value) })
   end
 
   def to_ostruct
@@ -31,9 +28,7 @@ class Hash
       end
     end
 
-    each.with_object(OpenStruct.new) do |(key, value), struct|
-      struct.send("#{key}=", recurse.call(value))
-    end
+    OpenStruct.new(**transform_values { |value| recurse.call(value) })
   end
 
   def to_istruct
@@ -48,11 +43,10 @@ class Hash
       end
     end
 
-    data_values = values.map { |value| recurse.call(value) }
-    ImmutableStruct.define(*keys).new(*data_values)
+    ImmutableStruct.define(*keys.map(&:to_sym)).new(*values.map { |value| recurse.call(value) })
   end
 
-  def format(join_with: "", &block)
-    map(&block).join(join_with)
+  def map_join(join_with = "", &)
+    filter_map(&).join(join_with)
   end
 end

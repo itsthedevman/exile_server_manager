@@ -17,8 +17,7 @@ describe "ESMs_util_hashmap_toArray", :requires_connection, v2: true do
       SQF
     )
 
-    expect(response).not_to be_nil
-    expect(response.data.result).to eq([["key_1", "value_1"], ["key_2", true], ["key_3", [["key_4", [4]], ["key_5", [["key_6", 6], ["key_7", 7]]]]]])
+    expect(response).to eq([["key_1", "value_1"], ["key_2", true], ["key_3", [["key_4", [4]], ["key_5", [["key_6", 6], ["key_7", 7]]]]]])
   end
 
   it "converts an array of hashmaps" do
@@ -37,10 +36,8 @@ describe "ESMs_util_hashmap_toArray", :requires_connection, v2: true do
       SQF
     )
 
-    expect(response).not_to be_nil
-
     # For whatever reason, Arma wants to sort the entries in the second Hash like that
-    expect(response.data.result).to eq([
+    expect(response).to eq([
       [["key_1", "value_1"], ["key_2", "value_2"]],
       [[["sub_key_2", [[["1", "11"]]]], ["sub_key_1", "sub_value_1"]]]
     ])

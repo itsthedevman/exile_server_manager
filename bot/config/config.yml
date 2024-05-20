@@ -1,33 +1,45 @@
 default: &default
   token: <%= ENV["DISCORD_TOKEN"] %>
   steam_api_key: <%= ENV["STEAM_TOKEN"] %>
-  # This MUST be multiline. If this is formatted to be a single line, REVERT IT PLS!
-  dev_user_allowlist:
-    <% JSON.parse(ENV["DEV_ALLOWLIST"]).each do |discord_id| %>
-    - "<%= discord_id %>"
-    <% end %>
-  loops:
-    # ESM::Request::Overseer
-    request_overseer:
-      check_every: 15
+  # to_yaml(indentation:) is not working. This has to be tabbed in once
+  # The alternative is to have the autoformatter constantly messing up the syntax
+  dev_user_allowlist: <%= JSON.parse(ENV["DEV_ALLOWLIST"]).to_yaml[3..].gsub("-", "  -") %>
+  ports:
+    connection_server: 3003
+  # ESM::Request::Overseer
+  request_overseer:
+    check_every: 15
 
-    # ESM::Websocket::Request::Overseer
-    websocket_request_overseer:
-      check_every: 15
+  # ESM::Websocket::Request::Overseer
+  websocket_request_overseer:
+    check_every: 15
 
-    # ESM::Connection::MessageOverseer
-    connection_message_overseer:
-      check_every: 0.1
+  # ESM::Websocket::Connection::Overseer
+  websocket_connection_overseer:
+    check_every: 3
 
-    # ESM::Websocket::Connection::Overseer
-    websocket_connection_overseer:
-      check_every: 3
+  # ESM::Bot::DeliveryOverseer
+  bot_delivery_overseer:
+    check_every: 0.5
 
-    # ESM::Bot::DeliveryOverseer
-    bot_delivery_overseer:
-      check_every: 0.5
+  # ESM::Connection::Server
+  connection_server:
+    connection_check: 0.1
+    lobby_timeout: 1
+    disconnect_after: 10
+
+  # ESM::Connection::Client
+  connection_client:
+    request_check: 0.0005
+    response_timeout: 5
+    min_threads: 2
+    max_threads: 20
+    max_queue: 250
+
   cache:
-    server_ids: 60
+    server_ids: 30
+    community_ids: 30
+
   tips:
   - You can set a default for server and/or community from the player dashboard. Once set, you can omit the server/community argument on most commands to use your defaults.
   - You can create aliases for servers and/or communities from the player dashboard. Once created, you can use the alias instead of a server/community ID
@@ -35,7 +47,8 @@ default: &default
   - Exile Server Manager was created in 2018 by one person and is still developed by that same person to this day
   - You can route your XM8 notifications to different channels on your Discord. These can be configured from the player dashboard or server dashboard
   - "ESM's tech stack includes Ruby, Ruby on Rails, Redis, and Postgres. The server mod is written in SQF/C# and will be replaced with a Rust one soon:tm:"
-  - "The \"slash\" part of a slash command can be omitted when used in other commands. For example:```/help with:my aliases```"
+  - 'The "slash" part of a slash command can be omitted when used in other commands. For example:```/help with:my aliases```'
+  - "Looking for a community or server, but don't know their ID(s)? Try out the new ID lookup tool on my website: https://esmbot.com/tools/id_lookup"
   error_logging_channel_id: <%= ENV["ERROR_LOGGING_CHANNEL_ID"] %>
 
 development:
@@ -44,37 +57,10 @@ development:
 
 test:
   !!merge <<: *default
-
-  loops:
-    # ESM::Request::Overseer
-    request_overseer:
-      check_every: 0.5
-
-    # ESM::Websocket::Request::Overseer
-    websocket_request_overseer:
-      check_every: 0.5
-
-    connection_message_overseer:
-      check_every: 0.01
-
-    # ESM::Websocket::Connection::Overseer
-    websocket_connection_overseer:
-      check_every: 0.5
-
-    # ESM::Bot::DeliveryOverseer
-    bot_delivery_overseer:
-      check_every: 0.01
-
-    # ESM::Request::Overseer
-    request_overseer:
-      check_every: 0.5
-
-    # ESM::Websocket::Request::Overseer
-    websocket_request_overseer:
-      check_every: 0.5
+  error_logging_channel_id: ""
   cache:
     server_ids: 0
-  error_logging_channel_id: ""
+    community_ids: 0
 
 production:
   !!merge <<: *default

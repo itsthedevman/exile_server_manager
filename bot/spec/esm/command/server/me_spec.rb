@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Server::Me, category: "command" do
-  describe "V1" do
-    include_context "command"
-    include_examples "validate_command"
+  include_context "command"
+  include_examples "validate_command"
 
+  describe "V1" do
     describe "#execute" do
       include_context "connection_v1"
 
@@ -33,9 +33,6 @@ describe ESM::Command::Server::Me, category: "command" do
   end
 
   describe "V2", category: "command", v2: true do
-    include_context "command"
-    include_examples "validate_command"
-
     it "is an player command" do
       expect(command.type).to eq(:player)
     end
@@ -48,67 +45,82 @@ describe ESM::Command::Server::Me, category: "command" do
     describe "#on_execute/#on_response", :requires_connection do
       include_context "connection"
 
-      it "returns the user's stats on the server" do
-        execute!(server_id: server.server_id)
-        wait_for { ESM::Test.messages }.not_to be_empty
-
-        embed = ESM::Test.messages.first.content
-        expect(embed.title).to match(/.+'s stats on `#{server.server_id}`/)
-        expect(embed.fields.size).to eq(3)
+      before do
+        user.create_account
+        user.create_player
       end
 
-      it "includes territories when the player has territories" do
-        owner_uid = ESM::Test.steam_uid
+      context "when the user has an account on the server" do
+        it "returns the user's stats" do
+          execute!(arguments: {server_id: server.server_id})
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        territories = create_list(
-          :exile_territory, 2,
-          owner_uid: owner_uid,
-          moderators: [owner_uid, user.steam_uid],
-          build_rights: [owner_uid, user.steam_uid],
-          server_id: server.id
-        )
-
-        execute!(server_id: server.server_id)
-        wait_for { ESM::Test.messages }.not_to be_empty
-
-        embed = ESM::Test.messages.first.content
-        expect(embed.fields.size).to eq(4)
-        expect(embed.fields[3].name).to eq("__Territories__")
-
-        territories.each do |territory|
-          expect(embed.fields[3].value).to include(territory.encoded_id, territory.name)
+          embed = ESM::Test.messages.first.content
+          expect(embed.title).to match(/.+'s stats on `#{server.server_id}`/)
+          expect(embed.fields.size).to eq(3)
         end
       end
 
-      it "displays account information when the player is dead" do
-        player = ESM::ExilePlayer.from(user)
-        expect(player).not_to be_nil
+      context "when the user owns territories on the server" do
+        let!(:territories) do
+          owner_uid = user.steam_uid
 
-        player.kill!
+          create_list(
+            :exile_territory, 2,
+            owner_uid: owner_uid,
+            moderators: [owner_uid],
+            build_rights: [owner_uid],
+            server_id: server.id
+          )
+        end
 
-        execute!(server_id: server.server_id)
-        wait_for { ESM::Test.messages }.not_to be_empty
+        it "includes territories in the embed" do
+          execute!(arguments: {server_id: server.server_id})
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        embed = ESM::Test.messages.first.content
-        general_field = embed.fields.first
-        expect(general_field.name).to match("General")
-        expect(general_field.value).to match("You are dead")
+          embed = ESM::Test.messages.first.content
+          expect(embed.fields.size).to eq(4)
+          expect(embed.fields[3].name).to eq("__Territories__")
+
+          territories.each do |territory|
+            expect(embed.fields[3].value).to include(territory.encoded_id, territory.name)
+          end
+        end
       end
 
-      it "errors because user has not joined the server" do
-        player = ESM::ExilePlayer.from(user)
-        player.kill!
+      context "when the user's player is dead" do
+        it "displays account information only" do
+          player = ESM::ExilePlayer.from(user)
+          expect(player).not_to be_nil
 
-        account = ESM::ExileAccount.from(user)
-        account.delete
+          player.kill!
 
-        execute!(server_id: server.server_id)
-        wait_for { ESM::Test.messages }.not_to be_empty
+          execute!(arguments: {server_id: server.server_id})
+          wait_for { ESM::Test.messages }.not_to be_empty
 
-        embed = ESM::Test.messages.first.content
-        expect(embed.description).to match(
-          "Hey #{user.mention}, you **need to join** `#{server.server_id}` first before you can run commands on it"
-        )
+          embed = ESM::Test.messages.first.content
+          general_field = embed.fields.first
+          expect(general_field.name).to match("General")
+          expect(general_field.value).to match("You are dead")
+        end
+      end
+
+      context "when the user does not have an account on the server" do
+        it "returns an error" do
+          player = ESM::ExilePlayer.from(user)
+          player.kill!
+
+          account = ESM::ExileAccount.from(user)
+          account.delete
+
+          execute!(arguments: {server_id: server.server_id})
+          wait_for { ESM::Test.messages }.not_to be_empty
+
+          embed = ESM::Test.messages.first.content
+          expect(embed.description).to match(
+            "Hey #{user.mention}, you **need to join** `#{server.server_id}` first before you can run commands on it"
+          )
+        end
       end
     end
   end

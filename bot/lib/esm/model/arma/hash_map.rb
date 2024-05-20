@@ -55,7 +55,6 @@ module ESM
 
       delegate :to_ostruct, :to_istruct, to: :to_h
 
-
       private
 
       # The parameters sent over by Arma can be in a SimpleArray format. This will convert the value if need be.

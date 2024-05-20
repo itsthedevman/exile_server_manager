@@ -2,7 +2,7 @@
 
 describe ESM::UserDefault do
   let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server }
+  let!(:server) { ESM::Test.server(for: community) }
   let!(:user) { ESM::Test.user }
 
   it "is valid" do

@@ -2,6 +2,9 @@
 
 module ESM
   class ExileTerritory < ArmaRecord
+    class ArmaError < ESM::Exception::Error
+    end
+
     FLAG_TEXTURES = %w[
       exile_assets\texture\flag\flag_mate_bis_co.paa exile_assets\texture\flag\flag_mate_vish_co.paa exile_assets\texture\flag\flag_mate_hollow_co.paa
       exile_assets\texture\flag\flag_mate_legion_ca.paa exile_assets\texture\flag\flag_mate_21dmd_co.paa exile_assets\texture\flag\flag_mate_spawny_co.paa
@@ -54,7 +57,6 @@ module ESM
     attribute :deleted_at, :datetime
 
     after_save :update_arma
-    after_create :create_territory
 
     scope :active, -> { where(deleted_at: nil) }
     scope :not_stolen, -> { where(flag_stolen: false) }
@@ -94,9 +96,33 @@ module ESM
       end
     end
 
+    def create_flag
+      sqf = <<~SQF
+        private _flag = #{id} call ESMs_system_territory_get;
+        if !(isNull _flag) exitWith { true };
+
+        #{id} call ExileServer_system_territory_database_load;
+      SQF
+
+      success = server.execute_sqf!(sqf)
+      raise ArmaError, "Failed to create flag for territory id:#{id}" unless success
+    end
+
     def delete_flag
-      sqf = "private _flagObject = #{id} call ESMs_system_territory_get; deleteVehicle _flagObject;"
-      ESM::Test.execute_sqf!(server, sqf, steam_uid: owner_uid)
+      # The sleep is required because Arma deletes a vehicle on the next frame
+      sqf = <<~SQF
+        private _flag = #{id} call ESMs_system_territory_get;
+        if (isNull _flag) exitWith { true };
+
+        deleteVehicle _flag;
+
+        sleep 0.1;
+        private _flag = #{id} call ESMs_system_territory_get;
+        isNull(_flag)
+      SQF
+
+      success = server.execute_sqf!(sqf)
+      raise ArmaError, "Failed to delete flag for territory id:#{id}" unless success
     end
 
     private
@@ -130,42 +156,7 @@ module ESM
         sqf += "_flagObject setVariable [\"ExileTerritoryBuildRights\", #{new_value.to_json}, true];"
       end
 
-      ESM::Test.execute_sqf!(server, sqf, steam_uid: owner_uid)
-    end
-
-    def create_territory
-      # I cannot get ExileServer_system_territory_database_load to load the territories
-      # IDK why extDB won't pull it back
-      sqf = <<~SQF
-        private _flagObject = createVehicle [
-          "Exile_Construction_Flag_Static",
-          [#{position_x},#{position_y}],
-          [], 0, "CAN_COLLIDE"
-        ];
-
-        if (#{!flag_stolen}) then
-        {
-          _flagObject setFlagTexture #{flag_texture.quoted};
-        };
-
-        ExileLocations pushBack _flagObject;
-
-        _flagObject setVariable ["ExileTerritoryName", #{name.quoted}, true];
-        _flagObject setVariable ["ExileDatabaseID", #{id}];
-        _flagObject setVariable ["ExileOwnerUID", #{owner_uid}, true];
-        _flagObject setVariable ["ExileTerritorySize", #{radius}, true];
-        _flagObject setVariable ["ExileTerritoryBuildRights", #{build_rights.to_json}, true];
-        _flagObject setVariable ["ExileTerritoryModerators", #{moderators.to_json}, true];
-        _flagObject setVariable ["ExileTerritoryLevel", #{level}, true];
-        _flagObject setVariable ["ExileTerritoryLastPayed", #{last_paid_at.to_s.quoted}];
-        _flagObject setVariable ["ExileTerritoryMaintenanceDue", #{7.days.from_now.to_s.quoted}];
-        _flagObject setVariable ["ExileTerritoryNumberOfConstructions", 0, true];
-        _flagObject setVariable ["ExileRadiusShown", false, true];
-        _flagObject setVariable ["ExileFlagStolen", #{flag_stolen}, true];
-        _flagObject setVariable ["ExileFlagTexture", #{flag_texture.quoted}];
-      SQF
-
-      ESM::Test.execute_sqf!(server, sqf, steam_uid: owner_uid)
+      server.execute_sqf!(sqf)
     end
   end
 end

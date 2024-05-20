@@ -33,7 +33,7 @@ module ESM
           deliver!(query: "restore", territory_id: arguments.territory_id)
         end
 
-        def on_response(_, _)
+        def on_response
           embed =
             if @response.success
               ESM::Embed.build(

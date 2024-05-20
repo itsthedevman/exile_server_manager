@@ -127,10 +127,10 @@ describe ESM::Command::Territory::Add, category: "command" do
     end
 
     # Change "requires_connection" to true if this command requires the client to be connected
-    describe "#on_execute/#on_response", :requires_connection do
+    describe "#on_execute", :requires_connection do
       include_context "connection"
 
-      let(:territory) do
+      let!(:territory) do
         owner_uid = ESM::Test.steam_uid
         create(
           :exile_territory,
@@ -141,137 +141,169 @@ describe ESM::Command::Territory::Add, category: "command" do
         )
       end
 
-      it "adds the user and logs to Discord" do
-        execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
+      before do
+        user.create_account
+        second_user.create_account
 
-        # Initial request and the notice
-        wait_for { ESM::Test.messages.size }.to eq(2)
-
-        # Process the request
-        request = previous_command.request
-        expect(request).not_to be_nil
-
-        # Respond to the request
-        request.respond(true)
-
-        # 1: Request
-        # 2: Request notice
-        # 3: Target's add notification
-        # 4: Requestor's confirmation
-        # 5: Discord log
-        wait_for { ESM::Test.messages.size }.to eq(5)
-
-        # The last messages are not always in order...
-        expect(
-          ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
-        ).not_to be_nil
-
-        expect(
-          ESM::Test.messages.retrieve(
-            /#{second_user.distinct} has been added to territory `#{territory.encoded_id}`/
-          )
-        ).not_to be_nil
-
-        # Admin log on the community's discord server
-        log_message = ESM::Test.messages.retrieve("Player added Target to territory")
-        expect(log_message).not_to be_nil
-        expect(log_message.destination.id.to_s).to eq(community.logging_channel_id)
-
-        log_embed = log_message.content
-        expect(log_embed.fields.size).to eq(3)
-
-        [
-          {
-            name: "Territory",
-            value: "**ID:** #{territory.encoded_id}\n**Name:** #{territory.name}"
-          },
-          {
-            name: "Player",
-            value: "**Discord ID:** #{user.discord_id}\n**Steam UID:** #{user.steam_uid}\n**Discord name:** #{user.discord_username}\n**Discord mention:** #{user.mention}"
-          },
-          {
-            name: "Target",
-            value: "**Discord ID:** #{second_user.discord_id}\n**Steam UID:** #{second_user.steam_uid}\n**Discord name:** #{second_user.discord_username}\n**Discord mention:** #{second_user.mention}"
-          }
-        ].each_with_index do |test_field, i|
-          field = log_embed.fields[i]
-          expect(field).not_to be_nil
-          expect(field.name).to eq(test_field[:name])
-          expect(field.value).to eq(test_field[:value])
-        end
-
-        # Check that Arma update the territory
-        territory.reload
-        expect(territory.build_rights).to include(second_user.steam_uid)
+        territory.create_flag
       end
 
-      it "adds a user via territory admin override", :territory_admin_bypass do
-        # The user and target user are not members of this territory.
-        # However, user is a territory admin
-        territory.revoke_membership(user.steam_uid)
-
-        execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
-        wait_for { ESM::Test.messages.size }.to eq(2)
-
-        # 1: Request
-        # 2: Request notice
-        # 3: Target's add notification
-        # 4: Requestor's confirmation
-        # 5: Discord log
-        expect(previous_command.request&.respond(true)).to be_truthy
-        wait_for { ESM::Test.messages.size }.to eq(5)
-
-        expect(
-          ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
-        ).not_to be_nil
-      end
-
-      it "adds self via territory admin override", :territory_admin_bypass do
-        # The user and target user are not members of this territory.
-        # However, user is a territory admin
-        territory.revoke_membership(user.steam_uid)
-
-        execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: user.steam_uid})
-
-        # No request message is sent for oneself
-        # 1: Success message
-        # 2: Discord log
-        wait_for { ESM::Test.messages.size }.to eq(2)
-
-        expect(
-          ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
-        ).not_to be_nil
-      end
-
-      it "does not allow adding a Steam UID that hasn't been registered with ESM" do
-        second_user_steam_uid = second_user.steam_uid
-        second_user.update!(steam_uid: "")
-
-        expect {
+      context "when the user is a moderator and the target is a different player" do
+        it "adds the player to the territory, notifies the user and target, and creates a log in the logging channel" do
           execute!(
             arguments: {
               server_id: server.server_id,
               territory_id: territory.encoded_id,
-              target: second_user_steam_uid
+              target: second_user.steam_uid
             }
           )
-        }.to raise_error do |error|
-          expect(error.data.description).to match(/hey .+, .+ has not registered with me yet/i)
+
+          wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
+
+          # 1: Request
+          # 2: Request notice
+          # 3: Target's add notification
+          # 4: Requestor's confirmation
+          # 5: Discord log
+          wait_for { ESM::Test.messages.size }.to eq(5)
+
+          # The last messages are not always in order...
+          expect(
+            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+          ).not_to be_nil
+
+          expect(
+            ESM::Test.messages.retrieve(
+              /#{second_user.distinct} has been added to territory `#{territory.encoded_id}`/
+            )
+          ).not_to be_nil
+
+          # Admin log on the community's discord server
+          log_message = ESM::Test.messages.retrieve("Player added Target to territory")
+          expect(log_message).not_to be_nil
+          expect(log_message.destination.id.to_s).to eq(community.logging_channel_id)
+
+          log_embed = log_message.content
+          expect(log_embed.fields.size).to eq(3)
+
+          [
+            {
+              name: "Territory",
+              value: "**ID:** #{territory.encoded_id}\n**Name:** #{territory.name}"
+            },
+            {
+              name: "Player",
+              value: "**Discord ID:** #{user.discord_id}\n**Steam UID:** #{user.steam_uid}\n**Discord name:** #{user.discord_username}\n**Discord mention:** #{user.mention}"
+            },
+            {
+              name: "Target",
+              value: "**Discord ID:** #{second_user.discord_id}\n**Steam UID:** #{second_user.steam_uid}\n**Discord name:** #{second_user.discord_username}\n**Discord mention:** #{second_user.mention}"
+            }
+          ].each_with_index do |test_field, i|
+            field = log_embed.fields[i]
+            expect(field).not_to be_nil
+            expect(field.name).to eq(test_field[:name])
+            expect(field.value).to eq(test_field[:value])
+          end
+
+          # Check that Arma update the territory
+          territory.reload
+          expect(territory.build_rights).to include(second_user.steam_uid)
         end
       end
 
-      describe "SQF Errors", :error_testing do
-        it "handles NullFlag" do
-          territory.delete_flag
+      context "when the user is a territory admin" do
+        before do
+          make_territory_admin!(user)
+          territory.revoke_membership(user.steam_uid)
+        end
 
-          execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
+        it "allows them to add any player" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
           wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
+
+          # 1: Request
+          # 2: Request notice
+          # 3: Target's add notification
+          # 4: Requestor's confirmation
+          # 5: Discord log
+          wait_for { ESM::Test.messages.size }.to eq(5)
+
+          expect(
+            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+          ).not_to be_nil
+        end
+
+        it "allows the user to add themselves" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: user.steam_uid
+            }
+          )
+
+          # No request message is sent for oneself
+          # 1: Success message
+          # 2: Discord log
+          wait_for { ESM::Test.messages.size }.to eq(2)
+
+          expect(
+            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+          ).not_to be_nil
+        end
+      end
+
+      context "when the target is a unregistered steam uid" do
+        it "does not allow adding them" do
+          second_user_steam_uid = second_user.steam_uid
+          second_user.update!(steam_uid: "")
+
+          expect {
+            execute!(
+              arguments: {
+                server_id: server.server_id,
+                territory_id: territory.encoded_id,
+                target: second_user_steam_uid
+              }
+            )
+          }.to raise_error do |error|
+            expect(error.data.description).to match(/hey .+, .+ has not registered with me yet/i)
+          end
+        end
+      end
+
+      context "when the flag is null" do
+        before { territory.delete_flag }
+
+        it "returns the translated Add_NullFlag_Admin error" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
+          accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Discord log
           # 4: Failure notification
-          expect(previous_command.request&.respond(true)).to be_truthy
           wait_for { ESM::Test.messages.size }.to eq(4)
 
           expect(
@@ -284,18 +316,28 @@ describe ESM::Command::Territory::Add, category: "command" do
             ESM::Test.messages.retrieve(/i was unable to find a territory with the ID of `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
+      end
 
-        it "handles MissingAccess" do
+      context "when the user is not a moderator or owner of the territory" do
+        it "returns the translated Add_MissingAccess error" do
           territory.revoke_membership(user.steam_uid)
 
-          execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
           wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Discord log
           # 4: Failure notification
-          expect(previous_command.request&.respond(true)).to be_truthy
           wait_for { ESM::Test.messages.size }.to eq(4)
 
           expect(
@@ -308,9 +350,18 @@ describe ESM::Command::Territory::Add, category: "command" do
             )
           ).not_to be_nil
         end
+      end
 
-        it "handles InvalidAdd" do
-          execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: user.steam_uid})
+      context "when the user attempts to add themselves to the territory without being a territory admin" do
+        it "returns the translated Add_InvalidAdd error" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: user.steam_uid
+            }
+          )
 
           # No request message is sent for oneself
           # 1: Player failure message
@@ -325,18 +376,29 @@ describe ESM::Command::Territory::Add, category: "command" do
             ESM::Test.messages.retrieve("Player attempted to add themselves to the territory. Time to go laugh at them!")
           ).not_to be_nil
         end
+      end
 
-        it "handles InvalidAdd_Owner" do
+      context "when the target is the owner of the territory" do
+        it "returns the translated Add_InvalidAdd_Owner error" do
           territory.owner_uid = second_user.steam_uid
           territory.save!
 
-          execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
           wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Player only Discord message
-          expect(previous_command.request&.respond(true)).to be_truthy
           wait_for { ESM::Test.messages.size }.to eq(3)
 
           expect(
@@ -345,18 +407,31 @@ describe ESM::Command::Territory::Add, category: "command" do
             )
           ).not_to be_nil
         end
+      end
 
-        it "handles InvalidAdd_Exists" do
+      context "when the target is already a member of the territory" do
+        before do
           territory.build_rights << second_user.steam_uid
           territory.save!
+        end
 
-          execute!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id, target: second_user.steam_uid})
+        it "returns the translated Add_InvalidAdd_Exists error" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
           wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Player only Discord message
-          expect(previous_command.request&.respond(true)).to be_truthy
           wait_for { ESM::Test.messages.size }.to eq(3)
 
           expect(

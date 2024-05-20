@@ -12,7 +12,7 @@ module ESM
         def on_execute
         end
 
-        def on_response(_, _)
+        def on_response
         end
 
         def on_accept

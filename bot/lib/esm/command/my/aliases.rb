@@ -44,7 +44,7 @@ module ESM
         private
 
         def build_table(type, id_aliases)
-          id_aliases.format(join_with: "\n") do |id_alias|
+          id_aliases.map_join("\n") do |id_alias|
             if id_alias.server_id
               server = id_alias.server
               id = server.server_id

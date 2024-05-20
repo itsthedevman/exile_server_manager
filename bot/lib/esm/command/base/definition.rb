@@ -90,7 +90,7 @@ module ESM
             end
 
             attribute = attributes[attribute]
-            opts.each { |k, v| attribute.send("#{k}=", v) }
+            opts.each { |k, v| attribute.send(:"#{k}=", v) }
             self
           end
 
@@ -203,7 +203,7 @@ module ESM
           def examples(raw: false)
             return examples_raw if raw
 
-            examples_raw.format(join_with: "\n") do |example|
+            examples_raw.map_join("\n") do |example|
               <<~STRING
                 ```
                 #{usage(with_args: true, arguments: example[:arguments] || {})}

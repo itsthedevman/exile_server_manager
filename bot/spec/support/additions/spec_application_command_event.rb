@@ -5,6 +5,10 @@ class SpecApplicationCommandEvent < SimpleDelegator
     nil
   end
 
+  def respond(...)
+    nil
+  end
+
   def edit_response(...)
     nil
   end

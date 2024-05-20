@@ -51,16 +51,14 @@ module ESM
               "server"
             end
 
-          send_to_arma(
-            data: {execute_on: execute_on, code: arguments.code_to_execute}
+          response = call_sqf_function(
+            "ESMs_command_sqf",
+            execute_on: execute_on,
+            code: arguments.code_to_execute
           )
-        end
 
-        def on_response(incoming_message, outgoing_message)
-          executed_on = outgoing_message.data.execute_on
-          data = incoming_message.data
-
-          translation_name = "responses.#{executed_on}"
+          data = response.data
+          translation_name = "responses.#{execute_on}"
           translation_name += "_with_result" if !data.result.nil?
 
           embed = ESM::Embed.build(
@@ -94,7 +92,7 @@ module ESM
             deliver!(command_name: "exec", function_name: "exec", target: execute_on, code: minify_sqf(arguments.code_to_execute))
           end
 
-          def on_response(_, _)
+          def on_response
             return if @response.message.blank?
 
             reply(response_message)

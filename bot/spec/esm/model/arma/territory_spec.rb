@@ -2,7 +2,7 @@
 
 describe ESM::Exile::Territory do
   let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server }
+  let!(:server) { ESM::Test.server(for: community) }
   let!(:settings) { server.server_setting }
   let!(:territory_example) { TerritoryGenerator.generate.to_ostruct }
   let!(:wsc) { WebsocketClient.new(server) }

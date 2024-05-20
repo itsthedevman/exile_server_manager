@@ -16,12 +16,14 @@ test:
   !!merge <<: *default
   adapter: postgresql
   database: esm_test
+  pool: 500
 
 arma_test:
   !!merge <<: *default
   adapter: mysql2
   encoding: utf8mb4
-  host: "0.0.0.0"
+  host: "127.0.0.1"
+  port: "3306"
   username: root
   database: exile_esm
   database_tasks: false

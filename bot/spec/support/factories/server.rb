@@ -19,13 +19,7 @@ FactoryBot.define do
     before :create do |server, _evaluator|
       next if server.server_id.present?
 
-      server_id =
-        loop do
-          server_id = Faker::ESM.server_id(community_id: server.community.community_id)
-          break server_id if ESM::Server.find_by_server_id(server_id).nil?
-        end
-
-      server.server_id = server_id
+      server.server_id = Faker::ESM.server_id(community_id: server.community.community_id)
     end
 
     after :create do |server, _evaluator|
@@ -37,9 +31,6 @@ FactoryBot.define do
       server.server_mods << create(:server_mod, server_id: server.id)
 
       server.save!
-
-      # Store the server key so the build tool can pick it up and write it
-      ESM.redis.set("server_key", server.token.to_json)
     end
 
     factory :esm_malden do

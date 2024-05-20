@@ -3,12 +3,6 @@
 ENV["ESM_ENV"] = "test"
 ENV["RAILS_ENV"] = "test"
 
-# Must execute before esm is required
-if ENV["CODE_COVERAGE"] == "true"
-  require "simplecov"
-  SimpleCov.start
-end
-
 require "bundler/setup"
 require "awesome_print"
 require "colorize"
@@ -69,8 +63,10 @@ ESM.logger.level =
     Logger::INFO
   when :warn
     Logger::WARN
-  else
+  when :error
     Logger::ERROR
+  else
+    Logger::UNKNOWN
   end
 
 # Enable discordrb logging

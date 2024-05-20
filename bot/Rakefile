@@ -42,16 +42,14 @@ task default: [:test, "standard:fix"]
 
 # rubocop:disable Rails/RakeEnvironment
 task :environment do
-  ESM.console!
   ESM.load!
 end
 
 task :bot do
-  ESM.console!
-  ESM.run!
+  ESM.run!(async: true)
 
   until ESM.bot.ready?
-    sleep 1
+    sleep 0.1
   end
 end
 

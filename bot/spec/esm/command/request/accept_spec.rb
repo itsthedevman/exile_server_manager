@@ -12,7 +12,7 @@ describe ESM::Command::Request::Accept, category: "command" do
         :request,
         requestor_user_id: user.id,
         requestee_user_id: user_2.id,
-        requested_from_channel_id: ESM::Test.channel.id,
+        requested_from_channel_id: ESM::Test.channel(in: community).id,
         command_name: "id"
       )
     end

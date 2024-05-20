@@ -96,7 +96,7 @@ module ESM
             ESM::Embed.build do |e|
               e.title = "Notification preferences for `#{target_server.server_id}`"
               e.description =
-                preference.attributes.format(join_with: "\n") do |key, value|
+                preference.attributes.map_join("\n") do |key, value|
                   next if %w[id user_id server_id created_at updated_at deleted_at].include?(key)
 
                   "#{value ? ":white_check_mark:" : ":x:"} **#{key.humanize}**"

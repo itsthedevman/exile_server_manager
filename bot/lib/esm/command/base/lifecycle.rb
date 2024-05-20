@@ -65,9 +65,6 @@ module ESM
           timers.time!(:after_execute) do
             # Update the cooldown after the command has ran just in case there are issues
             create_or_update_cooldown unless skipped_actions.cooldown?
-
-            # This just tracks how many times a command is used
-            ESM::CommandCount.increment_execution_counter(name)
           end
 
           result
@@ -87,12 +84,12 @@ module ESM
             load_v1_code! if v1_code_needed? # V1
 
             if @request.accepted
-              request_accepted
+              on_request_accepted
             else
               # Reset the cooldown since the request was declined.
               current_cooldown.reset! if current_cooldown.present?
 
-              request_declined
+              on_request_declined
             end
           end
         end
@@ -100,13 +97,10 @@ module ESM
         def on_execute
         end
 
-        def on_response(_incoming_message, _outgoing_message)
+        def on_request_accepted
         end
 
-        def request_accepted
-        end
-
-        def request_declined
+        def on_request_declined
         end
       end
     end

@@ -10,7 +10,7 @@ module ESM
           "on_execute"
         end
 
-        def on_response(_, _)
+        def on_response
           "on_response"
         end
       end

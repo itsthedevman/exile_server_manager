@@ -70,7 +70,7 @@ module ESM
         # @param incoming_message [ESM::Message] The incoming message from the server
         # @param _outgoing_message [ESM::Message] The outgoing message from the command
         #
-        def on_response(incoming_message, _outgoing_message)
+        def on_response
           results = incoming_message.data
 
           embed = ESM::Embed.build do |e|
@@ -145,7 +145,7 @@ module ESM
           data[:vehicles] = vehicles.to_json if vehicles.present?
           data[:items] = selected_reward.reward_items if selected_reward.reward_items.present?
 
-          send_to_arma(data: data)
+          send_to_target_server(data: data)
         end
 
         def send_request_description
@@ -174,7 +174,7 @@ module ESM
             end
 
             if selected_reward.reward_items.present?
-              items = selected_reward.items.sort_by { |v| v[:display_name].downcase }.format(join_with: "\n") do |item|
+              items = selected_reward.items.sort_by { |v| v[:display_name].downcase }.map_join("\n") do |item|
                 "#{item[:quantity]}x #{item[:display_name]}"
               end
 
@@ -183,7 +183,7 @@ module ESM
             end
 
             if selected_reward.reward_vehicles.present?
-              vehicles = selected_reward.vehicles.sort_by { |v| v[:display_name].downcase }.format(join_with: "\n") do |vehicle|
+              vehicles = selected_reward.vehicles.sort_by { |v| v[:display_name].downcase }.map_join("\n") do |vehicle|
                 vehicle[:display_name].to_s
               end
 

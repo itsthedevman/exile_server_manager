@@ -104,6 +104,7 @@ module ESM
     def mention
       "<@#{discord_id}>"
     end
+    alias_method :discord_mention, :mention
 
     def discord_user
       return if discord_id.nil?

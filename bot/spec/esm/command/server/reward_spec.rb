@@ -54,7 +54,7 @@ describe ESM::Command::Server::Reward, category: "command" do
           :request,
           requestor: user,
           requestee: user,
-          requested_from_channel_id: ESM::Test.channel.id,
+          requested_from_channel_id: ESM::Test.channel(in: community).id,
           command_name: command.command_name,
           command_arguments: execution_args[:arguments]
         )

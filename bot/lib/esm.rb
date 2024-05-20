@@ -19,6 +19,7 @@
   "activerecord-import",
   "base64",
   "colorize",
+  "concurrent",
   "discordrb",
   "dotenv",
   "dotiw",
@@ -29,12 +30,14 @@
   "httparty",
   "i18n",
   "neatjson",
+  "openssl",
   "puma",
   "puma/events",
   "pry",
   "redis",
   "securerandom",
   "semantic",
+  "socket",
   "steam_web_api",
   "steam-condenser",
   "terminal-table",
@@ -71,8 +74,9 @@ def __log(severity, caller_data, content)
     e = content[:error]
 
     content[:error] = {
+      class: e.class,
       message: e.message,
-      backtrace: e.backtrace[0..20]
+      backtrace: ESM.backtrace_cleaner.clean(e.backtrace)
     }
   end
 
@@ -105,16 +109,11 @@ module ESM
       @bot ||= ESM::Bot.new
     end
 
-    def run!
+    def run!(async: false, **)
       require_relative "post_init"
 
       # Start the bot
-      if @console
-        # Allow RSpec to continue
-        Thread.new { bot.run }
-      else
-        bot.run
-      end
+      bot.run(async:, **)
     end
 
     # Load everything right meow
@@ -125,11 +124,6 @@ module ESM
 
     def root
       @root ||= Pathname.new(File.expand_path("."))
-    end
-
-    # Allow IRB to be not-blocked by ESM's main thread
-    def console!
-      @console = true
     end
 
     def logger
@@ -199,7 +193,7 @@ module ESM
           aliases: true
         )[env.to_s]
 
-        config.to_istruct
+        config.to_struct
       end
     end
 
@@ -208,6 +202,22 @@ module ESM
         Zeitwerk::Loader.attr_predicate(:setup, :eager_loaded)
         Zeitwerk::Loader.for_gem(warn_on_extra_files: false)
       end
+    end
+
+    def backtrace_cleaner
+      @backtrace_cleaner ||= begin
+        cleaner = ActiveSupport::BacktraceCleaner.new
+        cleaner.add_filter { |line| line.gsub(root.to_s, "") }
+        cleaner.add_silencer { |line| /\/ruby.gems/.match?(line) }
+        cleaner
+      end
+    end
+
+    #
+    # Handles the connection between the bot and all of the A3 servers
+    #
+    def connection_server
+      @connection_server ||= ESM::Connection::Server.new
     end
   end
 end

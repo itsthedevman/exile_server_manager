@@ -90,7 +90,6 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
 
       before do
         grant_command_access!(community, "server_territories")
-        ESM::ExileTerritory.delete_all
       end
 
       let(:territories) do
@@ -118,8 +117,7 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
 
       it "returns all of territories encoded IDs, names, and owner UIDs - sorted by territory name" do
         territories.sort_by!(&:name)
-        execute!(server_id: server.server_id)
-        wait_for { previous_command.timers.on_response.finished? }.to be true
+        execute!(arguments: {server_id: server.server_id})
 
         # This tests the printed data on a per index bases. Since territories is sorted, each line should match
         printed_territory_lines.each_with_index do |line, index|
@@ -130,8 +128,7 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
 
       it "returns the territories sorted by id" do
         territories.sort_by!(&:encoded_id)
-        execute!(server_id: server.server_id, order_by: "id")
-        wait_for { previous_command.timers.on_response.finished? }.to be true
+        execute!(arguments: {server_id: server.server_id, order_by: "id"})
 
         # This tests the printed data on a per index bases. Since territories is sorted, each line should match
         printed_territory_lines.each_with_index do |line, index|
@@ -142,8 +139,7 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
 
       it "returns the territories sorted by owner uid" do
         territories.sort_by!(&:owner_uid)
-        execute!(server_id: server.server_id, order_by: "owner_uid")
-        wait_for { previous_command.timers.on_response.finished? }.to be true
+        execute!(arguments: {server_id: server.server_id, order_by: "owner_uid"})
 
         # This tests the printed data on a per index bases. Since territories is sorted, each line should match
         printed_territory_lines.each_with_index do |line, index|
@@ -153,7 +149,7 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
       end
 
       it "returns no territories" do
-        execute!(server_id: server.server_id)
+        execute!(handle_error: true, arguments: {server_id: server.server_id})
         wait_for { ESM::Test.messages }.not_to be_empty
 
         embed = ESM::Test.messages.first.content

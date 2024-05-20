@@ -42,7 +42,7 @@ module ESM
           reply(embed)
         end
 
-        def on_response(_, _)
+        def on_response
           embed =
             if @response.success
               ESM::Embed.build(:success, description: I18n.t("commands.stuck.success_message", user: current_user.mention))
@@ -53,7 +53,7 @@ module ESM
           reply(embed)
         end
 
-        def request_accepted
+        def on_request_accepted
           # Send request to the server
           deliver!(query: "reset_player", targetUID: current_user.steam_uid)
         end

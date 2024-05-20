@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 class Array
-  def format(join_with: "", &block)
-    filter_map(&block).join(join_with)
+  def to_arma_hashmap
+    ESM::Arma::HashMap.from(self)
+  end
+
+  def map_join(join_with = "", &)
+    filter_map(&).join(join_with)
   end
 
   # Adds up all the sizes of every element inside the array
