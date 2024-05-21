@@ -48,16 +48,15 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 //////////////////////
 // Initialization
 //////////////////////
-private _territoryData = get!(_data, "territory");
+private _encodedTerritoryID = get!(_data, "territory_id");
+private _territoryDatabaseID = get!(_data, "territory_database_id");
+
 private _playerMetadata = get!(_metadata, "player");
 private _targetMetadata = get!(_metadata, "target");
 
-private _encodedTerritoryID = get!(_territoryData, "id");
-private _territoryDatabaseID = get!(_territoryData, "database_id");
 private _playerUID = get!(_playerMetadata, "steam_uid");
 private _playerMention = get!(_playerMetadata, "discord_mention");
 private _targetUID = get!(_targetMetadata, "steam_uid");
-private _targetMention = get!(_targetMetadata, "discord_mention");
 
 private _territory = _territoryDatabaseID call ESMs_system_territory_get;
 

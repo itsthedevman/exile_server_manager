@@ -159,22 +159,8 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 
 async fn call_arma_function(mut message: Message) -> MessageResult {
     // If the data has a territory_id, check it against the database
-    if let Some(territory) = message.data.get_mut("territory") {
-        let Some(id) = territory.as_str() else {
-            return Err(format!(
-                "[call_arma_function] Territory ID parsed into {:?}",
-                territory
-            )
-            .into());
-        };
-
-        // Replace with the decoded one
-        *territory = json!({
-            "id": id.to_owned(),
-            "database_id": DATABASE.decode_territory_id(id).await?,
-        });
-
-        trace!("[call_arma_function] Decoded territory ID: {territory:#?}");
+    if message.data.contains_key("territory_id") {
+        decode_territory_id(&mut message).await?;
     }
 
     // Now process the message
@@ -220,4 +206,28 @@ async fn database_query(message: Message) -> MessageResult {
         )),
         Err(e) => Err(e),
     }
+}
+
+async fn decode_territory_id(message: &mut Message) -> ESMResult {
+    let Some(territory_id) = message.data.get_mut("territory_id") else {
+        return Err("[decode_territory_id] Failed to gain mut access to data object on Message. This is a bug".into());
+    };
+
+    let Some(id) = territory_id.as_str() else {
+        return Err(format!(
+            "[decode_territory_id] Invalid territory ID: {:?}",
+            territory_id
+        )
+        .into());
+    };
+
+    let decoded_id = DATABASE.decode_territory_id(id).await?;
+    debug!("[decode_territory_id] Resolved {territory_id} into {decoded_id}");
+
+    // Add the decoded database ID to the data object
+    message
+        .data
+        .insert("territory_database_id".to_owned(), json!(decoded_id));
+
+    Ok(())
 }
