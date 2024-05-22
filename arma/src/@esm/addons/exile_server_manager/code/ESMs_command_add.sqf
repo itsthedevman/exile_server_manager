@@ -25,8 +25,8 @@ Author:
 private _id = get!(_this, "id");
 
 /*
-	territory_id: Integer
-	territory_database_id:
+	territory_id: String
+	territory_database_id: Integer
 */
 private _data = get!(_this, "data");
 
@@ -76,7 +76,7 @@ try
 					[localize!("Target"), _targetMetadata, true]
 				]]
 			]],
-			["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_CommandPrefix, ESM_ServerID)]
+			["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_ServerID)]
 		];
 	};
 

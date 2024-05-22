@@ -28,7 +28,6 @@ Author:
 ---------------------------------------------------------------------------- */
 
 ESM_BuildNumber = "";
-ESM_CommandPrefix = "!";
 ESM_CommunityID = "";
 ESM_DatabaseExtension = "extDB3";
 ESM_ExtDBVersion = 3;
