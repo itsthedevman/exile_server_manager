@@ -52,7 +52,7 @@ try
 
 	if (isNull _playerObject) exitWith
 	{
-		throw format[localize "$STR_ESM_NullPlayer", _playerMention, ESM_ServerID];
+		throw format[localize "$STR_ESM_Reward_NullPlayer", _playerMention, ESM_ServerID];
 	};
 
 	if !(alive _playerObject) then
@@ -132,32 +132,32 @@ try
 					{
 						private _playerPosition = getPosATL _playerObject;
 						private _lootHolder = objNull;
-                        private _nearestHolder = nearestObjects [_playerObject, ["GroundWeaponHolder", "WeaponHolderSimulated", "LootWeaponHolder"], 3];
+            private _nearestHolder = nearestObjects [_playerObject, ["GroundWeaponHolder", "WeaponHolderSimulated", "LootWeaponHolder"], 3];
 
-						// Get the nearest loot holder
-                        if !(_nearestHolder isEqualTo []) then
-                        {
-                            _lootHolder = _nearestHolder select 0;
-                        };
+            // Get the nearest loot holder
+            if !(_nearestHolder isEqualTo []) then
+            {
+                _lootHolder = _nearestHolder select 0;
+            };
 
-						// If there are none, spawn one nearby
-                        if (isNull _lootHolder) then
-                        {
-                            _lootHolder = createVehicle ["GroundWeaponHolder", _playerPosition, [], 3, "CAN_COLLIDE"];
-                            _lootHolder setPosATL _playerPosition;
-                            _lootHolder setVariable ["BIS_enableRandomization", false];
-                        };
+            // If there are none, spawn one nearby
+            if (isNull _lootHolder) then
+            {
+                _lootHolder = createVehicle ["GroundWeaponHolder", _playerPosition, [], 3, "CAN_COLLIDE"];
+                _lootHolder setPosATL _playerPosition;
+                _lootHolder setVariable ["BIS_enableRandomization", false];
+            };
 
-						// If it is a backpack, add it using a different command. Because.
-						if (getText(configfile >> _configName >> _classname >> "vehicleClass") isEqualTo "Backpacks") then
-                        {
-                            _lootHolder addBackpackCargoGlobal [_classname, 1];
-                        }
-                        else
-                        {
-							// And everything else is an item
-                            _lootHolder addItemCargoGlobal [_classname, 1];
-                        };
+            // If it is a backpack, add it using a different command. Because.
+            if (getText(configfile >> _configName >> _classname >> "vehicleClass") isEqualTo "Backpacks") then
+            {
+                _lootHolder addBackpackCargoGlobal [_classname, 1];
+            }
+            else
+            {
+            // And everything else is an item
+                _lootHolder addItemCargoGlobal [_classname, 1];
+            };
 
 						_added = true;
 					};

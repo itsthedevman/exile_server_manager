@@ -48,6 +48,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 //////////////////////
 // Initialization
 //////////////////////
+private _loggingEnabled = ESM_Logging_Exec;
 private _code = compile(get!(_data, "code"));
 private _result = nil;
 
@@ -113,22 +114,22 @@ try
 		],
 
 		// Log the following?
-		ESM_Logging_Exec,
-
-		// Log this shizz
-		[
-			["title", localize!("Success")],
-			["description", [
-				["code", str(_code)],
-				["result", returns_nil!(_result)]
-			]]
-		]
+		_loggingEnabled,
+		{
+			[
+				["title", localize!("Success")],
+				["description", [
+					["code", str(_code)],
+					["result", returns_nil!(_result)]
+				]]
+			]
+		}
 	]
 	call ESMs_util_command_handleSuccess;
 }
 catch
 {
-	[_id, _exception, file_name!(), ESM_Logging_Exec] call ESMs_util_command_handleFailure;
+	[_id, _exception, file_name!(), _loggingEnabled] call ESMs_util_command_handleFailure;
 };
 
 nil
