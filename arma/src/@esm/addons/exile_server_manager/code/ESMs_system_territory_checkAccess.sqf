@@ -8,8 +8,10 @@ Description:
 Parameters:
 	_this select 0 	- The player's UID to check
 	_this select 1	- The flag object to check
-	_this select 2 	- The minimum access level the player must have. Optional, defaults to "builder".
+	_this select 2 	- The minimum access level the player must have.
 					  Valid options: "builder", "moderator", "owner"
+	_this select 3	- Allow territory admins to bypass this check?
+					  Default: true
 
 Returns:
 	true, false
@@ -36,11 +38,12 @@ Author:
 
 private _playerUID = _this select 0;
 private _flagObject = _this select 1;
+private _minimumAccessLevel = _this select 2;
+private _allowBypass = param [3, true];
 
 // Territory admins can view any territory
-if (_playerUID in ESM_TerritoryAdminUIDs) exitWith { true };
+if (_allowBypass && {_playerUID in ESM_TerritoryAdminUIDs}) exitWith { true };
 
-private _minimumAccessLevel = param [2, "builder"];
 private _hasAccess = false;
 
 switch (toLower(_minimumAccessLevel)) do
