@@ -1,5 +1,6 @@
 use colored::*;
 use glob::glob;
+use lazy_static::lazy_static;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -8,6 +9,32 @@ use std::time::Duration;
 use crate::*;
 
 const SEPARATOR: &str = "----------------------------------------";
+
+lazy_static! {
+    pub static ref GIT_PATH: PathBuf = {
+        // Current directory may or may not be the git directory.
+        // When running automated tests from VScode, the current directory will
+        // be a child directory of the .git folder
+        let current_dir = std::env::current_dir().expect("Failed to load current directory");
+
+        let find_git_path = { |mut dir: PathBuf|
+            loop {
+                // Check if .git directory exists in the current directory
+                if dir.join(".git").is_dir() {
+                    return Some(dir);
+                }
+
+                // Move to the parent directory
+                if !dir.pop() {
+                    // Reached the root directory without finding .git
+                    return None;
+                }
+            }
+        };
+
+        find_git_path(current_dir).expect("Failed to find git directory in tree")
+    };
+}
 
 pub struct Remote {
     pub build_path: PathBuf,
@@ -60,8 +87,7 @@ pub struct Builder {
 
 impl Builder {
     pub fn new(args: Args) -> Result<Self, BuildError> {
-        let local_git_path = std::env::current_dir()?;
-
+        let local_git_path = GIT_PATH.to_owned();
         let arch = args.build_arch();
         let os = args.build_os();
 

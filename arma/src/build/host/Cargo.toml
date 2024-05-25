@@ -26,3 +26,4 @@ compiler = { path = "../compiler" }
 run_script = "0.10.1"
 redis = "0.25"
 glob = "0.3.1"
+json_comments = "0.2.2"

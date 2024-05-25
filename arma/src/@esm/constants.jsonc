@@ -1,0 +1,9 @@
+{
+    "BUILDER_RIGHTS": 1,
+    /////////////////////////////////////////////
+    // Testing examples, do not modify!
+    /////////////////////////////////////////////
+    "EXAMPLE_STRING": "Hello world!",
+    "EXAMPLE_NUMBER": 69,
+    "EXAMPLE_BOOL": false
+}

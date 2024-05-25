@@ -1,5 +1,27 @@
+use std::collections::HashMap;
+
 use compiler::{Compiler, CompilerError, Data};
+use json_comments::StripComments;
+use lazy_static::lazy_static;
 use regex::Captures;
+use serde_json::Value;
+
+lazy_static! {
+    static ref CONSTANTS: HashMap<String, Value> = {
+        let file_path = crate::builder::GIT_PATH
+            .join("src")
+            .join("@esm")
+            .join("constants.jsonc");
+
+        let contents = std::fs::read_to_string(file_path)
+            .expect("Missing file esm_arma/src/@esm/constants.jsonc");
+
+        // Remove the comments :(
+        let contents = StripComments::new(contents.as_bytes());
+
+        serde_json::from_reader(contents).expect("Failed to parse content in constants.jsonc")
+    };
+}
 
 type CompilerResult = Result<Option<String>, CompilerError>;
 
@@ -22,6 +44,7 @@ const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
 const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
 const REGEX_EMPTY: &str = r#"empty\?\((\S+[^)])\)"#;
 const REGEX_NOT_EMPTY: &str = r#"!empty\?\((\S+[^)])\)"#;
+const REGEX_CONST: &str = r#"const!\((\w+)\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -44,7 +67,8 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_EMPTY, empty)
         .replace(REGEX_NOT_EMPTY, not_empty)
         .replace(REGEX_NOT_NIL, not_nil)
-        .replace(REGEX_NIL, nil);
+        .replace(REGEX_NIL, nil)
+        .replace(REGEX_CONST, replace_const);
 }
 
 fn localize(context: &Data, matches: &Captures) -> CompilerResult {
@@ -393,7 +417,7 @@ fn returns_nil(context: &Data, matches: &Captures) -> CompilerResult {
 }
 
 fn not_nil(context: &Data, matches: &Captures) -> CompilerResult {
-    let context = match matches.get(1) {
+    let content = match matches.get(1) {
         Some(m) => m.as_str(),
         None => {
             return Err(format!(
@@ -404,11 +428,11 @@ fn not_nil(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    Ok(Some(format!("!(isNil \"{context}\")")))
+    Ok(Some(format!("!(isNil \"{content}\")")))
 }
 
 fn nil(context: &Data, matches: &Captures) -> CompilerResult {
-    let context = match matches.get(1) {
+    let content = match matches.get(1) {
         Some(m) => m.as_str(),
         None => {
             return Err(format!(
@@ -419,7 +443,43 @@ fn nil(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    Ok(Some(format!("isNil \"{context}\"")))
+    Ok(Some(format!("isNil \"{content}\"")))
+}
+
+fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
+    let content = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> const! - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    // Load the constant
+    let constant = match CONSTANTS.get(content) {
+        Some(c) => c,
+        None => return Ok(None),
+    };
+
+    let replacement = match constant {
+        Value::Null => "nil".to_owned(),
+        Value::Bool(b) => format!("{b}"),
+        Value::Number(n) => format!("{n}"),
+        Value::String(s) => format!("\"{s}\""),
+        _ => {
+            return Err(format!(
+                "{} -> const! - Constant \"{constant}\" returns an object/array. These are not supported at this time",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    // Replace
+    Ok(Some(replacement))
 }
 
 #[cfg(test)]
@@ -772,5 +832,17 @@ mod tests {
     fn it_replaces_not_nil() {
         let output = compile!(r#"!nil?(_variable);"#, REGEX_NOT_NIL, not_nil);
         assert_eq!(output, r#"!(isNil "_variable");"#)
+    }
+
+    #[test]
+    fn it_replaces_constants() {
+        let output = compile!(r#"const!(EXAMPLE_STRING);"#, REGEX_CONST, replace_const);
+        assert_eq!(output, r#""Hello world!";"#);
+
+        let output = compile!(r#"const!(EXAMPLE_NUMBER);"#, REGEX_CONST, replace_const);
+        assert_eq!(output, r#"69;"#);
+
+        let output = compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, replace_const);
+        assert_eq!(output, r#"false;"#)
     }
 }
