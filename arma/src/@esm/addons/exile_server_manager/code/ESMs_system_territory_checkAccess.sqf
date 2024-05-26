@@ -9,9 +9,8 @@ Parameters:
 	_this select 0 	- The player's UID to check
 	_this select 1	- The flag object to check
 	_this select 2 	- The minimum access level the player must have.
+					  Defaults to: "builder"
 					  Valid options: "builder", "moderator", "owner"
-	_this select 3	- Allow territory admins to bypass this check?
-					  Default: true
 
 Returns:
 	true, false
@@ -38,42 +37,29 @@ Author:
 
 private _playerUID = _this select 0;
 private _flagObject = _this select 1;
-private _minimumAccessLevel = _this select 2;
-private _allowBypass = param [3, true];
 
 // Territory admins can view any territory
-if (_allowBypass && {_playerUID in ESM_TerritoryAdminUIDs}) exitWith { true };
+if (_playerUID in ESM_TerritoryAdminUIDs) exitWith { true };
 
-private _hasAccess = false;
-
+// Default value does not matter
+private _minimumAccessLevel = param [2, ""];
 switch (toLower(_minimumAccessLevel)) do
 {
 	case "moderator":
 	{
 		private _moderators = _flagObject getVariable ["ExileTerritoryModerators", []];
-		if (_playerUID in _moderators) then
-		{
-			_hasAccess = true;
-		};
+		_playerUID in _moderators
 	};
 
 	case "owner":
 	{
 		private _owner = _flagObject getVariable ["ExileOwnerUID", ""];
-		if (_owner isEqualTo _playerUID) then
-		{
-			_hasAccess = true;
-		};
+		_owner isEqualTo _playerUID
 	};
 
 	default
 	{
 		private _buildRights = _flagObject getVariable ["ExileTerritoryBuildRights", []];
-		if (_playerUID in _buildRights) then
-		{
-			_hasAccess = true;
-		};
+		_playerUID in _buildRights
 	};
-};
-
-_hasAccess
+}

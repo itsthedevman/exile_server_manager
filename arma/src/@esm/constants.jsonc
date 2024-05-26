@@ -1,5 +1,9 @@
 {
-    "BUILDER_RIGHTS": 1,
+    "TERRITORY_BUILDER_RIGHTS": 1,
+    "TERRITORY_ACCESS_NONE": 0,
+    "TERRITORY_ACCESS_BUILDER": 1,
+    "TERRITORY_ACCESS_MODERATOR": 2,
+    "TERRITORY_ACCESS_OWNER": 3,
     /////////////////////////////////////////////
     // Testing examples, do not modify!
     /////////////////////////////////////////////

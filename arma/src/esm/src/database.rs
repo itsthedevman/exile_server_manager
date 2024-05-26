@@ -94,6 +94,7 @@ impl Database {
             return Ok(id);
         }
 
+        // The ID was not hashed, check to see if it is a custom ID
         let result: SQLResult<Option<u64>> = connection
             .exec_first(
                 &self.statements.decode_territory_id,
