@@ -67,6 +67,7 @@ Co-author:
 forEach
 [
     define_fn!("ESMs_command_add"),
+    define_fn!("ESMs_command_demote"),
     define_fn!("ESMs_command_reward"),
     define_fn!("ESMs_command_sqf"),
     define_fn!("ESMs_system_extension_call"),

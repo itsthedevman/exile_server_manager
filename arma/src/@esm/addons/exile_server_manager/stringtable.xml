@@ -39,8 +39,8 @@
 				%1	- Player mention
 				%2 	- Server ID
 			-->
-			<Key ID="STR_ESM_NullPlayer">
-				<English>Hey %1, you must be spawned into `%2` in order to receive your reward</English>
+			<Key ID="STR_ESM_AccountMissing">
+				<English>Hey %1, you **need to join** `%2` first before you can run commands on it</English>
 			</Key>
 
 			<!--
@@ -54,12 +54,20 @@
 			<!--
 				%1	- Player mention
 				%2 	- Territory ID
-				%3 	- Command prefix
-				%4  - Server ID
+				%3  - Server ID
 			-->
 			<Key ID="STR_ESM_NullFlag">
 				<English>
-					Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID. You may also send me `%3territories %4` to see your territories
+					Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID. You may also send me `/server my territories for:%3` to see your territories
+				</English>
+			</Key>
+
+			<!--
+				%1 - function name
+			-->
+			<Key ID="STR_ESM_NullFlag_Admin">
+				<English>
+					Function %1 was called but the territory flag was not found in game
 				</English>
 			</Key>
 		</Container>
@@ -82,6 +90,14 @@
 			ESM Command: Reward
 		-->
 		<Container name="ESMs_command_reward">
+			<!--
+				%1	- Player mention
+				%2 	- Server ID
+			-->
+			<Key ID="STR_ESM_Reward_NullPlayer">
+				<English>Hey %1, you must be spawned into `%2` in order to receive your reward</English>
+			</Key>
+
 			<!--
 				%1	- Item class name
 			-->
@@ -128,7 +144,7 @@
 			-->
 			<Key ID="STR_ESM_Add_MissingAccess">
 				<English>
-					%1, you do not have permission to add people to `%2`
+					%1, you do not have permission to add players to `%2`
 				</English>
 			</Key>
 
@@ -158,16 +174,7 @@
 			<!--
 				%1 	- Player mention
 			-->
-			<Key ID="STR_ESM_Add_InvalidAdd_Owner">
-				<English>
-					%1, the Target is the owner of this territory which automatically makes them a member of this territory, silly :stuck_out_tongue_winking_eye:
-				</English>
-			</Key>
-
-			<!--
-				%1 	- Player mention
-			-->
-			<Key ID="STR_ESM_Add_InvalidAdd_Exists">
+			<Key ID="STR_ESM_Add_ExistingRights">
 				<English>
 					%1, this Player already has build rights
 				</English>
@@ -184,6 +191,79 @@
 			<Key ID="STR_ESM_Add_Log_Description">
 				<English>
 					Player added Target to territory
+				</English>
+			</Key>
+		</Container>
+
+		<!--
+			ESM Command: Demote
+		-->
+		<Container name="ESMs_command_demote">
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Demote_CannotDemoteOwner">
+				<English>
+					%1, you have no power here!
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Demote_CannotDemoteBuilder">
+				<English>
+					%1, you cannot demote someone who is already at the lowest rank. If you are looking to remove the player from the territory, use `/territory remove_player`
+				</English>
+			</Key>
+
+			<!--
+				%1 	- Player mention
+			-->
+			<Key ID="STR_ESM_Demote_CannotDemoteNothing">
+				<English>
+					%1, you can't demote someone you have no power over.
+				</English>
+			</Key>
+
+			<!--
+				%1	- Player mention
+				%2 	- Territory ID
+			-->
+			<Key ID="STR_ESM_Demote_MissingAccess">
+				<English>
+					%1, you do not have permission to demote players in `%2`
+				</English>
+			</Key>
+
+			<!--
+				%1	- Player mention
+				%2 	- Territory ID
+			-->
+			<Key ID="STR_ESM_Demote_MissingAccess">
+				<English>
+					%1, you do not have permission to demote players in `%2`
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Demote_MissingAccess_Admin">
+				<English>
+					Player attempted to add Target to territory, but Player does not have permission
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Demote_Log_Title">
+				<English>
+					`ESMs_command_demote` executed successfully
+				</English>
+			</Key>
+
+			<!-- None -->
+			<Key ID="STR_ESM_Demote_Log_Description">
+				<English>
+					Player demoted Target in territory
 				</English>
 			</Key>
 		</Container>
