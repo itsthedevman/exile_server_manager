@@ -68,10 +68,10 @@ try
   //////////////////////
 
   // Make sure the player has joined this server
-  if !(_playerUID call ESMs_util_account_isKnown) then
+  if !(_playerUID call ESMs_system_account_isKnown) then
   {
     throw [
-      ["player", localize!("AccountMissing", _playerMention, ESM_ServerID)]
+      ["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
     ];
   };
 

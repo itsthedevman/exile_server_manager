@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 Function:
-  ESMs_util_account_isKnown
+  ESMs_system_account_isKnown
 
 Description:
   Checks if a UID has joined this server or not
@@ -14,7 +14,7 @@ Returns:
 Examples:
   (begin example)
 
-    "765560000000000000" call ESMs_util_account_isKnown; // false
+    "765560000000000000" call ESMs_system_account_isKnown; // false
 
   (end)
 
