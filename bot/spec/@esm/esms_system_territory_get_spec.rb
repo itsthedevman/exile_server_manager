@@ -15,7 +15,7 @@ describe "ESMs_system_territory_get", :requires_connection, v2: true do
   end
 
   before do
-    user.create_account
+    user.exile_account
   end
 
   context "when the territory exists" do

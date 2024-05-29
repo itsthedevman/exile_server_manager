@@ -62,9 +62,9 @@ module ESM
         end
 
         def authenticate!(model)
-          @public_id = +model.public_id
+          @public_id = model.public_id
+          secret_key = model.server_key
 
-          secret_key = +model.server_key
           @encryption = Encryption.new(secret_key)
 
           # Generate new nonce indices for the client

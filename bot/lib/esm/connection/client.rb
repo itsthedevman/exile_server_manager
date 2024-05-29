@@ -45,40 +45,66 @@ module ESM
         send_request(message, type: :message, **)
       end
 
-      def send_error(error, block: false)
-        send_request(error, type: :error, block:)
+      def send_error(content, block: false)
+        message = ESM::Message.new.add_error(type: :message, content:)
+        send_request(message, type: :error, block:)
       end
 
-      def send_request(content = nil, type:, block: true)
+      #
+      # Sends a request over the network to the client
+      #
+      # @param message [ESM::Message, nil] The data to send
+      # @param type [Symbol] The type of request. See ESM::Connection::Request::TYPES
+      # @param block [true/false] Cause this method to block the current thread and either
+      #   1. Until the request is responded to by the client
+      #   2. The timeout is reached. This will raise ESM::Exception::RejectedPromise
+      #
+      # @return [ESM::Connection::Promise, ESM::Message]
+      #   If block is false, a promise in an processing status is returned
+      #   If block is true, the response as ESM::Message is returned
+      #
+      # @raises ESM::Exception::RejectedPromise, ESM::Exception::ExtensionError
+      #
+      def send_request(message = nil, type:, block: true)
+        # I feel so dirty. Multiline unless statements *shudder*
+        unless message.nil? || message.is_a?(ESM::Message)
+          raise TypeError, "Expected ESM::Message or nil. Got #{message.class}"
+        end
+
         info!(
           address:,
           public_id:,
           server_id:,
-          outbound: {type:, content: content.respond_to?(:to_h) ? content.to_h : content}
+          outbound: {type:, content: message&.to_h}
         )
 
-        promise = write(
-          id: (content.respond_to?(:id) ? content.id : nil),
-          type:,
-          content: content.to_s
-        )
+        id = message&.id
+        content = message&.to_s
 
+        # Send the data over the network
+        promise = write(id:, type:, content:)
         return promise.execute unless block
 
+        # Block and wait for a response or timeout
         response = promise.wait_for_response(@config.response_timeout)
         raise ESM::Exception::RejectedPromise, response.reason if response.rejected?
 
-        message = ESM::Message.from_string(response.value)
-        message.set_metadata(server_id:)
+        response_message = ESM::Message.from_string(response.value)
+        response_message.set_metadata(server_id:)
 
-        info!(address:, public_id:, server_id:, inbound: message.to_h)
+        info!(address:, public_id:, server_id:, inbound: response_message.to_h)
 
-        if message.errors?
+        # Messages with errors do not contain any extra data or metadata
+        # Merge the errors from the response into the original message and use that
+        # to build the error messages (the error message can reference data/metadata)
+        if response_message.errors?
+          message.add_errors(response_message.errors.map(&:to_h))
           embed = ESM::Embed.build(:error, description: message.error_messages.join("\n"))
+
           raise ESM::Exception::ExtensionError, embed
         end
 
-        message
+        response_message
       end
 
       #

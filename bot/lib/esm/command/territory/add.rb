@@ -51,7 +51,7 @@ module ESM
         end
 
         def on_request_accepted
-          call_sqf_function("ESMs_command_add", territory: arguments.territory_id)
+          call_sqf_function("ESMs_command_add", territory_id: arguments.territory_id)
           on_response
         end
 

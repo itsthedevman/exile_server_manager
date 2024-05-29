@@ -138,8 +138,9 @@ module ESM
     # _flagObject setVariable ["ExileRadiusShown", false, true];
     # _flagObject setVariable ["ExileFlagStolen",_flagStolen,true];
     # _flagObject setVariable ["ExileFlagTexture",_flagTexture];
+    IGNORED_ATTRIBUTES = %w[server_id esm_custom_id]
     def update_arma
-      changed_items = previous_changes.except("server_id")
+      changed_items = previous_changes.except(*IGNORED_ATTRIBUTES)
       return if changed_items.blank? || changed_items.key?("id")
 
       sqf = "private _flagObject = #{id} call ESMs_system_territory_get;"

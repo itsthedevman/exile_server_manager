@@ -94,9 +94,11 @@ module ESM
     #     message   # Treats the message like a string and sends it as is
     #   content [String] The content of this error.
     def add_errors(errors = [])
-      return if !errors.respond_to?(:each)
+      errors.each do |error|
+        error = error.symbolize_keys
+        add_error(error[:type].to_s, error[:content])
+      end
 
-      errors.each { |error| add_error(error[:type].to_s, error[:content]) }
       self
     end
 

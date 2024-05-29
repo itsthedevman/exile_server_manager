@@ -31,15 +31,11 @@ module ESM
           # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          deliver!(
-            function_name: "demotePlayer",
-            territory_id: arguments.territory_id,
-            target_uid: target_uid,
-            uid: current_user.steam_uid
+          call_sqf_function(
+            "ESMs_command_demote",
+            territory_id: arguments.territory_id
           )
-        end
 
-        def on_response
           message = I18n.t(
             "commands.demote.success_message",
             user: current_user.mention,
@@ -49,6 +45,32 @@ module ESM
           )
 
           reply(ESM::Embed.build(:success, description: message))
+        end
+
+        module V1
+          def on_execute
+            # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
+            check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+            deliver!(
+              function_name: "demotePlayer",
+              territory_id: arguments.territory_id,
+              target_uid: target_uid,
+              uid: current_user.steam_uid
+            )
+          end
+
+          def on_response
+            message = I18n.t(
+              "commands.demote.success_message",
+              user: current_user.mention,
+              target_uid: target_uid,
+              territory_id: arguments.territory_id,
+              server: target_server.server_id
+            )
+
+            reply(ESM::Embed.build(:success, description: message))
+          end
         end
       end
     end

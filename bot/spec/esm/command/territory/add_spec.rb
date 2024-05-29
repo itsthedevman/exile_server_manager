@@ -142,8 +142,8 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       before do
-        user.create_account
-        second_user.create_account
+        user.exile_account
+        second_user.exile_account
 
         territory.create_flag
       end
@@ -319,9 +319,9 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       context "when the user is not a moderator or owner of the territory" do
-        it "returns the translated Add_MissingAccess error" do
-          territory.revoke_membership(user.steam_uid)
+        before { territory.revoke_membership(user.steam_uid) }
 
+        it "returns the translated Add_MissingAccess error" do
           execute!(
             arguments: {
               server_id: server.server_id,
@@ -345,9 +345,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           ).not_to be_nil
 
           expect(
-            ESM::Test.messages.retrieve(
-              "#{user.mention}, you do not have permission to add people to `#{territory.encoded_id}`"
-            )
+            ESM::Test.messages.retrieve("#{user.mention}, you do not have permission")
           ).not_to be_nil
         end
       end
@@ -378,44 +376,13 @@ describe ESM::Command::Territory::Add, category: "command" do
         end
       end
 
-      context "when the target is the owner of the territory" do
-        it "returns the translated Add_InvalidAdd_Owner error" do
-          territory.owner_uid = second_user.steam_uid
-          territory.save!
-
-          execute!(
-            handle_error: true,
-            arguments: {
-              server_id: server.server_id,
-              territory_id: territory.encoded_id,
-              target: second_user.steam_uid
-            }
-          )
-
-          wait_for { ESM::Test.messages.size }.to eq(2)
-
-          accept_request
-
-          # 1: Request
-          # 2: Request notice
-          # 3: Player only Discord message
-          wait_for { ESM::Test.messages.size }.to eq(3)
-
-          expect(
-            ESM::Test.messages.retrieve(
-              "#{user.mention}, the Target is the owner of this territory which automatically makes them a member of this territory, silly :stuck_out_tongue_winking_eye:"
-            )
-          ).not_to be_nil
-        end
-      end
-
       context "when the target is already a member of the territory" do
         before do
           territory.build_rights << second_user.steam_uid
           territory.save!
         end
 
-        it "returns the translated Add_InvalidAdd_Exists error" do
+        it "returns the translated Add_ExistingRights error" do
           execute!(
             handle_error: true,
             arguments: {
@@ -436,6 +403,62 @@ describe ESM::Command::Territory::Add, category: "command" do
 
           expect(
             ESM::Test.messages.retrieve("#{user.mention}, this Player already has build rights")
+          ).not_to be_nil
+        end
+      end
+
+      context "when the player has not joined the server" do
+        before { user.exile_account.destroy! }
+
+        it "raises PlayerNeedsToJoin" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
+          wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
+
+          # 1: Request
+          # 2: Request notice
+          # 3: Player only Discord message
+          wait_for { ESM::Test.messages.size }.to eq(3)
+
+          expect(
+            ESM::Test.messages.retrieve("need to join")
+          ).not_to be_nil
+        end
+      end
+
+      context "when the target has not joined the server" do
+        before { second_user.exile_account.destroy! }
+
+        it "raises TargetNeedsToJoin" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
+          wait_for { ESM::Test.messages.size }.to eq(2)
+
+          accept_request
+
+          # 1: Request
+          # 2: Request notice
+          # 3: Player only Discord message
+          wait_for { ESM::Test.messages.size }.to eq(3)
+
+          expect(
+            ESM::Test.messages.retrieve("needs to join")
           ).not_to be_nil
         end
       end

@@ -46,8 +46,8 @@ describe ESM::Command::Server::Me, category: "command" do
       include_context "connection"
 
       before do
-        user.create_account
-        user.create_player
+        user.exile_account
+        user.exile_player
       end
 
       context "when the user has an account on the server" do

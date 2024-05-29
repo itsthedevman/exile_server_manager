@@ -26,29 +26,8 @@ RSpec.shared_context("connection") do
     wait_for { server.reload.connected? }.to be(true),
       "esm_arma never connected. From the esm_arma repo, please run `bin/bot_testing`"
 
-    # This allows us to run commands on the server without spawning in
-    allow_any_instance_of(ESM::User).to receive(:create_account) do |user|
-      next if ESM::ExileAccount.where(uid: user.steam_uid).exists?
-
-      ESM::ExileAccount.from(user)
-    end
-
-    allow_any_instance_of(ESM::User).to receive(:create_player) do |user|
-      next if ESM::ExilePlayer.where(account_uid: user.steam_uid).exists?
-
-      ESM::ExilePlayer.from(user)
-    end
-
-    # This allows us to "spawn" players on the server
-    # All this does is spawns a bambi and assigns player variables so the bambi AI
-    # can be treated as a player
-    allow_any_instance_of(ESM::User).to receive(:connect) do |user, **attrs|
-      user.create_account
-      user.create_player
-
-      spawn_test_user(user, on: server, **attrs)
-      _spawned_players << user
-    end
+    # Bind methods to the user object for connection based actions
+    bind_user_methods
 
     # Clear any territories
     server.delete_all_territories
@@ -84,6 +63,36 @@ RSpec.shared_context("connection") do
     execute_sqf!(sqf)
   ensure
     connection_server.pause
+  end
+
+  def bind_user_methods
+    user_methods = {
+      # Create or return the associated exile account
+      exile_account: lambda do |user|
+        ESM::ExileAccount.from(user)
+      end,
+
+      # Create or return the associated exile player
+      exile_player: lambda do |user|
+        ESM::ExilePlayer.from(user)
+      end,
+
+      # This allows us to "spawn" players on the server
+      # All this does is spawns a bambi and assigns player variables so the bambi AI
+      # can be treated as a player
+      connect: lambda do |user, **attrs|
+        # Ensure these exist
+        user.exile_account
+        user.exile_player
+
+        spawn_test_user(user, on: server, **attrs)
+        _spawned_players << user
+      end
+    }
+
+    user_methods.each do |name, block|
+      allow_any_instance_of(ESM::User).to receive(name, &block)
+    end
   end
 
   def spawn_test_user(user, **attrs)

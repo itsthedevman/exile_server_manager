@@ -158,7 +158,7 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
       before do
         grant_command_access!(community, "sqf")
-        user.create_account
+        user.exile_account
       end
 
       context "when the code is executed on the server and the code returns a result" do

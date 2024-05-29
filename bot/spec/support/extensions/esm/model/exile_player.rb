@@ -48,6 +48,8 @@ module ESM
     attribute :vest_weapons, :json, default: []
     attribute :last_updated_at, :datetime, default: -> { Time.current }
 
+    belongs_to :account, class_name: "ESM::ExileAccount", inverse_of: :player
+
     def self.from(user)
       model =
         where(account_uid: user.steam_uid).first_or_initialize.tap do |player|
