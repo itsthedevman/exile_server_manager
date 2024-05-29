@@ -49,7 +49,6 @@ const REGEX_CONST: &str = r#"const!\((\w+)\)"#;
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
     compiler
-        .replace(REGEX_LOCALIZE, localize)
         .replace(REGEX_FILE_NAME, file_name)
         .replace(REGEX_DEF_FN, define_fn)
         .replace(REGEX_OS_PATH, os_path)
@@ -68,7 +67,8 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_NOT_EMPTY, not_empty)
         .replace(REGEX_NOT_NIL, not_nil)
         .replace(REGEX_NIL, nil)
-        .replace(REGEX_CONST, replace_const);
+        .replace(REGEX_CONST, replace_const)
+        .replace(REGEX_LOCALIZE, localize);
 }
 
 fn localize(context: &Data, matches: &Captures) -> CompilerResult {
