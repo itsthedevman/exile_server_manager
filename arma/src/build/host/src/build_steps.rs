@@ -702,14 +702,14 @@ cd {build_path};
         )?;
     }
 
-    for file in ["Licenses.txt"].iter() {
-        File::transfer(
-            builder,
-            source_path.to_owned(),
-            destination_path.to_owned(),
-            file,
-        )?;
-    }
+    // for file in ["Licenses.txt"].iter() {
+    //     File::transfer(
+    //         builder,
+    //         source_path.to_owned(),
+    //         destination_path.to_owned(),
+    //         file,
+    //     )?;
+    // }
 
     Ok(())
 }

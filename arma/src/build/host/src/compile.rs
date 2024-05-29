@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use chrono::prelude::*;
 use compiler::{Compiler, CompilerError, Data};
 use json_comments::StripComments;
 use lazy_static::lazy_static;
@@ -45,10 +46,12 @@ const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
 const REGEX_EMPTY: &str = r#"empty\?\((\S+[^)])\)"#;
 const REGEX_NOT_EMPTY: &str = r#"!empty\?\((\S+[^)])\)"#;
 const REGEX_CONST: &str = r#"const!\((\w+)\)"#;
+const REGEX_CURRENT_YEAR: &str = r#"current_year!\(\)"#;
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
     compiler
+        .replace(REGEX_CURRENT_YEAR, current_year)
         .replace(REGEX_FILE_NAME, file_name)
         .replace(REGEX_DEF_FN, define_fn)
         .replace(REGEX_OS_PATH, os_path)
@@ -482,6 +485,10 @@ fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(replacement))
 }
 
+fn current_year(_context: &Data, _matches: &Captures) -> CompilerResult {
+    Ok(Some(format!("{}", chrono::Utc::now().year())))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -844,5 +851,13 @@ mod tests {
 
         let output = compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, replace_const);
         assert_eq!(output, r#"false;"#)
+    }
+
+    #[test]
+    fn it_replaces_current_year() {
+        let output = compile!(r#"current_year!();"#, REGEX_CURRENT_YEAR, current_year);
+
+        let regex = Regex::new(r"\d{4}").unwrap();
+        assert!(regex.is_match(&output))
     }
 }
