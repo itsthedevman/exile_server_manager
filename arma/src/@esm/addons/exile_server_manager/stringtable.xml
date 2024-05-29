@@ -39,8 +39,17 @@
 				%1	- Player mention
 				%2 	- Server ID
 			-->
-			<Key ID="STR_ESM_AccountMissing">
+			<Key ID="STR_ESM_PlayerNeedsToJoin">
 				<English>Hey %1, you **need to join** `%2` first before you can run commands on it</English>
+			</Key>
+
+			<!--
+				%1	- Player mention
+				%2  - Target mention or steam uid
+				%3 	- Server ID
+			-->
+			<Key ID="STR_ESM_TargetNeedsToJoin">
+				<English>Hey %1, %2 **needs to join** `%3` first before you can use them as a target in a command on this server</English>
 			</Key>
 
 			<!--
@@ -48,7 +57,7 @@
 				%2 	- Server ID
 			-->
 			<Key ID="STR_ESM_AlivePlayer">
-				<English>Hey %1, you are dead. You must be alive on `%2` in order to receive your reward</English>
+				<English>Hey %1, you are dead. You must be alive on `%2` in order to use this command</English>
 			</Key>
 
 			<!--
@@ -236,20 +245,10 @@
 				</English>
 			</Key>
 
-			<!--
-				%1	- Player mention
-				%2 	- Territory ID
-			-->
-			<Key ID="STR_ESM_Demote_MissingAccess">
-				<English>
-					%1, you do not have permission to demote players in `%2`
-				</English>
-			</Key>
-
 			<!-- None -->
 			<Key ID="STR_ESM_Demote_MissingAccess_Admin">
 				<English>
-					Player attempted to add Target to territory, but Player does not have permission
+					Player attempted to demote Target in a territory, but Player does not have permission
 				</English>
 			</Key>
 

@@ -80,11 +80,26 @@ try
     ];
   };
 
-  // Ensure the account exists
-  if !(_playerUID call ESMs_util_account_isKnown) then
+  // Ensure the player has joined the server at least once
+  if !(_playerUID call ESMs_system_account_isKnown) then
   {
     throw [
-      ["player", localize!("AccountMissing", _playerMention, ESM_ServerID)]
+      ["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
+    ];
+  };
+
+  // Ensure the target player has joined the server at least once
+  if !(_targetUID call ESMs_system_account_isKnown) then
+  {
+    // This can be executed on a player that is not registered with ESM
+    private _targetMention = get!(_targetMetadata, "discord_mention");
+    if (nil?(_targetMention) || { empty?(_targetMention) }) then
+    {
+      _targetMention = _targetUID;
+    };
+
+    throw [
+      ["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
     ];
   };
 
