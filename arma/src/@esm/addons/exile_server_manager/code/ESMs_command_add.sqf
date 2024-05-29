@@ -125,7 +125,7 @@ try
 
 	// Ensure the player is at least a moderator
 	// Territory admins bypass this
-	if !([_playerUID, _territory, "moderator"] call ESMs_system_territory_checkAccess) then
+	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
 			["admin", [
