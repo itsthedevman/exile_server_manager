@@ -140,13 +140,6 @@
 			ESM Command: Add
 		-->
 		<Container name="ESMs_command_add">
-			<!-- None -->
-			<Key ID="STR_ESM_Add_NullFlag_Admin">
-				<English>
-					Player attempted to add Target to territory, but the territory flag was not found in game
-				</English>
-			</Key>
-
 			<!--
 				%1	- Player mention
 				%2 	- Territory ID
