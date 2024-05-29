@@ -67,14 +67,6 @@ try
   // Validation
   //////////////////////
 
-  // Make sure the player has joined this server
-  if !(_playerUID call ESMs_system_account_isKnown) then
-  {
-    throw [
-      ["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
-    ];
-  };
-
   // Ensure the territory flag exists in game
   if (isNull _territory) then
   {
@@ -88,6 +80,29 @@ try
         ]]
       ]],
       ["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_ServerID)]
+    ];
+  };
+
+  // Ensure the player has joined the server at least once
+  if !(_playerUID call ESMs_system_account_isKnown) then
+  {
+    throw [
+      ["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
+    ];
+  };
+
+  // Ensure the target player has joined the server at least once
+  if !(_targetUID call ESMs_system_account_isKnown) then
+  {
+    // This can be executed on a player that is not registered with ESM
+    private _targetMention = get!(_targetMetadata, "discord_mention");
+    if (nil?(_targetMention) || { empty?(_targetMention) }) then
+    {
+      _targetMention = _targetUID;
+    };
+
+    throw [
+      ["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
     ];
   };
 
@@ -125,18 +140,18 @@ try
     ];
   };
 
-  // Data validation check to ensure no duplications
-  private _currentBuildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
-  if (_targetUID in _currentBuildRights) then
+  // Confirm the target can be added
+  // 0 means they are not a member of the territory
+  private _accessLevel = [_territory, _targetUID] call ExileClient_util_territory_getAccessLevel;
+  if !((_accessLevel select 0) isEqualTo const!(TERRITORY_ACCESS_NONE)) then
   {
-    throw [
-      ["player", localize!("Add_ExistingRights", _playerMention)]
-    ];
+    throw [["player", localize!("Add_ExistingRights", _playerMention)]];
   };
 
   //////////////////////
   // Modification
   //////////////////////
+  private _currentBuildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
   _currentBuildRights pushBack _targetUID;
 
   _territory setVariable ["ExileTerritoryBuildRights", _currentBuildRights, true];
