@@ -106,6 +106,24 @@ try
 		];
 	};
 
+	// Ensure the player is at least a moderator
+	// Territory admins bypass this
+	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
+	{
+		throw [
+			["admin", [
+				["description", localize!("MissingTerritoryAccess_Admin")],
+				["fields", [
+					[localize!("Function"), file_name!()],
+					[localize!("Territory"), _encodedTerritoryID],
+					[localize!("Player"), _playerMetadata, true],
+					[localize!("Target"), _targetMetadata, true]
+				]]
+			]],
+			["player", localize!("MissingTerritoryAccess", _playerMention, _encodedTerritoryID)]
+		];
+	};
+
 	// Ensure the player isn't trying to add themselves
 	// Territory admins bypass this
 	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
@@ -120,23 +138,6 @@ try
 				]]
 			]],
 			["player", localize!("Add_InvalidAdd", _playerMention)]
-		];
-	};
-
-	// Ensure the player is at least a moderator
-	// Territory admins bypass this
-	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
-	{
-		throw [
-			["admin", [
-				["description", localize!("Add_MissingAccess_Admin")],
-				["fields", [
-					[localize!("Territory"), _encodedTerritoryID],
-					[localize!("Player"), _playerMetadata, true],
-					[localize!("Target"), _targetMetadata, true]
-				]]
-			]],
-			["player", localize!("Add_MissingAccess", _playerMention, _encodedTerritoryID)]
 		];
 	};
 

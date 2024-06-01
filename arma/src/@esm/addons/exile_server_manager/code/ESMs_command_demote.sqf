@@ -109,14 +109,15 @@ try
 	{
 		throw [
 			["admin", [
-				["description", localize!("Demote_MissingAccess_Admin")],
+				["description", localize!("MissingTerritoryAccess_Admin")],
 				["fields", [
+					[localize!("Function"), file_name!()],
 					[localize!("Territory"), _encodedTerritoryID],
 					[localize!("Player"), _playerMetadata, true],
 					[localize!("Target"), _targetMetadata, true]
 				]]
 			]],
-			["player", localize!("Demote_MissingAccess", _playerMention, _encodedTerritoryID)]
+			["player", localize!("MissingTerritoryAccess", _playerMention, _encodedTerritoryID)]
 		];
 	};
 
