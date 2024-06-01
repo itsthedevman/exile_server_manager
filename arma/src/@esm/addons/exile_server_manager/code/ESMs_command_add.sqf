@@ -175,7 +175,7 @@ try
 		{
 			[
 				["title", localize!("Add_Log_Title")],
-				["description", localize!("Add_Log_Description", _playerMention)],
+				["description", localize!("Add_Log_Description")],
 				["color", "green"],
 				["fields", [
 					[localize!("Territory"), [

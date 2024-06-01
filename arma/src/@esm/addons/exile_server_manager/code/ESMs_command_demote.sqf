@@ -166,7 +166,7 @@ try
 		{
 			[
 				["title", localize!("Demote_Log_Title")],
-				["description", localize!("Demote_Log_Description", _playerMention)],
+				["description", localize!("Demote_Log_Description")],
 				["color", "green"],
 				["fields", [
 					[localize!("Territory"), [
