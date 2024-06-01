@@ -26,27 +26,26 @@ lazy_static! {
 
 type CompilerResult = Result<Option<String>, CompilerError>;
 
-const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
-const REGEX_EQUAL_TYPE: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_NOT_EQUAL_TYPE: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_GET: &str = r"get!\((.+)?,\s*(.+[^)])?\)";
-const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.+[^)])\)";
-const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
-const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
-const REGEX_NOT_NIL: &str = r#"!nil\?\((\w+)?\)"#;
-const REGEX_RETURNS_NIL: &str = r#"returns_nil!\((\w+)\)"#;
-const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
-const REGEX_ENV: &str = r#"(trace|info|warn|debug|error)\?"#;
-const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
-const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
-const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
-const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
-const REGEX_EMPTY: &str = r#"empty\?\((\S+[^)])\)"#;
-const REGEX_NOT_EMPTY: &str = r#"!empty\?\((\S+[^)])\)"#;
 const REGEX_CONST: &str = r#"const!\((\w+)\)"#;
 const REGEX_CURRENT_YEAR: &str = r#"current_year!\(\)"#;
+const REGEX_DEF_FN: &str = r#"define_fn!\("(\w+)?"\)"#;
+const REGEX_DIG: &str = r#"dig!\((.+[^)])\)"#;
+const REGEX_EMPTY_NEGATED: &str = r#"!empty\?\((\S+[^)])\)"#;
+const REGEX_EMPTY: &str = r#"empty\?\((\S+[^)])\)"#;
+const REGEX_FILE_NAME: &str = r#"file_name!\(\)"#;
+const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.+[^)])\)";
+const REGEX_GET: &str = r"get!\((.+)?,\s*(.+[^)])?\)";
+const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
+const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w"]+)*)\)"#;
+const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
+const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
+const REGEX_NIL_NEGATED: &str = r#"!nil\?\((\w+)?\)"#;
+const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
+const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
+const REGEX_RETURNS_NIL: &str = r#"returns_nil!\((\w+)\)"#;
+const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_TYPE_CHECK_NEGATED: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_TYPE_CHECK: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
@@ -55,20 +54,19 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_FILE_NAME, file_name)
         .replace(REGEX_DEF_FN, define_fn)
         .replace(REGEX_OS_PATH, os_path)
-        .replace(REGEX_NOT_EQUAL_TYPE, type_ne)
-        .replace(REGEX_EQUAL_TYPE, type_eq)
+        .replace(REGEX_TYPE_CHECK_NEGATED, type_ne)
+        .replace(REGEX_TYPE_CHECK, type_eq)
         .replace(REGEX_RV_TYPE, rv_type)
         .replace(REGEX_GET_WITH_DEFAULT, hash_get)
         .replace(REGEX_GET, hash_get)
         .replace(REGEX_DIG, hash_dig)
         .replace(REGEX_KEY, hash_key)
-        .replace(REGEX_ENV, env)
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
         .replace(REGEX_RETURNS_NIL, returns_nil)
         .replace(REGEX_EMPTY, empty)
-        .replace(REGEX_NOT_EMPTY, not_empty)
-        .replace(REGEX_NOT_NIL, not_nil)
+        .replace(REGEX_EMPTY_NEGATED, not_empty)
+        .replace(REGEX_NIL_NEGATED, not_nil)
         .replace(REGEX_NIL, nil)
         .replace(REGEX_CONST, replace_const)
         .replace(REGEX_LOCALIZE, localize);
@@ -367,11 +365,6 @@ fn log(context: &Data, matches: &Captures) -> CompilerResult {
     }))
 }
 
-fn env(_context: &Data, matches: &Captures) -> CompilerResult {
-    let log_level = matches.get(1).unwrap().as_str();
-    Ok(Some(format!("ESM_LogLevel isEqualTo \"{log_level}\"")))
-}
-
 fn empty(context: &Data, matches: &Captures) -> CompilerResult {
     let contents = match matches.get(1) {
         Some(m) => m.as_str(),
@@ -571,13 +564,17 @@ mod tests {
 
     #[test]
     fn it_replaces_type() {
-        let output = compile!(r#"type?(_variable, STRING);"#, REGEX_EQUAL_TYPE, type_eq);
+        let output = compile!(r#"type?(_variable, STRING);"#, REGEX_TYPE_CHECK, type_eq);
         assert_eq!(output, r#"_variable isEqualType "";"#);
     }
 
     #[test]
     fn it_replaces_not_type() {
-        let output = compile!(r#"!type?(VARIABLE, HASH);"#, REGEX_NOT_EQUAL_TYPE, type_ne);
+        let output = compile!(
+            r#"!type?(VARIABLE, HASH);"#,
+            REGEX_TYPE_CHECK_NEGATED,
+            type_ne
+        );
         assert_eq!(output, r#"!(VARIABLE isEqualType createHashMap);"#);
     }
 
@@ -746,32 +743,6 @@ mod tests {
     }
 
     #[test]
-    fn it_replaces_env() {
-        let output = compile!(
-            r#"
-            if (trace?) exitWith {};
-            if (debug?) exitWith {};
-            if (info?) exitWith {};
-            if (warn?) exitWith {};
-            if (error?) exitWith {};
-        "#,
-            REGEX_ENV,
-            env
-        );
-
-        assert_eq!(
-            output,
-            r#"
-            if (ESM_LogLevel isEqualTo "trace") exitWith {};
-            if (ESM_LogLevel isEqualTo "debug") exitWith {};
-            if (ESM_LogLevel isEqualTo "info") exitWith {};
-            if (ESM_LogLevel isEqualTo "warn") exitWith {};
-            if (ESM_LogLevel isEqualTo "error") exitWith {};
-        "#
-        )
-    }
-
-    #[test]
     fn it_replaces_empty() {
         let output = compile!(
             r#"
@@ -801,7 +772,7 @@ mod tests {
             (!empty?([]))
             if ((!empty?(foo)) then {};
         "#,
-            REGEX_NOT_EMPTY,
+            REGEX_EMPTY_NEGATED,
             not_empty
         );
 
@@ -837,7 +808,7 @@ mod tests {
 
     #[test]
     fn it_replaces_not_nil() {
-        let output = compile!(r#"!nil?(_variable);"#, REGEX_NOT_NIL, not_nil);
+        let output = compile!(r#"!nil?(_variable);"#, REGEX_NIL_NEGATED, not_nil);
         assert_eq!(output, r#"!(isNil "_variable");"#)
     }
 
