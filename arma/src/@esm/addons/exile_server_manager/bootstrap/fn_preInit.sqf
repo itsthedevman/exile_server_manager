@@ -70,6 +70,7 @@ forEach
     define_fn!("ESMs_command_demote"),
     define_fn!("ESMs_command_reward"),
     define_fn!("ESMs_command_sqf"),
+    define_fn!("ESMs_command_upgrade"),
     define_fn!("ESMs_system_account_isKnown"),
     define_fn!("ESMs_system_extension_call"),
     define_fn!("ESMs_system_extension_callback"),
@@ -96,7 +97,8 @@ forEach
     define_fn!("ESMs_util_hashmap_fromArray"),
     define_fn!("ESMs_util_hashmap_key"),
     define_fn!("ESMs_util_hashmap_toArray"),
-    define_fn!("ESMs_util_log")
+    define_fn!("ESMs_util_log"),
+    define_fn!("ESMs_util_number_toString")
 ];
 
 [] call ESMs_system_process_preInit;

@@ -94,5 +94,18 @@
 			"",
 		],
 		"description": "Inserts the Exile Server Manager copyright"
+	},
+	"Translation Key": {
+		"scope": "jsonc",
+		"prefix": "new_key",
+		"body": [
+			"{",
+			"\t\"$\": {",
+			"\t\t\"ID\": \"STR_ESM_ xxxx\"",
+			"\t},",
+			"\t\"_\": \"<!-- xxx -->\",",
+			"\t\"English\": \"xxx\"",
+			"}"
+		]
 	}
 }

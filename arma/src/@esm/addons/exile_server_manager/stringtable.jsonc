@@ -58,6 +58,12 @@
 								"ID": "STR_ESM_Target"
 							},
 							"English": "Target"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Receipt"
+							},
+							"English": "Receipt"
 						}
 					]
 				},
@@ -276,6 +282,41 @@
 							},
 							"_": "<!-- %1 - Player mention, %2 - Territory ID-->",
 							"English": "%1, `%2` cannot be upgrade as that it is already at the highest level"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Upgrade_TooPoor"
+							},
+							"_": "<!-- %1 - Player mention, %2 - Upgrade cost, %3 - Current locker amount -->",
+							"English": "%1, you do not have enough poptabs in your locker, it costs **%2** and you have **%3**"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Upgrade_Log_Title"
+							},
+							"_": "<!-- None -->",
+							"English": "`ESMs_command_upgrade` executed successfully"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Upgrade_Log_Description"
+							},
+							"_": "<!-- None -->",
+							"English": "Player upgraded territory"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Upgrade_Log_TotalCost_Title"
+							},
+							"_": "<!-- None -->",
+							"English": "Total cost"
+						},
+						{
+							"$": {
+								"ID": "STR_ESM_Upgrade_Log_TotalCost_Description"
+							},
+							"_": "<!-- %1 total cost -->",
+							"English": "-%1 poptabs"
 						}
 					]
 				}
