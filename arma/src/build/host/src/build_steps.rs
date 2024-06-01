@@ -4,6 +4,7 @@ use colored::*;
 use common::{BuildResult, Command};
 use compiler::Compiler;
 use glob::glob;
+use json_comments::StripComments;
 use lazy_static::lazy_static;
 use redis::Commands;
 use regex::Regex;
@@ -658,6 +659,7 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
     }
 
     let build_path = builder.local_build_path.join("@esm").join("addons");
+    let source_path = builder.local_git_path.join("src").join("@esm");
 
     for addon in ADDONS.iter().chain(extra_addons.iter()) {
         if !builder.rebuild_addon(addon) {
@@ -689,11 +691,58 @@ cd {build_path};
             .execute(None)?;
     }
 
+    // Convert stringtable.json file to stringtable.xml
+    let mod_path = build_path.join("exile_server_manager");
+    let stringtable_path = mod_path.join("stringtable.jsonc");
+
+    let mut xml_builder = xml2json_rs::XmlConfig::new()
+        .rendering(xml2json_rs::Indentation::new(b'\t', 1))
+        .decl(xml2json_rs::Declaration::new(
+            xml2json_rs::Version::XML10,
+            Some(xml2json_rs::Encoding::UTF8),
+            None,
+        ))
+        .finalize();
+
+    let file_content = match std::fs::read_to_string(&stringtable_path) {
+        Ok(c) => c,
+        Err(_) => {
+            return Err(format!(
+                "Failed to read stringtable.jsonc. Path: {}",
+                stringtable_path.display()
+            )
+            .into());
+        }
+    };
+
+    let mut sanitized_content = String::new();
+    std::io::Read::read_to_string(
+        &mut StripComments::new(file_content.as_bytes()),
+        &mut sanitized_content,
+    )?;
+
+    match xml_builder.build_from_json_string(&sanitized_content) {
+        Ok(xml) => fs::write(mod_path.join("stringtable.xml"), xml)?,
+        Err(e) => {
+            return Err(format!("Failed to convert stringtable.json to xml. Reason: {e}").into());
+        }
+    };
+
+    // Remove the stringtable.json from build
+    if let Err(e) = fs::remove_file(stringtable_path) {
+        return Err(format!(
+            "Failed to delete {}. Reason: {}",
+            mod_path.join("stringtable.json").display(),
+            e
+        )
+        .into());
+    }
+
+    // Copy the mod over
     let destination_path = builder.remote_build_path().join("@esm");
-    Directory::transfer(builder, build_path, destination_path.to_owned())?;
+    Directory::transfer(builder, build_path.to_owned(), destination_path.to_owned())?;
 
     // Copy extra directories and files
-    let source_path = builder.local_git_path.join("src").join("@esm");
     for directory in ["optionals", "sql"].iter() {
         Directory::transfer(
             builder,
@@ -701,15 +750,6 @@ cd {build_path};
             destination_path.to_owned(),
         )?;
     }
-
-    // for file in ["Licenses.txt"].iter() {
-    //     File::transfer(
-    //         builder,
-    //         source_path.to_owned(),
-    //         destination_path.to_owned(),
-    //         file,
-    //     )?;
-    // }
 
     Ok(())
 }
