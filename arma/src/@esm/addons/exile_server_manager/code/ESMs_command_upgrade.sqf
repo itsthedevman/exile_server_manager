@@ -56,6 +56,15 @@ try
 	//////////////////////
 	// Validation
 	//////////////////////
+	// Ensure the player has joined the server at least once
+	if !(_playerUID call ESMs_system_account_isKnown) then
+	{
+		throw [
+			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
+		];
+	};
+
+	// Ensure the territory exists
 	if (isNull _territory) then
 	{
 		throw [
@@ -67,14 +76,6 @@ try
 				]]
 			]],
 			["player", localize!("NullFlag", _playerMention, _encodedTerritoryID, ESM_ServerID)]
-		];
-	};
-
-	// Ensure the player has joined the server at least once
-	if !(_playerUID call ESMs_system_account_isKnown) then
-	{
-		throw [
-			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
 		];
 	};
 
@@ -258,7 +259,3 @@ catch
 };
 
 nil
-
-/*
-
-*/
