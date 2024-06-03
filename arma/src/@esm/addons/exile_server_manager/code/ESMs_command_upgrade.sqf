@@ -106,9 +106,9 @@ try
 
 	// Max level check
 	private _currentLevel = _territory getVariable ["ExileTerritoryLevel", 0];
-	private _upgradePrices = getArray(missionConfigFile >> "CfgTerritories" >> "Prices");
-	private _maxLevel = count _upgradePrices;
-	private _nextLevel = _level + 1;
+	private _upgradeListings = getArray(missionConfigFile >> "CfgTerritories" >> "Prices");
+	private _maxLevel = count _upgradeListings;
+	private _nextLevel = _currentLevel + 1;
 
 	if (_nextLevel > _maxLevel) then
 	{
@@ -116,11 +116,11 @@ try
 	};
 
 	// Gather the upgrade information
-	private _territoryPrice = (_territoryConfig select _level) select 0;
-	private _territoryRange = (_territoryConfig select _level) select 1;
+	private _territoryPrice = (_upgradeListings select _currentLevel) select 0;
+	private _territoryRange = (_upgradeListings select _currentLevel) select 1;
 
 	// Calculate a payment tax. 0% will be 0
-	private _tax = round(_territoryPrice * ESM_UpgradeTaxPercentage);
+	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryUpgrade);
 	_territoryPrice = _territoryPrice + _tax;
 
 	//////////////////////
@@ -133,35 +133,37 @@ try
 	private _updatedPlayerMoney = 0;
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
 
-	if !nil?(_playerObject) then
+	if (null?(_playerObject)) then // Because Arma!
 	{
-		// Locker check
-		_playerMoney = _playerObject getVariable ["ExileLocker", 0];
-		if (_playerMoney < _territoryPrice) then
-		{
-			throw [[
-				"player",
-				localize!("Upgrade_TooPoor", _playerTag, _territoryPrice call ESMs_util_number_toString, _playerMoney call ESMs_util_number_toString)
-			]];
-		};
-
-		// Adjust the players attributes and globally update
-		_updatedPlayerMoney = _playerMoney - _territoryPrice;
-		_playerObject setVariable ["ExileLocker", _updatedPlayerMoney, true];
-	}
-	else
-	{
+		debug!("Nil player");
 		// Locker check
 		_playerMoney = format["getLocker:%1", _playerUID] call ExileServer_system_database_query_selectSingleField;
 		if (_playerMoney < _territoryPrice) then
 		{
 			throw [[
 				"player",
-				localize!("Upgrade_TooPoor", _playerTag, _territoryPrice call ESMs_util_number_toString, _playerMoney call ESMs_util_number_toString)
+				localize!("Upgrade_TooPoor", _playerMention, _territoryPrice call ESMs_util_number_toString, _playerMoney call ESMs_util_number_toString)
 			]];
 		};
 
 		_updatedPlayerMoney = _playerMoney - _territoryPrice;
+	}
+	else
+	{
+		debug!("Not nil player");
+		// Locker check
+		_playerMoney = _playerObject getVariable ["ExileLocker", 0];
+		if (_playerMoney < _territoryPrice) then
+		{
+			throw [[
+				"player",
+				localize!("Upgrade_TooPoor", _playerMention, _territoryPrice call ESMs_util_number_toString, _playerMoney call ESMs_util_number_toString)
+			]];
+		};
+
+		// Adjust the players attributes and globally update
+		_updatedPlayerMoney = _playerMoney - _territoryPrice;
+		_playerObject setVariable ["ExileLocker", _updatedPlayerMoney, true];
 	};
 
 	format["updateLocker:%1:%2", _updatedPlayerMoney, _playerUID] call ExileServer_system_database_query_fireAndForget;
@@ -169,8 +171,8 @@ try
 	_territory setVariable ["ExileTerritoryLevel", _nextLevel, true];
 	_territory setVariable ["ExileTerritorySize", _territoryRange, true];
 
-	format ["setTerritoryLevel:%1:%2", _nextLevel, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
-	format ["setTerritorySize:%1:%2", _territoryRange, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
+	format["setTerritoryLevel:%1:%2", _nextLevel, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
+	format["setTerritorySize:%1:%2", _territoryRange, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
 
 	// Update all constructions and containers
 	_territory call ExileServer_system_territory_updateNearContainers;
@@ -224,17 +226,15 @@ try
 							[
 								[
 									"Locker before",
-									format["%1 poptabs", _playerMoney call ESMs_util_number_toString]
+									format ["+%1 poptabs", _playerMoney call ESMs_util_number_toString]
 								],
 								[
 									localize!("Upgrade_Log_TotalCost_Title"),
-									localize!("Upgrade_Log_TotalCost_Description"),
-									true
+									localize!("Upgrade_Log_TotalCost_Description", _territoryPrice)
 								],
 								[
 									"Locker after",
-									format["=%1 poptabs", _updatedPlayerMoney call ESMs_util_number_toString],
-									true
+									format ["+%1 poptabs", _updatedPlayerMoney call ESMs_util_number_toString]
 								]
 							]
 						],

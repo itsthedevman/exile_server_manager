@@ -288,7 +288,7 @@
 								"ID": "STR_ESM_Upgrade_TooPoor"
 							},
 							"_": "<!-- %1 - Player mention, %2 - Upgrade cost, %3 - Current locker amount -->",
-							"English": "%1, you do not have enough poptabs in your locker, it costs **%2** and you have **%3**"
+							"English": "%1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
 						},
 						{
 							"$": {

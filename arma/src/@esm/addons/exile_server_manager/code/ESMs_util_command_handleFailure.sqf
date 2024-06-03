@@ -39,7 +39,7 @@ Author:
 private _id = _this select 0;
 private _commandException = _this select 1;
 private _callingFunction = _this select 2;
-private	_log = _this param [3, false];
+private	_logEnabled = _this param [3, false];
 
 private _exceptionHash = createHashmapFromArray _commandException;
 
@@ -56,7 +56,7 @@ if (key?(_exceptionHash, "admin")) then
 	private _message = get!(_exceptionHash, "admin", "");
 	warn!(_message);
 
-	if (_log) then
+	if (_logEnabled) then
 	{
 		if (type?(_message, ARRAY)) then
 		{
