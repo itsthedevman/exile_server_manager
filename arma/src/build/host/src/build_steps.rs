@@ -650,8 +650,63 @@ fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
     Ok(())
 }
 
+// Convert stringtable.jsonc to stringtable.xml
+// Because fuck working with xml like that
+fn compile_string_table(builder: &mut Builder) -> BuildResult {
+    let build_path = builder.local_build_path.join("@esm").join("addons");
+    let mod_path = build_path.join("exile_server_manager");
+    let string_table_path = mod_path.join("stringtable.jsonc");
+
+    // N-n-neat
+    let mut xml_builder = xml2json_rs::XmlConfig::new()
+        .rendering(xml2json_rs::Indentation::new(b'\t', 1))
+        .decl(xml2json_rs::Declaration::new(
+            xml2json_rs::Version::XML10,
+            Some(xml2json_rs::Encoding::UTF8),
+            None,
+        ))
+        .finalize();
+
+    let file_content = match std::fs::read_to_string(&string_table_path) {
+        Ok(c) => c,
+        Err(_) => {
+            return Err(format!(
+                "Failed to read stringtable.jsonc. Path: {}",
+                string_table_path.display()
+            )
+            .into());
+        }
+    };
+
+    let mut sanitized_content = String::new();
+    std::io::Read::read_to_string(
+        &mut StripComments::new(file_content.as_bytes()),
+        &mut sanitized_content,
+    )?;
+
+    match xml_builder.build_from_json_string(&sanitized_content) {
+        Ok(xml) => fs::write(mod_path.join("stringtable.xml"), xml)?,
+        Err(e) => {
+            return Err(format!("Failed to convert stringtable.json to xml. Reason: {e}").into());
+        }
+    };
+
+    // Remove the stringtable.json from build
+    if let Err(e) = fs::remove_file(string_table_path) {
+        return Err(format!(
+            "Failed to delete {}. Reason: {}",
+            mod_path.join("stringtable.json").display(),
+            e
+        )
+        .into());
+    }
+
+    Ok(())
+}
+
 pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
+    compile_string_table(builder)?;
 
     let mut extra_addons = vec![];
     if matches!(builder.args.build_env(), BuildEnv::Test) {
@@ -689,53 +744,6 @@ cd {build_path};
             .add_error_detection("Failed to build")
             .add_error_detection("missing file")
             .execute(None)?;
-    }
-
-    // Convert stringtable.json file to stringtable.xml
-    let mod_path = build_path.join("exile_server_manager");
-    let stringtable_path = mod_path.join("stringtable.jsonc");
-
-    let mut xml_builder = xml2json_rs::XmlConfig::new()
-        .rendering(xml2json_rs::Indentation::new(b'\t', 1))
-        .decl(xml2json_rs::Declaration::new(
-            xml2json_rs::Version::XML10,
-            Some(xml2json_rs::Encoding::UTF8),
-            None,
-        ))
-        .finalize();
-
-    let file_content = match std::fs::read_to_string(&stringtable_path) {
-        Ok(c) => c,
-        Err(_) => {
-            return Err(format!(
-                "Failed to read stringtable.jsonc. Path: {}",
-                stringtable_path.display()
-            )
-            .into());
-        }
-    };
-
-    let mut sanitized_content = String::new();
-    std::io::Read::read_to_string(
-        &mut StripComments::new(file_content.as_bytes()),
-        &mut sanitized_content,
-    )?;
-
-    match xml_builder.build_from_json_string(&sanitized_content) {
-        Ok(xml) => fs::write(mod_path.join("stringtable.xml"), xml)?,
-        Err(e) => {
-            return Err(format!("Failed to convert stringtable.json to xml. Reason: {e}").into());
-        }
-    };
-
-    // Remove the stringtable.json from build
-    if let Err(e) = fs::remove_file(stringtable_path) {
-        return Err(format!(
-            "Failed to delete {}. Reason: {}",
-            mod_path.join("stringtable.json").display(),
-            e
-        )
-        .into());
     }
 
     // Copy the mod over
