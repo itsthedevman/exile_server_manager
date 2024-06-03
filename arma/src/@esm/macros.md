@@ -4,6 +4,8 @@ The build tool for ESM supports macros that are expanded during compilation. The
 ## Limitations
 The supporting compiler system works on Regex and only support single line usage. I would love to fix this but other priorities come first.
 
+## Arguments
+Some macros support providing "arguments" between the brackets. These normally are passed down to the resulting SQF code. Arma code, including other macros, are supported.
 
 ## Macros
 
@@ -163,18 +165,18 @@ info!("Wow! %1, so cool.", _playerName)
 ["macros", format["Wow! %1, so cool.", _playerName], "info"] call ESMs_util_log
 ```
 
-### `nil?(object)`
-Shorthand to check to see if the provided object is nil
+### `nil?(variable)`
+Shorthand to check to see if the provided variable is nil
 
 Example:
 ```sqf
-nil?(_myObject)
+nil?(_myVariable)
 
 // Becomes:
-isNil "_myObject"
+isNil "_myVariable"
 ```
 
-### `!nil?(object)`
+### `!nil?(variable)`
 Shorthand for the negated version of nil above; not nil.
 
 Example:
@@ -183,6 +185,18 @@ Example:
 
 // Becomes:
 !(isNil "_myVariable")
+```
+
+### `null?(object)`
+Shorthand to check to see if the provided object is null
+This is different than nil? above because Arma considers the null variants (objNull, locationNull, scriptNull, etc.) as not nil. Why you ask? Short answer: _because Arma_
+
+Example:
+```sqf
+null?(_playerObject)
+
+// Becomes:
+isNull _playerObject
 ```
 
 ### `os_path!(path_fragments...)`

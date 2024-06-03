@@ -41,6 +41,7 @@ const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*
 const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
 const REGEX_NIL_NEGATED: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
+const REGEX_NULL: &str = r"null\?\((\w+)?\)";
 const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
 const REGEX_RETURNS_NIL: &str = r#"returns_nil!\((\w+)\)"#;
 const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
@@ -49,6 +50,9 @@ const REGEX_TYPE_CHECK: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\
 
 pub fn bind_replacements(compiler: &mut Compiler) {
     // The order of these matter
+    // Macros without arguments are first
+    // Macros that could end up with another macro being used as an argument
+    // need to be last
     compiler
         .replace(REGEX_CURRENT_YEAR, current_year)
         .replace(REGEX_FILE_NAME, file_name)
@@ -68,6 +72,7 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_EMPTY_NEGATED, not_empty)
         .replace(REGEX_NIL_NEGATED, not_nil)
         .replace(REGEX_NIL, nil)
+        .replace(REGEX_NULL, null)
         .replace(REGEX_CONST, replace_const)
         .replace(REGEX_LOCALIZE, localize);
 }
@@ -442,6 +447,21 @@ fn nil(context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("isNil \"{content}\"")))
 }
 
+fn null(context: &Data, matches: &Captures) -> CompilerResult {
+    let content = match matches.get(1) {
+        Some(m) => m.as_str(),
+        None => {
+            return Err(format!(
+                "{} -> null? - Wrong number of arguments, given 0, expect 1",
+                context.file_path
+            )
+            .into())
+        }
+    };
+
+    Ok(Some(format!("isNull {content}")))
+}
+
 fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
     let content = match matches.get(1) {
         Some(m) => m.as_str(),
@@ -810,6 +830,15 @@ mod tests {
     fn it_replaces_not_nil() {
         let output = compile!(r#"!nil?(_variable);"#, REGEX_NIL_NEGATED, not_nil);
         assert_eq!(output, r#"!(isNil "_variable");"#)
+    }
+
+    #[test]
+    fn it_replaces_null() {
+        let output = compile!(r#"null?(objNull);"#, REGEX_NULL, null);
+        assert_eq!(output, r#"isNull objNull;"#);
+
+        let output = compile!(r#"null?(_playerObject);"#, REGEX_NULL, null);
+        assert_eq!(output, r#"isNull _playerObject;"#);
     }
 
     #[test]
