@@ -12,7 +12,7 @@
 #
 # For example:
 #
-# # YAML                                      # Converted into XML
+# # YAML                                      # XML
 # MyNewContainer:                             # <Container name="MyNewContainer">
 # - id: "MyLocalizedString"                   #   <Key ID="STR_ESM_MyLocalizedString">
 #   arguments:                                #     <!-- %1 - Some argument | %2 - Another -->
@@ -23,30 +23,34 @@
 #                                             #   </Key>
 #                                             #
 # - id: "AnotherString"                       #   <Key ID="STR_ESM_AnotherString">
-#   # ignore this comment                     #     <!-- None -->
+#                                             #     <!-- None -->
 #   english: "This is short"                  #     <English>This is short</English>
 #                                             #   </Key>
 #                                             # </Container>
 
-# Single words
-Words:
+################################################################################
+# Commonly used words, phrases, errors, etc.
+General:
 - id: "Success"
   english: "Success"
+
 - id: "Territory"
   english: "Territory"
+
 - id: "Player"
   english: "Player"
+
 - id: "Target"
   english: "Target"
+
 - id: "Receipt"
   english: "Receipt"
+
 - id: "Poptabs"
   arguments:
   - "Number of poptabs"
   english: "%1 poptab(s)"
 
-# Common
-General:
 - id: "PlayerNeedsToJoin"
   arguments:
   - "Player mention"
@@ -87,6 +91,7 @@ General:
 - id: "MissingTerritoryAccess_Admin"
   english: "Player attempted to perform an action on Territory but they do not have access"
 
+################################################################################
 # /territory add_player
 ESMs_command_add:
 - id: "Add_CannotAddSelf"
@@ -127,6 +132,7 @@ ESMs_command_demote:
 - id: "Demote_Log_Description"
   english: "Player demoted Target in territory"
 
+################################################################################
 # /territory upgrade
 ESMs_command_upgrade:
 - id: "Upgrade_StolenFlag"
