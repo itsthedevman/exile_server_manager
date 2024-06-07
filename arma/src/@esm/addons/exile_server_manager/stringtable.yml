@@ -1,0 +1,181 @@
+#
+# This file is a YAML representation of Arma 3's stringtable.xml containers and keys
+# This file is read in and transformed into the full stringtable.xml file that we know and love
+#
+# Note: The build process will transform this data into something XML can understand. All "id"
+# values defined will automatically have `STR_ESM_` prepended to them
+#
+# Syntax:
+#
+# Each root key represents a <Container> entry in the resulting XML. The associated value
+# to these keys represent a single <Key> entry.
+#
+# For example:
+#
+# # YAML                                      # Converted into XML
+# MyNewContainer:                             # <Container name="MyNewContainer">
+# - id: "MyLocalizedString"                   #   <Key ID="STR_ESM_MyLocalizedString">
+#   arguments:                                #     <!-- %1 - Some argument | %2 - Another -->
+#   - Some argument                           #
+#   - Another                                 #
+#   english: "Hello %1, how are you %2?"      #     <English>Hello %1, how are you %2?</English>
+#   german: "Hallo %1, wie geht es dir %2?"   #     <German>Hallo %1, wie geht es dir %2?</German>
+#                                             #   </Key>
+#                                             #
+# - id: "AnotherString"                       #   <Key ID="STR_ESM_AnotherString">
+#   # ignore this comment                     #     <!-- None -->
+#   english: "This is short"                  #     <English>This is short</English>
+#                                             #   </Key>
+#                                             # </Container>
+
+# Single words
+Words:
+- id: "Success"
+  english: "Success"
+- id: "Territory"
+  english: "Territory"
+- id: "Player"
+  english: "Player"
+- id: "Target"
+  english: "Target"
+- id: "Receipt"
+  english: "Receipt"
+- id: "Poptabs"
+  arguments:
+  - "Number of poptabs"
+  english: "%1 poptab(s)"
+
+# Common
+General:
+- id: "PlayerNeedsToJoin"
+  arguments:
+  - "Player mention"
+  - "Server ID"
+  english: "Hey %1, you **need to join** `%2` first before you can run commands on it"
+
+- id: "TargetNeedsToJoin"
+  arguments:
+  - "Player mention"
+  - "Target mention or Steam UID"
+  - "Server ID"
+  english: "Hey %1, %2 **needs to join** `%3` first before you can use them as a target in a command on this server"
+
+- id: "AlivePlayer"
+  arguments:
+  - "Player mention"
+  - "Server ID"
+  english: "Hey %1, you are dead. You must be alive on `%2` in order to use this command"
+
+- id: "NullFlag"
+  arguments:
+  - "Player mention"
+  - "Territory ID"
+  - "Server ID"
+  english: "Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID. You may also send me `/server my territories for:%3` to see your territories"
+
+- id: "NullFlag_Admin"
+  arguments:
+  - "Function name"
+  english: "Function %1 was called but the territory flag was not found in game"
+
+- id: "MissingTerritoryAccess"
+  arguments:
+  - "Player mention"
+  - "Territory ID"
+  english: "%1, you do not have permission to perform this action on `%2`"
+
+- id: "MissingTerritoryAccess_Admin"
+  english: "Player attempted to perform an action on Territory but they do not have access"
+
+# /territory add_player
+ESMs_command_add:
+- id: "Add_CannotAddSelf"
+  arguments:
+  - "Player mention"
+  english: Hey %1, you cannot add yourself to this territory
+
+- id: "Add_ExistingRights"
+  arguments:
+  - "Player mention"
+  english: "Hey %1, this player already has build rights"
+
+- id: "Add_Log_Title"
+  english: "`ESMs_command_add` executed successfully"
+
+- id: "Add_Log_Description"
+  english: "Player added Target to territory"
+
+ESMs_command_demote:
+- id: "Demote_CannotDemoteOwner"
+  arguments:
+  - "Player mention"
+  english: "%1, you have no power here!"
+
+- id: "Demote_CannotDemoteBuilder"
+  arguments:
+  - "Player mention"
+  english: "Hey %1, you cannot demote someone who is already at the lowest rank. If you are looking to remove the player from the territory, use `/territory remove_player`"
+
+- id: "Demote_CannotDemoteNothing"
+  arguments:
+  - "Player mention"
+  english: "Hey %1, you can't demote someone you have no power over."
+
+- id: "Demote_Log_Title"
+  english: "`ESMs_command_demote` executed successfully"
+
+- id: "Demote_Log_Description"
+  english: "Player demoted Target in territory"
+
+# /territory upgrade
+ESMs_command_upgrade:
+- id: "Upgrade_StolenFlag"
+  arguments:
+  - "Player mention"
+  - "Territory ID"
+  english: "Hey %1, the territory flag for `%2` has been stolen! You need to get it back before you can upgrade your base"
+
+- id: "Upgrade_MaxLevel"
+  arguments:
+  - "Player mention"
+  - "Territory ID"
+  english: "Hey %1, `%2` cannot be upgrade as that it is already at the highest level"
+
+- id: "Upgrade_TooPoor"
+  arguments:
+  - "Player mention"
+  - "Upgrade cost"
+  - "Current locker amount"
+  english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
+
+- id: "Upgrade_Log_Title"
+  english: "`ESMs_command_upgrade` executed successfully"
+
+- id: "Upgrade_Log_Description"
+  english: "Player upgraded territory"
+
+- id: "Upgrade_Log_TotalCost_Title"
+  english: "Total cost"
+
+- id: "Upgrade_Log_TotalCost_Description"
+  english: "-%1 poptabs"
+
+- id: "Upgrade_Response_Title"
+  arguments:
+  - "Territory ID"
+  english: "`%1` has been upgraded successfully"
+
+- id: "Upgrade_Response_Description"
+  arguments:
+  - "Territory level"
+  - "Upgrade cost"
+  - "Range"
+  - "Current object count"
+  - "Max object count"
+  english: |-
+    ---
+    **Upgraded to level %1**
+    ---
+    **Cost:** %2 poptab(s)
+    **Range:** %3 meters
+    **Objects:** %4 / %5

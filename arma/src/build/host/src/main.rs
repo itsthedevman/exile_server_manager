@@ -10,6 +10,7 @@ mod directory;
 mod file;
 mod file_watcher;
 mod server;
+mod string_table;
 
 pub use build_steps::*;
 pub use builder::*;

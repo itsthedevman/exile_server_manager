@@ -86,7 +86,7 @@ try
 				};
 
 				throw [
-					["player", localize!("Sqf_NullTarget", _playerMention, _targetMention, ESM_ServerID)]
+					["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
 				];
 			};
 

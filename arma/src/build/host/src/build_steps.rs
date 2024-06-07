@@ -1,10 +1,10 @@
 use crate::*;
 
+use crate::string_table;
 use colored::*;
 use common::{BuildResult, Command};
 use compiler::Compiler;
 use glob::glob;
-use json_comments::StripComments;
 use lazy_static::lazy_static;
 use redis::Commands;
 use regex::Regex;
@@ -650,56 +650,18 @@ fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
     Ok(())
 }
 
-// Convert stringtable.jsonc to stringtable.xml
+// Convert stringtable.yml to stringtable.xml
 // Because fuck working with xml like that
 fn compile_string_table(builder: &mut Builder) -> BuildResult {
+    // Important to use the build path here and not the source
     let build_path = builder.local_build_path.join("@esm").join("addons");
     let mod_path = build_path.join("exile_server_manager");
-    let string_table_path = mod_path.join("stringtable.jsonc");
 
-    // N-n-neat
-    let mut xml_builder = xml2json_rs::XmlConfig::new()
-        .rendering(xml2json_rs::Indentation::new(b'\t', 1))
-        .decl(xml2json_rs::Declaration::new(
-            xml2json_rs::Version::XML10,
-            Some(xml2json_rs::Encoding::UTF8),
-            None,
-        ))
-        .finalize();
+    // There isn't a good crate that supports going from YAML to XML directly
+    // So we have to convert the YML to JSON and modify it so xml2json can convert it to XML
+    let xml = string_table::convert_yaml_to_xml(mod_path.join("stringtable.yml"))?;
 
-    let file_content = match std::fs::read_to_string(&string_table_path) {
-        Ok(c) => c,
-        Err(_) => {
-            return Err(format!(
-                "Failed to read stringtable.jsonc. Path: {}",
-                string_table_path.display()
-            )
-            .into());
-        }
-    };
-
-    let mut sanitized_content = String::new();
-    std::io::Read::read_to_string(
-        &mut StripComments::new(file_content.as_bytes()),
-        &mut sanitized_content,
-    )?;
-
-    match xml_builder.build_from_json_string(&sanitized_content) {
-        Ok(xml) => fs::write(mod_path.join("stringtable.xml"), xml)?,
-        Err(e) => {
-            return Err(format!("Failed to convert stringtable.json to xml. Reason: {e}").into());
-        }
-    };
-
-    // Remove the stringtable.json from build
-    if let Err(e) = fs::remove_file(string_table_path) {
-        return Err(format!(
-            "Failed to delete {}. Reason: {}",
-            mod_path.join("stringtable.json").display(),
-            e
-        )
-        .into());
-    }
+    fs::write(mod_path.join("stringtable.xml"), xml)?;
 
     Ok(())
 }

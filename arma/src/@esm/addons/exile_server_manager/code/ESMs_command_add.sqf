@@ -129,15 +129,7 @@ try
 	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
 	{
 		throw [
-			["admin", [
-				["description", localize!("Add_InvalidAdd_Admin")],
-				["fields", [
-					[localize!("Territory"), _encodedTerritoryID],
-					[localize!("Player"), _playerMetadata, true],
-					[localize!("Target"), _targetMetadata, true]
-				]]
-			]],
-			["player", localize!("Add_InvalidAdd", _playerMention)]
+			["player", localize!("Add_CannotAddSelf", _playerMention)]
 		];
 	};
 
