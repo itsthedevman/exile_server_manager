@@ -154,18 +154,7 @@ ESMs_command_upgrade:
   - "Current locker amount"
   english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
 
-- id: "Upgrade_Log_Title"
-  english: "`ESMs_command_upgrade` executed successfully"
-
-- id: "Upgrade_Log_Description"
-  english: "Player upgraded territory"
-
-- id: "Upgrade_Log_TotalCost_Title"
-  english: "Total cost"
-
-- id: "Upgrade_Log_TotalCost_Description"
-  english: "-%1 poptabs"
-
+# Player message
 - id: "Upgrade_Response_Title"
   arguments:
   - "Territory ID"
@@ -174,7 +163,6 @@ ESMs_command_upgrade:
 - id: "Upgrade_Response_Description"
   arguments:
   - "Territory level"
-  - "Upgrade cost"
   - "Range"
   - "Current object count"
   - "Max object count"
@@ -182,6 +170,41 @@ ESMs_command_upgrade:
     ---
     **Upgraded to level %1**
     ---
-    **Cost:** %2 poptab(s)
-    **Range:** %3 meters
-    **Objects:** %4 / %5
+    **Range:** %2 meters
+    **Objects:** %3 / %4
+
+- id: "Upgrade_Response_Receipt"
+  arguments:
+  - "Locker balance before"
+  - "Upgrade cost"
+  - "Tax amount"
+  - "Tax percentage"
+  - "Locker balance after"
+  english: |-
+    ```
+             Locker:  +%1
+       Flag upgrade:  -%2
+    Convenience fee:  -%3 (%4%%)
+            Balance:  =%5 poptab(s)
+    ```
+
+# Admin log
+- id: "Upgrade_Log_Title"
+  english: "`ESMs_command_upgrade` executed successfully"
+
+- id: "Upgrade_Log_Description"
+  arguments:
+  - "Territory level"
+  - "Locker balance before"
+  - "Upgrade cost"
+  - "Tax amount"
+  - "Tax percentage"
+  - "Locker balance after"
+  english: |-
+    Territory upgraded to level %1
+    ```
+             Locker:  +%2
+       Flag upgrade:  -%3
+    Convenience fee:  -%4 (%5%%)
+            Balance:  =%6 poptab(s)
+    ```
