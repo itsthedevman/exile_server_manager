@@ -1,0 +1,3 @@
+#!/bin/bash
+
+bin/run --target=linux --env=development "$@"
