@@ -79,7 +79,7 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
     /*
         // Represents a single Key
         {
-            "ESMs_command_upgrade": Array [
+            "ESMs_command_upgrade": [
                 Object {
                     "id": String("Upgrade_StolenFlag"),
                     "arguments": Array [String("Player mention"), String("Territory ID")],
