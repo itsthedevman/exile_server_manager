@@ -93,6 +93,8 @@ forEach
     define_fn!("ESMs_util_embed_setColor"),
     define_fn!("ESMs_util_embed_setDescription"),
     define_fn!("ESMs_util_embed_setTitle"),
+    define_fn!("ESMs_util_extension_formatArmaError"),
+    define_fn!("ESMs_util_extension_formatError"),
     define_fn!("ESMs_util_hashmap_dig"),
     define_fn!("ESMs_util_hashmap_fromArray"),
     define_fn!("ESMs_util_hashmap_key"),

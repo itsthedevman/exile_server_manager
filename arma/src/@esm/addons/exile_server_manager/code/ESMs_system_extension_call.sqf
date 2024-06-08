@@ -118,28 +118,21 @@ private _result = "esm" callExtension [_function, _sanitizedArguments];
 // debug!("[%1] Endpoint ""%2"" replied with %3: %4", _id, _function, typeName _result, _result);
 
 // If there is an issue, Arma-rs will return an error code.
-// Possible error codes:
-// 		0 	Success
-// 		1 	Command not found
-// 		2x 	Invalid argument count, x is received count
-// 		3x 	Invalid argument type, x is argument position
-// 		4 	Attempted to write a value larger than the buffer
-// 		9 	Application error, from using a Result
 if ((_result select 1) > 0) exitWith
 {
-	error!("[%1] Extension barfed. Error code: %2", _id, _result select 1);
-	false
+	private _reason = (_result select [0, 2]) call ESMs_util_extension_formatError;
+	error!("[%1] Extension call to function ""%2"" barfed. Reason: %3", _id, _function, _reason);
+
+	nil
 };
 
 // If there is an issue, Arma will return an error code.
-//     101: SYNTAX_ERROR_WRONG_PARAMS_SIZE
-//     102: SYNTAX_ERROR_WRONG_PARAMS_TYPE
-//     201: PARAMS_ERROR_TOO_MANY_ARGS
-//     301: EXECUTION_WARNING_TAKES_TOO_LONG
 if ((_result select 2) > 0) exitWith
 {
-	error!("[%1] Arma barfed. Error code: %2", _id, _result select 2);
-	false
+	private _reason = (_result select 2) call ESMs_util_extension_formatArmaError;
+	error!("[%1] Extension call to function ""%2"" caused Arma to barf. Reason: %3", _id, _function, _reason);
+
+	nil
 };
 
 // The result is worthless, don't try to process it
