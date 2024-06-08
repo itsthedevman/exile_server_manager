@@ -6,7 +6,11 @@ pub struct Parser {}
 
 impl Parser {
     pub fn from_arma<T: DeserializeOwned + Default>(input: &str) -> Result<T, String> {
-        let input = replace_arma_characters(input);
+        let input = replace_arma_characters(input)
+            // Replace Structured Text line breaks
+            .replace("<br/>", "\\n")
+            .replace("<br />", "\\n")
+            .replace("<br></br>", "\\n");
 
         let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
@@ -278,7 +282,6 @@ mod tests {
                 (String::from("player_poptabs"), json!(null)),
                 (String::from("respect"), json!("1")),
                 (String::from("vehicles"), json!([])),
-
             ])
         )
     }
