@@ -3,23 +3,26 @@ Function:
 	ESMs_util_number_toString
 
 Description:
-	Converts a scalar to a string and makes it look pretty
+	Converts an Scalar to a localized number
 
 Parameters:
-	_this - [Scalar] The number to convert to a string
+	_this - [Scalar] The number to convert
 
 Returns:
-	Nothing
+	The formatted string
 
 Examples:
 	(begin example)
 
-		19993 call ESMs_util_number_toString; // "19,993"
+		1999 call ESMs_util_number_toString; // "1,999"
+		1234e007 call ESMs_util_number_toString; // "12,340,000,000"
 
 	(end)
 
 Author:
-	Permission given by Andrew_S90 for use within Exile Server Manager
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-current_year!() Bryan "WolfkillArcadia"
 	© 2018-current_year!() Andrew_S90
 
 	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
@@ -27,7 +30,6 @@ Author:
 ---------------------------------------------------------------------------- */
 
 private _input = _this;
-private _output = [];
 private _isNegative = _input < 0;
 
 if (_isNegative) then
@@ -35,28 +37,15 @@ if (_isNegative) then
 	_input = abs(_input);
 };
 
-private _popTabsString = _input call ExileClient_util_string_exponentToString;
-private _split = _popTabsString splitString "";
-reverse _split;
-
-{
-	if (((_forEachIndex % 3) isEqualTo 0) && !(_forEachIndex isEqualTo 0)) then
-	{
-		_output pushBack ",";
-	};
-	_output pushBack _x;
-}
-forEach _split;
-
-reverse _output;
-
-_output = _output joinString "";
+private _output = [
+	"number_to_string",
+	_input call ExileClient_util_string_exponentToString
+]
+call ESMs_system_extension_call;
 
 if (_isNegative) then
 {
-	format["-%1", _output]
-}
-else
-{
-	_output
+	_output = format ["-%1", _output];
 };
+
+_output

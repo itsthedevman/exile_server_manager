@@ -2,6 +2,7 @@
 use arma_rs::{arma, Context, Extension};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
+use num_format::{Locale, ToFormattedString};
 pub use serde_json::{json, Value as JSONValue};
 pub use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -108,6 +109,7 @@ pub fn init() -> Extension {
         .command("pre_init", pre_init)
         .command("send_message", send_message)
         .command("send_to_channel", send_to_channel)
+        .command("number_to_string", number_to_string)
         .finish()
 }
 
@@ -294,23 +296,41 @@ fn log(log_level: String, caller: String, content: String) {
         content.len()
     );
 
-    TOKIO_RUNTIME.block_on(async {
-        let message = format!("{caller} | {content}");
+    let message = format!("{caller} | {content}");
 
-        match log_level.to_ascii_lowercase().as_str() {
-            "trace" => trace!("{message}"),
-            "debug" => debug!("{message}"),
-            "info" => info!("{message}"),
-            "warn" => warn!("{message}"),
-            "error" => error!("{message}"),
-            t => error!(
-                "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
-                t
-            ),
+    match log_level.to_ascii_lowercase().as_str() {
+        "trace" => trace!("{message}"),
+        "debug" => debug!("{message}"),
+        "info" => info!("{message}"),
+        "warn" => warn!("{message}"),
+        "error" => error!("{message}"),
+        t => error!(
+            "[#log] Invalid log level provided. Received {}, expected debug, info, warn, error",
+            t
+        ),
+    }
+
+    trace!("[log] ⏲ Took {:.2?}", timer.elapsed());
+}
+
+fn number_to_string(input_number: String) -> Result<String, String> {
+    // Allow different types of separations
+    let locale = match Locale::from_name(&CONFIG.number_locale) {
+        Ok(l) => l,
+        Err(e) => {
+            return Err(format!(
+                "[#number_to_string] Failed to local configured locale \"{locale}\". Reason: {e}",
+                locale = CONFIG.number_locale
+            ))
         }
+    };
 
-        trace!("[log] ⏲ Took {:.2?}", timer.elapsed());
-    });
+    match input_number.parse::<usize>() {
+        Ok(n) => Ok(n.to_formatted_string(&locale)),
+        Err(e) => Err(format!(
+            "[#number_to_string] Failed to parse unsigned integer from {input_number}. Reason: {e}"
+        )),
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////

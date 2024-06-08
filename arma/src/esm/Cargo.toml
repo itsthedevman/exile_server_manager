@@ -36,6 +36,7 @@ uuid = { version = "1.8", features = ["serde", "v4", "fast-rng"] }
 openssl = "0.10"
 base64 = "0.22"
 flate2 = "1.0"
+num-format = "0.4.4"
 
 [dev-dependencies]
 pretty_assertions = "1.4"

@@ -32,6 +32,9 @@ pub struct Config {
 
     #[serde(default = "default_server_mod_name")]
     pub server_mod_name: String,
+
+    #[serde(default = "default_number_locale")]
+    pub number_locale: String,
 }
 
 impl Default for Config {
@@ -47,6 +50,7 @@ impl Default for Config {
             log_output: default_log_output(),
             database_uri: default_database_uri(),
             server_mod_name: default_server_mod_name(),
+            number_locale: default_number_locale(),
         }
     }
 }
@@ -125,11 +129,17 @@ fn default_server_mod_name() -> String {
     }
 }
 
+fn default_number_locale() -> String {
+    String::from("en")
+}
+
 impl std::fmt::Display for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#?}", self)
     }
 }
+
+type ConfigResult = Result<(), String>;
 
 impl Config {
     pub fn new() -> Self {
@@ -150,11 +160,12 @@ impl Config {
         }
     }
 
-    pub fn validate(&self) -> Result<(), String> {
-        self.validate_connection_url()
+    pub fn validate(&self) -> ConfigResult {
+        self.validate_connection_url()?;
+        self.validate_number_locale()
     }
 
-    fn validate_connection_url(&self) -> Result<(), String> {
+    fn validate_connection_url(&self) -> ConfigResult {
         match std::net::ToSocketAddrs::to_socket_addrs(&self.connection_url) {
             Ok(mut addr) => match addr.next() {
                 Some(_socket_addr) => Ok(()),
@@ -166,6 +177,16 @@ impl Config {
             Err(e) => Err(format!(
                 "Failed to parse connection url -> {:?}. Reason: {}",
                 self.connection_url, e
+            )),
+        }
+    }
+
+    fn validate_number_locale(&self) -> ConfigResult {
+        match Locale::from_name(&self.number_locale) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!(
+                "Failed to validate number_locale -> {:?}. Reason: {}",
+                self.number_locale, e
             )),
         }
     }
