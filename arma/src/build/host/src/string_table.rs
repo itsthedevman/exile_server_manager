@@ -3,6 +3,8 @@ use serde::Serialize;
 use serde_json::json;
 use std::path::PathBuf;
 
+const COMMENT_TABBING: &str = "\t\t\t\t\t";
+
 #[derive(Serialize)]
 struct NameAttribute {
     name: String,
@@ -122,14 +124,14 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
                             )
                         })
                         .collect::<Vec<String>>()
-                        .join(" | ");
+                        .join(&format!("\n{COMMENT_TABBING}"));
 
                     // Default to "None" if there are none
                     if argument_comment.is_empty() {
                         argument_comment.push_str("None");
                     }
 
-                    stringtable_entry.comment = format!("<!-- {argument_comment} -->");
+                    stringtable_entry.comment = format!("<!--\n{COMMENT_TABBING}{argument_comment}\n\t\t\t\t-->");
 
                     // Insert the languages
                     entry.iter().for_each(|(key, value)| {

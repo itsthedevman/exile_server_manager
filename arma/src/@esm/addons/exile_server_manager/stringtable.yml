@@ -26,6 +26,14 @@
 #     english: "This is short"                  #     <English>This is short</English>
 #                                               #   </Key>
 #                                               # </Container>
+#
+#
+# Formatting:
+#   - Discord markdown is supported
+#   - Any new line characters will be replaced with an Arma 3 line break (<br/>) when compiled.
+#     These will then be converted back to new lines by the bot. This is because XML does not
+#     support new line characters and will be normalized to a space
+#
 
 ################################################################################
 # Commonly used words, phrases, errors, etc.
@@ -190,8 +198,8 @@ ESMs_command_upgrade:
     - "Locker balance after"
     english: |
       ```
-              Locker:  +%1
-        Flag upgrade:  -%2
+               Locker:  +%1
+         Flag upgrade:  -%2
       Convenience fee:  -%3 (%4 percent)
               Balance:  =%5 poptab(s)
       ```
@@ -211,8 +219,8 @@ ESMs_command_upgrade:
     english: |
       Territory upgraded to level %1
       ```
-              Locker:  +%2
-        Flag upgrade:  -%3
+               Locker:  +%2
+         Flag upgrade:  -%3
       Convenience fee:  -%4 (%5 percent)
               Balance:  =%6 poptab(s)
       ```
