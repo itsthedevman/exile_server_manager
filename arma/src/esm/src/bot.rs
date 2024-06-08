@@ -280,6 +280,8 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
 
         RequestType::Message => on_message(request),
 
+        RequestType::Heartbeat => on_heartbeat(request),
+
         _ => Ok(()),
     }
 }
@@ -323,6 +325,11 @@ fn on_disconnect() {
     if let Err(e) = BotRequest::connect() {
         error!("[on_disconnect] ❌ {e}");
     }
+}
+
+// Thump
+fn on_heartbeat(request: Request) -> ESMResult {
+    send_request(request)
 }
 
 fn on_error(request: Request) -> ESMResult {

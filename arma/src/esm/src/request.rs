@@ -87,10 +87,11 @@ impl std::fmt::Display for BotRequest {
 pub enum RequestType {
     Noop = 0,
     Error = 1,
-    Identification = 2,
-    Handshake = 3,
+    Heartbeat = 2,
+    Identification = 3,
     Initialize = 4,
-    Message = 5,
+    Handshake = 5,
+    Message = 6,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
