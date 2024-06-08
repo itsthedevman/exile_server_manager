@@ -104,6 +104,7 @@ ESMs_command_add:
   - "Player mention"
   english: "Hey %1, this player already has build rights"
 
+# Discord message to logging channel
 - id: "Add_Log_Title"
   english: "`ESMs_command_add` executed successfully"
 
@@ -126,6 +127,7 @@ ESMs_command_demote:
   - "Player mention"
   english: "Hey %1, you can't demote someone you have no power over."
 
+# Discord message to logging channel
 - id: "Demote_Log_Title"
   english: "`ESMs_command_demote` executed successfully"
 
@@ -154,24 +156,31 @@ ESMs_command_upgrade:
   - "Current locker amount"
   english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
 
-# Player message
+# Toast message to player
+- id: "Upgrade_Toast_Title"
+  english: "Territory upgraded!"
+
+- id: "Upgrade_Toast_Description"
+  arguments:
+  - "Territory level"
+  - "Territory radius"
+  english: "Your territory has reached level %1 and now has a new radius of %2 meters."
+
+# Discord message to player
 - id: "Upgrade_Response_Title"
   arguments:
   - "Territory ID"
-  english: "`%1` has been upgraded successfully"
+  - "Territory level"
+  english: "`%1` has been upgraded to level %2"
 
 - id: "Upgrade_Response_Description"
   arguments:
-  - "Territory level"
   - "Range"
   - "Current object count"
   - "Max object count"
   english: |-
-    ---
-    **Upgraded to level %1**
-    ---
-    **Range:** %2 meters
-    **Objects:** %3 / %4
+    **Range:** %1 meters
+    **Objects:** %2 / %3
 
 - id: "Upgrade_Response_Receipt"
   arguments:
@@ -180,15 +189,15 @@ ESMs_command_upgrade:
   - "Tax amount"
   - "Tax percentage"
   - "Locker balance after"
-  english: |-
+  english: |
     ```
              Locker:  +%1
        Flag upgrade:  -%2
-    Convenience fee:  -%3 (%4%%)
+    Convenience fee:  -%3 (%4 percent)
             Balance:  =%5 poptab(s)
     ```
 
-# Admin log
+# Discord message to logging channel
 - id: "Upgrade_Log_Title"
   english: "`ESMs_command_upgrade` executed successfully"
 
@@ -200,11 +209,11 @@ ESMs_command_upgrade:
   - "Tax amount"
   - "Tax percentage"
   - "Locker balance after"
-  english: |-
+  english: |
     Territory upgraded to level %1
     ```
              Locker:  +%2
        Flag upgrade:  -%3
-    Convenience fee:  -%4 (%5%%)
+    Convenience fee:  -%4 (%5 percent)
             Balance:  =%6 poptab(s)
     ```
