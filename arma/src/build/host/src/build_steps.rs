@@ -597,7 +597,7 @@ fn compile_mod(builder: &mut Builder) -> BuildResult {
     let destination_path = mod_build_path.join("addons");
 
     println!(); // Formatting
-    print_wait_prefix(": Replacing SQF macros")?;
+    print_wait_prefix(": Replacing macros")?;
 
     let mut compiler = Compiler::new();
     compiler
@@ -608,6 +608,8 @@ fn compile_mod(builder: &mut Builder) -> BuildResult {
     crate::compile::bind_replacements(&mut compiler);
     compiler.compile()?;
     print_wait_success();
+
+    compile_string_table(builder)?;
 
     check_sqf(builder, &destination_path)
 }
@@ -653,6 +655,8 @@ fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
 // Convert stringtable.yml to stringtable.xml
 // Because fuck working with xml like that
 fn compile_string_table(builder: &mut Builder) -> BuildResult {
+    print_wait_prefix(": Building stringtable.xml")?;
+
     // Important to use the build path here and not the source
     let build_path = builder.local_build_path.join("@esm").join("addons");
     let mod_path = build_path.join("exile_server_manager");
@@ -663,12 +667,13 @@ fn compile_string_table(builder: &mut Builder) -> BuildResult {
 
     fs::write(mod_path.join("stringtable.xml"), xml)?;
 
+    print_wait_success();
+
     Ok(())
 }
 
 pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
-    compile_string_table(builder)?;
 
     let mut extra_addons = vec![];
     if matches!(builder.args.build_env(), BuildEnv::Test) {

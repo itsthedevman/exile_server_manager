@@ -102,14 +102,14 @@ pub fn init() -> Extension {
     lazy_static::initialize(&READY);
 
     Extension::build()
-        .command("log", log)
-        .command("log_output", log_output)
         .command("log_level", log_level)
-        .command("utc_timestamp", utc_timestamp)
+        .command("log_output", log_output)
+        .command("log", log)
+        .command("number_to_string", number_to_string)
         .command("pre_init", pre_init)
         .command("send_message", send_message)
         .command("send_to_channel", send_to_channel)
-        .command("number_to_string", number_to_string)
+        .command("utc_timestamp", utc_timestamp)
         .finish()
 }
 
