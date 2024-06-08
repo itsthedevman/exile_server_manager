@@ -70,7 +70,7 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
 
     // There isn't a good crate that supports going from YAML to XML directly
     // So we have to convert the YML to JSON and modify it so xml2json can convert it to XML
-    let json_hash: IndexMap<String, Vec<IndexMap<String, serde_json::Value>>> =
+    let json_hash: IndexMap<String, IndexMap<String, IndexMap<String, serde_json::Value>>> =
         match serde_yaml::from_str(&file_content) {
             Ok(j) => j,
             Err(e) => return Err(format!("Failed to parse YAML. {e}")),
@@ -79,9 +79,8 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
     /*
         // Represents a single Key
         {
-            "ESMs_command_upgrade": [
-                Object {
-                    "id": String("Upgrade_StolenFlag"),
+            "ESMs_command_upgrade": {
+                "Upgrade_StolenFlag": Object {
                     "arguments": Array [String("Player mention"), String("Territory ID")],
                     "english": String("%1, the territory flag for `%2` has been stolen! You need to get it back before you can upgrade your base")
                 }
@@ -95,14 +94,8 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
 
             let keys = container_value
                 .iter_mut()
-                .map(|entry| {
-                    // Remove id and arguments because the rest of the keys are languages
-                    let id = entry.shift_remove("id".into()).expect("Missing ID for {entry:?}");
-
-                    let id = id
-                        .as_str()
-                        .expect("Invalid data type for ID. Expected String");
-
+                .map(|(id, entry)| {
+                    // Remove arguments because the rest of the keys are languages
                     let arguments = entry
                         .shift_remove("arguments".into())
                         .unwrap_or(json!([]));
@@ -146,7 +139,8 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
 
                         stringtable_entry.languages.insert(
                             uppercase_first_character_maybe(key),
-                            value.into()
+                            // Arma stringtable supports Structured text, but not new lines
+                            value.to_string().replace('\n', "<br/>")
                         );
                     });
 
