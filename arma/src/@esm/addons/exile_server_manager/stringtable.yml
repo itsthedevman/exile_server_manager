@@ -174,20 +174,33 @@ ESMs_command_upgrade:
     english: "Your territory has reached level %1 and now has a new radius of %2 meters."
 
   # Discord message to player
+  Upgrade_Response_Author:
+    arguments:
+    - "Server ID"
+    english: "Sent from %1"
+
   Upgrade_Response_Title:
     arguments:
     - "Territory ID"
     - "Territory level"
     english: "`%1` has been upgraded to level %2"
 
-  Upgrade_Response_Description:
+  Upgrade_Response_Range_Title:
+    english: "**New range**"
+
+  Upgrade_Response_Range_Value:
     arguments:
     - "Range"
+    english: "%1 meters"
+
+  Upgrade_Response_Objects_Title:
+    english: "Objects / Max objects"
+
+  Upgrade_Response_Objects_Value:
+    arguments:
     - "Current object count"
     - "Max object count"
-    english: |-
-      **Range:** %1 meters
-      **Objects:** %2 / %3
+    english: "%1 / %2"
 
   Upgrade_Response_Receipt:
     arguments:
@@ -196,7 +209,7 @@ ESMs_command_upgrade:
     - "Tax amount"
     - "Tax percentage"
     - "Locker balance after"
-    english: |
+    english: |-
       ```
                Locker:  +%1
          Flag upgrade:  -%2

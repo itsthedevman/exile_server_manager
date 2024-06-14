@@ -200,8 +200,8 @@ try
 			[
 				"SuccessTitleAndText",
 				[
-					"Territory upgraded!",
-					format ["Your territory has reached level %1 and now has a new radius of %2 meters.", _nextLevel, _territoryRange]
+					localize!("Upgrade_Toast_Title"),
+					localize!("Upgrade_Toast_Description", _nextLevel, _territoryRange)
 				]
 			]
 		]
@@ -214,20 +214,31 @@ try
 		[
 			_id,
 			[
-				["title", localize!("Upgrade_Response_Title", _encodedTerritoryID)],
 				[
-					"description",
-					format[
-						localize!("Upgrade_Response_Description"),
-						_nextLevel,
-						_territoryRange,
-						_territoryCurrentObjectCount,
-						_territoryMaxObjectCount
-					]
+					"author",
+					localize!("Upgrade_Response_Author", ESM_ServerID)
+				],
+				[
+					"title",
+					localize!("Upgrade_Response_Title", _encodedTerritoryID, _nextLevel)
 				],
 				[
 					"fields",
 					[
+						[
+							localize!("Upgrade_Response_Range_Title"),
+							localize!("Upgrade_Response_Range_Value", _territoryRange),
+							true
+						],
+						[
+							localize!("Upgrade_Response_Objects_Title"),
+							format[
+								localize!("Upgrade_Response_Objects_Value"),
+								_territory getVariable ["ExileTerritoryNumberOfConstructions", 0],
+								_territoryMaxObjectCount
+							],
+							true
+						],
 						[
 							localize!("Receipt"),
 							format [
@@ -235,10 +246,9 @@ try
 								_playerMoney call ESMs_util_number_toString,
 								_territoryPrice call ESMs_util_number_toString,
 								_tax call ESMs_util_number_toString,
-								ESM_Taxes_TerritoryUpgrade * 100
+								ESM_Taxes_TerritoryUpgrade * 100,
 								_updatedPlayerMoney call ESMs_util_number_toString
-							],
-							true
+							]
 						]
 					]
 				]
@@ -249,6 +259,7 @@ try
 		_loggingEnabled,
 		{
 			[
+				["color", "green"],
 				["title", localize!("Upgrade_Log_Title")],
 				[
 					"description",
@@ -258,11 +269,10 @@ try
 						_playerMoney call ESMs_util_number_toString,
 						_territoryPrice call ESMs_util_number_toString,
 						_tax call ESMs_util_number_toString,
-						ESM_Taxes_TerritoryUpgrade * 100
+						ESM_Taxes_TerritoryUpgrade * 100,
 						_updatedPlayerMoney call ESMs_util_number_toString
 					]
 				],
-				["color", "green"],
 				[
 					"fields",
 					[
