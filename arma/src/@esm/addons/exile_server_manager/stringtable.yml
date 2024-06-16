@@ -208,13 +208,14 @@ ESMs_command_upgrade:
     - "Upgrade cost"
     - "Tax amount"
     - "Tax percentage"
+    - "The percent sign. Because Arma"
     - "Locker balance after"
     english: |-
       ```
                Locker:  +%1
          Flag upgrade:  -%2
-      Convenience fee:  -%3 (%4 percent)
-              Balance:  =%5 poptab(s)
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
       ```
 
   # Discord message to logging channel
@@ -228,12 +229,13 @@ ESMs_command_upgrade:
     - "Upgrade cost"
     - "Tax amount"
     - "Tax percentage"
+    - "The percent sign. Because Arma"
     - "Locker balance after"
     english: |
       Territory upgraded to level %1
       ```
                Locker:  +%2
          Flag upgrade:  -%3
-      Convenience fee:  -%4 (%5 percent)
-              Balance:  =%6 poptab(s)
+      Convenience fee:  -%4 (%5%6)
+              Balance:  =%7 poptab(s)
       ```

@@ -121,7 +121,7 @@ try
 	private _territoryRange = _upgradeListing select 1;
 	private _territoryMaxObjectCount = _upgradeListing select 2;
 
-	// Calculate a payment tax. 0% will be 0
+	// Calculate a payment tax. ESM_Taxes_TerritoryUpgrade is a decimal between 0 and 1
 	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryUpgrade);
 	_territoryPriceSubTotal = _territoryPrice + _tax;
 
@@ -176,13 +176,26 @@ try
 		_playerObject setVariable ["ExileLocker", _updatedPlayerMoney, true];
 	};
 
-	format["updateLocker:%1:%2", _updatedPlayerMoney, _playerUID] call ExileServer_system_database_query_fireAndForget;
+	format[
+		"updateLocker:%1:%2",
+		_updatedPlayerMoney,
+		_playerUID
+	] call ExileServer_system_database_query_fireAndForget;
+
+	format[
+		"setTerritoryLevel:%1:%2",
+		_nextLevel,
+		_territoryDatabaseID
+	] call ExileServer_system_database_query_fireAndForget;
+
+	format[
+		"setTerritorySize:%1:%2",
+		_territoryRange,
+		_territoryDatabaseID
+	] call ExileServer_system_database_query_fireAndForget;
 
 	_territory setVariable ["ExileTerritoryLevel", _nextLevel, true];
 	_territory setVariable ["ExileTerritorySize", _territoryRange, true];
-
-	format["setTerritoryLevel:%1:%2", _nextLevel, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
-	format["setTerritorySize:%1:%2", _territoryRange, _territoryDatabaseID] call ExileServer_system_database_query_fireAndForget;
 
 	// Update all constructions and containers
 	_territory call ExileServer_system_territory_updateNearContainers;
@@ -247,6 +260,7 @@ try
 								_territoryPrice call ESMs_util_number_toString,
 								_tax call ESMs_util_number_toString,
 								ESM_Taxes_TerritoryUpgrade * 100,
+								"%", // Because Arma
 								_updatedPlayerMoney call ESMs_util_number_toString
 							]
 						]
@@ -270,6 +284,7 @@ try
 						_territoryPrice call ESMs_util_number_toString,
 						_tax call ESMs_util_number_toString,
 						ESM_Taxes_TerritoryUpgrade * 100,
+						"%", // Because Arma
 						_updatedPlayerMoney call ESMs_util_number_toString
 					]
 				],

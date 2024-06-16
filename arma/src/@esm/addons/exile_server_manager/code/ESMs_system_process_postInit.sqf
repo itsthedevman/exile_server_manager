@@ -1,27 +1,26 @@
-/**
- *
- * Function:
- *      ESMs_system_process_postInit
- *
- * Description:
- *      Called after the extension has connected to the bot successfully. This function binds the required variables and their values.
- *
- * Arguments:
- *      _this	-	A hashmap representation of a Message
- *
- * Examples:
- *      Message call ESMs_system_process_postInit;
- *
- * * *
- *
- * Exile Server Manager
- * www.esmbot.com
- * © 2018-current_year!() Bryan "WolfkillArcadia"
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
- *
- **/
+/* ----------------------------------------------------------------------------
+Function:
+	ESMs_system_process_postInit
+
+Description:
+	Called after the extension has connected to the bot successfully.
+	This function binds the required variables and their values.
+
+Parameters:
+	_this - [HashMap]
+
+Returns:
+	Nothing
+
+Author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-current_year!() Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+---------------------------------------------------------------------------- */
+
 
 private _id = get!(_this, "id");
 private _data = get!(_this, "data");
