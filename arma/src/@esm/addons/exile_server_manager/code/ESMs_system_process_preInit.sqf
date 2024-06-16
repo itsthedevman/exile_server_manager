@@ -66,14 +66,13 @@ ESM_LogOutput = "log_output" call ESMs_system_extension_call;
 // Cache the territory prices to make calculating upgrade costs faster
 private _territoryData = [];
 {
-	_territoryData pushBack (
-		[
-			["level", _forEachIndex + 1],
-			["purchase_price", _x select 0],
-			["radius", _x select 1],
-			["object_count", _x select 2]
-		] call ESMs_util_hashmap_fromArray
-	);
+	_territoryData pushBack
+	[
+		["level", _forEachIndex],
+		["purchase_price", _x select 0],
+		["radius", _x select 1],
+		["object_count", _x select 2]
+	];
 }
 forEach (getArray(missionConfigFile >> "CfgTerritories" >> "prices"));
 
