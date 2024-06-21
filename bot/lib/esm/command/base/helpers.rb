@@ -412,12 +412,7 @@ module ESM
         end
 
         def request_url
-          # I have no idea why the ENV won't apply for this _one_ key.
-          if ESM.env.production?
-            "https://www.esmbot.com/requests"
-          else
-            ENV["REQUEST_URL"]
-          end
+          ESM.config.request_url
         end
 
         def accept_request_url(uuid)

@@ -18,7 +18,7 @@ require "rspec/wait"
 require "timecop"
 
 # Load the spec related files
-require_relative "spec_helper_methods"
+require_relative "methods"
 
 # Files that have to be loaded before ESM
 Dir["#{__dir__}/support/pre_load/**/*.rb"]

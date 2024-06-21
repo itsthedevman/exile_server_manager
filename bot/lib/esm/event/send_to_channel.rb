@@ -39,42 +39,8 @@ module ESM
       end
 
       def build_embed(embed_data)
-        ESM::Embed.build do |e|
-          e.set_author(name: "Sent from #{@server.server_id}")
-
-          title = embed_data[:title]
-          e.title = title if title.present?
-
-          description = embed_data[:description]
-          e.description = description if description.present?
-
-          color = embed_data[:color]
-          e.color =
-            if color.blank?
-              ESM::Color.random
-            elsif ESM::Regex::HEX_COLOR.match?(color)
-              color
-            elsif ESM::Color::Toast.const_defined?(color.upcase)
-              ESM::Color::Toast.const_get(color.upcase)
-            end
-
-          fields = embed_data[:fields] || []
-          fields.each do |field|
-            value =
-              if field[:value].is_a?(Hash)
-                field[:value].map_join("\n") do |key, value|
-                  "**#{key.humanize(keep_id_suffix: true)}:** #{value}"
-                end
-              else
-                field[:value].to_s
-              end
-
-            e.add_field(
-              name: field[:name].to_s,
-              value: value,
-              inline: field[:inline] || false
-            )
-          end
+        ESM::Embed.from_hash(embed_data) do |e|
+          e.set_author(name: "Sent from #{@server.server_id}") if e.author.nil?
         end
       end
     end

@@ -24,27 +24,39 @@ module ESM
         #################################
 
         def on_execute
-          deliver!(
-            function_name: "upgradeTerritory",
-            territory_id: arguments.territory_id,
-            uid: current_user.steam_uid
+          response = call_sqf_function(
+            "ESMs_command_upgrade",
+            territory_id: arguments.territory_id
           )
+
+          embed_data = response.data.to_h
+          reply(ESM::Embed.from_hash(embed_data))
         end
 
-        def on_response
-          return if @response.blank?
+        module V1
+          def on_execute
+            deliver!(
+              function_name: "upgradeTerritory",
+              territory_id: arguments.territory_id,
+              uid: current_user.steam_uid
+            )
+          end
 
-          message = I18n.t(
-            "commands.upgrade.success_message",
-            user: current_user.mention,
-            territory_id: arguments.territory_id,
-            cost: @response.cost.to_poptab,
-            level: @response.level,
-            range: @response.range,
-            locker: @response.locker.to_poptab
-          )
+          def on_response
+            return if @response.blank?
 
-          reply(ESM::Embed.build(:success, description: message))
+            message = I18n.t(
+              "commands.upgrade.success_message",
+              user: current_user.mention,
+              territory_id: arguments.territory_id,
+              cost: @response.cost.to_poptab,
+              level: @response.level,
+              range: @response.range,
+              locker: @response.locker.to_poptab
+            )
+
+            reply(ESM::Embed.build(:success, description: message))
+          end
         end
       end
     end

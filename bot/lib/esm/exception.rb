@@ -7,7 +7,7 @@ module ESM
 
     # This exception allows attaching extra data to the exception
     # This is mainly used for exception embeds
-    class DataError < Error
+    class ApplicationError < Error
       attr_reader :data
 
       def initialize(data)
@@ -38,10 +38,10 @@ module ESM
     class InvalidMessage < Error; end
 
     # Raised if the provided argument value from the user is invalid
-    class InvalidArgument < DataError; end
+    class InvalidArgument < ApplicationError; end
 
     # Generic exception for any checks
-    class CheckFailure < DataError; end
+    class CheckFailure < ApplicationError; end
 
     # When the bot does not have access to send a message to a particular channel
     class ChannelAccessDenied < Error; end
@@ -74,10 +74,10 @@ module ESM
     #
     # Base type that will send the error back to the client
     #
-    class SendableError < DataError
+    class SendableError < ApplicationError
     end
 
-    class ExtensionError < DataError
+    class ExtensionError < ApplicationError
     end
 
     class DecryptionError < ClosableError
@@ -86,7 +86,7 @@ module ESM
     class InvalidRequest < SendableError
     end
 
-    class RequestTimeout < DataError
+    class RequestTimeout < ApplicationError
       def initialize = super("Request timed out")
     end
 

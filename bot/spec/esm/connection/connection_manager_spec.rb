@@ -14,7 +14,7 @@ describe ESM::Connection::ConnectionManager, v2: true do
     end
 
     context "when the client has not been in the waiting room long enough to time out" do
-      subject(:connection_manager) { described_class.new(2) }
+      subject(:connection_manager) { described_class.new(lobby_timeout: 2) }
 
       it "does not time out the client" do
         lobby = connection_manager.instance_variable_get(:@lobby)
@@ -28,7 +28,7 @@ describe ESM::Connection::ConnectionManager, v2: true do
     end
 
     context "when the client has been in the waiting room for too long" do
-      subject(:connection_manager) { described_class.new(0.01, execution_interval: 0.5) }
+      subject(:connection_manager) { described_class.new(lobby_timeout: 0.01, execution_interval: 0.5) }
 
       it "times out the client" do
         lobby = connection_manager.instance_variable_get(:@lobby)

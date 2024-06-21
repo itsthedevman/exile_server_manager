@@ -29,7 +29,10 @@ module ESM
           when :message
             on_request(request.content)
           end
-        rescue ESM::Exception::ClosableError
+        rescue ESM::Exception::InvalidAccessKey
+          close
+        rescue ESM::Exception::ClosableError => e
+          warn!(error: e)
           close
         rescue ESM::Exception::SendableError => e
           send_error(e.data)
@@ -63,6 +66,7 @@ module ESM
 
         def authenticate!(model)
           @public_id = model.public_id
+          @server_id = model.server_id
           secret_key = model.server_key
 
           @encryption = Encryption.new(secret_key)
@@ -117,6 +121,27 @@ module ESM
             VALID_REQUEST_TYPES.include?(message.data.function_name)
 
           raise ESM::Exception::InvalidRequest, "Invalid request received. Read the docs!"
+        end
+
+        def on_disconnect
+          return if @public_id.nil?
+
+          ESM::ApplicationRecord.connection_pool.with_connection do
+            model = ESM::Server.find_by_public_id(@public_id)
+            uptime = model.uptime
+
+            info!(public_id:, server_id:, uptime:, bot_stopping: ESM.bot.stopping?)
+
+            message =
+              if ESM.bot.stopping?
+                I18n.t("server_disconnected_esm_stopping", server: server_id, uptime:)
+              else
+                I18n.t("server_disconnected", server: server_id, uptime:)
+              end
+
+            model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
+            model.community.log_event(:reconnect, message)
+          end
         end
       end
     end

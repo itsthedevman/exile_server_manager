@@ -4,21 +4,9 @@
 SPEC_TIMEOUT_SECONDS = 5
 LOG_LEVEL = false
 
+require_relative "config"
+
 RSpec.configure do |config|
-  require_relative "spec_helper_pre_init"
-
-  config.include FactoryBot::Syntax::Methods
-
-  # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
-
-  # Timeout for rspec/wait, default timeout for requests
-  config.wait_timeout = (SPEC_TIMEOUT_SECONDS == false) ? 999_999_999 : SPEC_TIMEOUT_SECONDS
-
-  config.expect_with :rspec do |c|
-    c.syntax = :expect
-  end
-
   config.before :suite do
     FactoryBot.definition_file_paths = [ESM.root.join("spec", "support", "factories")]
     FactoryBot.find_definitions

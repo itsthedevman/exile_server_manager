@@ -19,7 +19,7 @@ describe ESM::Command::Server::Reward, category: "command", v2: true do
       reward = server.server_rewards.default
       reward.update(reward_items: [], reward_vehicles: [], locker_poptabs: 0, respect: 0)
 
-      user.connect
+      spawn_player_for(user)
       execute!(channel_type: :pm, server_id: server.server_id)
 
       # 1: Send the information embed to the user
@@ -89,7 +89,7 @@ describe ESM::Command::Server::Reward, category: "command", v2: true do
       reward = server.server_rewards.default
       reward.update(reward_items: [], reward_vehicles: [], player_poptabs: 0, locker_poptabs: 0)
 
-      user.connect
+      spawn_player_for(user)
       execute!(channel_type: :pm, server_id: server.server_id)
 
       # 1: Send the information embed to the user
@@ -159,7 +159,7 @@ describe ESM::Command::Server::Reward, category: "command", v2: true do
       reward = server.server_rewards.default
       reward.update(reward_items: [], reward_vehicles: [], player_poptabs: 0, respect: 0)
 
-      user.connect
+      spawn_player_for(user)
       execute!(channel_type: :pm, server_id: server.server_id)
 
       # 1: Send the information embed to the user
@@ -229,7 +229,7 @@ describe ESM::Command::Server::Reward, category: "command", v2: true do
       reward = server.server_rewards.default
       reward.update(reward_vehicles: [], player_poptabs: 0, locker_poptabs: 0, respect: 0)
 
-      user.connect
+      spawn_player_for(user)
       execute!(channel_type: :pm, server_id: server.server_id)
 
       # 1: Send the information embed to the user

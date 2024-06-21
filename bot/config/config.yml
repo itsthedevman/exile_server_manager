@@ -1,11 +1,30 @@
 default: &default
+  # Your Discord bot token
+  # Used to connect to Discord ;)
   token: <%= ENV["DISCORD_TOKEN"] %>
+
+  # Your Steam API key
+  # Used to connect to Steam for player lookup
   steam_api_key: <%= ENV["STEAM_TOKEN"] %>
-  # to_yaml(indentation:) is not working. This has to be tabbed in once
-  # The alternative is to have the autoformatter constantly messing up the syntax
+
+  # The Discord IDs who can access development functionality/commands
+  # Note:
+  #   to_yaml(indentation:) is not working. This has to be tabbed in exactly once
+  #   The alternative is to have the autoformatter constantly messing up the syntax
   dev_user_allowlist: <%= JSON.parse(ENV["DEV_ALLOWLIST"]).to_yaml[3..].gsub("-", "  -") %>
+
+  # The base URL for requests
+  request_url: "http://localhost:3000/requests"
+
+  # Should ESM print to Stdout? ESM will always log to log/development.log
+  print_to_stdout: true
+
+  # Port numbers for various functionality
   ports:
+    websocket: 3001
+    api: 3002
     connection_server: 3003
+
   # ESM::Request::Overseer
   request_overseer:
     check_every: 15
@@ -26,7 +45,7 @@ default: &default
   connection_server:
     connection_check: 0.1
     lobby_timeout: 1
-    disconnect_after: 10
+    heartbeat_timeout: 5
 
   # ESM::Connection::Client
   connection_client:
@@ -49,7 +68,6 @@ default: &default
   - "ESM's tech stack includes Ruby, Ruby on Rails, Redis, and Postgres. The server mod is written in SQF/C# and will be replaced with a Rust one soon:tm:"
   - 'The "slash" part of a slash command can be omitted when used in other commands. For example:```/help with:my aliases```'
   - "Looking for a community or server, but don't know their ID(s)? Try out the new ID lookup tool on my website: https://esmbot.com/tools/id_lookup"
-  error_logging_channel_id: <%= ENV["ERROR_LOGGING_CHANNEL_ID"] %>
 
 development:
   !!merge <<: *default
@@ -64,3 +82,10 @@ test:
 
 production:
   !!merge <<: *default
+  ports:
+    websocket: <%= ENV["WEBSOCKET_PORT"] %>
+    api: <%= ENV["API_PORT"] %>
+    connection_server: <%= ENV["CONNECTION_SERVER_PORT"] %>
+  request_url: "https://www.esmbot.com/requests"
+  error_logging_channel_id: <%= ENV["ERROR_LOGGING_CHANNEL_ID"] %>
+  print_to_stdout: false

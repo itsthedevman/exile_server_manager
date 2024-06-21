@@ -36,7 +36,7 @@ if ["development", "test"].include?(ENV["ESM_ENV"])
   require "standard/rake"
 end
 
-Rake.add_rakelib("tasks/migrations")
+Rake.add_rakelib("tasks")
 
 task default: [:test, "standard:fix"]
 

@@ -96,8 +96,8 @@ describe ESM::Command::Territory::Demote, category: "command" do
         create(
           :exile_territory,
           owner_uid: owner_uid,
-          moderators: [owner_uid],
-          build_rights: [owner_uid],
+          moderators: [owner_uid, user.steam_uid, second_user.steam_uid],
+          build_rights: [owner_uid, user.steam_uid, second_user.steam_uid],
           server_id: server.id
         )
       end
@@ -107,113 +107,57 @@ describe ESM::Command::Territory::Demote, category: "command" do
         second_user.exile_account
 
         territory.create_flag
-
-        # I rarely use this syntax, but it felt fun
-        territory.moderators << user.steam_uid << second_user.steam_uid
-        territory.build_rights << user.steam_uid << second_user.steam_uid
-        territory.save!
       end
 
-      context "when the player is a moderator and the target is another moderator" do
-        it "demotes the target to builder" do
-          execute!(
-            arguments: {
-              server_id: server.server_id,
-              territory_id: territory.encoded_id,
-              target: second_user.steam_uid
-            }
-          )
+      subject(:execute_command) do
+        execute!(
+          arguments: {
+            server_id: server.server_id,
+            territory_id: territory.encoded_id,
+            target: second_user.steam_uid
+          }
+        )
+      end
 
+      shared_examples "successful_demotion" do
+        it "demotes the target" do
+          execute_command
           territory.reload
 
           expect(territory.moderators).not_to include(second_user.steam_uid)
           expect(territory.build_rights).to include(second_user.steam_uid)
         end
+      end
+
+      context "when the player is a moderator and the target is another moderator" do
+        include_examples "successful_demotion"
       end
 
       context "when the player is a territory admin and the target is a moderator" do
         before do
           make_territory_admin!(user)
-
-          territory.moderators.delete(user.steam_uid)
-          territory.build_rights.delete(user.steam_uid)
-          territory.save!
+          territory.revoke_membership(user.steam_uid)
         end
 
-        it "demotes the target" do
-          execute!(
-            arguments: {
-              server_id: server.server_id,
-              territory_id: territory.encoded_id,
-              target: second_user.steam_uid
-            }
-          )
-
-          territory.reload
-
-          expect(territory.moderators).not_to include(second_user.steam_uid)
-          expect(territory.build_rights).to include(second_user.steam_uid)
-        end
+        include_examples "successful_demotion"
       end
 
       context "when the territory flag is null" do
         before { territory.delete_flag }
 
-        it "raises NullFlag" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("I was unable to find a territory")
-          end
-        end
+        include_examples "arma_error_null_flag"
       end
 
       context "when the player has not joined the server" do
         before { user.exile_account.destroy! }
 
-        it "raises PlayerNeedsToJoin" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("need to join")
-          end
-        end
+        include_examples "arma_error_player_needs_to_join"
       end
 
       context "when the target has not joined the server" do
         before { second_user.exile_account.destroy! }
 
-        it "raises TargetNeedsToJoin" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("needs to join")
-          end
-        end
+        include_examples "arma_error_target_needs_to_join"
       end
 
       context "when the player is not a moderator" do
@@ -221,28 +165,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
           territory.revoke_membership(user.steam_uid)
         end
 
-        it "raises Demote_MissingAccess and Demote_MissingAccess_Admin" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you do not have permission")
-          end
-
-          wait_for { ESM::Test.messages.size }.to eq(1)
-
-          # Admin log
-          expect(
-            ESM::Test.messages.retrieve("Player attempted to demote Target")
-          ).not_to be_nil
-        end
+        include_examples "arma_error_missing_territory_access"
       end
 
       context "when the target is the owner" do
@@ -251,17 +174,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
         end
 
         it "raises Demote_CannotDemoteOwner" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
+          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
             expect(error.data.description).to match("you have no power here")
           end
         end
@@ -274,17 +187,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
         end
 
         it "raises Demote_CannotDemoteBuilder" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
+          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
             expect(error.data.description).to match("you cannot demote someone who is already at the lowest rank")
           end
         end
@@ -296,17 +199,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
         end
 
         it "raises Demote_CannotDemoteNothing" do
-          expectation = expect do
-            execute!(
-              arguments: {
-                server_id: server.server_id,
-                territory_id: territory.encoded_id,
-                target: second_user.steam_uid
-              }
-            )
-          end
-
-          expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
+          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
             expect(error.data.description).to match("you can't demote someone you have no power over")
           end
         end

@@ -236,4 +236,194 @@ describe ESM::Embed do
       expect(embed.fields.size).to eq(1)
     end
   end
+
+  describe ".from_hash" do
+    let!(:hash) { {} }
+
+    let!(:expectation) do
+      {
+        title: nil,
+        description: nil,
+        color: an_instance_of(String),
+        fields: [],
+        footer: nil,
+        image: nil,
+        thumbnail: nil,
+        url: nil,
+        author: nil,
+        timestamp: an_instance_of(DateTime)
+      }
+    end
+
+    subject(:embed) { described_class.from_hash(hash) }
+
+    context "when there is a title" do
+      let(:hash) do
+        {title: "This is a title"}
+      end
+
+      it "includes the title" do
+        expect(embed.to_h).to match(expectation.merge(hash))
+      end
+    end
+
+    context "when there is a description" do
+      let(:hash) do
+        {description: "This is a description"}
+      end
+
+      it "includes the description" do
+        expect(embed.to_h).to match(expectation.merge(hash))
+      end
+    end
+
+    describe "when there is a color" do
+      context "and the color is a Hex code" do
+        let(:hash) do
+          {color: "#000000"} # Black isn't used
+        end
+
+        it "uses the color" do
+          expect(embed.to_h).to match(expectation.merge(hash))
+        end
+      end
+
+      context "and the color is a preset" do
+        let(:hash) do
+          {color: "lAvenDer"} # Case insensitive
+        end
+
+        it "looks up the color" do
+          expect(embed.to_h).to match(
+            expectation.merge(color: ESM::Color::Toast::LAVENDER)
+          )
+        end
+      end
+    end
+
+    context "when there isn't a color provided" do
+      it "uses a random color" do
+        expect(embed.to_h).to match(expectation.merge(hash))
+      end
+    end
+
+    context "when there are fields" do
+      context "and the field is not inline" do
+        let!(:field) { {name: "name", value: "value"} }
+
+        let(:hash) do
+          {fields: [field]}
+        end
+
+        it "is included" do
+          expect(embed.to_h).to match(
+            expectation.merge(fields: [field.merge(inline: false)])
+          )
+        end
+      end
+
+      context "and the field is inline" do
+        let!(:field) { {name: "name", value: "value", inline: true} }
+
+        let(:hash) do
+          {fields: [field]}
+        end
+
+        it "is included" do
+          expect(embed.to_h).to match(expectation.merge(hash))
+        end
+      end
+
+      context "and the field is not a hash" do
+        let!(:field) { "nope" }
+
+        let(:hash) do
+          {fields: [field]}
+        end
+
+        it "is not included" do
+          expect(embed.to_h).to match(expectation)
+        end
+      end
+
+      context "and the field's value is a hash" do
+        let!(:field) { {name: "name", value: {foo: "bar", territory_id: "12345"}} }
+
+        let(:hash) do
+          {fields: [field]}
+        end
+
+        it "is formatted" do
+          expect(embed.to_h).to match(
+            expectation.merge(
+              fields: [
+                field.merge(
+                  value: "**Foo:** bar\n**Territory ID:** 12345",
+                  inline: false
+                )
+              ]
+            )
+          )
+        end
+      end
+    end
+
+    context "when a block is provided" do
+      let(:hash) do
+        {title: "title", description: "description"}
+      end
+
+      it "passes the embed" do
+        embed do |e|
+          expect(e).to be_instance_of(described_class)
+          expect(e.title).to eq(hash[:title])
+          expect(e.description).to eq(hash[:description])
+        end
+      end
+    end
+
+    describe "when the author is provided" do
+      context "and the value is not a HashMap" do
+        let(:hash) do
+          {author: "Hello World"}
+        end
+
+        it "sets the author's name" do
+          expect(embed.to_h).to match(
+            expectation.merge(
+              author: {
+                name: hash[:author],
+                icon_url: nil,
+                url: nil
+              }
+            )
+          )
+        end
+      end
+
+      context "and the value is a HashMap" do
+        let(:hash) do
+          {
+            author: [
+              ["name", "Author Name"],
+              ["url", "https://google.com"],
+              ["icon_url", "https://static-00.iconduck.com/assets.00/google-icon-2048x2048-pks9lbdv.png"]
+            ]
+          }
+        end
+
+        it "sets the author values" do
+          expect(embed.to_h).to match(
+            expectation.merge(
+              author: {
+                name: hash[:author].dig(0, 1),
+                url: hash[:author].dig(1, 1),
+                icon_url: hash[:author].dig(2, 1)
+              }
+            )
+          )
+        end
+      end
+    end
+  end
 end

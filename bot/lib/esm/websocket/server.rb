@@ -7,8 +7,10 @@ module ESM
         # Load Faye support for puma
         Faye::WebSocket.load_adapter("puma")
 
+        port = ESM.config.ports.websocket
+
         @server = Puma::Server.new(self)
-        @server.add_tcp_listener("0.0.0.0", ENV["WEBSOCKET_PORT"])
+        @server.add_tcp_listener("0.0.0.0", port)
         @server.run
 
         info!("Starting server")

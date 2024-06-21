@@ -288,7 +288,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       context "when the flag is null" do
         before { territory.delete_flag }
 
-        it "returns the translated Add_NullFlag_Admin error" do
+        it "returns the translated NullFlag error" do
           execute!(
             handle_error: true,
             arguments: {
@@ -307,9 +307,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(4)
 
           expect(
-            ESM::Test.messages.retrieve(
-              "Player attempted to add Target to territory, but the territory flag was not found in game"
-            )
+            ESM::Test.messages.retrieve("territory flag was not found in game")
           ).not_to be_nil
 
           expect(
@@ -321,7 +319,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       context "when the user is not a moderator or owner of the territory" do
         before { territory.revoke_membership(user.steam_uid) }
 
-        it "returns the translated Add_MissingAccess error" do
+        it "returns the translated MissingTerritoryAccess error" do
           execute!(
             arguments: {
               server_id: server.server_id,
@@ -341,7 +339,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(4)
 
           expect(
-            ESM::Test.messages.retrieve("Player attempted to add Target to territory, but Player does not have permission")
+            ESM::Test.messages.retrieve("Player attempted to perform an action on Territory but they do not have access")
           ).not_to be_nil
 
           expect(
@@ -351,7 +349,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       context "when the user attempts to add themselves to the territory without being a territory admin" do
-        it "returns the translated Add_InvalidAdd error" do
+        it "returns the translated Add_CannotAddSelf error" do
           execute!(
             handle_error: true,
             arguments: {
@@ -363,15 +361,10 @@ describe ESM::Command::Territory::Add, category: "command" do
 
           # No request message is sent for oneself
           # 1: Player failure message
-          # 2: Discord log
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          wait_for { ESM::Test.messages.size }.to eq(1)
 
           expect(
             ESM::Test.messages.retrieve("#{user.mention}, you cannot add yourself to this territory")
-          ).not_to be_nil
-
-          expect(
-            ESM::Test.messages.retrieve("Player attempted to add themselves to the territory. Time to go laugh at them!")
           ).not_to be_nil
         end
       end
@@ -402,7 +395,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(3)
 
           expect(
-            ESM::Test.messages.retrieve("#{user.mention}, this Player already has build rights")
+            ESM::Test.messages.retrieve("#{user.mention}, this player already has build rights")
           ).not_to be_nil
         end
       end

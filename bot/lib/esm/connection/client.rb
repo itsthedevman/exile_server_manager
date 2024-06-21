@@ -37,8 +37,9 @@ module ESM
       def close
         @task.shutdown
         @socket.close
-
         ESM.connection_server.on_disconnect(self)
+
+        on_disconnect
       end
 
       def send_message(message, **)
@@ -46,7 +47,7 @@ module ESM
       end
 
       def send_error(content, block: false)
-        message = ESM::Message.new.add_error(type: :message, content:)
+        message = ESM::Message.new.add_error(:message, content)
         send_request(message, type: :error, block:)
       end
 
@@ -58,6 +59,8 @@ module ESM
       # @param block [true/false] Cause this method to block the current thread and either
       #   1. Until the request is responded to by the client
       #   2. The timeout is reached. This will raise ESM::Exception::RejectedPromise
+      # @param timeout [Integer] A number in seconds on how long the process will block before
+      #   considering a message to be timed out. Defaults to response_timeout in config.yml
       #
       # @return [ESM::Connection::Promise, ESM::Message]
       #   If block is false, a promise in an processing status is returned
@@ -65,7 +68,7 @@ module ESM
       #
       # @raises ESM::Exception::RejectedPromise, ESM::Exception::ExtensionError
       #
-      def send_request(message = nil, type:, block: true)
+      def send_request(message = nil, type:, block: true, timeout: @config.response_timeout)
         # I feel so dirty. Multiline unless statements *shudder*
         unless message.nil? || message.is_a?(ESM::Message)
           raise TypeError, "Expected ESM::Message or nil. Got #{message.class}"
@@ -86,7 +89,7 @@ module ESM
         return promise.execute unless block
 
         # Block and wait for a response or timeout
-        response = promise.wait_for_response(@config.response_timeout)
+        response = promise.wait_for_response(timeout)
         raise ESM::Exception::RejectedPromise, response.reason if response.rejected?
 
         response_message = ESM::Message.from_string(response.value)

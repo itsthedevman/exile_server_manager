@@ -59,7 +59,7 @@ module ESM
         return delete_response if error.is_a?(Exception::CheckFailureNoMessage)
 
         content =
-          if error.is_a?(Exception::CheckFailure)
+          if error.is_a?(Exception::ApplicationError)
             ":warning: I was unable to complete your request :warning:\n"
           else
             ":grimacing: Well, this is awkward... :grimacing:\n"
@@ -69,7 +69,7 @@ module ESM
 
         message =
           case error
-          when ESM::Exception::DataError
+          when ESM::Exception::ApplicationError
             error.data
           when StandardError
             uuid = SecureRandom.uuid.split("-")[0..1].join("")

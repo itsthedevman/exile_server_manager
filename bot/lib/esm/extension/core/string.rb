@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 class String
-  # NumberHelper contains instance methods, but you can't initialize a module. Create an anonymous object to store the methods
-  NUMBER_HELPER = Object.new.extend(ActionView::Helpers::NumberHelper).freeze
+  NUMBER_HELPER = ActiveSupport::NumberHelper
 
   def steam_uid?
     ESM::Regex::STEAM_UID_ONLY.match?(self)
@@ -41,6 +40,10 @@ class String
     NUMBER_HELPER.number_to_currency("%f" % self, format: "%n", precision: precision)
   end
 
+  def to_delimited
+    NUMBER_HELPER.number_to_delimited(self)
+  end
+
   # Extending active support classify to allow leaving the s on the end
   def classify(keep_plural: false)
     if keep_plural
@@ -50,7 +53,5 @@ class String
     end
   end
 
-  def quoted
-    "\"#{self}\""
-  end
+  alias_method :quoted, :to_json
 end

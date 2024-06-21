@@ -71,7 +71,11 @@ module ESM
           # This will attempt to parse a string for json
           possible_hash_map =
             if input.is_a?(String)
-              input.gsub("\"\"", "\"").to_a
+              input.gsub("\"\"", "\"") # Handle arma string escape
+                .gsub("<br/>", "\\n") # Handle <br/>
+                .gsub("<br />", "\\n") # Handle <br />
+                .gsub("<br></br>", "\\n") # Handle <br></br>
+                .to_a
             else
               input
             end

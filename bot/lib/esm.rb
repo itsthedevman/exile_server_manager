@@ -135,7 +135,7 @@ module ESM
           header = "#{severity} [#{datetime.utc.strftime("%F %H:%M:%S:%L")}] (#{progname})"
           body = "\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
 
-          if ENV["PRINT_LOG"] == "true"
+          if config.print_to_stdout
             styled_header =
               case severity
               when "TRACE"

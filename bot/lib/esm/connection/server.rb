@@ -6,9 +6,13 @@ module ESM
       delegate :on_initialize, :on_disconnect, to: :@connection_manager
 
       def initialize
-        @config = ESM.config.connection_server
-        @connection_manager = ConnectionManager.new(@config.lobby_timeout)
         @server = ServerSocket.new(TCPServer.new("0.0.0.0", ESM.config.ports.connection_server))
+
+        @config = ESM.config.connection_server
+        @connection_manager = ConnectionManager.new(
+          lobby_timeout: @config.lobby_timeout,
+          heartbeat_timeout: @config.heartbeat_timeout
+        )
       end
 
       def start

@@ -3,7 +3,8 @@
 module ESM
   class API
     def self.run!
-      @instance = DRb::DRbServer.new("druby://localhost:#{ENV["API_PORT"]}", new)
+      port = ESM.config.ports.api
+      @instance = DRb::DRbServer.new("druby://localhost:#{port}", new)
     end
 
     def self.stop!

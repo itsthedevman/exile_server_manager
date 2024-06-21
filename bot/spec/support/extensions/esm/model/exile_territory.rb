@@ -127,6 +127,15 @@ module ESM
 
     private
 
+    MAPPING = {
+      owner_uid: "ExileOwnerUID",
+      moderators: "ExileTerritoryModerators",
+      build_rights: "ExileTerritoryBuildRights",
+      flag_stolen: "ExileFlagStolen",
+      radius: "ExileTerritorySize",
+      level: "ExileTerritoryLevel"
+    }.stringify_keys.freeze
+
     # _flagObject setVariable ["ExileTerritoryName", _name, true];
     # _flagObject setVariable ["ExileDatabaseID", _id];
     # _flagObject setVariable ["ExileOwnerUID", _owner, true];
@@ -138,23 +147,24 @@ module ESM
     # _flagObject setVariable ["ExileRadiusShown", false, true];
     # _flagObject setVariable ["ExileFlagStolen",_flagStolen,true];
     # _flagObject setVariable ["ExileFlagTexture",_flagTexture];
-    IGNORED_ATTRIBUTES = %w[server_id esm_custom_id]
     def update_arma
-      changed_items = previous_changes.except(*IGNORED_ATTRIBUTES)
-      return if changed_items.blank? || changed_items.key?("id")
+      changed_items = previous_changes.slice(*MAPPING.keys)
+      return if changed_items.blank?
 
       sqf = "private _flagObject = #{id} call ESMs_system_territory_get;"
+      sqf += changed_items.map_join(" ") do |key, (_, value)|
+        arma_variable = MAPPING[key]
+        if arma_variable.nil?
+          warn!(
+            "ServerSetting attribute #{key.quoted} was updated but does not have a MAPPING entry"
+          )
+          next
+        end
 
-      if ((_, new_value) = changed_items["owner_uid"])
-        sqf += "_flagObject setVariable [\"ExileOwnerUID\", #{new_value.quoted}, true];"
-      end
+        # Ugh
+        value = value ? 1 : 0 if key == "flag_stolen"
 
-      if ((_, new_value) = changed_items["moderators"])
-        sqf += "_flagObject setVariable [\"ExileTerritoryModerators\", #{new_value.to_json}, true];"
-      end
-
-      if ((_, new_value) = changed_items["build_rights"])
-        sqf += "_flagObject setVariable [\"ExileTerritoryBuildRights\", #{new_value.to_json}, true];"
+        "_flagObject setVariable [#{arma_variable.to_json}, #{value.to_json}, true];"
       end
 
       server.execute_sqf!(sqf)

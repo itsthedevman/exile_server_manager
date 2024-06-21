@@ -3,18 +3,20 @@
 module ESM
   module Connection
     class Request < Data.define(:id, :type, :content)
-      # These numbers MUST match the associated ServerRequestType enum value in esm_arma/src/esm/src/bot.rs
+      # These numbers MUST match the associated RequestType enum value
+      # in esm_arma/src/esm/src/request.rs
       TYPES = {
         0 => :noop,
         1 => :error,
-        2 => :identification,
-        3 => :handshake,
+        2 => :heartbeat,
+        3 => :identification,
         4 => :initialize,
-        5 => :message
+        5 => :handshake,
+        6 => :message
       }.freeze
 
       def self.from_client(data)
-        new(id: data[:i], type: TYPES[data[:t]], content: data[:c].pack("C*"))
+        new(id: data[:i], type: TYPES[data[:t]], content: data[:c]&.pack("C*"))
       end
 
       delegate :to_json, to: :to_h

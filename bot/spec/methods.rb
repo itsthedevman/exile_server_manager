@@ -26,14 +26,6 @@ def send_discord_message(message)
   ESM::Test.response = message
 end
 
-def enable_log_printing
-  ENV["PRINT_LOG"] = "true"
-end
-
-def disable_log_printing
-  ENV["PRINT_LOG"] = "false"
-end
-
 def messages
   ESM::Test.messages.contents
 end
