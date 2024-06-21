@@ -15,7 +15,6 @@ Exile Server Manager (ESM) is a Discord Bot that interfaces with Exile servers v
 - [Links](#links)
 - [Suggestions](#suggestions)
 - [Developing](#developing)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Links
