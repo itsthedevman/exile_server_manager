@@ -1,6 +1,7 @@
 pub mod command_all_territories;
 pub mod command_me;
 pub mod command_reward;
+pub mod command_set_id;
 
 pub use crate::database::*;
 pub use crate::*;
@@ -8,6 +9,7 @@ pub use crate::*;
 pub use command_all_territories::*;
 pub use command_me::*;
 pub use command_reward::*;
+pub use command_set_id::*;
 
 /*
 {
