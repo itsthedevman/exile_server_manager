@@ -110,6 +110,15 @@ impl From<std::num::ParseFloatError> for Error {
     }
 }
 
+impl From<mysql_async::Error> for Error {
+    fn from(value: mysql_async::Error) -> Self {
+        Self {
+            error_type: ErrorType::Message,
+            error_content: value.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorType {
