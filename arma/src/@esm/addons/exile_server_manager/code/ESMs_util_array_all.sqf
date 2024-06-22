@@ -2,7 +2,8 @@
 Function: ESMs_util_array_all
 
 Description:
-	Passes each element of the array to the given code block
+	Tests all elements in the array against the provided code block. Each iteration
+	of the code block must return true in order for this function call to return true
 
 Parameters:
 	_this select 0 	- The array to iterate over. [Array]
