@@ -117,6 +117,7 @@ impl Database {
     pub async fn query(&self, name: &str, arguments: HashMap<String, String>) -> DatabaseResult {
         let mut connection = self.connection().await?;
 
+        // Need a better way of doing this...
         let query_result = match name {
             "reward_territories" => {
                 queries::command_reward_territories(&self, &mut connection, &arguments).await
@@ -125,6 +126,7 @@ impl Database {
             "all_territories" => {
                 queries::command_all_territories(&self, &mut connection, &arguments).await
             }
+            "set_id" => queries::command_set_id(&self, &mut connection, &arguments).await,
             _ => {
                 return Err(format!(
                     "[query] ❌ Unexpected query \"{}\" with arguments {:?}",
@@ -136,6 +138,18 @@ impl Database {
 
         query_result
     }
+}
+
+// Generates a Statements struct containing these attributes and the contents of their
+// corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
+statements! {
+    check_if_territory_owner,
+    decode_territory_id,
+
+    // Command queries
+    command_me,
+    command_all_territories,
+    command_set_id
 }
 
 /*
@@ -287,49 +301,5 @@ impl Hasher {
 
     pub fn set_salt(&self, salt: &str) {
         *self.builder.write() = Self::builder(salt)
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-struct Statements {
-    decode_territory_id: String,
-
-    // Command queries
-    command_me: String,
-    command_all_territories: String,
-}
-
-// I would much rather this to be a macro so I don't have to manually add
-// all of this extra code
-impl Statements {
-    pub fn new() -> Self {
-        Statements {
-            decode_territory_id: include_sql!("decode_territory_id"),
-            command_me: include_sql!("command_me"),
-            command_all_territories: include_sql!("command_all_territories"),
-        }
-    }
-
-    pub fn validate(&self) -> ESMResult {
-        if self.decode_territory_id.is_empty() {
-            return Self::format_error("decode_territory_id");
-        }
-
-        if self.command_me.is_empty() {
-            return Self::format_error("command_me");
-        }
-
-        if self.command_all_territories.is_empty() {
-            return Self::format_error("command_all_territories");
-        }
-
-        Ok(())
-    }
-
-    fn format_error(name: &str) -> ESMResult {
-        Err(format!(
-            "Failed to load {name}.sql. Please ensure @esm/sql/queries/{name}.sql exists and contains valid SQL"
-        )
-        .into())
     }
 }

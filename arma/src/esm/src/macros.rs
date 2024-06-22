@@ -64,6 +64,43 @@ macro_rules! include_sql {
     }};
 }
 
+// Generates the Statements struct from the SQL files
+#[macro_export]
+macro_rules! statements {
+    ($( $names:ident ),*) => {
+        #[derive(Clone, Debug, Default)]
+        struct Statements {
+            $($names: String),*
+        }
+
+        impl Statements {
+            pub fn new() -> Self {
+                Statements {
+                    $($names: include_sql!(stringify!($names))),*
+                }
+            }
+
+            pub fn validate(&self) -> ESMResult {
+                $(
+                    if self.$names.is_empty() {
+                        return Self::format_error(stringify!($names));
+                    }
+                )*
+
+                Ok(())
+            }
+
+            fn format_error(name: &str) -> ESMResult {
+                Err(format!(
+                    "Failed to load {name}.sql. Please ensure @esm/sql/queries/{name}.sql exists and contains valid SQL"
+                )
+                .into())
+            }
+        }
+
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use tokio::sync::Mutex;
