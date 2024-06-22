@@ -21,24 +21,28 @@ use log4rs::encode::pattern::PatternEncoder;
 use config::Config;
 use config::Env;
 
-pub type ESMResult = Result<(), Error>;
-pub type MessageResult = Result<Option<Message>, Error>;
-pub type NumberString = String;
-
 mod arma;
 mod bot;
 mod config;
 mod database;
 mod encryption;
+mod error;
 mod macros;
+mod message;
+mod parser;
 mod request;
 mod router;
 mod token;
 
 pub use bot::TOKEN_MANAGER;
-pub use esm_message::*;
+pub use error::*;
+pub use message::*;
 pub use request::*;
 pub use router::ROUTER;
+
+pub type ESMResult = Result<(), Error>;
+pub type MessageResult = Result<Option<Message>, Error>;
+pub type NumberString = String;
 
 lazy_static! {
     /// Represents @esm/config.yml
