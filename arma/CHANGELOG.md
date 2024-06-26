@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_exec` with `ESMs_command_sqf`
 - Replaced `ESM_fnc_getFlagObject` with `ESMs_system_territory_get`
 - Replaced `ESM_fnc_handleCallback` with `ESMs_system_extension_callback`
-- Replaced `ESM_fnc_hasAccessToTerritory` with `ESMs_xxx`
+- Replaced `ESM_fnc_hasAccessToTerritory` with `ESMs_system_territory_checkAccess`
 - Replaced `ESM_fnc_log` and `ESM_fnc_logToDLL` with RPT and extension based logging through `ESMs_util_log`
 - Replaced `ESM_fnc_logToDiscord` with `ESMs_system_network_discord_log`
 - Replaced `ESM_fnc_postServerInitialization` with `ESMs_system_process_postInit`
