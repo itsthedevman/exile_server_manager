@@ -194,33 +194,22 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
 }
 
 async fn database_query(message: Message) -> MessageResult {
-    let query = message.data;
+    let mut query = message.data;
 
-    let name = match query.get("name") {
-        Some(name) => name.as_str().unwrap_or(""),
-        None => return Err("Missing name attribute for database query".into()),
+    let Some(name) = query.remove("query_function_name") else {
+        return Err("Missing \"query_function_name\" attribute for database query".into());
     };
 
-    let arguments = match query.get("arguments") {
-        Some(arguments) => {
-            let Some(arguments) = arguments.as_object() else {
-                return Err("Failed to convert database arguments to object".into());
-            };
+    let mut arguments: HashMap<String, String> = HashMap::new();
+    for (key, value) in query {
+        let Some(value) = value.as_str() else {
+            return Err(format!("Failed to convert argument {key} value to string").into());
+        };
 
-            let mut transformed_args: HashMap<String, String> = HashMap::new();
-            for (key, value) in arguments {
-                let Some(value) = value.as_str() else {
-                    return Err("Failed to convert argument value to string".into());
-                };
+        arguments.insert(key.to_string(), value.to_string());
+    }
 
-                transformed_args.insert(key.to_string(), value.to_string());
-            }
-
-            transformed_args
-        }
-        None => return Err("Missing arguments attribute for database query".into()),
-    };
-
+    let name = name.as_str().unwrap_or("Invalid query name");
     match DATABASE.query(&name, arguments).await {
         Ok(results) => Ok(Some(
             Message::new()
