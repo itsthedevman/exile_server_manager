@@ -19,7 +19,6 @@ use log4rs::config::{Appender, Config as LogConfig, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 use config::Config;
-use config::Env;
 
 mod arma;
 mod bot;

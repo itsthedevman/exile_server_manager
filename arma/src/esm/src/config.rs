@@ -12,9 +12,6 @@ pub struct Config {
     #[serde(default = "default_log_level")]
     pub log_level: String,
 
-    #[serde(default = "default_env")]
-    pub env: Env,
-
     #[serde(default = "default_extdb_conf_path")]
     pub extdb_conf_path: String,
 
@@ -43,7 +40,6 @@ impl Default for Config {
             connection_url: default_connection_url(),
             logging_path: default_logging_path(),
             log_level: default_log_level(),
-            env: default_env(),
             extdb_conf_path: default_extdb_conf_path(),
             extdb_conf_header_name: default_extdb_conf_header_name(),
             extdb_version: default_extdb_version(),
@@ -52,28 +48,6 @@ impl Default for Config {
             server_mod_name: default_server_mod_name(),
             number_locale: default_number_locale(),
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum Env {
-    Production,
-    Test,
-    Development,
-}
-
-impl Env {
-    pub fn production(&self) -> bool {
-        matches!(self, Env::Production)
-    }
-
-    pub fn test(&self) -> bool {
-        matches!(self, Env::Test)
-    }
-
-    pub fn development(&self) -> bool {
-        matches!(self, Env::Development)
     }
 }
 
@@ -95,10 +69,6 @@ fn default_logging_path() -> String {
 
 fn default_log_level() -> String {
     "info".into()
-}
-
-fn default_env() -> Env {
-    Env::Production
 }
 
 fn default_extdb_conf_path() -> String {

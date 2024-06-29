@@ -46,3 +46,8 @@ regex = "1"
 [dependencies.mysql_common]
 version = "0.32.1"
 features = ["chrono"]
+
+[features]
+# Using features to control environments
+development = []
+test = []

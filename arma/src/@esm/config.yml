@@ -68,13 +68,6 @@
 # logging_path: ""
 
 ###
-## The environment mode that ESM runs in
-## Valid options: "production", "test", "development"
-## Default: "production"
-###
-# env: "production"
-
-###
 ## The output destination for log calls in the SQF code
 ## Valid options: "rpt", "extension", "both"
 ## Default: "extension"

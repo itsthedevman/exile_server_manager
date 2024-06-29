@@ -69,7 +69,8 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                         .next()
                         .unwrap();
 
-                    if !matches!(crate::CONFIG.env, Env::Test) {
+                    // Disable for testing only
+                    if !cfg!(feature = "test") {
                         warn!("[on_connect] Calling...");
                     }
 
@@ -295,17 +296,17 @@ fn on_disconnect() {
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
-    let time_to_wait: f32 = match crate::CONFIG.env {
-        Env::Test => 1.0,
-        Env::Development => 3.0,
-        _ => {
-            let mut rng = thread_rng();
+    let time_to_wait: f32 = if cfg!(feature = "test") {
+        1.0
+    } else if cfg!(feature = "development") {
+        3.0
+    } else {
+        let mut rng = thread_rng();
 
-            // Most servers share the same restart time. This'll spread out the connection requests so the bot isn't slammed all at once, over and over again
-            let offset: f32 = rng.gen();
+        // Most servers share the same restart time. This'll spread out the connection requests so the bot isn't slammed all at once, over and over again
+        let offset: f32 = rng.gen();
 
-            ((current_count * 15) as f32) + offset
-        }
+        ((current_count * 15) as f32) + offset
     };
 
     let time_to_wait = Duration::from_secs_f32(time_to_wait);
