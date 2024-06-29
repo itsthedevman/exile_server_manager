@@ -24,7 +24,7 @@ impl Error {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
-                    "[esm_message::error::from_arma] Failed to convert input into JSONValue. Reason: {e}. Input: {input:?}"
+                    "[error::from_arma] Failed to convert input into JSONValue. Reason: {e}. Input: {input:?}"
                 ))
             }
         };
@@ -32,7 +32,7 @@ impl Error {
         let errors = crate::parser::validate_content(&input);
         let error_array = match errors.as_array() {
             Some(e) => e,
-            None => return Err(format!("[esm_message::error::from_arma] Failed to convert validated errors to array. Errors: \"{errors:?}\"")),
+            None => return Err(format!("[error::from_arma] Failed to convert validated errors to array. Errors: \"{errors:?}\"")),
         };
 
         let mut errors: Vec<Error> = Vec::new();
@@ -40,12 +40,12 @@ impl Error {
             let error = crate::parser::validate_content(error);
             let json = match serde_json::to_string(&error) {
                 Ok(j) => j,
-                Err(e) => return Err(format!("[esm_message::error::from_arma] Failed to convert to final JSON. Reason: {e}. Error: \"{error:?}\"")),
+                Err(e) => return Err(format!("[error::from_arma] Failed to convert to final JSON. Reason: {e}. Error: \"{error:?}\"")),
             };
 
             match serde_json::from_str(&json) {
                 Ok(e) => errors.push(e),
-                Err(e) => return Err(format!("[esm_message::error::from_arma] Failed to convert to Error. Reason: {e}. Error: \"{error:?}\" ")),
+                Err(e) => return Err(format!("[error::from_arma] Failed to convert to Error. Reason: {e}. Error: \"{error:?}\" ")),
             };
         }
 
@@ -106,6 +106,15 @@ impl From<std::num::ParseFloatError> for Error {
         Self {
             error_type: ErrorType::Message,
             error_content: e.to_string(),
+        }
+    }
+}
+
+impl From<mysql_async::Error> for Error {
+    fn from(value: mysql_async::Error) -> Self {
+        Self {
+            error_type: ErrorType::Message,
+            error_content: value.to_string(),
         }
     }
 }

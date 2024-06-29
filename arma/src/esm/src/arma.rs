@@ -2,12 +2,18 @@ use crate::database::Database;
 use crate::*;
 
 use arma_rs::{Context, IntoArma};
-use std::sync::Mutex as SyncMutex;
+use std::{collections::HashSet, iter::FromIterator, sync::Mutex as SyncMutex};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
     pub static ref DATABASE: Database = Database::new();
+    static ref TERRITORY_ADMINS: Arc<SyncMutex<HashSet<String>>> =
+        Arc::new(SyncMutex::new(HashSet::new()));
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> = Arc::new(SyncMutex::new(None));
+}
+
+pub fn is_territory_admin(steam_uid: &str) -> bool {
+    lock!(TERRITORY_ADMINS).contains(&steam_uid.to_string())
 }
 
 pub async fn initialize(receiver: UnboundedReceiver<ArmaRequest>) {
@@ -114,7 +120,7 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 
     // Get the base path to figure out where to look for the ini
     let Some(base_ini_path) = data.get("extdb_path") else {
-        return Err("Missing extdb_path attribute on message".into());
+        return Err("Missing extdb_path attribute on message".to_string().into());
     };
 
     let base_ini_path = base_ini_path.as_str().unwrap_or("");
@@ -128,11 +134,25 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     if let Err(e) = DATABASE.connect(&base_ini_path).await {
         error!("{e}");
 
-        return Ok(Some(message.add_error(
-            ErrorType::Code,
-            String::from("fail_database_connect"),
-        )));
+        return Err("fail_database_connect".into());
     }
+
+    // Yes, this isn't used until later. The goal is to not exit for errors after this point
+    let territory_admin_uids: Vec<String> = match data.get("territory_admin_uids") {
+        Some(uids) => match uids.as_array() {
+            Some(uids) => uids
+                .into_iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(String::from)
+                .collect(),
+            None => {
+                return Err("Failed to convert territory_admin_uids to array"
+                    .to_string()
+                    .into())
+            }
+        },
+        None => return Err("Missing territory_admin_uids attribute".to_string().into()),
+    };
 
     data.insert(
         "build_number".to_owned(),
@@ -146,6 +166,11 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 
     data.insert("extdb_version".to_owned(), json!(DATABASE.extdb_version));
 
+    info!("[post_init] Caching data...");
+
+    // Store the territory admins
+    *lock!(TERRITORY_ADMINS) = HashSet::from_iter(territory_admin_uids.iter().cloned());
+
     info!("[post_init] Updating Arma global variables...");
 
     send_to_arma(message)?;
@@ -153,7 +178,6 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     info!("[post_init] ✅ Connection established");
 
     crate::READY.store(true, Ordering::SeqCst);
-
     Ok(None)
 }
 
@@ -170,33 +194,22 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
 }
 
 async fn database_query(message: Message) -> MessageResult {
-    let query = message.data;
+    let mut query = message.data;
 
-    let name = match query.get("name") {
-        Some(name) => name.as_str().unwrap_or(""),
-        None => return Err("Missing name attribute for database query".into()),
+    let Some(name) = query.remove("query_function_name") else {
+        return Err("Missing \"query_function_name\" attribute for database query".into());
     };
 
-    let arguments = match query.get("arguments") {
-        Some(arguments) => {
-            let Some(arguments) = arguments.as_object() else {
-                return Err("Failed to convert database arguments to object".into());
-            };
+    let mut arguments: HashMap<String, String> = HashMap::new();
+    for (key, value) in query {
+        let Some(value) = value.as_str() else {
+            return Err(format!("Failed to convert argument {key} value to string").into());
+        };
 
-            let mut transformed_args: HashMap<String, String> = HashMap::new();
-            for (key, value) in arguments {
-                let Some(value) = value.as_str() else {
-                    return Err("Failed to convert argument value to string".into());
-                };
+        arguments.insert(key.to_string(), value.to_string());
+    }
 
-                transformed_args.insert(key.to_string(), value.to_string());
-            }
-
-            transformed_args
-        }
-        None => return Err("Missing arguments attribute for database query".into()),
-    };
-
+    let name = name.as_str().unwrap_or("Invalid query name");
     match DATABASE.query(&name, arguments).await {
         Ok(results) => Ok(Some(
             Message::new()
