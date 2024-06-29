@@ -465,14 +465,12 @@ pub fn create_server_config(builder: &mut Builder) -> BuildResult {
     struct Config {
         connection_url: String,
         log_level: String,
-        env: String,
         // log_output: String,
     }
 
     let config = Config {
         connection_url: builder.args.bot_host().to_string(),
         log_level: builder.args.log_level().to_string(),
-        env: builder.args.build_env().to_string(),
         // log_output: "extension".into(),
     };
 
@@ -748,36 +746,54 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         builder.remote_build_path().to_owned(),
     )?;
 
+    let build_path = builder.remote_build_path_str();
+    let build_target = &builder.extension_build_target;
+    let file_name = match builder.args.build_arch() {
+        BuildArch::X32 => "esm",
+        BuildArch::X64 => "esm_x64",
+    };
+
+    // Handle env feature switching
+    let features = match builder.args.build_env() {
+        BuildEnv::Development => "--features development",
+        BuildEnv::Test => "--features test",
+        BuildEnv::Production => "",
+    };
+
+    // Handle release flag
+    let release_flag = if builder.args.build_release() {
+        "--release"
+    } else {
+        ""
+    };
+
+    let build_dir = if builder.args.build_release() {
+        "release"
+    } else {
+        "debug"
+    };
+
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
-                "
-                    cd '{build_path}\\esm';
-                    rustup run stable-{build_target} cargo build --target {build_target} --release;
-                    Copy-Item '{build_path}\\esm\\target\\{build_target}\\release\\esm_arma.dll' -Destination '{build_path}\\{file_name}.dll';
-                ",
-                build_path = builder.remote_build_path_str(),
-                build_target = builder.extension_build_target,
-                file_name = match builder.args.build_arch() {
-                    BuildArch::X32 => "esm",
-                    BuildArch::X64 => "esm_x64",
-                }
+                r#"
+cd '{build_path}\\esm';
+
+rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
+
+Copy-Item '{build_path}\\esm\\target\\{build_target}\\{build_dir}\\esm_arma.dll' -Destination '{build_path}\\{file_name}.dll';
+"#
             )
         }
         BuildOS::Linux => {
             format!(
                 r#"
 cd {build_path}/esm;
-rustup run stable-{build_target} cargo build --target {build_target} --release;
 
-cp "{build_path}/esm/target/{build_target}/release/libesm_arma.so" "{build_path}/{file_name}.so"
-"#,
-                build_path = builder.remote_build_path_str(),
-                build_target = builder.extension_build_target,
-                file_name = match builder.args.build_arch() {
-                    BuildArch::X32 => "esm",
-                    BuildArch::X64 => "esm_x64",
-                }
+rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
+
+cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_path}/{file_name}.so"
+"#
             )
         }
     };
