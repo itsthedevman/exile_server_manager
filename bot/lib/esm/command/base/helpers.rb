@@ -335,8 +335,6 @@ module ESM
               "Command #{name} must define the `server_id` argument in order to use #send_to_target_server"
           end
 
-          message.set_metadata(player: current_user, target: target_user)
-
           target_server.send_message(message, block:)
         end
 
@@ -351,16 +349,19 @@ module ESM
         def query_exile_database(name, **arguments)
           message = ESM::Message.new
             .set_type(:query)
-            .set_data(name:, arguments:)
+            .set_data(query_function_name: name, **arguments)
 
           response = send_to_target_server(message)
           response.data.results
         end
 
+        alias_method :run_database_query, :query_exile_database
+
         def call_sqf_function(function_name, **arguments)
           message = ESM::Message.new
             .set_type(:call)
             .set_data(function_name:, **arguments)
+            .set_metadata(player: current_user, target: target_user)
 
           send_to_target_server(message)
         end

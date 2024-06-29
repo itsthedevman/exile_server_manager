@@ -5,7 +5,19 @@ RSpec.shared_context("connection") do
   let!(:user) { ESM::Test.user }
   let!(:server) { ESM::Test.server(for: community) }
   let!(:connection_server) { ESM.connection_server }
+  let(:territory_admin_uids) { [] }
   let(:_spawned_players) { [] }
+
+  let(:territory) do
+    owner_uid = ESM::Test.steam_uid
+    create(
+      :exile_territory,
+      owner_uid: owner_uid,
+      moderators: [owner_uid],
+      build_rights: [owner_uid],
+      server_id: server.id
+    )
+  end
 
   def execute_sqf!(code, **)
     server.execute_sqf!(code, **)
@@ -23,6 +35,12 @@ RSpec.shared_context("connection") do
 
     # Store the server key so the build tool can pick it up and write it
     ESM.redis.set("server_key", server.token.to_json)
+
+    # In order to properly bind territory_admin_uids, the UIDs must be available by
+    # server initialization. However, I haven't figured out an elegant way to make this
+    # data available outside storing it somewhere globally and referencing it during
+    # server initialization
+    ESM::Test.territory_admin_uids = territory_admin_uids
 
     connection_server.resume
 
@@ -46,7 +64,7 @@ RSpec.shared_context("connection") do
       "ESM_TestUser_#{user.steam_uid} call _deleteFunction;" if user.connected
     end
 
-    sqf = "ESM_TerritoryAdminUIDs = [];"
+    sqf = ""
     sqf += if users.present?
       <<~SQF
         private _deleteFunction = {
@@ -57,17 +75,10 @@ RSpec.shared_context("connection") do
 
         #{users}
       SQF
-    else
-      "nil" # Arma vomits for whatever reason unless we return something
     end
 
-    execute_sqf!(sqf)
+    execute_sqf!(sqf) if sqf.present?
   ensure
     connection_server.pause
-  end
-
-  def make_territory_admin!(user)
-    # Arma vomits unless we return something like `nil`
-    execute_sqf!("ESM_TerritoryAdminUIDs = [#{user.steam_uid.quoted}]; nil")
   end
 end

@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.1]
+
+### Added
+- Added alias `#run_database_query` for helper method `#query_exile_database`
+- Added @esm v2 support to `/territory set_id`
+- Tests - Added `ESM::ExileTerritory#change_owner`
+
+### Changed
+- Tests - Changed how territory admins are modified
+
+### Removed
+- Removed setting command metadata on query messages
+
 ## [2.3.2] - 2024-06-20
 
 ### Added
@@ -48,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.1
+[2.3.2.1]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.1..v2.3.2
 [2.3.2]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2..v2.3.1
 [2.3.1]: https://github.com/itsthedevman/esm_bot/compare/v2.3.1..v2.3.0

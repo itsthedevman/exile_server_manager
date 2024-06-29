@@ -85,6 +85,20 @@ module ESM
       self
     end
 
+    def change_owner(steam_uid)
+      old_owner_uid = owner_uid
+
+      moderators.delete(old_owner_uid)
+      build_rights.delete(old_owner_uid)
+
+      self.owner_uid = steam_uid
+      self.moderators |= [steam_uid]
+      self.build_rights |= [steam_uid]
+
+      save! if changed?
+      self
+    end
+
     def server
       ESM::Server.find(server_id)
     end

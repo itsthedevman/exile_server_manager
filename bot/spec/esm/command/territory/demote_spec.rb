@@ -134,8 +134,9 @@ describe ESM::Command::Territory::Demote, category: "command" do
       end
 
       context "when the player is a territory admin and the target is a moderator" do
+        let!(:territory_admin_uids) { [user.steam_uid] }
+
         before do
-          make_territory_admin!(user)
           territory.revoke_membership(user.steam_uid)
         end
 

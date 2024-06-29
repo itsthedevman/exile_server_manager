@@ -8,7 +8,7 @@ module ESM
 
       attr_reader :response
       attr_writer :messages
-      attr_accessor :skip_cooldown
+      attr_accessor :skip_cooldown, :territory_admin_uids
 
       def messages
         @messages ||= Messages.new
@@ -88,6 +88,7 @@ module ESM
         @second_community = nil
 
         @skip_cooldown = false
+        @territory_admin_uids = []
 
         @communities = %i[primary_community secondary_community]
         @community_type = @communities.sample

@@ -33,8 +33,9 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
   end
 
   context "when the player is a territory admin" do
+    let!(:territory_admin_uids) { [user.steam_uid] }
+
     before do
-      make_territory_admin!(user)
       territory.revoke_membership(user.steam_uid)
     end
 
