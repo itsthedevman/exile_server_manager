@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_logToDiscord` with `ESMs_system_network_discord_log`
 - Replaced `ESM_fnc_postServerInitialization` with `ESMs_system_process_postInit`
 - Replaced `ESM_fnc_preInit` with `ESMs_system_process_preInit`
+- Replaced `ESM_fnc_removePlayerFromTerritory` with `ESMs_command_remove`
 - Replaced `ESM_fnc_respond` with `ESMs_system_message_respond_to`
 - Replaced `ESM_fnc_respondWithError` and `ESM_fnc_respondWithErrorCode` with `ESMs_system_message_respond_withError`
 - Replaced `ESM_fnc_scalarToString` with extension based function `ESMs_util_number_toString` for speedy formatting

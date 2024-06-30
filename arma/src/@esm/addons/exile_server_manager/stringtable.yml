@@ -239,3 +239,39 @@ ESMs_command_upgrade:
       Convenience fee:  -%4 (%5%6)
               Balance:  =%7 poptab(s)
       ```
+################################################################################
+# /territory remove_player
+ESMs_command_remove:
+  Remove_CannotRemoveOwner:
+    arguments:
+    - "Player mention"
+    english: "%1, you have no power here!"
+
+  Remove_CannotRemoveNothing:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you can't remove someone you have no power over."
+
+  # Discord message to player
+  Remove_Response_Author:
+    arguments:
+    - "Server ID"
+    english: "Sent from %1"
+
+  Remove_Response_Title:
+    arguments:
+    - "Territory ID"
+    english: "Successfully removed player from territory `%1`"
+
+  Remove_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target UID"
+    english: "Hey %1, `%2` has been removed"
+
+  # Discord message to logging channel
+  Remove_Log_Title:
+    english: "`ESMs_command_remove` executed successfully"
+
+  Remove_Log_Description:
+    english: "Player removed Target from territory"
