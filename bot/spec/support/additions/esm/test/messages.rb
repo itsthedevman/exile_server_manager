@@ -40,9 +40,7 @@ module ESM
       end
 
       def contents
-        @contents = nil if @contents.size != size
-
-        @contents ||= map(&:content)
+        map(&:content)
       end
 
       def earliest

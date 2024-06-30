@@ -77,6 +77,25 @@ module ESM
       territory.tap { |t| t.server_id = server.id }
     end
 
+    def add_moderators!(*steam_uids)
+      self.moderators |= steam_uids
+      self.build_rights |= steam_uids
+
+      save! if changed?
+      self
+    end
+
+    alias_method :add_moderator!, :add_moderators!
+
+    def add_builders!(*steam_uids)
+      self.build_rights |= steam_uids
+
+      save! if changed?
+      self
+    end
+
+    alias_method :add_builder!, :add_builders!
+
     def revoke_membership(steam_uid)
       self.owner_uid = ESM::Test.steam_uid if owner_uid == steam_uid
       moderators.delete(steam_uid)

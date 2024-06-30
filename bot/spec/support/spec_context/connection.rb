@@ -5,7 +5,12 @@ RSpec.shared_context("connection") do
   let!(:user) { ESM::Test.user }
   let!(:server) { ESM::Test.server(for: community) }
   let!(:connection_server) { ESM.connection_server }
+
+  # Define this in your context and include any steam uids you'd like to be
+  # added to territory admins for the server
   let(:territory_admin_uids) { [] }
+
+  # Internal, used when spawning in players
   let(:_spawned_players) { [] }
 
   let(:territory) do
