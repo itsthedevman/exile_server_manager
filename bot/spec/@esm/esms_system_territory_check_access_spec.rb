@@ -1,17 +1,8 @@
 # frozen_string_literal: true
 
 describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
-  include_context "connection"
-
-  let!(:territory) do
-    owner_uid = ESM::Test.steam_uid
-    create(
-      :exile_territory,
-      owner_uid: owner_uid,
-      moderators: [owner_uid, user.steam_uid],
-      build_rights: [owner_uid, user.steam_uid],
-      server_id: server.id
-    )
+  include_context "connection" do
+    let!(:territory_moderators) { [user.steam_uid] }
   end
 
   before do

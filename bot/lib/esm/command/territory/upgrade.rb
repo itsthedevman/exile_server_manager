@@ -29,8 +29,8 @@ module ESM
             territory_id: arguments.territory_id
           )
 
-          embed_data = response.data.to_h
-          reply(ESM::Embed.from_hash(embed_data))
+          embed = embed_from_message!(response)
+          reply(embed)
         end
 
         module V1

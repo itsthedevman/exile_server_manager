@@ -34,18 +34,8 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
     end
 
     describe "#on_execute", requires_connection: true do
-      include_context "connection"
-
-      let!(:territory) do
-        owner_uid = ESM::Test.steam_uid
-        create(
-          :exile_territory,
-          owner_uid: owner_uid,
-          moderators: [owner_uid, user.steam_uid],
-          build_rights: [owner_uid, user.steam_uid],
-          server_id: server.id,
-          level: 0
-        )
+      include_context "connection" do
+        let!(:territory_moderators) { [user.steam_uid] }
       end
 
       let(:territory_purchase_price) do
@@ -155,11 +145,7 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
           territory.update!(flag_stolen: true)
         end
 
-        it "raises Upgrade_StolenFlag" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("has been stolen")
-          end
-        end
+        include_examples "arma_error_flag_stolen"
       end
 
       context "when the flag is already at max level" do
@@ -179,21 +165,13 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
 
         before { spawn_player_for(user) }
 
-        it "raises Upgrade_TooPoor" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you do not have enough poptabs in your locker. It costs ..#{territory_purchase_price.to_s.to_delimited}.. and you have ..#{user.exile_account.locker}..")
-          end
-        end
+        include_examples "arma_error_too_poor"
       end
 
       context "when the player is not online and does not have enough poptabs" do
         let(:locker_balance) { 0 }
 
-        it "raises Upgrade_TooPoor" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you do not have enough poptabs in your locker. It costs ..#{territory_purchase_price.to_s.to_delimited}.. and you have ..#{user.exile_account.locker}..")
-          end
-        end
+        include_examples "arma_error_too_poor"
       end
     end
   end

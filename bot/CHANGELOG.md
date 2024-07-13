@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.3]
+
+### Added
+- Added @esm v2 support to `/territory pay`
+- Added `ApplicationCommand#embed_from_message!`
+    - This helper method takes a Message from the Arma 3 server, validates the data, and converts it to an Embed.
+    - Invalid Embed data will result in a error log and a message to the user informing them that the server has something they need to fix
+- Added `Symbol#quoted` that returns the string variant of the symbol surrounded in double quotes.
+- Tests - Added specs for `ESMs_system_territory_incrementPaymentCounter`
+- Tests - Added specs for `ESMs_system_territory_resetPaymentCounter`
+- Tests - Added spec for `ESMs_util_array_map` 'filter' argument
+- Tests - Added command example specs for FlagStolen, and TooPoor
+
+### Changed
+- Migrated `ESM::Command::Territory::Remove` and `ESM::Command::Territory::Upgrade` to utilize `#embed_from_message!`
+- Tests - Moved pay_spec.rb from `server` to `territory`
+- Tests - Improved `ExileTerritory` variable update SQF
+
+### Removed
+
 ## [2.3.2.2]
 
 ### Added
@@ -68,7 +88,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.2
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.3
+[2.3.2.3]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.3..v2.3.2.2
 [2.3.2.2]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.2..v2.3.2.1
 [2.3.2.1]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.1..v2.3.2
 [2.3.2]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2..v2.3.1

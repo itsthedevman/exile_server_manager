@@ -74,3 +74,19 @@ RSpec.shared_examples("arma_error_missing_territory_access") do
     ).not_to be_nil
   end
 end
+
+RSpec.shared_examples("arma_error_flag_stolen") do
+  it "raises StolenFlag" do
+    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+      expect(error.data.description).to match("has been stolen")
+    end
+  end
+end
+
+RSpec.shared_examples("arma_error_too_poor") do
+  it "raises TooPoor" do
+    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+      expect(error.data.description).to match(/you do not have enough poptabs in your locker. It costs ..[\d,]+.. and you have ..[\d,]+../)
+    end
+  end
+end

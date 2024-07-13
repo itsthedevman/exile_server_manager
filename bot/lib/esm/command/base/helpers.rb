@@ -465,6 +465,54 @@ module ESM
           # Return the query
           query
         end
+
+        #
+        # Attempts to create an embed using data from the client.
+        # This checks for valid attributes, and invalid attributes
+        #
+        # @param message_data [Hash]
+        #
+        # @return [ESM::Embed]
+        #
+        def embed_from_message!(message)
+          message_data = message.data.to_h
+          message_data.deep_symbolize_keys!
+
+          embed_data = message_data.slice(*Embed::ATTRIBUTES)
+
+          invalid_attributes = message_data.keys - embed_data.keys
+          has_invalid_attributes = invalid_attributes.size > 0
+
+          # Missing data or extra data? That's a paddling
+          if embed_data.blank? || has_invalid_attributes
+            message =
+              if has_invalid_attributes
+                I18n.translate(
+                  "exceptions.extension.invalid_embed_attributes",
+                  attributes: invalid_attributes.map(&:quoted).to_sentence
+                )
+              else
+                I18n.translate(
+                  "exceptions.extension.missing_embed_attributes",
+                  attributes: Embed::ATTRIBUTES.map(&:quoted).to_sentence
+                )
+              end
+
+            # Tell the admins
+            target_server.connection.send_error(message)
+
+            # Sorry user... The admins need to fix their shit
+            raise_error!(
+              :error,
+              path_prefix: "exceptions.extension",
+              user: current_user.mention,
+              server_id: target_server.server_id
+            )
+          end
+
+          # Finally create the embed
+          Embed.from_hash(embed_data)
+        end
       end
     end
   end

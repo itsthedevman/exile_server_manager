@@ -13,13 +13,15 @@ RSpec.shared_context("connection") do
   # Internal, used when spawning in players
   let(:_spawned_players) { [] }
 
+  let(:territory_moderators) { [] }
+  let(:territory_build_rights) { [] }
   let(:territory) do
     owner_uid = ESM::Test.steam_uid
     create(
       :exile_territory,
       owner_uid: owner_uid,
-      moderators: [owner_uid],
-      build_rights: [owner_uid],
+      moderators: [owner_uid] + territory_moderators,
+      build_rights: [owner_uid] + territory_moderators + territory_build_rights,
       server_id: server.id
     )
   end

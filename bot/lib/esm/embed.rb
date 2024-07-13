@@ -5,6 +5,9 @@ module ESM
     EMPTY_SPACE = "\u200B"
     TAB = "#{EMPTY_SPACE}#{EMPTY_SPACE}#{EMPTY_SPACE}#{EMPTY_SPACE}"
 
+    # Attributes that are available for building via Hash
+    ATTRIBUTES = %i[author title description color fields]
+
     module Limit
       TITLE_LENGTH_MAX = 256
       DESCRIPTION_LENGTH_MAX = 2048
@@ -15,15 +18,29 @@ module ESM
     ###########################
     # Class methods
     ###########################
+
+    #
+    # Creates an embed from a preset
+    #
+    # @param type [Symbol] Template to build. Valid options: :info, :success, :error
+    # @param ** [Hash] Any embed attributes to set
+    # @param & [Block, nil] optional block that yields the new embed
+    #
+    # @return [ESM::Embed] The newly built instance
+    #
     def self.build(type = nil, **, &)
       ESM::Embed.new(type, **, &)
     end
 
-    # This is defensively written because this can receive user provided data
+    #
+    # Creates an embed from a Hash
+    #
+    # @param hash [Hash]
+    # @param &block [Block, nil] Optional block that yields the new embed
+    #
+    # @return [ESM::Embed] The newly built instance
+    #
     def self.from_hash(hash, &block)
-      raise TypeError, "Expected Hash, got #{hash.class}" unless hash.is_a?(Hash)
-
-      hash = hash.with_indifferent_access
       new do |embed|
         ###########
         # Author

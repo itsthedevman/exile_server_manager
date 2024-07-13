@@ -24,25 +24,37 @@ module ESM
         #################################
 
         def on_execute
-          deliver!(function_name: "payTerritory", territory_id: arguments.territory_id, uid: current_user.steam_uid)
+          response = call_sqf_function(
+            "ESMs_command_pay",
+            territory_id: arguments.territory_id
+          )
+
+          embed = embed_from_message!(response)
+          reply(embed)
         end
 
-        def on_response
-          embed =
-            ESM::Embed.build do |e|
-              e.description = I18n.t(
-                "commands.pay.embed.description",
-                user: current_user.mention,
-                server_id: target_server.server_id,
-                territory_id: arguments.territory_id,
-                cost: @response.payment.to_poptab,
-                locker_amount: @response.locker.to_poptab
-              )
+        module V1
+          def on_execute
+            deliver!(function_name: "payTerritory", territory_id: arguments.territory_id, uid: current_user.steam_uid)
+          end
 
-              e.color = :green
-            end
+          def on_response
+            embed =
+              ESM::Embed.build do |e|
+                e.description = I18n.t(
+                  "commands.pay.embed.description",
+                  user: current_user.mention,
+                  server_id: target_server.server_id,
+                  territory_id: arguments.territory_id,
+                  cost: @response.payment.to_poptab,
+                  locker_amount: @response.locker.to_poptab
+                )
 
-          reply(embed)
+                e.color = :green
+              end
+
+            reply(embed)
+          end
         end
       end
     end

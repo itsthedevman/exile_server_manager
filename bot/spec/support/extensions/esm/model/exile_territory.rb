@@ -56,6 +56,9 @@ module ESM
     attribute :esm_payment_counter, :integer, default: 0
     attribute :deleted_at, :datetime
 
+    # Not database backed
+    attribute :number_of_constructions, :integer, default: 0
+
     after_save :update_arma
 
     scope :active, -> { where(deleted_at: nil) }
@@ -131,10 +134,18 @@ module ESM
 
     def create_flag
       sqf = <<~SQF
-        private _flag = #{id} call ESMs_system_territory_get;
-        if !(isNull _flag) exitWith { true };
+        private _territory = #{id} call ESMs_system_territory_get;
+        if !(isNull _territory) exitWith { true };
 
         #{id} call ExileServer_system_territory_database_load;
+
+        sleep 0.1;
+        private _territory = #{id} call ESMs_system_territory_get;
+        if (isNull _territory) exitWith { false };
+
+        #{set_variables(MAPPING.keys)}
+
+        !(isNull _territory)
       SQF
 
       success = server.execute_sqf!(sqf)
@@ -144,14 +155,14 @@ module ESM
     def delete_flag
       # The sleep is required because Arma deletes a vehicle on the next frame
       sqf = <<~SQF
-        private _flag = #{id} call ESMs_system_territory_get;
-        if (isNull _flag) exitWith { true };
+        private _territory = #{id} call ESMs_system_territory_get;
+        if (isNull _territory) exitWith { true };
 
-        deleteVehicle _flag;
+        deleteVehicle _territory;
 
         sleep 0.1;
-        private _flag = #{id} call ESMs_system_territory_get;
-        isNull(_flag)
+        private _territory = #{id} call ESMs_system_territory_get;
+        isNull(_territory)
       SQF
 
       success = server.execute_sqf!(sqf)
@@ -166,39 +177,53 @@ module ESM
       build_rights: "ExileTerritoryBuildRights",
       flag_stolen: "ExileFlagStolen",
       radius: "ExileTerritorySize",
-      level: "ExileTerritoryLevel"
+      level: "ExileTerritoryLevel",
+      number_of_constructions: "ExileTerritoryNumberOfConstructions",
+      esm_payment_counter: "ESM_PaymentCounter"
     }.stringify_keys.freeze
 
-    # _flagObject setVariable ["ExileTerritoryName", _name, true];
-    # _flagObject setVariable ["ExileDatabaseID", _id];
-    # _flagObject setVariable ["ExileOwnerUID", _owner, true];
-    # _flagObject setVariable ["ExileTerritorySize", _radius, true];
-    # _flagObject setVariable ["ExileTerritoryLevel", _level, true];
-    # _flagObject setVariable ["ExileTerritoryLastPayed", _lastPayed];
-    # _flagObject call ExileServer_system_territory_maintenance_recalculateDueDate;
-    # _flagObject setVariable ["ExileTerritoryNumberOfConstructions", _data select 15, true];
-    # _flagObject setVariable ["ExileRadiusShown", false, true];
-    # _flagObject setVariable ["ExileFlagStolen",_flagStolen,true];
-    # _flagObject setVariable ["ExileFlagTexture",_flagTexture];
-    def update_arma
-      changed_items = previous_changes.slice(*MAPPING.keys)
-      return if changed_items.blank?
-
-      sqf = "private _flagObject = #{id} call ESMs_system_territory_get;"
-      sqf += changed_items.map_join(" ") do |key, (_, value)|
-        arma_variable = MAPPING[key]
+    def set_variables(items)
+      items.map_join(" ") do |attribute|
+        arma_variable = MAPPING[attribute]
         if arma_variable.nil?
           warn!(
-            "ServerSetting attribute #{key.quoted} was updated but does not have a MAPPING entry"
+            "Territory attribute #{attribute.quoted} was updated but does not have a MAPPING entry"
           )
           next
         end
 
-        # Ugh
-        value = value ? 1 : 0 if key == "flag_stolen"
+        value =
+          if attribute == "flag_stolen"
+            flag_stolen ? 1 : 0
+          else
+            public_send(attribute)
+          end
 
-        "_flagObject setVariable [#{arma_variable.to_json}, #{value.to_json}, true];"
+        "_territory setVariable [#{arma_variable.to_json}, #{value.to_json}];"
       end
+    end
+
+    # _territory setVariable ["ExileTerritoryName", _name, true];
+    # _territory setVariable ["ExileDatabaseID", _id];
+    # _territory setVariable ["ExileOwnerUID", _owner, true];
+    # _territory setVariable ["ExileTerritorySize", _radius, true];
+    # _territory setVariable ["ExileTerritoryLevel", _level, true];
+    # _territory setVariable ["ExileTerritoryLastPayed", _lastPayed];
+    # _territory call ExileServer_system_territory_maintenance_recalculateDueDate;
+    # _territory setVariable ["ExileTerritoryNumberOfConstructions", _data select 15, true];
+    # _territory setVariable ["ExileRadiusShown", false, true];
+    # _territory setVariable ["ExileFlagStolen",_flagStolen,true];
+    # _territory setVariable ["ExileFlagTexture",_flagTexture];
+    def update_arma
+      return if previously_new_record?
+
+      changed_items = previous_changes.slice(*MAPPING.keys)
+      return if changed_items.blank?
+
+      sqf = <<~STRING
+        private _territory = #{id} call ESMs_system_territory_get;
+        #{set_variables(changed_items.keys)}
+      STRING
 
       server.execute_sqf!(sqf)
     end
