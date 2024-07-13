@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [2.3.2.3]
+## [2.3.2.3] - 2024-07-13
 
 ### Added
 - Added @esm v2 support to `/territory pay`
@@ -31,16 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests - Moved pay_spec.rb from `server` to `territory`
 - Tests - Improved `ExileTerritory` variable update SQF
 
-### Removed
-
-## [2.3.2.2]
+## [2.3.2.2] - 2024-06-30
 
 ### Added
 - Added @esm v2 support to `/territory remove_player`
 - Tests - Added `ESM::ExileTerritory#add_moderators!` and `ESM::ExileTerritory#add_builders!`.
     - Aliases: `#add_moderator!` and `#add_builder!`
 
-## [2.3.2.1]
+## [2.3.2.1] - 2024-06-29
 
 ### Added
 - Added alias `#run_database_query` for helper method `#query_exile_database`
