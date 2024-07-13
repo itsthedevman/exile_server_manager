@@ -8,6 +8,7 @@ Description:
 Parameters:
 	_input - [Array] The array to iterate over
 	_function - [Code] The code to execute on each item in the provided array
+	_filter - [Bool] Should `nil` values be filtered out? Acts like `filter_map` in other languages
 
 Returns:
 	An new array containing the results
@@ -30,6 +31,7 @@ Author:
 
 private _input = _this select 0;
 private _function = _this select 1;
+private _filter = param [2, false];
 private _output = [];
 
 {
@@ -44,8 +46,11 @@ private _output = [];
 		_result = _x call _function;
 	};
 
+
 	if (nil?(_result)) then
 	{
+		if (_filter) then { continue; };
+
 		// https://community.bistudio.com/wiki/pushBack See DreadedEntity's comment
 		_output set [_forEachIndex, nil];
 	}

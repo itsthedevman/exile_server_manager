@@ -255,7 +255,7 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
     // Decode
     let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
         Ok(p) => p,
-        Err(e) => return Err(format!("[on_request] ❌ {e:?}").into()),
+        Err(e) => return Err(format!("[on_request] ❌ {e:?}\n{encoded_message:?}").into()),
     };
 
     let decrypted_message = decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
@@ -334,12 +334,16 @@ fn on_heartbeat(request: Request) -> ESMResult {
 }
 
 fn on_error(request: Request) -> ESMResult {
-    let s = match std::str::from_utf8(&request.value) {
-        Ok(v) => v,
-        Err(_) => return Err("[on_error] Expected String, got not a String".into()),
-    };
+    let message = Message::from_bytes(&request.value)?;
 
-    error!("[on_error] ❌ {s}");
+    let error = message
+        .errors
+        .iter()
+        .map(|e| format!("❌ {}", e.error_content))
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    error!("[on_error] {error}");
 
     Ok(())
 }
@@ -420,18 +424,6 @@ fn on_message(request: Request) -> ESMResult {
     let message = Message::from_bytes(&request.value)?;
 
     debug!("[on_message] {}", message);
-
-    // Echo bypasses this so errors can be triggered on the round trip
-    if !matches!(message.message_type, Type::Echo) && !message.errors.is_empty() {
-        let error = message
-            .errors
-            .iter()
-            .map(|e| format!("❌ {}", e.error_content))
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        return Err(error.into());
-    }
 
     match message.message_type {
         Type::Query => ArmaRequest::query(message),

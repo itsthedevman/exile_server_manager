@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `number_locale`: Controls how numbers are formatted
     - `server_mod_name`: The name of @ExileServer on this server. Linux uses `@exileserver`
 - Added extension endpoint `utc_timestamp` for returning the current UTC timestamp
+- Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
 
 ### Changed
 - Changed Exile file naming prefix for ESM's server and client functions. `ESMs` means a server function, `ESMc` means a client function
@@ -56,11 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_getFlagObject` with `ESMs_system_territory_get`
 - Replaced `ESM_fnc_handleCallback` with `ESMs_system_extension_callback`
 - Replaced `ESM_fnc_hasAccessToTerritory` with `ESMs_system_territory_checkAccess`
+- Replaced `ESM_fnc_incrementPaymentCounter` with `ESMs_system_territory_incrementPaymentCounter`
 - Replaced `ESM_fnc_log` and `ESM_fnc_logToDLL` with RPT and extension based logging through `ESMs_util_log`
 - Replaced `ESM_fnc_logToDiscord` with `ESMs_system_network_discord_log`
+- Replaced `ESM_fnc_payTerritory` with `ESMs_command_pay`
 - Replaced `ESM_fnc_postServerInitialization` with `ESMs_system_process_postInit`
 - Replaced `ESM_fnc_preInit` with `ESMs_system_process_preInit`
 - Replaced `ESM_fnc_removePlayerFromTerritory` with `ESMs_command_remove`
+- Replaced `ESM_fnc_resetPaymentCounter` with `ESMs_system_territory_resetPaymentCounter`
 - Replaced `ESM_fnc_respond` with `ESMs_system_message_respond_to`
 - Replaced `ESM_fnc_respondWithError` and `ESM_fnc_respondWithErrorCode` with `ESMs_system_message_respond_withError`
 - Replaced `ESM_fnc_scalarToString` with extension based function `ESMs_util_number_toString` for speedy formatting

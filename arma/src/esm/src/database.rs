@@ -138,6 +138,31 @@ impl Database {
 
         query_result
     }
+
+    pub async fn set_territory_payment_counter(&self, database_id: usize, counter_value: usize) {
+        let mut connection = match self.connection().await {
+            Ok(c) => c,
+            Err(e) => {
+                error!("[set_territory_payment_counter] ❌ {e}");
+                return;
+            }
+        };
+
+        let result = connection
+            .exec_drop(
+                &self.statements.set_territory_payment_counter,
+                params! {
+                    "counter_value" => counter_value,
+                    "territory_id" => database_id
+                },
+            )
+            .await;
+
+        if let Err(e) = result {
+            error!("[set_territory_payment_counter] ❌ {e}");
+            return;
+        }
+    }
 }
 
 // Generates a Statements struct containing these attributes and the contents of their
@@ -145,6 +170,7 @@ impl Database {
 statements! {
     check_if_territory_owner,
     decode_territory_id,
+    set_territory_payment_counter,
 
     // Command queries
     command_me,

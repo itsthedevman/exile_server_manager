@@ -188,7 +188,7 @@ try
 		[
 			_id,
 			[
-				["author", localize!("Remove_Response_Author", ESM_ServerID)],
+				["author", localize!("ResponseAuthor", ESM_ServerID)],
 				["title", localize!("Remove_Response_Title", _encodedTerritoryID)],
 				[
 					"description",

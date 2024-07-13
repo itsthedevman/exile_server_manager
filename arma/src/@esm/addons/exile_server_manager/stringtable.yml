@@ -53,6 +53,9 @@ General:
   Receipt:
     english: "Receipt"
 
+  Function:
+    english: "Function"
+
   Poptabs:
     arguments:
     - "Number of poptabs"
@@ -89,6 +92,19 @@ General:
     - "Function name"
     english: "Function %1 was called but the territory flag was not found in game"
 
+  StolenFlag:
+    arguments:
+    - "Player mention"
+    - "Territory ID"
+    english: "Not to worry you, %1, but `%2`'s flag has been stolen at some point. The flag must be returned before you can perform this action"
+
+  TooPoor:
+    arguments:
+    - "Player mention"
+    - "Cost"
+    - "Current locker amount"
+    english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
+
   MissingTerritoryAccess:
     arguments:
     - "Player mention"
@@ -97,6 +113,11 @@ General:
 
   MissingTerritoryAccess_Admin:
     english: "Player attempted to perform an action on Territory but they do not have access"
+
+  ResponseAuthor:
+    arguments:
+    - "Server ID"
+    english: "Sent from %1"
 
 ################################################################################
 # /territory add_player
@@ -144,24 +165,11 @@ ESMs_command_demote:
 ################################################################################
 # /territory upgrade
 ESMs_command_upgrade:
-  Upgrade_StolenFlag:
-    arguments:
-    - "Player mention"
-    - "Territory ID"
-    english: "Hey %1, the territory flag for `%2` has been stolen! You need to get it back before you can upgrade your base"
-
   Upgrade_MaxLevel:
     arguments:
     - "Player mention"
     - "Territory ID"
     english: "Hey %1, `%2` cannot be upgrade as that it is already at the highest level"
-
-  Upgrade_TooPoor:
-    arguments:
-    - "Player mention"
-    - "Upgrade cost"
-    - "Current locker amount"
-    english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
 
   # Toast message to player
   Upgrade_Toast_Title:
@@ -174,11 +182,6 @@ ESMs_command_upgrade:
     english: "Your territory has reached level %1 and now has a new radius of %2 meters."
 
   # Discord message to player
-  Upgrade_Response_Author:
-    arguments:
-    - "Server ID"
-    english: "Sent from %1"
-
   Upgrade_Response_Title:
     arguments:
     - "Territory ID"
@@ -253,11 +256,6 @@ ESMs_command_remove:
     english: "Hey %1, you can't remove someone you have no power over."
 
   # Discord message to player
-  Remove_Response_Author:
-    arguments:
-    - "Server ID"
-    english: "Sent from %1"
-
   Remove_Response_Title:
     arguments:
     - "Territory ID"
@@ -275,3 +273,47 @@ ESMs_command_remove:
 
   Remove_Log_Description:
     english: "Player removed Target from territory"
+
+################################################################################
+# /territory pay
+ESMs_command_pay:
+  Pay_Response_Title:
+    arguments:
+    - "Territory ID"
+    english: "Successfully paid protection money for territory `%1`"
+
+  Pay_Response_Receipt:
+    arguments:
+    - "Locker balance before"
+    - "Protection cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |-
+      ```
+               Locker:  +%1
+       Protection fee:  -%2
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
+      ```
+
+  Pay_Log_Title:
+    english: "`ESMs_command_pay` executed successfully"
+
+  Pay_Log_Description:
+    arguments:
+    - "Locker balance before"
+    - "Protection cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |-
+      Territory protection money paid
+      ```
+               Locker:  +%1
+       Protection fee:  -%2
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
+      ```

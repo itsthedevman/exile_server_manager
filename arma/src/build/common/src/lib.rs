@@ -14,48 +14,58 @@ use uuid::Uuid;
 pub mod error;
 pub use error::*;
 
+const RED: [u8; 3] = [153, 0, 51];
+const YELLOW: [u8; 3] = [153, 102, 0];
+const BLUE: [u8; 3] = [102, 204, 255];
+const GRAY: [u8; 3] = [80, 82, 86];
+const ORANGE: [u8; 3] = [255, 153, 102];
+
 lazy_static! {
     pub static ref WHITESPACE_REGEX: Regex = Regex::new(r"\t|\s+").unwrap();
     pub static ref HIGHLIGHTS: Vec<Highlight> = vec![
         Highlight {
             regex: Regex::new(r"ERROR\b").unwrap(),
-            color: [153, 0, 51],
+            color: RED,
         },
         Highlight {
             regex: Regex::new(r"Missing '.+'").unwrap(),
-            color: [153, 0, 51],
+            color: RED,
         },
         Highlight {
             regex: Regex::new(r"Error in expression").unwrap(),
-            color: [153, 0, 51],
+            color: RED,
+        },
+        Highlight {
+            regex: Regex::new(r"String STR\w+ not found").unwrap(),
+            color: RED
         },
         Highlight {
             regex: Regex::new(r"Undefined variable in expression").unwrap(),
-            color: [153, 0, 51],
+            color: RED,
         },
         Highlight {
             regex: Regex::new(r"CallExtension 'esm' could not be found").unwrap(),
-            color: [153, 0, 51],
+            color: RED,
         },
         Highlight {
             regex: Regex::new(r"Warning Message:.+").unwrap(),
-            color: [153, 102, 0],
+            color: YELLOW,
         },
         Highlight {
             regex: Regex::new(r"WARN").unwrap(),
-            color: [153, 102, 0],
+            color: YELLOW,
         },
         Highlight {
             regex: Regex::new(r"INFO").unwrap(),
-            color: [102, 204, 255],
+            color: BLUE,
         },
         Highlight {
             regex: Regex::new(r"DEBUG").unwrap(),
-            color: [80, 82, 86],
+            color: GRAY,
         },
         Highlight {
             regex: Regex::new(r"TRACE").unwrap(),
-            color: [255, 153, 102],
+            color: ORANGE,
         },
     ];
 }
@@ -481,7 +491,11 @@ impl System {
         let result = endpoint.send(Command::System(self.to_owned()))?;
 
         let Command::SystemResponse(result) = result else {
-            return Err("Invalid response for System command. Must be Command::SystemResponse".to_string().into());
+            return Err(
+                "Invalid response for System command. Must be Command::SystemResponse"
+                    .to_string()
+                    .into(),
+            );
         };
 
         Ok(result)

@@ -68,6 +68,7 @@ forEach
 [
     define_fn!("ESMs_command_add"),
     define_fn!("ESMs_command_demote"),
+    define_fn!("ESMs_command_pay"),
     define_fn!("ESMs_command_remove"),
     define_fn!("ESMs_command_reward"),
     define_fn!("ESMs_command_sqf"),
@@ -84,6 +85,8 @@ forEach
     define_fn!("ESMs_system_process_postInit"),
     define_fn!("ESMs_system_territory_checkAccess"),
     define_fn!("ESMs_system_territory_get"),
+    define_fn!("ESMs_system_territory_incrementPaymentCounter"),
+    define_fn!("ESMs_system_territory_resetPaymentCounter"),
     define_fn!("ESMs_util_array_all"),
     define_fn!("ESMs_util_array_isValidHashmap"),
     define_fn!("ESMs_util_array_map"),

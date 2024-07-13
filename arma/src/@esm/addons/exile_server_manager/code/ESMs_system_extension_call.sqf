@@ -93,25 +93,26 @@ private _sanitizer = {
 };
 
 // Using the sanitizer, sanitize the provided arguments
-private _sanitizedArguments = [_arguments, _sanitizer] call ESMs_util_array_map;
-// debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
-
-// Convert any arrays to string
-// As of arma-rs 1.10, Array and Hashmap types are supported. However, I have my own parser that expects Strings
-_sanitizedArguments = [
-	_sanitizedArguments,
+private _sanitizedArguments = [
+	_arguments,
 	{
-		if (type?(_this, ARRAY)) then
+		private _result = _this call _sanitizer;
+
+		// As of arma-rs 1.10, Array and Hashmap types are supported.
+		// However, my own parser handles more complex scenarios when the data is a String
+		if (type?(_result, ARRAY)) then
 		{
-			str(_this)
+			str(_result)
 		}
 		else
 		{
-			_this
+			_result
 		}
 	}
 ]
 call ESMs_util_array_map;
+
+// debug!("[%1] Calling endpoint ""%2"" with: %3", _id, _function, _sanitizedArguments);
 
 // Call the extension and process the result
 private _result = "esm" callExtension [_function, _sanitizedArguments];
@@ -121,7 +122,7 @@ private _result = "esm" callExtension [_function, _sanitizedArguments];
 if ((_result select 1) > 0) exitWith
 {
 	private _reason = (_result select [0, 2]) call ESMs_util_extension_formatError;
-	error!("[%1] Extension call to function ""%2"" barfed. Reason: %3", _id, _function, _reason);
+	error!("[%1] Extension call to function ""%2"" barfed. %3", _id, _function, _reason);
 
 	nil
 };
@@ -130,7 +131,7 @@ if ((_result select 1) > 0) exitWith
 if ((_result select 2) > 0) exitWith
 {
 	private _reason = (_result select 2) call ESMs_util_extension_formatArmaError;
-	error!("[%1] Extension call to function ""%2"" caused Arma to barf. Reason: %3", _id, _function, _reason);
+	error!("[%1] Extension call to function ""%2"" caused Arma to barf. %3", _id, _function, _reason);
 
 	nil
 };

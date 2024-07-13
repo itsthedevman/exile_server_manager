@@ -19,10 +19,10 @@ Examples:
 	(begin example)
 
 	// Returns true if the player, at the very least, has build rights
-	[_flagObject, _playerUID] call ESMs_system_territory_checkAccess;
+	[_territory, _playerUID] call ESMs_system_territory_checkAccess;
 
 	// Returns true if the player has moderator access, or is the owner
-	[_flagObject, _playerUID, "moderator"] call ESMs_system_territory_checkAccess;
+	[_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess;
 
 	(end)
 
@@ -35,7 +35,7 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-private _flagObject = _this select 0;
+private _territory = _this select 0;
 private _playerUID = _this select 1;
 
 // Territory admins can view any territory
@@ -47,19 +47,19 @@ switch (toLower(_minimumAccessLevel)) do
 {
 	case "moderator":
 	{
-		private _moderators = _flagObject getVariable ["ExileTerritoryModerators", []];
+		private _moderators = _territory getVariable ["ExileTerritoryModerators", []];
 		_playerUID in _moderators
 	};
 
 	case "owner":
 	{
-		private _owner = _flagObject getVariable ["ExileOwnerUID", ""];
+		private _owner = _territory getVariable ["ExileOwnerUID", ""];
 		_owner isEqualTo _playerUID
 	};
 
 	default
 	{
-		private _buildRights = _flagObject getVariable ["ExileTerritoryBuildRights", []];
+		private _buildRights = _territory getVariable ["ExileTerritoryBuildRights", []];
 		_playerUID in _buildRights
 	};
 }

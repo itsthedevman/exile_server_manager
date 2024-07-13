@@ -1,15 +1,16 @@
 /* ----------------------------------------------------------------------------
 Function:
-	ESMs_command_upgrade
+	ESMs_command_pay
 
 Description:
-	Upgrades a territory
+	Handles paying a player's territory protection payment.
+	A configurable tax will be added to the cost of the payment
 
 Parameters:
-  _this - [Hashmap] A hashmap representation of a ESM message
+	_this - [HashMap]
 
 Returns:
-  Nothing
+	Nothing
 
 Author:
 	Exile Server Manager
@@ -41,7 +42,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 //////////////////////
 // Initialization
 //////////////////////
-private _loggingEnabled = ESM_Logging_UpgradeTerritory;
+private _loggingEnabled = ESM_Logging_PayTerritory;
 private _encodedTerritoryID = get!(_data, "territory_id");
 private _territoryDatabaseID = get!(_data, "territory_database_id");
 
@@ -56,6 +57,7 @@ try
 	//////////////////////
 	// Validation
 	//////////////////////
+
 	// Ensure the player has joined the server at least once
 	if !(_playerUID call ESMs_system_account_isKnown) then
 	{
@@ -79,9 +81,9 @@ try
 		];
 	};
 
-	// Ensure the player is at least a moderator
+	// Ensure the player is at least a builder
 	// Territory admins bypass this
-	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
+	if !([_territory, _playerUID] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
 			["admin", [
@@ -104,25 +106,16 @@ try
 		throw [["player", localize!("StolenFlag", _playerMention, _encodedTerritoryID)]];
 	};
 
-	// Max level check
-	private _currentLevel = _territory getVariable ["ExileTerritoryLevel", 0];
-	private _upgradeListings = getArray(missionConfigFile >> "CfgTerritories" >> "Prices");
-	private _maxLevel = count _upgradeListings;
-	private _nextLevel = _currentLevel + 1;
+	private _territoryPrice = (
+		(_territory getVariable ["ExileTerritoryLevel", 1])
+		*
+		(getNumber (missionConfigFile >> "CfgTerritories" >> "popTabAmountPerObject"))
+		*
+		(_territory getVariable ["ExileTerritoryNumberOfConstructions", 0])
+	);
 
-	if (_nextLevel > _maxLevel) then
-	{
-		throw [["player", localize!("Upgrade_MaxLevel", _playerMention, _encodedTerritoryID)]];
-	};
-
-	// Gather the upgrade information
-	private _upgradeListing = _upgradeListings select _currentLevel;
-	private _territoryPrice = _upgradeListing select 0;
-	private _territoryRange = _upgradeListing select 1;
-	private _territoryMaxObjectCount = _upgradeListing select 2;
-
-	// Calculate a payment tax. ESM_Taxes_TerritoryUpgrade is a decimal between 0 and 1
-	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryUpgrade);
+	// Calculate a payment tax. ESM_Taxes_TerritoryPayment is a decimal between 0 and 1
+	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryPayment);
 	private _territoryPriceSubTotal = _territoryPrice + _tax;
 
 	//////////////////////
@@ -180,46 +173,33 @@ try
 		"updateLocker:%1:%2",
 		_updatedPlayerMoney,
 		_playerUID
-	] call ExileServer_system_database_query_fireAndForget;
+	]
+	call ExileServer_system_database_query_fireAndForget;
 
+	// Extend the due date of the territory
+	_territory setVariable [
+		"ExileTerritoryLastPayed",
+		[] call ExileServer_util_time_currentTime
+	];
+
+	_territory call ExileServer_system_territory_maintenance_recalculateDueDate;
+
+	// Save the due date in the database
 	format[
-		"setTerritoryLevel:%1:%2",
-		_nextLevel,
+		"maintainTerritory:%1",
 		_territoryDatabaseID
-	] call ExileServer_system_database_query_fireAndForget;
+	]
+	call ExileServer_system_database_query_fireAndForget;
 
-	format[
-		"setTerritorySize:%1:%2",
-		_territoryRange,
-		_territoryDatabaseID
-	] call ExileServer_system_database_query_fireAndForget;
+	// Send a broadcast on the XM8
+	_territory call ExileServer_system_xm8_sendProtectionMoneyPaid;
 
-	_territory setVariable ["ExileTerritoryLevel", _nextLevel, true];
-	_territory setVariable ["ExileTerritorySize", _territoryRange, true];
-
-	// Update all constructions and containers
-	_territory call ExileServer_system_territory_updateNearContainers;
-	_territory call ExileServer_system_territory_updateNearConstructions;
+	// Increase the payment counter
+	_territory call ESMs_system_territory_incrementPaymentCounter;
 
 	//////////////////////
 	// Completion
 	//////////////////////
-	// Tell the client
-	if !(isNull(_playerObject)) then
-	{
-		[
-			_playerObject getVariable ["ExileSessionID", -1],
-			"toastRequest",
-			[
-				"SuccessTitleAndText",
-				[
-					localize!("Upgrade_Toast_Title"),
-					localize!("Upgrade_Toast_Description", _nextLevel, _territoryRange)
-				]
-			]
-		]
-		call ExileServer_system_network_send_to;
-	};
 
 	// Tell ESM
 	[
@@ -227,43 +207,18 @@ try
 		[
 			_id,
 			[
+				["author", localize!("ResponseAuthor", ESM_ServerID)],
+				["title", localize!("Pay_Response_Title", _encodedTerritoryID)],
 				[
-					"author",
-					localize!("ResponseAuthor", ESM_ServerID)
-				],
-				[
-					"title",
-					localize!("Upgrade_Response_Title", _encodedTerritoryID, _nextLevel)
-				],
-				[
-					"fields",
-					[
-						[
-							localize!("Upgrade_Response_Range_Title"),
-							localize!("Upgrade_Response_Range_Value", _territoryRange),
-							true
-						],
-						[
-							localize!("Upgrade_Response_Objects_Title"),
-							format[
-								localize!("Upgrade_Response_Objects_Value"),
-								_territory getVariable ["ExileTerritoryNumberOfConstructions", 0],
-								_territoryMaxObjectCount
-							],
-							true
-						],
-						[
-							localize!("Receipt"),
-							format [
-								localize!("Upgrade_Response_Receipt"),
-								_playerMoney call ESMs_util_number_toString,
-								_territoryPrice call ESMs_util_number_toString,
-								_tax call ESMs_util_number_toString,
-								ESM_Taxes_TerritoryUpgrade * 100,
-								"%", // Because Arma
-								_updatedPlayerMoney call ESMs_util_number_toString
-							]
-						]
+					"description",
+					format [
+						localize!("Pay_Response_Receipt"),
+						_playerMoney call ESMs_util_number_toString,
+						_territoryPrice call ESMs_util_number_toString,
+						_tax call ESMs_util_number_toString,
+						ESM_Taxes_TerritoryPayment * 100,
+						"%", // Because Arma
+						_updatedPlayerMoney call ESMs_util_number_toString
 					]
 				]
 			]
@@ -273,34 +228,28 @@ try
 		_loggingEnabled,
 		{
 			[
-				["color", "green"],
-				["title", localize!("Upgrade_Log_Title")],
+				["title", localize!("Pay_Log_Title")],
 				[
 					"description",
 					format [
-						localize!("Upgrade_Log_Description"),
-						_nextLevel,
+						localize!("Pay_Log_Description"),
 						_playerMoney call ESMs_util_number_toString,
 						_territoryPrice call ESMs_util_number_toString,
 						_tax call ESMs_util_number_toString,
-						ESM_Taxes_TerritoryUpgrade * 100,
+						ESM_Taxes_TerritoryPayment * 100,
 						"%", // Because Arma
 						_updatedPlayerMoney call ESMs_util_number_toString
 					]
 				],
-				[
-					"fields",
-					[
-						[
-							localize!("Territory"),
-							[
-								["id", _encodedTerritoryID],
-								["name", _territory getVariable ["ExileTerritoryName", "N/A"]]
-							]
-						],
-						[localize!("Player"), _playerMetadata]
-					]
-				]
+				["color", "green"],
+				["fields", [
+					[localize!("Territory"), [
+						["id", _encodedTerritoryID],
+						["name", _territory getVariable ["ExileTerritoryName", "N/A"]],
+						["payment counter", _territory getVariable ["ESM_PaymentCounter", 0]]
+					]],
+					[localize!("Player"), _playerMetadata, true]
+				]]
 			]
 		}
 	]
