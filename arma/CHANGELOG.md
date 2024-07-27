@@ -41,15 +41,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
 
 ### Changed
-- Changed Exile file naming prefix for ESM's server and client functions. `ESMs` means a server function, `ESMc` means a client function
-- Changed file naming scheme from BIS to Exile
 - Changed database ID encoded hashing algorithm to utilize a unique server key making encoded territory IDs unique to each individual server
-- Replaced `ESM.key` with `esm.key` and changed data structure
+- Changed Exile file naming prefix for ESM's server and client functions.
+    - `ESMs` (ESMServer) means a server function
+    - `ESMc` (ESMClient) means a client function
+- Changed file naming scheme from BIS to Exile
+- Changed how ESM responds to invalid territory IDs by returning a generic territory not found message
 - Moved embedded SQL in extension into separate SQL files in `@esm/sql/queries`
 - Renamed `ESM_DatabaseVersion` to `ESM_DatabaseExtension`
 - Renamed `ESM_PayTaxPercentage` to `ESM_Taxes_TerritoryPayment`
 - Renamed `ESM_UpgradeTaxPercentage` to `ESM_Taxes_TerritoryUpgrade`
-- Reworked the reconnection workflow to keep attempting to reconnect without limit. The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes.
 - Replaced `ESM_fnc_addPlayerToTerritory` with `ESMs_command_add`
 - Replaced `ESM_fnc_callExtension` with `ESMs_system_extension_call`
 - Replaced `ESM_fnc_demotePlayer` with `ESMs_command_demote`
@@ -70,6 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_scalarToString` with extension based function `ESMs_util_number_toString` for speedy formatting
 - Replaced `ESM_fnc_sendToChannel` with `ESMs_system_network_discord_send_to`
 - Replaced `ESM_fnc_upgradeTerritory` with `ESMs_command_upgrade`
+- Replaced `ESM.key` with `esm.key` and changed data structure
+- Reworked the reconnection workflow to keep attempting to reconnect without limit.
+    - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes.
 
 ### Removed
 - Removed `ESM_fnc_attemptReconnect`

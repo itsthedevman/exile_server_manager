@@ -1,7 +1,6 @@
 mod queries;
 
 use crate::*;
-use queries::*;
 
 use ini::Ini;
 pub use mysql_async::{params, prelude::Queryable, Conn, Opts, Params, Pool, Result as SQLResult};
@@ -87,33 +86,6 @@ impl Database {
         }
     }
 
-    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
-        let mut connection = self.connection().await?;
-
-        if let Some(id) = self.hasher.decode(&territory_id) {
-            return Ok(id);
-        }
-
-        // The ID was not hashed, check to see if it is a custom ID
-        let result: SQLResult<Option<u64>> = connection
-            .exec_first(
-                &self.statements.decode_territory_id,
-                params! { "territory_id" => territory_id },
-            )
-            .await;
-
-        match result {
-            Ok(r) => match r {
-                Some(v) => Ok(v),
-                None => Err(Error {
-                    error_type: ErrorType::Code,
-                    error_content: String::from("territory_id_does_not_exist"),
-                }),
-            },
-            Err(e) => Err(e.to_string().into()),
-        }
-    }
-
     pub async fn query(&self, name: &str, arguments: HashMap<String, String>) -> DatabaseResult {
         let mut connection = self.connection().await?;
 
@@ -127,6 +99,7 @@ impl Database {
                 queries::command_all_territories(&self, &mut connection, &arguments).await
             }
             "set_id" => queries::command_set_id(&self, &mut connection, &arguments).await,
+            "restore" => queries::command_restore(&self, &mut connection, &arguments).await,
             _ => {
                 return Err(format!(
                     "[query] ❌ Unexpected query \"{}\" with arguments {:?}",
@@ -139,43 +112,40 @@ impl Database {
         query_result
     }
 
-    pub async fn set_territory_payment_counter(&self, database_id: usize, counter_value: usize) {
-        let mut connection = match self.connection().await {
-            Ok(c) => c,
-            Err(e) => {
-                error!("[set_territory_payment_counter] ❌ {e}");
-                return;
-            }
-        };
+    /// Attempts to decode a hashed territory ID or custom ID
+    /// Do not use if you already have access to the database and connection (i.e in query files)
+    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
+        let mut connection = self.connection().await?;
+        queries::decode_territory_id(&self, &mut connection, territory_id).await
+    }
 
-        let result = connection
-            .exec_drop(
-                &self.statements.set_territory_payment_counter,
-                params! {
-                    "counter_value" => counter_value,
-                    "territory_id" => database_id
-                },
-            )
-            .await;
+    pub async fn set_territory_payment_counter(
+        &self,
+        database_id: usize,
+        counter_value: usize,
+    ) -> Result<(), Error> {
+        let mut connection = self.connection().await?;
 
-        if let Err(e) = result {
-            error!("[set_territory_payment_counter] ❌ {e}");
-            return;
-        }
+        queries::set_territory_payment_counter(&self, &mut connection, database_id, counter_value)
+            .await
     }
 }
 
 // Generates a Statements struct containing these attributes and the contents of their
 // corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
 statements! {
+    check_if_territory_exists,
     check_if_territory_owner,
     decode_territory_id,
     set_territory_payment_counter,
 
     // Command queries
-    command_me,
     command_all_territories,
-    command_set_id
+    command_me,
+    command_restore_territory,
+    command_restore_construction,
+    command_restore_container,
+    command_set_id,
 }
 
 /*

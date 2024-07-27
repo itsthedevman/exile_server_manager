@@ -8,7 +8,7 @@ pub async fn command_reward_territories(
     let player_uid = match arguments.get("uid") {
         Some(uid) => uid,
         None => {
-            error!("[query_reward_territories] ❌ Missing key `uid` in provided query arguments");
+            error!("[command_reward_territories] ❌ Missing key `uid` in provided query arguments");
             return Err("error".into());
         }
     };
@@ -61,7 +61,7 @@ AND
             Ok(results)
         }
         Err(e) => {
-            error!("[reward_territories] ❌ Query failed - {}", e);
+            error!("[command_reward_territories] ❌ Query failed - {}", e);
             Err("error".into())
         }
     }

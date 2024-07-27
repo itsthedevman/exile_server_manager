@@ -20,23 +20,16 @@ pub async fn command_set_id(
         return Err("error".into());
     };
 
-    // This handles both hashed IDs or custom IDs
-    let territory_id = context.decode_territory_id(territory_id).await?;
+    // This handles both hashed IDs or custom 
+    let territory_id = queries::decode_territory_id(context, connection, territory_id).await?;
 
     // Territory admins can bypass this check.
     // Otherwise, check to see if the steam_uid is the owner's
     if !arma::is_territory_admin(&steam_uid) {
-        let owner_check: Option<String> = connection
-            .exec_first(
-                &context.statements.check_if_territory_owner,
-                params! {
-                    "territory_id" => territory_id,
-                    "owner_uid" => steam_uid
-                },
-            )
-            .await?;
+        let is_owner =
+            queries::check_if_territory_owner(context, connection, territory_id, steam_uid).await?;
 
-        if owner_check.is_none() || owner_check.is_some_and(|v| v == "false".to_string()) {
+        if !is_owner {
             // This might seem odd but pretending the territory ID doesn't exist
             // means we're not accidentally exposing if an encoded/custom ID exists in the DB
             return Err("territory_id_does_not_exist".into());

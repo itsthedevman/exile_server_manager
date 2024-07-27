@@ -38,7 +38,7 @@ pub async fn command_all_territories(
             Ok(results)
         }
         Err(e) => {
-            error!("[query_me] ❌ Query failed - {}", e);
+            error!("[command_all_territories] ❌ Query failed - {}", e);
             Err("error".into())
         }
     }

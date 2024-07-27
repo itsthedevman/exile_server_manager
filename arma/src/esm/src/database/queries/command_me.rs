@@ -28,7 +28,7 @@ pub async fn command_me(
     let player_uid = match arguments.get("uid") {
         Some(uid) => uid,
         None => {
-            error!("[query_me] ❌ Missing key `uid` in provided query arguments");
+            error!("[command_me] ❌ Missing key `uid` in provided query arguments");
             return Err("error".into());
         }
     };
@@ -78,7 +78,7 @@ pub async fn command_me(
             Ok(results)
         }
         Err(e) => {
-            error!("[query_me] ❌ Query failed - {}", e);
+            error!("[command_me] ❌ Query failed - {}", e);
             Err("error".into())
         }
     }
