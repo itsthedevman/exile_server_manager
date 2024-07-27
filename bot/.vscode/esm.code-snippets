@@ -154,9 +154,7 @@
       "\t\t# Uncomment if \"requires_connection\" is true",
       "\t\t# include_context \"connection\"",
       "",
-      "\t\tit \"!${2:command_name} ${3:arguments}\" do",
-      "\t\t\texecute!(${4:arguments})",
-      "\t\tend",
+      "\t\tcontext \"\"",
       "\tend",
       "end"
     ],

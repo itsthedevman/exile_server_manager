@@ -30,30 +30,37 @@ module ESM
 
         def on_execute
           check_for_owned_server!
-          deliver!(query: "restore", territory_id: arguments.territory_id)
+          run_database_query("restore", territory_id: arguments.territory_id)
         end
 
-        def on_response
-          embed =
-            if @response.success
-              ESM::Embed.build(
-                :success,
-                description: I18n.t("commands.restore.success_message", user: current_user.mention, territory_id: arguments.territory_id)
-              )
-            else
-              ESM::Embed.build(
-                :error,
-                description: I18n.t(
-                  "commands.restore.failure_message",
-                  user: current_user.mention,
-                  territory_id: arguments.territory_id,
-                  server: target_server.server_id
+        module V1
+          def on_execute
+            check_for_owned_server!
+            deliver!(query: "restore", territory_id: arguments.territory_id)
+          end
+
+          def on_response
+            embed =
+              if @response.success
+                ESM::Embed.build(
+                  :success,
+                  description: I18n.t("commands.restore.success_message", user: current_user.mention, territory_id: arguments.territory_id)
                 )
-              )
+              else
+                ESM::Embed.build(
+                  :error,
+                  description: I18n.t(
+                    "commands.restore.failure_message",
+                    user: current_user.mention,
+                    territory_id: arguments.territory_id,
+                    server: target_server.server_id
+                  )
+                )
 
-            end
+              end
 
-          reply(embed)
+            reply(embed)
+          end
         end
       end
     end

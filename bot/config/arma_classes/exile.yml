@@ -263,11 +263,8 @@ exile:
         Exile_Item_OldChestKit: "Old Chest Kit"
         Exile_Item_PortableGeneratorKit: "Portable Generator Kit"
         Exile_Item_RazorWireKit: "Razor Wire Kit"
-        Exile_Item_SafeKit: "Safe Kit"
-        Exile_Item_SafeSmallKit: "Safe Small Kit"
         Exile_Item_SandBagsKit_Corner: "Sandbags Kit (Corner)"
         Exile_Item_SandBagsKit_Long: "Sandbags Kit (Long)"
-        Exile_Item_Storagecratekit: "Storage Crate Kit"
         Exile_Item_WaterBarrelKit: "Water Barrel Kit"
         Exile_Item_WireFenceKit: "Wire Fence Kit"
         Exile_Item_WoodDoorKit: "Wood Door Kit"
@@ -285,6 +282,13 @@ exile:
         Exile_Item_WoodWallKit: "Wood Wall Kit"
         Exile_Item_WoodWindowKit: "Wood Window Kit"
         Exile_Item_WorkBenchKit: "Work Bench Kit"
+
+    exile_container:
+      name: "Exile Container"
+      entries:
+        Exile_Item_SafeKit: "Safe Kit"
+        Exile_Item_SafeSmallKit: "Safe Small Kit"
+        Exile_Item_Storagecratekit: "Storage Crate Kit"
 
     exile_misc:
       name: "Exile Misc"

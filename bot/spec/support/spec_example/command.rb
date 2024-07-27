@@ -86,7 +86,19 @@ end
 RSpec.shared_examples("arma_error_too_poor") do
   it "raises TooPoor" do
     expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match(/you do not have enough poptabs in your locker. It costs ..[\d,]+.. and you have ..[\d,]+../)
+      expect(error.data.description).to match(
+        /you do not have enough poptabs in your locker. It costs ..[\d,]+.. and you have ..[\d,]+../
+      )
+    end
+  end
+end
+
+RSpec.shared_examples("error_territory_id_does_not_exist") do
+  it "raises territory_id_does_not_exist" do
+    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+      expect(error.data.description).to match(
+        "I was unable to find an active territory with an ID of `#{territory.encoded_id}`"
+      )
     end
   end
 end

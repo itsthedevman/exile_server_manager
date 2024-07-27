@@ -59,6 +59,9 @@ module ESM
     # Not database backed
     attribute :number_of_constructions, :integer, default: 0
 
+    has_many :containers, class_name: "ESM::ExileContainer", dependent: :destroy
+    has_many :constructions, class_name: "ESM::ExileConstruction", dependent: :destroy
+
     after_save :update_arma
 
     scope :active, -> { where(deleted_at: nil) }

@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.4] - 2024-07-20
+
+### Added
+- Added @esm v2 support to `/territory admin restore`
+- Tests - Added `ESM::ExileContainer` and `ESM::ExileConstruction` models and factories
+- Tests - Added `error_territory_id_does_not_exist` command example
+
+### Changed
+- Improved `ESM::Arma::ClassLookup`
+    - Added auto-caching
+    - Moved container class names from `exile_construction` into `exile_container`
+
+### Removed
+
 ## [2.3.2.3] - 2024-07-13
 
 ### Added
