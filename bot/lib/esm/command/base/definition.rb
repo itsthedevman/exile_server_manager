@@ -251,6 +251,9 @@ module ESM
               :connected_server, :cooldown, :nil_target_user,
               :nil_target_server, :nil_target_community, :different_community
             )
+
+            # Require registration by default
+            requires :registration
           end
 
           # @!visibility private
