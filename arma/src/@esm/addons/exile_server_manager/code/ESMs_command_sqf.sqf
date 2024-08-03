@@ -79,12 +79,6 @@ try
 				private _playerMention = dig!(_metadata, "player", "discord_mention");
 				private _targetMention = dig!(_metadata, "target", "discord_mention");
 
-				// This can be executed on a player that is not registered with ESM
-				if (nil?(_targetMention) || { empty?(_targetMention) }) then
-				{
-					_targetMention = _targetUID;
-				};
-
 				throw [
 					["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
 				];

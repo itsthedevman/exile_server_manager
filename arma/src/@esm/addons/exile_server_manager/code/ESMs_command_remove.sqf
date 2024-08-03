@@ -93,10 +93,6 @@ try
 	{
 		// This can be executed on a player that is not registered with ESM
 		private _targetMention = get!(_targetMetadata, "discord_mention");
-		if (nil?(_targetMention) || { empty?(_targetMention) }) then
-		{
-			_targetMention = _targetUID;
-		};
 
 		throw [
 			["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]

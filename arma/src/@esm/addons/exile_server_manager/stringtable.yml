@@ -132,6 +132,30 @@ ESMs_command_add:
     - "Player mention"
     english: "Hey %1, this player already has build rights"
 
+  # Discord message to the user who requested to add the player
+  # This message is only sent if the requestor is not the requestee
+  Add_Response_Requestor_Title:
+    english: "Added player to territory"
+
+  Add_Response_Requestor_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hi %1, %2 has been added to territory `%3`"
+
+  # Discord message to player who is being added
+  Add_Response_Requestee_Title:
+    arguments:
+    - "Territory name"
+    english: "Welcome to %1!"
+
+  Add_Response_Requestee_Description:
+    arguments:
+    - "Target mention"
+    - "Territory ID"
+    english: "Hi %1, you've been added to territory `%2`"
+
   # Discord message to logging channel
   Add_Log_Title:
     english: "`ESMs_command_add` executed successfully"
@@ -154,6 +178,17 @@ ESMs_command_demote:
     arguments:
     - "Player mention"
     english: "Hey %1, you can't demote someone you have no power over."
+
+  # Discord message to player
+  Demote_Response_Title:
+    english: "Player demoted"
+
+  Demote_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hey %1, `%2` has been demoted to builder in territory `%3`"
 
   # Discord message to logging channel
   Demote_Log_Title:

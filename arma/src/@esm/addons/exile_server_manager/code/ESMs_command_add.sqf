@@ -58,6 +58,7 @@ private _targetMetadata = get!(_metadata, "target");
 private _playerUID = get!(_playerMetadata, "steam_uid");
 private _playerMention = get!(_playerMetadata, "discord_mention");
 private _targetUID = get!(_targetMetadata, "steam_uid");
+private _targetMention = get!(_targetMetadata, "discord_mention");
 
 private _territory = _territoryDatabaseID call ESMs_system_territory_get;
 
@@ -158,9 +159,45 @@ try
 	//////////////////////
 	// Completion
 	//////////////////////
+	private _territoryName = _territory getVariable ["ExileTerritoryName", "N/A"];
 	[
 		// Response
-		[_id],
+		[
+			_id,
+			[
+				[
+					"requestor",
+					[
+						["author", localize!("ResponseAuthor", ESM_ServerID)],
+						["title", localize!("Add_Response_Requestor_Title")],
+						[
+							"description",
+							format[
+								localize!("Add_Response_Requestor_Description"),
+								_playerMention,
+								_targetMention,
+								_encodedTerritoryID
+							]
+						]
+					]
+				],
+				[
+					"requestee",
+					[
+						["author", localize!("ResponseAuthor", ESM_ServerID)],
+						["title", localize!("Add_Response_Requestee_Title", _territoryName)],
+						[
+							"description",
+							format[
+								localize!("Add_Response_Requestee_Description"),
+								_targetMention,
+								_encodedTerritoryID
+							]
+						]
+					]
+				]
+			]
+		],
 
 		// Log the following?
 		_loggingEnabled,

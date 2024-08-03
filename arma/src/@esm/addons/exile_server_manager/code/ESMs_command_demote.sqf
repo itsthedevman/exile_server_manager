@@ -57,6 +57,7 @@ private _playerUID = get!(_playerMetadata, "steam_uid");
 private _targetUID = get!(_targetMetadata, "steam_uid");
 
 private _playerMention = get!(_playerMetadata, "discord_mention");
+private _targetMention = get!(_targetMetadata, "discord_mention");
 
 private _territory = _territoryDatabaseID call ESMs_system_territory_get;
 
@@ -91,13 +92,6 @@ try
 	// Ensure the target player has joined the server at least once
 	if !(_targetUID call ESMs_system_account_isKnown) then
 	{
-		// This can be executed on a player that is not registered with ESM
-		private _targetMention = get!(_targetMetadata, "discord_mention");
-		if (nil?(_targetMention) || { empty?(_targetMention) }) then
-		{
-			_targetMention = _targetUID;
-		};
-
 		throw [
 			["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
 		];
@@ -159,7 +153,22 @@ try
 	//////////////////////
 	[
 		// Response
-		[_id],
+		[
+			_id,
+			[
+				["author", localize!("ResponseAuthor", ESM_ServerID)],
+				["title", localize!("Demote_Response_Title")],
+				[
+					"description",
+					format[
+						localize!("Demote_Response_Description"),
+						_playerMention,
+						_targetMention,
+						_encodedTerritoryID
+					]
+				]
+			]
+		],
 
 		// Log the following?
 		_loggingEnabled,
