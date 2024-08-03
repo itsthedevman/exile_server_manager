@@ -126,6 +126,12 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
           expect(territory.moderators).not_to include(second_user.steam_uid)
           expect(territory.build_rights).to include(second_user.steam_uid)
+
+          expect(
+            ESM::Test.messages.retrieve(
+              /`#{second_user.mention}` has been demoted to builder in territory `#{territory.encoded_id}`/i
+            )
+          ).not_to be_nil
         end
       end
 

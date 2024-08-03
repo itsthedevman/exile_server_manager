@@ -31,20 +31,13 @@ module ESM
           # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          call_sqf_function(
+          response = call_sqf_function(
             "ESMs_command_demote",
             territory_id: arguments.territory_id
           )
 
-          message = I18n.t(
-            "commands.demote.success_message",
-            user: current_user.mention,
-            target_uid: target_uid,
-            territory_id: arguments.territory_id,
-            server: target_server.server_id
-          )
-
-          reply(ESM::Embed.build(:success, description: message))
+          embed = embed_from_message!(response)
+          reply(embed)
         end
 
         module V1

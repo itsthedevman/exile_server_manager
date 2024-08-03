@@ -11,7 +11,7 @@ module ESM
           attr_predicate :modifiable
 
           def initialize(modifiable: true, default: nil)
-            super(modifiable: modifiable, default: default)
+            super
           end
 
           def default?
@@ -246,9 +246,6 @@ module ESM
             self.limited_to = nil
             self.type = :player
             self.requirements = Inquirer.new(:dev, :registration)
-
-            # Require registration by default
-            requirements.set(:registration)
 
             self.skipped_actions = Inquirer.new(
               :connected_server, :cooldown, :nil_target_user,

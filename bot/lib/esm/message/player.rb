@@ -17,7 +17,12 @@ module ESM
             discord_mention: user.mention
           )
         when ESM::User::Ephemeral
-          data[:steam_uid] = user.steam_uid
+          # Ephemeral#mention will return the steam_uid
+          # This simplifies message logic in the mod
+          data.merge(
+            steam_uid: user.steam_uid,
+            discord_mention: user.mention
+          )
         else
           data.merge!(user)
         end

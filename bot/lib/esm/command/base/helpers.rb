@@ -470,14 +470,19 @@ module ESM
         # Attempts to create an embed using data from the client.
         # This checks for valid attributes, and invalid attributes
         #
-        # @param message_data [Hash]
+        # @param message [Message, Hash]
         #
         # @return [ESM::Embed]
         #
         def embed_from_message!(message)
-          message_data = message.data.to_h
-          message_data.deep_symbolize_keys!
+          message_data =
+            if message.is_a?(Message)
+              message.data.to_h
+            else
+              message
+            end
 
+          message_data.deep_symbolize_keys!
           embed_data = message_data.slice(*Embed::ATTRIBUTES)
 
           invalid_attributes = message_data.keys - embed_data.keys
@@ -513,6 +518,8 @@ module ESM
           # Finally create the embed
           Embed.from_hash(embed_data)
         end
+
+        alias_method :embed_from_hash!, :embed_from_message!
       end
     end
   end

@@ -31,7 +31,8 @@ module ESM
           # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
           return on_request_accepted if same_user?
 
-          # Checks for a registered target user. This also keeps people from adding via steam_uid only
+          # Checks for a registered target user.
+          # This also keeps people from adding via steam_uid only
           check_for_registered_target_user!
           check_for_pending_request!
 
@@ -51,41 +52,22 @@ module ESM
         end
 
         def on_request_accepted
-          call_sqf_function("ESMs_command_add", territory_id: arguments.territory_id)
-          on_response
-        end
-
-        # V1
-        # This code could stay, or it could be moved into `#on_request_accepted`
-        def on_response
-          # Send the success message to the requestee (which can be the requestor)
-          embed = ESM::Embed.build(
-            :success,
-            description: I18n.t(
-              "commands.add.requestee_success",
-              user: target_user.mention,
-              territory_id: arguments.territory_id
-            )
+          response = call_sqf_function(
+            "ESMs_command_add",
+            territory_id: arguments.territory_id
           )
 
-          ESM.bot.deliver(embed, to: target_user)
+          # Parse both first in case there are errors
+          requestee_embed = embed_from_hash!(response.data.requestee)
+          requestor_embed = embed_from_hash!(response.data.requestor)
 
-          # Don't send essentially the same message twice
+          # Send to the requestee first since they can be the requestor
+          ESM.bot.deliver(requestee_embed, to: target_user)
+
+          # And if they are the same person, don't send them the second message
           return if same_user?
 
-          # Send a message to the requestor (if they aren't the requestee as well)
-          embed = ESM::Embed.build(
-            :success,
-            description: I18n.t(
-              "commands.add.requestor_success",
-              current_user: current_user.mention,
-              target_user: target_user.distinct,
-              territory_id: arguments.territory_id,
-              server_id: target_server.server_id
-            )
-          )
-
-          reply(embed)
+          reply(requestor_embed)
         end
 
         module V1
@@ -97,6 +79,37 @@ module ESM
               target_uid: target_user.steam_uid,
               uid: current_user.steam_uid
             )
+          end
+
+          def on_response
+            # Send the success message to the requestee (which can be the requestor)
+            embed = ESM::Embed.build(
+              :success,
+              description: I18n.t(
+                "commands.add.requestee_success",
+                user: target_user.mention,
+                territory_id: arguments.territory_id
+              )
+            )
+
+            ESM.bot.deliver(embed, to: target_user)
+
+            # Don't send essentially the same message twice
+            return if same_user?
+
+            # Send a message to the requestor (if they aren't the requestee as well)
+            embed = ESM::Embed.build(
+              :success,
+              description: I18n.t(
+                "commands.add.requestor_success",
+                current_user: current_user.mention,
+                target_user: target_user.distinct,
+                territory_id: arguments.territory_id,
+                server_id: target_server.server_id
+              )
+            )
+
+            reply(embed)
           end
         end
       end

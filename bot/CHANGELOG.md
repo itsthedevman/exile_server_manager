@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.5] - 2024-07-27
+
+### Added
+- Added Hash support to `ApplicationCommand#embed_from_message!`
+- Added `ApplicationCommand#embed_from_hash!` alias for `ApplicationCommand#embed_from_message!`
+
+### Changed
+- Moved registration default from `Command::Base` initializer to `ApplicationCommand` to make it clearer to see defaults
+- Defaulted `discord_mention` value to steam UID for target metadata on a `Message` when the target is Ephemeral
+- Changed `/territory add_player` and `/territory demote_player` to support embed content from SQF
+
 ## [2.3.2.4] - 2024-07-20
 
 ### Added
@@ -100,7 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.3
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.5
+[2.3.2.5]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.5..v2.3.2.4
+[2.3.2.4]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.4..v2.3.2.3
 [2.3.2.3]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.3..v2.3.2.2
 [2.3.2.2]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.2..v2.3.2.1
 [2.3.2.1]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.1..v2.3.2

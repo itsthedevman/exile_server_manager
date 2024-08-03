@@ -170,13 +170,15 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(5)
 
           # The last messages are not always in order...
+          # Requestee message
           expect(
-            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+            ESM::Test.messages.retrieve(/Welcome to #{territory.name}!/i)
           ).not_to be_nil
 
+          # Requestor message
           expect(
             ESM::Test.messages.retrieve(
-              /#{second_user.distinct} has been added to territory `#{territory.encoded_id}`/
+              /#{second_user.mention} has been added to territory `#{territory.encoded_id}`/
             )
           ).not_to be_nil
 
@@ -242,7 +244,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(5)
 
           expect(
-            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+            ESM::Test.messages.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
 
@@ -262,7 +264,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(2)
 
           expect(
-            ESM::Test.messages.retrieve(/you've been added to `#{territory.encoded_id}` successfully/i)
+            ESM::Test.messages.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
       end
