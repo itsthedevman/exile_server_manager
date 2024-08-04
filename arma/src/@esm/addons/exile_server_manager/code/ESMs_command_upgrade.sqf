@@ -56,15 +56,8 @@ try
 	//////////////////////
 	// Validation
 	//////////////////////
-	// Ensure the player has joined the server at least once
-	if !(_playerUID call ESMs_system_account_isKnown) then
-	{
-		throw [
-			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
-		];
-	};
 
-	// Ensure the territory exists
+	// Territory flag must exist in game
 	if (isNull _territory) then
 	{
 		throw [
@@ -79,8 +72,15 @@ try
 		];
 	};
 
-	// Ensure the player is at least a moderator
-	// Territory admins bypass this
+	// Player must have joined the server at least once
+	if !(_playerUID call ESMs_system_account_isKnown) then
+	{
+		throw [
+			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
+		];
+	};
+
+	// Player must have moderator permissions
 	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
@@ -96,7 +96,7 @@ try
 		];
 	};
 
-	// Flag stolen check
+	// Territory flag must not be stolen
 	// 1 means stolen
 	private _flagStolen = _territory getVariable ["ExileFlagStolen", const!(FLAG_OK)];
 	if (_flagStolen isEqualTo const!(FLAG_STOLEN)) then
@@ -104,16 +104,20 @@ try
 		throw [["player", localize!("StolenFlag", _playerMention, _encodedTerritoryID)]];
 	};
 
-	// Max level check
 	private _currentLevel = _territory getVariable ["ExileTerritoryLevel", 0];
 	private _upgradeListings = getArray(missionConfigFile >> "CfgTerritories" >> "Prices");
 	private _maxLevel = count _upgradeListings;
 	private _nextLevel = _currentLevel + 1;
 
+	// The upgraded level must not be higher than the max level
 	if (_nextLevel > _maxLevel) then
 	{
 		throw [["player", localize!("Upgrade_MaxLevel", _playerMention, _encodedTerritoryID)]];
 	};
+
+	//////////////////////
+	// Modification
+	//////////////////////
 
 	// Gather the upgrade information
 	private _upgradeListing = _upgradeListings select _currentLevel;
@@ -124,10 +128,6 @@ try
 	// Calculate a payment tax. ESM_Taxes_TerritoryUpgrade is a decimal between 0 and 1
 	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryUpgrade);
 	private _territoryPriceSubTotal = _territoryPrice + _tax;
-
-	//////////////////////
-	// Modification
-	//////////////////////
 
 	// If the player is online make sure to adjust their in-game data
 	// Otherwise, we'll get their poptabs from the database itself

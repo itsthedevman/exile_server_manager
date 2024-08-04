@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_payTerritory` with `ESMs_command_pay`
 - Replaced `ESM_fnc_postServerInitialization` with `ESMs_system_process_postInit`
 - Replaced `ESM_fnc_preInit` with `ESMs_system_process_preInit`
+- Replaced `ESM_fnc_promotePlayer` with `ESMs_command_promote`
 - Replaced `ESM_fnc_removePlayerFromTerritory` with `ESMs_command_remove`
 - Replaced `ESM_fnc_resetPaymentCounter` with `ESMs_system_territory_resetPaymentCounter`
 - Replaced `ESM_fnc_respond` with `ESMs_system_message_respond_to`

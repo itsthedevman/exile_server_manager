@@ -43,10 +43,12 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 // Initialization
 //////////////////////
 private _loggingEnabled = ESM_Logging_PayTerritory;
+
 private _encodedTerritoryID = get!(_data, "territory_id");
 private _territoryDatabaseID = get!(_data, "territory_database_id");
 
 private _playerMetadata = get!(_metadata, "player");
+
 private _playerUID = get!(_playerMetadata, "steam_uid");
 private _playerMention = get!(_playerMetadata, "discord_mention");
 
@@ -58,15 +60,7 @@ try
 	// Validation
 	//////////////////////
 
-	// Ensure the player has joined the server at least once
-	if !(_playerUID call ESMs_system_account_isKnown) then
-	{
-		throw [
-			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
-		];
-	};
-
-	// Ensure the territory exists
+	// Territory flag must exist in game
 	if (isNull _territory) then
 	{
 		throw [
@@ -81,8 +75,15 @@ try
 		];
 	};
 
-	// Ensure the player is at least a builder
-	// Territory admins bypass this
+	// Player must have joined the server at least once
+	if !(_playerUID call ESMs_system_account_isKnown) then
+	{
+		throw [
+			["player", localize!("PlayerNeedsToJoin", _playerMention, ESM_ServerID)]
+		];
+	};
+
+	// Player must be at least a builder
 	if !([_territory, _playerUID] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
@@ -98,7 +99,7 @@ try
 		];
 	};
 
-	// Flag stolen check
+	// Territory flag must not be stolen
 	// 1 means stolen
 	private _flagStolen = _territory getVariable ["ExileFlagStolen", const!(FLAG_OK)];
 	if (_flagStolen isEqualTo const!(FLAG_STOLEN)) then
@@ -106,6 +107,9 @@ try
 		throw [["player", localize!("StolenFlag", _playerMention, _encodedTerritoryID)]];
 	};
 
+	//////////////////////
+	// Modification
+	//////////////////////
 	private _territoryPrice = (
 		(_territory getVariable ["ExileTerritoryLevel", 1])
 		*
@@ -117,10 +121,6 @@ try
 	// Calculate a payment tax. ESM_Taxes_TerritoryPayment is a decimal between 0 and 1
 	private _tax = round(_territoryPrice * ESM_Taxes_TerritoryPayment);
 	private _territoryPriceSubTotal = _territoryPrice + _tax;
-
-	//////////////////////
-	// Modification
-	//////////////////////
 
 	// If the player is online make sure to adjust their in-game data
 	// Otherwise, we'll get their poptabs from the database itself

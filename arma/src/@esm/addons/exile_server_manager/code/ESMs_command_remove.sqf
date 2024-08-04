@@ -47,6 +47,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 // Initialization
 //////////////////////
 private _loggingEnabled = ESM_Logging_RemovePlayerFromTerritory;
+
 private _encodedTerritoryID = get!(_data, "territory_id");
 private _territoryDatabaseID = get!(_data, "territory_database_id");
 
@@ -57,6 +58,7 @@ private _playerUID = get!(_playerMetadata, "steam_uid");
 private _targetUID = get!(_targetMetadata, "steam_uid");
 
 private _playerMention = get!(_playerMetadata, "discord_mention");
+private _targetMention = get!(_targetMetadata, "discord_mention");
 
 private _territory = _territoryDatabaseID call ESMs_system_territory_get;
 
@@ -65,6 +67,8 @@ try
 	//////////////////////
 	// Validation
 	//////////////////////
+
+	// Territory flag must exist in game
 	if (isNull _territory) then
 	{
 		throw [
@@ -80,7 +84,7 @@ try
 		];
 	};
 
-	// Ensure the player has joined the server at least once
+	// Player must have joined the server at least once
 	if !(_playerUID call ESMs_system_account_isKnown) then
 	{
 		throw [
@@ -88,12 +92,9 @@ try
 		];
 	};
 
-	// Ensure the target player has joined the server at least once
+	// Target player must have joined the server at least once
 	if !(_targetUID call ESMs_system_account_isKnown) then
 	{
-		// This can be executed on a player that is not registered with ESM
-		private _targetMention = get!(_targetMetadata, "discord_mention");
-
 		throw [
 			["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
 		];
@@ -106,7 +107,7 @@ try
 	// Otherwise, the player must be a moderator
 	private _basePermissionLevel = ["moderator", "builder"] select _selfRemoval;
 
-	// Territory admins bypass this
+	// Player must have base permission in order to remove the target player or themselves
 	if !([_territory, _playerUID, _basePermissionLevel] call ESMs_system_territory_checkAccess) then
 	{
 		throw [

@@ -49,6 +49,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 // Initialization
 //////////////////////
 private _loggingEnabled = ESM_Logging_AddPlayerToTerritory;
+
 private _encodedTerritoryID = get!(_data, "territory_id");
 private _territoryDatabaseID = get!(_data, "territory_database_id");
 
@@ -57,6 +58,7 @@ private _targetMetadata = get!(_metadata, "target");
 
 private _playerUID = get!(_playerMetadata, "steam_uid");
 private _playerMention = get!(_playerMetadata, "discord_mention");
+
 private _targetUID = get!(_targetMetadata, "steam_uid");
 private _targetMention = get!(_targetMetadata, "discord_mention");
 
@@ -68,7 +70,7 @@ try
 	// Validation
 	//////////////////////
 
-	// Ensure the territory flag exists in game
+	// Territory flag must exist in game
 	if (isNull _territory) then
 	{
 		throw [
@@ -84,7 +86,7 @@ try
 		];
 	};
 
-	// Ensure the player has joined the server at least once
+	// Player must have joined the server at least once
 	if !(_playerUID call ESMs_system_account_isKnown) then
 	{
 		throw [
@@ -92,23 +94,15 @@ try
 		];
 	};
 
-	// Ensure the target player has joined the server at least once
+	// Target player must have joined the server at least once
 	if !(_targetUID call ESMs_system_account_isKnown) then
 	{
-		// This can be executed on a player that is not registered with ESM
-		private _targetMention = get!(_targetMetadata, "discord_mention");
-		if (nil?(_targetMention) || { empty?(_targetMention) }) then
-		{
-			_targetMention = _targetUID;
-		};
-
 		throw [
 			["player", localize!("TargetNeedsToJoin", _playerMention, _targetMention, ESM_ServerID)]
 		];
 	};
 
-	// Ensure the player is at least a moderator
-	// Territory admins bypass this
+	// Player must have moderator permissions
 	if !([_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess) then
 	{
 		throw [
@@ -125,8 +119,7 @@ try
 		];
 	};
 
-	// Ensure the player isn't trying to add themselves
-	// Territory admins bypass this
+	// Player cannot add themselves unless they are a territory admin
 	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
 	{
 		throw [
@@ -134,12 +127,10 @@ try
 		];
 	};
 
-	// Confirm the target can be added
-	// 0 means they are not a member of the territory
-	private _accessLevel = [_territory, _targetUID] call ExileClient_util_territory_getAccessLevel;
-	if !((_accessLevel select 0) isEqualTo const!(TERRITORY_ACCESS_NONE)) then
+	// Target player must not be a member of this territory
+	if ([_territory, _targetUID] call ESMs_system_territory_checkAccess) then
 	{
-		throw [["player", localize!("Add_ExistingRights", _playerMention)]];
+		throw [["player", localize!("Add_ExistingRights", _playerMention, _targetMention)]];
 	};
 
 	//////////////////////

@@ -49,6 +49,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 // Initialization
 //////////////////////
 private _loggingEnabled = ESM_Logging_Exec;
+
 private _code = compile(get!(_data, "code"));
 private _result = nil;
 

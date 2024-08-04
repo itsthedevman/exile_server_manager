@@ -130,7 +130,8 @@ ESMs_command_add:
   Add_ExistingRights:
     arguments:
     - "Player mention"
-    english: "Hey %1, this player already has build rights"
+    - "Target mention"
+    english: "Hey %1, %2 already has build rights"
 
   # Discord message to the user who requested to add the player
   # This message is only sent if the requestor is not the requestee
@@ -352,3 +353,38 @@ ESMs_command_pay:
       Convenience fee:  -%3 (%4%5)
               Balance:  =%6 poptab(s)
       ```
+################################################################################
+# /territory promote_player
+ESMs_command_promote:
+  Promote_ExistingRights:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    english: "Hey %1, %2 is already a moderator"
+
+  Promote_MissingRights:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory name"
+    english: |-
+      Hey %1, %2 is not a member this territory.
+      You may add them by using `/territory add_player`.
+
+  # Discord message to player
+  Promote_Response_Title:
+    english: "Player promoted"
+
+  Promote_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hey %1, `%2` has been promoted to moderator in territory `%3`"
+
+  # Discord message to logging channel
+  Promote_Log_Title:
+    english: "`ESMs_command_promote` executed successfully"
+
+  Promote_Log_Description:
+    english: "Player promoted Target in territory"
