@@ -31,10 +31,6 @@ describe ESM::Command::Territory::Pay, category: "command" do
       expect(command.type).to eq(:player)
     end
 
-    it "requires registration" do
-      expect(command.registration_required?).to be(true)
-    end
-
     describe "#on_execute", requires_connection: true do
       include_context "connection" do
         let!(:territory_build_rights) { [user.steam_uid] }

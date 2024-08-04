@@ -7,9 +7,9 @@ module ESM
 
       delegate :mention, :distinct, :username, to: :@discord_user
 
-      def initialize(id)
-        @steam_uid = id
-        @discord_user = DiscordUser.new(id)
+      def initialize(steam_uid)
+        @steam_uid = steam_uid
+        @discord_user = DiscordUser.new(steam_uid)
       end
 
       def registered?

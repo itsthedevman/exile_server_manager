@@ -29,10 +29,6 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
       expect(command.type).to eq(:player)
     end
 
-    it "requires registration" do
-      expect(command.registration_required?).to be(true)
-    end
-
     describe "#on_execute", requires_connection: true do
       include_context "connection" do
         let!(:territory_moderators) { [user.steam_uid] }
@@ -117,6 +113,31 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
 
         include_examples "successful_territory_upgrade" do
           it { expect(territory_upgrade_tax).not_to eq(0) }
+        end
+      end
+
+      context "when logging is enabled" do
+        before do
+          server.server_setting.update!(logging_upgrade_territory: true)
+        end
+
+        include_examples "arma_discord_logging_enabled" do
+          let(:message) { "`ESMs_command_upgrade` executed successfully" }
+
+          before do
+            # This log does not contain the target entry
+            fields.delete_at(2)
+          end
+        end
+      end
+
+      context "when logging is disabled" do
+        before do
+          server.server_setting.update!(logging_upgrade_territory: false)
+        end
+
+        include_examples "arma_discord_logging_disabled" do
+          let(:message) { "`ESMs_command_upgrade` executed successfully" }
         end
       end
 

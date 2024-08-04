@@ -31,24 +31,39 @@ module ESM
           # Check for registered target_user
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          deliver!(
-            function_name: "promotePlayer",
-            territory_id: arguments.territory_id,
-            target_uid: target_uid,
-            uid: current_user.steam_uid
+          response = call_sqf_function(
+            "ESMs_command_promote",
+            territory_id: arguments.territory_id
           )
+
+          embed = embed_from_message!(response)
+          reply(embed)
         end
 
-        def on_response
-          message = I18n.t(
-            "commands.promote.success_message",
-            user: current_user.mention,
-            target_uid: target_uid,
-            territory_id: arguments.territory_id,
-            server: target_server.server_id
-          )
+        module V1
+          def on_execute
+            # Check for registered target_user
+            check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          reply(ESM::Embed.build(:success, description: message))
+            deliver!(
+              function_name: "promotePlayer",
+              territory_id: arguments.territory_id,
+              target_uid: target_uid,
+              uid: current_user.steam_uid
+            )
+          end
+
+          def on_response
+            message = I18n.t(
+              "commands.promote.success_message",
+              user: current_user.mention,
+              target_uid: target_uid,
+              territory_id: arguments.territory_id,
+              server: target_server.server_id
+            )
+
+            reply(ESM::Embed.build(:success, description: message))
+          end
         end
       end
     end

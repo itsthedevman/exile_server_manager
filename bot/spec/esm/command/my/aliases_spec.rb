@@ -8,11 +8,6 @@ describe ESM::Command::My::Aliases, category: "command" do
     expect(command.type).to eq(:player)
   end
 
-  # Delete one, keep the other
-  it "requires registration" do
-    expect(command.registration_required?).to be(true)
-  end
-
   describe "#on_execute/#on_response" do
     context "when the user has no aliases" do
       it "informs the user" do

@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.6] - 2024-08-03
+
+### Added
+- Added @esm v2 support to `/territory promote_player`
+- Tests - Added tests for command success logging for `ESMs_command_demote`, `ESMs_command_remove`, and `ESMs_command_upgrade`
+- Tests - Added tests for `ESM::Message::Player`
+- Tests - Added shared examples `arma_discord_logging_enabled` and `arma_discord_logging_disabled`
+
+### Changed
+- Fixed bug with `ESM::Message::Player.from` not setting values when given an instance of `ESM::User::Ephemeral`
+- Tests - Moved command "requires registration" check to command examples
+
 ## [2.3.2.5] - 2024-07-27
 
 ### Added
@@ -111,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.5
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.6
+[2.3.2.6]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.5
 [2.3.2.5]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.5..v2.3.2.4
 [2.3.2.4]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.4..v2.3.2.3
 [2.3.2.3]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.3..v2.3.2.2

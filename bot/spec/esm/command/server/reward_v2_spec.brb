@@ -8,10 +8,6 @@ describe ESM::Command::Server::Reward, category: "command", v2: true do
     expect(command.type).to eq(:player)
   end
 
-  it "requires registration" do
-    expect(command.registration_required?).to be(true)
-  end
-
   describe "Command workflows", :requires_connection do
     include_context "connection"
 

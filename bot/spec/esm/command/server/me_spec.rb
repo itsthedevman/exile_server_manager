@@ -37,11 +37,6 @@ describe ESM::Command::Server::Me, category: "command" do
       expect(command.type).to eq(:player)
     end
 
-    it "requires registration" do
-      expect(command.registration_required?).to be(true)
-    end
-
-    # Change "requires_connection" to true if this command requires the client to be connected
     describe "#on_execute/#on_response", :requires_connection do
       include_context "connection"
 

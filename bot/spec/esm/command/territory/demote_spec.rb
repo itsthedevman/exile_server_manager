@@ -76,16 +76,9 @@ describe ESM::Command::Territory::Demote, category: "command" do
     end
   end
 
-  describe "V2", category: "command" do
-    include_context "command", described_class
-    include_examples "validate_command"
-
+  describe "V2", v2: true do
     it "is a player command" do
       expect(command.type).to eq(:player)
-    end
-
-    it "requires registration" do
-      expect(command.registration_required?).to be(true)
     end
 
     describe "#on_execute", requires_connection: true do
@@ -147,6 +140,26 @@ describe ESM::Command::Territory::Demote, category: "command" do
         end
 
         include_examples "successful_demotion"
+      end
+
+      context "when logging is enabled" do
+        before do
+          server.server_setting.update!(logging_demote_player: true)
+        end
+
+        include_examples "arma_discord_logging_enabled" do
+          let(:message) { "`ESMs_command_demote` executed successfully" }
+        end
+      end
+
+      context "when logging is disabled" do
+        before do
+          server.server_setting.update!(logging_demote_player: false)
+        end
+
+        include_examples "arma_discord_logging_disabled" do
+          let(:message) { "`ESMs_command_demote` executed successfully" }
+        end
       end
 
       context "when the territory flag is null" do

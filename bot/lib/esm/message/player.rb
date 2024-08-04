@@ -17,12 +17,10 @@ module ESM
             discord_mention: user.mention
           )
         when ESM::User::Ephemeral
-          # Ephemeral#mention will return the steam_uid
-          # This simplifies message logic in the mod
-          data.merge(
-            steam_uid: user.steam_uid,
-            discord_mention: user.mention
-          )
+          # Having steam_uid as the default saves work for the A3 server
+          data[:steam_uid] = user.steam_uid
+          data[:discord_mention] = user.mention
+          data[:discord_name] = user.mention
         else
           data.merge!(user)
         end
