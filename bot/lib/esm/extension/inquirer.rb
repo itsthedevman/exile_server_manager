@@ -101,7 +101,7 @@ class Inquirer
     enabled_predicates = to_a
 
     if enabled_predicates.size > 1
-      enabled_predicates.to_json
+      enabled_predicates.to_s
     else
       enabled_predicates.first.to_s
     end

@@ -1069,6 +1069,13 @@ describe ESM::Command::Base do
     it "skips #check_for_connected_server!" do
       execute!(arguments: {server_id: server.server_id})
     end
+
+    it "does not modify the class attribute" do
+      command.skip_action(:cooldown)
+
+      expect(command.skipped_actions.to_a).to eq([:connected_server, :cooldown])
+      expect(command_class.skipped_actions.to_a).to eq([:connected_server])
+    end
   end
 
   describe "#skip" do

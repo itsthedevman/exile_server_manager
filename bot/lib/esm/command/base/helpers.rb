@@ -324,7 +324,7 @@ module ESM
         end
 
         def skip_action(*)
-          skipped_actions.set(*)
+          skipped_actions.set(*, unset: false)
         end
 
         def send_to_target_server(message, block: true)

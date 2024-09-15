@@ -329,6 +329,9 @@ module ESM
         def initialize(user: nil, server: nil, channel: nil, arguments: {})
           command_class = self.class
 
+          # This can be modified on the fly. Disconnect it from the class
+          self.skipped_actions = skipped_actions.dup
+
           @name = command_class.command_name
           @category = command_class.category
           @attributes = attributes.to_istruct
@@ -336,7 +339,11 @@ module ESM
           @current_user = ESM::User.from_discord(user)
           @current_community = ESM::Community.from_discord(server)
           @current_channel = channel
-          @arguments = ESM::Command::Arguments.new(self, templates: command_class.arguments, values: arguments)
+          @arguments = ESM::Command::Arguments.new(
+            self,
+            templates: command_class.arguments,
+            values: arguments
+          )
 
           @timers = Timers.new(name)
 
