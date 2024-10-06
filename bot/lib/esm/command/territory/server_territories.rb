@@ -39,7 +39,7 @@ module ESM
         def on_execute
           check_for_owned_server!
 
-          @territories = query_exile_database("all_territories").map(&:to_istruct)
+          @territories = query_exile_database!("all_territories").map(&:to_istruct)
           check_for_no_territories!
 
           tables = build_territory_tables

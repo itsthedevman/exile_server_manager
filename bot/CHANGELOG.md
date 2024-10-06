@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.7] - 2024-10-05
+
+### Added
+- Added @esm v2 support to `/server gamble`
+- Added server setting `gambling_locker_limit_enabled`
+- Dev - Added `bin/generate_migration`
+- Added proper error message when the server does not respond in time.
+- Added monkey patch `Integer#to_delimited_s` that returns the integer as a delimited string
+- Tests - Added update SQF for the various gambling server settings
+- Tests - Added various error handling shared examples
+
+### Changed
+- Dev - Decreased timeout time to 2 seconds
+- Renamed `ESM::ApplicationCommand#call_sqf_function` to `call_sqf_function!`
+- Renamed `ESM::ApplicationCommand#query_exile_database` to `query_exile_database!`
+- Rejected promises will raise the exception that caused the rejection instead of being wrapped in `ESM::Exception::RejectedPromise`
+- Tests - All arguments are now converted to a string to match Discord
+- Tests - `spawn_player_for` helper now returns the player's NetID
+
 ## [2.3.2.6] - 2024-08-03
 
 ### Added
@@ -123,7 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.6
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.7
+[2.3.2.7]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.7
 [2.3.2.6]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.5
 [2.3.2.5]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.5..v2.3.2.4
 [2.3.2.4]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.4..v2.3.2.3

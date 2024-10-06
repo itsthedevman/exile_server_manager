@@ -90,7 +90,7 @@ module ESM
 
         # Block and wait for a response or timeout
         response = promise.wait_for_response(timeout)
-        raise ESM::Exception::RejectedPromise, response.reason if response.rejected?
+        raise response.reason if response.rejected?
 
         response_message = ESM::Message.from_string(response.value)
         response_message.set_metadata(server_id:)

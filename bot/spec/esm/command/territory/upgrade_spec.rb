@@ -186,13 +186,13 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
 
         before { spawn_player_for(user) }
 
-        include_examples "arma_error_too_poor"
+        include_examples "arma_error_too_poor_with_cost"
       end
 
       context "when the player is not online and does not have enough poptabs" do
         let(:locker_balance) { 0 }
 
-        include_examples "arma_error_too_poor"
+        include_examples "arma_error_too_poor_with_cost"
       end
     end
   end

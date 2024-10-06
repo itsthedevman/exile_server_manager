@@ -13,7 +13,7 @@ module ESM
             .set_type(:echo)
             .add_error(:message, "this is an error message")
 
-          send_to_target_server(message)
+          send_to_target_server!(message)
         end
 
         def on_response

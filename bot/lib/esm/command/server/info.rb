@@ -65,7 +65,7 @@ module ESM
         private
 
         def check_for_no_target!
-          raise_error!(:no_target, user: current_user.mention) if arguments.target.nil? && arguments.territory_id.nil?
+          raise_error!(:no_target, user: current_user.mention) if arguments.target.blank? && arguments.territory_id.blank?
         end
 
         def check_for_response!

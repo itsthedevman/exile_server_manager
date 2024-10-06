@@ -99,7 +99,7 @@ module ESM
     end
 
     class RejectedPromise < ClosableError
-      def initialize(reason = "") = super(reason)
+      def initialize(reason = "") = super
     end
   end
 end

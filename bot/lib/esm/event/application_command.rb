@@ -20,7 +20,7 @@ module ESM
           end
 
         @backtrace_cleaner = ActiveSupport::BacktraceCleaner.new
-        @backtrace_cleaner.add_filter { |line| line.gsub(ESM.root.to_s, "") }
+        @backtrace_cleaner.add_filter { |line| line.gsub(ESM.root.to_s, "").delete_prefix("/") }
         @backtrace_cleaner.add_silencer { |line| /gems/.match?(line) }
       end
 
@@ -65,19 +65,28 @@ module ESM
             ":grimacing: Well, this is awkward... :grimacing:\n"
           end
 
-        edit_response(content: content)
+        edit_response(content:)
 
         message =
           case error
+          when ESM::Exception::RequestTimeout
+            ESM::Embed.build(
+              :error,
+              description: I18n.t(
+                "exceptions.extension.message_undeliverable",
+                user: @command.current_user.mention,
+                server_id: @command.target_server.server_id
+              )
+            )
           when ESM::Exception::ApplicationError
             error.data
           when StandardError
             uuid = SecureRandom.uuid.split("-")[0..1].join("")
 
             ESM.bot.log_error(
-              uuid: uuid,
-              user: @command&.current_user&.attributes_for_logging,
-              message: error.message,
+              uuid:,
+              user: @command.current_user.attributes_for_logging,
+              message: error.inspect,
               backtrace: @backtrace_cleaner.clean(error.backtrace)
             )
 

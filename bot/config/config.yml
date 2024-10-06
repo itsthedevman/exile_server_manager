@@ -72,6 +72,8 @@ default: &default
 development:
   !!merge <<: *default
   error_logging_channel_id: ""
+  connection_client:
+    response_timeout: 2
 
 test:
   !!merge <<: *default

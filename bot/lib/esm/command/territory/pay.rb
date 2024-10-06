@@ -24,7 +24,7 @@ module ESM
         #################################
 
         def on_execute
-          response = call_sqf_function(
+          response = call_sqf_function!(
             "ESMs_command_pay",
             territory_id: arguments.territory_id
           )

@@ -33,19 +33,44 @@ RSpec.shared_examples("validate_command") do
   end
 end
 
-RSpec.shared_examples("arma_error_player_needs_to_join") do
-  it "raises PlayerNeedsToJoin" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match("need to join")
+RSpec.shared_examples("raises_exception") do |it_message = nil|
+  let(:exception_class) {}
+  let(:matcher) {}
+
+  it it_message || "is expected to raise an exception" do
+    expect { execute_command }.to raise_error(exception_class) do |error|
+      expect(error.data.description).to match(matcher)
     end
   end
 end
 
+RSpec.shared_examples("raises_check_failure") do
+  include_examples "raises_exception", "is expected to raise CheckFailure" do
+    let(:exception_class) { ESM::Exception::CheckFailure }
+  end
+end
+
+RSpec.shared_examples("raises_extension_error") do |it_message = nil|
+  include_examples "raises_exception", it_message || "is expected to raise ExtensionError" do
+    let(:exception_class) { ESM::Exception::ExtensionError }
+  end
+end
+
+RSpec.shared_examples("raises_server_not_connected") do
+  include_examples "raises_check_failure" do
+    let!(:matcher) { "it looks like `#{server.server_id}` isn't connected right now" }
+  end
+end
+
+RSpec.shared_examples("arma_error_player_needs_to_join") do
+  include_examples "raises_extension_error", "is expected to raise PlayerNeedsToJoin" do
+    let!(:matcher) { "need to join" }
+  end
+end
+
 RSpec.shared_examples("arma_error_target_needs_to_join") do
-  it "raises TargetNeedsToJoin" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match("needs to join")
-    end
+  include_examples "raises_extension_error", "is expected to raise TargetNeedsToJoin" do
+    let!(:matcher) { "needs to join" }
   end
 end
 
@@ -80,52 +105,57 @@ RSpec.shared_examples("arma_error_missing_territory_access") do
 end
 
 RSpec.shared_examples("arma_error_flag_stolen") do
-  it "raises StolenFlag" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match("has been stolen")
-    end
+  include_examples "raises_extension_error", "is expected to raise StolenFlag" do
+    let!(:matcher) { "has been stolen" }
   end
 end
 
 RSpec.shared_examples("arma_error_too_poor") do
-  it "raises TooPoor" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match(
-        /you do not have enough poptabs in your locker. It costs ..[\d,]+.. and you have ..[\d,]+../
-      )
+  include_examples "raises_extension_error", "is expected to raise TooPoor" do
+    let!(:matcher) { /you do not have enough poptabs in your locker/ }
+  end
+end
+
+RSpec.shared_examples("arma_error_too_poor_with_cost") do
+  include_examples "raises_extension_error", "is expected to raise TooPoor_WithCost" do
+    let!(:matcher) do
+      /you do not have enough poptabs in your locker. It costs ..[\d,]+.. and you have ..[\d,]+../
     end
   end
 end
 
 RSpec.shared_examples("error_territory_id_does_not_exist") do
-  it "raises territory_id_does_not_exist" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match(
-        "I was unable to find an active territory with an ID of `#{territory.encoded_id}`"
-      )
+  include_examples "raises_extension_error", "is expected to raise territory_id_does_not_exist" do
+    let!(:matcher) do
+      "I was unable to find an active territory with an ID of `#{territory.encoded_id}`"
     end
   end
 end
 
 RSpec.shared_examples("arma_discord_logging_enabled") do
   let(:message) { "" }
-
-  let(:fields) do
-    [
-      {
-        name: "Territory",
-        value: "**ID:** #{territory.encoded_id}\n**Name:** #{territory.name}"
-      },
-      {
-        name: "Player",
-        value: "**Discord ID:** #{user.discord_id}\n**Steam UID:** #{user.steam_uid}\n**Discord name:** #{user.discord_username}\n**Discord mention:** #{user.mention}"
-      },
-      {
-        name: "Target",
-        value: "**Discord ID:** #{second_user.discord_id}\n**Steam UID:** #{second_user.steam_uid}\n**Discord name:** #{second_user.discord_username}\n**Discord mention:** #{second_user.mention}"
-      }
-    ]
+  let(:territory_field) do
+    {
+      name: "Territory",
+      value: "**ID:** #{territory.encoded_id}\n**Name:** #{territory.name}"
+    }
   end
+
+  let(:player_field) do
+    {
+      name: "Player",
+      value: "**Discord ID:** #{user.discord_id}\n**Steam UID:** #{user.steam_uid}\n**Discord name:** #{user.discord_username}\n**Discord mention:** #{user.mention}"
+    }
+  end
+
+  let(:target_field) do
+    {
+      name: "Target",
+      value: "**Discord ID:** #{second_user.discord_id}\n**Steam UID:** #{second_user.steam_uid}\n**Discord name:** #{second_user.discord_username}\n**Discord mention:** #{second_user.mention}"
+    }
+  end
+
+  let(:fields) { [territory_field, player_field, target_field] }
 
   it "is expected to send a log message to the discord server" do
     execute_command

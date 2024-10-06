@@ -76,7 +76,8 @@ RSpec.shared_context("command") do
             when ESM::User
               value.mention
             else
-              value
+              # All values from Discord are sent as String
+              value.to_s
             end
 
           {name: argument.display_name.to_s, value: value, type: argument.discord_type}

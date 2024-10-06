@@ -22,9 +22,9 @@ en:
       account_does_not_exist: "Hey %{user}, you **need to join** `%{server_id}` first before you can run commands on it"
       client_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
       null_player: "Hey %{user}, you need to be spawned and alive on `%{server_id}` before you can use this command."
-      message_undeliverable: "I'm sorry %{user}, `%{server_id}` never replied to your previous command. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}`"
+      message_undeliverable: "I'm sorry %{user}, `%{server_id}` never replied to your previous command. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and have them check their `server.rpt` for any errors"
       system_exception: "Oh crap! I'm sorry %{user}, it appears that I have a bug in my software\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this error:" # Error included in separate error
-      error: "I'm sorry %{user}, an error occurred while processing your request on `%{server_id}`. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and let them know I left them details in `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path)"
+      error: "I'm sorry %{user}, an error occurred while processing your request on `%{server_id}`. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and let them know I left them details in `@esm/log/esm.log`"
       fail_database_connect: |-
         ESM on `%{server_id}` experienced an error when attempting to connect to your database. Please open `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path) and search for `ERROR` for the full error.
         **ESM will not be available on this server until this error is resolved.**

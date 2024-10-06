@@ -145,7 +145,7 @@ module ESM
           data[:vehicles] = vehicles.to_json if vehicles.present?
           data[:items] = selected_reward.reward_items if selected_reward.reward_items.present?
 
-          send_to_target_server(data: data)
+          send_to_target_server!(data: data)
         end
 
         def send_request_description

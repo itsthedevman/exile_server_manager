@@ -51,7 +51,7 @@ module ESM
               "server"
             end
 
-          response = call_sqf_function(
+          response = call_sqf_function!(
             "ESMs_command_sqf",
             execute_on: execute_on,
             code: arguments.code_to_execute

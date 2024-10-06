@@ -30,7 +30,7 @@ module ESM
         def on_execute
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          response = call_sqf_function(
+          response = call_sqf_function!(
             "ESMs_command_remove",
             territory_id: arguments.territory_id
           )

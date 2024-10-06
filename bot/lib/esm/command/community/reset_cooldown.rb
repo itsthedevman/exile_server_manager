@@ -57,7 +57,7 @@ module ESM
         private
 
         def check_for_valid_command!
-          return if arguments.command.nil?
+          return if arguments.command.blank?
           return if ESM::Command.include?(arguments.command)
 
           raise_error!(:invalid_command, user: current_user.mention, command_name: arguments.command)
@@ -104,8 +104,8 @@ module ESM
           query = query.or(ESM::Cooldown.where(user_id: target_user.id, steam_uid: target_user.steam_uid)) if target_user
 
           # Check for command_name and/or server_id if we've been given one
-          query = query.where(command_name: arguments.command) if !arguments.command.nil?
-          query = query.where(server_id: target_server.id) if !arguments.server_id.nil?
+          query = query.where(command_name: arguments.command) if arguments.command.present?
+          query = query.where(server_id: target_server.id) if arguments.server_id.present?
 
           query
         end

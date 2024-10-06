@@ -31,7 +31,7 @@ module ESM
           # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          response = call_sqf_function(
+          response = call_sqf_function!(
             "ESMs_command_demote",
             territory_id: arguments.territory_id
           )

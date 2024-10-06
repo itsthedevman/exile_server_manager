@@ -31,8 +31,9 @@ RSpec.shared_context("connection") do
   end
 
   def spawn_player_for(user)
-    user.connect_to(server)
+    net_id = user.connect_to(server)
     _spawned_players << user
+    net_id
   end
 
   before do |example|

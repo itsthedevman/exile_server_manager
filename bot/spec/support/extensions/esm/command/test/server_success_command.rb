@@ -12,7 +12,7 @@ module ESM
 
         def on_execute
           message = ESM::Message.new.set_type(:echo)
-          send_to_target_server(message)
+          send_to_target_server!(message)
         end
 
         def on_response

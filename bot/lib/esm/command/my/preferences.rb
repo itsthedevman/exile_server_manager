@@ -53,7 +53,7 @@ module ESM
         #################################
 
         def on_execute
-          return send_preferences if arguments.action.nil?
+          return send_preferences if arguments.action.blank?
 
           # Creates an array of ["custom"] or ["base-raid", "flag-stolen", "flag-restored", etc...]
           types =

@@ -346,14 +346,6 @@ module ESM
           )
 
           @timers = Timers.new(name)
-
-          debug!(
-            command_name: name,
-            user: user&.attributes,
-            server: server&.attributes,
-            channel: channel&.attributes,
-            arguments: self.arguments
-          )
         end
       end
     end
