@@ -16,7 +16,7 @@ module ESM
     attribute :server_port, :string
     attribute :server_start_time, :datetime
     attribute :server_version, :string
-    enum server_visibility: {private: 0, public: 1}, _default: :public, _suffix: :visibility
+    enum :server_visibility, {private: 0, public: 1}, default: :public, suffix: :visibility
     attribute :disconnected_at, :datetime
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
