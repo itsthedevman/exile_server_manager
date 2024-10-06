@@ -137,7 +137,7 @@ try
 			throw [[
 				"player",
 				format[
-					localize!("TooPoor"),
+					localize!("TooPoor_WithCost"),
 					_playerMention,
 					_territoryPriceSubTotal call ESMs_util_number_toString,
 					_playerMoney call ESMs_util_number_toString
@@ -156,7 +156,7 @@ try
 			throw [[
 				"player",
 				format[
-					localize!("TooPoor"),
+					localize!("TooPoor_WithCost"),
 					_playerMention,
 					_territoryPriceSubTotal call ESMs_util_number_toString,
 					_playerMoney call ESMs_util_number_toString

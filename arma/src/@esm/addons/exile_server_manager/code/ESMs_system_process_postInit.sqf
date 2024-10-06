@@ -36,7 +36,7 @@ private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")
 
 	private _value = get!(_data, _attributeName);
 	if (nil?(_value)) then {
-		error!("Failed to a value for %1", _attributeName);
+		error!("Failed to find value for %1", _attributeName);
 		continue;
 	};
 
@@ -45,6 +45,15 @@ private _variablesHash = (getArray (configFile >> "CfgESM" >> "globalVariables")
 	debug!("%1 = %3; // %2", _variableName, typeName(_value), if (type?(_value, STRING)) then { format["'%1'", _value] } else { _value });
 }
 forEach _variablesHash;
+
+ESM_Gambling_PayoutModifier = (ESM_Gambling_PayoutBase / 100);
+ESM_Gambling_WinPercentage = (ESM_Gambling_WinPercentage / 100);
+
+ESM_Gambling_PayoutRandomizer = [
+	ESM_Gambling_PayoutRandomizerMin,
+	ESM_Gambling_PayoutRandomizerMid,
+	ESM_Gambling_PayoutRandomizerMax
+];
 
 // Cache which extDB extension is being used. Makes calling extDB easier.
 ESM_DatabaseExtension = format["extDB%1", ESM_ExtDBVersion];

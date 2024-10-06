@@ -101,6 +101,11 @@ General:
   TooPoor:
     arguments:
     - "Player mention"
+    english: "Hey %1, you do not have enough poptabs in your locker"
+
+  TooPoor_WithCost:
+    arguments:
+    - "Player mention"
     - "Cost"
     - "Current locker amount"
     english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
@@ -118,6 +123,12 @@ General:
     arguments:
     - "Server ID"
     english: "Sent from %1"
+
+  LockerBefore:
+    english: "Locker before"
+
+  LockerAfter:
+    english: "Locker after"
 
 ################################################################################
 # /territory add_player
@@ -388,3 +399,92 @@ ESMs_command_promote:
 
   Promote_Log_Description:
     english: "Player promoted Target in territory"
+
+
+################################################################################
+# /server gamble
+ESMs_command_gamble:
+  Gamble_CannotGambleNothing:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you cannot gamble nothing!"
+
+  Gamble_LockerFull:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, your locker is full"
+
+  # Discord message to player
+  Gamble_Response_Title_Win:
+    english: "Winner winner!"
+
+  Gamble_Response_Title_Loss:
+    english: "Better luck next time!"
+
+  Gambling_Response_Description_Win:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Poptabs won"
+    - "Poptabs profit"
+    - "Locker amount"
+    english: |-
+      Congrats %1!
+      You gambled %2 poptabs and won %3 poptabs _(**+%4** poptab profit)_.
+      You now have **%5** poptabs in your locker.
+
+  Gambling_Response_Description_WinMaxLocker:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Poptabs won"
+    - "Poptabs profit"
+    - "Locker amount"
+    english: |-
+      Congrats %1!
+      You gambled %2 poptabs and won %3 poptabs _(**+%4** poptab profit)_.
+      Your locker maxed out at **%5** poptabs due to server limits.
+
+  Gambling_Response_Description_Loss_1:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "Whoops! %1, you just lost %2 poptabs. On the bright side, you're now qualified for a PhD in 'How to Make Money Disappear'. Congrats, Dr. Unlucky! Your remaining %3 poptabs are now trembling in fear."
+
+  Gambling_Response_Description_Loss_2:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, you've bravely sacrificed %2 poptabs to the gambling gods. Surely they're appeased now, right? Your remaining %3 poptabs are tingling with anticipation. The next big win could be just a click away!"
+
+  Gambling_Response_Description_Loss_3:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, those %2 poptabs were just holding you back. Now your streamlined %3 poptab force is lean, mean, and ready to take on the house! Who needs a battle plan when you've got moxie?"
+
+  Gambling_Response_Description_Loss_4:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "Oh no, %1! %2 poptabs just vanished into thin air. But don't worry, I'm sure your remaining %3 poptabs are lucky. Like, really lucky. Probably. Maybe. Why not find out?"
+
+  Gambling_Response_Description_Loss_5:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, you didn't lose %2 poptabs - you invested in future winning karma! Those %3 poptabs you have left? They're practically multiplying already. Can you hear the jackpot calling your name?"
+
+  # Discord message to logging channel
+  Gamble_Log_Title:
+    english: "`ESMs_command_gamble` executed successfully"
+
+  Gamble_Log_Description:
+    arguments:
+    - "Gamble status (won/lost)"
+    english: "Player gambled and %1"

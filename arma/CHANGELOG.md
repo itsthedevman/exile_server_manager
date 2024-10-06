@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `server_mod_name`: The name of @ExileServer on this server. Linux uses `@exileserver`
 - Added extension endpoint `utc_timestamp` for returning the current UTC timestamp
 - Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
+- Added server setting that controls if the locker limit will be taken into account when gambling.
+- Added randomized gambling loss messages to stringtable.
 
 ### Changed
 - Changed database ID encoded hashing algorithm to utilize a unique server key making encoded territory IDs unique to each individual server
@@ -47,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `ESMc` (ESMClient) means a client function
 - Changed file naming scheme from BIS to Exile
 - Changed how ESM responds to invalid territory IDs by returning a generic territory not found message
+- Balanced gambling algorithm to ensure the player gets back what they gambled.
 - Moved embedded SQL in extension into separate SQL files in `@esm/sql/queries`
 - Renamed `ESM_DatabaseVersion` to `ESM_DatabaseExtension`
 - Renamed `ESM_PayTaxPercentage` to `ESM_Taxes_TerritoryPayment`
@@ -55,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_callExtension` with `ESMs_system_extension_call`
 - Replaced `ESM_fnc_demotePlayer` with `ESMs_command_demote`
 - Replaced `ESM_fnc_exec` with `ESMs_command_sqf`
+- Replaced `ESM_fnc_gamble` with `ESMs_command_gamble`
 - Replaced `ESM_fnc_getFlagObject` with `ESMs_system_territory_get`
 - Replaced `ESM_fnc_handleCallback` with `ESMs_system_extension_callback`
 - Replaced `ESM_fnc_hasAccessToTerritory` with `ESMs_system_territory_checkAccess`
@@ -74,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_upgradeTerritory` with `ESMs_command_upgrade`
 - Replaced `ESM.key` with `esm.key` and changed data structure
 - Reworked the reconnection workflow to keep attempting to reconnect without limit.
-    - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes.
+    - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes between attempts.
 
 ### Removed
 - Removed `ESM_fnc_attemptReconnect`
