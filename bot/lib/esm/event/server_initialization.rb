@@ -103,6 +103,19 @@ module ESM
           logging_channel_id: @community.logging_channel_id,
           server_id: @model.server_id,
           territory_admin_uids: build_territory_admins,
+
+          # Todo after v1: Fix the naming scheme on the database side
+          logging_command_add: settings.logging_add_player_to_territory,
+          logging_command_demote: settings.logging_demote_player,
+          logging_command_gamble: settings.logging_gamble,
+          logging_command_pay: settings.logging_pay_territory,
+          logging_command_player: settings.logging_modify_player,
+          logging_command_promote: settings.logging_promote_player,
+          logging_command_remove: settings.logging_remove_player_from_territory,
+          logging_command_reward: settings.logging_reward_player,
+          logging_command_sqf: settings.logging_exec,
+          logging_command_transfer: settings.logging_transfer_poptabs,
+          logging_command_upgrade: settings.logging_upgrade_territory,
           taxes_territory_payment: settings.territory_payment_tax / 100,
           taxes_territory_upgrade: settings.territory_upgrade_tax / 100
         )
