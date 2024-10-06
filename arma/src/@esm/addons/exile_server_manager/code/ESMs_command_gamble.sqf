@@ -37,7 +37,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 //////////////////////
 // Initialization
 //////////////////////
-private _loggingEnabled = ESM_Logging_Gamble;
+private _loggingEnabled = ESM_Logging_CommandGamble;
 
 private _amountToGamble = get!(_data, "amount");
 

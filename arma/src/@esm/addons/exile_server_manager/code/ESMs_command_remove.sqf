@@ -46,7 +46,7 @@ if (isNil "_id" || { isNil "_data" || { isNil "_metadata" } }) exitWith { nil };
 //////////////////////
 // Initialization
 //////////////////////
-private _loggingEnabled = ESM_Logging_RemovePlayerFromTerritory;
+private _loggingEnabled = ESM_Logging_CommandRemove;
 
 private _encodedTerritoryID = get!(_data, "territory_id");
 private _territoryDatabaseID = get!(_data, "territory_database_id");

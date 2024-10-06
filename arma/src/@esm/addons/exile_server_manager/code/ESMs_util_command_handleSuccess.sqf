@@ -23,7 +23,7 @@ Examples:
 		// Logs a string
 		[
 			[_id],
-			ESM_Logging_AddPlayerToTerritory,
+			ESM_Logging_CommandAdd,
 			{ "Player added!" }
 		] call ESMs_util_command_handleSuccess;
 

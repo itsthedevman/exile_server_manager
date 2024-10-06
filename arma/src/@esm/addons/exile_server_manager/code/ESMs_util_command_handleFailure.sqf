@@ -21,7 +21,7 @@ Examples:
 			_id,
 			_exception,
 			"ESMs_command_add",
-			ESM_Logging_AddPlayerToTerritory
+			ESM_Logging_CommandAdd
 		]
 		call ESMs_util_command_handleFailure;
 
