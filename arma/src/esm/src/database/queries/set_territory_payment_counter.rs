@@ -8,7 +8,7 @@ pub async fn set_territory_payment_counter(
 ) -> Result<(), Error> {
     let result = connection
         .exec_drop(
-            &context.statements.set_territory_payment_counter,
+            &context.sql.set_territory_payment_counter,
             params! {
                 "counter_value" => counter_value,
                 "territory_id" => database_id

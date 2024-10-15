@@ -1,3 +1,7 @@
+use mysql_async::prelude::FromValue;
+use mysql_async::FromValueError;
+pub use mysql_async::Row;
+
 pub use crate::database::*;
 pub use crate::*;
 
@@ -9,33 +13,39 @@ import_and_export!(command_me);
 import_and_export!(command_restore);
 import_and_export!(command_reward);
 import_and_export!(command_set_id);
+import_and_export!(player_territories);
 import_and_export!(decode_territory_id);
 import_and_export!(set_territory_payment_counter);
 
-/*
+// Generates a Queries struct containing these attributes and the contents of their
+// corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
+load_sql! {
+    account_name_lookup,
+    check_if_territory_exists,
+    check_if_territory_owner,
+    decode_territory_id,
+    set_territory_payment_counter,
+
+    // Command queries
+    command_all_territories,
+    command_me,
+    command_restore_construction,
+    command_restore_container,
+    command_restore_territory,
+    command_set_id,
+    player_territories // Used by multiple commands
+}
+
+pub fn select_column<T>(row: &Row, index: &str) -> Result<T, String>
+where
+    T: FromValue,
 {
-    "list_territories",
-    @"SELECT
-        t.id as id,
-        owner_uid,
-        (SELECT name FROM account WHERE uid = owner_uid) as owner_name,
-        name as territory_name,
-        radius,
-        level,
-        flag_texture,
-        flag_stolen,
-        CONVERT_TZ(`last_paid_at`, @@session.time_zone, '+00:00') AS `last_paid_at`,
-        build_rights,
-        moderators,
-        (SELECT COUNT(*) FROM construction WHERE territory_id = t.id) as object_count,
-        esm_custom_id
-    FROM
-        territory t
-    WHERE
-        deleted_at IS NULL
-    AND
-        (owner_uid = @uid OR build_rights LIKE CONCAT('%', @uid, '%') OR moderators LIKE CONCAT('%', @uid, '%'))"
-},
+    row.get_opt(index)
+        .ok_or_else(|| format!("{index} does not exist on row: {row:?}"))
+        .and_then(|v| v.map_err(|e: FromValueError| e.to_string()))
+}
+
+/*
 {
     "territory_info",
     @"SELECT

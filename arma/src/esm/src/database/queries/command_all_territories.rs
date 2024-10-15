@@ -4,7 +4,7 @@ pub async fn command_all_territories(
     context: &Database,
     connection: &mut Conn,
     _arguments: &HashMap<String, String>,
-) -> DatabaseResult {
+) -> QueryResult {
     #[derive(Debug, Serialize)]
     struct TerritoryResult {
         id: String,
@@ -16,14 +16,17 @@ pub async fn command_all_territories(
 
     let result = connection
         .exec_map(
-            &context.statements.command_all_territories,
+            &context.sql.command_all_territories,
             Params::Empty,
-            |(id, esm_custom_id, territory_name, owner_uid, owner_name)| TerritoryResult {
-                id: context.hasher.encode(id),
-                esm_custom_id,
-                territory_name,
-                owner_uid,
-                owner_name,
+            |(id, esm_custom_id, territory_name, owner_uid, owner_name)| {
+                let id: String = id;
+                TerritoryResult {
+                    id: context.hasher.encode(&id),
+                    esm_custom_id,
+                    territory_name,
+                    owner_uid,
+                    owner_name,
+                }
             },
         )
         .await;
@@ -37,9 +40,6 @@ pub async fn command_all_territories(
 
             Ok(results)
         }
-        Err(e) => {
-            error!("[command_all_territories] ❌ Query failed - {}", e);
-            Err("error".into())
-        }
+        Err(e) => Err(QueryError::System(format!("Query failed - {}", e))),
     }
 }

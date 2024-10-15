@@ -13,10 +13,18 @@ pub struct Error {
 
 impl Error {
     pub fn new(error_type: ErrorType, error_content: String) -> Self {
-        Error {
+        Self {
             error_type,
             error_content,
         }
+    }
+
+    pub fn code<S: AsRef<str>>(message: S) -> Self {
+        Self::new(ErrorType::Code, message.as_ref().to_string())
+    }
+
+    pub fn message<S: AsRef<str>>(message: S) -> Self {
+        Self::new(ErrorType::Message, message.as_ref().to_string())
     }
 
     pub fn from_arma(input: String) -> Result<Vec<Self>, String> {

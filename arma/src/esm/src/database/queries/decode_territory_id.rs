@@ -16,7 +16,7 @@ pub async fn decode_territory_id(
     // The ID was not hashed, check to see if it is a custom ID
     let result: SQLResult<Option<u64>> = connection
         .exec_first(
-            &context.statements.decode_territory_id,
+            &context.sql.decode_territory_id,
             params! { "custom_id" => territory_id },
         )
         .await;

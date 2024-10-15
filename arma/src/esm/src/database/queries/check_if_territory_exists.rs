@@ -7,7 +7,7 @@ pub async fn check_if_territory_exists(
 ) -> Result<bool, Error> {
     let existence_check: Option<String> = connection
         .exec_first(
-            &context.statements.check_if_territory_exists,
+            &context.sql.check_if_territory_exists,
             params! {
                 "territory_id" => database_id
             },

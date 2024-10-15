@@ -64,18 +64,18 @@ macro_rules! include_sql {
     }};
 }
 
-// Generates the Statements struct from the SQL files
+// Generates the Queries struct from the SQL files
 #[macro_export]
-macro_rules! statements {
+macro_rules! load_sql {
     ($( $names:ident ),* $(,)?) => {
         #[derive(Clone, Debug, Default)]
-        struct Statements {
-            $($names: String),*
+        pub struct Queries {
+            $(pub $names: String),*
         }
 
-        impl Statements {
+        impl Queries {
             pub fn new() -> Self {
-                Statements {
+                Queries {
                     $($names: include_sql!(stringify!($names))),*
                 }
             }

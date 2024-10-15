@@ -63,6 +63,7 @@ private _targetUID = get!(_targetMetadata, "steam_uid");
 private _targetMention = get!(_targetMetadata, "discord_mention");
 
 private _territory = _territoryDatabaseID call ESMs_system_territory_get;
+private _playerIsAdmin = _playerUID in ESM_TerritoryAdminUIDs;
 
 try
 {
@@ -120,7 +121,7 @@ try
 	};
 
 	// Player cannot add themselves unless they are a territory admin
-	if (_playerUID isEqualTo _targetUID && !(_playerUID in ESM_TerritoryAdminUIDs)) then
+	if (!_playerIsAdmin && { _playerUID isEqualTo _targetUID }) then
 	{
 		throw [
 			["player", localize!("Add_CannotAddSelf", _playerMention)]
@@ -128,7 +129,8 @@ try
 	};
 
 	// Target player must not be a member of this territory
-	if ([_territory, _targetUID] call ESMs_system_territory_checkAccess) then
+	// checkAccess will return true if the player is an admin, we have to skip
+	if (!_playerIsAdmin && { [_territory, _targetUID] call ESMs_system_territory_checkAccess }) then
 	{
 		throw [["player", localize!("Add_ExistingRights", _playerMention, _targetMention)]];
 	};

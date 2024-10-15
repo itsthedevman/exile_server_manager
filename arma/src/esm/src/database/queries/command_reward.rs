@@ -4,12 +4,13 @@ pub async fn command_reward_territories(
     _context: &Database,
     connection: &mut Conn,
     arguments: &HashMap<String, String>,
-) -> DatabaseResult {
+) -> QueryResult {
     let player_uid = match arguments.get("uid") {
         Some(uid) => uid,
         None => {
-            error!("[command_reward_territories] ❌ Missing key `uid` in provided query arguments");
-            return Err("error".into());
+            return Err(QueryError::User(
+                "Missing key `uid` in provided query arguments".into(),
+            ));
         }
     };
 
@@ -60,9 +61,6 @@ AND
 
             Ok(results)
         }
-        Err(e) => {
-            error!("[command_reward_territories] ❌ Query failed - {}", e);
-            Err("error".into())
-        }
+        Err(e) => Err(QueryError::System(format!("Query failed - {}", e))),
     }
 }

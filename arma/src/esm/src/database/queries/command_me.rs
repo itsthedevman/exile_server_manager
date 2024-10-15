@@ -24,18 +24,19 @@ pub async fn command_me(
     context: &Database,
     connection: &mut Conn,
     arguments: &HashMap<String, String>,
-) -> DatabaseResult {
+) -> QueryResult {
     let player_uid = match arguments.get("uid") {
         Some(uid) => uid,
         None => {
-            error!("[command_me] ❌ Missing key `uid` in provided query arguments");
-            return Err("error".into());
+            return Err(QueryError::User(
+                "Missing key `uid` in provided query arguments".into(),
+            ));
         }
     };
 
     let result = connection
         .exec_map(
-            &context.statements.command_me,
+            &context.sql.command_me,
             params! { "player_uid" => player_uid, "wildcard_uid" => format!("%{}%", player_uid) },
             |(locker, score, name, money, damage, hunger, thirst, kills, deaths, territories)| {
                 let territories_json: Option<String> = territories;
@@ -46,7 +47,7 @@ pub async fn command_me(
                         serde_json::from_str::<Vec<TerritoryResult>>(&territories_json)
                     {
                         territories_parsed.into_iter().for_each(|mut territory| {
-                            territory.id = context.hasher.encode(territory.id);
+                            territory.id = context.hasher.encode(&territory.id);
                             territories.push(territory);
                         });
                     }
@@ -77,9 +78,6 @@ pub async fn command_me(
 
             Ok(results)
         }
-        Err(e) => {
-            error!("[command_me] ❌ Query failed - {}", e);
-            Err("error".into())
-        }
+        Err(e) => Err(QueryError::System(format!("Query failed - {}", e))),
     }
 }

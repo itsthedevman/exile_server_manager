@@ -8,7 +8,7 @@ pub async fn check_if_territory_owner(
 ) -> Result<bool, Error> {
     let owner_check: Option<String> = connection
         .exec_first(
-            &context.statements.check_if_territory_owner,
+            &context.sql.check_if_territory_owner,
             params! {
                 "territory_id" => territory_id,
                 "owner_uid" => steam_uid
