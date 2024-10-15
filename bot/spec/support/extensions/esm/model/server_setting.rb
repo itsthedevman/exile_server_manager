@@ -38,7 +38,7 @@ module ESM
       changed_items = previous_changes.slice(*MAPPING.keys)
       return if changed_items.blank?
 
-      sqf = changed_items.map_join(";") do |key, (_, value)|
+      sqf = changed_items.join_map(";") do |key, (_, value)|
         arma_variable = MAPPING[key]
         if arma_variable.nil?
           warn!(

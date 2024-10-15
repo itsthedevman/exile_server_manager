@@ -59,8 +59,17 @@ module ESM
     # Not database backed
     attribute :number_of_constructions, :integer, default: 0
 
-    has_many :containers, class_name: "ESM::ExileContainer", dependent: :destroy
-    has_many :constructions, class_name: "ESM::ExileConstruction", dependent: :destroy
+    alias_attribute :territory_name, :name
+
+    has_many :containers,
+      class_name: "ESM::ExileContainer",
+      foreign_key: "territory_id",
+      dependent: :destroy
+
+    has_many :constructions,
+      class_name: "ESM::ExileConstruction",
+      foreign_key: "territory_id",
+      dependent: :destroy
 
     after_save :update_arma
 
@@ -81,6 +90,14 @@ module ESM
     def self.sampled_for(server)
       territory = all.sample
       territory.tap { |t| t.server_id = server.id }
+    end
+
+    def object_count
+      constructions.size
+    end
+
+    def owner_name
+      name_lookup[owner_uid]
     end
 
     def add_moderators!(*steam_uids)
@@ -172,6 +189,40 @@ module ESM
       raise ArmaError, "Failed to delete flag for territory id:#{id}" unless success
     end
 
+    def name_lookup
+      name_lookup = ExileAccount.all.pluck(:uid, :name).to_h
+      name_lookup.default = "Name not found"
+      name_lookup
+    end
+
+    def moderators_as_hash
+      moderators.map { |uid| {uid:, name: name_lookup[uid]} }
+        .sort_by { |hash| hash[:name].downcase }
+    end
+
+    def builders_as_hash
+      build_rights.map { |uid| {uid:, name: name_lookup[uid]} }
+        .sort_by { |hash| hash[:name].downcase }
+    end
+
+    def to_h
+      attrs = %i[
+        id esm_custom_id
+        owner_uid radius level
+        flag_texture flag_stolen last_paid_at
+        build_rights moderators
+      ]
+
+      attributes.symbolize_keys.slice(*attrs).tap do |hash|
+        hash[:owner_name] = owner_name
+        hash[:territory_name] = territory_name
+        hash[:object_count] = object_count
+        hash[:moderators] = moderators_as_hash
+        hash[:build_rights] = builders_as_hash
+        hash[:last_paid_at] = hash[:last_paid_at].strftime("%Y-%m-%dT%X")
+      end
+    end
+
     private
 
     MAPPING = {
@@ -186,7 +237,7 @@ module ESM
     }.stringify_keys.freeze
 
     def set_variables(items)
-      items.map_join(" ") do |attribute|
+      items.join_map(" ") do |attribute|
         arma_variable = MAPPING[attribute]
         if arma_variable.nil?
           warn!(

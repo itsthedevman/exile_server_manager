@@ -13,7 +13,7 @@ FactoryBot.define do
     xm8_protectionmoney_notified { false }
     build_rights { [] }
     moderators { [] }
-    last_paid_at { nil }
+    last_paid_at { Time.now }
 
     trait :stolen do
       flag_stolen { true }

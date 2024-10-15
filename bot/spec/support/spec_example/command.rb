@@ -1,4 +1,4 @@
-RSpec.shared_examples("validate_command") do
+RSpec.shared_examples("validate_command") do |**args|
   it "has a description" do
     expect(command.description).not_to be_blank
     expect(command.description).not_to match(/todo/i)
@@ -28,8 +28,10 @@ RSpec.shared_examples("validate_command") do
     end
   end
 
-  it "requires registration" do
-    expect(command.registration_required?).to be(true)
+  if !args.key?(:requires_registration) || args[:requires_registration]
+    it "requires registration" do
+      expect(command.registration_required?).to be(true)
+    end
   end
 end
 

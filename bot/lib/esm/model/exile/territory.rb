@@ -21,10 +21,21 @@ module ESM
 
       def initialize(server:, territory:)
         @server = server
-        @territory = territory
         @server_settings = server.server_setting
-        @current_level_territory = ESM::Territory.where(server_id: @server.id, territory_level: @territory.level).first
-        @next_level_territory = ESM::Territory.where(server_id: @server.id, territory_level: @territory.level + 1).first
+
+        @territory = if @server.v2?
+          transform_territory(territory)
+        else
+          territory
+        end
+
+        @current_level_territory = @server.territories.find_by(
+          territory_level: @territory.level
+        )
+
+        @next_level_territory = @server.territories.find_by(
+          territory_level: @territory.level + 1
+        )
       end
 
       def id
@@ -91,13 +102,16 @@ module ESM
       end
 
       def renew_price
-        price = @territory.level * @territory.object_count * @server_settings.territory_price_per_object
-        return "#{price} poptabs" if @server_settings.territory_payment_tax.zero?
+        price = @territory.level *
+          @territory.object_count *
+          @server_settings.territory_price_per_object
+
+        return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
 
         # If the server has tax, add it to the price
         price += (price * (@server_settings.territory_payment_tax.to_f / 100)).round
 
-        "#{price} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
+        "#{price.to_delimitated_s} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
       end
 
       def upgradeable?
@@ -106,12 +120,12 @@ module ESM
 
       def upgrade_price
         price = @next_level_territory.territory_purchase_price
-        return "#{price} poptabs" if @server_settings.territory_upgrade_tax.zero?
+        return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_upgrade_tax.zero?
 
         # If the server has tax, add it to the price
         price += (price * (@server_settings.territory_upgrade_tax.to_f / 100)).round
 
-        "#{price} poptabs (#{@server_settings.territory_upgrade_tax}% tax added)"
+        "#{price.to_delimitated_s} poptabs (#{@server_settings.territory_upgrade_tax}% tax added)"
       end
 
       def upgrade_radius
@@ -123,11 +137,32 @@ module ESM
       end
 
       def moderators
-        @territory.moderators.map { |name, uid| "#{name} (#{uid})" }
+        if @server.v2?
+          @territory.moderators
+            .sort_by { |a| a.name.downcase }
+            .join_map("\n") do |account|
+              next if account.owner
+
+              "#{account.name} (#{account.uid})"
+            end
+        else
+          # V1
+          @territory.moderators.map { |name, uid| "#{name} (#{uid})" }
+        end
       end
 
       def builders
-        @territory.build_rights.map { |name, uid| "#{name} (#{uid})" }
+        if @server.v2?
+          @territory.build_rights
+            .join_map("\n") do |account|
+              next if account.owner || account.moderator
+
+              "#{account.name} (#{account.uid})"
+            end
+        else
+          # V1
+          @territory.build_rights.map { |name, uid| "#{name} (#{uid})" }
+        end
       end
 
       def days_left_until_payment_due
@@ -159,14 +194,28 @@ module ESM
 
           e.add_field(name: I18n.t(:territory_id), value: "```#{id}```", inline: true)
           e.add_field(name: I18n.t(:flag_status), value: "```#{flag_status}```", inline: true)
-          e.add_field(name: I18n.t(:next_due_date), value: "```#{next_due_date.strftime(ESM::Time::Format::TIME)}```")
-          e.add_field(name: I18n.t(:last_paid), value: "```#{last_paid_at.strftime(ESM::Time::Format::TIME)}```")
+
+          e.add_field(
+            name: I18n.t(:next_due_date),
+            value: "```#{next_due_date.strftime(ESM::Time::Format::TIME)}```"
+          )
+
+          e.add_field(
+            name: I18n.t(:last_paid),
+            value: "```#{last_paid_at.strftime(ESM::Time::Format::TIME)}```"
+          )
+
           e.add_field(name: I18n.t(:price_to_renew_protection), value: renew_price, inline: true)
 
           e.add_field(value: I18n.t("commands.territories.current_territory_stats"))
           e.add_field(name: I18n.t(:level), value: level, inline: true)
           e.add_field(name: I18n.t(:radius), value: "#{radius}m", inline: true)
-          e.add_field(name: "#{I18n.t(:current)} / #{I18n.t(:max_objects)}", value: "#{object_count}/#{max_object_count}", inline: true)
+
+          e.add_field(
+            name: "#{I18n.t(:current)} / #{I18n.t(:max_objects)}",
+            value: "#{object_count}/#{max_object_count}",
+            inline: true
+          )
 
           if upgradeable?
             e.add_field(value: I18n.t("commands.territories.next_territory_stats"))
@@ -177,13 +226,37 @@ module ESM
           end
 
           e.add_field(value: I18n.t("commands.territories.territory_members"))
-          e.add_field(name: I18n.t(:owner), value: owner)
-          e.add_field(name: I18n.t(:moderators), value: moderators)
-          e.add_field(name: I18n.t(:build_rights), value: builders)
+          e.add_field(name: ":crown: #{I18n.t(:owner)}", value: owner)
+
+          if (value = moderators) && value.present?
+            e.add_field(name: ":shield: #{I18n.t(:moderators)}", value:)
+          end
+
+          if (value = builders) && value.present?
+            e.add_field(name: ":construction_site: #{I18n.t(:build_rights)}", value:)
+          end
         end
       end
 
       private
+
+      def transform_territory(territory)
+        moderator_uids = territory[:moderators].map { |a| a[:uid] }
+        builder_uids = territory[:build_rights].map { |a| a[:uid] }
+
+        label_accounts = lambda do |account|
+          account[:owner] = account[:uid] == territory[:owner_uid]
+          account[:moderator] = moderator_uids.include?(account[:uid])
+          account[:builder] = builder_uids.include?(account[:uid])
+        end
+
+        sort_accounts = ->(account) { account[:name].downcase }
+
+        territory[:moderators].each(&label_accounts).sort_by!(&sort_accounts)
+        territory[:build_rights].each(&label_accounts).sort_by!(&sort_accounts)
+
+        territory.to_istruct
+      end
 
       def convert_flag_path(arma_path)
         flag_base_path = "https://exile-server-manager.s3.amazonaws.com/flags"

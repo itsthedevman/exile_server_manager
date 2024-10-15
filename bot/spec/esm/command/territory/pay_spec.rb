@@ -87,9 +87,6 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
           expect(user.exile_account.locker).to eq(locker_balance - territory_protection_price - tax)
 
-          # Ensure everything is in the correct spot
-          expect(territory.last_paid_at).to be(nil)
-
           territory.reload
 
           # Check for increased payment counter

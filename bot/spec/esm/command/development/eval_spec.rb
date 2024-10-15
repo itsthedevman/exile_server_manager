@@ -7,7 +7,7 @@ describe ESM::Command::Development::Eval, category: "command" do
   let!(:server) { create(:esm_malden, community_id: community.id) }
   let!(:user) { create(:developer) }
 
-  include_examples "validate_command"
+  include_examples "validate_command", requires_registration: false
 
   describe "#execute" do
     context "when the input is a boolean" do

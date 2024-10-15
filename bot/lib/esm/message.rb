@@ -81,10 +81,10 @@ module ESM
     # @return [Message] A referenced to the modified message
     #
     def set_metadata(player: nil, target: nil, server_id: nil)
-      player = Player.from(player) if player
-      target = Target.from(target) if target
+      @metadata.player = Player.from(player) if player
+      @metadata.target = Target.from(target) if target
+      @metadata.server_id = server_id if server_id
 
-      @metadata = Metadata.new(player:, target:, server_id:)
       self
     end
 

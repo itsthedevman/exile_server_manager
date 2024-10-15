@@ -2,7 +2,7 @@
 
 describe ESM::Command::Community::Id, category: "command" do
   include_context "command"
-  include_examples "validate_command"
+  include_examples "validate_command", requires_registration: false
 
   describe "#execute" do
     it "returns the community's ID" do

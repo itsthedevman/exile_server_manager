@@ -46,7 +46,7 @@ class Hash
     ImmutableStruct.define(*keys.map(&:to_sym)).new(*values.map { |value| recurse.call(value) })
   end
 
-  def map_join(join_with = "", &)
+  def join_map(join_with = "", &)
     filter_map(&).join(join_with)
   end
 end

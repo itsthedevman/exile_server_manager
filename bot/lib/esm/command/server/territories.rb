@@ -24,29 +24,54 @@ module ESM
         #################################
 
         def on_execute
-          deliver!(query: "list_territories", uid: current_user.steam_uid)
-        end
+          territories = query_exile_database!("player_territories", uid: current_user.steam_uid)
 
-        def on_response
-          check_for_no_territories!
+          if territories.size == 0
+            raise_error!(
+              :no_territories,
+              user: current_user.mention,
+              server_id: target_server.server_id
+            )
+          end
 
-          # Apparently past me I didn't default the response to an array if there was only one territory...
-          @response = [@response] if @response.is_a?(OpenStruct)
+          territories.each do |territory|
+            embed = ESM::Exile::Territory.new(
+              server: target_server,
+              territory: territory.to_h
+            ).to_embed
 
-          @response.each do |territory|
-            reply(territory_embed(territory))
+            reply(embed)
           end
         end
 
-        private
+        ########################################################################
 
-        def check_for_no_territories!
-          raise_error!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
-        end
+        module V1
+          def on_execute
+            deliver!(query: "list_territories", uid: current_user.steam_uid)
+          end
 
-        def territory_embed(territory)
-          @territory = ESM::Exile::Territory.new(server: target_server, territory: territory)
-          @territory.to_embed
+          def on_response
+            check_for_no_territories!
+
+            # Apparently past me I didn't default the response to an array if there was only one territory...
+            @response = [@response] if @response.is_a?(OpenStruct)
+
+            @response.each do |territory|
+              reply(territory_embed(territory))
+            end
+          end
+
+          private
+
+          def check_for_no_territories!
+            raise_error!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
+          end
+
+          def territory_embed(territory)
+            @territory = ESM::Exile::Territory.new(server: target_server, territory: territory)
+            @territory.to_embed
+          end
         end
       end
     end

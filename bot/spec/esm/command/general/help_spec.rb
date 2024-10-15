@@ -2,7 +2,7 @@
 
 describe ESM::Command::General::Help, category: "command" do
   include_context "command"
-  include_examples "validate_command"
+  include_examples "validate_command", requires_registration: false
 
   describe "#execute" do
     context "when there is no category provided" do

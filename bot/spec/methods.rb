@@ -14,7 +14,10 @@ end
 
 # Disables the allowlist on admin commands so the tests can use them
 def grant_command_access!(community, command)
-  community.command_configurations.where(command_name: command).update_all(allowlist_enabled: false)
+  community.command_configurations.where(command_name: command).update_all(
+    allowlist_enabled: false,
+    allowed_in_text_channels: true
+  )
 end
 
 #

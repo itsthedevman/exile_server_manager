@@ -39,5 +39,17 @@ FactoryBot.define do
       server_ip { "127.0.0.1" }
       server_port { "2602" }
     end
+
+    trait :v2 do
+      server_version { "2.0.0" }
+    end
+
+    trait :with_territories do
+      territories do
+        (0..10).map do |territory_level|
+          build(:territory, territory_level:, server_id:)
+        end
+      end
+    end
   end
 end

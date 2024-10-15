@@ -101,7 +101,10 @@ module ESM
         # Merge the errors from the response into the original message and use that
         # to build the error messages (the error message can reference data/metadata)
         if response_message.errors?
-          message.add_errors(response_message.errors.map(&:to_h))
+          message
+            .set_metadata(server_id:)
+            .add_errors(response_message.errors.map(&:to_h))
+
           embed = ESM::Embed.build(:error, description: message.error_messages.join("\n"))
 
           raise ESM::Exception::ExtensionError, embed

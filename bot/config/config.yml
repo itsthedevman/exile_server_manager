@@ -48,7 +48,7 @@ default: &default
     heartbeat_timeout: 5
 
   # ESM::Connection::Client
-  connection_client:
+  connection_client: &connection_client
     request_check: 0.0005
     response_timeout: 5
     min_threads: 2
@@ -73,6 +73,7 @@ development:
   !!merge <<: *default
   error_logging_channel_id: ""
   connection_client:
+    !!merge <<: *connection_client
     response_timeout: 2
 
 test:

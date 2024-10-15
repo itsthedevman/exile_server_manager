@@ -2,7 +2,7 @@
 
 describe ESM::Command::Server::Server, category: "command" do
   include_context "command"
-  include_examples "validate_command"
+  include_examples "validate_command", requires_registration: false
 
   describe "#execute" do
     include_context "connection_v1"

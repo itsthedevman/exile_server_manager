@@ -49,7 +49,7 @@ module ESM
             description: I18n.t(
               "commands.reward_v1.receipt",
               user: current_user.mention,
-              items: receipt.map_join { |item, quantity| "- #{quantity}x #{item}\n" }
+              items: receipt.join_map { |item, quantity| "- #{quantity}x #{item}\n" }
             )
           )
 

@@ -5,7 +5,7 @@ class Array
     ESM::Arma::HashMap.from(self)
   end
 
-  def map_join(join_with = "", &)
+  def join_map(join_with = "", &)
     filter_map(&).join(join_with)
   end
 

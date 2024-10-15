@@ -55,7 +55,7 @@ module ESM
       end
 
       def server(opts = {})
-        FactoryBot.create(:server, community_id: opts[:for].id)
+        FactoryBot.create(:server, *(opts[:traits] || []), community_id: opts.delete(:for).id)
       end
 
       def channel(opts = {})

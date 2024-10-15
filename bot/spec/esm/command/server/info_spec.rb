@@ -102,7 +102,7 @@ describe ESM::Command::Server::Info, category: "command" do
           )
         end
 
-        field_info.push({value: "__Territory Members__"}, {name: "Owner", value: territory.owner})
+        field_info.push({value: "__Territory Members__"}, {name: ":crown: Owner", value: territory.owner})
 
         # Now check the fields
         # Removing them from the embed so we can check moderators/builders easily
@@ -130,7 +130,7 @@ describe ESM::Command::Server::Info, category: "command" do
 
         builder_fields.each do |builder_field|
           field = embed.fields.shift
-          expect(field.name).to match(/build rights/i)
+          expect(field.name).to match(/builder/i)
           expect(field.value).to eq(builder_field)
         end
       end

@@ -22,6 +22,7 @@ end
 
 # Make active support happy
 ActiveSupport::Cache.format_version = 7.1
+ActiveSupport.to_time_preserves_timezone = true # Rails 8
 
 # Required by standalone_migrations
 module Rails
@@ -55,6 +56,7 @@ ESM.loader.tap do |loader|
   # Ignore inits
   loader.ignore(ESM.root.join("lib", "esm", "database.rb"))
   loader.ignore(ESM.root.join("lib", "post_init.rb"))
+  loader.ignore(ESM.root.join("lib", "post_init_dev.rb"))
   loader.ignore(ESM.root.join("lib", "pre_init.rb"))
   loader.ignore(ESM.root.join("lib", "pre_init_dev.rb"))
 

@@ -350,6 +350,11 @@ module ESM
               "Command #{name} must define the `server_id` argument in order to use #send_to_target_server!"
           end
 
+          message = message.set_metadata(
+            player: current_user,
+            target: target_user
+          )
+
           target_server.send_message(message, block:)
         end
 
@@ -388,7 +393,6 @@ module ESM
           message = ESM::Message.new
             .set_type(:call)
             .set_data(function_name:, **arguments)
-            .set_metadata(player: current_user, target: target_user)
 
           send_to_target_server!(message)
         end

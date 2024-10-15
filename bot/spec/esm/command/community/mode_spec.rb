@@ -5,7 +5,7 @@ describe ESM::Command::Community::Mode, category: "command" do
     let!(:user_args) { [:owner] }
   end
 
-  include_examples "validate_command"
+  include_examples "validate_command", requires_registration: false
 
   describe "#execute" do
     context "when player mode is enabled" do

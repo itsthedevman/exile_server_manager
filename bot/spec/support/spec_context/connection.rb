@@ -66,15 +66,15 @@ RSpec.shared_context("connection") do
     next unless example.metadata[:requires_connection]
     next if _spawned_players.size == 0
 
-    users = _spawned_players.map_join("\n") do |user|
+    users = _spawned_players.join_map("\n") do |user|
       next if user.steam_uid.blank?
 
       "ESM_TestUser_#{user.steam_uid} call _deleteFunction;" if user.connected
     end
 
     sqf = ""
-    sqf += if users.present?
-      <<~SQF
+    if users.present?
+      sqf += <<~SQF
         private _deleteFunction = {
           if (isNil "_this") exitWith {};
 

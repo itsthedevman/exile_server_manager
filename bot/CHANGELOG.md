@@ -13,7 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [2.3.2.7] - 2024-10-05
+## [2.3.2.8] - 12024-10-15
+
+### Added
+- Added @esm v2 support to `/server my territories`
+    - Moderators and Builder lists now only show who is uniquely that role.
+        - For example, owner and moderators will not show in the builders list.
+- Added emoji icons to Owner, Moderators, and Builders header in resulting embeds
+- Added @esm v2 support to `Exile::Territory`
+- Added comma delimination to renew price and upgrade price in embed from `/server my territories`
+
+### Changed
+- Changed locale `build_rights` from "Build rights" to "Builders"
+- Renamed `map_join` to `join_map` on `Array` and `Hash`
+- Fixed an issue where extension errors would not properly format
+- Changed `Message#set_metadata` to update instead of overwrite
+- Changed default timestamp formatting to not display seconds
+- Updated and fixed a bunch of tests
+
+## [2.3.2.7] - 12024-10-05
 
 ### Added
 - Added @esm v2 support to `/server gamble`
@@ -32,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests - All arguments are now converted to a string to match Discord
 - Tests - `spawn_player_for` helper now returns the player's NetID
 
-## [2.3.2.6] - 2024-08-03
+## [2.3.2.6] - 12024-08-03
 
 ### Added
 - Added @esm v2 support to `/territory promote_player`
@@ -44,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug with `ESM::Message::Player.from` not setting values when given an instance of `ESM::User::Ephemeral`
 - Tests - Moved command "requires registration" check to command examples
 
-## [2.3.2.5] - 2024-07-27
+## [2.3.2.5] - 12024-07-27
 
 ### Added
 - Added Hash support to `ApplicationCommand#embed_from_message!`
@@ -55,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Defaulted `discord_mention` value to steam UID for target metadata on a `Message` when the target is Ephemeral
 - Changed `/territory add_player` and `/territory demote_player` to support embed content from SQF
 
-## [2.3.2.4] - 2024-07-20
+## [2.3.2.4] - 12024-07-20
 
 ### Added
 - Added @esm v2 support to `/territory admin restore`
@@ -69,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [2.3.2.3] - 2024-07-13
+## [2.3.2.3] - 12024-07-13
 
 ### Added
 - Added @esm v2 support to `/territory pay`
@@ -87,14 +105,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests - Moved pay_spec.rb from `server` to `territory`
 - Tests - Improved `ExileTerritory` variable update SQF
 
-## [2.3.2.2] - 2024-06-30
+## [2.3.2.2] - 12024-06-30
 
 ### Added
 - Added @esm v2 support to `/territory remove_player`
 - Tests - Added `ESM::ExileTerritory#add_moderators!` and `ESM::ExileTerritory#add_builders!`.
     - Aliases: `#add_moderator!` and `#add_builder!`
 
-## [2.3.2.1] - 2024-06-29
+## [2.3.2.1] - 12024-06-29
 
 ### Added
 - Added alias `#run_database_query` for helper method `#query_exile_database`
@@ -107,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed setting command metadata on query messages
 
-## [2.3.2] - 2024-06-20
+## [2.3.2] - 12024-06-20
 
 ### Added
 - Added `CHANGELOG.md`
@@ -140,9 +158,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed redundant `_context` and `_examples` for RSpec context and examples
 - Removed `ESM::Callbacks`
 
-## [2.3.1] - 2024-05-29
+## [2.3.1] - 12024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.7
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.8
+[2.3.2.8]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.7..v2.3.2.8
 [2.3.2.7]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.7
 [2.3.2.6]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.5
 [2.3.2.5]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.5..v2.3.2.4

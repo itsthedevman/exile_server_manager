@@ -111,6 +111,7 @@ module ESM
 
     def run!(async: false, **)
       require_relative "post_init"
+      require_relative "post_init_dev" if ESM.env.development?
 
       # Start the bot
       bot.run(async:, **)

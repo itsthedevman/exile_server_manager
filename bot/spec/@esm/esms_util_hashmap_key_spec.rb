@@ -25,7 +25,7 @@ describe "ESMs_util_hashmap_key", :requires_connection, v2: true do
         end
 
         sqf += "[_hash1,"
-        sqf += keys.map_join { |key| "\"#{key}\"," }
+        sqf += keys.join_map { |key| "\"#{key}\"," }
         sqf += "\"#{expected_key}\"] call ESMs_util_hashmap_key"
 
         response = execute_sqf!(sqf)

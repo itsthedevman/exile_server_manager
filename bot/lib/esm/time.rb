@@ -6,7 +6,7 @@ module ESM
     include ActiveSupport::Inflector
 
     module Format
-      TIME = "%F at %r UTC"
+      TIME = "%F at %I:%M %p UTC"
       DATE = "%F"
     end
 

@@ -120,7 +120,7 @@ module ESM
                       provided_server_id: provided_server_id
                     )
                   else
-                    corrections = corrections.map_join(", ") { |correction| "`#{correction}`" }
+                    corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
 
                     I18n.t(
                       "command_errors.invalid_server_id_with_correction",
@@ -155,7 +155,7 @@ module ESM
                     provided_community_id: provided_community_id
                   )
                 else
-                  corrections = corrections.map_join(", ") { |correction| "`#{correction}`" }
+                  corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
 
                   I18n.t(
                     "command_errors.invalid_community_id_with_correction",

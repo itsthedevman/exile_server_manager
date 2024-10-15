@@ -174,7 +174,7 @@ module ESM
             end
 
             if selected_reward.reward_items.present?
-              items = selected_reward.items.sort_by { |v| v[:display_name].downcase }.map_join("\n") do |item|
+              items = selected_reward.items.sort_by { |v| v[:display_name].downcase }.join_map("\n") do |item|
                 "#{item[:quantity]}x #{item[:display_name]}"
               end
 
@@ -183,7 +183,7 @@ module ESM
             end
 
             if selected_reward.reward_vehicles.present?
-              vehicles = selected_reward.vehicles.sort_by { |v| v[:display_name].downcase }.map_join("\n") do |vehicle|
+              vehicles = selected_reward.vehicles.sort_by { |v| v[:display_name].downcase }.join_map("\n") do |vehicle|
                 vehicle[:display_name].to_s
               end
 

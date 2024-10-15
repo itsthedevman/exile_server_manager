@@ -203,7 +203,7 @@ module ESM
           def examples(raw: false)
             return examples_raw if raw
 
-            examples_raw.map_join("\n") do |example|
+            examples_raw.join_map("\n") do |example|
               <<~STRING
                 ```
                 #{usage(with_args: true, arguments: example[:arguments] || {})}
