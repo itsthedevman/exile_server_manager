@@ -18,9 +18,11 @@ services:
   mysql_db:
     image: mysql:8
     container_name: ESM_DB_MYSQL
-    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: password12345
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:

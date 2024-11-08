@@ -42,3 +42,6 @@ server/@exile/addons/*.exile.bisign
 server/@exile/addons/*.txt
 server/@exile/mod.paa
 server/@exileserver/logs
+
+.direnv/
+.env
