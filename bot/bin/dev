@@ -1,8 +1,4 @@
-#!/bin/bash
-
-export RUBYOPT='-W:no-deprecated -W:no-experimental'
-export PRINT_LOG='true'
-export ESM_ENV='development'
+#!/usr/bin/env bash
 
 # Start the bot
 bundle exec ruby bin/esm.rb
