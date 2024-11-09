@@ -22,7 +22,6 @@
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
           extensions = [ "rust-src" "rust-analyzer" "clippy" ];
         };
-
       in
       {
         devShells.default = pkgs.mkShell {
@@ -37,15 +36,7 @@
             # Docker tools (for containerization)
             docker-compose
             docker-client
-
-            # Development tools
-            nil
           ];
-
-          shellHook = ''
-            echo "🦀 Welcome to ESM Arma development shell!"
-            echo "Rust $(rustc --version) is available"
-          '';
 
           # Environment variables
           RUST_BACKTRACE = "1";
