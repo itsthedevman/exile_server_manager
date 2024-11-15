@@ -17,7 +17,10 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            ruby_3_2.devEnv
+            (ruby_3_2.override {
+              jemallocSupport = true;
+              docSupport = false;
+            })
 
             # Dependencies for native gems
             pkg-config
@@ -37,7 +40,7 @@
             export GEM_PATH="$GEM_HOME"
             export PATH="$GEM_HOME/bin:$PATH"
 
-            export RUBYOPT="-W:no-deprecated -W:no-experimental -ruri -rstringio -rjson -ryaml"
+            export RUBYOPT="-W:no-deprecated -W:no-experimental -ruri -rjson -ryaml"
             export PRINT_LOG='true'
             export ESM_ENV='development'
 
