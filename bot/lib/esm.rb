@@ -41,6 +41,7 @@
   "steam_web_api",
   "steam-condenser",
   "terminal-table",
+  "uri",
   "yaml",
   "zeitwerk"
 ].each { |gem| require gem }
