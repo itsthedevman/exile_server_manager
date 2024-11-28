@@ -422,7 +422,12 @@ module ESM
             query = ESM::Request.where(requestee_user_id: requestee.id, command_name: command_name)
 
             arguments.to_h.each do |name, value|
-              query = query.where("command_arguments->>'#{name}' = ?", value)
+              query =
+                if value.nil?
+                  query.where("command_arguments->>'#{name}' IS NULL")
+                else
+                  query.where("command_arguments->>'#{name}' = ?", value)
+                end
             end
 
             query.first

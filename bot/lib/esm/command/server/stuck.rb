@@ -21,9 +21,9 @@ module ESM
         #################################
 
         def on_execute
-          # Create a confirmation request to the requestee
           check_for_pending_request!
 
+          # Create a confirmation request to the requestee
           add_request(
             to: current_user,
             description: I18n.t(
@@ -42,20 +42,33 @@ module ESM
           reply(embed)
         end
 
-        def on_response
-          embed =
-            if @response.success
-              ESM::Embed.build(:success, description: I18n.t("commands.stuck.success_message", user: current_user.mention))
-            else
-              ESM::Embed.build(:error, description: I18n.t("commands.stuck.failure_message", user: current_user.mention, server: target_server.server_id))
-            end
+        def on_request_accepted
+          query_exile_database!("reset_player", uid: current_user.steam_uid)
+
+          embed = ESM::Embed.build(
+            :success,
+            description: I18n.t("commands.stuck.success_message", user: current_user.mention)
+          )
 
           reply(embed)
         end
 
-        def on_request_accepted
-          # Send request to the server
-          deliver!(query: "reset_player", targetUID: current_user.steam_uid)
+        module V1
+          def on_response
+            embed =
+              if @response.success
+                ESM::Embed.build(:success, description: I18n.t("commands.stuck.success_message", user: current_user.mention))
+              else
+                ESM::Embed.build(:error, description: I18n.t("commands.stuck.failure_message", user: current_user.mention, server: target_server.server_id))
+              end
+
+            reply(embed)
+          end
+
+          def on_request_accepted
+            # Send request to the server
+            deliver!(query: "reset_player", targetUID: current_user.steam_uid)
+          end
         end
       end
     end

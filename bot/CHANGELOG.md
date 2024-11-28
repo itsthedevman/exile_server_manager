@@ -13,7 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [2.3.2.9]
+## [2.3.2.10] - 12024-11-28
+
+### Added
+- Added v2 support to `/server stuck` and `/server admin reset_player`
+
+### Changed
+- Fixed SQL null bug with requests
+
+## [2.3.2.9] - 12024-11-27
 
 ### Added
 - Added NixOS flake support
@@ -177,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 12024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.9
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.10
+[2.3.2.10]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.9..v2.3.2.10
 [2.3.2.9]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.8..v2.3.2.9
 [2.3.2.8]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.7..v2.3.2.8
 [2.3.2.7]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.7
