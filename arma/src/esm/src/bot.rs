@@ -14,6 +14,7 @@ use std::sync::atomic::AtomicI64;
 use std::sync::Mutex as SyncMutex;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::time::sleep;
 
 lazy_static! {
     pub static ref TOKEN_MANAGER: Arc<SyncMutex<TokenManager>> =
@@ -21,12 +22,14 @@ lazy_static! {
     static ref INIT: Arc<SyncMutex<Init>> = Arc::new(SyncMutex::new(Init::default()));
     static ref ENCRYPTION_ENABLED: AtomicBool = AtomicBool::new(false);
     static ref CONNECTED: AtomicBool = AtomicBool::new(false);
-    static ref ENDPOINT: Arc<SyncMutex<Option<Endpoint>>> = Arc::new(SyncMutex::new(None));
+    static ref ENDPOINT: Arc<SyncMutex<Option<Endpoint>>> =
+        Arc::new(SyncMutex::new(None));
     static ref HANDLER: Arc<SyncMutex<NodeHandler<()>>> = {
         let (handler, _) = node::split();
         Arc::new(SyncMutex::new(handler))
     };
-    static ref LISTENER_TASK: Arc<SyncMutex<Option<NodeTask>>> = Arc::new(SyncMutex::new(None));
+    static ref LISTENER_TASK: Arc<SyncMutex<Option<NodeTask>>> =
+        Arc::new(SyncMutex::new(None));
     static ref RECONNECTION_COUNT: AtomicI64 = AtomicI64::new(0);
 }
 
@@ -44,10 +47,13 @@ pub async fn initialize(receiver: UnboundedReceiver<BotRequest>) {
     trace!("[initialize] Loading threads");
     routing_thread(receiver).await;
     listener_thread(listener);
+    xm8_notification_thread().await;
 }
 
 async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
     tokio::spawn(async move {
+        trace!("[routing_thread] Checking for requests");
+
         loop {
             let Some(request) = receiver.recv().await else {
                 continue;
@@ -58,8 +64,8 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
             match request {
                 BotRequest::Connect => {
                     if let Err(errors) = lock!(INIT).validate() {
-                        error!("[on_connect] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
-                        return;
+                        error!("[connect] ❌ Attempted to connect but init data was not valid. Errors: {:?}", errors);
+                        continue;
                     }
 
                     let server_address = crate::CONFIG
@@ -69,10 +75,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                         .next()
                         .unwrap();
 
-                    // Disable for testing only
-                    if !cfg!(feature = "test") {
-                        warn!("[on_connect] Calling...");
-                    }
+                    info!("[connect] Dialing the bot's number...");
 
                     match lock!(HANDLER)
                         .network()
@@ -82,7 +85,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                             *lock!(ENDPOINT) = Some(e);
                         }
                         Err(e) => {
-                            error!("[on_connect] ❌ Failed to connect to bot - {e}")
+                            error!("[connect] ❌ Failed to connect to bot - {e}")
                         }
                     }
                 }
@@ -115,12 +118,63 @@ fn listener_thread(listener: NodeListener<()>) {
             let incoming_data = incoming_data.to_owned();
 
             if let Err(e) = on_request(incoming_data) {
-                error!("[on_request] {e}");
+                error!("[on_request] ❌ {e}");
             }
         }
     });
 
     *lock!(LISTENER_TASK) = Some(task);
+}
+
+async fn xm8_notification_thread() {
+    tokio::spawn(async move {
+        let time_to_wait = if cfg!(feature = "development") {
+            1.0
+        } else {
+            5.0
+        };
+
+        loop {
+            sleep(Duration::from_secs_f64(time_to_wait)).await;
+
+            if !crate::READY.load(Ordering::SeqCst) {
+                continue;
+            }
+
+            let notifications = match DATABASE.get_xm8_notifications().await {
+                Ok(n) => n,
+                Err(e) => {
+                    error!("[xm8_notification_thread] ❌ {e}");
+                    continue;
+                }
+            };
+
+            if notifications.is_empty() {
+                continue;
+            }
+
+            // Update the attempt counter
+            let notification_ids: Vec<&String> =
+                notifications.iter().flat_map(|n| &n.uuids).collect();
+
+            if let Err(e) = DATABASE.update_xm8_attempt_counter(notification_ids).await {
+                error!("[xm8_notification_thread] ❌ {e}");
+                continue;
+            }
+
+            trace!("[xm8_notification_thread] Sending notifications {notifications:?}");
+
+            // Send the message
+            let message = Message::new().set_type(Type::Call).set_data(Data::from([
+                ("function_name".to_owned(), json!("send_xm8_notification")),
+                ("notifications".to_owned(), json!(notifications)),
+            ]));
+
+            if let Err(e) = BotRequest::send(message) {
+                error!("[send_to_channel] ❌ {}", e);
+            };
+        }
+    });
 }
 
 fn send_message(message: Message) -> ESMResult {
@@ -146,20 +200,25 @@ fn send_request(request: Request) -> ESMResult {
     // Make sure we are connected first
     if !ready(&*lock!(HANDLER), *lock!(ENDPOINT)) {
         return Err(
-            "❌ Cannot send message - We are not connected to the bot at the moment".into(),
+            "❌ Cannot send message - We are not connected to the bot at the moment"
+                .into(),
         );
     }
 
     let request = match serde_json::to_vec(&request) {
         Ok(r) => r,
-        Err(e) => return Err(format!("❌ Cannot send message - Failed to convert - {e}").into()),
+        Err(e) => {
+            return Err(format!("❌ Cannot send message - Failed to convert - {e}").into())
+        }
     };
 
     // Compress
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
 
     if let Err(e) = encoder.write_all(&request[..]) {
-        return Err(format!("❌ Cannot send message - Failed to write to buffer - {e}").into());
+        return Err(
+            format!("❌ Cannot send message - Failed to write to buffer - {e}").into(),
+        );
     };
 
     let Ok(request) = encoder.finish() else {
@@ -182,9 +241,10 @@ fn send_request(request: Request) -> ESMResult {
         .send(lock!(ENDPOINT).unwrap(), &request)
     {
         SendStatus::Sent => Ok(()),
-        s => Err(
-            format!("❌ Cannot send - We are not connected to the bot at the moment: {s:?}").into(),
-        ),
+        s => Err(format!(
+            "❌ Cannot send - We are not connected to the bot at the moment: {s:?}"
+        )
+        .into()),
     }
 }
 
@@ -255,10 +315,13 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
     // Decode
     let encoded_message: Vec<u8> = match BASE64_STANDARD.decode(&encoded_message) {
         Ok(p) => p,
-        Err(e) => return Err(format!("[on_request] ❌ {e:?}\n{encoded_message:?}").into()),
+        Err(e) => {
+            return Err(format!("[on_request] ❌ {e:?}\n{encoded_message:?}").into())
+        }
     };
 
-    let decrypted_message = decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
+    let decrypted_message =
+        decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
 
     // Decompress
     let mut decoder = GzDecoder::new(decrypted_message.as_slice());
@@ -296,10 +359,8 @@ fn on_disconnect() {
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
-    let time_to_wait: f32 = if cfg!(feature = "test") {
+    let time_to_wait: f32 = if cfg!(feature = "development") {
         1.0
-    } else if cfg!(feature = "development") {
-        3.0
     } else {
         let mut rng = thread_rng();
 
@@ -317,15 +378,18 @@ fn on_disconnect() {
 
     // Sleep a max of 5 minutes in between connection attempts
     if current_count <= 20 {
-        // Increase the reconnect counter by 1
         RECONNECTION_COUNT.fetch_add(1, Ordering::SeqCst);
     }
 
-    std::thread::sleep(time_to_wait);
+    TOKIO_RUNTIME.block_on(async {
+        tokio::spawn(async move {
+            sleep(time_to_wait).await;
 
-    if let Err(e) = BotRequest::connect() {
-        error!("[on_disconnect] ❌ {e}");
-    }
+            if let Err(e) = BotRequest::connect() {
+                error!("[on_disconnect] ❌ {e}");
+            }
+        });
+    });
 }
 
 // Thump
@@ -344,6 +408,9 @@ fn on_error(request: Request) -> ESMResult {
         .join("\n");
 
     error!("[on_error] {error}");
+
+    let message = Message::new().set_id(message.id).set_type(Type::Ack);
+    send_message(message)?;
 
     Ok(())
 }

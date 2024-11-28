@@ -631,7 +631,7 @@ fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
             .command(
                 builder
                     .local_git_path
-                    .join("tools")
+                    .join("bin")
                     .join("sqfvm")
                     .to_string_lossy(),
             )
@@ -692,19 +692,15 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
 
         let script = format!(
             r#"
-destination_file="{addon}.pbo";
+source_file="{build_path}/{addon}";
+destination_file="{build_path}/{addon}.pbo";
 
-cd {build_path};
-{armake2} pack -v "{addon}" "$destination_file";
+{armake2} pack -v "$source_file" "$destination_file";
 
 [[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
 "#,
             build_path = build_path.display(),
-            armake2 = builder
-                .local_git_path
-                .join("tools")
-                .join("armake2")
-                .display()
+            armake2 = builder.local_git_path.join("bin").join("armake2").display()
         );
 
         System::new()
@@ -760,7 +756,7 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     // Handle env feature switching
     let features = match builder.args.build_env() {
         BuildEnv::Development => "--features development",
-        BuildEnv::Test => "--features test",
+        BuildEnv::Test => "--features development",
         BuildEnv::Production => "",
     };
 

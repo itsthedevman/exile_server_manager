@@ -1,13 +1,22 @@
 /* ----------------------------------------------------------------------------
 Function:
-	ExileServer_system_xm8_sendCustom
+	ESMs_system_territory_encodeID
 
 Description:
-	Sends a custom notification
+	Encodes the provided territory's database ID for public viewing
 
 Parameters:
-	_recipientUIDs 	- [Array<String>] An array of player UIDs
-	_embedData 		- [HashMap<String, Any>] An embed to send to the UIDs
+	_this - [Object] The territory flag
+
+Returns:
+	Nothing
+
+Examples:
+	(begin example)
+
+		_territory call ESMs_system_territory_encodeID;
+
+	(end)
 
 Author:
 	Exile Server Manager
@@ -18,9 +27,4 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-private _recipientUIDs = _this select 0;
-private _embedData = _this select 1;
-
-["custom", _recipientUIDs, _embedData] call ExileServer_system_xm8_send;
-
-nil
+["encode_territory_id", _this getVariable ["ExileDatabaseID", -1]] call ESMs_system_extension_call

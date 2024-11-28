@@ -33,13 +33,17 @@ impl ArmaRequest {
 impl std::fmt::Display for ArmaRequest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArmaRequest::Query(m) => f.debug_tuple("ArmaRequest::Query").field(m).finish(),
+            ArmaRequest::Query(m) => {
+                f.debug_tuple("ArmaRequest::Query").field(m).finish()
+            }
             ArmaRequest::Method { name, message } => f
                 .debug_struct("ArmaRequest::Method")
                 .field("name", name)
                 .field("message", message)
                 .finish(),
-            ArmaRequest::Initialize(_) => f.debug_tuple("ArmaRequest::Initialize").finish(),
+            ArmaRequest::Initialize(_) => {
+                f.debug_tuple("ArmaRequest::Initialize").finish()
+            }
         }
     }
 }

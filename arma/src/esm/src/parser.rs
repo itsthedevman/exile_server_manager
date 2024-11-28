@@ -33,7 +33,9 @@ impl Parser {
 
         let output: T = match serde_json::from_value(content) {
             Ok(t) => t,
-            Err(e) => return Err(format!("[parser::from_arma] Failed to convert to Data/Metadata. Reason: {e}. Input: \"{input}\" ")),
+            Err(e) => return Err(format!(
+                "[parser::from_arma] Failed to convert to type. Reason: {e}. Input: \"{input}\""
+            )),
         };
 
         Ok(output)
@@ -42,28 +44,36 @@ impl Parser {
 
 pub fn validate_content(input: &JSONValue) -> JSONValue {
     match input {
-        JSONValue::Array(a) => {
-            if a.is_empty() {
-                JSONValue::Array(vec![])
-            } else {
-                match convert_arma_array_to_object(a) {
-                    Ok(v) => v,
-                    Err(_) => input.to_owned(),
-                }
-            }
+        // [] => []
+        JSONValue::Array(arr) if arr.is_empty() => JSONValue::Array(vec![]),
+        // [["key1", "value1"], ["key2", 2]]
+        JSONValue::Array(arr) if is_valid_pair_array(arr) => {
+            convert_arma_array_to_object(arr).unwrap_or_else(|_| input.to_owned())
+        }
+        // [anything else]
+        JSONValue::Array(arr) => {
+            JSONValue::Array(arr.iter().map(|v| validate_content(v)).collect())
         }
         _ => input.to_owned(),
     }
 }
 
-fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, String> {
-    if !input
-        .iter()
-        .all(|i| i.is_array() && i.as_array().unwrap().len() == 2)
-    {
-        return Err(format!("[parser::convert_arma_array_to_object] Input must consist of key/value pairs. Input: {input:?}"));
-    }
+fn is_valid_pair_array(arr: &[JSONValue]) -> bool {
+    arr.iter().all(|item| {
+        if let JSONValue::Array(pair) = item {
+            if pair.len() == 2 {
+                matches!(&pair.get(0), Some(JSONValue::String(_)))
+                    && pair.get(1).is_some()
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    })
+}
 
+fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, String> {
     let mut object = serde_json::map::Map::new();
     for pair in input {
         let pair = match pair.as_array() {
@@ -134,7 +144,8 @@ fn replace_arma_characters(input: &str) -> String {
                     quote_series_counter = quote_series_counter.saturating_sub(1);
                 }
 
-                char_to_add = format!("{}\"", "\\".repeat(quote_series_counter.saturating_sub(1)));
+                char_to_add =
+                    format!("{}\"", "\\".repeat(quote_series_counter.saturating_sub(1)));
             }
         }
 
@@ -283,6 +294,29 @@ mod tests {
                 (String::from("respect"), json!("1")),
                 (String::from("vehicles"), json!([])),
             ])
+        )
+    }
+
+    #[test]
+    fn it_handles_arrays_of_hashes() {
+        let input = json!([json!([
+            "nested",
+            json!([json!([json!(["key1", "value1"]), json!(["key2", 2])])])
+        ])])
+        .to_arma()
+        .to_string();
+
+        let result: Result<Data, String> = Parser::from_arma(&input);
+
+        assert_eq!(
+            result.unwrap(),
+            HashMap::from([(
+                String::from("nested"),
+                json!([json!({
+                    String::from("key1"): json!("value1"),
+                    String::from("key2"): json!(2),
+                })])
+            )])
         )
     }
 }

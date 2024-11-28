@@ -163,12 +163,7 @@ async fn create_name_lookup(
         .into_iter()
         .collect::<Vec<String>>();
 
-    // Annoying workaround for `IN` query
-    let placeholders = vec!["?"; uids.len()].join(",");
-    let query = context
-        .sql
-        .account_name_lookup
-        .replace(":uids", &placeholders);
+    let query = replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
 
     // Execute the query
     let name_lookup = connection.exec_map(&query, uids, |t| t).await;

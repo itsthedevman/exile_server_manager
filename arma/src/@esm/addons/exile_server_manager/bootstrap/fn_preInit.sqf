@@ -85,6 +85,7 @@ forEach
 	define_fn!("ESMs_system_process_preInit"),
     define_fn!("ESMs_system_process_postInit"),
     define_fn!("ESMs_system_territory_checkAccess"),
+    define_fn!("ESMs_system_territory_encodeID"),
     define_fn!("ESMs_system_territory_get"),
     define_fn!("ESMs_system_territory_incrementPaymentCounter"),
     define_fn!("ESMs_system_territory_resetPaymentCounter"),

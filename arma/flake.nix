@@ -31,12 +31,35 @@
 
             # Build essentials
             pkg-config
+            openssl_3
             openssl.dev
 
             # Docker tools (for containerization)
             docker-compose
             docker-client
+            patchelf
+
+            mysql84
           ];
+
+          shellHook = ''
+            OPENSSL_LIB="${pkgs.openssl_3.out}/lib"
+
+            echo "setting up binary wrappers..."
+            mkdir -p tools/wrappers
+
+            echo "patching sqfvm..."
+            cp -f tools/sqfvm tools/wrappers/sqfvm
+            patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/sqfvm
+
+            echo "patching armake2..."
+            cp -f tools/armake2 tools/wrappers/armake2
+            patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/armake2
+            patchelf --set-rpath "$OPENSSL_LIB" tools/wrappers/armake2
+
+            # Ensure they're executable
+            chmod +x tools/wrappers/sqfvm tools/wrappers/armake2
+          '';
 
           # Environment variables
           RUST_BACKTRACE = "1";

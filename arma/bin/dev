@@ -1,3 +1,10 @@
 #!/usr/bin/env bash
 
-bin/run --target=linux --env=development "$@"
+set -euo pipefail
+
+readonly args=("$@")
+
+echo "Running tests..."
+cargo test --workspace
+
+exec "./bin/build" --target=linux --env=development --start-server "${args[@]}"

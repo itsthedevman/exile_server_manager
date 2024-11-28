@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")/.." || exit 1
+
+if [ -f "tools/wrappers/sqfvm" ]; then
+    exec tools/wrappers/sqfvm "$@"
+else
+    exec tools/sqfvm "$@"
+fi

@@ -72,11 +72,13 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
 
     // There isn't a good crate that supports going from YAML to XML directly
     // So we have to convert the YML to JSON and modify it so xml2json can convert it to XML
-    let json_hash: IndexMap<String, IndexMap<String, IndexMap<String, serde_json::Value>>> =
-        match serde_yaml::from_str(&file_content) {
-            Ok(j) => j,
-            Err(e) => return Err(format!("Failed to parse YAML. {e}")),
-        };
+    let json_hash: IndexMap<
+        String,
+        IndexMap<String, IndexMap<String, serde_json::Value>>,
+    > = match serde_yaml::from_str(&file_content) {
+        Ok(j) => j,
+        Err(e) => return Err(format!("Failed to parse YAML. {e}")),
+    };
 
     /*
         // Represents a single Key
@@ -99,7 +101,7 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
                 .map(|(id, entry)| {
                     // Remove arguments because the rest of the keys are languages
                     let arguments = entry
-                        .shift_remove("arguments".into())
+                        .shift_remove("arguments")
                         .unwrap_or(json!([]));
 
                     let arguments = arguments
@@ -190,7 +192,9 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
 
             Ok(xml)
         }
-        Err(e) => Err(format!("Failed to convert stringtable.yml to xml. Reason: {e}").into()),
+        Err(e) => {
+            Err(format!("Failed to convert stringtable.yml to xml. Reason: {e}").into())
+        }
     }
 }
 

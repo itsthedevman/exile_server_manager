@@ -1,45 +1,90 @@
-/**
- * ExileServer_system_xm8_send
- *
- * Exile Mod
- * www.exilemod.com
- * © 2015 Exile Mod Team
- *
- * This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
- *
- * Modify by Exile Server Manager Team for use with Exile Server Manager
- */
+/* ----------------------------------------------------------------------------
+Function:
+	ExileServer_system_xm8_send
 
-private["_methodName", "_recipients", "_text", "_allowedMethods", "_escapedText", "_message", "_result"];
-_methodName = _this select 0;
-_recipients = _this select 1;
-_text = _this select 2;
-_flagID = param [3, ""];
+Description:
+	Enqueues an XM8 notification to be sent to the bot as soon as possible.
+	Used internally by other XM8 functions:
+		- ExileServer_system_xm8_sendBaseRaid
+		- ExileServer_system_xm8_sendChargePlantStarted
+		- ExileServer_system_xm8_sendCustom
+		- ExileServer_system_xm8_sendFlagRestored
+		- ExileServer_system_xm8_sendFlagStealStarted
+		- ExileServer_system_xm8_sendFlagStolen
+		- ExileServer_system_xm8_sendGrindingStarted
+		- ExileServer_system_xm8_sendHackingStarted
+		- ExileServer_system_xm8_sendItemSold
+		- ExileServer_system_xm8_sendProtectionMoneyDue
+		- ExileServer_system_xm8_sendProtectionMoneyPaid
+
+Parameters:
+	_notificationType	- [String]
+	_recipientUIDs		- [Array<String>]
+	_content			- [HashMap<String, Any>]
+Returns:
+	Nothing
+
+Examples:
+	(begin example)
+
+		[
+			"custom",
+			["UID1", "UID2", "UID3"],
+			[
+				["title", "This is the title!"],
+				["description", "This is the description"]
+			]
+		]
+		call ExileServer_system_xm8_send;
+
+	(end)
+
+Author:
+	Exile Mod
+	www.exilemod.com
+	© 2015-current_year!() Exile Mod Team
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
+
+Co-author:
+	Exile Server Manager
+	www.esmbot.com
+	© 2018-current_year!() Bryan "WolfkillArcadia"
+
+	This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
+---------------------------------------------------------------------------- */
+
+private _notificationType = _this select 0;
+private _recipientUIDs = _this select 1;
+private _content = _this select 2;
+
 try
 {
-	if !(_recipients isEqualType []) then
+	if (!type?(_recipientUIDs, ARRAY)) then
 	{
-		throw "Broken recipient list!";
+		throw "Invalid recipient array";
 	};
-	_recipients = _recipients call ExileClient_util_array_unique;
-	if ((count _recipients) isEqualTo 0) then
+
+	// Filter duplicate recipients
+	_recipientUIDs = _recipientUIDs call ExileClient_util_array_unique;
+	if (empty?(_recipientUIDs)) then
 	{
-		throw "No recipients!";
+		throw "No recipients";
 	};
-	if ((count _recipients) > 30) then
-	{
-		throw "Too many recipients!";
-	};
-	_escapedText = _text call ExileClient_util_string_escapeJson;
-	if (_escapedText isEqualTo "") then
-	{
-		throw "Invalid text!";
-	};
-	// ["xm8_notification", [["type", _methodName], ["recipients", format['{ "r": %1 }', _recipients] call ExileClient_util_string_escapeJson], ["message", _escapedText], ["id", _flagID]]] call ESM_fnc_callExtension;
-	// ["xm8_send", format["XM8 notification sent. Type: %1. Recipients: %2. Message: %3", _methodName, _recipients, _escapedText]] call ESM_fnc_log;
+
+	[
+		"add_xm8_notification",
+		_notificationType,
+		_recipientUIDS,
+		_content
+	]
+	call ESMs_system_extension_call;
 }
 catch
 {
-	format ["XM8 message failed: %1", _exception] call ExileServer_util_log;
+	error!("Failed to send %1: %2", _notificationType, _exception);
 };
+
+nil

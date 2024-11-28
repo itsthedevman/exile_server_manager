@@ -6,6 +6,7 @@ pub use crate::database::*;
 pub use crate::*;
 
 // I have this separated so Rust compiler errors will be localized to a line vs the entire macro
+import_and_export!(add_xm8_notifications);
 import_and_export!(check_if_territory_exists);
 import_and_export!(check_if_territory_owner);
 import_and_export!(command_all_territories);
@@ -13,9 +14,12 @@ import_and_export!(command_me);
 import_and_export!(command_restore);
 import_and_export!(command_reward);
 import_and_export!(command_set_id);
-import_and_export!(player_territories);
 import_and_export!(decode_territory_id);
+import_and_export!(get_xm8_notifications);
+import_and_export!(player_territories);
 import_and_export!(set_territory_payment_counter);
+import_and_export!(update_xm8_attempt_counter);
+import_and_export!(update_xm8_notification_state);
 
 // Generates a Queries struct containing these attributes and the contents of their
 // corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
@@ -43,6 +47,12 @@ where
     row.get_opt(index)
         .ok_or_else(|| format!("{index} does not exist on row: {row:?}"))
         .and_then(|v| v.map_err(|e: FromValueError| e.to_string()))
+}
+
+pub fn replace_list(query: &str, placeholder: &str, quantity: usize) -> String {
+    // Annoying workaround for `IN` query, or insert multiple
+    let placeholders = vec!["?"; quantity].join(",");
+    query.replace(placeholder, &placeholders)
 }
 
 /*

@@ -12,14 +12,8 @@ pub type Data = HashMap<String, Value>;
         id: "",
         type: "",
         server_id: [],
-        data: {
-            type: "",
-            content: {}
-        },
-        metadata: {
-            type: "",
-            content: {}
-        },
+        data: {},
+        metadata: {},
         errors: []
     }
 */

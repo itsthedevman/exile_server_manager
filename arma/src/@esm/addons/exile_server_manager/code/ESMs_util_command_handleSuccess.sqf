@@ -56,6 +56,7 @@ private _message = _this select 0;
 if !(_this select 1) exitWith {};
 
 private _logContent = call (_this param [2, {}]);
+if (nil?(_logContent)) exitWith {};
 
 if (type?(_logContent, ARRAY)) then
 {

@@ -64,11 +64,14 @@ pub const WINDOWS_EXES: &[&str] = &[
     "arma3battleye",
 ];
 
-pub const LINUX_EXES: &[&str] = &["/arma3server/arma3server", "/arma3server/arma3server_x64"];
+pub const LINUX_EXES: &[&str] =
+    &["/arma3server/arma3server", "/arma3server/arma3server_x64"];
 
 /// Builds ESM's Arma 3 server mod
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(name = "bin/build")]
+#[command(bin_name = "bin/build")]
+#[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Build the extension as 32 bit instead of 64 bit
     #[arg(short, long)]
@@ -106,9 +109,9 @@ pub struct Args {
     #[arg(short, long)]
     update: bool,
 
-    /// Builds the code but does not start the server
+    /// Builds the code and starts the server
     #[arg(short, long)]
-    build: bool,
+    start_server: bool,
 }
 
 impl Args {
@@ -149,15 +152,15 @@ impl Args {
     }
 
     pub fn full_rebuild(&self) -> bool {
-        self.full || self.build
+        self.full
     }
 
     pub fn update_arma(&self) -> bool {
         self.update
     }
 
-    pub fn build_only(&self) -> bool {
-        self.build
+    pub fn start_server(&self) -> bool {
+        self.start_server
     }
 }
 

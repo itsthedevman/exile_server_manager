@@ -167,6 +167,7 @@ impl Builder {
         self.print_status("Waiting for build target", Self::wait_for_receiver)?;
 
         detect_rebuild(self)?;
+
         self.print_build_info();
         self.print_status("Preparing to build", build_steps::prepare_to_build)?;
 
@@ -178,7 +179,7 @@ impl Builder {
             self.print_status("Building extension", build_steps::build_extension)?;
         }
 
-        if self.args.build_only() {
+        if !self.args.start_server() {
             return Ok(());
         }
 

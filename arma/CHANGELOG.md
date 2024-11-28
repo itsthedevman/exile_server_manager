@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
 - Added server setting that controls if the locker limit will be taken into account when gambling.
 - Added randomized gambling loss messages to stringtable.
+- Added `ESMs_system_territory_encodeID` for encoding a territory ID
+- Overhauled the XM8 notification system:
+    - New database table `xm8_notification` to track all notifications
+    - Notifications no longer vanish into the void if ESM isn't connected - they're safely stored until delivery
+    - Added a proper queue system: store first, deliver when ready
+    - Each notification now has a paper trail from trigger to delivery
 
 ### Changed
 - Changed database ID encoded hashing algorithm to utilize a unique server key making encoded territory IDs unique to each individual server
@@ -79,6 +85,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM.key` with `esm.key` and changed data structure
 - Reworked the reconnection workflow to keep attempting to reconnect without limit.
     - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes between attempts.
+- Updated Exile's XM8 functions to the new system
+    - `ExileServer_system_xm8_send`
+	- `ExileServer_system_xm8_sendBaseRaid`
+    - `ExileServer_system_xm8_sendChargePlantStarted`
+    - `ExileServer_system_xm8_sendCustom`
+    - `ExileServer_system_xm8_sendFlagRestored`
+    - `ExileServer_system_xm8_sendFlagStealStarted`
+    - `ExileServer_system_xm8_sendFlagStolen`
+    - `ExileServer_system_xm8_sendGrindingStarted`
+    - `ExileServer_system_xm8_sendHackingStarted`
+    - `ExileServer_system_xm8_sendItemSold`
+    - `ExileServer_system_xm8_sendProtectionMoneyDue`
+    - `ExileServer_system_xm8_sendProtectionMoneyPaid`
+- Updated `ExileServer_system_xm8_sendCustom` to accept Embed arguments
 
 ### Removed
 - Removed `ESM_fnc_attemptReconnect`

@@ -45,3 +45,4 @@ server/@exileserver/logs
 
 .direnv/
 .env
+tools/wrappers/

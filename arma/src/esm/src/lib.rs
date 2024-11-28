@@ -96,8 +96,11 @@ fn initialize_logger() {
 ///////////////////////////////////////////////////////////////////////
 #[arma]
 pub fn init() -> Extension {
-    // Start the logger
-    initialize_logger();
+    // This will create a log file in the src directory when running tests
+    if !cfg!(test) {
+        // Start the logger
+        initialize_logger();
+    }
 
     debug!("[init] - Initializing");
 
@@ -196,7 +199,8 @@ mod tests {
 
         // "2021-01-01T00:00:00.000000000+00:00"
         let re =
-            Regex::new(r#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}\+\d{2}:\d{2}$"#).unwrap();
+            Regex::new(r#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}\+\d{2}:\d{2}$"#)
+                .unwrap();
 
         assert!(re.is_match(&result));
     }
