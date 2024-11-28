@@ -10,6 +10,7 @@
   # This contains a check for the existence of the Rails class.
   # One of the action/active gems defines Rails, so this needs to be loaded first
   "sucker_punch",
+  "uri",
 
   "action_view",
   "action_view/helpers",
@@ -41,7 +42,6 @@
   "steam_web_api",
   "steam-condenser",
   "terminal-table",
-  "uri",
   "yaml",
   "zeitwerk"
 ].each { |gem| require gem }
