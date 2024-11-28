@@ -58,7 +58,7 @@ describe ESM::Event::Xm8NotificationV1 do
         enabled: false,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL
       )
 
       results = nil
@@ -73,7 +73,7 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL,
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL,
         user_accepted: false
       )
 
@@ -81,7 +81,7 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL,
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL,
         community_accepted: false
       )
 
@@ -97,14 +97,14 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL
       )
 
       create(
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL
       )
 
       results = nil
@@ -122,7 +122,7 @@ describe ESM::Event::Xm8NotificationV1 do
         user: user,
         destination_community: community,
         source_server_id: server.id,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL
       )
 
       create(
@@ -130,7 +130,7 @@ describe ESM::Event::Xm8NotificationV1 do
         user: second_user,
         destination_community: community,
         source_server_id: ESM::Test.server(for: community).id,
-        channel_id: ESM::Community::ESM::SPAM_CHANNEL
+        channel_id: ESM::Community::ESM_SPAM_CHANNEL
       )
 
       results = nil

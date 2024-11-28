@@ -3,6 +3,7 @@
 module ESM
   class Community < ApplicationRecord
     ALPHABET = ("a".."z").to_a.freeze
+    ESM_ID = "452568470765305866"
 
     before_create :generate_community_id
     before_create :generate_public_id
@@ -36,13 +37,9 @@ module ESM
 
     alias_attribute :name, :community_name
 
-    module ESM
-      ID = "452568470765305866"
-    end
-
     def self.community_ids
-      ::ESM.cache.fetch("community_ids", expires_in: ::ESM.config.cache.community_ids) do
-        ApplicationRecord.connection_pool.with_connection { pluck(:community_id) }
+      ESM.cache.fetch("community_ids", expires_in: ESM.config.cache.community_ids) do
+        ESM::Database.with_connection { pluck(:community_id) }
       end
     end
 
@@ -74,13 +71,13 @@ module ESM
     end
 
     def logging_channel
-      ::ESM.bot.channel(logging_channel_id)
+      ESM.bot.channel(logging_channel_id)
     rescue
       nil
     end
 
     def discord_server
-      ::ESM.bot.server(guild_id)
+      ESM.bot.server(guild_id)
     rescue
       nil
     end
@@ -99,7 +96,7 @@ module ESM
       when :error
         return if !log_error_event
       else
-        raise ::ESM::Exception::Error, "Attempted to log :#{event} to #{guild_id} without explicit permission.\nMessage:\n#{message}"
+        raise ESM::Exception::Error, "Attempted to log :#{event} to #{guild_id} without explicit permission.\nMessage:\n#{message}"
       end
 
       # Check this first to avoid an infinite loop if the bot cannot send a message to this channel
@@ -107,7 +104,7 @@ module ESM
       channel = logging_channel
       return if channel.nil?
 
-      ::ESM.bot.deliver(message, to: channel)
+      ESM.bot.deliver(message, to: channel)
     end
 
     def modifiable_by?(guild_member)
@@ -147,12 +144,12 @@ module ESM
     end
 
     def create_command_configurations
-      configurations = ::ESM::Command.configurations.map { |c| c.merge(community_id: id) }
-      ::ESM::CommandConfiguration.import(configurations)
+      configurations = ESM::Command.configurations.map { |c| c.merge(community_id: id) }
+      ESM::CommandConfiguration.import(configurations)
     end
 
     def create_notifications
-      ::ESM::Notification::DEFAULTS.each do |category, notifications|
+      ESM::Notification::DEFAULTS.each do |category, notifications|
         notifications =
           notifications.map do |notification|
             {
@@ -165,7 +162,7 @@ module ESM
             }
           end
 
-        ::ESM::Notification.import(notifications)
+        ESM::Notification.import(notifications)
       end
     end
   end

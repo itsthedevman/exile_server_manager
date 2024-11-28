@@ -208,8 +208,13 @@ module ESM
     def backtrace_cleaner
       @backtrace_cleaner ||= begin
         cleaner = ActiveSupport::BacktraceCleaner.new
+
         cleaner.add_filter { |line| line.gsub(root.to_s, "") }
-        cleaner.add_silencer { |line| /\/ruby.gems/.match?(line) }
+
+        cleaner.add_silencer do |line|
+          /\/ruby.gems|\/nix/.match?(line)
+        end
+
         cleaner
       end
     end

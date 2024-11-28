@@ -10,7 +10,7 @@ describe ESM::Websocket::ServerRequest do
   end
 
   let!(:client) { WebsocketClient.new(server) }
-  let!(:channel) { ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL) }
+  let!(:channel) { ESM.bot.channel(ESM::Community::ESM_SPAM_CHANNEL) }
 
   # Wait before pulling this value
   let(:connection) { ESM::Websocket.connections[server.server_id] }

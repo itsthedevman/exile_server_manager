@@ -4,7 +4,7 @@ describe ESM::Request do
   let!(:user_1) { ESM::Test.user }
   let!(:user_2) { ESM::Test.user }
   let(:request) do
-    channel_id = [ESM::Community::ESM::SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
+    channel_id = [ESM::Community::ESM_SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
 
     create(
       :request,

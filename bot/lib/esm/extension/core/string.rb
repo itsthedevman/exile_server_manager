@@ -22,6 +22,30 @@ class String
   end
   alias_method :to_a, :to_h
 
+  def to_deep_h
+    transformer = lambda do |object|
+      case object
+      when Array
+        object.map { |v| transformer.call(v) }
+      when String
+        result = object.to_deep_h
+
+        case result
+        when Array, Hash
+          transformer.call(result)
+        else
+          object
+        end
+      when Hash
+        object.transform_values { |v| transformer.call(v) }
+      else
+        object
+      end
+    end
+
+    transformer.call(to_h)
+  end
+
   def to_poptab
     # Convert from Scientific notation.
     # Arma automatically converts to scientific notation if the value is greater than 2mil

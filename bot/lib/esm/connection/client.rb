@@ -36,10 +36,14 @@ module ESM
 
       def close
         @task.shutdown
-        @socket.close
+
         ESM.connection_server.on_disconnect(self)
 
-        on_disconnect
+        ESM::Database.with_connection do
+          on_disconnect
+        end
+
+        @socket.close
       end
 
       def send_message(message, **)

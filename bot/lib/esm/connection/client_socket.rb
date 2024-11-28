@@ -15,6 +15,7 @@ module ESM
         Base64.strict_decode64(data)
       rescue => e
         error!(error: e)
+        nil
       end
 
       def write(data)

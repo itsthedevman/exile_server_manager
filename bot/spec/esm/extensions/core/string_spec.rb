@@ -80,4 +80,40 @@ describe String do
       expect(user.discord_id.steam_uid?).to be(false)
     end
   end
+
+  describe "#to_deep_h" do
+    context "when there are other json objects in the json" do
+      let(:input) do
+        {
+          key1: "1",
+          key2: 2,
+          key3: [
+            1, "2", [1], {key1: 1}
+          ].to_json,
+          key4: {
+            key1: 1,
+            key2: [1].to_json
+          }.to_json
+        }.to_json
+      end
+
+      let(:output) do
+        {
+          key1: "1",
+          key2: 2,
+          key3: [
+            1, "2", [1], {key1: 1}
+          ],
+          key4: {
+            key1: 1,
+            key2: [1]
+          }
+        }
+      end
+
+      it "converts them to json objects" do
+        expect(input.to_deep_h).to eq(output)
+      end
+    end
+  end
 end

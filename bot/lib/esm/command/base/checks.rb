@@ -216,7 +216,7 @@ module ESM
           return if current_community.id == target_community.id
 
           # Allow if current_community is ESM, for debugging and support
-          return if ESM.env.production? && current_community.guild_id == ESM::Community::ESM::ID
+          return if ESM.env.production? && current_community.guild_id == ESM::Community::ESM_ID
 
           check_failed!(:different_community_in_text, user: current_user.mention)
         end

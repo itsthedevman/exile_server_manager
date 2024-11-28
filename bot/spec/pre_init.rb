@@ -63,16 +63,14 @@ ESM.logger.level =
     Logger::INFO
   when :warn
     Logger::WARN
-  when :error
-    Logger::ERROR
   else
-    Logger::UNKNOWN
+    Logger::ERROR
   end
 
 # Enable discordrb logging
 Discordrb::LOGGER.debug = false
 
 # Ignore debug messages when running tests
-ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.present?
+ActiveRecord::Base.logger.level = Logger::DEBUG if ActiveRecord::Base.logger
 
 RSpec::Matchers.define_negated_matcher :exclude, :include

@@ -65,7 +65,8 @@ describe ESM::Command::Territory::Pay, category: "command" do
         it "pays the territory's protection money using poptabs from the player's locker" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          # Player response, admin log, xm8 notification
+          wait_for { ESM::Test.messages.size }.to be >= 2
 
           # Player response
           expect(
@@ -95,9 +96,15 @@ describe ESM::Command::Territory::Pay, category: "command" do
           # Check for time change
           expect(territory.last_paid_at).not_to be(nil)
         end
+      end
 
-        # Can't test this yet, I need to port the system over
-        it "sends an XM8 notification"
+      context "when the territory protection money is paid" do
+        it "sends an XM8 notification" do
+          execute_command
+
+          notifications = ESM::ExileXm8Notification.protection_money_paid.sent
+          wait_for { notifications.size }.to eq(1)
+        end
       end
 
       context "when the player is online, is a builder, and upgrades the territory" do

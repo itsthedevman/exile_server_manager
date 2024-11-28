@@ -107,7 +107,7 @@ RSpec.shared_context("command") do
       arguments: event.options
     )
 
-    ESM::ApplicationRecord.connection_pool.with_connection do
+    ESM::Database.with_connection do
       @previous_command.from_discord!
     end
   end

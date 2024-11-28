@@ -185,7 +185,9 @@ module ESM
 
       # Process the request
       Thread.new do
-        server_request.process
+        ESM::Database.with_connection do
+          server_request.process
+        end
       rescue => e
         ESM.logger.error("#{self.class}##{__method__}") { "Exception: #{e.message}\n#{e.backtrace[0..5].join("\n")}" }
         raise e if ESM.env.test?

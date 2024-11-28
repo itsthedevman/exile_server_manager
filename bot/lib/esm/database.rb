@@ -19,5 +19,11 @@ module ESM
         aliases: true
       )
     end
+
+    def self.with_connection(&)
+      ESM::ApplicationRecord
+        .connection_pool
+        .with_connection(prevent_permanent_checkout: true, &)
+    end
   end
 end

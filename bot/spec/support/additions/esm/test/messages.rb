@@ -43,6 +43,10 @@ module ESM
         map(&:content)
       end
 
+      def destinations
+        map(&:destination)
+      end
+
       def earliest
         first&.content
       end

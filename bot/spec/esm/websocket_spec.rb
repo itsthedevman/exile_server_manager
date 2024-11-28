@@ -74,7 +74,7 @@ describe ESM::Websocket do
     end
 
     let!(:ws_connection) { ESM::Websocket.connections[esm_malden.server_id] }
-    let!(:channel) { ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL) }
+    let!(:channel) { ESM.bot.channel(ESM::Community::ESM_SPAM_CHANNEL) }
     let!(:discord_user) { user.discord_user }
 
     let(:request) do

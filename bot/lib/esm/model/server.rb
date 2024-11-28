@@ -45,7 +45,7 @@ module ESM
 
     def self.server_ids
       ::ESM.cache.fetch("server_ids", expires_in: ESM.config.cache.server_ids) do
-        ApplicationRecord.connection_pool.with_connection { pluck(:server_id) }
+        ESM::Database.with_connection { pluck(:server_id) }
       end
     end
 
@@ -68,7 +68,7 @@ module ESM
       ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
 
-    delegate :send_message, :send_error, to: :connection
+    delegate :send_message, :send_error, to: :connection, allow_nil: true
 
     #
     # Returns the server's current version
@@ -139,9 +139,7 @@ module ESM
     # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
     def log_error(log_message)
       uuid = SecureRandom.uuid
-
-      message = ESM::Message.new.add_error("message", "[#{uuid}] #{log_message}")
-      send_error(message)
+      send_error("[#{uuid}] #{log_message}")
 
       return if community.logging_channel_id.blank?
 

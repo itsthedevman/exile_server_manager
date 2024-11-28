@@ -17,8 +17,8 @@ FactoryBot.define do
     factory :esm_community do
       community_id { "esm" }
       community_name { "Exile Server Manager" }
-      guild_id { ESM::Community::ESM::ID }
-      logging_channel_id { ESM::Community::ESM::SPAM_CHANNEL }
+      guild_id { ESM::Community::ESM_ID }
+      logging_channel_id { ESM::Community::ESM_SPAM_CHANNEL }
       player_mode_enabled { false }
       role_ids { [] }
     end

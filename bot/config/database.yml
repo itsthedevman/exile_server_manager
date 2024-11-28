@@ -16,7 +16,6 @@ test:
   !!merge <<: *default
   adapter: postgresql
   database: esm_test
-  pool: 500
 
 arma_test:
   !!merge <<: *default

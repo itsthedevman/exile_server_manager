@@ -2,7 +2,7 @@
 
 module ESM
   class Notification < ApplicationRecord
-    DEFAULTS = YAML.safe_load(ERB.new(File.read(File.expand_path("config/notifications.yml"))).result).freeze
+    DEFAULTS = YAML.safe_load_file(File.expand_path("config/notifications.yml")).freeze
 
     attribute :community_id, :integer
     attribute :notification_type, :string
@@ -20,10 +20,17 @@ module ESM
         community_id: community_id,
         notification_type: type,
         notification_category: category
-      ).sample(1).first
+      ).sample
 
       # Grab a default if one was not found
-      notification = DEFAULTS[category][type].sample(1).first if notification.nil?
+      if notification.nil?
+        default = DEFAULTS[category]
+          .select { |n| n["type"] == type }
+          .sample
+          .transform_keys { |k| "notification_#{k}" }
+
+        notification = new(default)
+      end
 
       notification.build_embed(**)
     end

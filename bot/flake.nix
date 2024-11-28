@@ -40,17 +40,17 @@
             export GEM_PATH="$GEM_HOME"
             export PATH="$GEM_HOME/bin:$PATH"
 
-            export RUBYOPT="-W:no-deprecated -W:no-experimental -ruri -rjson -ryaml"
+            export RUBYOPT="-W:no-deprecated -W:no-experimental -ruri"
             export PRINT_LOG='true'
             export ESM_ENV='development'
 
             # Creating the user
             if ! psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${db_user}'" | grep -q 1; then
-              echo "Creating database user ${db_user}..."
+              echo "creating database user ${db_user}..."
               psql postgres -c "CREATE USER ${db_user} WITH SUPERUSER PASSWORD '${db_pass}';"
             fi
 
-            echo "Checking/installing gems"
+            echo "checking gems"
             bundle check || bundle install
           '';
         };

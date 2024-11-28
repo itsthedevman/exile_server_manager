@@ -6,6 +6,7 @@ module ESM
       module Lifecycle
         VALID_REQUEST_TYPES = %w[
           send_to_channel
+          send_xm8_notification
         ]
 
         private
@@ -14,7 +15,11 @@ module ESM
           request = read
           return if request.nil?
 
-          @thread_pool.post { process_message(request) }
+          @thread_pool.post do
+            ESM::Database.with_connection do
+              process_message(request)
+            end
+          end
         end
 
         def process_message(request)
@@ -55,13 +60,11 @@ module ESM
           existing_connection = ESM.connection_server.client(public_id)
           raise ESM::Exception::ExistingConnection if existing_connection
 
-          ESM::ApplicationRecord.connection_pool.with_connection do
-            model = ESM::Server.find_by_public_id(public_id)
-            raise ESM::Exception::InvalidAccessKey if model.nil?
+          model = ESM::Server.find_by_public_id(public_id)
+          raise ESM::Exception::InvalidAccessKey if model.nil?
 
-            authenticate!(model)
-            initialize!(model)
-          end
+          authenticate!(model)
+          initialize!(model)
         end
 
         def authenticate!(model)
@@ -100,22 +103,6 @@ module ESM
           ESM.connection_server.on_initialize(self)
         end
 
-        def on_request(content)
-          message = ESM::Message.from_string(content)
-          info!(address:, public_id:, server_id:, inbound: message.to_h)
-
-          check_for_valid_request!(message)
-
-          ESM::ApplicationRecord.connection_pool.with_connection do
-            model = ESM::Server.find_by_public_id(@public_id)
-
-            case message.data.function_name
-            when "send_to_channel"
-              ESM::Event::SendToChannel.new(model, message).run!
-            end
-          end
-        end
-
         def check_for_valid_request!(message)
           return if message.type == :call &&
             VALID_REQUEST_TYPES.include?(message.data.function_name)
@@ -126,22 +113,39 @@ module ESM
         def on_disconnect
           return if @public_id.nil?
 
-          ESM::ApplicationRecord.connection_pool.with_connection do
-            model = ESM::Server.find_by_public_id(@public_id)
-            uptime = model.uptime
+          model = ESM::Server.find_by_public_id(@public_id)
+          uptime = model.uptime
 
-            info!(public_id:, server_id:, uptime:, bot_stopping: ESM.bot.stopping?)
+          info!(public_id:, server_id:, uptime:, bot_stopping: ESM.bot.stopping?)
 
-            message =
-              if ESM.bot.stopping?
-                I18n.t("server_disconnected_esm_stopping", server: server_id, uptime:)
-              else
-                I18n.t("server_disconnected", server: server_id, uptime:)
-              end
+          message =
+            if ESM.bot.stopping?
+              I18n.t("server_disconnected_esm_stopping", server: server_id, uptime:)
+            else
+              I18n.t("server_disconnected", server: server_id, uptime:)
+            end
 
-            model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
-            model.community.log_event(:reconnect, message)
-          end
+          model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
+          model.community.log_event(:reconnect, message)
+        end
+
+        def on_request(content)
+          message = ESM::Message.from_string(content)
+          info!(address:, public_id:, server_id:, inbound: message.to_h)
+
+          check_for_valid_request!(message)
+
+          model = ESM::Server.find_by_public_id(@public_id)
+
+          event_class =
+            case message.data.function_name
+            when "send_to_channel"
+              Event::SendToChannel
+            when "send_xm8_notification"
+              Event::SendXm8Notification
+            end
+
+          event_class.new(model, message).run!
         end
       end
     end

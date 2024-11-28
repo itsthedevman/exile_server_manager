@@ -11,7 +11,7 @@ module ESM
     # @return [Self]
     #
     def self.from_string(json)
-      from_hash(json.to_h)
+      from_hash(json.to_deep_h)
     end
 
     #
@@ -25,21 +25,21 @@ module ESM
       hash = hash.deep_symbolize_keys
 
       message = new
-      message = message.set_id(hash[:id]) if hash[:id].present?
-      message = message.set_type(hash[:type]) if hash[:type].present?
+      message.set_id(hash[:id]) if hash[:id].present?
+      message.set_type(hash[:type]) if hash[:type].present?
 
       if hash[:data].present?
-        message = message.set_data(**hash[:data])
+        message.set_data(**hash[:data])
       end
 
       if hash[:metadata].present?
-        message = message.set_metadata(
+        message.set_metadata(
           player: hash.dig(:metadata, :player),
           target: hash.dig(:metadata, :target)
         )
       end
 
-      message = message.add_errors(hash[:errors]) if hash[:errors].present?
+      message.add_errors(hash[:errors]) if hash[:errors].present?
       message
     end
 
@@ -109,6 +109,7 @@ module ESM
     # @param message [String] The message or code for this error
     #
     def add_error(type, content)
+      # Return nil on purpose
       return if type.nil? || content.nil?
 
       @errors << Error.new(self, type, content)

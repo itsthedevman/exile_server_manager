@@ -191,11 +191,11 @@ module ESM
     # @param to [String, Discordrb::Commands::CommandEvent, Discordrb::Channel, Discordrb::Member, Discordrb::User] Where should the message be sent? This ultimately will end up as a channel
     # @param embed_message [String] An optional message to attach with an embed. Only works if `message` is an embed
     # @param replying_to [Discordrb::Message] A message to "reply" to. Discord will reference the previous message
-    # @param async [true/false] Controls if this should block and wait for the message to send and discord to reply, or send it async and immediately return
+    # @param block [true/false] Controls if this should block and wait for the message to send and discord to reply, or send it and immediately return
     #
-    # @return [Discordrb::Message, nil] Nil if async: true or if there was an error.
+    # @return [Discordrb::Message, nil]
     #
-    def deliver(message, to:, embed_message: "", replying_to: nil, async: true)
+    def deliver(message, to:, embed_message: "", replying_to: nil, block: false)
       return if message.blank?
 
       replying_to = nil if replying_to.present? && !replying_to.is_a?(Discordrb::Message)
@@ -205,21 +205,34 @@ module ESM
       raise ESM::Exception::ChannelNotFound.new(message, to) if delivery_channel.nil?
 
       if !delivery_channel.pm?
-        raise ESM::Exception::ChannelAccessDenied if !channel_permission?(:read_messages, delivery_channel)
-        raise ESM::Exception::ChannelAccessDenied if !channel_permission?(:send_messages, delivery_channel)
+        if !channel_permission?(:read_messages, delivery_channel)
+          raise ESM::Exception::ChannelAccessDenied
+        end
+
+        if !channel_permission?(:send_messages, delivery_channel)
+          raise ESM::Exception::ChannelAccessDenied
+        end
       end
 
-      @delivery_overseer.add(
+      promise = @delivery_overseer.add(
         message,
         delivery_channel,
         embed_message: embed_message,
         replying_to: replying_to,
-        wait: !async
+        wait: block
       )
+
+      # A "promise" is returned only if block is true.
+      # If block is false, this will be nil and immediately return
+      promise&.wait_for_delivery
     rescue ESM::Exception::ChannelAccessDenied
       embed = ESM::Embed.build(
         :error,
-        description: I18n.t("exceptions.deliver_failure", channel_name: delivery_channel.name, message: message)
+        description: I18n.t(
+          "exceptions.deliver_failure",
+          channel_name: delivery_channel.name,
+          message:
+        )
       )
 
       community = ESM::Community.find_by_guild_id(delivery_channel.server.id)
@@ -235,7 +248,9 @@ module ESM
     def __deliver(message, delivery_channel, embed_message: "", replying_to: nil)
       info!(
         channel: "#{delivery_channel.name} (#{delivery_channel.id})",
-        message: message.is_a?(ESM::Embed) ? message.to_h : message
+        message: message.is_a?(ESM::Embed) ? message.to_h : message,
+        embed_message:,
+        replying_to:
       )
 
       if message.is_a?(ESM::Embed)

@@ -80,7 +80,6 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
       expect(data.territory_admin_uids).to eq([])
     end
 
-    expect(data.extdb_path).to eq(setting.extdb_path || "")
     expect(data.gambling_modifier).to eq(setting.gambling_modifier)
     expect(data.gambling_payout_base).to eq(setting.gambling_payout_base)
     expect(data.gambling_payout_randomizer_max).to eq(setting.gambling_payout_randomizer_max)

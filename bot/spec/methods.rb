@@ -7,7 +7,7 @@ def create_request(**params)
   ESM::Websocket::Request.new(
     command: command,
     user: user,
-    channel: ESM.bot.channel(ESM::Community::ESM::SPAM_CHANNEL),
+    channel: ESM.bot.channel(ESM::Community::ESM_SPAM_CHANNEL),
     parameters: params
   )
 end

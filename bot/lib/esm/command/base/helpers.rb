@@ -399,8 +399,7 @@ module ESM
 
         # Convenience method for replying back to the event's channel
         def reply(message)
-          pending_delivery = ESM.bot.deliver(message, to: current_channel, async: false)
-          pending_delivery.wait_for_delivery
+          ESM.bot.deliver(message, to: current_channel, block: true)
         end
 
         def edit_message(message, content)
@@ -505,49 +504,25 @@ module ESM
         #
         # @return [ESM::Embed]
         #
-        def embed_from_message!(message)
-          message_data =
-            if message.is_a?(Message)
-              message.data.to_h
+        def embed_from_message!(message_or_hash)
+          hash =
+            if message_or_hash.is_a?(Message)
+              message_or_hash.data.to_h
             else
-              message
+              message_or_hash
             end
 
-          message_data.deep_symbolize_keys!
-          embed_data = message_data.slice(*Embed::ATTRIBUTES)
+          Embed.from_hash!(hash)
+        rescue ArgumentError => e
+          target_server.connection.send_error(e)
 
-          invalid_attributes = message_data.keys - embed_data.keys
-          has_invalid_attributes = invalid_attributes.size > 0
-
-          # Missing data or extra data? That's a paddling
-          if embed_data.blank? || has_invalid_attributes
-            message =
-              if has_invalid_attributes
-                I18n.translate(
-                  "exceptions.extension.invalid_embed_attributes",
-                  attributes: invalid_attributes.map(&:quoted).to_sentence
-                )
-              else
-                I18n.translate(
-                  "exceptions.extension.missing_embed_attributes",
-                  attributes: Embed::ATTRIBUTES.map(&:quoted).to_sentence
-                )
-              end
-
-            # Tell the admins
-            target_server.connection.send_error(message)
-
-            # Sorry user... The admins need to fix their shit
-            raise_error!(
-              :error,
-              path_prefix: "exceptions.extension",
-              user: current_user.mention,
-              server_id: target_server.server_id
-            )
-          end
-
-          # Finally create the embed
-          Embed.from_hash(embed_data)
+          # Sorry user... The admins need to fix their shit
+          raise_error!(
+            :error,
+            path_prefix: "exceptions.extension",
+            user: current_user.mention,
+            server_id: target_server.server_id
+          )
         end
 
         alias_method :embed_from_hash!, :embed_from_message!

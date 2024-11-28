@@ -8,6 +8,7 @@ module ESM
     module Format
       TIME = "%F at %I:%M %p UTC"
       DATE = "%F"
+      SQL_TIME = "%Y-%m-%dT%X"
     end
 
     def self.distance_of_time_in_words(to_time, from_time: ESM::Time.current, precise: true)

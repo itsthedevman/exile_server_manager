@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.9]
+
+### Added
+- Added NixOS flake support
+- Added XM8 notification support for V2 servers
+- Added `ESM::Database.with_connection(&block)`
+- Added `ESM::Embed.from_hash!` that can raise `ArgumentError` if the data is invalid
+- Added `String#to_deep_h` that recursively converts the String to a Hash
+
+### Changed
+- Updated README.md
+- Simplified `ESM::Bot#deliver` usage regarding thread blocking behaviors
+- Fixed notification generation fallback
+
+### Removed
+- Removed `extdb_path` from being sent to V2 servers on post_initialization. This setting is handled via the server side config
+
 ## [2.3.2.8] - 12024-10-15
 
 ### Added
@@ -160,7 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 12024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.8
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.9
+[2.3.2.9]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.8..v2.3.2.9
 [2.3.2.8]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.7..v2.3.2.8
 [2.3.2.7]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.7
 [2.3.2.6]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.6..v2.3.2.5

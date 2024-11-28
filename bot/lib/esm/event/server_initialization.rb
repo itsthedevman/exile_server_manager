@@ -92,14 +92,13 @@ module ESM
           *%w[
             id server_id created_at updated_at deleted_at
             server_restart_hour server_restart_min request_thread_type
-            request_thread_tick logging_path
+            request_thread_tick logging_path extdb_path
           ]
         ).symbolize_keys
 
         @data = data.merge(
           function_name: "ESMs_system_process_postInit",
           community_id: @community.community_id,
-          extdb_path: settings.extdb_path || "",
           logging_channel_id: @community.logging_channel_id,
           server_id: @model.server_id,
           territory_admin_uids: build_territory_admins,

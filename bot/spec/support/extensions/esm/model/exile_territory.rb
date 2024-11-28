@@ -219,7 +219,7 @@ module ESM
         hash[:object_count] = object_count
         hash[:moderators] = moderators_as_hash
         hash[:build_rights] = builders_as_hash
-        hash[:last_paid_at] = hash[:last_paid_at].strftime("%Y-%m-%dT%X")
+        hash[:last_paid_at] = hash[:last_paid_at].strftime(ESM::Time::Format::SQL_TIME)
       end
     end
 
@@ -233,7 +233,8 @@ module ESM
       radius: "ExileTerritorySize",
       level: "ExileTerritoryLevel",
       number_of_constructions: "ExileTerritoryNumberOfConstructions",
-      esm_payment_counter: "ESM_PaymentCounter"
+      esm_payment_counter: "ESM_PaymentCounter",
+      last_paid_at: "ExileTerritoryLastPayed"
     }.stringify_keys.freeze
 
     def set_variables(items)
@@ -249,6 +250,8 @@ module ESM
         value =
           if attribute == "flag_stolen"
             flag_stolen ? 1 : 0
+          elsif attribute == "last_paid_at"
+            last_paid_at.strftime(ESM::Time::Format::SQL_TIME)
           else
             public_send(attribute)
           end

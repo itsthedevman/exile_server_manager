@@ -38,12 +38,13 @@ module ESM
 
         @command = command_class.new(user:, server:, channel:, arguments: options)
 
-        ESM::ApplicationRecord.connection_pool.with_connection do
+        ESM::Database.with_connection do
           @command.from_discord!
-          on_completion
-        rescue => error
-          on_error(error)
         end
+
+        on_completion
+      rescue => error
+        on_error(error)
       end
 
       def on_completion

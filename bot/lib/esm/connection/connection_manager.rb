@@ -3,16 +3,17 @@
 module ESM
   module Connection
     class ConnectionManager
-      def initialize(lobby_timeout: 1, heartbeat_timeout: 5, execution_interval: 1)
+      def initialize(lobby_timeout: 3, heartbeat_timeout: 5, execution_interval: 1)
         @lobby_timeout = lobby_timeout
         @heartbeat_timeout = heartbeat_timeout
 
         @lobby = Concurrent::Array.new
+        @ids_to_check = Concurrent::Array.new
+        @connections = Concurrent::Map.new
+
         @lobby_task = Concurrent::TimerTask.execute(execution_interval:) { check_lobby }
         @lobby_task.add_observer(ErrorHandler.new)
 
-        @ids_to_check = Concurrent::Array.new
-        @connections = Concurrent::Map.new
         @heartbeat = Concurrent::TimerTask.execute(execution_interval: 2.5) { check_connections }
         @heartbeat.add_observer(ErrorHandler.new)
       end

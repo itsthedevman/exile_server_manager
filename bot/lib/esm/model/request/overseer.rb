@@ -4,23 +4,21 @@ module ESM
   class Request
     class Overseer
       def self.watch
-        check_every = ESM.config.request_overseer.check_every
+        execution_interval = ESM.config.request_overseer.check_every
 
-        @thread = Thread.new do
-          ESM::ApplicationRecord.connection_pool.with_connection do
-            loop do
-              ESM::Request.expired.destroy_all
-
-              sleep(check_every)
-            end
+        @task = Concurrent::TimerTask.execute(execution_interval:) do
+          ESM::Database.with_connection do
+            ESM::Request.expired.destroy_all
           end
         end
+
+        @task.add_observer(ErrorHandler.new)
       end
 
       def self.die
-        return if @thread.nil?
+        return if @task.nil?
 
-        Thread.kill(@thread)
+        @task.shutdown
       end
     end
   end

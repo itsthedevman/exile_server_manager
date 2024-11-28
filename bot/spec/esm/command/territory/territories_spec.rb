@@ -117,8 +117,6 @@ describe ESM::Command::Server::Territories, category: "command" do
     end
   end
 
-  # frozen_string_literal: true
-
   describe "V2" do
     it "is a player command" do
       expect(command.type).to eq(:player)
