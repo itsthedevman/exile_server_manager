@@ -108,28 +108,9 @@ impl Database {
         self.hasher.encode(id)
     }
 
-    /// Attempts to decode a hashed territory ID or custom ID
-    /// Do not use if you already have access to the database and connection (i.e in query files)
-    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
-        let mut connection = self.connection().await?;
-        queries::decode_territory_id(&self, &mut connection, territory_id).await
-    }
-
-    pub async fn set_territory_payment_counter(
-        &self,
-        database_id: usize,
-        counter_value: usize,
-    ) -> Result<(), Error> {
-        let mut connection = self.connection().await?;
-
-        queries::set_territory_payment_counter(
-            &self,
-            &mut connection,
-            database_id,
-            counter_value,
-        )
-        .await
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Queries!
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     pub async fn add_xm8_notifications(
         &self,
@@ -149,19 +130,33 @@ impl Database {
         .await
     }
 
-    pub async fn get_xm8_notifications(&self) -> Result<Vec<Notification>, Error> {
-        let mut connection = self.connection().await?;
-
-        queries::get_xm8_notifications(&self, &mut connection).await
+    pub async fn command_all_territories(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::command_all_territories(&self, &mut connection, &arguments).await
     }
 
-    pub async fn update_xm8_attempt_counter(
-        &self,
-        ids: Vec<&String>,
-    ) -> Result<(), Error> {
-        let mut connection = self.connection().await?;
+    pub async fn command_me(&self, arguments: HashMap<String, String>) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::command_me(&self, &mut connection, &arguments).await
+    }
 
-        queries::update_xm8_attempt_counter(&self, &mut connection, ids).await
+    pub async fn command_reset_all(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::command_reset_all(&self, &mut connection, &arguments).await
+    }
+
+    pub async fn command_reset_player(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::command_reset_player(&self, &mut connection, &arguments).await
     }
 
     pub async fn command_reward_territories(
@@ -172,25 +167,12 @@ impl Database {
         queries::command_reward_territories(&self, &mut connection, &arguments).await
     }
 
-    pub async fn command_me(&self, arguments: HashMap<String, String>) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::command_me(&self, &mut connection, &arguments).await
-    }
-
-    pub async fn command_all_territories(
+    pub async fn command_restore(
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
         let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::command_all_territories(&self, &mut connection, &arguments).await
-    }
-
-    pub async fn player_territories(
-        &self,
-        arguments: HashMap<String, String>,
-    ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::player_territories(&self, &mut connection, &arguments).await
+        queries::command_restore(&self, &mut connection, &arguments).await
     }
 
     pub async fn command_set_id(
@@ -201,12 +183,50 @@ impl Database {
         queries::command_set_id(&self, &mut connection, &arguments).await
     }
 
-    pub async fn command_restore(
+    /// Attempts to decode a hashed territory ID or custom ID
+    /// Do not use if you already have access to the database and connection (i.e in query files)
+    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
+        let mut connection = self.connection().await?;
+        queries::decode_territory_id(&self, &mut connection, territory_id).await
+    }
+
+    pub async fn get_xm8_notifications(&self) -> Result<Vec<Notification>, Error> {
+        let mut connection = self.connection().await?;
+
+        queries::get_xm8_notifications(&self, &mut connection).await
+    }
+
+    pub async fn player_territories(
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
         let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::command_restore(&self, &mut connection, &arguments).await
+        queries::player_territories(&self, &mut connection, &arguments).await
+    }
+
+    pub async fn set_territory_payment_counter(
+        &self,
+        database_id: usize,
+        counter_value: usize,
+    ) -> Result<(), Error> {
+        let mut connection = self.connection().await?;
+
+        queries::set_territory_payment_counter(
+            &self,
+            &mut connection,
+            database_id,
+            counter_value,
+        )
+        .await
+    }
+
+    pub async fn update_xm8_attempt_counter(
+        &self,
+        ids: Vec<&String>,
+    ) -> Result<(), Error> {
+        let mut connection = self.connection().await?;
+
+        queries::update_xm8_attempt_counter(&self, &mut connection, ids).await
     }
 
     pub async fn update_xm8_notification_state(

@@ -11,6 +11,8 @@ import_and_export!(check_if_territory_exists);
 import_and_export!(check_if_territory_owner);
 import_and_export!(command_all_territories);
 import_and_export!(command_me);
+import_and_export!(command_reset_all);
+import_and_export!(command_reset_player);
 import_and_export!(command_restore);
 import_and_export!(command_reward);
 import_and_export!(command_set_id);
@@ -33,6 +35,8 @@ load_sql! {
     // Command queries
     command_all_territories,
     command_me,
+    command_reset_all,
+    command_reset_player,
     command_restore_construction,
     command_restore_container,
     command_restore_territory,

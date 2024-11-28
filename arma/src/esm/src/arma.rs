@@ -237,6 +237,8 @@ async fn database_query(message: Message) -> MessageResult {
                 "all_territories" => DATABASE.command_all_territories(arguments).await,
                 "me" => DATABASE.command_me(arguments).await,
                 "player_territories" => DATABASE.player_territories(arguments).await,
+                "reset_all" => DATABASE.command_reset_all(arguments).await,
+                "reset_player" => DATABASE.command_reset_player(arguments).await,
                 "restore" => DATABASE.command_restore(arguments).await,
                 "reward_territories" => {
                     DATABASE.command_reward_territories(arguments).await
