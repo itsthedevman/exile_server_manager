@@ -74,20 +74,23 @@ impl Database {
         self.sql.validate().map_err(|e| e.to_string())?;
 
         // Get connection string from config or INI file
-        let database_url =
-            connection_string(&crate::CONFIG.server_mod_name, self.extdb_version)
-                .map_err(|e| e.to_string())?;
+        let database_url = connection_string(
+            &crate::CONFIG.server_mod_name,
+            self.extdb_version,
+        )
+        .map_err(|e| e.to_string())?;
 
         // Parse connection options
-        let database_opts = Opts::from_url(&database_url).map_err(|e| e.to_string())?;
+        let database_opts =
+            Opts::from_url(&database_url).map_err(|e| e.to_string())?;
 
         // Initialize connection pool
         *await_lock!(self.connection_pool) = Some(Pool::new(database_opts));
 
         // Verify connection
-        self.connection()
-            .await
-            .map_err(|_| format!("Failed to connect to MySQL at {}", database_url))?;
+        self.connection().await.map_err(|_| {
+            format!("Failed to connect to MySQL at {}", database_url)
+        })?;
 
         Ok(())
     }
@@ -134,20 +137,46 @@ impl Database {
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::command_all_territories(&self, &mut connection, &arguments).await
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::command_all_territories(&self, &mut connection, &arguments)
+            .await
     }
 
-    pub async fn command_me(&self, arguments: HashMap<String, String>) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
+    pub async fn command_me(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
         queries::command_me(&self, &mut connection, &arguments).await
+    }
+
+    pub async fn command_player_info(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::command_player_info(&self, &mut connection, &arguments).await
+    }
+
+    pub async fn command_player_territories(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::command_player_territories(&self, &mut connection, &arguments)
+            .await
     }
 
     pub async fn command_reset_all(
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
         queries::command_reset_all(&self, &mut connection, &arguments).await
     }
 
@@ -155,7 +184,8 @@ impl Database {
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
         queries::command_reset_player(&self, &mut connection, &arguments).await
     }
 
@@ -163,15 +193,18 @@ impl Database {
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::command_reward_territories(&self, &mut connection, &arguments).await
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::command_reward_territories(&self, &mut connection, &arguments)
+            .await
     }
 
     pub async fn command_restore(
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
         queries::command_restore(&self, &mut connection, &arguments).await
     }
 
@@ -179,29 +212,37 @@ impl Database {
         &self,
         arguments: HashMap<String, String>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
         queries::command_set_id(&self, &mut connection, &arguments).await
+    }
+
+    pub async fn command_territory_info(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::command_territory_info(&self, &mut connection, &arguments)
+            .await
     }
 
     /// Attempts to decode a hashed territory ID or custom ID
     /// Do not use if you already have access to the database and connection (i.e in query files)
-    pub async fn decode_territory_id(&self, territory_id: &str) -> Result<u64, Error> {
+    pub async fn decode_territory_id(
+        &self,
+        territory_id: &str,
+    ) -> Result<u64, Error> {
         let mut connection = self.connection().await?;
         queries::decode_territory_id(&self, &mut connection, territory_id).await
     }
 
-    pub async fn get_xm8_notifications(&self) -> Result<Vec<Notification>, Error> {
+    pub async fn get_xm8_notifications(
+        &self,
+    ) -> Result<Vec<Notification>, Error> {
         let mut connection = self.connection().await?;
 
         queries::get_xm8_notifications(&self, &mut connection).await
-    }
-
-    pub async fn player_territories(
-        &self,
-        arguments: HashMap<String, String>,
-    ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::player_territories(&self, &mut connection, &arguments).await
     }
 
     pub async fn set_territory_payment_counter(
@@ -233,10 +274,15 @@ impl Database {
         &self,
         arguments: HashMap<String, JSONValue>,
     ) -> QueryResult {
-        let mut connection = self.connection().await.map_err(QueryError::System)?;
-        queries::update_xm8_notification_state(&self, &mut connection, arguments)
-            .await
-            .map(|_| vec![])
+        let mut connection =
+            self.connection().await.map_err(QueryError::System)?;
+        queries::update_xm8_notification_state(
+            &self,
+            &mut connection,
+            arguments,
+        )
+        .await
+        .map(|_| vec![])
     }
 }
 
@@ -257,7 +303,10 @@ impl Database {
         IP = esm.mshome.net
         Port = 3306
 */
-fn connection_string(base_ini_path: &str, extdb_version: u8) -> Result<String, String> {
+fn connection_string(
+    base_ini_path: &str,
+    extdb_version: u8,
+) -> Result<String, String> {
     if !crate::CONFIG.database_uri.is_empty() {
         return Ok(crate::CONFIG.database_uri.clone());
     }

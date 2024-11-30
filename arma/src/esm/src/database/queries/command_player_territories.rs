@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use super::*;
 
 #[derive(Debug, Serialize)]
-struct Account {
+pub struct Account {
     uid: String,
     name: String,
 }
@@ -18,7 +18,7 @@ impl Account {
 }
 
 #[derive(Debug, Serialize, Default)]
-struct Territory {
+pub struct Territory {
     id: String,
     owner_uid: String,
     owner_name: String,
@@ -34,7 +34,7 @@ struct Territory {
     esm_custom_id: Option<String>,
 }
 
-pub async fn player_territories(
+pub async fn command_player_territories(
     context: &Database,
     connection: &mut Conn,
     arguments: &HashMap<String, String>,
@@ -50,7 +50,7 @@ pub async fn player_territories(
 
     let result = connection
         .exec_map(
-            &context.sql.player_territories,
+            &context.sql.command_player_territories,
             params! { "player_uid" => player_uid, "wildcard_uid" => format!("%{}%", player_uid) },
             map_results,
         )
@@ -70,7 +70,10 @@ pub async fn player_territories(
                 .join(", ");
 
             if !errors.is_empty() {
-                return Err(QueryError::System(format!("Query failed - {}", errors)));
+                return Err(QueryError::System(format!(
+                    "Query failed - {}",
+                    errors
+                )));
             }
 
             let territories: Vec<Territory> =
@@ -89,11 +92,12 @@ pub async fn player_territories(
     }
 }
 
-fn map_results(mut row: Row) -> Result<Territory, Error> {
-    let account_converter = |data: &str| match serde_json::from_str::<Vec<String>>(data) {
-        Ok(res) => Ok(res.iter().map(|uid| Account::new(&uid)).collect()),
-        Err(e) => Err(e.to_string()),
-    };
+pub fn map_results(mut row: Row) -> Result<Territory, Error> {
+    let account_converter =
+        |data: &str| match serde_json::from_str::<Vec<String>>(data) {
+            Ok(res) => Ok(res.iter().map(|uid| Account::new(&uid)).collect()),
+            Err(e) => Err(e.to_string()),
+        };
 
     let id: isize = select_column(&mut row, "id")?;
     let flag_stolen: isize = select_column(&mut row, "flag_stolen")?;
@@ -119,12 +123,13 @@ fn map_results(mut row: Row) -> Result<Territory, Error> {
     Ok(territory)
 }
 
-async fn update_id_and_names(
+pub async fn update_id_and_names(
     context: &Database,
     connection: &mut Conn,
     mut territories: Vec<Territory>,
 ) -> Result<Vec<Territory>, QueryError> {
-    let name_lookup = create_name_lookup(context, connection, &territories).await?;
+    let name_lookup =
+        create_name_lookup(context, connection, &territories).await?;
 
     territories.iter_mut().for_each(|territory| {
         // Update the builder/moderator names
@@ -146,7 +151,7 @@ async fn update_id_and_names(
     Ok(territories)
 }
 
-async fn create_name_lookup(
+pub async fn create_name_lookup(
     context: &Database,
     connection: &mut Conn,
     territories: &Vec<Territory>,
@@ -163,13 +168,16 @@ async fn create_name_lookup(
         .into_iter()
         .collect::<Vec<String>>();
 
-    let query = replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
+    let query =
+        replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
 
     // Execute the query
     let name_lookup = connection.exec_map(&query, uids, |t| t).await;
 
     match name_lookup {
         Ok(l) => Ok(l.into_iter().collect::<HashMap<String, String>>()),
-        Err(e) => return Err(QueryError::System(format!("Query failed - {}", e))),
+        Err(e) => {
+            return Err(QueryError::System(format!("Query failed - {}", e)))
+        }
     }
 }
