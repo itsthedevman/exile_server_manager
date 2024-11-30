@@ -214,6 +214,7 @@ module ESM
       ]
 
       attributes.symbolize_keys.slice(*attrs).tap do |hash|
+        hash[:id] = encoded_id
         hash[:owner_name] = owner_name
         hash[:territory_name] = territory_name
         hash[:object_count] = object_count

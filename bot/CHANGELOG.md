@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.11] - 12024-11-30
+
+### Added
+- Added v2 support to `/server admin find`
+
 ## [2.3.2.10] - 12024-11-28
 
 ### Added

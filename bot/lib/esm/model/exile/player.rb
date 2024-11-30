@@ -3,9 +3,9 @@
 module ESM
   module Exile
     class Player
-      def initialize(server:, player_data:)
+      def initialize(server:, player:)
         @server = server
-        @data = player_data
+        @data = player
         @alive = true
 
         # If the player is dead, not all information is returned.

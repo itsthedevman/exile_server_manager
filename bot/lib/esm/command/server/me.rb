@@ -44,9 +44,9 @@ module ESM
 
         private
 
-        def build_embed(player_data)
-          if player_data
-            player = ESM::Exile::Player.new(server: target_server, player_data: player_data)
+        def build_embed(player)
+          if player
+            player = ESM::Exile::Player.new(server: target_server, player:)
             return player.to_embed
           end
 

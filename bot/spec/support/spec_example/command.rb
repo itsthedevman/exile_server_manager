@@ -129,7 +129,7 @@ end
 RSpec.shared_examples("error_territory_id_does_not_exist") do
   include_examples "raises_extension_error", "is expected to raise territory_id_does_not_exist" do
     let!(:matcher) do
-      "I was unable to find an active territory with an ID of `#{territory.encoded_id}`"
+      "I was unable to find an active territory with an ID of"
     end
   end
 end

@@ -20,5 +20,8 @@ en:
           "on": esm_namalsk
           territory: jquee
       errors:
-        no_target: Hey %{user}, you must provide either a territory ID, Discord ID, steam uid, or @user discord mention.
+        no_target: Hey %{user}, you must provide either a territory ID, Discord ID, Discord mention, or a Steam UID.
+        no_player_info: "Hey %{user}, I didn't find any player information related to %{target}"
+        no_territory_info: "Hey %{user}, I didn't find any territory information related to %{territory_id}"
+        # v1
         no_response: I'm sorry %{user}, I didn't find any information related to your request.
