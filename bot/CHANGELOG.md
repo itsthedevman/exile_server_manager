@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.12] - 12024-11-30
+
+### Added
+- Added v2 support to `/server admin modify_player`
+
 ## [2.3.2.11] - 12024-11-30
 
 ### Added
@@ -190,7 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 12024-05-29
 
-[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.11
+[Unreleased]: https://github.com/itsthedevman/esm_bot/compare/main..v2.3.2.12
+[2.3.2.12]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.11..v2.3.2.12
 [2.3.2.11]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.10..v2.3.2.11
 [2.3.2.10]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.9..v2.3.2.10
 [2.3.2.9]: https://github.com/itsthedevman/esm_bot/compare/v2.3.2.8..v2.3.2.9

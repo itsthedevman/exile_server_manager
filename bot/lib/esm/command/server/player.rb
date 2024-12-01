@@ -28,7 +28,7 @@ module ESM
         argument(
           :amount,
           type: :integer,
-          checked_against: ->(content) { !content.nil? },
+          checked_against: ->(content) { content.present? },
           checked_against_if: ->(_a, _c) { %w[money respect locker].include?(arguments.action) },
           modifier: lambda do |content|
             return content unless %w[heal kill].include?(arguments.action)
@@ -54,16 +54,12 @@ module ESM
         def on_execute
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          deliver!(
-            function_name: "modifyPlayer",
-            discord_tag: current_user.mention,
-            target_uid: target_uid,
-            type: arguments.action,
-            value: arguments.amount
-          )
-        end
+          result = call_sqf_function!(
+            "ESMs_command_player",
+            action: arguments.action,
+            amount: arguments.amount
+          ).data
 
-        def on_response
           embed = ESM::Notification.build_random(
             community_id: target_community.id,
             type: arguments.action,
@@ -76,12 +72,47 @@ module ESM
             targetusername: target_user.username,
             targetusertag: target_user.mention,
             targetuid: target_uid,
-            modifiedamount: @response.modified_amount&.to_readable,
-            previousamount: @response.previous_amount&.to_readable,
-            newamount: @response.new_amount&.to_readable
+            modifiedamount: result.modified_amount&.to_readable,
+            previousamount: result.previous_amount&.to_readable,
+            newamount: result.new_amount&.to_readable
           )
 
           reply(embed)
+        end
+
+        module V1
+          def on_execute
+            check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+            deliver!(
+              function_name: "modifyPlayer",
+              discord_tag: current_user.mention,
+              target_uid: target_uid,
+              type: arguments.action,
+              value: arguments.amount
+            )
+          end
+
+          def on_response
+            embed = ESM::Notification.build_random(
+              community_id: target_community.id,
+              type: arguments.action,
+              category: "player",
+              serverid: target_server.server_id,
+              servername: target_server.server_name,
+              communityid: target_community.community_id,
+              username: current_user.username,
+              usertag: current_user.mention,
+              targetusername: target_user.username,
+              targetusertag: target_user.mention,
+              targetuid: target_uid,
+              modifiedamount: @response.modified_amount&.to_readable,
+              previousamount: @response.previous_amount&.to_readable,
+              newamount: @response.new_amount&.to_readable
+            )
+
+            reply(embed)
+          end
         end
       end
     end
