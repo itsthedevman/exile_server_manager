@@ -400,7 +400,6 @@ ESMs_command_promote:
   Promote_Log_Description:
     english: "Player promoted Target in territory"
 
-
 ################################################################################
 # /server gamble
 ESMs_command_gamble:
@@ -488,3 +487,28 @@ ESMs_command_gamble:
     arguments:
     - "Gamble status (won/lost)"
     english: "Player gambled and %1"
+
+################################################################################
+# /server admin modify_player
+ESMs_command_player:
+  Player_Log_Title:
+    english: "`ESMs_command_player` executed successfully"
+  Player_Log_Description_Money:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's money has been modified by %1 poptabs. They now have %2 poptabs."
+  Player_Log_Description_Respect:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's respect has been modified by %1. They now have %2 respect."
+  Player_Log_Description_Locker:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's locker has been modified by %1 poptabs. They now have %2 poptabs."
+  Player_Log_Description_Heal:
+    english: "Target has been healed"
+  Player_Log_Description_Kill:
+    english: "Target has been killed"

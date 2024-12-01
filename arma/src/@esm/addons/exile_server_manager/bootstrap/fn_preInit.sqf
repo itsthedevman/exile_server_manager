@@ -68,8 +68,9 @@ forEach
 [
     define_fn!("ESMs_command_add"),
     define_fn!("ESMs_command_demote"),
-    define_fn!("ESMs_command_pay"),
     define_fn!("ESMs_command_gamble"),
+    define_fn!("ESMs_command_pay"),
+    define_fn!("ESMs_command_player"),
     define_fn!("ESMs_command_promote"),
     define_fn!("ESMs_command_remove"),
     define_fn!("ESMs_command_sqf"),

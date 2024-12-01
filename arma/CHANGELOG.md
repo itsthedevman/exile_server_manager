@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_incrementPaymentCounter` with `ESMs_system_territory_incrementPaymentCounter`
 - Replaced `ESM_fnc_log` and `ESM_fnc_logToDLL` with RPT and extension based logging through `ESMs_util_log`
 - Replaced `ESM_fnc_logToDiscord` with `ESMs_system_network_discord_log`
+- Replaced `ESM_fnc_modifyPlayer` with `ESMs_command_player`
 - Replaced `ESM_fnc_payTerritory` with `ESMs_command_pay`
 - Replaced `ESM_fnc_postServerInitialization` with `ESMs_system_process_postInit`
 - Replaced `ESM_fnc_preInit` with `ESMs_system_process_preInit`
