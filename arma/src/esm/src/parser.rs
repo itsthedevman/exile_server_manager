@@ -5,12 +5,10 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct Parser {}
 
 impl Parser {
-    pub fn from_arma<T: DeserializeOwned + Default>(input: &str) -> Result<T, String> {
-        let input = replace_arma_characters(input)
-            // Replace Structured Text line breaks
-            .replace("<br/>", "\\n")
-            .replace("<br />", "\\n")
-            .replace("<br></br>", "\\n");
+    pub fn from_arma<T: DeserializeOwned + Default>(
+        input: &str,
+    ) -> Result<T, String> {
+        let input = replace_arma_characters(input);
 
         let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
@@ -23,11 +21,15 @@ impl Parser {
 
         let content = validate_content(&input);
 
-        if content.is_array() && content.as_array().is_some_and(|a| a.is_empty()) {
+        if content.is_array()
+            && content.as_array().is_some_and(|a| a.is_empty())
+        {
             return Ok(T::default());
         }
 
-        if content.is_object() && content.as_object().is_some_and(|a| a.is_empty()) {
+        if content.is_object()
+            && content.as_object().is_some_and(|a| a.is_empty())
+        {
             return Ok(T::default());
         }
 
@@ -48,7 +50,8 @@ pub fn validate_content(input: &JSONValue) -> JSONValue {
         JSONValue::Array(arr) if arr.is_empty() => JSONValue::Array(vec![]),
         // [["key1", "value1"], ["key2", 2]]
         JSONValue::Array(arr) if is_valid_pair_array(arr) => {
-            convert_arma_array_to_object(arr).unwrap_or_else(|_| input.to_owned())
+            convert_arma_array_to_object(arr)
+                .unwrap_or_else(|_| input.to_owned())
         }
         // [anything else]
         JSONValue::Array(arr) => {
@@ -73,7 +76,9 @@ fn is_valid_pair_array(arr: &[JSONValue]) -> bool {
     })
 }
 
-fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, String> {
+fn convert_arma_array_to_object(
+    input: &Vec<JSONValue>,
+) -> Result<JSONValue, String> {
     let mut object = serde_json::map::Map::new();
     for pair in input {
         let pair = match pair.as_array() {
@@ -135,17 +140,21 @@ fn replace_arma_characters(input: &str) -> String {
                         break;
                     }
 
-                    quote_series_counter = quote_series_counter.saturating_add(1);
+                    quote_series_counter =
+                        quote_series_counter.saturating_add(1);
                 }
 
                 // There can only ever be a equal number of quotes to escape
                 // This handles an ending series of quotes -> """tada"""
                 if (quote_series_counter % 2) != 0 {
-                    quote_series_counter = quote_series_counter.saturating_sub(1);
+                    quote_series_counter =
+                        quote_series_counter.saturating_sub(1);
                 }
 
-                char_to_add =
-                    format!("{}\"", "\\".repeat(quote_series_counter.saturating_sub(1)));
+                char_to_add = format!(
+                    "{}\"",
+                    "\\".repeat(quote_series_counter.saturating_sub(1))
+                );
             }
         }
 
@@ -163,25 +172,28 @@ fn replace_arma_characters(input: &str) -> String {
             let allowed_suffix_chars = ["]", "", " "];
             let index = new_string_chars.len().saturating_sub(1);
 
-            let detect_and_replace_word = |word: &str, chars: &mut Vec<String>| {
-                let word_size = word.len() - 1;
-                let starting_index = index.saturating_sub(word_size);
-                let slice = &chars[starting_index..=index].join("");
-                let previous_char = &chars[starting_index.saturating_sub(1)];
+            let detect_and_replace_word =
+                |word: &str, chars: &mut Vec<String>| {
+                    let word_size = word.len() - 1;
+                    let starting_index = index.saturating_sub(word_size);
+                    let slice = &chars[starting_index..=index].join("");
+                    let previous_char =
+                        &chars[starting_index.saturating_sub(1)];
 
-                if slice.eq(&word)
-                    && allowed_prefix_chars.contains(&previous_char.as_str())
-                    && allowed_suffix_chars.contains(next_char)
-                {
-                    for _ in 0..=word_size {
-                        chars.pop();
-                    }
+                    if slice.eq(&word)
+                        && allowed_prefix_chars
+                            .contains(&previous_char.as_str())
+                        && allowed_suffix_chars.contains(next_char)
+                    {
+                        for _ in 0..=word_size {
+                            chars.pop();
+                        }
 
-                    for c in "null".chars().map(String::from) {
-                        chars.push(c);
+                        for c in "null".chars().map(String::from) {
+                            chars.push(c);
+                        }
                     }
-                }
-            };
+                };
 
             detect_and_replace_word("any", &mut new_string_chars);
             detect_and_replace_word("nil", &mut new_string_chars);

@@ -155,11 +155,7 @@ try
 			if (_isOnline) then
 			{
 				_playerObject setVariable ["ExileScore", _newAmount];
-
-				[
-					_newAmount,
-					{ ExileClientPlayerScore = _this; }
-				] remoteExecCall ["call", owner _playerObject];
+				[_playerObject, _newAmount] call ESMs_object_player_updateRespect;
 			};
 
 			_response = [

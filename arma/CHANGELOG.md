@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Rust based extension with Windows x32/x64 and Linux x32/x64 support
 - Added `@esm/sql` directory for storing SQL related files
 - Added `@esm/sql/01.sql` for this releases required migrations
+- Added helper function `ESMs_object_player_updateRespect` for updating a player's respect on their client
 - Added helper function `ESMs_system_account_isKnown` for checking if a steam UID is known
 - Added helper function `ESMs_util_command_handleFailure` for handling when a command fails
 - Added helper function `ESMs_util_command_handleSuccess` for handling when a command succeeds
@@ -80,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_resetPaymentCounter` with `ESMs_system_territory_resetPaymentCounter`
 - Replaced `ESM_fnc_respond` with `ESMs_system_message_respond_to`
 - Replaced `ESM_fnc_respondWithError` and `ESM_fnc_respondWithErrorCode` with `ESMs_system_message_respond_withError`
+- Replaced `ESM_fnc_reward` with `ESMs_command_reward`
 - Replaced `ESM_fnc_scalarToString` with extension based function `ESMs_util_number_toString` for speedy formatting
 - Replaced `ESM_fnc_sendToChannel` with `ESMs_system_network_discord_send_to`
 - Replaced `ESM_fnc_upgradeTerritory` with `ESMs_command_upgrade`

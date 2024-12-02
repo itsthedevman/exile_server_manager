@@ -512,3 +512,44 @@ ESMs_command_player:
     english: "Target has been healed"
   Player_Log_Description_Kill:
     english: "Target has been killed"
+
+################################################################################
+# /server reward
+ESMs_command_reward:
+  Reward_PlayerPoptabs:
+    english: "Poptabs added to your player"
+  Reward_LockerPoptabs:
+    english: "Poptabs added to your locker"
+  Reward_Respect:
+    english: "Respect"
+  Reward_InvalidClassName_Title:
+    english: "**Invalid Reward Item**"
+  Reward_InvalidClassName_Description:
+    arguments:
+    - "Item classname"
+    english: |-
+      The item `%1` is configured as a reward but could not be found in your server's config.
+
+      This usually means either:
+      - The item name is misspelled
+      - The mod that adds this item isn't installed
+      - The mod isn't loaded in the correct order
+
+      The reward cannot be delivered until this is fixed. Double-check the item name and required mods.
+  Reward_Response_Title:
+    english: "**Reward Package Delivered!**"
+  Reward_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Receipt"
+    english: |-
+      Hey %1, here's what you just received:
+      %2
+  Reward_Log_Title:
+    english: "`ESMs_command_reward` executed successfully"
+  Reward_Log_Description:
+    arguments:
+    - "Receipt"
+    english: |-
+      Player received the following:
+      %1
