@@ -107,7 +107,7 @@ describe ESM::Command::Territory::SetId, category: "command" do
     end
   end
 
-  describe "V2", category: "command" do
+  describe "V2", v2: true do
     include_context "command", described_class
     include_examples "validate_command"
 

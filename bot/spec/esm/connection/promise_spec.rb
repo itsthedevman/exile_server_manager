@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Connection::Promise do
+describe ESM::Connection::Promise, v2: true do
   subject(:promise) { described_class.new }
 
   context "when the inner value is set and the promise is told to wait for a response" do

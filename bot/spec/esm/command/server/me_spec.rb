@@ -32,7 +32,7 @@ describe ESM::Command::Server::Me, category: "command" do
     end
   end
 
-  describe "V2", category: "command", v2: true do
+  describe "V2", v2: true do
     it "is an player command" do
       expect(command.type).to eq(:player)
     end

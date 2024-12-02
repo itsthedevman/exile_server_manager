@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Message::Player do
+describe ESM::Message::Player, v2: true do
   describe ".from" do
     let(:user) { {} }
 

@@ -32,41 +32,70 @@ module ESM
           # Add the request
           add_request(
             to: current_user,
-            description: I18n.t("commands.reward_v1.request_description", user: current_user.mention, server: target_server.server_id)
+            description: I18n.t(
+              "commands.reward_v1.request_description",
+              user: current_user.mention,
+              server: target_server.server_id
+            )
           )
 
           # Remind them to check their PMs
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.request.check_pm", user: current_user.mention))
-          reply(embed)
-        end
-
-        def on_response
-          # Array<Array<item, quantity>>
-          receipt = @response.receipt.to_h
-
           embed = ESM::Embed.build(
             :success,
-            description: I18n.t(
-              "commands.reward_v1.receipt",
-              user: current_user.mention,
-              items: receipt.join_map { |item, quantity| "- #{quantity}x #{item}\n" }
-            )
+            description: I18n.t("commands.request.check_pm", user: current_user.mention)
           )
 
           reply(embed)
         end
 
         def on_request_accepted
-          deliver!(command_name: "reward", function_name: "rewardPlayer", target_uid: current_user.steam_uid)
+          reward = target_server.server_reward
+
+          response = call_sqf_function!(
+            "ESMs_command_reward",
+            items: reward.reward_items,
+            locker: reward.locker_poptabs,
+            money: reward.player_poptabs,
+            respect: reward.respect
+          )
+
+          embed = embed_from_message!(response)
+          reply(embed)
         end
 
         private
 
         def check_for_reward_items!
           reward = target_server.server_reward
-          return if reward.reward_items.present? || reward.locker_poptabs.positive? || reward.player_poptabs.positive? || reward.respect.positive?
+
+          return if reward.reward_items.present? ||
+            reward.locker_poptabs.positive? ||
+            reward.player_poptabs.positive? ||
+            reward.respect.positive?
 
           raise_error!(:no_reward_items, user: current_user.mention)
+        end
+
+        module V1
+          def on_response
+            # Array<Array<item, quantity>>
+            receipt = @response.receipt.to_h
+
+            embed = ESM::Embed.build(
+              :success,
+              description: I18n.t(
+                "commands.reward_v1.receipt",
+                user: current_user.mention,
+                items: receipt.join_map { |item, quantity| "- #{quantity}x #{item}\n" }
+              )
+            )
+
+            reply(embed)
+          end
+
+          def on_request_accepted
+            deliver!(command_name: "reward", function_name: "rewardPlayer", target_uid: current_user.steam_uid)
+          end
         end
       end
     end

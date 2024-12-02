@@ -117,7 +117,7 @@ describe ESM::Command::Server::Territories, category: "command" do
     end
   end
 
-  describe "V2" do
+  describe "V2", v2: true do
     it "is a player command" do
       expect(command.type).to eq(:player)
     end

@@ -114,7 +114,7 @@ describe ESM::Command::Territory::Add, category: "command" do
     end
   end
 
-  describe "V2", category: "command", v2: true do
+  describe "V2", v2: true do
     include_context "command"
     include_examples "validate_command"
 

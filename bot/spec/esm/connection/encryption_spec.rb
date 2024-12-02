@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Connection::Encryption do
+describe ESM::Connection::Encryption, v2: true do
   let(:different_encryption) { described_class.new("This is a complete different key not the same at all") }
 
   let(:key) { "This is the super secret key that is used to encrypt" }

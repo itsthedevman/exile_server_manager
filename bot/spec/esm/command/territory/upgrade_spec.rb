@@ -24,7 +24,7 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
     end
   end
 
-  describe "V2", category: "command", v2: true do
+  describe "V2", v2: true do
     it "is a player command" do
       expect(command.type).to eq(:player)
     end

@@ -16,6 +16,18 @@ module ESM
       @exile_player ||= ESM::ExilePlayer.from(self)
     end
 
+    def kill_player!(server)
+      exile_player.destroy!
+      return unless @connected
+
+      sqf = <<~SQF
+        private _playerObject = objectFromNetId "#{@net_id}";
+        _playerObject setDamage 666;
+      SQF
+
+      server.execute_sqf!(sqf)
+    end
+
     # This allows us to "spawn" players on the server
     # All this does is spawns a bambi and assigns player variables so the bambi AI
     # can be treated as a player
@@ -102,7 +114,7 @@ module ESM
       raise "Received a nil net ID from Arma when spawning in player" if net_id.nil?
 
       @connected = true
-      net_id
+      @net_id = net_id
     end
   end
 end

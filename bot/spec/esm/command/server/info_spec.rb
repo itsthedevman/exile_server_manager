@@ -145,7 +145,7 @@ describe ESM::Command::Server::Info, category: "command" do
     end
   end
 
-  describe "V2" do
+  describe "V2", v2: true do
     describe "#on_execute", requires_connection: true do
       include_context "connection"
 

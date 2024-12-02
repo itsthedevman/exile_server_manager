@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Event::SendXm8Notification, :requires_connection do
+describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   include_context "connection"
 
   let!(:second_user) { ESM::Test.user }

@@ -44,7 +44,7 @@ describe ESM::Command::Territory::Restore, category: "command" do
     end
   end
 
-  describe "V2", category: "command" do
+  describe "V2", v2: true do
     it "is an admin command" do
       expect(command.type).to eq(:admin)
     end

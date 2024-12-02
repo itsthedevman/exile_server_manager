@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Xm8Notification do
+describe ESM::Xm8Notification, v2: true do
   let(:user) { ESM::Test.user }
   let(:second_user) { ESM::Test.user }
   let(:server) { ESM::Test.server(for: ESM::Test.community) }

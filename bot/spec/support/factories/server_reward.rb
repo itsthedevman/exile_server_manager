@@ -16,7 +16,7 @@ FactoryBot.define do
     reward_items do
       reward_items = {}
 
-      items = ESM::Arma::ClassLookup.where(category: ESM::Arma::ClassLookup::CATEGORY_EXILE)
+      items = ESM::Arma::ClassLookup.where(mod: "exile", category: "exile_consumables")
       Faker::Number.between(from: 2, to: 10).times do
         reward_items[items.keys.sample] = Faker::Number.between(from: 1, to: 5)
       end
