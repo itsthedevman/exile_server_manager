@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.3.2.14] - 12024-12-03
+
+### Added
+- Added v2 support for `/server admin search_logs`
+
+### Removed
+- Removed NOT NULL constraint on `log_entries.log_date`
+
 ## [2.3.2.13] - 12024-12-01
 
 ### Added

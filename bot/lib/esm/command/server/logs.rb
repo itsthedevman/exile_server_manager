@@ -57,40 +57,39 @@ module ESM
         #################################
 
         def on_execute
-          query = ""
-
           # If the target was given, check to make sure they're registered and then set the steam_uid
-          if target_user
-            check_for_registered_target_user! if target_user.is_a?(ESM::User)
+          search =
+            if target_user
+              check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-            query = target_user.steam_uid
-          else
-            # Escape any regex in the "query"
-            query = Regexp.quote(arguments.target)
-          end
+              target_user.steam_uid
+            else
+              # Escape any regex in the "search query"
+              Regexp.quote(arguments.target)
+            end
 
-          deliver!(search: query, length: 14)
-        end
+          message = ESM::Message.new.set_type(:search).set_data(search:)
+          log_results = send_to_target_server!(message).data.results
 
-        # Response:
-        # 0: The search parameters
-        # 1..-1: The parsed logs
-        #   date: <String> October 11 2020
-        #   file_name (Exile_TradingLog.log): <Array>
-        #     line: <Integer>
-        #     entry: <String>
-        #     date: <String 2020-10-11>
-        def on_response
-          check_for_no_logs!
+          check_for_no_logs!(log_results)
 
-          @log = ESM::Log.create!(server_id: target_server.id, search_text: arguments.target, requestors_user_id: current_user.id)
+          log = ESM::Log.create!(
+            server_id: target_server.id,
+            search_text: arguments.target,
+            requestors_user_id: current_user.id
+          )
 
-          parse_logs
+          create_log_entries(log, log_results)
 
           embed =
             ESM::Embed.build do |e|
               e.title = "Log parsing for `#{target_server.server_id}` completed"
-              e.description = "You may review the results here:\n#{@log.link}\n\n_Link expires on `#{@log.expires_at.strftime(ESM::Time::Format::TIME)}`_"
+
+              e.description = <<~STRING
+                You may review the results here:
+                #{log.link}
+                _Link expires on `#{log.expires_at.strftime(ESM::Time::Format::TIME)}`_
+              STRING
             end
 
           reply(embed)
@@ -98,60 +97,126 @@ module ESM
 
         private
 
-        def check_for_no_logs!
-          raise_error!(:no_logs, user: current_user.mention) if @response.second.blank?
+        def check_for_no_logs!(logs)
+          raise_error!(:no_logs, user: current_user.mention) if logs.blank?
         end
 
-        def parse_logs
-          @response[1..].each do |entry|
-            log_date = parse_log_entry_date(entry)
+        def create_log_entries(log, log_results)
+          log_results = log_results.group_by { |r| r[:file_name] }
 
-            # Convert the entry into a hash to drop the date field
-            entry = entry.to_h.with_indifferent_access.without(:date)
-            entry.each do |file_name, logs|
-              parse_log(file_name: file_name.to_s, logs: logs, log_date: log_date)
+          # Remove file_name and sort
+          log_results.transform_values! do |entries|
+            entries.each { |e| e.delete(:file_name) }
+              .sort_by { |e| e[:line_number] }
+          end
+
+          log_results.each do |file_name, entries|
+            next if entries.blank?
+
+            ESM::LogEntry.create!(log:, file_name:, entries:)
+          end
+        end
+
+        ###########################################################################################
+
+        module V1
+          def on_execute
+            query = ""
+
+            # If the target was given, check to make sure they're registered and then set the steam_uid
+            if target_user
+              check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+              query = target_user.steam_uid
+            else
+              # Escape any regex in the "query"
+              query = Regexp.quote(arguments.target)
+            end
+
+            deliver!(search: query, length: 14)
+          end
+
+          # Response:
+          # 0: The search parameters
+          # 1..-1: The parsed logs
+          #   date: <String> October 11 2020
+          #   file_name (Exile_TradingLog.log): <Array>
+          #     line: <Integer>
+          #     entry: <String>
+          #     date: <String 2020-10-11>
+          def on_response
+            check_for_no_logs!
+
+            @log = ESM::Log.create!(server_id: target_server.id, search_text: arguments.target, requestors_user_id: current_user.id)
+
+            parse_logs
+
+            embed =
+              ESM::Embed.build do |e|
+                e.title = "Log parsing for `#{target_server.server_id}` completed"
+                e.description = "You may review the results here:\n#{@log.link}\n\n_Link expires on `#{@log.expires_at.strftime(ESM::Time::Format::TIME)}`_"
+              end
+
+            reply(embed)
+          end
+
+          private
+
+          def check_for_no_logs!
+            raise_error!(:no_logs, user: current_user.mention) if @response.second.blank?
+          end
+
+          def parse_logs
+            @response[1..].each do |entry|
+              log_date = parse_log_entry_date(entry)
+
+              # Convert the entry into a hash to drop the date field
+              entry = entry.to_h.with_indifferent_access.without(:date)
+              entry.each do |file_name, logs|
+                parse_log(file_name: file_name.to_s, logs: logs, log_date: log_date)
+              end
             end
           end
-        end
 
-        def parse_log(file_name:, logs:, log_date:)
-          return [] if logs.blank?
+          def parse_log(file_name:, logs:, log_date:)
+            return [] if logs.blank?
 
-          entries = []
-          log_entry = ESM::LogEntry.new(log_id: @log.id, log_date: log_date, file_name: file_name)
+            entries = []
+            log_entry = ESM::LogEntry.new(log_id: @log.id, log_date: log_date, file_name: file_name)
 
-          logs.each do |log|
-            parsed_entry = {timestamp: "", line_number: log.line, entry: ""}
+            logs.each do |log|
+              parsed_entry = {timestamp: "", line_number: log.line, entry: ""}
 
-            # Pull timestamp from file and remove metadata
-            if (match = log.entry.match(ESM::Regex::LOG_TIMESTAMP))
-              parsed_entry[:timestamp] = DateTime.strptime("#{log.date} #{match["time"]} #{match["zone"]}", "%Y-%m-%d %H:%M:%S %Z")
-              log.entry = log.entry.gsub(ESM::Regex::LOG_TIMESTAMP, "")
+              # Pull timestamp from file and remove metadata
+              if (match = log.entry.match(ESM::Regex::LOG_TIMESTAMP))
+                parsed_entry[:timestamp] = DateTime.strptime("#{log.date} #{match["time"]} #{match["zone"]}", "%Y-%m-%d %H:%M:%S %Z")
+                log.entry = log.entry.gsub(ESM::Regex::LOG_TIMESTAMP, "")
+              end
+
+              # No fancy parsing, just bring over the standard log line
+              parsed_entry[:entry] = log.entry
+
+              # Store the log
+              entries << parsed_entry
             end
 
-            # No fancy parsing, just bring over the standard log line
-            parsed_entry[:entry] = log.entry
-
-            # Store the log
-            entries << parsed_entry
+            # Persist the entries to the database
+            log_entry.update!(entries: entries)
           end
 
-          # Persist the entries to the database
-          log_entry.update!(entries: entries)
-        end
+          # The DLL sends over this date as Month Day Year
+          # Problem is, Ruby parses dates by checking the first 3 letters of the month and only supports English.
+          # This method converts the date by translating the first 3 letters to an English month
+          def parse_log_entry_date(entry)
+            date = entry.date
 
-        # The DLL sends over this date as Month Day Year
-        # Problem is, Ruby parses dates by checking the first 3 letters of the month and only supports English.
-        # This method converts the date by translating the first 3 letters to an English month
-        def parse_log_entry_date(entry)
-          date = entry.date
+            # Scan the date for the translations. Replacing the first three letters
+            TRANSLATED_MONTHS.each do |key, value|
+              break date = date.sub(/#{key}/i, value) if date.match?(/^(#{key}).*\b/i)
+            end
 
-          # Scan the date for the translations. Replacing the first three letters
-          TRANSLATED_MONTHS.each do |key, value|
-            break date = date.sub(/#{key}/i, value) if date.match?(/^(#{key}).*\b/i)
+            Date.parse(date)
           end
-
-          Date.parse(date)
         end
       end
     end

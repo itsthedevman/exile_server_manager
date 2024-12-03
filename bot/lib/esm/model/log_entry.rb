@@ -3,10 +3,12 @@
 module ESM
   class LogEntry < ApplicationRecord
     attribute :log_id, :integer
-    attribute :log_date, :datetime
     attribute :file_name, :string
     attribute :entries, :json
 
-    belongs_to :logs
+    # V1
+    attribute :log_date, :datetime, default: nil
+
+    belongs_to :log
   end
 end

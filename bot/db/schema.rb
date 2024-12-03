@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_09_13_210053) do
+ActiveRecord::Schema[7.2].define(version: 2024_12_03_010055) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -136,7 +136,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_09_13_210053) do
 
   create_table "log_entries", force: :cascade do |t|
     t.integer "log_id", null: false
-    t.datetime "log_date", precision: nil, null: false
+    t.datetime "log_date"
     t.string "file_name", null: false
     t.json "entries"
     t.index ["log_id", "log_date", "file_name"], name: "index_log_entries_on_log_id_and_log_date_and_file_name"
