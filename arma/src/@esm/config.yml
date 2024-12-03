@@ -110,3 +110,26 @@
 ## Default: "en"
 ###
 # number_locale: "de_DE"
+
+###
+## Number of days to look back when searching Exile logs
+## These logs are organized in dated folders: YYYY/MM/DD/
+## Example: 7 will search the last week of logs
+###
+# exile_logs_search_days: 14
+
+###
+## Additional log files to include in searches
+##
+## path: can be relative to server directory or absolute
+##   Relative path examples:
+##     - logs/server.log         -> <server_dir>/logs/server.log
+##     - @ServerMod/logs/mod.log -> <server_dir>/@ServerMod/logs/mod.log
+##
+##   Absolute path examples:
+##     - /home/steam/logs/error.log
+##     - C:\servers\arma\logs\rcon.log
+###
+# additional_logs:
+# - "C:\logs\server.rpt"
+# - "logs/server.log"

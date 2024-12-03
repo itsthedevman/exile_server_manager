@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::*;
 
+use crate::log_search;
 use arma_rs::{Context, IntoArma};
 use database::QueryError;
 use std::{collections::HashSet, iter::FromIterator, sync::Mutex as SyncMutex};
@@ -41,6 +42,7 @@ async fn request_thread(mut receiver: UnboundedReceiver<ArmaRequest>) {
                     *lock!(CALLBACK) = Some(context);
                     continue;
                 }
+                ArmaRequest::Search(message) => execute("search", *message).await,
             };
 
             // If a message is returned, send it back
@@ -62,6 +64,7 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
 
     let result = match name {
         "query" => database_query(message).await,
+        "search" => file_search(message).await,
         "post_initialization" => post_initialization(message).await,
         "call_function" => call_arma_function(message).await,
         n => Err(format!(
@@ -128,9 +131,7 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     let data = &mut message.data;
 
     // Yes, this isn't used until later. The goal is to not exit for errors after this point
-    let territory_admin_uids: Vec<String> = match data
-        .get("territory_admin_uids")
-    {
+    let territory_admin_uids: Vec<String> = match data.get("territory_admin_uids") {
         Some(uids) => match uids.as_array() {
             Some(uids) => uids
                 .into_iter()
@@ -144,9 +145,7 @@ async fn post_initialization(mut message: Message) -> MessageResult {
             }
         },
         None => {
-            return Err("Missing territory_admin_uids attribute"
-                .to_string()
-                .into())
+            return Err("Missing territory_admin_uids attribute".to_string().into())
         }
     };
 
@@ -215,13 +214,37 @@ async fn decode_territory_id(message: &mut Message) -> ESMResult {
     Ok(())
 }
 
+async fn file_search(message: Message) -> MessageResult {
+    let search = message
+        .data
+        .get("search")
+        .ok_or::<String>("[file_search] ❌ Missing key `search` argument".into())?;
+
+    let Some(search) = search.as_str() else {
+        return Err(format!(
+            "[file_search] ❌ Failed to convert {search:?} to string"
+        )
+        .into());
+    };
+
+    match log_search::search_files(&search).await {
+        Ok(results) => {
+            let message = message
+                .set_type(Type::Ack)
+                .set_data(Data::from([("results".to_owned(), json!(results))]));
+
+            Ok(Some(message))
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
 async fn database_query(message: Message) -> MessageResult {
     let mut arguments = message.data;
 
     let Some(name) = arguments.remove("query_function_name") else {
         return Err(
-            "Missing \"query_function_name\" attribute for database query"
-                .into(),
+            "Missing \"query_function_name\" attribute for database query".into(),
         );
     };
 
@@ -253,17 +276,13 @@ async fn database_query(message: Message) -> MessageResult {
                     DATABASE.command_player_territories(arguments).await
                 }
                 "reset_all" => DATABASE.command_reset_all(arguments).await,
-                "reset_player" => {
-                    DATABASE.command_reset_player(arguments).await
-                }
+                "reset_player" => DATABASE.command_reset_player(arguments).await,
                 "restore" => DATABASE.command_restore(arguments).await,
                 "reward_territories" => {
                     DATABASE.command_reward_territories(arguments).await
                 }
                 "set_id" => DATABASE.command_set_id(arguments).await,
-                "territory_info" => {
-                    DATABASE.command_territory_info(arguments).await
-                }
+                "territory_info" => DATABASE.command_territory_info(arguments).await,
                 _ => Err(QueryError::System(format!(
                     "Unexpected query \"{}\" with arguments {:?}",
                     name, arguments

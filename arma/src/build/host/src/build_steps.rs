@@ -107,8 +107,10 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 
     let build_copy_script = |directory: &str, copy_script: &mut String| {
         let module_changed =
-            has_directory_changed(&builder.file_watcher, &build_path.join(directory))
-                || !docker_dir_exists(&docker_tmp_path.join(directory).join("src"));
+            has_directory_changed(
+                &builder.file_watcher,
+                &build_path.join(directory),
+            ) || !docker_dir_exists(&docker_tmp_path.join(directory).join("src"));
 
         if module_changed {
             copy_script.push_str(&format!(
@@ -206,6 +208,7 @@ pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
     prepare_directories(builder)?;
     // transfer_mikeros_tools(builder)?;
+    create_test_files(builder)?;
     create_server_config(builder)?;
     create_esm_key_file(builder)
 }
@@ -394,6 +397,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                     Remove-Item '{server_path}\\{profile_name}\\*.rpt' -ErrorAction SilentlyContinue;
                     Remove-Item '{server_path}\\{profile_name}\\*.bidmp' -ErrorAction SilentlyContinue;
                     Remove-Item '{server_path}\\{profile_name}\\*.mdmp' -ErrorAction SilentlyContinue;
+                    Remove-Item '{server_path}\\@ExileServer\\logs' -Recurse -ErrorAction SilentlyContinue;
 
                     if ([bool]::Parse('{rebuild_mod}')) {{
                         Remove-Item '{build_path}\\@esm' -Recurse -ErrorAction SilentlyContinue;
@@ -424,6 +428,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -f "{server_path}/{profile_name}/*.bidmp";
                 rm -f "{server_path}/{profile_name}/*.mdmp";
                 rm -rf "{server_path}/@esm";
+                rm -rf "{server_path}/@exileserver/logs";
 
                 {rebuild_mod} && rm -rf "{build_path}/@esm";
                 if {rebuild_extension}; then
@@ -461,18 +466,36 @@ pub fn transfer_mikeros_tools(builder: &mut Builder) -> BuildResult {
     Directory::transfer(builder, mikero_path, builder.remote_build_path().to_owned())
 }
 
+pub fn create_test_files(builder: &mut Builder) -> BuildResult {
+    let source_path = builder.local_git_path.join("server");
+
+    crate::File::transfer(
+        builder,
+        source_path.to_owned(),
+        Path::new("/tmp").to_path_buf(),
+        "test.rpt",
+    )?;
+
+    crate::File::transfer(
+        builder,
+        source_path.to_owned(),
+        Path::new(&builder.remote.server_path).to_path_buf(),
+        "test.log",
+    )
+}
+
 pub fn create_server_config(builder: &mut Builder) -> BuildResult {
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Config {
         connection_url: String,
         log_level: String,
-        // log_output: String,
+        additional_logs: Vec<String>,
     }
 
     let config = Config {
         connection_url: builder.args.bot_host().to_string(),
         log_level: builder.args.log_level().to_string(),
-        // log_output: "extension".into(),
+        additional_logs: vec!["test.log".to_string(), "/tmp/test.rpt".to_string()],
     };
 
     let config_yaml = serde_yaml::to_string(&config)?;
@@ -614,11 +637,14 @@ fn compile_mod(builder: &mut Builder) -> BuildResult {
 }
 
 fn check_sqf(builder: &Builder, addons_path: &Path) -> BuildResult {
-    let Ok(file_paths) = glob(&format!("{}/**/*.sqf", addons_path.to_string_lossy()))
+    let Ok(file_paths) =
+        glob(&format!("{}/**/*.sqf", addons_path.to_string_lossy()))
     else {
-        return Err(
-            format!("Failed to find any SQF files in {}", addons_path.display()).into(),
-        );
+        return Err(format!(
+            "Failed to find any SQF files in {}",
+            addons_path.display()
+        )
+        .into());
     };
 
     print_wait_prefix(": Checking SQF")?;
@@ -713,7 +739,11 @@ destination_file="{build_path}/{addon}.pbo";
 
     // Copy the mod over
     let destination_path = builder.remote_build_path().join("@esm");
-    Directory::transfer(builder, build_path.to_owned(), destination_path.to_owned())?;
+    Directory::transfer(
+        builder,
+        build_path.to_owned(),
+        destination_path.to_owned(),
+    )?;
 
     // Copy extra directories and files
     for directory in ["optionals", "sql"].iter() {
@@ -909,7 +939,8 @@ pub fn stream_logs(builder: &mut Builder) -> BuildResult {
             println!(
                 "{name}:{line_number:5}{sep} {content}",
                 sep = "|".bright_black(),
-                name = extension.truecolor(line.color[0], line.color[1], line.color[2]),
+                name =
+                    extension.truecolor(line.color[0], line.color[1], line.color[2]),
                 line_number = line.line_number.to_string().bright_black(),
                 content = if let Some(h) = highlight {
                     content.bold().truecolor(h.color[0], h.color[1], h.color[2])

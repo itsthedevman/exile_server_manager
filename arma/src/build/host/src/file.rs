@@ -14,9 +14,10 @@ impl File {
         destination_path: PathBuf,
         file_name: &str,
     ) -> BuildResult {
-        let source_path = source_path.join(file_name);
+        let source_path = &source_path.join(file_name);
 
-        let bytes = std::fs::read(source_path).unwrap();
+        let bytes = std::fs::read(source_path)
+            .map_err(|e| format!("Failed to read file: {source_path:?}. {e}"))?;
 
         let total_size = bytes.len();
         let sha1 = Sha1::new().chain_update(&bytes).finalize().to_vec();

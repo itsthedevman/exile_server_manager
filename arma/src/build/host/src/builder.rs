@@ -154,7 +154,10 @@ impl Builder {
 
         if matches!(self.args.build_os(), BuildOS::Linux) {
             self.print_status("Preparing container", build_steps::start_container)?;
-            self.print_status("Waiting for container", build_steps::wait_for_container)?;
+            self.print_status(
+                "Waiting for container",
+                build_steps::wait_for_container,
+            )?;
             self.print_status("Checking for @exile", build_steps::check_for_files)?;
             self.print_status("Preparing receiver", build_steps::prepare_receiver)?;
 
@@ -342,7 +345,9 @@ impl Builder {
             .command("bash")
             .arguments(&[
                 "-c",
-                &format!("docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""),
+                &format!(
+                    "docker exec -t {ARMA_CONTAINER} /bin/bash -c \"{script}\""
+                ),
             ])
             .execute(None)
             .unwrap_or_default()

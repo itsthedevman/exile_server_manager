@@ -19,7 +19,8 @@ use tokio::time::sleep;
 lazy_static! {
     pub static ref TOKEN_MANAGER: Arc<SyncMutex<TokenManager>> =
         Arc::new(SyncMutex::new(TokenManager::new()));
-    static ref INIT: Arc<SyncMutex<Init>> = Arc::new(SyncMutex::new(Init::default()));
+    static ref INIT: Arc<SyncMutex<Init>> =
+        Arc::new(SyncMutex::new(Init::default()));
     static ref ENCRYPTION_ENABLED: AtomicBool = AtomicBool::new(false);
     static ref CONNECTED: AtomicBool = AtomicBool::new(false);
     static ref ENDPOINT: Arc<SyncMutex<Option<Endpoint>>> =
@@ -157,18 +158,23 @@ async fn xm8_notification_thread() {
             let notification_ids: Vec<&String> =
                 notifications.iter().flat_map(|n| &n.uuids).collect();
 
-            if let Err(e) = DATABASE.update_xm8_attempt_counter(notification_ids).await {
+            if let Err(e) =
+                DATABASE.update_xm8_attempt_counter(notification_ids).await
+            {
                 error!("[xm8_notification_thread] ❌ {e}");
                 continue;
             }
 
-            trace!("[xm8_notification_thread] Sending notifications {notifications:?}");
+            trace!(
+                "[xm8_notification_thread] Sending notifications {notifications:?}"
+            );
 
             // Send the message
-            let message = Message::new().set_type(Type::Call).set_data(Data::from([
-                ("function_name".to_owned(), json!("send_xm8_notification")),
-                ("notifications".to_owned(), json!(notifications)),
-            ]));
+            let message =
+                Message::new().set_type(Type::Call).set_data(Data::from([
+                    ("function_name".to_owned(), json!("send_xm8_notification")),
+                    ("notifications".to_owned(), json!(notifications)),
+                ]));
 
             if let Err(e) = BotRequest::send(message) {
                 error!("[send_to_channel] ❌ {}", e);
@@ -208,7 +214,9 @@ fn send_request(request: Request) -> ESMResult {
     let request = match serde_json::to_vec(&request) {
         Ok(r) => r,
         Err(e) => {
-            return Err(format!("❌ Cannot send message - Failed to convert - {e}").into())
+            return Err(
+                format!("❌ Cannot send message - Failed to convert - {e}").into()
+            )
         }
     };
 
@@ -216,9 +224,10 @@ fn send_request(request: Request) -> ESMResult {
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
 
     if let Err(e) = encoder.write_all(&request[..]) {
-        return Err(
-            format!("❌ Cannot send message - Failed to write to buffer - {e}").into(),
-        );
+        return Err(format!(
+            "❌ Cannot send message - Failed to write to buffer - {e}"
+        )
+        .into());
     };
 
     let Ok(request) = encoder.finish() else {
@@ -505,6 +514,7 @@ fn on_message(request: Request) -> ESMResult {
             ArmaRequest::call("post_initialization", message)
         }
         Type::Echo => BotRequest::send(message),
+        Type::Search => ArmaRequest::search(message),
         t => Err(format!("❌ Unexpected message type: {t:?}").into()),
     }
 }

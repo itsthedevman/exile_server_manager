@@ -98,7 +98,8 @@ impl Message {
             Err(e) => Err(format!(
                 "Failed to deserialize. Reason: {:?}. Message: {:#?}",
                 e,
-                String::from_utf8(data.to_vec()).unwrap_or(format!("Bytes: {:?}", data))
+                String::from_utf8(data.to_vec())
+                    .unwrap_or(format!("Bytes: {:?}", data))
             )),
         }
     }
@@ -111,19 +112,22 @@ impl Message {
         errors: String,
     ) -> Result<Message, String> {
         // The message type has to be double quoted in order to parse
-        let mut message = match serde_json::from_str(&format!("\"{}\"", message_type)) {
-            Ok(t) => Self::new().set_type(t),
-            Err(e) => {
-                return Err(format!(
-                    "\"{}\" is not a valid type. Error: {}",
-                    message_type, e
-                ))
-            }
-        };
+        let mut message =
+            match serde_json::from_str(&format!("\"{}\"", message_type)) {
+                Ok(t) => Self::new().set_type(t),
+                Err(e) => {
+                    return Err(format!(
+                        "\"{}\" is not a valid type. Error: {}",
+                        message_type, e
+                    ))
+                }
+            };
 
         match Uuid::parse_str(&id) {
             Ok(uuid) => message.id = uuid,
-            Err(e) => return Err(format!("Failed to extract ID from {:?}. {}", id, e)),
+            Err(e) => {
+                return Err(format!("Failed to extract ID from {:?}. {}", id, e))
+            }
         };
 
         match crate::parser::Parser::from_arma(&data) {
@@ -172,6 +176,7 @@ pub enum Type {
     Ack,
     Call,
     Query,
+    Search,
 }
 
 ////////////////////////////////////////////////////////////

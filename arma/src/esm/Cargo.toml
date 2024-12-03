@@ -38,10 +38,11 @@ base64 = "0"
 flate2 = "1"
 num-format = "0"
 unicode-segmentation = "1"
+regex = "1"
 
 [dev-dependencies]
 pretty_assertions = "1"
-regex = "1"
+tempfile = "3.8"
 
 [dependencies.mysql_common]
 version = "0.32"

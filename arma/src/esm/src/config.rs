@@ -32,6 +32,12 @@ pub struct Config {
 
     #[serde(default = "default_number_locale")]
     pub number_locale: String,
+
+    #[serde(default = "default_exile_logs_search_days")]
+    pub exile_logs_search_days: u32,
+
+    #[serde(default = "default_additional_logs")]
+    pub additional_logs: Vec<String>,
 }
 
 impl Default for Config {
@@ -47,6 +53,8 @@ impl Default for Config {
             database_uri: default_database_uri(),
             server_mod_name: default_server_mod_name(),
             number_locale: default_number_locale(),
+            exile_logs_search_days: default_exile_logs_search_days(),
+            additional_logs: default_additional_logs(),
         }
     }
 }
@@ -101,6 +109,14 @@ fn default_server_mod_name() -> String {
 
 fn default_number_locale() -> String {
     String::from("en")
+}
+
+fn default_exile_logs_search_days() -> u32 {
+    14
+}
+
+fn default_additional_logs() -> Vec<String> {
+    Vec::new()
 }
 
 impl std::fmt::Display for Config {

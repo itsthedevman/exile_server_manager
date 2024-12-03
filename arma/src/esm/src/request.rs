@@ -9,6 +9,7 @@ use crate::Init;
 
 pub enum ArmaRequest {
     Query(Box<Message>),
+    Search(Box<Message>),
     Method { name: String, message: Box<Message> },
     Initialize(Context),
 }
@@ -28,6 +29,10 @@ impl ArmaRequest {
     pub fn query(message: Message) -> ESMResult {
         crate::ROUTER.route_to_arma(Self::Query(Box::new(message)))
     }
+
+    pub fn search(message: Message) -> ESMResult {
+        crate::ROUTER.route_to_arma(Self::Search(Box::new(message)))
+    }
 }
 
 impl std::fmt::Display for ArmaRequest {
@@ -43,6 +48,9 @@ impl std::fmt::Display for ArmaRequest {
                 .finish(),
             ArmaRequest::Initialize(_) => {
                 f.debug_tuple("ArmaRequest::Initialize").finish()
+            }
+            ArmaRequest::Search(m) => {
+                f.debug_tuple("ArmaRequest::Search").field(m).finish()
             }
         }
     }
@@ -75,9 +83,13 @@ impl BotRequest {
 impl std::fmt::Display for BotRequest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BotRequest::Send(m) => f.debug_tuple("BotRequest::Send").field(m).finish(),
+            BotRequest::Send(m) => {
+                f.debug_tuple("BotRequest::Send").field(m).finish()
+            }
             BotRequest::Connect => f.debug_tuple("BotRequest::Connect").finish(),
-            BotRequest::Initialize(_) => f.debug_tuple("BotRequest::Initialize").finish(),
+            BotRequest::Initialize(_) => {
+                f.debug_tuple("BotRequest::Initialize").finish()
+            }
         }
     }
 }

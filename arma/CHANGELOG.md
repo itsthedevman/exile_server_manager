@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `logging_path`: The full path where ESM will log store its logs
     - `number_locale`: Controls how numbers are formatted
     - `server_mod_name`: The name of @ExileServer on this server. Linux uses `@exileserver`
+    - `exile_logs_search_days`: This controls how far back to look when search Exile logs. Defaults to 14 days
+    - `additional_logs`: Useful for any extra files that should be searched when using `/server admin search_logs`
 - Added extension endpoint `utc_timestamp` for returning the current UTC timestamp
 - Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
 - Added server setting that controls if the locker limit will be taken into account when gambling.
