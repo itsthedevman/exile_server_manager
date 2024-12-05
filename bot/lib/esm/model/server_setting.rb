@@ -2,8 +2,26 @@
 
 module ESM
   class ServerSetting < ApplicationRecord
+    CONFIG_DEFAULTS = {
+      connection_url: "",
+      log_level: "info",
+      logging_path: "",
+      extdb_conf_path: "",
+      extdb_conf_header_name: "exile",
+      extdb_version: 3,
+      log_output: "extension",
+      database_uri: "",
+      server_mod_name: "@ExileServer",
+      number_locale: "en",
+      exile_logs_search_days: 14,
+      additional_logs: []
+    }.freeze
+
     attribute :server_id, :integer
 
+    #############################################
+    # Settings sent via post init
+    #############################################
     # Whether to enforce if the player can gamble with their locker being full
     # When true, prevents gambling if player's poptabs exceed a specified threshold
     attribute :gambling_locker_limit_enabled, :boolean, default: true
@@ -80,11 +98,48 @@ module ESM
     # Minute of the hour when server restarts
     attribute :server_restart_min, :integer, default: 0
 
+    #############################################
+    # Settings stored in config.yml
+    #############################################
+    # Do not add defaults to these
+    # I only want the website to show if something as been set
+
+    # Additional log files to include in searches
+    attribute :additional_logs, :json
+
+    # Database connection URI string
+    attribute :database_uri, :text
+
+    # Number of days of logs to search
+    attribute :exile_logs_search_days, :integer
+
+    # ExtDB config section name
+    attribute :extdb_conf_header_name, :string
+
+    # Path to ExtDB config file
+    attribute :extdb_conf_path, :text
+
+    # ExtDB version override
+    attribute :extdb_version, :integer
+
+    # Where to send SQF logs (rpt/extension/both)
+    attribute :log_output, :string
+
+    # ESM extension log file path
+    attribute :logging_path, :text
+
+    # Number formatting locale
+    attribute :number_locale, :string
+
+    # Exile server mod directory name
+    attribute :server_mod_name, :string
+
+    #############################################
     # V1
-    attribute :extdb_path, :text, default: nil
+    #############################################
+    alias_attribute :extdb_path, :extdb_conf_path
     attribute :request_thread_type, :string, default: "exile"
     attribute :request_thread_tick, :float, default: 0.1
-    attribute :logging_path, :text, default: nil
 
     belongs_to :server
   end
