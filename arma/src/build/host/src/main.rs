@@ -97,10 +97,6 @@ pub struct Args {
     #[arg(short, long)]
     full: bool,
 
-    /// Sets the release flag
-    #[arg(short, long)]
-    release: bool,
-
     /// Space or comma separated list that controls which pieces are built
     #[arg(short, long, value_parser = ["mod", "extension"])]
     only: Option<String>,
@@ -129,10 +125,6 @@ impl Args {
 
     pub fn build_os(&self) -> BuildOS {
         self.target
-    }
-
-    pub fn build_release(&self) -> bool {
-        self.release
     }
 
     /// Controls which code group (extension, mod) is built for this run

@@ -791,17 +791,8 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     };
 
     // Handle release flag
-    let release_flag = if builder.args.build_release() {
-        "--release"
-    } else {
-        ""
-    };
-
-    let build_dir = if builder.args.build_release() {
-        "release"
-    } else {
-        "debug"
-    };
+    let release_flag = "--release";
+    let build_dir = "release";
 
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
