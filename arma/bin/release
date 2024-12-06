@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 set -uo pipefail
+trap "exit" INT
 
 readonly root_dir="$(pwd)"
 readonly build_dir=$root_dir/target/@esm
 readonly release_dir=$root_dir/release
 readonly args=("$@")
-readonly total_steps=3
+readonly total_steps=8
 step=0
 
 function echo_step() {
@@ -44,11 +45,40 @@ rm $build_dir/addons/esm_test.pbo || true
 # Copy to release
 run_command cp -rf $build_dir $release_dir
 
+# echo
+# echo_step "Building esm.so"
+
+# # Extension - Linux (x32)
+# run_command ./bin/build --only=extension --env=production --release --target=linux
+# run_command cp $build_dir/esm_x64.so $release_dir/@esm
+
 echo
 echo_step "Building esm_x64.so"
 
 # Extension - Linux (x64)
 run_command ./bin/build --only=extension --env=production --release --target=linux
 run_command cp $build_dir/esm_x64.so $release_dir/@esm
+
+echo
+echo_step "Building esm.dll"
+
+# Extension - Windows (x32)
+run_command ./bin/build --only=extension --env=production --release --target=windows --x32
+run_command cp $build_dir/esm.dll $release_dir/@esm
+
+echo
+echo_step "Building esm_x64.dll"
+
+# Extension - Windows (x64)
+run_command ./bin/build --only=extension --env=production --release --target=windows
+run_command cp $build_dir/esm_x64.dll $release_dir/@esm
+
+echo
+echo_step "Zipping @esm"
+cd $release_dir && zip -r @esm.zip ./@esm
+
+echo
+echo_step "Cleanup"
+rm -rf $release_dir/@esm
 
 echo "<esm_bt> - Build completed"

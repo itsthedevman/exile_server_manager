@@ -18,10 +18,16 @@
           inherit system overlays;
         };
 
-        # Rust toolchain
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" "clippy" ];
-        };
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override
+          {
+            extensions = [ "rust-src" "rust-analyzer" "clippy" ];
+            targets = [
+              "x86_64-unknown-linux-gnu"
+              "i686-unknown-linux-gnu"
+              "x86_64-pc-windows-gnu"
+              "i686-pc-windows-gnu"
+            ];
+          };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -33,6 +39,9 @@
             pkg-config
             openssl_3
             openssl.dev
+            pkgsCross.mingwW64.buildPackages.gcc # For 64-bit Windows targets
+            pkgsCross.mingw32.buildPackages.gcc # For 32-bit Windows targets
+            pkgsCross.mingwW64.windows.pthreads
 
             # Docker tools (for containerization)
             docker-compose
@@ -43,27 +52,33 @@
           ];
 
           shellHook = ''
+            LIBRARY_PATH="${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib";
             OPENSSL_LIB="${pkgs.openssl_3.out}/lib"
 
             echo "setting up binary wrappers..."
             mkdir -p tools/wrappers
 
-            echo "patching sqfvm..."
-            cp -f tools/sqfvm tools/wrappers/sqfvm
-            patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/sqfvm
+            if [ -f tools/sqfvm ]; then
+              echo "patching sqfvm..."
+              cp -f tools/sqfvm tools/wrappers/sqfvm
+              patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/sqfvm || true
+            fi
 
-            echo "patching armake2..."
-            cp -f tools/armake2 tools/wrappers/armake2
-            patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/armake2
-            patchelf --set-rpath "$OPENSSL_LIB" tools/wrappers/armake2
+            if [ -f tools/armake2 ]; then
+              echo "patching armake2..."
+              cp -f tools/armake2 tools/wrappers/armake2
+              patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" tools/wrappers/armake2 || true
+              patchelf --set-rpath "$OPENSSL_LIB" tools/wrappers/armake2 || true
+            fi
 
-            # Ensure they're executable
-            chmod +x tools/wrappers/sqfvm tools/wrappers/armake2
+            chmod +x tools/wrappers/*
           '';
 
           # Environment variables
           RUST_BACKTRACE = "1";
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+          CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = "${pkgs.pkgsCross.mingwW64.buildPackages.gcc}/bin/x86_64-w64-mingw32-gcc";
+          CC_x86_64_pc_windows_gnu = "${pkgs.pkgsCross.mingwW64.buildPackages.gcc}/bin/x86_64-w64-mingw32-gcc";
         };
       }
     );

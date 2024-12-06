@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 git_root=$(pwd)
 
@@ -6,4 +6,4 @@ cd src/build/receiver
 cargo build --release --target x86_64-pc-windows-gnu
 
 cd $git_root/target/x86_64-pc-windows-gnu/release
-mv receiver.exe ~/public/esm_build_receiver.exe
+mv receiver.exe ~/Public/esm_build_receiver.exe
