@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+readonly root_dir="$(pwd)"
+readonly build_dir=$root_dir/target/@esm
+readonly release_dir=$root_dir/release
+readonly args=("$@")
+readonly total_steps=3
+step=0
+
+function echo_step() {
+    ((step++))
+    echo "<esm_bt> - Step $step/$total_steps: $1"
+}
+
+# Helper to catch errors
+function run_command() {
+    if ! "$@"; then
+        echo "!!! Command failed: $*"
+        return 1
+    fi
+}
+
+echo_step "Running tests"
+run_command cargo test --workspace --quiet
+
+# Cleanup
+run_command rm -rf $release_dir
+run_command mkdir -p $release_dir
+
+echo
+echo_step "Building @esm"
+
+# Mod build
+run_command ./bin/build --only=mod --env=production --release --target=linux
+
+# Remove source directories - this might be failing if directories don't exist
+find $build_dir/addons -mindepth 1 -type d -exec rm -rf {} + || true
+
+# And the esm_test.pbo - this might fail if file doesn't exist
+rm $build_dir/addons/esm_test.pbo || true
+
+# Copy to release
+run_command cp -rf $build_dir $release_dir
+
+echo
+echo_step "Building esm_x64.so"
+
+# Extension - Linux (x64)
+run_command ./bin/build --only=extension --env=production --release --target=linux
+run_command cp $build_dir/esm_x64.so $release_dir/@esm
+
+echo "<esm_bt> - Build completed"

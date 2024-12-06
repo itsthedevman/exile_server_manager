@@ -37,6 +37,11 @@ RUN apt-get update \
         libuchardet0 \
         # extDB3
         libtbb-dev \
+        # x32
+        gcc-multilib \
+        g++-multilib \
+        libssl-dev:i386 \
+        libc6-dev-i386 \
     # Cleanup
     && apt-get remove --purge -y \
     && apt-get clean autoclean \
@@ -50,7 +55,9 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
 
 # Install PBO library
-RUN rustup update && cargo install armake2
+RUN rustup update  \
+    && rustup target add i686-unknown-linux-gnu \
+    && cargo install armake2
 
 # SteamCMD
 RUN mkdir -p /steamcmd \

@@ -209,8 +209,13 @@ pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     prepare_directories(builder)?;
     // transfer_mikeros_tools(builder)?;
     create_test_files(builder)?;
-    create_server_config(builder)?;
-    create_esm_key_file(builder)
+
+    if !builder.args.release {
+        create_server_config(builder)?;
+        create_esm_key_file(builder)?;
+    }
+
+    Ok(())
 }
 
 pub fn kill_arma(builder: &mut Builder) -> BuildResult {
@@ -255,7 +260,7 @@ pub fn detect_rebuild(builder: &mut Builder) -> BuildResult {
         .map(|addon| format!(r"addons{path_separator}{addon}.pbo"))
         .collect();
 
-    if matches!(builder.args.build_env(), BuildEnv::Test) {
+    if matches!(builder.args.build_env(), BuildEnv::Development) {
         files_to_check.push(format!(r"addons{path_separator}esm_test.pbo"));
     }
 
@@ -347,6 +352,19 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         let addons_path = esm_path.join("addons");
         if !addons_path.exists() {
             fs::create_dir_all(&addons_path)?;
+        }
+    }
+
+    if builder.args.release {
+        let release_path = builder.local_git_path.join("release");
+        if !release_path.exists() {
+            fs::create_dir_all(&release_path)?;
+        }
+
+        let release_path = builder.local_build_path.join("esm-release");
+        if release_path.exists() {
+            fs::remove_dir_all(&release_path)?;
+            fs::create_dir_all(&release_path)?;
         }
     }
 
@@ -704,7 +722,7 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
 
     let mut extra_addons = vec![];
-    if matches!(builder.args.build_env(), BuildEnv::Test) {
+    if matches!(builder.args.build_env(), BuildEnv::Development) {
         extra_addons.push("esm_test");
     }
 
@@ -786,7 +804,6 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     // Handle env feature switching
     let features = match builder.args.build_env() {
         BuildEnv::Development => "--features development",
-        BuildEnv::Test => "--features development",
         BuildEnv::Production => "",
     };
 
@@ -802,7 +819,7 @@ cd '{build_path}\\esm';
 
 rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
 
-Copy-Item '{build_path}\\esm\\target\\{build_target}\\{build_dir}\\esm_arma.dll' -Destination '{build_path}\\{file_name}.dll';
+Copy-Item '{build_path}\\esm\\target\\{build_target}\\{build_dir}\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
 "#
             )
         }
@@ -813,7 +830,7 @@ cd {build_path}/esm;
 
 rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
 
-cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_path}/{file_name}.so"
+cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_path}/@esm/{file_name}.so"
 "#
             )
         }
@@ -826,6 +843,33 @@ cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_p
         .print_as("cargo (esm)")
         .print_to_remote()
         .execute_remote(&builder.build_server)?;
+
+    Ok(())
+}
+
+pub fn create_release_build(builder: &mut Builder) -> BuildResult {
+    let build_path = builder.remote_build_path_str();
+
+    let destination_path = builder.local_build_path.join("@esm");
+    if destination_path.exists() {
+        fs::remove_dir_all(&destination_path)?;
+    }
+
+    match builder.args.build_os() {
+        BuildOS::Windows => {}
+        BuildOS::Linux => {
+            System::new()
+                .command("docker")
+                .arguments(&[
+                    "cp",
+                    &format!("{ARMA_CONTAINER}:{build_path}/@esm"),
+                    &destination_path.display().to_string(),
+                ])
+                .add_error_detection("no such")
+                .print()
+                .execute(None)?;
+        }
+    };
 
     Ok(())
 }
@@ -847,7 +891,6 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 "
                     Remove-Item -Path '{server_path}\\@esm' -Recurse;
                     Copy-Item -Path '{build_path}\\@esm' -Destination '{server_path}\\@esm' -Recurse;
-                    Copy-Item -Path '{build_path}\\{file_name}.dll' -Destination '{server_path}\\@esm\\';
 
                     Start-Process '{server_path}\\{server_executable}' `
                         -ArgumentList '{server_args}' `
@@ -857,10 +900,6 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,
                 server_args = builder.remote.server_args,
-                file_name = match builder.args.build_arch() {
-                    BuildArch::X32 => "esm",
-                    BuildArch::X64 => "esm_x64",
-                }
             )
         }
         BuildOS::Linux => {
@@ -868,7 +907,6 @@ pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
                 r#"
 rm -rf {server_path}/@esm;
 cp -rf {build_path}/@esm {server_path}/@esm;
-cp {build_path}/{file_name}.so {server_path}/@esm/;
 mkdir -p {ARMA_PATH}/server_profile;
 
 {server_path}/{server_executable} {server_args} &>{ARMA_PATH}/server_profile/server.rpt &
@@ -877,10 +915,6 @@ mkdir -p {ARMA_PATH}/server_profile;
                 server_path = builder.remote.server_path,
                 server_executable = builder.server_executable,
                 server_args = builder.remote.server_args,
-                file_name = match builder.args.build_arch() {
-                    BuildArch::X32 => "esm",
-                    BuildArch::X64 => "esm_x64",
-                }
             )
         }
     };

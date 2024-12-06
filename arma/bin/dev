@@ -4,7 +4,7 @@ set -euo pipefail
 
 readonly args=("$@")
 
-echo "Running tests..."
+echo "<esm_bt> - Running tests..."
 cargo test --workspace
 
 exec "./bin/build" --target=linux --env=development --start-server "${args[@]}"

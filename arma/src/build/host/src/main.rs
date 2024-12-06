@@ -108,6 +108,10 @@ pub struct Args {
     /// Builds the code and starts the server
     #[arg(short, long)]
     start_server: bool,
+
+    // Builds everything and copies it to the release directory
+    #[arg(short, long)]
+    release: bool,
 }
 
 impl Args {
@@ -186,7 +190,6 @@ impl fmt::Display for LogLevel {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum BuildEnv {
     Development,
-    Test,
     Production,
 }
 

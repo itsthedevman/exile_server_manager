@@ -183,6 +183,13 @@ impl Builder {
         }
 
         if !self.args.start_server() {
+            if self.args.release {
+                self.print_status(
+                    "Copying to release",
+                    build_steps::create_release_build,
+                )?;
+            }
+
             return Ok(());
         }
 
