@@ -3,9 +3,9 @@
 module ESM
   module Connection
     class Encryption
-      CIPHER = "aes-256-cbc"
-
-      NONCE_SIZE = 16
+      CIPHER = "aes-256-gcm"
+      NONCE_SIZE = 12  # GCM standard
+      TAG_SIZE = 16    # GCM authentication tag size
 
       # First 32 bytes.
       # A standard request will larger than 32 bytes so this _shouldn't_ cause issues with the nonce being stacked at the end of the bytes (because of the data packet being smaller than 32 bytes)
@@ -17,11 +17,12 @@ module ESM
         NONCE_SIZE.times.map { indices.pop }.sort
       end
 
-      def initialize(key, nonce_indices: [])
+      def initialize(key, nonce_indices: [], session_id: "")
         key = key.bytes[INDEX_LOW_BOUNDS..INDEX_HIGH_BOUNDS]
         raise ArgumentError, "Encryption key must be 32 bytes" if key.size != 32
 
         @key = key.pack("C*")
+        @session_id = session_id
         @nonce_indices = nonce_indices.presence || (0...NONCE_SIZE).to_a
       end
 
@@ -31,17 +32,21 @@ module ESM
 
         cipher.key = @key
         cipher.iv = nonce
+        cipher.auth_data = @session_id
 
+        encrypted_data = cipher.update(data) + cipher.final
+        auth_tag = cipher.auth_tag
+
+        # Combine encrypted data and auth tag
+        encrypted_bytes = encrypted_data.bytes + auth_tag.bytes
         nonce_bytes = nonce.bytes
-        encrypted_data = (cipher.update(data) + cipher.final).bytes
 
+        # Insert nonce bytes at specified positions
         @nonce_indices.each_with_index do |nonce_index, index|
-          encrypted_data.insert(nonce_index, nonce_bytes[index])
+          encrypted_bytes.insert(nonce_index, nonce_bytes[index])
         end
 
-        # If the nonce index is greater than the size of the encrypted_bytes,
-        # ruby will add `nil` until it gets to the index
-        encrypted_data.compact.pack("C*")
+        encrypted_bytes.pack("C*")
       end
 
       #
@@ -57,7 +62,9 @@ module ESM
       #
       def decrypt(input)
         cipher = OpenSSL::Cipher.new(CIPHER).decrypt
+        cipher.key = @key
 
+        # Extract nonce and encrypted data
         nonce = []
         packet = []
         input.bytes.each_with_index do |byte, index|
@@ -69,10 +76,15 @@ module ESM
           packet << byte
         end
 
-        cipher.key = @key
-        cipher.iv = nonce.pack("C*")
+        # Separate auth tag from encrypted data
+        auth_tag = packet.pop(TAG_SIZE).pack("C*")
+        encrypted_data = packet.pack("C*")
 
-        decrypted_data = cipher.update(packet.pack("C*")) + cipher.final
+        cipher.iv = nonce.pack("C*")
+        cipher.auth_tag = auth_tag
+        cipher.auth_data = @session_id
+
+        decrypted_data = cipher.update(encrypted_data) + cipher.final
         raise ESM::Exception::DecryptionError if decrypted_data.blank?
 
         decrypted_data
@@ -86,7 +98,7 @@ module ESM
           raise e
         end
       rescue OpenSSL::Cipher::CipherError
-        raise ESM::Exception::DecryptionError, "Failed to decrypt"
+        raise ESM::Exception::DecryptionError, "Authentication failed"
       end
     end
   end

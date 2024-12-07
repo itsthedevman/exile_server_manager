@@ -70,8 +70,11 @@ module ESM
         def authenticate!(model)
           @public_id = model.public_id
           @server_id = model.server_id
+          @session_id = SecureRandom.uuid
+
           secret_key = model.server_key
 
+          # Do not set the session ID on this
           @encryption = Encryption.new(secret_key)
 
           # Generate new nonce indices for the client
@@ -79,14 +82,14 @@ module ESM
 
           message = ESM::Message.new
             .set_type(:init)
-            .set_data(indices: nonce_indices)
+            .set_data(indices: nonce_indices, session_id:)
 
           # This doesn't use #send_request because it needs to hook into the promise to immediately
           # swap the nonce to the new one before the client has time to respond.
           # Ignorance is bliss but this shouldn't be a race condition due to network lag
           # "It works on my computer"
           response = write(id: message.id, type: :handshake, content: message.to_s)
-            .then { |_| @encryption = Encryption.new(secret_key, nonce_indices:) }
+            .then { |_| @encryption = Encryption.new(secret_key, nonce_indices:, session_id:) }
             .wait_for_response(@config.response_timeout)
 
           raise ESM::Exception::RejectedPromise, response.reason if response.rejected?

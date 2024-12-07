@@ -7,7 +7,7 @@ module ESM
 
       Metadata = ImmutableStruct.define(:vg_enabled, :vg_max_sizes)
 
-      attr_reader :public_id, :server_id, :connected_at
+      attr_reader :public_id, :server_id, :connected_at, :session_id
 
       delegate :address, to: :@socket
 
@@ -18,6 +18,7 @@ module ESM
 
         @public_id = nil
         @server_id = nil
+        @session_id = nil
 
         @thread_pool = Concurrent::CachedThreadPool.new
         set_metadata(vg_enabled: false, vg_max_sizes: 0)
