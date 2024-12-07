@@ -236,7 +236,8 @@ fn send_request(request: Request) -> ESMResult {
 
     // Encrypt
     let request = if ENCRYPTION_ENABLED.load(Ordering::SeqCst) {
-        encrypt_request(&request, lock!(TOKEN_MANAGER).secret_bytes())?
+        encrypt_request(&request, lock!(TOKEN_MANAGER).secret_bytes())
+            .map_err(|e| format!("❌ Failed to encrypt. {e}"))?
     } else {
         request
     };
@@ -330,7 +331,8 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
     };
 
     let decrypted_message =
-        decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())?;
+        decrypt_request(encoded_message, lock!(TOKEN_MANAGER).secret_bytes())
+            .map_err(|e| format!("[on_request] ❌ Failed to decrypt. {e}"))?;
 
     // Decompress
     let mut decoder = GzDecoder::new(decrypted_message.as_slice());
@@ -437,37 +439,51 @@ fn on_handshake(mut request: Request) -> ESMResult {
 
     let message = Message::from_bytes(&request.value)?;
 
-    // Weeeeeeeee! I have no idea what I'm doing! ;)
-    let indices: Vec<u8> = message
-        .data
-        .get("indices")
-        .unwrap_or(&json!([]))
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .into_iter()
-        .map(|i| i.as_u64().unwrap_or(0) as u8)
-        .collect();
-
-    if indices.is_empty() {
-        return Err("Received invalid handshake. This is a bug!".into());
-    }
-
     info!("[on_handshake] Good posture ✅");
 
-    // Store the new indices for future use
-    if let Err(e) = set_indices(indices.to_owned()) {
-        return Err(e.into());
+    // Set the nonce indices
+    match message.data.get("indices") {
+        Some(serde_json::Value::Array(arr)) => {
+            let indices: Vec<u8> = arr
+                .iter()
+                .filter_map(|i| i.as_u64().map(|n| n as u8))
+                .collect();
+
+            if indices.is_empty() {
+                return Err("missing_nonce_indices".into());
+            }
+
+            // Store the new indices for future use
+            if let Err(e) = set_indices(indices.to_owned()) {
+                return Err(e.into());
+            }
+        }
+        _ => return Err("missing_nonce_indices".into()),
     }
+
+    info!("[on_handshake] Eye contact ✅");
+
+    // Set the session ID
+    match message.data.get("session_id") {
+        Some(serde_json::Value::String(session_id)) => {
+            if session_id.is_empty() {
+                return Err("missing_session_id".into());
+            }
+
+            set_session_id(&session_id);
+        }
+        _ => return Err("missing_session_id".into()),
+    }
+
+    info!("[on_handshake] And a firm grip ✅");
 
     let message = message.set_data(Data::default());
     request.value = message.as_bytes()?;
 
-    info!("[on_handshake] Eye contact ✅");
-
     // Since we've successfully set the nonce indices, we're good to start sending encrypted data
     ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
 
-    info!("[on_handshake] And a firm grip ✅");
+    info!("[on_handshake] Laugh at using v1 jokes ✅");
 
     send_request(request)
 }
