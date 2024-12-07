@@ -345,6 +345,13 @@ impl Builder {
             )
     }
 
+    pub fn build_os(&self) -> &'static str {
+        match self.args.build_os() {
+            BuildOS::Linux => "linux",
+            BuildOS::Windows => "windows",
+        }
+    }
+
     pub fn update_arma(&self) -> bool {
         let script = "[ -f /arma3server/arma3server ] && echo \"true\"";
 

@@ -56,6 +56,7 @@ impl Directory {
 
         System::new()
             .script(script)
+            .target_os(builder.build_os())
             .execute_remote(&builder.build_server)?;
         Ok(())
     }

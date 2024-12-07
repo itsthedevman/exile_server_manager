@@ -226,6 +226,7 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
                     "for pid in $(ps -ef | awk '/{}/ {{print $2}}'); do kill -9 $pid; done",
                     LINUX_EXES.join("|")
                 ))
+                .target_os(builder.build_os())
                 .execute_remote(&builder.build_server)?;
         }
         BuildOS::Windows => {
@@ -236,7 +237,7 @@ pub fn kill_arma(builder: &mut Builder) -> BuildResult {
                     .map(|exe| format!("Get-Process -Name '{exe}' -ErrorAction SilentlyContinue | Stop-Process -Force;"))
                     .collect::<Vec<String>>().join(" ")
                 )
-                .windows()
+                .target_os(builder.build_os())
                 .execute_remote(&builder.build_server)?;
         }
     }
@@ -298,8 +299,9 @@ for file in ${{files[@]}}; do [[ ! -f "{server_path}/@esm/$file" ]] && echo "reb
         }
     };
 
-    let result = System::new()
+    let result: String = System::new()
         .script(script)
+        .target_os(builder.build_os())
         .add_detection("rebuild")
         .execute_remote(&builder.build_server)?;
 
@@ -467,6 +469,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
 
     System::new()
         .script(script)
+        .target_os(builder.build_os())
         .add_error_detection("error")
         .print()
         .execute_remote(&builder.build_server)?;
@@ -592,6 +595,7 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
 
     let result = System::new()
         .script(script)
+        .target_os(builder.build_os())
         .add_detection("p_drive_mounted")
         .execute_remote(&builder.build_server)?;
 
@@ -619,6 +623,7 @@ pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
 
     System::new()
         .command(script)
+        .target_os(builder.build_os())
         .add_error_detection("p_drive_not_mounted")
         .execute_remote(&builder.build_server)?;
 
@@ -815,12 +820,15 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
         BuildOS::Windows => {
             format!(
                 r#"
-cd '{build_path}\\esm';
+`$env:OPENSSL_DIR = 'C:\Program Files\OpenSSL-Win64';
+`$env:OPENSSL_STATIC = 'true';
+`$env:OPENSSL_LIB_DIR = 'C:\Program Files\OpenSSL-Win64\lib\VC\x64\MD';
 
+cd '{build_path}\esm';
 rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
 
-Copy-Item '{build_path}\\esm\\target\\{build_target}\\{build_dir}\\esm_arma.dll' -Destination '{build_path}\\@esm\\{file_name}.dll';
-"#
+Copy-Item '{build_path}\esm\target\{build_target}\{build_dir}\esm_arma.dll' -Destination '{build_path}\@esm\{file_name}.dll';
+            "#
             )
         }
         BuildOS::Linux => {
@@ -838,6 +846,7 @@ cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_p
 
     System::new()
         .script(script)
+        .target_os(builder.build_os())
         .add_error_detection(r"error: .+")
         .add_detection(r"warning")
         .print_as("cargo (esm)")
@@ -856,7 +865,13 @@ pub fn create_release_build(builder: &mut Builder) -> BuildResult {
     }
 
     match builder.args.build_os() {
-        BuildOS::Windows => {}
+        BuildOS::Windows => {
+            System::new()
+                .script("Copy-Item '{build_path}\\@esm' -Destination 'Z:\\exile_server_manager\\@esm'")
+                .target_os(builder.build_os())
+                .print()
+                .execute_remote(&builder.build_server)?;
+        }
         BuildOS::Linux => {
             System::new()
                 .command("docker")
@@ -865,7 +880,6 @@ pub fn create_release_build(builder: &mut Builder) -> BuildResult {
                     &format!("{ARMA_CONTAINER}:{build_path}/@esm"),
                     &destination_path.display().to_string(),
                 ])
-                .add_error_detection("no such")
                 .print()
                 .execute(None)?;
         }
@@ -921,6 +935,7 @@ mkdir -p {ARMA_PATH}/server_profile;
 
     System::new()
         .script(script)
+        .target_os(builder.build_os())
         .execute_remote(&builder.build_server)?;
 
     Ok(())

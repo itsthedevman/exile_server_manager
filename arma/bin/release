@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -uo pipefail
+set -ueo pipefail
 trap "exit" INT
 
 readonly root_dir="$(pwd)"
@@ -46,6 +46,20 @@ rm $build_dir/addons/esm_test.pbo || true
 run_command cp -rf $build_dir $release_dir
 
 # echo
+# echo_step "Building esm.dll"
+
+# # Extension - Windows (x32)
+# run_command ./bin/build --only=extension --env=production --release --target=windows --x32
+# run_command cp $build_dir/esm.dll $release_dir/@esm
+
+echo
+echo_step "Building esm_x64.dll"
+
+# Extension - Windows (x64)
+run_command ./bin/build --only=extension --env=production --release --target=windows
+run_command cp $build_dir/esm_x64.dll $release_dir/@esm
+
+# echo
 # echo_step "Building esm.so"
 
 # # Extension - Linux (x32)
@@ -58,20 +72,6 @@ echo_step "Building esm_x64.so"
 # Extension - Linux (x64)
 run_command ./bin/build --only=extension --env=production --release --target=linux
 run_command cp $build_dir/esm_x64.so $release_dir/@esm
-
-echo
-echo_step "Building esm.dll"
-
-# Extension - Windows (x32)
-run_command ./bin/build --only=extension --env=production --release --target=windows --x32
-run_command cp $build_dir/esm.dll $release_dir/@esm
-
-echo
-echo_step "Building esm_x64.dll"
-
-# Extension - Windows (x64)
-run_command ./bin/build --only=extension --env=production --release --target=windows
-run_command cp $build_dir/esm_x64.dll $release_dir/@esm
 
 echo
 echo_step "Zipping @esm"

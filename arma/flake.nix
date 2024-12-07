@@ -39,9 +39,6 @@
             pkg-config
             openssl_3
             openssl.dev
-            pkgsCross.mingwW64.buildPackages.gcc # For 64-bit Windows targets
-            pkgsCross.mingw32.buildPackages.gcc # For 32-bit Windows targets
-            pkgsCross.mingwW64.windows.pthreads
 
             # Docker tools (for containerization)
             docker-compose
@@ -52,7 +49,6 @@
           ];
 
           shellHook = ''
-            LIBRARY_PATH="${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib";
             OPENSSL_LIB="${pkgs.openssl_3.out}/lib"
 
             echo "setting up binary wrappers..."
@@ -77,8 +73,6 @@
           # Environment variables
           RUST_BACKTRACE = "1";
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
-          CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = "${pkgs.pkgsCross.mingwW64.buildPackages.gcc}/bin/x86_64-w64-mingw32-gcc";
-          CC_x86_64_pc_windows_gnu = "${pkgs.pkgsCross.mingwW64.buildPackages.gcc}/bin/x86_64-w64-mingw32-gcc";
         };
       }
     );

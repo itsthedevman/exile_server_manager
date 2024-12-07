@@ -151,13 +151,8 @@ impl System {
         }
     }
 
-    pub fn windows(&mut self) -> &mut Self {
-        self.target_os = "windows".into();
-        self
-    }
-
-    pub fn linux(&mut self) -> &mut Self {
-        self.target_os = "linux".into();
+    pub fn target_os(&mut self, target_os: &str) -> &mut Self {
+        self.target_os = target_os.into();
         self
     }
 
@@ -166,7 +161,10 @@ impl System {
         self
     }
 
-    pub fn script<S: AsRef<str> + std::fmt::Display>(&mut self, script: S) -> &mut Self {
+    pub fn script<S: AsRef<str> + std::fmt::Display>(
+        &mut self,
+        script: S,
+    ) -> &mut Self {
         self.script = WHITESPACE_REGEX
             .replace_all(script.as_ref(), " ")
             .to_string();
@@ -244,7 +242,10 @@ impl System {
                 self.command("powershell");
 
                 self.arguments.clear();
-                self.arguments(&["Invoke-Expression", &format!("\"{}\"", self.script)]);
+                self.arguments(&[
+                    "Invoke-Expression",
+                    &format!("\"{}\"", self.script),
+                ]);
             } else {
                 self.command("bash");
 
@@ -532,7 +533,12 @@ impl System {
         Ok(result)
     }
 
-    fn remote_print(&self, print_as: &str, content: &str, endpoint: &dyn NetworkSend) {
+    fn remote_print(
+        &self,
+        print_as: &str,
+        content: &str,
+        endpoint: &dyn NetworkSend,
+    ) {
         if let Err(e) = endpoint.send(Command::Print {
             label: print_as.to_string(),
             content: content.to_string(),
