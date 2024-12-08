@@ -37,11 +37,11 @@ build_config.yml
 .build-sha
 
 # Because it's a big mod
-server/@exile/addons/*.pbo
-server/@exile/addons/*.exile.bisign
-server/@exile/addons/*.txt
-server/@exile/mod.paa
-server/@exileserver/logs
+tools/server/@exile/addons/*.pbo
+tools/server/@exile/addons/*.exile.bisign
+tools/server/@exile/addons/*.txt
+tools/server/@exile/mod.paa
+tools/server/@exileserver/logs
 
 .direnv/
 .env

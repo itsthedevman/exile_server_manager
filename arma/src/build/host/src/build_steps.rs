@@ -47,6 +47,7 @@ pub fn wait_for_container(_builder: &mut Builder) -> BuildResult {
 pub fn check_for_files(builder: &mut Builder) -> BuildResult {
     let exile_path = builder
         .local_git_path
+        .join("tools")
         .join("server")
         .join("@exile")
         .join("addons");
@@ -207,8 +208,6 @@ pub fn build_receiver(builder: &mut Builder) -> BuildResult {
 pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
     prepare_directories(builder)?;
-    // transfer_mikeros_tools(builder)?;
-    create_test_files(builder)?;
 
     if !builder.args.release {
         create_server_config(builder)?;
@@ -465,34 +464,6 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         .execute_remote(&builder.build_server)?;
 
     Ok(())
-}
-
-pub fn transfer_mikeros_tools(builder: &mut Builder) -> BuildResult {
-    let mikero_path = builder
-        .local_git_path
-        .join("tools")
-        .join("pbo_tools")
-        .join(builder.args.build_os().to_string());
-
-    Directory::transfer(builder, mikero_path, builder.remote_build_path().to_owned())
-}
-
-pub fn create_test_files(builder: &mut Builder) -> BuildResult {
-    let source_path = builder.local_git_path.join("server");
-
-    crate::File::transfer(
-        builder,
-        source_path.to_owned(),
-        Path::new("/tmp").to_path_buf(),
-        "test.rpt",
-    )?;
-
-    crate::File::transfer(
-        builder,
-        source_path.to_owned(),
-        Path::new(&builder.remote.server_path).to_path_buf(),
-        "test.log",
-    )
 }
 
 pub fn create_server_config(builder: &mut Builder) -> BuildResult {

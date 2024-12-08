@@ -3,9 +3,11 @@ services:
     build: .
     container_name: ESM_ARMA_SERVER
     volumes:
-      - './server/@exile:/arma3server/@exile'
-      - './server/@exileserver:/arma3server/@exileserver'
-      - './server/mpmissions:/arma3server/mpmissions'
+      - './tools/server/@exile:/arma3server/@exile'
+      - './tools/server/@exileserver:/arma3server/@exileserver'
+      - './tools/server/mpmissions:/arma3server/mpmissions'
+      - './tools/server/test.log:/arma3server/test.log'
+      - './tools/server/test.rpt:/tmp/test.rpt'
       - 'server-data:/arma3server'
       - 'steam-data:/steamcmd'
       - 'tmp-data:/tmp'
