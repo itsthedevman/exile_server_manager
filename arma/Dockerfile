@@ -40,6 +40,7 @@ RUN apt-get update \
         # x32
         gcc-multilib \
         g++-multilib \
+        zlib1g:i386 \
         libssl-dev:i386 \
         libc6-dev-i386 \
     # Cleanup
@@ -56,7 +57,7 @@ ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
 
 # Install PBO library
 RUN rustup update  \
-    && rustup target add i686-unknown-linux-gnu \
+    && rustup toolchain install stable-i686-unknown-linux-gnu \
     && cargo install armake2
 
 # SteamCMD

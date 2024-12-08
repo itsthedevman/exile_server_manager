@@ -48,7 +48,7 @@ run_command cp -rf $build_dir $release_dir
 # echo
 # echo_step "Building esm.dll"
 
-# # Extension - Windows (x32)
+# Extension - Windows (x32)
 # run_command ./bin/build --only=extension --env=production --release --target=windows --x32
 # run_command cp $build_dir/esm.dll $release_dir/@esm
 
@@ -59,12 +59,12 @@ echo_step "Building esm_x64.dll"
 run_command ./bin/build --only=extension --env=production --release --target=windows
 run_command cp $build_dir/esm_x64.dll $release_dir/@esm
 
-# echo
-# echo_step "Building esm.so"
+echo
+echo_step "Building esm.so"
 
-# # Extension - Linux (x32)
-# run_command ./bin/build --only=extension --env=production --release --target=linux
-# run_command cp $build_dir/esm_x64.so $release_dir/@esm
+# Extension - Linux (x32)
+run_command ./bin/build --only=extension --env=production --release --target=linux --x32
+run_command cp $build_dir/esm.so $release_dir/@esm
 
 echo
 echo_step "Building esm_x64.so"
