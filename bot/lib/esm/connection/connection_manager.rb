@@ -3,18 +3,19 @@
 module ESM
   module Connection
     class ConnectionManager
-      def initialize(lobby_timeout: 3, heartbeat_timeout: 5, execution_interval: 1)
+      def initialize(lobby_timeout: 3, heartbeat_timeout: 2, execution_interval: 0.5)
         @lobby_timeout = lobby_timeout
         @heartbeat_timeout = heartbeat_timeout
 
         @lobby = Concurrent::Array.new
         @ids_to_check = Concurrent::Array.new
         @connections = Concurrent::Map.new
+        @pool = Concurrent::CachedThreadPool.new
 
         @lobby_task = Concurrent::TimerTask.execute(execution_interval:) { check_lobby }
         @lobby_task.add_observer(ErrorHandler.new)
 
-        @heartbeat = Concurrent::TimerTask.execute(execution_interval: 2.5) { check_connections }
+        @heartbeat = Concurrent::TimerTask.execute(execution_interval:) { check_connections }
         @heartbeat.add_observer(ErrorHandler.new)
       end
 
@@ -64,10 +65,12 @@ module ESM
         client = find(id)
         return if client.nil?
 
-        response = client.write(type: :heartbeat).wait_for_response(@heartbeat_timeout)
-        return @ids_to_check << id if response.fulfilled?
+        @pool.post do
+          response = client.write(type: :heartbeat).wait_for_response(@heartbeat_timeout)
+          return @ids_to_check << id if response.fulfilled?
 
-        client.close
+          client.close
+        end
       end
     end
   end
