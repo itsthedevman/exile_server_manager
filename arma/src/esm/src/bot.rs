@@ -366,6 +366,7 @@ fn on_disconnect() {
     CONNECTED.store(false, Ordering::SeqCst);
 
     reset_indices();
+    reset_session_id();
     ENCRYPTION_ENABLED.store(false, Ordering::SeqCst);
 
     // Get the current reconnection count and calculate the wait time

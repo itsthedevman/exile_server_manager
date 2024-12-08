@@ -41,6 +41,10 @@ pub fn set_session_id(session_id: &str) {
     *lock!(SESSION_ID) = Some(session_id.to_owned());
 }
 
+pub fn reset_session_id() {
+    *lock!(SESSION_ID) = None;
+}
+
 pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
     if server_key.len() < 32 {
         return Err("Server key must contain at least 32 bytes".into());
