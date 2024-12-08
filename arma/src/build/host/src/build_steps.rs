@@ -357,19 +357,6 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
         }
     }
 
-    if builder.args.release {
-        let release_path = builder.local_git_path.join("release");
-        if !release_path.exists() {
-            fs::create_dir_all(&release_path)?;
-        }
-
-        let release_path = builder.local_build_path.join("esm-release");
-        if release_path.exists() {
-            fs::remove_dir_all(&release_path)?;
-            fs::create_dir_all(&release_path)?;
-        }
-    }
-
     // Remove some build files
     let paths = vec![
         "@esm.zip",
@@ -450,7 +437,10 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 rm -rf "{server_path}/@esm";
                 rm -rf "{server_path}/@exileserver/logs";
 
-                {rebuild_mod} && rm -rf "{build_path}/@esm";
+                if {rebuild_mod}; then
+                    rm -rf "{build_path}/@esm";
+                fi;
+
                 if {rebuild_extension}; then
                     mv "{build_path}/esm/target" "{build_path}/esm_target";
                     rm -rf "{build_path}/esm";
@@ -769,7 +759,7 @@ destination_file="{build_path}/{addon}.pbo";
     )?;
 
     // Copy extra directories and files
-    for directory in ["optionals", "sql"].iter() {
+    for directory in ["optionals", "sql", "README.md"].iter() {
         Directory::transfer(
             builder,
             source_path.join(directory),

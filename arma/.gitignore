@@ -46,3 +46,6 @@ server/@exileserver/logs
 .direnv/
 .env
 tools/wrappers/
+
+release/@esm/
+!release/@esm*.zip
