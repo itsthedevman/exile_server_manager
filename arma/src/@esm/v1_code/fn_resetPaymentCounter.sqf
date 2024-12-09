@@ -1,1 +1,0 @@
-["reset_payment_counter", [["uid", _this]]] call ESM_fnc_callExtension;
