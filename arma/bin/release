@@ -12,7 +12,7 @@ readonly build_dir=$root_dir/target/@esm
 readonly release_dir=$root_dir/release
 
 # Annoying workaround for windows
-readonly public_dir=$root_dir/../../Public
+readonly public_dir="$(dirname "$(dirname "$root_dir")")/Public/exile_server_manager/@esm"
 
 readonly git_rev=$(git rev-parse --short HEAD)
 readonly crate_version=$(
@@ -46,6 +46,7 @@ function run_command() {
 # Preparation
 echo_step "Preparing"
 run_command rm -rf $build_dir
+run_command rm -rf $public_dir
 run_command rm -rf $release_dir
 run_command mkdir -p $release_dir
 
@@ -65,14 +66,14 @@ run_command cp -rf $build_dir $release_dir
 ##################################
 # Extension - Windows (x32)
 echo_step "Building esm.dll"
-# run_command ./bin/build --only=extension --env=production --release --target=windows --x32
-# run_command cp $public_dir/exile_server_manager/@esm/esm.dll $release_dir/@esm
+run_command ./bin/build --only=extension --env=production --release --target=windows --x32
+run_command cp $public_dir/esm.dll $release_dir/@esm
 
 ##################################
 # Extension - Windows (x64)
 echo_step "Building esm_x64.dll"
-# run_command ./bin/build --only=extension --env=production --release --target=windows
-# run_command cp $public_dir/exile_server_manager/@esm/esm_x64.dll $release_dir/@esm
+run_command ./bin/build --only=extension --env=production --release --target=windows
+run_command cp $public_dir/esm_x64.dll $release_dir/@esm
 
 ##################################
 # Extension - Linux (x32)

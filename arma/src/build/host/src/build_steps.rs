@@ -842,8 +842,9 @@ pub fn create_release_build(builder: &mut Builder) -> BuildResult {
     match builder.args.build_os() {
         BuildOS::Windows => {
             System::new()
-                .script("Copy-Item '{build_path}\\@esm' -Destination 'Z:\\exile_server_manager\\@esm'")
+                .script(&format!("Copy-Item '{build_path}\\@esm' -Destination 'Z:\\exile_server_manager\\@esm' -Recurse -Force"))
                 .target_os(builder.build_os())
+                .add_error_detection("Error")
                 .print()
                 .execute_remote(&builder.build_server)?;
         }
@@ -855,6 +856,7 @@ pub fn create_release_build(builder: &mut Builder) -> BuildResult {
                     &format!("{ARMA_CONTAINER}:{build_path}/@esm"),
                     &destination_path.display().to_string(),
                 ])
+                .add_error_detection("error")
                 .print()
                 .execute(None)?;
         }
