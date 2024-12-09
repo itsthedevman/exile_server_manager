@@ -147,7 +147,11 @@ en:
   dm: "Direct Message"
   text: "Text"
   message: "Message"
-  server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`"
-  server_disconnected: ":red_circle: **`%{server}` disconnected.** Uptime: `%{uptime}`"
-  server_disconnected_esm_stopping: ":red_circle: Exile Server Manager is rebooting, `%{server}` will reconnect shortly. Uptime: `%{uptime}`"
   xm8_notification: "XM8 notification"
+  server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`"
+  server_disconnect:
+    base: ":red_circle: **`%{server}`** disconnected. %{reason}. Uptime: `%{uptime}`"
+    reasons:
+      normal: "Your server will reconnect shortly"
+      restart: "ESM is restarting. Your server will reconnect shortly"
+      settings_update: "The server's settings have been updated. Your server will reconnect shortly"

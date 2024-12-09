@@ -35,13 +35,13 @@ module ESM
         @metadata = Metadata.new(**)
       end
 
-      def close
+      def close(reason = "")
         @task.shutdown
 
         ESM.connection_server.on_disconnect(self)
 
         ESM::Database.with_connection do
-          on_disconnect
+          on_disconnect(reason)
         end
 
         @socket.close

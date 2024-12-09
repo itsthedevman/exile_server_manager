@@ -24,15 +24,6 @@ module ESM
         send_post_init
       end
 
-      # Called when an admin updates some settings.
-      def update
-        # We need to let the DLL know some stuff (namely a lot of stuff)
-        build_setting_data
-
-        # Send message to server
-        send_post_init
-      end
-
       private
 
       def initialize_server

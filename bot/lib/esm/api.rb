@@ -41,11 +41,18 @@ module ESM
       server = ESM::Server.where(id: id).first
       return if server.nil?
 
-      connection = ESM::Websocket.connection(server.server_id)
-      return true if connection.nil?
+      if server.v2?
+        connection = server.connection
+        return true if connection.nil?
 
-      # Tell ESM to update the server with the new details
-      ESM::Event::ServerInitializationV1.new(connection: connection, server: server, parameters: {}).update
+        connection.close(I18n.t("server_reconnect.reasons.settings_update"))
+      else
+        connection = ESM::Websocket.connection(server.server_id)
+        return true if connection.nil?
+
+        # Tell ESM to update the server with the new details
+        ESM::Event::ServerInitializationV1.new(connection: connection, server: server, parameters: {}).update
+      end
     end
 
     # If a community changes their ID, their servers need to disconnect and reconnect
