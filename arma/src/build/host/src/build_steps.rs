@@ -779,11 +779,25 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
 
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
+            let env = match builder.args.build_arch() {
+                BuildArch::X32 => {
+                    r#"
+`$env:OPENSSL_DIR = 'C:\Program Files (x86)\OpenSSL-Win32';
+`$env:OPENSSL_LIB_DIR = 'C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD';
+                "#
+                }
+                BuildArch::X64 => {
+                    r#"
+`$env:OPENSSL_DIR = 'C:\Program Files\OpenSSL-Win64';
+`$env:OPENSSL_LIB_DIR = 'C:\Program Files\OpenSSL-Win64\lib\VC\x64\MD';
+                "#
+                }
+            };
+
             format!(
                 r#"
-`$env:OPENSSL_DIR = 'C:\Program Files\OpenSSL-Win64';
+{env}
 `$env:OPENSSL_STATIC = 'true';
-`$env:OPENSSL_LIB_DIR = 'C:\Program Files\OpenSSL-Win64\lib\VC\x64\MD';
 
 cd '{build_path}\esm';
 rustup run stable-{build_target} cargo build --target {build_target} {release_flag} {features};
