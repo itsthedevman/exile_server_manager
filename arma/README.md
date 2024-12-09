@@ -19,6 +19,12 @@ This repository contains the Rust extension and Arma 3 server mod that enables c
 - Docker & Docker Compose
 - Git
 
+For Windows development, you'll also need to install these Rust targets:
+```bash
+rustup install stable-x86_64-pc-windows-gnu
+rustup install stable-i686-pc-windows-gnu
+```
+
 ### Setup
 
 #### Method 1: Using Nix (Recommended)
