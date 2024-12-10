@@ -70,7 +70,7 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
                     }
 
                     let server_address = crate::CONFIG
-                        .connection_url
+                        .connection_uri
                         .to_socket_addrs()
                         .unwrap()
                         .next()

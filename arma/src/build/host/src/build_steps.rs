@@ -469,13 +469,13 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
 pub fn create_server_config(builder: &mut Builder) -> BuildResult {
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Config {
-        connection_url: String,
+        connection_uri: String,
         log_level: String,
         additional_logs: Vec<String>,
     }
 
     let config = Config {
-        connection_url: builder.args.bot_host().to_string(),
+        connection_uri: builder.args.bot_host().to_string(),
         log_level: builder.args.log_level().to_string(),
         additional_logs: vec!["test.log".to_string(), "/tmp/test.rpt".to_string()],
     };

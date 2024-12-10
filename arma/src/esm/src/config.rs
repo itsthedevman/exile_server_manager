@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
-    #[serde(default = "default_connection_url")]
-    pub connection_url: String,
+    #[serde(default = "default_connection_uri")]
+    pub connection_uri: String,
 
     #[serde(default = "default_logging_path")]
     pub logging_path: String,
@@ -43,7 +43,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            connection_url: default_connection_url(),
+            connection_uri: default_connection_uri(),
             logging_path: default_logging_path(),
             log_level: default_log_level(),
             extdb_conf_path: default_extdb_conf_path(),
@@ -59,8 +59,8 @@ impl Default for Config {
     }
 }
 
-fn default_connection_url() -> String {
-    "https://arma.esmbot.com".into()
+fn default_connection_uri() -> String {
+    "arma.esmbot.com:2035".into()
 }
 
 fn default_logging_path() -> String {
@@ -152,17 +152,17 @@ impl Config {
     }
 
     fn validate_connection_url(&self) -> ConfigResult {
-        match std::net::ToSocketAddrs::to_socket_addrs(&self.connection_url) {
+        match std::net::ToSocketAddrs::to_socket_addrs(&self.connection_uri) {
             Ok(mut addr) => match addr.next() {
                 Some(_socket_addr) => Ok(()),
                 None => Err(format!(
                     "Failed to convert connection url -> {:?}",
-                    self.connection_url
+                    self.connection_uri
                 )),
             },
             Err(e) => Err(format!(
                 "Failed to parse connection url -> {:?}. Reason: {}",
-                self.connection_url, e
+                self.connection_uri, e
             )),
         }
     }
