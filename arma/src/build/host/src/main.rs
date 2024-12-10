@@ -25,6 +25,7 @@ pub use server::*;
 
 use std::{
     fmt::{self, Display},
+    path::{Path, PathBuf},
     process::exit,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -109,9 +110,13 @@ pub struct Args {
     #[arg(short, long)]
     start_server: bool,
 
-    // Builds everything and copies it to the release directory
+    /// Builds mod and extension with the production environment
     #[arg(short, long)]
     release: bool,
+
+    /// Path to the esm.key file to use, useful with --release --start-server
+    #[arg(short, long)]
+    key_file: String,
 }
 
 impl Args {
@@ -157,6 +162,14 @@ impl Args {
 
     pub fn start_server(&self) -> bool {
         self.start_server
+    }
+
+    pub fn has_key_file(&self) -> bool {
+        !self.key_file.is_empty() && self.key_file_path().exists()
+    }
+
+    pub fn key_file_path(&self) -> PathBuf {
+        Path::new(&self.key_file).to_path_buf()
     }
 }
 

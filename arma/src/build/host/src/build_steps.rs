@@ -209,7 +209,11 @@ pub fn prepare_to_build(builder: &mut Builder) -> BuildResult {
     kill_arma(builder)?;
     prepare_directories(builder)?;
 
-    if !builder.args.release {
+    if builder.args.release {
+        if builder.args.has_key_file() {
+            copy_esm_key_file(builder)?;
+        }
+    } else {
         create_server_config(builder)?;
         create_esm_key_file(builder)?;
     }
@@ -543,52 +547,14 @@ pub fn create_esm_key_file(builder: &mut Builder) -> BuildResult {
     Ok(())
 }
 
-pub fn check_for_p_drive(builder: &mut Builder) -> BuildResult {
-    assert!(matches!(builder.args.build_os(), BuildOS::Windows));
+pub fn copy_esm_key_file(builder: &mut Builder) -> BuildResult {
+    let source_path = builder.args.key_file_path();
 
-    let script = r#"
-            if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
-                "p_drive_mounted";
-            }} else {{
-                "p_drive_not_mounted";
-            }}
-        "#;
-
-    let result = System::new()
-        .script(script)
-        .target_os(builder.build_os())
-        .add_detection("p_drive_mounted")
-        .execute_remote(&builder.build_server)?;
-
-    // Continue building
-    if result == "p_drive_mounted" {
-        return Ok(());
-    }
-
-    // WorkDrive.exe will keep a window open that requires user input
-    println!("{}", "paused\nWaiting for input...".yellow());
-    println!("Please confirm Window's UAC and then press any key on the window that WorkDrive has opened");
-
-    let script = format!(
-        r#"
-                Start-Process -Wait -FilePath "{build_path}\windows\WorkDrive.exe" -ArgumentList "/Mount";
-
-                if (Get-PSDrive P -ErrorAction SilentlyContinue) {{
-                    "p_drive_mounted";
-                }} else {{
-                    "p_drive_not_mounted";
-                }}
-            "#,
-        build_path = builder.remote_build_path_str(),
-    );
-
-    System::new()
-        .command(script)
-        .target_os(builder.build_os())
-        .add_error_detection("p_drive_not_mounted")
-        .execute_remote(&builder.build_server)?;
-
-    Ok(())
+    crate::File::transfer_exact(
+        builder,
+        source_path,
+        builder.remote_build_path().join("@esm"),
+    )
 }
 
 fn compile_mod(builder: &mut Builder) -> BuildResult {

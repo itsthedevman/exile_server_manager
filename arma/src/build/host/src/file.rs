@@ -14,7 +14,35 @@ impl File {
         destination_path: PathBuf,
         file_name: &str,
     ) -> BuildResult {
-        let source_path = &source_path.join(file_name);
+        let source_path = source_path.join(file_name);
+        Self::transfer_to_remote(builder, &source_path, &destination_path)
+    }
+
+    pub fn transfer_exact(
+        builder: &mut Builder,
+        source_path: PathBuf,
+        destination_path: PathBuf,
+    ) -> BuildResult {
+        Self::transfer_to_remote(builder, &source_path, &destination_path)
+    }
+
+    pub fn copy(source: &Path, destination: &Path) -> BuildResult {
+        assert!(source.is_file());
+
+        std::fs::copy(source, destination)?;
+        Ok(())
+    }
+
+    fn transfer_to_remote(
+        builder: &mut Builder,
+        source_path: &PathBuf,
+        destination_path: &PathBuf,
+    ) -> BuildResult {
+        let Some(file_name) = source_path.file_name() else {
+            return Err(
+                format!("Missing filename from {}", source_path.display()).into()
+            );
+        };
 
         let bytes = std::fs::read(source_path)
             .map_err(|e| format!("Failed to read file: {source_path:?}. {e}"))?;
@@ -25,7 +53,7 @@ impl File {
         let id = Uuid::new_v4();
         let transfer = FileTransfer {
             id,
-            file_name: file_name.to_string(),
+            file_name: file_name.to_string_lossy().to_string(),
             destination_path: destination_path.to_string_lossy().to_string(),
             number_of_chunks: if total_size < CHUNK_SIZE {
                 1
@@ -57,13 +85,6 @@ impl File {
 
         builder.build_server.send(Command::FileTransferEnd(id))?;
 
-        Ok(())
-    }
-
-    pub fn copy(source: &Path, destination: &Path) -> BuildResult {
-        assert!(source.is_file());
-
-        std::fs::copy(source, destination)?;
         Ok(())
     }
 }
