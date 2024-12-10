@@ -3,7 +3,7 @@
 module ESM
   module Connection
     class ConnectionManager
-      def initialize(lobby_timeout: 3, heartbeat_timeout: 2, execution_interval: 0.5)
+      def initialize(lobby_timeout: 3, heartbeat_timeout: 3, execution_interval: 0.5)
         @lobby_timeout = lobby_timeout
         @heartbeat_timeout = heartbeat_timeout
 
@@ -64,10 +64,17 @@ module ESM
 
         client = find(id)
         return if client.nil?
+        return @ids_to_check << id if client.recent_heartbeat?
 
         @pool.post do
           response = client.write(type: :heartbeat).wait_for_response(@heartbeat_timeout)
-          return @ids_to_check << id if response.fulfilled?
+
+          if response.fulfilled?
+            client.update_last_heartbeat
+            @ids_to_check << id
+
+            return
+          end
 
           client.close
         end

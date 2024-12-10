@@ -5,6 +5,8 @@ module ESM
     class Client
       include Lifecycle
 
+      HEARTBEAT_INTERVAL = 3 # seconds
+
       Metadata = ImmutableStruct.define(:vg_enabled, :vg_max_sizes)
 
       attr_reader :public_id, :server_id, :connected_at, :session_id
@@ -28,6 +30,8 @@ module ESM
         @task.add_observer(ErrorHandler.new)
 
         @connected_at = Time.current
+        @last_heartbeat = Time.current
+
         info!(address:, state: :on_connect)
       end
 
@@ -151,6 +155,14 @@ module ESM
 
         # Once the promise is executed, write the content to the client
         promise.then { @socket.write(content) }
+      end
+
+      def update_last_heartbeat
+        @last_heartbeat = Time.current
+      end
+
+      def recent_heartbeat?
+        (Time.current - @last_heartbeat) < HEARTBEAT_INTERVAL.seconds
       end
 
       private

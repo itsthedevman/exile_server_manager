@@ -3,7 +3,7 @@
 module ESM
   class ServerSetting < ApplicationRecord
     CONFIG_DEFAULTS = {
-      connection_url: "",
+      connection_uri: "",
       log_level: "info",
       logging_path: "",
       extdb_conf_path: "",
