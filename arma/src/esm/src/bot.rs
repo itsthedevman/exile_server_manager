@@ -476,7 +476,7 @@ fn on_handshake(mut request: Request) -> ESMResult {
         _ => return Err("missing_session_id".into()),
     }
 
-    info!("[on_handshake] And a firm grip ✅");
+    info!("[on_handshake] Firm grip ✅");
 
     let message = message.set_data(Data::default());
     request.value = message.as_bytes()?;
@@ -484,7 +484,7 @@ fn on_handshake(mut request: Request) -> ESMResult {
     // Since we've successfully set the nonce indices, we're good to start sending encrypted data
     ENCRYPTION_ENABLED.store(true, Ordering::SeqCst);
 
-    info!("[on_handshake] Laugh at using v1 jokes ✅");
+    info!("[on_handshake] and laugh at old jokes ✅");
 
     send_request(request)
 }
