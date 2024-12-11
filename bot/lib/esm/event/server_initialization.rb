@@ -124,7 +124,9 @@ module ESM
           end.flatten
 
         # Pluck all the steam UIDs we have, including the guild owners
-        ESM::User.where(discord_id: discord_ids + [@discord_server.owner.id.to_s]).where.not(steam_uid: nil).pluck(:steam_uid)
+        ESM::User.where(discord_id: discord_ids + [@discord_server.owner.id.to_s])
+          .where.not(steam_uid: nil)
+          .pluck(:steam_uid)
       end
 
       def send_post_init
@@ -134,12 +136,10 @@ module ESM
 
         @tcp_client.send_message(message)
 
-        info!(server_id: @model.server_id, uptime: @model.uptime)
+        embed = @model.status_embed(:connected)
+        @model.community.log_event(:reconnect, embed)
 
-        @model.community.log_event(
-          :reconnect,
-          I18n.t("server_connected", server: @model.server_id, uptime: @model.uptime)
-        )
+        info!(server_id: @model.server_id, uptime: @model.uptime)
       end
     end
   end

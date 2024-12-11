@@ -187,6 +187,26 @@ module ESM
       result
     end
 
+    def status_embed(status, reason: "")
+      ESM::Embed.build do |e|
+        e.color = (status == :connected) ? :green : :red
+        e.title = "#{server_name} (`#{server_id}`)"
+
+        if status == :connected
+          e.description = I18n.t("server_connected")
+        else
+          description = I18n.t("server_disconnect.base")
+          description += "\n#{reason}" if reason.present?
+
+          e.description = description
+
+          e.footer = I18n.t("server_disconnect.footer")
+        end
+
+        e.add_field(name: I18n.t("uptime"), value: uptime, inline: true)
+      end
+    end
+
     private
 
     def generate_public_id

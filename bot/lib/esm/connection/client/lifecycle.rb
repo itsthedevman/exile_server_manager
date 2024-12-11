@@ -117,7 +117,6 @@ module ESM
           return if @public_id.nil?
 
           model = ESM::Server.find_by_public_id(@public_id)
-          uptime = model.uptime
 
           model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
 
@@ -126,14 +125,12 @@ module ESM
               reason
             elsif ESM.bot.stopping?
               I18n.t("server_disconnect.reasons.restart")
-            else
-              I18n.t("server_disconnect.reasons.normal")
             end
 
-          info!(public_id:, server_id:, uptime:, reason:)
+          embed = model.status_embed(:disconnected, reason:)
+          model.community.log_event(:reconnect, embed)
 
-          message = I18n.t("server_disconnect.base", server: server_id, uptime:, reason:)
-          model.community.log_event(:reconnect, message)
+          info!(public_id:, server_id:, uptime: model.uptime, reason:)
         end
 
         def on_request(content)

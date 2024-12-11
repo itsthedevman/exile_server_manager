@@ -153,10 +153,11 @@ en:
   text: "Text"
   message: "Message"
   xm8_notification: "XM8 notification"
-  server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`."
+  uptime: "Uptime"
+  server_connected: "**Server is now online**"
   server_disconnect:
-    base: ":red_circle: **`%{server}` disconnected.** Uptime: `%{uptime}`. %{reason}."
+    base: "**Server has gone offline**"
+    footer: "ESM will reconnect automatically when your server is back online"
     reasons:
-      normal: "ESM will reconnect automatically when your server is back online"
       restart: "ESM is restarting. Your server will reconnect shortly"
       settings_update: "The server's settings have been updated. Your server will reconnect shortly"
