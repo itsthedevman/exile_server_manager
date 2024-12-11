@@ -128,8 +128,7 @@ pub async fn update_id_and_names(
     connection: &mut Conn,
     mut territories: Vec<Territory>,
 ) -> Result<Vec<Territory>, QueryError> {
-    let name_lookup =
-        create_name_lookup(context, connection, &territories).await?;
+    let name_lookup = create_name_lookup(context, connection, &territories).await?;
 
     territories.iter_mut().for_each(|territory| {
         // Update the builder/moderator names
@@ -145,7 +144,7 @@ pub async fn update_id_and_names(
         }
 
         // Encode the ID
-        territory.id = context.hasher.encode(&territory.id)
+        territory.id = context.encode_territory_id(&territory.id)
     });
 
     Ok(territories)
@@ -168,16 +167,13 @@ pub async fn create_name_lookup(
         .into_iter()
         .collect::<Vec<String>>();
 
-    let query =
-        replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
+    let query = replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
 
     // Execute the query
     let name_lookup = connection.exec_map(&query, uids, |t| t).await;
 
     match name_lookup {
         Ok(l) => Ok(l.into_iter().collect::<HashMap<String, String>>()),
-        Err(e) => {
-            return Err(QueryError::System(format!("Query failed - {}", e)))
-        }
+        Err(e) => return Err(QueryError::System(format!("Query failed - {}", e))),
     }
 }

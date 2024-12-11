@@ -21,7 +21,7 @@ pub async fn command_all_territories(
             |(id, esm_custom_id, territory_name, owner_uid, owner_name)| {
                 let id: String = id;
                 TerritoryResult {
-                    id: context.hasher.encode(&id),
+                    id: context.encode_territory_id(&id),
                     esm_custom_id,
                     territory_name,
                     owner_uid,

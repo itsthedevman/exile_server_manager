@@ -47,7 +47,7 @@ pub async fn command_me(
                         serde_json::from_str::<Vec<TerritoryResult>>(&territories_json)
                     {
                         territories_parsed.into_iter().for_each(|mut territory| {
-                            territory.id = context.hasher.encode(&territory.id);
+                            territory.id = context.encode_territory_id(&territory.id);
                             territories.push(territory);
                         });
                     }
