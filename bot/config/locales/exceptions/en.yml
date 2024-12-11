@@ -1,9 +1,24 @@
 en:
   exceptions:
-    system: "An error occurred while processing your request.\nWill you please join my [Discord](https://esmbot.com/join) and post the following error code in the `#get-help-here` channel so my developer can fix it for you?\nThank you!\n```%{error_code}```"
-    invalid_discord_log: "**[`ESM_fnc_logToDiscord`]**\n**Uh oh, I ran into an issue parsing your discord log message from `%{server}`**\nPlease fix any issues in your JSON and confirm its validity using https://jsonlint.com\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to parse: ```%{message}```"
-    invalid_channel_access: "**[`ESM_fnc_sendToChannel`]**\nYour Discord Server does not have a channel with ID `%{channel_id}`. Please provide `ESM_fnc_sendToChannel` a channel ID that belongs to your Discord Server."
-    malformed_message: "**[`ESM_fnc_sendToChannel`]**\nThe provided message is malformed and unable to be delivered.\nPlease read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.\nThis is the message I attempted to send: ```%{message}```"
+    system: |-
+      An error occurred while processing your request.
+      Will you please join my [Discord](https://esmbot.com/join) and post the following error code in the `#get-help-here` channel so my developer can fix it for you?
+      Thank you!
+      ```%{error_code}```
+    invalid_discord_log: |-
+      **[`ESM_fnc_logToDiscord`]**
+      **Uh oh, I ran into an issue parsing your discord log message from `%{server}`**
+      Please fix any issues in your JSON and confirm its validity using https://jsonlint.com
+      Please read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.
+      This is the message I attempted to parse: ```%{message}```
+    invalid_channel_access: |-
+      **[`ESM_fnc_sendToChannel`]**
+      Your Discord Server does not have a channel with ID `%{channel_id}`. Please provide `ESM_fnc_sendToChannel` a channel ID that belongs to your Discord Server.
+    malformed_message: |-
+      **[`ESM_fnc_sendToChannel`]**
+      The provided message is malformed and unable to be delivered.
+      Please read the API documentation on my website (https://www.esmbot.com/wiki/api) for the correct format.
+      This is the message I attempted to send: ```%{message}```
     deliver_failure: |-
       Hi there!
       Sorry for bothering you. I ran into an issue with sending a message to one of your channels. Since this is more than likely a permission issue, will you please ensure that I have permission to "View Channels" and text channel permission to "Send Messages" and "Embed Links"? Thanks!
@@ -20,10 +35,15 @@ en:
       test: "%{user} | %{message_id} | %{type} | %{data_foo} | %{server_id} | %{user}"
       default: "Error type `%{type}` is not registered as a valid locale"
       account_does_not_exist: "Hey %{user}, you **need to join** `%{server_id}` first before you can run commands on it"
-      client_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
+      client_not_connected: |-
+        Hey %{user}, it looks like `%{server_id}` isn't connected right now.
+        Please try again in a few minutes as the server may be restarting.
       null_player: "Hey %{user}, you need to be spawned and alive on `%{server_id}` before you can use this command."
       message_undeliverable: "I'm sorry %{user}, `%{server_id}` never replied to your previous command. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and have them check their `server.rpt` for any errors"
-      system_exception: "Oh crap! I'm sorry %{user}, it appears that I have a bug in my software\nWill you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?\nPlease give him this error:" # Error included in separate error
+      system_exception: |-
+        Oh crap! I'm sorry %{user}, it appears that I have a bug in my software
+        Will you please join my Discord (https://esmbot.com/join) and let my developer know that this happened?
+        Please give him this error:
       error: "I'm sorry %{user}, an error occurred while processing your request on `%{server_id}`. Please wait a few minutes before trying again. If this error persists, please reach out to the server owners of `%{server_id}` and let them know I left them details in `@esm/log/esm.log`"
       fail_database_connect: |-
         ESM on `%{server_id}` experienced an error when attempting to connect to your database. Please open `esm.log` located in [`@esm/logs/`](Or the pre-configured log file path) and search for `ERROR` for the full error.
@@ -36,12 +56,22 @@ en:
       invalid_attributes: "Received unexpected keys. Please remove these: %{attributes}"
       missing_attributes: "Received no keys. Valid attributes: %{attributes}"
   command_errors:
-    text_only: "Hey %{user}, this command can only be used in a Discord server's **text channel**.\n\n__I will not be able to process your request in this channel__"
-    dm_only: "Hey %{user}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there"
+    text_only: |-
+      Hey %{user}, this command can only be used in a Discord server's **text channel**.
+
+      __I will not be able to process your request in this channel__
+    dm_only: |-
+      Hey %{user}, this command can only be used in a **Direct Message** with me.
+
+      Just right click my name, click **Message**, and send it there
     command_not_enabled: "Hey %{user}, `%{command_name}` is not enabled for this community"
     not_allowlisted: "Hey %{user}, you do not have permission to use `%{command_name}`"
-    not_allowed_in_text_channels: "Hey %{user}, `%{command_name}` is not allowed in this Discord's channels.\nTry sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there"
-    on_cooldown_time_left: "Hey %{user}, you're on cooldown for `%{command_name}`.\nYou have **%{time_left}** left before you can use it again"
+    not_allowed_in_text_channels: |-
+      Hey %{user}, `%{command_name}` is not allowed in this Discord's channels.
+      Try sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there
+    on_cooldown_time_left: |-
+      Hey %{user}, you're on cooldown for `%{command_name}`.
+      You have **%{time_left}** left before you can use it again
     on_cooldown_useage: "Hey %{user}, you've exceeded the amount of times you may use `%{command_name}`."
     not_registered: |-
       Greetings %{user}!
@@ -52,13 +82,19 @@ en:
       **This Discord account is %{full_username}.**
 
       Once you're ready, please head over to https://www.esmbot.com/register to get started.
-    server_not_connected: "Hey %{user}, it looks like `%{server_id}` isn't connected right now.\nPlease try again in a few minutes as the server may be restarting."
+    server_not_connected: |-
+      Hey %{user}, it looks like `%{server_id}` isn't connected right now.
+      Please try again in a few minutes as the server may be restarting.
     server_not_initialized: "Hey %{user}, `%{server_id}` is in the process of connection. Please wait a few minutes before trying again."
     invalid_server_id: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`."
-    invalid_server_id_with_correction: "Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`.\nDid you mean: %{correction}?"
+    invalid_server_id_with_correction: |-
+      Hey %{user}, I was unable to find a server with an ID of `%{provided_server_id}`.
+      Did you mean: %{correction}?
     invalid_server_id_blank: "Come on %{user}, you gotta give me something for the server ID"
     invalid_community_id: "Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`."
-    invalid_community_id_with_correction: "Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`.\nDid you mean: %{correction}?"
+    invalid_community_id_with_correction: |-
+      Hey %{user}, I was unable to find a community with an ID of `%{provided_community_id}`.
+      Did you mean: %{correction}?
     target_user_nil: "Hey %{user}, I was unable to find the requested user. Please double check you have given me a valid Discord ID, steam uid, or @user discord mention"
     player_mode_command_not_available: "I'm sorry %{user}, `%{command_name}` is not available in player mode."
     different_community_in_text: "I'm sorry %{user}, using commands for other communities is only allowed a **direct message** with me or with [Player Mode](https://www.esmbot.com/wiki/player_mode) turned on."
@@ -66,5 +102,7 @@ en:
     pending_request_different_user: "I'm sorry %{user}, %{target_user} already has a request pending"
     owned_server: "Hey %{user}, you can only access servers belonging to `%{community_id}`. Please provide a different server ID."
     target_not_registered: "Hey %{user}, %{target_user} has not registered with me yet. Tell them to head over to https://www.esmbot.com/register to get started!"
-    waiting_for_reply: "Hey %{user}, I'm awaiting your response to my question in regarding the `%{command_name}` command. \nIf you are no longer in need of my previous services, please reply with `cancel`. After which, you may execute your command again."
+    waiting_for_reply: |-
+      Hey %{user}, I'm awaiting your response to my question in regarding the `%{command_name}` command.
+      If you are no longer in need of my previous services, please reply with `cancel`. After which, you may execute your command again.
     no_permissions: "I'm sorry %{user}, only the owner of this community has access to this command"

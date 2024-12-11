@@ -7,7 +7,8 @@ en:
           Community IDs are composed of a few characters that are configured by the server owner
           You may find this by by using the `/community id` on the Discord server for that community
           You may omit this argument if you have a default community set
-        optional_text: This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
+        optional_text: |-
+          This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
       target:
         description: "The user that you want to run this command on"
         description_extra: |-
@@ -21,7 +22,8 @@ en:
           Server IDs are composed of a community ID and a custom name, separated by an underscore
           For example: `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`
           You may omit this argument if you have a default server set
-        optional_text: This argument may be excluded if a server is set as a default for you, or the Discord community if you are using this command in a text channel
+        optional_text: |-
+          This argument may be excluded if a server is set as a default for you, or the Discord community if you are using this command in a text channel
       territory_id:
         description: "The ID for the territory that you want to run this command on"
         description_extra: |-
@@ -31,10 +33,13 @@ en:
         description: A slash command (e.g. `/server reward` with or without the `/`)
   "yes": "Yes"
   "no": "No"
-  invalid_response: "I'm sorry, I don't know how to reply to your response.\nI was expecting %{expected}"
+  invalid_response: |-
+    I'm sorry, I don't know how to reply to your response.
+    I was expecting %{expected}
   failure_to_communicate: "Looks like what we've got here is failure to communicate. I am unable to help you. Goodbye"
-  request_timed_out: "I'm sorry %{user}, `%{server_id}` never replied to your command\nHere was the command you ran: ```%{command_message}``` Please wait a few minutes and try again."
-  # Time
+  request_timed_out: |-
+    I'm sorry %{user}, `%{server_id}` never replied to your command
+    Here was the command you ran: ```%{command_message}``` Please wait a few minutes and try again.
   datetime:
     dotiw:
       words_connector: ", "
@@ -148,10 +153,10 @@ en:
   text: "Text"
   message: "Message"
   xm8_notification: "XM8 notification"
-  server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`"
+  server_connected: ":green_circle: **`%{server}` connected.** Uptime: `%{uptime}`."
   server_disconnect:
-    base: ":red_circle: **`%{server}`** disconnected. %{reason}. Uptime: `%{uptime}`"
+    base: ":red_circle: **`%{server}` disconnected.** Uptime: `%{uptime}`. %{reason}."
     reasons:
-      normal: "Your server will reconnect shortly"
+      normal: "ESM will reconnect automatically when your server is back online"
       restart: "ESM is restarting. Your server will reconnect shortly"
       settings_update: "The server's settings have been updated. Your server will reconnect shortly"
