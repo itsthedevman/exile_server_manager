@@ -184,6 +184,16 @@ async fn xm8_notification_thread() {
 }
 
 fn send_message(message: Message) -> ESMResult {
+    info!(
+        "[send_message] {} - outbound message - {} bytes - data size: {}, metadata size: {}",
+        message.id,
+        serde_json::to_string(&message.data)
+            .unwrap_or_default()
+            .len(),
+        message.data.len(),
+        message.metadata.len(),
+    );
+
     debug!("[send_message] {message}");
 
     send_request(
@@ -515,6 +525,16 @@ fn on_message(request: Request) -> ESMResult {
     }
 
     let message = Message::from_bytes(&request.value)?;
+
+    info!(
+        "[on_message] {} - inbound message - {} bytes - data size: {}, metadata size: {}",
+        message.id,
+        serde_json::to_string(&message.data)
+            .unwrap_or_default()
+            .len(),
+        message.data.len(),
+        message.metadata.len(),
+    );
 
     debug!("[on_message] {}", message);
 

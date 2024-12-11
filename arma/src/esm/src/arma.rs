@@ -99,13 +99,7 @@ fn send_to_arma(message: Message) -> ESMResult {
         ).into());
     }
 
-    info!(
-        "[send_to_arma] {} - Calling {} with\ndata: {}\nmetadata: {}",
-        message.id,
-        function_name,
-        serde_json::to_string_pretty(&message.data).unwrap_or_default(),
-        serde_json::to_string_pretty(&message.metadata).unwrap_or_default()
-    );
+    info!("[send_to_arma] {} - calling {}", message.id, function_name);
 
     let message = vec![
         vec!["id".to_arma(), message.id.to_arma()],
@@ -227,6 +221,11 @@ async fn file_search(message: Message) -> MessageResult {
         .into());
     };
 
+    info!(
+        "[file_search] {} - searching files for \"{}\"",
+        message.id, search
+    );
+
     match log_search::search_files(&search).await {
         Ok(results) => {
             let message = message
@@ -247,6 +246,13 @@ async fn database_query(message: Message) -> MessageResult {
             "Missing \"query_function_name\" attribute for database query".into(),
         );
     };
+
+    info!(
+        "[database_query] {} - executing query {} with {} arguments",
+        message.id,
+        name,
+        arguments.len()
+    );
 
     let result = match name.as_str().unwrap_or_default() {
         "update_xm8_notification_state" => {
