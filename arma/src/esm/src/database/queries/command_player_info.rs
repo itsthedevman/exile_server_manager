@@ -38,7 +38,7 @@ pub async fn command_player_info(
     match result {
         Some(row) => {
             let result =
-                convert_result(row).map_err(|e| QueryError::System(e))?;
+                convert_result(row, context).map_err(|e| QueryError::System(e))?;
 
             Ok(vec![result])
         }
@@ -46,11 +46,17 @@ pub async fn command_player_info(
     }
 }
 
-fn convert_result(mut row: Row) -> Result<String, String> {
+fn convert_result(mut row: Row, context: &Database) -> Result<String, String> {
     let territories: String = select_column(&mut row, "territories")?;
 
-    let territories: Vec<Territory> =
-        serde_json::from_str(&territories).map_err(|err| err.to_string())?;
+    let territories = serde_json::from_str::<Vec<Territory>>(&territories)
+        .map_err(|err| err.to_string())?
+        .into_iter()
+        .map(|mut territory| {
+            territory.id = context.encode_territory_id(&territory.id);
+            territory
+        })
+        .collect();
 
     let account = Account {
         uid: select_column(&mut row, "uid")?,
