@@ -14,6 +14,11 @@ import!(utc_timestamp);
 
 pub fn register() -> Extension {
     Extension::build()
+        .version(format!(
+            "{}.{}",
+            env!("CARGO_PKG_VERSION"),
+            std::include_str!("../../.build-sha")
+        ))
         .command("encode_territory_id", encode_territory_id)
         .command("add_xm8_notification", add_xm8_notification)
         .command("log_level", log_level)
