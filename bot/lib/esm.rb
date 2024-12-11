@@ -97,6 +97,12 @@ def __log(severity, caller_data, content)
     end
   end
 end
+
+#################################
+
+require_relative "signal_handler"
+SignalHandler.start
+
 #################################
 
 module ESM
@@ -218,13 +224,6 @@ module ESM
 
         cleaner
       end
-    end
-
-    #
-    # Handles the connection between the bot and all of the A3 servers
-    #
-    def connection_server
-      @connection_server ||= ESM::Connection::Server.new
     end
   end
 end
