@@ -115,7 +115,7 @@ pub struct Args {
     release: bool,
 
     /// Path to the esm.key file to use, useful with --release --start-server
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = String::new())]
     key_file: String,
 }
 

@@ -840,8 +840,6 @@ pub fn seed_database(builder: &mut Builder) -> BuildResult {
 }
 
 pub fn start_a3_server(builder: &mut Builder) -> BuildResult {
-    println!();
-
     let script = match builder.args.build_os() {
         BuildOS::Windows => {
             format!(
