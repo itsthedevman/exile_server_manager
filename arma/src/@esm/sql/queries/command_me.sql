@@ -10,12 +10,8 @@ SELECT
     a.deaths,
     (
         SELECT
-            CONCAT(
-                "[",
-                GROUP_CONCAT(
-                    JSON_OBJECT("id", CONVERT(id, char), "name", name) SEPARATOR ", "
-                ),
-                "]"
+            JSON_ARRAYAGG(
+                JSON_OBJECT('id', CONVERT(id, char), 'name', name)
             )
         FROM
             territory

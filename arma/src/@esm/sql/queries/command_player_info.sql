@@ -12,7 +12,9 @@ SELECT
     COALESCE(
         (
             SELECT
-                JSON_ARRAYAGG(JSON_OBJECT('id', id, 'name', name))
+                JSON_ARRAYAGG(
+                    JSON_OBJECT('id', CONVERT(id, char), 'name', name)
+                )
             FROM
                 territory
             WHERE
