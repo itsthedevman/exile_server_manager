@@ -88,7 +88,7 @@ module ESM
     end
 
     def connection
-      ESM.connection_server.client(public_id)
+      ESM::Connection::Server.client(public_id)
     end
 
     def connected?

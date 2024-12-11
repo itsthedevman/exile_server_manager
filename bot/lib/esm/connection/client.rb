@@ -42,7 +42,7 @@ module ESM
       def close(reason = "")
         @task.shutdown
 
-        ESM.connection_server.on_disconnect(self)
+        ESM::Connection::Server.on_disconnect(self)
 
         ESM::Database.with_connection do
           on_disconnect(reason)

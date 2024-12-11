@@ -23,7 +23,7 @@ RSpec.configure do |config|
     )
 
     ESM::Test.reset!
-    ESM.connection_server.pause
+    ESM::Connection::Server.pause
 
     # Run the test!
     DatabaseCleaner.cleaning { example.run }

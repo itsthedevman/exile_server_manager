@@ -101,7 +101,7 @@ module ESM
 
         ESM.bot.delivery_overseer.queue.clear # Otherwise messages from other tests may leak between each other
 
-        ESM.connection_server.pause
+        ESM::Connection::Server.pause
       end
 
       def wait_for_response(timeout: nil)

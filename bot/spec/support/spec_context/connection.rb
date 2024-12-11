@@ -4,7 +4,7 @@ RSpec.shared_context("connection") do
   let!(:community) { ESM::Test.community }
   let!(:user) { ESM::Test.user }
   let!(:server) { ESM::Test.server(for: community) }
-  let!(:connection_server) { ESM.connection_server }
+  let!(:connection_server) { ESM::Connection::Server }
 
   # Define this in your context and include any steam uids you'd like to be
   # added to territory admins for the server

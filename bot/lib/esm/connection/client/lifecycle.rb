@@ -57,7 +57,7 @@ module ESM
         def on_identification(public_id)
           info!(address:, state: :on_identification, public_id:)
 
-          existing_connection = ESM.connection_server.client(public_id)
+          existing_connection = ESM::Connection::Server.client(public_id)
           raise ESM::Exception::ExistingConnection if existing_connection
 
           model = ESM::Server.find_by_public_id(public_id)
@@ -103,7 +103,7 @@ module ESM
           message = send_request(type: :initialize)
           ESM::Event::ServerInitialization.new(self, model, message).run!
 
-          ESM.connection_server.on_initialize(self)
+          ESM::Connection::Server.on_initialize(self)
         end
 
         def check_for_valid_request!(message)

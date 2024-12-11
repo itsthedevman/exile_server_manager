@@ -19,6 +19,14 @@ module ESM
         @heartbeat.add_observer(ErrorHandler.new)
       end
 
+      def stop
+        @lobby_task.shutdown
+        @heartbeat.shutdown
+
+        @connections.each { |_public_id, client| client.close }
+        @lobby.each { |client| client.close }
+      end
+
       def find(id)
         @connections[id]
       end

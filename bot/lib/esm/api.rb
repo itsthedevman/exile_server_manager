@@ -7,11 +7,6 @@ module ESM
       @instance = DRb::DRbServer.new("druby://localhost:#{port}", new)
     end
 
-    def self.stop!
-      @instance&.stop_service
-      @instance = nil
-    end
-
     # Accepts a request and triggers any logic that is required by the command
     def requests_accept(id:)
       info!(event: "requests:accept", id: id)

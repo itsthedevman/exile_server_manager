@@ -3,12 +3,21 @@
 module ESM
   module Connection
     class Server
+      include Singleton
+
+      class << self
+        delegate :start, :stop, :client, :on_initialize, :on_disconnect, to: :instance
+      end
+
       delegate :on_initialize, :on_disconnect, to: :@connection_manager
 
       def initialize
-        @server = ServerSocket.new(TCPServer.new("0.0.0.0", ESM.config.ports.connection_server))
+        @server = ServerSocket.new(
+          TCPServer.new("0.0.0.0", ESM.config.ports.connection_server)
+        )
 
         @config = ESM.config.connection_server
+
         @connection_manager = ConnectionManager.new(
           lobby_timeout: @config.lobby_timeout,
           heartbeat_timeout: @config.heartbeat_timeout
@@ -17,6 +26,7 @@ module ESM
 
       def start
         execution_interval = @config.connection_check
+
         @task = Concurrent::TimerTask.execute(execution_interval:) { on_connect }
         @task.add_observer(ErrorHandler.new)
 
@@ -24,6 +34,8 @@ module ESM
       end
 
       def stop
+        @connection_manager.stop
+
         @server.shutdown(:RDWR)
         @task.shutdown
       end
