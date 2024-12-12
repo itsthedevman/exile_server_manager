@@ -207,14 +207,8 @@ module ESM
 
       info!(bot_stopping: ESM.bot.stopping?, server_id: @server.server_id, uptime: @server.uptime)
 
-      message =
-        if ESM.bot.stopping?
-          I18n.t("server_disconnected_esm_stopping", server: @server.server_id, uptime: @server.uptime)
-        else
-          I18n.t("server_disconnected", server: @server.server_id, uptime: @server.uptime)
-        end
-
-      @server.community&.log_event(:reconnect, message)
+      embed = @server.status_embed(:disconnected)
+      @server.community&.log_event(:reconnect, embed)
 
       ESM::Websocket.remove_connection(self)
       @closed = true
