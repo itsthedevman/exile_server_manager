@@ -142,7 +142,8 @@ module ESM
           info!(server_id: server.server_id, uptime: server.uptime)
 
           # Trigger a connect notification
-          server.community.log_event(:reconnect, I18n.t("server_connected", server: server.server_id, uptime: server.uptime))
+          embed = model.status_embed(:connected)
+          server.community.log_event(:reconnect, embed)
 
           # Set the connection to be available for commands
           connection.ready = true

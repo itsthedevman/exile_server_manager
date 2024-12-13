@@ -42,7 +42,7 @@ module ESM
 
     # Removes a connection from the connections
     def self.remove_connection(connection)
-      connection.server.update(disconnected_at: ::Time.zone.now) if !ESM.env.test?
+      connection.server.update(server_start_time: nil, disconnected_at: ::Time.zone.now) if !ESM.env.test?
       @server_ids.delete(connection.server.server_id)
       @connections.delete(connection.server.server_id)
     end
