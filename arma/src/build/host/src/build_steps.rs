@@ -607,7 +607,7 @@ destination_file="{build_path}/{addon}.pbo";
     // Copy directories
     for dir in directories.iter() {
         let source_dir = source_path.join(dir);
-        let target_dir = build_path.join(dir);
+        let target_dir = build_path.to_owned();
 
         std::fs::create_dir_all(&target_dir)?;
 
