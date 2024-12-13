@@ -9,7 +9,7 @@ module ESM
       def read
         return unless readable?
 
-        length_bytes = @socket.recv(HEADER_SIZE)
+        length_bytes = @socket.read(HEADER_SIZE)
         return if length_bytes.blank?
 
         length = length_bytes.unpack1("N")
@@ -17,7 +17,7 @@ module ESM
 
         info!("Preparing to read #{length} bytes")
 
-        data = @socket.recv(length)
+        data = @socket.read(length)
 
         info!("DATA | Size: #{data.size}, content: #{data.inspect}")
 
@@ -39,7 +39,7 @@ module ESM
         data = Base64.strict_encode64(data)
 
         # Send
-        @socket.send(data, 0)
+        @socket.write(data)
       rescue TypeError
         raise
       rescue Errno::EPIPE
