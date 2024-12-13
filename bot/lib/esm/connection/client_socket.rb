@@ -6,18 +6,20 @@ module ESM
       HEADER_SIZE = 4 # bytes
 
       def address
-        local_address.inspect_sockaddr
+        @socket.local_address.inspect_sockaddr
       end
 
       def read
         return unless readable?
 
-        length_bytes = recv(HEADER_SIZE)
+        length_bytes = @socket.recv(HEADER_SIZE)
+        return if length_bytes.blank?
+
         length = length_bytes.unpack1("N")
 
         info!("Preparing to read #{length} bytes")
 
-        data = recv(length)
+        data = @socket.recv(length)
 
         info!("DATA | Size: #{data.size}, content: #{data.inspect}")
 
@@ -35,7 +37,7 @@ module ESM
         data = Base64.strict_encode64(data)
 
         # Send
-        __getobj__.send(data, 0)
+        @socket.send(data, 0)
       rescue TypeError
         raise
       rescue Errno::EPIPE

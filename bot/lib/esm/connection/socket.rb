@@ -2,7 +2,11 @@
 
 module ESM
   module Connection
-    class Socket < SimpleDelegator
+    class Socket
+      def initialize(socket)
+        @socket = socket
+      end
+
       def readable?(timeout = 5)
         wait_readable(timeout).first.size > 0
       end
@@ -21,7 +25,7 @@ module ESM
       # @returns [Array] The sockets grouped by state [readable, writeable, errored]
       #
       def wait_readable(timeout = 5)
-        IO.select([__getobj__], nil, nil, timeout) || [[], [], []]
+        IO.select([@socket], nil, nil, timeout) || [[], [], []]
       rescue IOError
         [[], [], []]
       end
@@ -34,7 +38,7 @@ module ESM
       # @returns [Array] The sockets grouped by state [readable, writeable, errored]
       #
       def wait_writeable(timeout = 5)
-        IO.select(nil, [__getobj__], nil, timeout) || [[], [], []]
+        IO.select(nil, [@socket], nil, timeout) || [[], [], []]
       rescue IOError
         [[], [], []]
       end

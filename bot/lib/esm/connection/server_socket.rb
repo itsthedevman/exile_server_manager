@@ -6,9 +6,7 @@ module ESM
       def accept
         return unless readable?
 
-        __getobj__.accept_nonblock
-      rescue IO::EAGAINWaitReadable
-        # Noop - we'll try again next iteration
+        @socket.accept
       rescue => e
         error!(error: e)
       end
