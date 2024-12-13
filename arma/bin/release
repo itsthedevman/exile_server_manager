@@ -18,11 +18,9 @@ readonly git_rev=$(git rev-parse --short HEAD)
 readonly crate_version=$(
     cargo pkgid file://$(pwd)/src/esm | \
     cut -d# -f2 | \
-    cut -d@ -f2 | \
-    # 2.x.x -> 2xx
-    sed 's/\.//g'
+    cut -d@ -f2
 )
-readonly zip_filename="@esm-$crate_version$git_rev.zip"
+readonly zip_filename="@esm-$crate_version.$git_rev.zip"
 readonly total_steps=9
 step=0
 
