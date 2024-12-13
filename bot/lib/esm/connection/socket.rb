@@ -7,6 +7,10 @@ module ESM
         @socket = socket
       end
 
+      def close
+        @socket.close
+      end
+
       def readable?(timeout = 5)
         wait_readable(timeout).first.size > 0
       end

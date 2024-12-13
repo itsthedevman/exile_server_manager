@@ -45,11 +45,6 @@ module ESM
       rescue => e
         error!(error: e)
       end
-
-      def close
-        close_write if writeable?(0)
-        close_read if readable?(0)
-      end
     end
   end
 end
