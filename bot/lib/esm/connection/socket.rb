@@ -3,12 +3,13 @@
 module ESM
   module Connection
     class Socket
+      attr_reader :address
+
+      delegate :close, :shutdown, to: :@socket
+
       def initialize(socket)
         @socket = socket
-      end
-
-      def close
-        @socket.close
+        @address = socket.local_address.inspect_sockaddr
       end
 
       def readable?(timeout = 5)

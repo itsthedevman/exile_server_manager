@@ -3,11 +3,8 @@
 module ESM
   module Connection
     class ClientSocket < Socket
-      HEADER_SIZE = 4 # bytes
-
-      def address
-        @socket.local_address.inspect_sockaddr
-      end
+      HEADER_SIZE = 4.bytes
+      MAX_READ = 16.megabytes
 
       def read
         return unless readable?
@@ -16,6 +13,7 @@ module ESM
         return if length_bytes.blank?
 
         length = length_bytes.unpack1("N")
+        raise Exception::MessageTooLarge, length if length >= MAX_READ
 
         info!("Preparing to read #{length} bytes")
 
@@ -25,7 +23,7 @@ module ESM
 
         Base64.strict_decode64(data)
       rescue => e
-        error!(error: e)
+        error!(address:, error: e)
         nil
       end
 

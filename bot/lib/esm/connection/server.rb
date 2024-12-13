@@ -36,8 +36,8 @@ module ESM
       def stop
         @connection_manager.stop
 
-        @task.shutdown
         @server.close
+        @task.shutdown
       end
 
       def client(id)

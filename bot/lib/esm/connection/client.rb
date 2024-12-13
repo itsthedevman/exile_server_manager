@@ -9,7 +9,7 @@ module ESM
 
       Metadata = ImmutableStruct.define(:vg_enabled, :vg_max_sizes)
 
-      attr_reader :public_id, :server_id, :connected_at, :session_id
+      attr_reader :public_id, :server_id, :session_id, :connected_at
 
       delegate :address, to: :@socket
 
@@ -40,15 +40,18 @@ module ESM
       end
 
       def close(reason = "")
-        @task.shutdown
-
-        ESM::Connection::Server.on_disconnect(self)
+        @socket.shutdown(:RD)
 
         ESM::Database.with_connection do
           on_disconnect(reason)
         end
 
+        @socket.shutdown(:WR)
         @socket.close
+
+        ESM::Connection::Server.on_disconnect(self)
+
+        @task.shutdown
       end
 
       def send_message(message, **)
@@ -175,7 +178,9 @@ module ESM
         # Every request from that point on will be encrypted
         data =
           if @public_id.nil?
-            data
+            # Since this is the only non-encrypted data, we're going to take the exact
+            # size of the base64 encoded identification request, which is 176 bytes
+            data[..175]
           else
             @encryption.decrypt(data)
           end

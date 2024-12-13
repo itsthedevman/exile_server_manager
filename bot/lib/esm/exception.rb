@@ -101,5 +101,11 @@ module ESM
     class RejectedPromise < ClosableError
       def initialize(reason = "") = super
     end
+
+    class MessageTooLarge < ApplicationError
+      def initialize(size)
+        super("Attempted to read #{size} bytes")
+      end
+    end
   end
 end
