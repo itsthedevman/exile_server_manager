@@ -257,15 +257,6 @@ fn send_request(request: Request) -> ESMResult {
 
     // Add the length header
     let length = (request.len() as u32).to_be_bytes();
-
-    info!(
-        "DATA | length: {}, size: {}, content: {:?}",
-        u32::from_be_bytes(length),
-        request.len(),
-        String::from_utf8_lossy(&request)
-    );
-
-    // Add the header
     request.splice(0..0, length);
 
     // Send
