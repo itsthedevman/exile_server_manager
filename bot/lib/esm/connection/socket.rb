@@ -3,13 +3,33 @@
 module ESM
   module Connection
     class Socket
+      IGNORED_IO_ERRORS = [
+        "closed stream",
+        "stream closed in another thread",
+        "uninitialized stream"
+      ].freeze
+
       attr_reader :address
 
-      delegate :close, :shutdown, to: :@socket
+      delegate :close, to: :@socket
 
       def initialize(socket)
         @socket = socket
         @address = socket.local_address.inspect_sockaddr
+      end
+
+      def shutdown(...)
+        @socket.shutdown(...)
+      rescue IOError => e
+        return if ignored_io_error?(e)
+        raise
+      end
+
+      def close(...)
+        @socket.close(...)
+      rescue IOError => e
+        return if ignored_io_error?(e)
+        raise
       end
 
       def readable?(timeout = 5)
@@ -46,6 +66,10 @@ module ESM
         IO.select(nil, [@socket], nil, timeout) || [[], [], []]
       rescue IOError
         [[], [], []]
+      end
+
+      def ignored_io_error?(error)
+        IGNORED_IO_ERRORS.include?(error.message)
       end
     end
   end

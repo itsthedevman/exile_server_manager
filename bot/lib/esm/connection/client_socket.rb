@@ -22,6 +22,10 @@ module ESM
         info!("DATA | Size: #{data.size}, content: #{data.inspect}")
 
         Base64.strict_decode64(data)
+      rescue IOError => e
+        return if ignored_io_error?(e)
+
+        raise # Re-raise
       rescue => e
         error!(address:, error: e)
         nil
