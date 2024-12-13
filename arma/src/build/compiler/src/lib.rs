@@ -62,7 +62,11 @@ impl Compiler {
         self.write_to_destination()
     }
 
-    pub fn replace<'a, F: 'static>(&'a mut self, regex_str: &'a str, callback: F) -> &'a mut Self
+    pub fn replace<'a, F: 'static>(
+        &'a mut self,
+        regex_str: &'a str,
+        callback: F,
+    ) -> &'a mut Self
     where
         F: Fn(&Data, &Captures) -> Result<Option<String>, CompilerError>,
     {
@@ -90,7 +94,8 @@ impl Compiler {
                     relative_path: f
                         .path()
                         .to_string_lossy()
-                        .replace(&self.source.to_string_lossy().to_string(), "")[1..]
+                        .replace(&self.source.to_string_lossy().to_string(), "")
+                        [1..]
                         .to_string(),
                     file_name: f
                         .file_name()
@@ -144,9 +149,14 @@ pub struct File {
 }
 
 impl File {
-    pub fn replace(&mut self, replacement: &Replacement, data: &Data) -> CompilerResult {
+    pub fn replace(
+        &mut self,
+        replacement: &Replacement,
+        data: &Data,
+    ) -> CompilerResult {
         let content = self.content.to_owned();
-        let captures: Vec<Captures> = replacement.regex.captures_iter(&content).collect();
+        let captures: Vec<Captures> =
+            replacement.regex.captures_iter(&content).collect();
 
         for capture in captures {
             if let Some(result) = (replacement.callback)(data, &capture)? {

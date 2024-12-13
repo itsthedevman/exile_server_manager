@@ -37,7 +37,8 @@ const REGEX_GET_WITH_DEFAULT: &str = r"get!\((.+),\s*(.+),\s*(.+[^)])\)";
 const REGEX_GET: &str = r"get!\((.+)?,\s*(.+[^)])?\)";
 const REGEX_KEY: &str = r#"key\?\((.+[^)])\)"#;
 const REGEX_LOCALIZE: &str = r#"localize!\("(\w+)"((?:,\s*[\w\s"]+)*)\)"#;
-const REGEX_LOG_WITH_ARGS: &str = r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
+const REGEX_LOG_WITH_ARGS: &str =
+    r#"(trace|info|warn|debug|error)!\((".+")*,\s*(.*)+\)"#;
 const REGEX_LOG: &str = r#"(trace|info|warn|debug|error)!\((.+)?\)"#;
 const REGEX_NIL_NEGATED: &str = r#"!nil\?\((\w+)?\)"#;
 const REGEX_NIL: &str = r#"nil\?\((\w+)?\)"#;
@@ -45,7 +46,8 @@ const REGEX_NULL: &str = r"null\?\((\w+)?\)";
 const REGEX_OS_PATH: &str = r"os_path!\((.+,?)?\)";
 const REGEX_RETURNS_NIL: &str = r#"returns_nil!\((\w+)\)"#;
 const REGEX_RV_TYPE: &str = r"rv_type!\((ARRAY|BOOL|HASH|STRING|NIL)?\)";
-const REGEX_TYPE_CHECK_NEGATED: &str = r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
+const REGEX_TYPE_CHECK_NEGATED: &str =
+    r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_TYPE_CHECK: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 
 pub fn bind_replacements(compiler: &mut Compiler) {
@@ -263,9 +265,9 @@ fn rv_type(context: &Data, matches: &Captures) -> CompilerResult {
             },
             None => {
                 return Err(format!(
-                    "{} -> rv_type! - Wrong number of arguments, given 0, expected 1",
-                    context.file_path
-                )
+                "{} -> rv_type! - Wrong number of arguments, given 0, expected 1",
+                context.file_path
+            )
                 .into())
             }
         }
@@ -516,8 +518,11 @@ mod tests {
 
             let mut output = $code.to_string();
             for capture in captures {
-                if let Some(result) = $parsing_method(&Data::default(), &capture).unwrap() {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                if let Some(result) =
+                    $parsing_method(&Data::default(), &capture).unwrap()
+                {
+                    output =
+                        output.replace(capture.get(0).unwrap().as_str(), &result);
                 }
             }
 
@@ -531,7 +536,8 @@ mod tests {
             let mut output = $code.to_string();
             for capture in captures {
                 if let Some(result) = $parsing_method(&$data, &capture).unwrap() {
-                    output = output.replace(capture.get(0).unwrap().as_str(), &result);
+                    output =
+                        output.replace(capture.get(0).unwrap().as_str(), &result);
                 }
             }
 
@@ -541,7 +547,8 @@ mod tests {
 
     #[test]
     fn it_replaces_localize() {
-        let output = compile!(r#"localize!("Foo_Barrington")"#, REGEX_LOCALIZE, localize);
+        let output =
+            compile!(r#"localize!("Foo_Barrington")"#, REGEX_LOCALIZE, localize);
         assert_eq!(output, r#"localize "$STR_ESM_Foo_Barrington""#);
     }
 
@@ -584,7 +591,8 @@ mod tests {
 
     #[test]
     fn it_replaces_type() {
-        let output = compile!(r#"type?(_variable, STRING);"#, REGEX_TYPE_CHECK, type_eq);
+        let output =
+            compile!(r#"type?(_variable, STRING);"#, REGEX_TYPE_CHECK, type_eq);
         assert_eq!(output, r#"_variable isEqualType "";"#);
     }
 
@@ -843,19 +851,23 @@ mod tests {
 
     #[test]
     fn it_replaces_constants() {
-        let output = compile!(r#"const!(EXAMPLE_STRING);"#, REGEX_CONST, replace_const);
+        let output =
+            compile!(r#"const!(EXAMPLE_STRING);"#, REGEX_CONST, replace_const);
         assert_eq!(output, r#""Hello world!";"#);
 
-        let output = compile!(r#"const!(EXAMPLE_NUMBER);"#, REGEX_CONST, replace_const);
+        let output =
+            compile!(r#"const!(EXAMPLE_NUMBER);"#, REGEX_CONST, replace_const);
         assert_eq!(output, r#"69;"#);
 
-        let output = compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, replace_const);
+        let output =
+            compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, replace_const);
         assert_eq!(output, r#"false;"#)
     }
 
     #[test]
     fn it_replaces_current_year() {
-        let output = compile!(r#"current_year!();"#, REGEX_CURRENT_YEAR, current_year);
+        let output =
+            compile!(r#"current_year!();"#, REGEX_CURRENT_YEAR, current_year);
 
         let regex = Regex::new(r"\d{4}").unwrap();
         assert!(regex.is_match(&output))
