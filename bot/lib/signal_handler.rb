@@ -3,6 +3,8 @@
 class SignalHandler
   include Singleton
 
+  SIGNALS = %w[INT TERM QUIT]
+
   def self.start
     instance.start
   end
@@ -10,7 +12,7 @@ class SignalHandler
   def start
     @signal_read, @signal_write = IO.pipe
 
-    %w[INT QUIT].each do |signal|
+    SIGNALS.each do |signal|
       Signal.trap(signal) do
         @signal_write.write_nonblock("#{signal}\n")
       end
