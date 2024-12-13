@@ -15,12 +15,7 @@ module ESM
         length = length_bytes.unpack1("N")
         raise Exception::MessageTooLarge, length if length >= MAX_READ
 
-        info!("Preparing to read #{length} bytes")
-
         data = @socket.read(length)
-
-        info!("DATA | Size: #{data.size}, content: #{data.inspect}")
-
         Base64.strict_decode64(data)
       rescue IOError => e
         return if ignored_io_error?(e)
