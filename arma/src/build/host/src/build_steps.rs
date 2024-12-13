@@ -558,6 +558,73 @@ pub fn copy_esm_key_file(builder: &mut Builder) -> BuildResult {
     )
 }
 
+pub fn build_mod(builder: &mut Builder) -> BuildResult {
+    compile_mod(builder)?;
+
+    let mut extra_addons = vec![];
+    if !builder.args.release {
+        extra_addons.push("esm_test");
+    }
+
+    let source_path = builder.local_git_path.join("src").join("@esm");
+    let build_path = builder.local_build_path.join("@esm");
+
+    for addon in ADDONS.iter().chain(extra_addons.iter()) {
+        if !builder.rebuild_addon(addon) {
+            continue;
+        }
+
+        let script = format!(
+            r#"
+source_file="{build_path}/{addon}";
+destination_file="{build_path}/{addon}.pbo";
+
+{armake2} pack -v "$source_file" "$destination_file";
+
+[[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
+"#,
+            build_path = build_path.join("addons").display(),
+            armake2 = builder.local_git_path.join("bin").join("armake2").display()
+        );
+
+        System::new()
+            .script(script)
+            .add_error_detection("ErrorId")
+            .add_error_detection("Failed to build")
+            .add_error_detection("missing file")
+            .execute(None)?;
+    }
+
+    // Copy extra directories and files
+    let files = ["README.md"];
+    let directories = ["sql"];
+
+    // Copy files
+    for file in files.iter() {
+        File::copy(&source_path.join(file), &build_path.join(file))?;
+    }
+
+    // Copy directories
+    for dir in directories.iter() {
+        let source_dir = source_path.join(dir);
+        let target_dir = build_path.join(dir);
+
+        std::fs::create_dir_all(&target_dir)?;
+        fs_extra::dir::copy(source_dir, target_dir, &CopyOptions::default())
+            .map_err(|e| e.to_string())?;
+    }
+
+    // Copy the mod over
+    let destination_path = builder.remote_build_path().join("@esm");
+    Directory::transfer(
+        builder,
+        build_path.to_owned(),
+        destination_path.to_owned(),
+    )?;
+
+    Ok(())
+}
+
 fn compile_mod(builder: &mut Builder) -> BuildResult {
     // Set up all the paths needed
     let source_path = builder.local_git_path.join("src").join("@esm");
@@ -653,73 +720,6 @@ fn compile_string_table(builder: &mut Builder) -> BuildResult {
     fs::write(mod_path.join("stringtable.xml"), xml)?;
 
     print_wait_success();
-
-    Ok(())
-}
-
-pub fn build_mod(builder: &mut Builder) -> BuildResult {
-    compile_mod(builder)?;
-
-    let mut extra_addons = vec![];
-    if !builder.args.release {
-        extra_addons.push("esm_test");
-    }
-
-    let source_path = builder.local_git_path.join("src").join("@esm");
-    let build_path = builder.local_build_path.join("@esm");
-
-    for addon in ADDONS.iter().chain(extra_addons.iter()) {
-        if !builder.rebuild_addon(addon) {
-            continue;
-        }
-
-        let script = format!(
-            r#"
-source_file="{build_path}/{addon}";
-destination_file="{build_path}/{addon}.pbo";
-
-{armake2} pack -v "$source_file" "$destination_file";
-
-[[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
-"#,
-            build_path = build_path.join("addons").display(),
-            armake2 = builder.local_git_path.join("bin").join("armake2").display()
-        );
-
-        System::new()
-            .script(script)
-            .add_error_detection("ErrorId")
-            .add_error_detection("Failed to build")
-            .add_error_detection("missing file")
-            .execute(None)?;
-    }
-
-    // Copy extra directories and files
-    let files = ["README.md"];
-    let directories = ["sql"];
-
-    // Copy files
-    for file in files.iter() {
-        File::copy(&source_path.join(file), &build_path.join(file))?;
-    }
-
-    // Copy directories
-    for dir in directories.iter() {
-        let source_dir = source_path.join(dir);
-        let target_dir = build_path.join(dir);
-
-        std::fs::create_dir_all(&target_dir)?;
-        fs_extra::dir::copy(source_dir, target_dir, &CopyOptions::default())
-            .map_err(|e| e.to_string())?;
-    }
-
-    // Copy the mod over
-    let destination_path = builder.remote_build_path().join("@esm");
-    Directory::transfer(
-        builder,
-        build_path.to_owned(),
-        destination_path.to_owned(),
-    )?;
 
     Ok(())
 }
