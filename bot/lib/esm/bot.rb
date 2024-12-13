@@ -69,6 +69,7 @@ module ESM
 
       @esm_status = :stopping
 
+      ESM::API.stop
       ESM::Connection::Server.stop
 
       # V1
@@ -130,7 +131,7 @@ module ESM
         started_in: "#{@timer.stop!}s"
       )
 
-      ESM::API.run!
+      ESM::API.run
 
       # V1
       ESM::Websocket.start!

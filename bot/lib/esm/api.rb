@@ -2,9 +2,13 @@
 
 module ESM
   class API
-    def self.run!
+    def self.run
       port = ESM.config.ports.api
       @instance = DRb::DRbServer.new("druby://localhost:#{port}", new)
+    end
+
+    def self.stop
+      @instance.stop_service
     end
 
     # Accepts a request and triggers any logic that is required by the command
