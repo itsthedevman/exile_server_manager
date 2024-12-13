@@ -395,7 +395,7 @@ fn on_disconnect() {
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
     let time_to_wait: f32 = if cfg!(feature = "development") {
-        1.0
+        0.5
     } else {
         let mut rng = thread_rng();
 
