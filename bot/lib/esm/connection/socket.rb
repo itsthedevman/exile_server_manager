@@ -20,6 +20,7 @@ module ESM
 
       def shutdown(...)
         @socket.shutdown(...)
+      rescue Errno::ENOTCONN
       rescue IOError => e
         return if ignored_io_error?(e)
         raise
@@ -27,16 +28,17 @@ module ESM
 
       def close(...)
         @socket.close(...)
+      rescue Errno::ENOTCONN
       rescue IOError => e
         return if ignored_io_error?(e)
         raise
       end
 
-      def readable?(timeout = 5)
+      def readable?(timeout = 3)
         wait_readable(timeout).first.size > 0
       end
 
-      def writeable?(timeout = 5)
+      def writeable?(timeout = 3)
         wait_writeable(timeout).second.size > 0
       end
 

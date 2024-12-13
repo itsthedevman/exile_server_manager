@@ -40,14 +40,12 @@ module ESM
       end
 
       def close(reason = "")
-        @socket.shutdown(:RD)
+        @socket.shutdown
+        @socket.close
 
         ESM::Database.with_connection do
           on_disconnect(reason)
         end
-
-        @socket.shutdown(:WR)
-        @socket.close
 
         ESM::Connection::Server.on_disconnect(self)
 
