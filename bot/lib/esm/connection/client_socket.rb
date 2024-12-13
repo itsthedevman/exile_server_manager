@@ -3,6 +3,8 @@
 module ESM
   module Connection
     class ClientSocket < Socket
+      HEADER_SIZE = 4 # bytes
+
       def address
         local_address.inspect_sockaddr
       end
@@ -10,7 +12,14 @@ module ESM
       def read
         return unless readable?
 
-        data = recv_nonblock(READ_BYTES)
+        length_bytes = recv(HEADER_SIZE)
+        length = length_bytes.unpack1("N")
+
+        info!("Preparing to read #{length} bytes")
+
+        data = recv(length)
+
+        info!("DATA | Size: #{data.size}, content: #{data.inspect}")
 
         Base64.strict_decode64(data)
       rescue => e

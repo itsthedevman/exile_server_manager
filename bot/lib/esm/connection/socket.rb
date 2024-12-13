@@ -3,8 +3,6 @@
 module ESM
   module Connection
     class Socket < SimpleDelegator
-      READ_BYTES = 65_444 - 20 - 8
-
       def readable?(timeout = 5)
         wait_readable(timeout).first.size > 0
       end
