@@ -610,16 +610,17 @@ destination_file="{build_path}/{addon}.pbo";
         let target_dir = build_path.join(dir);
 
         std::fs::create_dir_all(&target_dir)?;
-        fs_extra::dir::copy(source_dir, target_dir, &CopyOptions::default())
+
+        let options = CopyOptions::default().overwrite(true).copy_inside(true);
+        fs_extra::dir::copy(source_dir, target_dir, &options)
             .map_err(|e| e.to_string())?;
     }
 
     // Copy the mod over
-    let destination_path = builder.remote_build_path().join("@esm");
     Directory::transfer(
         builder,
         build_path.to_owned(),
-        destination_path.to_owned(),
+        builder.remote_build_path().to_owned(),
     )?;
 
     Ok(())
