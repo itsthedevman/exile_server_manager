@@ -118,8 +118,6 @@ module ESM
 
           model = ESM::Server.find_by_public_id(@public_id)
 
-          model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
-
           reason =
             if reason.present?
               reason
@@ -131,6 +129,8 @@ module ESM
           model.community.log_event(:reconnect, embed)
 
           info!(public_id:, server_id:, uptime: model.uptime, reason:)
+
+          model.update(server_start_time: nil, disconnected_at: ESM::Time.now)
         end
 
         def on_request(content)
