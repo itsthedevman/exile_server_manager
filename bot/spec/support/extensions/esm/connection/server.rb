@@ -3,6 +3,10 @@
 module ESM
   module Connection
     class Server
+      class << self
+        delegate :pause, :resume, to: :instance
+      end
+
       def pause
         @server.block!
 
