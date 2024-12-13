@@ -559,26 +559,32 @@ pub fn copy_esm_key_file(builder: &mut Builder) -> BuildResult {
 
 fn compile_mod(builder: &mut Builder) -> BuildResult {
     // Set up all the paths needed
-    let source_path = builder
-        .local_git_path
-        .join("src")
-        .join("@esm")
-        .join("addons");
-
-    let mod_build_path = builder.local_build_path.join("@esm");
-    let destination_path = mod_build_path.join("addons");
+    let source_path = builder.local_git_path.join("src").join("@esm");
+    let destination_path = builder.local_build_path.join("@esm");
 
     println!(); // Formatting
     print_wait_prefix(": Replacing macros")?;
 
-    let mut compiler = Compiler::new();
-    compiler
-        .source(&source_path.to_string_lossy())
-        .destination(&destination_path.to_string_lossy())
-        .target(&builder.args.build_os().to_string());
+    let paths = [
+        (source_path.join("addons"), destination_path.join("addons")),
+        (
+            source_path.join("optionals"),
+            destination_path.join("optionals"),
+        ),
+    ];
 
-    crate::compile::bind_replacements(&mut compiler);
-    compiler.compile()?;
+    for (source, destination) in paths {
+        let mut compiler = Compiler::new();
+
+        compiler
+            .source(&source.to_string_lossy())
+            .destination(&destination.to_string_lossy())
+            .target(&builder.args.build_os().to_string());
+
+        crate::compile::bind_replacements(&mut compiler);
+        compiler.compile()?;
+    }
+
     print_wait_success();
 
     compile_string_table(builder)?;
