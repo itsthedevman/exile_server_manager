@@ -86,10 +86,6 @@ pub struct Args {
     #[arg(short, long, value_enum, default_value_t = LogLevel::Debug)]
     log_level: LogLevel,
 
-    /// Sets the logging level for the extension and the mod
-    #[arg(short, long, value_enum, default_value_t = BuildEnv::Development)]
-    env: BuildEnv,
-
     /// The URI of the server hosting esm_bot
     #[arg(long, default_value_t = String::from("192.168.50.242:3003"))]
     bot_host: String,
@@ -126,10 +122,6 @@ impl Args {
         } else {
             BuildArch::X64
         }
-    }
-
-    pub fn build_env(&self) -> BuildEnv {
-        self.env
     }
 
     pub fn build_os(&self) -> BuildOS {
@@ -200,18 +192,6 @@ impl fmt::Display for LogLevel {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum BuildEnv {
-    Development,
-    Production,
-}
-
-impl fmt::Display for BuildEnv {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
-    }
-}
-
 #[derive(Debug)]
 pub enum BuildArch {
     X32,
@@ -257,22 +237,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match builder.run() {
         Ok(_) => {}
-        Err(e) => println!(
-            "{} - {} - {}",
-            "<esm_bt>".blue().bold(),
-            "error".red().bold(),
-            e
-        ),
+        Err(e) => {
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "error".red().bold(),
+                e
+            );
+
+            exit(1)
+        }
     };
 
     match builder.finish() {
         Ok(_) => {}
-        Err(e) => println!(
-            "{} - {} - {}",
-            "<esm_bt>".blue().bold(),
-            "error".red().bold(),
-            e
-        ),
+        Err(e) => {
+            println!(
+                "{} - {} - {}",
+                "<esm_bt>".blue().bold(),
+                "error".red().bold(),
+                e
+            );
+
+            exit(1)
+        }
     };
 
     Ok(())

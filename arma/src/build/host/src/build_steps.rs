@@ -4,6 +4,7 @@ use crate::string_table;
 use colored::*;
 use common::{BuildResult, Command};
 use compiler::Compiler;
+use fs_extra::dir::CopyOptions;
 use glob::glob;
 use lazy_static::lazy_static;
 use redis::Commands;
@@ -264,7 +265,7 @@ pub fn detect_rebuild(builder: &mut Builder) -> BuildResult {
         .map(|addon| format!(r"addons{path_separator}{addon}.pbo"))
         .collect();
 
-    if matches!(builder.args.build_env(), BuildEnv::Development) {
+    if !builder.args.release {
         files_to_check.push(format!(r"addons{path_separator}esm_test.pbo"));
     }
 
@@ -660,12 +661,12 @@ pub fn build_mod(builder: &mut Builder) -> BuildResult {
     compile_mod(builder)?;
 
     let mut extra_addons = vec![];
-    if matches!(builder.args.build_env(), BuildEnv::Development) {
+    if !builder.args.release {
         extra_addons.push("esm_test");
     }
 
-    let build_path = builder.local_build_path.join("@esm").join("addons");
     let source_path = builder.local_git_path.join("src").join("@esm");
+    let build_path = builder.local_build_path.join("@esm");
 
     for addon in ADDONS.iter().chain(extra_addons.iter()) {
         if !builder.rebuild_addon(addon) {
@@ -681,7 +682,7 @@ destination_file="{build_path}/{addon}.pbo";
 
 [[ -f "$destination_file" ]] || echo "Failed to build - $destination_file does not exist";
 "#,
-            build_path = build_path.display(),
+            build_path = build_path.join("addons").display(),
             armake2 = builder.local_git_path.join("bin").join("armake2").display()
         );
 
@@ -693,6 +694,25 @@ destination_file="{build_path}/{addon}.pbo";
             .execute(None)?;
     }
 
+    // Copy extra directories and files
+    let files = ["README.md"];
+    let directories = ["sql"];
+
+    // Copy files
+    for file in files.iter() {
+        File::copy(&source_path.join(file), &build_path.join(file))?;
+    }
+
+    // Copy directories
+    for dir in directories.iter() {
+        let source_dir = source_path.join(dir);
+        let target_dir = build_path.join(dir);
+
+        std::fs::create_dir_all(&target_dir)?;
+        fs_extra::dir::copy(source_dir, target_dir, &CopyOptions::default())
+            .map_err(|e| e.to_string())?;
+    }
+
     // Copy the mod over
     let destination_path = builder.remote_build_path().join("@esm");
     Directory::transfer(
@@ -700,15 +720,6 @@ destination_file="{build_path}/{addon}.pbo";
         build_path.to_owned(),
         destination_path.to_owned(),
     )?;
-
-    // Copy extra directories and files
-    for directory in ["optionals", "sql", "README.md"].iter() {
-        Directory::transfer(
-            builder,
-            source_path.join(directory),
-            destination_path.to_owned(),
-        )?;
-    }
 
     Ok(())
 }
@@ -740,14 +751,15 @@ pub fn build_extension(builder: &mut Builder) -> BuildResult {
     };
 
     // Handle env feature switching
-    let features = match builder.args.build_env() {
-        BuildEnv::Development => "--features development",
-        BuildEnv::Production => "",
-    };
+    let mut features = "--features development";
+    let mut release_flag = "";
+    let mut build_dir = "debug";
 
-    // Handle release flag
-    let release_flag = "--release";
-    let build_dir = "release";
+    if builder.args.release {
+        features = "";
+        release_flag = "--release";
+        build_dir = "release";
+    }
 
     let script = match builder.args.build_os() {
         BuildOS::Windows => {

@@ -405,7 +405,7 @@ impl Builder {
             r#"{label} - : {SEPARATOR}
 {label} - : {header:^40}
 {label} - : {build_queue_label:>17} -> {build_queue}
-{label} - : {env_label:>17} -> {env:?}
+{label} - : {env_label:>17} -> {env}
 {label} - : {log_label:>17} -> {log}
 {label} - : {git_dir_label:>17} -> {git_directory}
 {label} - : {build_dir_label:>17} -> {build_directory}
@@ -419,7 +419,11 @@ impl Builder {
             git_dir_label = "git directory".bold(),
             build_dir_label = "build directory".bold(),
             server_dir_label = "server directory".bold(),
-            env = self.args.build_env(),
+            env = if self.args.release {
+                "production"
+            } else {
+                "development"
+            },
             log = self.args.log_level(),
             git_directory = self.local_git_path.to_string_lossy(),
             build_directory = self.remote_build_path_str(),

@@ -58,7 +58,7 @@ run_command cargo test --workspace --quiet
 ##################################
 # Build @esm
 echo_step "Building @esm"
-run_command ./bin/build --only=mod --env=production --release --target=linux
+run_command ./bin/build --only=mod --release --target=linux
 run_command find $build_dir/addons -mindepth 1 -type d -exec rm -rf {} +
 run_command rm -f $build_dir/addons/esm_test.pbo
 run_command cp -rf $build_dir $release_dir
@@ -66,25 +66,25 @@ run_command cp -rf $build_dir $release_dir
 ##################################
 # Extension - Windows (x32)
 echo_step "Building esm.dll"
-run_command ./bin/build --only=extension --env=production --release --target=windows --x32
+run_command ./bin/build --only=extension --release --target=windows --x32
 run_command cp $public_dir/esm.dll $release_dir/@esm
 
 ##################################
 # Extension - Windows (x64)
 echo_step "Building esm_x64.dll"
-run_command ./bin/build --only=extension --env=production --release --target=windows
+run_command ./bin/build --only=extension --release --target=windows
 run_command cp $public_dir/esm_x64.dll $release_dir/@esm
 
 ##################################
 # Extension - Linux (x32)
 echo_step "Building esm.so"
-run_command ./bin/build --only=extension --env=production --release --target=linux --x32
+run_command ./bin/build --only=extension --release --target=linux --x32
 run_command cp $build_dir/esm.so $release_dir/@esm
 
 ##################################
 # Extension - Linux (x64)
 echo_step "Building esm_x64.so"
-run_command ./bin/build --only=extension --env=production --release --target=linux
+run_command ./bin/build --only=extension --release --target=linux
 run_command cp $build_dir/esm_x64.so $release_dir/@esm
 
 ##################################
