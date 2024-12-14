@@ -1,10 +1,9 @@
 GIT
   remote: https://github.com/itsthedevman/discordrb.git
-  revision: c6ea7cfa65a3f1cdff8790e5fbe8d3a803fab189
+  revision: 261501bc43810b2f86f13c23fb2e2b886fa50645
   branch: fix/group-subcommand-mixing
   specs:
     discordrb (3.5.0)
-      base64 (~> 0.2.0)
       discordrb-webhooks (~> 3.5.0)
       ffi (>= 1.9.24)
       opus-ruby
