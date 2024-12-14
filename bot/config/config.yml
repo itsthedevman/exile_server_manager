@@ -1,6 +1,7 @@
-default: &default
+default:
   # Your Discord bot token
   # Used to connect to Discord ;)
+  &default
   token: <%= ENV["DISCORD_TOKEN"] %>
 
   # Your Steam API key
@@ -60,14 +61,31 @@ default: &default
     community_ids: 30
 
   tips:
-  - You can set a default for server and/or community from the player dashboard. Once set, you can omit the server/community argument on most commands to use your defaults.
-  - You can create aliases for servers and/or communities from the player dashboard. Once created, you can use the alias instead of a server/community ID
-  - Player mode allows you to use ESM on your own Discord without hosting servers
-  - Exile Server Manager was created in 2018 by one person and is still developed by that same person to this day
-  - You can route your XM8 notifications to different channels on your Discord. These can be configured from the player dashboard or server dashboard
-  - "ESM's tech stack includes Ruby, Ruby on Rails, Redis, and Postgres. The server mod is written in SQF/C# and will be replaced with a Rust one soon:tm:"
-  - 'The "slash" part of a slash command can be omitted when used in other commands. For example:```/help with:my aliases```'
-  - "Looking for a community or server, but don't know their ID(s)? Try out the new ID lookup tool on my website: https://esmbot.com/tools/id_lookup"
+  - "Admins can use `/community admin find_player` to get comprehensive information about any player via their Steam UID, Discord ID, or @mention."
+  - "Looking for a community or server ID? Use the ID lookup tool at https://esmbot.com/tools/id_lookup"
+  - "Most commands can be used either in a Discord channel or via DM with ESM, except admin commands which must be used in channels."
+  - "Not sure about a command's usage? Use `/help with: <command>` to see detailed documentation and examples."
+  - "Server admins: Territory restoration is possible with `/territory admin restore` if a territory was marked for deletion due to missed payments."
+  - "Server admins: The `/server admin broadcast` command lets you send messages to all registered players on your server(s)."
+  - "Server admins: Use `/server admin search_logs` to find specific items or player activities."
+  - "Server admins: Use `/server admin search_logs` to search through the last 14 days of trading, territory, and death logs."
+  - "Server admins: You can customize where different types of XM8 notifications are sent through the server dashboard."
+  - "Server admins: You can request to forward your members' XM8 notifications to specific channels through the server dashboard."
+  - "Server admins: You can reset command cooldowns for specific players or entire servers using `/community admin reset_cooldown`."
+  - "Server rewards require confirmation in your DMs with ESM before delivery - make sure you're online and alive first!"
+  - "Territory IDs can be customized using `/territory set_id` to make them more memorable and easier to type."
+  - "Use `/community servers` to see all registered servers for a community, whether they're online or not."
+  - "Use `/server my territories` to see all territories you own or are a member of, including their IDs and payment status."
+  - "Want to gamble all or half your poptabs? Use `all` or `half` instead of a number with the gamble command."
+  - "Want your base raid notifications in one Discord and grinding notifications in another? Set up multiple notification routes in your dashboard!"
+  - "When in a Discord server's text channel, you can omit the community ID part of a server ID - ESM will automatically use the current community's ID. For example, use `malden` instead of `esm_malden`."
+  - "When using `/territory pay`, the cost will be taken from your locker's poptabs."
+  # - "XM8 notifications are stored and queued even if ESM is temporarily disconnected - you won't miss important alerts."
+  - "XM8 notifications can be enabled/disabled individually - you don't have to receive all types if you don't want to!"
+  - "You can check server details like connection info and next restart time with `/server details`."
+  - "You can check your gambling statistics on any server using `/server gamble amount: stats`."
+  - "You can forward your XM8 notifications to any channel in a player mode Discord server - check the XM8 Notification Routes section in your dashboard!"
+  - "You can set default server and community IDs from the player dashboard to avoid typing them in every command."
 
 development:
   !!merge <<: *default

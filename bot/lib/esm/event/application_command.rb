@@ -113,7 +113,7 @@ module ESM
       def add_tip(content)
         return content unless send_tip?
 
-        content + "\n:information_source: **Did you know?** *#{@tip}*"
+        content + "\n\n:information_source: **Did you know?**\n#{@tip}"
       end
     end
   end
