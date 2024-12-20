@@ -9,7 +9,7 @@ readonly args=("$@")
 
 readonly root_dir="$(pwd)"
 readonly build_dir=$root_dir/target/@esm
-readonly release_dir=$root_dir/release
+readonly release_dir=$root_dir/target/build_release
 
 # Annoying workaround for windows
 readonly public_dir="$(dirname "$(dirname "$root_dir")")/Public/exile_server_manager/@esm"
@@ -20,38 +20,73 @@ readonly crate_version=$(
     cut -d# -f2 | \
     cut -d@ -f2
 )
-readonly zip_filename="@esm-$crate_version.$git_rev.zip"
-readonly total_steps=9
+readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g')-$git_rev.zip"
+readonly total_steps=10
+
 step=0
+tag_created=false
+skip_release=false
 
 ##################################
 # Functions
+function echo_with_prefix() {
+    echo "<esm_bt> - : $1"
+}
+
 function echo_step() {
     ((step++)) || true
-    echo "<esm_bt> - : ----------------------------------------"
-    echo "<esm_bt> - : Step $step/$total_steps: $1"
-    echo "<esm_bt> - : ----------------------------------------"
+    echo_with_prefix "----------------------------------------"
+    echo_with_prefix "Step $step/$total_steps: $1"
+    echo_with_prefix "----------------------------------------"
 }
 
 function run_command() {
     if ! "$@"; then
-        echo "!!! Command failed: $*"
+        echo_with_prefix "Fatal - Command failed: $*"
         return 1
     fi
 }
 
+function confirm() {
+    local prompt="$1"
+    while true; do
+        read -p "<esm_bt> - : $prompt [y/n]: " answer
+        case ${answer:-y} in
+            [Yy]* | '' ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo_with_prefix "Please answer y/n";;
+        esac
+    done
+}
+
 ##################################
-# Preparation
-echo_step "Preparing"
-run_command rm -rf $build_dir
-run_command rm -rf $public_dir
-run_command rm -rf $release_dir
-run_command mkdir -p $release_dir
+# Check for the git tag
+echo_step "Checking for tag"
+
+if git show-ref --tags "v$crate_version" --quiet; then
+    if ! confirm "Tag v$crate_version already exists - continue?"; then
+        exit 1
+    fi
+elif confirm "Tag v$crate_version does not exist - create tag?"; then
+    git tag -a "v$crate_version"
+    tag_created=true
+else
+    echo_with_prefix "Tag skipped - Github release will not created"
+    skip_release=true
+fi
 
 ##################################
 # Run tests
 echo_step "Running tests"
 run_command cargo test --workspace --quiet
+
+##################################
+# Preparation
+echo_step "Preparing to build"
+run_command rm -rf $build_dir
+run_command rm -rf $public_dir
+run_command rm -rf $release_dir
+run_command mkdir -p $release_dir
 
 ##################################
 # Build @esm
@@ -91,5 +126,18 @@ echo_step "Zipping $zip_filename"
 cd $release_dir && zip -r $zip_filename ./@esm
 
 ##################################
+# Create a release
+if [[ "$tag_created" == true ]]; then
+    git push --tags
+fi
+
+if [[ "$skip_release" == false ]] && confirm "Create a GitHub release for v$crate_version?"; then
+    gh release create v$crate_version \
+        --generate-notes \
+        --draft \
+        "$release_dir/$zip_filename"
+fi
+
+##################################
 # Woohoo!
-echo_step "Build completed"
+echo_step "Release build completed"

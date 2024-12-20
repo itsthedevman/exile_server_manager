@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Removed
+
+## [2.0.0] - 12024-12-20
+### Added
 - Added Rust based extension with Windows x32/x64 and Linux x32/x64 support
 - Added `@esm/sql` directory for storing SQL related files
 - Added `@esm/sql/01.sql` for this releases required migrations
@@ -108,4 +115,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed `ESM_fnc_attemptReconnect`
 
-[Unreleased]: https://github.com/itsthedevman/esm_arma/compare/401f167e731c4bcb8ceb76a1a54cb3b4d343d48b..main
+[Unreleased]: https://github.com/itsthedevman/esm_arma/compare/v2.0.0..main
+[2.0.0]: https://github.com/itsthedevman/esm_arma/compare/401f167e731c4bcb8ceb76a1a54cb3b4d343d48b..v2.0.0
