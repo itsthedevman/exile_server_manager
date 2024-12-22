@@ -1,6 +1,6 @@
 [package]
 name = "esm"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["Bryan <WolfkillArcadia@gmail.com>"]
 edition = "2018"
 
@@ -39,6 +39,7 @@ flate2 = "1.0"
 num-format = "0.4"
 unicode-segmentation = "1.12"
 regex = "1.1"
+humantime = "2.1"
 
 [dev-dependencies]
 pretty_assertions = "1"

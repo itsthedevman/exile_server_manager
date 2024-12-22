@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [2.0.1]
+
+### Changed
+- Fixed client reconnection interval calculation
+
 ## [2.0.0] - 12024-12-20
 ### Added
 - Added Rust based extension with Windows x32/x64 and Linux x32/x64 support

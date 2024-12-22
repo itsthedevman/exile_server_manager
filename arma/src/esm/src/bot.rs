@@ -5,9 +5,11 @@ use encryption::*;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use humantime::format_duration;
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
 use rand::prelude::*;
+use std::cmp::min;
 use std::io::prelude::*;
 use std::net::ToSocketAddrs;
 use std::sync::atomic::AtomicI64;
@@ -15,6 +17,13 @@ use std::sync::Mutex as SyncMutex;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::time::sleep;
+
+const RECONNECT_MIN: Duration = Duration::from_secs(5); // 5 seconds
+const RECONNECT_MAX: Duration = Duration::from_secs(300); // 5 minutes
+
+// Keep the counter in check
+const RECONNECT_COUNTER_MAX: i64 =
+    (RECONNECT_MAX.as_secs() / RECONNECT_MIN.as_secs()) as i64;
 
 lazy_static! {
     pub static ref TOKEN_MANAGER: Arc<SyncMutex<TokenManager>> =
@@ -318,7 +327,6 @@ fn on_connect(connected: bool) {
     }
 
     CONNECTED.store(true, Ordering::SeqCst);
-    RECONNECTION_COUNT.store(0, Ordering::SeqCst);
 
     let request = Request::new()
         .set_type(RequestType::Identification)
@@ -385,25 +393,21 @@ fn on_disconnect() {
 
     // Get the current reconnection count and calculate the wait time
     let current_count = RECONNECTION_COUNT.load(Ordering::SeqCst);
-    let time_to_wait: f32 = if cfg!(feature = "development") {
-        0.5
+    let time_to_wait = if cfg!(feature = "development") {
+        Duration::from_millis(500)
     } else {
-        let mut rng = thread_rng();
+        // Add jitter of 1-5 seconds to prevent slamming the server all at once
+        let jitter = Duration::from_secs_f32(thread_rng().gen_range(1.0..5.0));
 
-        // Most servers share the same restart time. This'll spread out the connection requests so the bot isn't slammed all at once, over and over again
-        let offset: f32 = rng.gen();
-
-        ((current_count * 15) as f32) + offset
+        min(RECONNECT_MIN * current_count as u32 + jitter, RECONNECT_MAX)
     };
 
-    let time_to_wait = Duration::from_secs_f32(time_to_wait);
     warn!(
-        "[on_disconnect] ⚠ *Click* Your call with the bot was lost. Attempting to call back in {:?}",
-        time_to_wait
+        "[on_disconnect] ⚠ *Click* Your call with the bot was lost. Attempting to call back in {}",
+        format_duration(Duration::from_secs(time_to_wait.as_secs()))
     );
 
-    // Sleep a max of 5 minutes in between connection attempts
-    if current_count <= 20 {
+    if current_count <= RECONNECT_COUNTER_MAX {
         RECONNECTION_COUNT.fetch_add(1, Ordering::SeqCst);
     }
 
@@ -504,6 +508,8 @@ fn on_handshake(mut request: Request) -> ESMResult {
 }
 
 fn on_initialize(request: Request) -> ESMResult {
+    RECONNECTION_COUNT.store(0, Ordering::SeqCst);
+
     let init = lock!(INIT).clone();
 
     let message = Message::new()
