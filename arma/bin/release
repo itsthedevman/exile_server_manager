@@ -14,13 +14,12 @@ readonly release_dir=$root_dir/target/build_release
 # Annoying workaround for windows
 readonly public_dir="$(dirname "$(dirname "$root_dir")")/Public/exile_server_manager/@esm"
 
-readonly git_rev=$(git rev-parse --short HEAD)
 readonly crate_version=$(
     cargo pkgid file://$(pwd)/src/esm | \
     cut -d# -f2 | \
     cut -d@ -f2
 )
-readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g')-$git_rev.zip"
+readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
 readonly total_steps=10
 
 step=0
