@@ -20,7 +20,7 @@ readonly crate_version=$(
         cut -d@ -f2
 )
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
-readonly total_steps=10
+readonly total_steps=8
 
 step=0
 tag_created=false
@@ -53,14 +53,14 @@ function confirm() {
         case ${answer:-y} in
         [Yy]* | '') return 0 ;;
         [Nn]*) return 1 ;;
-        *) echo_with_prefix "Please answer y/n" ;;
+        *) echo_with_prefix "Please answer y/n [y]" ;;
         esac
     done
 }
 
 ##################################
 # Check for the git tag
-echo_step "Checking for tag"
+echo_with_prefix "Checking for git tag"
 
 if git show-ref --tags "v$crate_version" --quiet; then
     if ! confirm "Tag v$crate_version already exists - continue?"; then
@@ -93,7 +93,8 @@ if [[ "$skip_build" == true ]]; then
         echo_with_prefix "Error: Build artifact '$zip_filename' not found in $release_dir"
         exit 1
     fi
-    echo_step "Using existing build artifact: $zip_filename"
+
+    echo_with_prefix "Using existing build artifact: $zip_filename"
 else
     ##################################
     # Run tests
@@ -172,4 +173,4 @@ fi
 
 ##################################
 # Woohoo!
-echo_step "Release build completed"
+echo_with_prefix "Release build completed"
