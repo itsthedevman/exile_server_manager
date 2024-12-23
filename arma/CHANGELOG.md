@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [2.0.1]
+## [2.0.1] - 12024-12-22
 
 ### Changed
 - Fixed client reconnection interval calculation
@@ -120,5 +120,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed `ESM_fnc_attemptReconnect`
 
-[Unreleased]: https://github.com/itsthedevman/esm_arma/compare/v2.0.0..main
+[Unreleased]: https://github.com/itsthedevman/esm_arma/compare/v2.0.1..main
+[2.0.1]: https://github.com/itsthedevman/esm_arma/compare/v2.0.0..v2.0.1
 [2.0.0]: https://github.com/itsthedevman/esm_arma/compare/401f167e731c4bcb8ceb76a1a54cb3b4d343d48b..v2.0.0
