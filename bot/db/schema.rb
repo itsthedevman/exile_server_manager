@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_23_205434) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -92,7 +92,6 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
     t.text "welcome_message", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.boolean "allow_v2_servers", default: false
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["guild_id"], name: "index_communities_on_guild_id", unique: true
     t.index ["public_id"], name: "index_communities_on_public_id", unique: true
@@ -110,19 +109,25 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
   end
 
   create_table "cooldowns", force: :cascade do |t|
-    t.string "command_name"
-    t.integer "community_id"
-    t.integer "server_id"
-    t.integer "user_id"
+    t.uuid "public_id", null: false
+    t.bigint "community_id"
+    t.bigint "server_id"
+    t.bigint "user_id"
     t.string "steam_uid"
-    t.integer "cooldown_quantity"
-    t.string "cooldown_type"
+    t.string "type", null: false
+    t.string "key", null: false
+    t.integer "cooldown_quantity", default: 2, null: false
+    t.string "cooldown_type", default: "seconds", null: false
     t.integer "cooldown_amount", default: 0
-    t.datetime "expires_at", precision: nil
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.index ["command_name", "steam_uid", "community_id"], name: "index_cooldowns_on_command_name_and_steam_uid_and_community_id"
-    t.index ["command_name", "user_id", "community_id"], name: "index_cooldowns_on_command_name_and_user_id_and_community_id"
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["community_id", "steam_uid", "type", "key"], name: "index_cooldowns_on_community_id_and_steam_uid_and_type_and_key", unique: true
+    t.index ["community_id", "user_id", "type", "key"], name: "index_cooldowns_on_community_id_and_user_id_and_type_and_key", unique: true
+    t.index ["community_id"], name: "index_cooldowns_on_community_id"
+    t.index ["public_id"], name: "index_cooldowns_on_public_id", unique: true
+    t.index ["server_id"], name: "index_cooldowns_on_server_id"
+    t.index ["user_id"], name: "index_cooldowns_on_user_id"
   end
 
   create_table "downloads", force: :cascade do |t|
@@ -201,18 +206,33 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
     t.index ["server_id"], name: "index_server_mods_on_server_id"
   end
 
+  create_table "server_reward_items", force: :cascade do |t|
+    t.uuid "public_id", null: false
+    t.bigint "server_reward_id"
+    t.string "reward_type", null: false
+    t.string "classname"
+    t.integer "quantity", null: false
+    t.integer "expiry_value", default: 0, null: false
+    t.string "expiry_unit", default: "never", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["public_id"], name: "index_server_reward_items_on_public_id", unique: true
+    t.index ["server_reward_id"], name: "index_server_reward_items_on_server_reward_id"
+  end
+
   create_table "server_rewards", force: :cascade do |t|
-    t.integer "server_id", null: false
+    t.uuid "public_id", null: false
+    t.bigint "server_id"
+    t.string "reward_id"
+    t.integer "cooldown_quantity", default: 2
+    t.string "cooldown_type", default: "never"
     t.json "reward_items", default: {}
     t.bigint "player_poptabs", default: 0
     t.bigint "locker_poptabs", default: 0
     t.bigint "respect", default: 0
-    t.datetime "deleted_at", precision: nil
-    t.string "reward_id"
-    t.json "reward_vehicles"
-    t.integer "cooldown_quantity"
-    t.string "cooldown_type"
-    t.index ["deleted_at"], name: "index_server_rewards_on_deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["public_id"], name: "index_server_rewards_on_public_id", unique: true
     t.index ["server_id", "reward_id"], name: "index_server_rewards_on_server_id_and_reward_id", unique: true
     t.index ["server_id"], name: "index_server_rewards_on_server_id"
   end
@@ -257,6 +277,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
     t.string "number_locale"
     t.integer "exile_logs_search_days"
     t.json "additional_logs", default: []
+    t.boolean "logging_reward_admin", default: true
     t.index ["deleted_at"], name: "index_server_settings_on_deleted_at"
     t.index ["server_id"], name: "index_server_settings_on_server_id"
   end
@@ -397,6 +418,17 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "user_steam_uid_histories", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "previous_steam_uid"
+    t.string "new_steam_uid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_user_steam_uid_histories_on_created_at"
+    t.index ["previous_steam_uid", "new_steam_uid"], name: "idx_steam_uids"
+    t.index ["user_id"], name: "index_user_steam_uid_histories_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "discord_id", null: false
     t.string "discord_username", null: false
@@ -415,12 +447,13 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
   add_foreign_key "community_defaults", "servers", on_delete: :cascade
   add_foreign_key "cooldowns", "communities", on_delete: :cascade
   add_foreign_key "cooldowns", "servers", on_delete: :cascade
-  add_foreign_key "cooldowns", "users", on_delete: :nullify
+  add_foreign_key "cooldowns", "users", on_delete: :cascade
   add_foreign_key "log_entries", "logs"
   add_foreign_key "logs", "servers", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestee_user_id", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestor_user_id", on_delete: :cascade
   add_foreign_key "server_mods", "servers", on_delete: :cascade
+  add_foreign_key "server_reward_items", "server_rewards", on_delete: :cascade
   add_foreign_key "server_rewards", "servers", on_delete: :cascade
   add_foreign_key "server_settings", "servers", on_delete: :cascade
   add_foreign_key "servers", "communities", on_delete: :cascade
@@ -438,4 +471,5 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_05_054436) do
   add_foreign_key "user_notification_routes", "communities", column: "destination_community_id", on_delete: :cascade
   add_foreign_key "user_notification_routes", "users", on_delete: :cascade
   add_foreign_key "user_steam_data", "users", on_delete: :cascade
+  add_foreign_key "user_steam_uid_histories", "users", on_delete: :nullify
 end
