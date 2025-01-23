@@ -15,24 +15,6 @@
   // 	],
   // 	"description": "Log output to console"
   // }
-  "Binding.pry": {
-    "scope": "ruby",
-    "prefix": [
-      "bd"
-    ],
-    "body": "binding.pry",
-    "description": "Inserts a pry breakpoint"
-  },
-  "# frozen_string_literal: true": {
-    "scope": "ruby",
-    "prefix": "fsl",
-    "body": [
-      "# frozen_string_literal: true",
-      "",
-      "$0"
-    ],
-    "description": "Inserts the magic ruby comment to freeze all string literals"
-  },
   "ESM Log (Trace)": {
     "scope": "ruby",
     "prefix": [
