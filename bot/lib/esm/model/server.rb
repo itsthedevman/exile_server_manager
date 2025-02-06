@@ -104,6 +104,8 @@ module ESM
     end
 
     def time_left_before_restart
+      return "Offline" if server_start_time.nil?
+
       restart_time = server_start_time + server_setting.server_restart_hour.hours + server_setting.server_restart_min.minutes
       ESM::Time.distance_of_time_in_words(restart_time)
     end
