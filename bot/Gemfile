@@ -52,6 +52,7 @@ group :development do
   gem "rubocop-performance"
   gem "rubocop-rails"
   gem "yard"
+  gem "kramdown"
 end
 
 group :test do
