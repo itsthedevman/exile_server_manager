@@ -21,6 +21,8 @@ module ESM
       return self if user.steam_uid.blank?
 
       player_data = ESM::SteamAccount.new(user.steam_uid)
+      return self unless player_data.valid?
+
       update(
         username: player_data.username,
         avatar: player_data.avatar,

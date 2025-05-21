@@ -2,8 +2,14 @@
 
 module ESM
   class SteamAccount
+    EMPTY_STRUCT = OpenStruct.new
+
     def initialize(steam_uid)
       @steam_uid = steam_uid
+    end
+
+    def valid?
+      summary.is_a?(Data)
     end
 
     def username
@@ -51,16 +57,20 @@ module ESM
 
     def summary
       @summary ||= lambda do
-        response = HTTParty.get("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002", query: query)
+        response = HTTParty.get(
+          "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002",
+          query:
+        )
+
         if !response.ok? || response.body.nil? || response["response"].blank?
           error!("Steam summary is nil! UID: #{@steam_uid}\nResponse: #{response}")
-          return
+          return EMPTY_STRUCT
         end
 
         data = response.dig("response", "players")&.first
         if data.blank?
           error!("Steam players response is blank! UID: #{@steam_uid}\nResponse: #{response}")
-          return
+          return EMPTY_STRUCT
         end
 
         {
@@ -91,10 +101,10 @@ module ESM
     #       "EconomyBan" => "none"
     def bans
       @bans ||= lambda do
-        response = HTTParty.get("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1", query: query)
+        response = HTTParty.get("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1", query:)
         if !response.ok? || response.body.nil? || response["players"].blank?
           error!("Steam bans is nil! UID: #{@steam_uid}\nResponse: #{response}")
-          return
+          return EMPTY_STRUCT
         end
 
         data = response["players"].first
