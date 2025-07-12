@@ -1,0 +1,23 @@
+doctype html
+html
+  head
+    title
+      = content_for(:title) || "Exile Server Manager"
+    meta[name="viewport" content="width=device-width,initial-scale=1"]
+    meta[name="apple-mobile-web-app-capable" content="yes"]
+    meta[name="mobile-web-app-capable" content="yes"]
+    = csrf_meta_tags
+    = csp_meta_tag
+    = yield :head
+    - # Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!)
+    - #= tag.link rel: "manifest", href: pwa_manifest_path(format: :json)
+    link[rel="icon" href="/icon.png" type="image/png"]
+    link[rel="apple-touch-icon" href="/icon.png"]
+    = vite_client_tag
+    = vite_javascript_tag "application"
+    = vite_stylesheet_tag "application.scss"
+  body[data-bs-theme="dark"]
+    #nav-container
+      = render partial: "shared/nav", locals: local_assigns
+    #main-container
+      = yield
