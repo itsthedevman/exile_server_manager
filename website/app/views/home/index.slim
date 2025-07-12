@@ -1,2 +1,91 @@
-h1
-  | Hello World
+.container.mt-5
+  .min-vh-100.d-flex.flex-column
+    .text-center.mt-5.mb-5
+      h2.mb-2
+        | Interact with E
+        span.text-danger x
+        | ile like never before
+      p.text-muted
+        | Developed exclusively for Arma 3 Exile, ESM is the bridge between Discord and your Exile server(s)
+      .text-center.mt-4
+        = link_to "Learn More", "#learn-more",
+          class: "btn btn-secondary btn-lg text-white mt-3",
+          data: { bs_smooth_scroll: "true" }
+
+    #learn-more
+      .mb-5
+        h2
+          = "30 Powerful "
+          = link_to "Commands", ""
+        p
+          em Do you need to compensate a player but don't feel like starting Arma?
+          |  Adjust a player's poptabs and respect with
+          code !player
+          br
+          em Want to give new players a welcome gift? Maybe as a weekly reward?
+          code<> !reward
+          |  has your back.
+          br
+          em Big clan dispute? Do you need to remove someone from your territory that second?
+          |  Look no further than
+          code !remove
+          br
+          | From territory management, gambling, and doggos; to compensation, logs, and executing SQF. ESM has commands for players and server admins alike.
+          br
+          | All accessible from any device that runs Discord.
+          br
+          em Neat, huh?
+          br
+          = link_to "Learn More", ""
+
+      .mb-5.text-end
+        h2 Offline XM8 Notifications
+        p
+          | By taking control of the XM8 notification system, ESM adds
+          span.text-danger.cursor-pointer(
+            data-bs-toggle="tooltip"
+            data-bs-html="true"
+            data-bs-title="These new types include<ul class='mb-0 ps-3'><li>Custom</li><li>MarXet Item Sold</li><li>Grind Started</li><li>Hack Started</li><li>Charge Plant Started</li><li>Flag Steal Started<span class='text-danger'>*</span></li></ul><small><span class='text-danger'>*</span> optional</small>"
+          )
+            |  6 new notification types
+          | and notifies
+          span.text-danger(
+            data-bs-toggle="tooltip"
+            data-bs-title="Players must be registered with ESM"
+          ) players using Discord
+          | .
+          br
+          | Each XM8 notification is completely customizable. The title, the content, and even color can be changed.
+          br
+          em Can't settle on one message?
+          |  ESM allows you to create as many as you want; randomly picking one before sending.
+          br
+          | This way you can provide the recipient motivation, feedback, or perhaps even remind them to hydrate...
+          br
+          em All while their base is being raided.
+          br
+          = link_to "Learn More", ""
+
+      .mb-5
+        h2 Fully customizable
+        p
+          | ESM is shipped ready to go and requires only a basic setup process; allowing you to add ESM to your server(s) within minutes.
+          br
+          | Each server linked to ESM can be fully customized from its rewards, to logging and payments.
+          br
+          em Want to increase the stakes for gambling?
+          |  You can tweak every part of the
+          = link_to "equation", ""
+          |  to make it
+          em just right
+          | .
+          br
+          em Don't want command to be used? Maybe you want to limit it to a Discord role?
+          |  With a few exceptions, you can fully customize each command to your liking.
+
+      .text-center.mt-5
+        = link_to "", class: "btn btn-primary btn-lg text-white me-3" do
+          = image_tag "discord_white.svg", size: "36x41", class: "me-2"
+          | Invite to Discord
+        = link_to "Get Started", "",
+          class: "btn btn-secondary btn-lg text-white mt-3 mt-md-0"
