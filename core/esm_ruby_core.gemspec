@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "lib/esm_ruby_core/version"
-
 Gem::Specification.new do |spec|
   spec.name = "esm_ruby_core"
   spec.version = "0.0.1"

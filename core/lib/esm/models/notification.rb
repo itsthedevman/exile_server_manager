@@ -6,7 +6,12 @@ module ESM
     # INITIALIZE
     # =============================================================================
 
-    DEFAULTS = YAML.safe_load_file(File.expand_path("config/notifications.yml")).freeze
+    DEFAULTS = YAML.safe_load_file(
+      File.join(
+        File.expand_path("..", __dir__),
+        "defaults/notifications.yml"
+      )
+    ).freeze
 
     # =============================================================================
     # DATA STRUCTURE

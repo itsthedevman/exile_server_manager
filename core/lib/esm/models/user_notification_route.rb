@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class UserNotificationRoute < ESM::ApplicationRecord
+  class UserNotificationRoute < ApplicationRecord
     # =============================================================================
     # INITIALIZE
     # =============================================================================
