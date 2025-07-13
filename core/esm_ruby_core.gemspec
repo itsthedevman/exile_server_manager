@@ -4,7 +4,7 @@ require_relative "lib/esm_ruby_core/version"
 
 Gem::Specification.new do |spec|
   spec.name = "esm_ruby_core"
-  spec.version = EsmRubyCore::VERSION
+  spec.version = "0.0.1"
   spec.authors = ["Bryan"]
   spec.email = ["bryan@itsthedevman.com"]
 
