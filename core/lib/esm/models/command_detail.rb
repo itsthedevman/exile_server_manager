@@ -20,6 +20,8 @@ module ESM
     attribute :command_arguments, :json
     attribute :command_attributes, :json
     attribute :command_requirements, :json
+    attribute :created_at, :datetime
+    attribute :updated_at, :datetime
 
     attr_reader :configuration
 

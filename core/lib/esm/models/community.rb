@@ -20,7 +20,6 @@ module ESM
     attribute :log_reconnect_event, :boolean, default: false
     attribute :log_xm8_event, :boolean, default: true
     attribute :log_discord_log_event, :boolean, default: true
-    attribute :log_error_event, :boolean, default: true
     attribute :player_mode_enabled, :boolean, default: true
     attribute :territory_admin_ids, :json, default: []
     attribute :dashboard_access_role_ids, :json, default: []

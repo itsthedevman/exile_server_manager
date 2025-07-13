@@ -9,6 +9,7 @@ class UserSteamUidHistory < ApplicationRecord
   # DATA STRUCTURE
   # =============================================================================
 
+  attribute :user_id, :integer
   attribute :previous_steam_uid, :string
   attribute :new_steam_uid, :string
   attribute :created_at, :datetime

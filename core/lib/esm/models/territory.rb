@@ -17,6 +17,7 @@ module ESM
     attribute :territory_object_count, :integer
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
+    attribute :deleted_at, :datetime
 
     # =============================================================================
     # ASSOCIATIONS

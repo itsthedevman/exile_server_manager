@@ -15,6 +15,8 @@ module ESM
     attribute :community_id, :integer
     attribute :server_id, :integer
     attribute :value, :string
+    attribute :created_at, :datetime
+    attribute :updated_at, :datetime
 
     # =============================================================================
     # ASSOCIATIONS

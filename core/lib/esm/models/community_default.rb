@@ -13,6 +13,8 @@ module ESM
     attribute :community_id, :integer
     attribute :server_id, :integer
     attribute :channel_id, :string
+    attribute :created_at, :datetime
+    attribute :updated_at, :datetime
 
     # =============================================================================
     # ASSOCIATIONS

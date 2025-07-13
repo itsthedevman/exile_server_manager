@@ -17,6 +17,7 @@ module ESM
     attribute :mod_required, :boolean, default: false
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
+    attribute :deleted_at, :datetime
 
     # =============================================================================
     # ASSOCIATIONS
