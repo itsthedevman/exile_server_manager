@@ -2,13 +2,14 @@
 
 module ESM
   class Community < ApplicationRecord
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
     ALPHABET = ("a".."z").to_a.freeze
 
-    before_create :generate_community_id
-    before_create :generate_public_id
-    after_create :create_command_configurations
-    after_create :create_notifications
-
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
     attribute :public_id, :uuid
     attribute :community_id, :string
     attribute :community_name, :text
@@ -28,6 +29,11 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
+    alias_attribute :name, :community_name
+
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
     has_many :command_configurations, dependent: :destroy
     has_many :cooldowns, dependent: :destroy
     has_many :id_defaults, class_name: "CommunityDefault", dependent: :destroy
@@ -37,8 +43,25 @@ module ESM
     has_many :user_defaults, dependent: :nullify
     has_many :user_notification_routes, foreign_key: :destination_community_id, dependent: :destroy
 
-    alias_attribute :name, :community_name
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
 
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+    before_create :generate_community_id
+    before_create :generate_public_id
+    after_create :create_command_configurations
+    after_create :create_notifications
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
     def self.correct(id)
       checker = DidYouMean::SpellChecker.new(dictionary: community_ids)
       checker.correct(id)
@@ -78,6 +101,10 @@ module ESM
       community.update!(community_name: discord_server.name)
       community
     end
+
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
 
     private
 

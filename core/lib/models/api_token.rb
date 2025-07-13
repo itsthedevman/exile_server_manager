@@ -1,17 +1,49 @@
 # frozen_string_literal: true
 
-class ApiToken < ApplicationRecord
-  attribute :token, :string
-  attribute :active, :boolean, default: true
-  attribute :comment, :string
-  attribute :created_at, :datetime
-  attribute :updated_at, :datetime
+module ESM
+  class ApiToken < ApplicationRecord
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
 
-  before_save :create_token
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
+    attribute :token, :string
+    attribute :active, :boolean, default: true
+    attribute :comment, :string
+    attribute :created_at, :datetime
+    attribute :updated_at, :datetime
 
-  private
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
 
-  def create_token
-    self.token = SecureRandom.uuid.delete("-").upcase
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
+
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+    before_save :create_token
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
+
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
+
+    private
+
+    def create_token
+      self.token = SecureRandom.uuid.delete("-").upcase
+    end
   end
 end
