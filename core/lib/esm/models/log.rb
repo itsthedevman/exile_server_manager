@@ -49,14 +49,6 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
-    def link
-      if ESM.env.production?
-        "https://www.esmbot.com/logs/#{uuid}"
-      else
-        "http://localhost:3000/logs/#{uuid}"
-      end
-    end
-
     private
 
     def generate_uuid
