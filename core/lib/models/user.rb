@@ -4,6 +4,7 @@ module ESM
   class User < ApplicationRecord
     attr_writer :discord_user
 
+    before_save :insert_steam_uid_history
     after_create :create_user_steam_data
     after_create :create_id_defaults
 
@@ -86,7 +87,10 @@ module ESM
     #########################
 
     def attributes_for_logging
-      attributes.except("id", "discord_avatar", "discord_access_token", "discord_refresh_token", "updated_at")
+      attributes.except(
+        "id", "discord_avatar", "discord_access_token",
+        "discord_refresh_token", "updated_at"
+      )
     end
 
     def steam_data
@@ -95,10 +99,6 @@ module ESM
 
     def registered?
       steam_uid.present?
-    end
-
-    def developer?
-      ESM.config.dev_user_allowlist.include?(discord_id)
     end
 
     def mention
