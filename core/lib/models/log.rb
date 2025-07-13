@@ -13,7 +13,9 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
+    belongs_to :user, class_name: "User", foreign_key: "requestors_user_id"
     belongs_to :server
+
     has_many :log_entries, dependent: :destroy
 
     def link

@@ -23,20 +23,7 @@ module ESM
     before_validation :set_expiration_date, on: :create
 
     validates :uuid_short, format: {with: /[0-9a-fA-F]{4}/}
-    scope :expired, -> { where("expires_at <= ?", DateTime.current) }
-
-    def respond(accepted)
-      @accepted = accepted
-
-      # Build the command
-      command = ESM::Command[command_name].new
-
-      # Respond
-      command.from_request(self)
-
-      # Remove the request
-      destroy
-    end
+    scope :expired, -> { where("expires_at <= ?", Time.now) }
 
     private
 

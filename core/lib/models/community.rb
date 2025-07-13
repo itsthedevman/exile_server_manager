@@ -3,7 +3,6 @@
 module ESM
   class Community < ApplicationRecord
     ALPHABET = ("a".."z").to_a.freeze
-    ESM_ID = "452568470765305866"
 
     before_create :generate_community_id
     before_create :generate_public_id
@@ -21,8 +20,11 @@ module ESM
     attribute :log_error_event, :boolean, default: true
     attribute :player_mode_enabled, :boolean, default: true
     attribute :territory_admin_ids, :json, default: []
+    attribute :dashboard_access_role_ids, :json, default: []
+    attribute :command_prefix, :string, default: nil
     attribute :welcome_message_enabled, :boolean, default: true
     attribute :welcome_message, :string, default: ""
+    attribute :allow_v2_servers, :boolean, default: false
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
@@ -36,12 +38,6 @@ module ESM
     has_many :user_notification_routes, foreign_key: :destination_community_id, dependent: :destroy
 
     alias_attribute :name, :community_name
-
-    def self.community_ids
-      ESM.cache.fetch("community_ids", expires_in: ESM.config.cache.community_ids) do
-        ESM::Database.with_connection { pluck(:community_id) }
-      end
-    end
 
     def self.correct(id)
       checker = DidYouMean::SpellChecker.new(dictionary: community_ids)
@@ -62,56 +58,25 @@ module ESM
       joins(:servers).order(:guild_id).where(servers: {server_id: id}).first
     end
 
+    def self.servers_by_community
+      communities = Community.includes(:servers).joins(:servers).order(:community_id)
+
+      communities.map do |community|
+        servers = community.servers.order(:server_id).select(:server_id, :server_name)
+
+        {
+          name: "[#{community.community_id}] #{community.community_name}",
+          servers: servers.map(&:clientize)
+        }
+      end
+    end
+
     def self.from_discord(discord_server)
       return if discord_server.nil?
 
       community = order(:guild_id).where(guild_id: discord_server.id).first_or_initialize
       community.update!(community_name: discord_server.name)
       community
-    end
-
-    def logging_channel
-      ESM.bot.channel(logging_channel_id)
-    rescue
-      nil
-    end
-
-    def discord_server
-      ESM.bot.server(guild_id)
-    rescue
-      nil
-    end
-
-    def log_event(event, message)
-      return if logging_channel_id.blank?
-
-      # Only allow logging events to logging channel if permission has been given
-      case event
-      when :xm8
-        return if !log_xm8_event
-      when :discord_log
-        return if !log_discord_log_event
-      when :reconnect
-        return if !log_reconnect_event
-      when :error
-        return if !log_error_event
-      else
-        raise ESM::Exception::Error, "Attempted to log :#{event} to #{guild_id} without explicit permission.\nMessage:\n#{message}"
-      end
-
-      # Check this first to avoid an infinite loop if the bot cannot send a message to this channel
-      # since this method is called from the #deliver method for this exact reason.
-      channel = logging_channel
-      return if channel.nil?
-
-      ESM.bot.deliver(message, to: channel)
-    end
-
-    def modifiable_by?(guild_member)
-      return true if guild_member.permission?(:administrator) || guild_member.owner?
-
-      # Check for roles
-      dashboard_access_role_ids.any? { |role_id| guild_member.role?(role_id) }
     end
 
     private

@@ -33,6 +33,8 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
 
+    validates :public_id, uniqueness: true, presence: true
+
     scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
 
     def self.find_by_public_id(id)
@@ -43,10 +45,8 @@ module ESM
       includes(:community).order(:server_id).where("server_id ilike ?", id).first
     end
 
-    def self.server_ids
-      ::ESM.cache.fetch("server_ids", expires_in: ESM.config.cache.server_ids) do
-        ESM::Database.with_connection { pluck(:server_id) }
-      end
+    def self.clientize
+      all.map(&:clientize)
     end
 
     # Checks to see if there are any corrections and provides them for the server id
@@ -59,6 +59,17 @@ module ESM
       @token ||= {access: public_id, secret: server_key}
     end
 
+    def recently_created?(time: 30.seconds.ago)
+      created_at.between?(time, Time.current)
+    end
+
+    def clientize
+      {
+        id: server_id,
+        name: "[#{server_id}] #{server_name.presence || "Server name not provided"}"
+      }
+    end
+
     # V1
     def server_reward
       server_rewards.default
@@ -67,8 +78,6 @@ module ESM
     def territories
       ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
-
-    delegate :send_message, :send_error, to: :connection, allow_nil: true
 
     #
     # Returns the server's current version
@@ -85,16 +94,6 @@ module ESM
 
     def v2?
       version?("2.0.0")
-    end
-
-    def connection
-      ESM::Connection::Server.client(public_id)
-    end
-
-    def connected?
-      return ESM::Websocket.connected?(server_id) unless v2? # V1
-
-      !connection.nil?
     end
 
     def uptime
@@ -136,77 +135,6 @@ module ESM
 
     def most_poptabs_lost
       user_gamble_stats.order(total_poptabs_loss: :desc).first
-    end
-
-    # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
-    def log_error(log_message)
-      uuid = SecureRandom.uuid
-      send_error("[#{uuid}] #{log_message}")
-
-      return if community.logging_channel_id.blank?
-
-      ESM.bot.deliver(
-        I18n.t("exceptions.extension_error", server_id: server_id, id: uuid),
-        to: community.logging_channel_id
-      )
-    end
-
-    #
-    # Sends the provided SQF code to the linked connection.
-    #
-    # @param code [String] Valid and error free SQF code as a string
-    # @param execute_on [String] Valid options: "server", "player", "all"
-    # @param player [ESM::User, nil] The player who initiated the request
-    #   Note: This technically can be `nil` but errors triggered by this function may look weird
-    # @param target [ESM::User, ESM::User::Ephemeral, nil]
-    #   The user to execute the code on if execute_on is "player"
-    #
-    # @return [Any] The result of the SQF code.
-    #
-    # @note: The result is ran through a JSON parser.
-    #   The type may not be what you expect, but it will be consistent.
-    #   For example, an empty hash map will always be represented by an empty array []
-    #
-    def execute_sqf!(code, execute_on: "server", player: nil, target: nil)
-      message = ESM::Message.new.set_type(:call)
-        .set_data(
-          function_name: "ESMs_command_sqf",
-          execute_on: "server",
-          code: code
-        )
-        .set_metadata(player:, target:)
-
-      response = send_message(message).data.result
-
-      # Check if it's JSON like
-      result = ESM::JSON.parse(response.to_s)
-      return response if result.nil?
-
-      # Check to see if its a hashmap
-      possible_hashmap = ESM::Arma::HashMap.from(result)
-      return result if possible_hashmap.nil?
-
-      result
-    end
-
-    def status_embed(status, reason: "")
-      ESM::Embed.build do |e|
-        e.color = (status == :connected) ? :green : :red
-        e.title = "#{server_name} (`#{server_id}`)"
-
-        if status == :connected
-          e.description = I18n.t("server_connected")
-        else
-          description = I18n.t("server_disconnect.base")
-          description += "\n#{reason}" if reason.present?
-
-          e.description = description
-
-          e.footer = I18n.t("server_disconnect.footer")
-        end
-
-        e.add_field(name: I18n.t("uptime"), value: uptime, inline: true)
-      end
     end
 
     private

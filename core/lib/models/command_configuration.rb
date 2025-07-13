@@ -2,6 +2,15 @@
 
 module ESM
   class CommandConfiguration < ApplicationRecord
+    COOLDOWN_TYPES = %w[
+      times
+      seconds
+      minutes
+      hours
+      days
+    ].freeze
+    public_constant :COOLDOWN_TYPES
+
     attribute :community_id, :integer
     attribute :command_name, :string
     attribute :enabled, :boolean, default: true
@@ -15,5 +24,20 @@ module ESM
     attribute :updated_at, :datetime
 
     belongs_to :community
+
+    def allowlisted_roles
+      @allowlisted_roles ||= lambda do
+        allowlisted_role_ids.filter_map do |id|
+          role = community.roles.find { |r| r.id == id }
+          next if role.nil?
+
+          role
+        end
+      end.call
+    end
+
+    def details
+      CommandDetail.where(command_name: command_name).first
+    end
   end
 end

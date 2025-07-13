@@ -142,5 +142,31 @@ module ESM
     attribute :request_thread_tick, :float, default: 0.1
 
     belongs_to :server
+
+    def server_needs_restarted?
+      all_changes = previous_changes.merge(changes)
+      all_changes.except(*CONFIG_DEFAULTS.keys).present?
+    end
+
+    def config_changed?
+      all_changes = previous_changes.merge(changes)
+      changes = all_changes.slice(*CONFIG_DEFAULTS.keys)
+
+      # Hotfix: Additional logs will always appear as [] for the first save
+      changes.delete(:additional_logs) if changes[:additional_logs] == [[], nil]
+
+      changes.present?
+    end
+
+    private
+
+    def set_default_config_values
+      CONFIG_DEFAULTS.each do |key, default_value|
+        value = self[key].presence
+        next if value != default_value
+
+        self[key] = nil
+      end
+    end
   end
 end
