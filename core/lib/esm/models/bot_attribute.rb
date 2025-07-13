@@ -9,6 +9,7 @@ module ESM
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
+
     attribute :maintenance_mode_enabled, :boolean, default: false
     attribute :maintenance_message, :string, default: nil
     attribute :status_type, :string, default: "PLAYING"

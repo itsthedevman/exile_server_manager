@@ -9,6 +9,7 @@ module ESM
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
+
     attribute :command_name, :string
     attribute :execution_count, :integer
 

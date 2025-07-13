@@ -2,9 +2,13 @@
 
 module ESM
   class User < ApplicationRecord
-    before_save :insert_steam_uid_history
-    after_create :create_user_steam_data
-    after_create :create_id_defaults
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
+
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
 
     attribute :discord_id, :string
     attribute :discord_username, :string
@@ -19,6 +23,10 @@ module ESM
     alias_attribute :distinct, :discord_username
     alias_attribute :username, :discord_username
 
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
+
     has_many :cooldowns, dependent: :nullify
     has_many :id_aliases, class_name: "UserAlias", dependent: :destroy
     has_one :id_defaults, class_name: "UserDefault", dependent: :destroy
@@ -30,9 +38,26 @@ module ESM
     has_many :user_notification_routes, dependent: :destroy
     has_one :user_steam_data, dependent: :destroy
 
-    #########################
-    # Public Methods
-    #########################
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
+
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+
+    after_create :create_user_steam_data
+    after_create :create_id_defaults
+
+    before_save :insert_steam_uid_history
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
 
     def self.find_by_steam_uid(uid)
       order(:steam_uid).where(steam_uid: uid).first
@@ -43,9 +68,9 @@ module ESM
       order(:discord_id).where(discord_id: id).first
     end
 
-    #########################
-    # Instance Methods
-    #########################
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
 
     def attributes_for_logging
       attributes.except(

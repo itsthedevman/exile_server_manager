@@ -2,10 +2,18 @@
 
 module ESM
   class Server < ApplicationRecord
-    before_create :generate_public_id
-    before_create :generate_key
-    after_create :create_server_setting
-    after_create :create_default_reward
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
+
+    # Idk how to store random bytes in redis (Dang you NULL!)
+    KEY_CHARS = [
+      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"
+    ].shuffle.freeze
+
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
 
     attribute :public_id, :uuid
     attribute :server_id, :string
@@ -21,6 +29,10 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
+
     belongs_to :community
 
     has_many :cooldowns, dependent: :destroy
@@ -33,9 +45,30 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
 
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
+
     validates :public_id, uniqueness: true, presence: true
 
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+
+    before_create :generate_public_id
+    before_create :generate_key
+    after_create :create_server_setting
+    after_create :create_default_reward
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
     scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
 
     def self.find_by_public_id(id)
       includes(:community).order(:public_id).where(public_id: id).first
@@ -54,6 +87,10 @@ module ESM
       checker = DidYouMean::SpellChecker.new(dictionary: server_ids)
       checker.correct(server_id)
     end
+
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
 
     def token
       @token ||= {access: public_id, secret: server_key}
@@ -79,11 +116,6 @@ module ESM
       ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
 
-    #
-    # Returns the server's current version
-    #
-    # @return [Semantic::Version] Returns a version 2.0.0 or greater if there is a connection. If there is no connection, 1.0.0 is assumed.
-    #
     def version
       Semantic::Version.new(server_version || "1.0.0")
     end
@@ -144,11 +176,6 @@ module ESM
 
       self.public_id = SecureRandom.uuid
     end
-
-    # Idk how to store random bytes in redis (Dang you NULL!)
-    KEY_CHARS = [
-      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"
-    ].shuffle.freeze
 
     def generate_key
       return if server_key.present?

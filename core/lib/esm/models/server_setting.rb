@@ -2,6 +2,10 @@
 
 module ESM
   class ServerSetting < ApplicationRecord
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
+
     CONFIG_DEFAULTS = {
       connection_uri: "",
       log_level: "info",
@@ -17,11 +21,15 @@ module ESM
       additional_logs: []
     }.freeze
 
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
+
     attribute :server_id, :integer
 
-    #############################################
+    ##########################
     # Settings sent via post init
-    #############################################
+    ##########################
     # Whether to enforce if the player can gamble with their locker being full
     # When true, prevents gambling if player's poptabs exceed a specified threshold
     attribute :gambling_locker_limit_enabled, :boolean, default: true
@@ -98,9 +106,9 @@ module ESM
     # Minute of the hour when server restarts
     attribute :server_restart_min, :integer, default: 0
 
-    #############################################
+    ##########################
     # Settings stored in config.yml
-    #############################################
+    ##########################
     # Do not add defaults to these
     # I only want the website to show if something as been set
 
@@ -134,14 +142,37 @@ module ESM
     # Exile server mod directory name
     attribute :server_mod_name, :string
 
-    #############################################
+    ##########################
     # V1
-    #############################################
     alias_attribute :extdb_path, :extdb_conf_path
     attribute :request_thread_type, :string, default: "exile"
     attribute :request_thread_tick, :float, default: 0.1
 
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
+
     belongs_to :server
+
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
+
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
+
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
 
     def server_needs_restarted?
       all_changes = previous_changes.merge(changes)

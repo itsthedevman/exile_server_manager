@@ -5,11 +5,13 @@ module ESM
     # =============================================================================
     # INITIALIZE
     # =============================================================================
+
     ALPHABET = ("a".."z").to_a.freeze
 
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
+
     attribute :public_id, :uuid
     attribute :community_id, :string
     attribute :community_name, :text
@@ -34,6 +36,7 @@ module ESM
     # =============================================================================
     # ASSOCIATIONS
     # =============================================================================
+
     has_many :command_configurations, dependent: :destroy
     has_many :cooldowns, dependent: :destroy
     has_many :id_defaults, class_name: "CommunityDefault", dependent: :destroy
@@ -50,6 +53,7 @@ module ESM
     # =============================================================================
     # CALLBACKS
     # =============================================================================
+
     before_create :generate_community_id
     before_create :generate_public_id
     after_create :create_command_configurations
@@ -62,6 +66,7 @@ module ESM
     # =============================================================================
     # CLASS METHODS
     # =============================================================================
+
     def self.correct(id)
       checker = DidYouMean::SpellChecker.new(dictionary: community_ids)
       checker.correct(id)

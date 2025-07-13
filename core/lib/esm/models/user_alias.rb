@@ -2,7 +2,13 @@
 
 module ESM
   class UserAlias < ApplicationRecord
-    before_validation(on: :create) { self.uuid ||= SecureRandom.uuid }
+    # =============================================================================
+    # INITIALIZE
+    # =============================================================================
+
+    # =============================================================================
+    # DATA STRUCTURE
+    # =============================================================================
 
     attribute :uuid, :uuid
     attribute :user_id, :integer
@@ -10,14 +16,36 @@ module ESM
     attribute :server_id, :integer
     attribute :value, :string
 
+    # =============================================================================
+    # ASSOCIATIONS
+    # =============================================================================
+
     belongs_to :user
     belongs_to :community, optional: true
     belongs_to :server, optional: true
+
+    # =============================================================================
+    # VALIDATIONS
+    # =============================================================================
 
     validates :uuid, uniqueness: true, presence: true
     validates :value, uniqueness: {scope: [:user_id, :server_id]}
     validates :value, uniqueness: {scope: [:user_id, :community_id]}
     validates :value, length: {minimum: 1, maximum: 64}
+
+    # =============================================================================
+    # CALLBACKS
+    # =============================================================================
+
+    before_validation(on: :create) { self.uuid ||= SecureRandom.uuid }
+
+    # =============================================================================
+    # SCOPES
+    # =============================================================================
+
+    # =============================================================================
+    # CLASS METHODS
+    # =============================================================================
 
     def self.find_server_alias(value)
       eager_load(:server).where(value: value).where.not(server_id: nil).first
@@ -38,20 +66,8 @@ module ESM
         end
     end
 
-    def self.clientize
-      all.map(&:clientize)
-    end
-
-    def clientize
-      if community_id
-        type = "community"
-        target = community.clientize
-      else
-        type = "server"
-        target = server.clientize
-      end
-
-      {id: uuid, type: type, target: target, value: value, state: "unchanged"}
-    end
+    # =============================================================================
+    # INSTANCE METHODS
+    # =============================================================================
   end
 end
