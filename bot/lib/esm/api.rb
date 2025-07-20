@@ -276,6 +276,52 @@ module ESM
     end
 
     #
+    # Returns community data with permission information for a user
+    #
+    # @param id [String, Integer] The user's database ID
+    # @param guild_ids [Array<String>] The Discord guild IDs to check
+    # @return [Array<Hash>] Array of community data with permission flags
+    #   Each hash contains:
+    #   - `:id` [Integer] The community's database ID
+    #   - `:modifiable` [Boolean] Whether the user can modify this community
+    # @example
+    #   perms = Bot.user_community_permissions(123, ["guild1", "guild2"])
+    #   # => [
+    #   #   { id: 1, modifiable: true },
+    #   #   { id: 2, modifiable: false }
+    #   # ]
+    #
+    def user_community_permissions(id:, guild_ids:)
+      info!(event: "user:community_permissions", id:, guild_ids:)
+
+      user = ESM::User.find_by(id: id)
+      return if user.nil?
+
+      communities = ESM::Community.select(
+        :id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled
+      ).where(guild_id: guild_ids)
+
+      return [] if communities.blank?
+
+      discord_user = user.discord_user
+      communities.filter_map do |community|
+        server = community.discord_server
+        next if server.nil?
+
+        # Keeps the community metadata up to date
+        community.update(community_name: server.name) if community.community_name != server.name
+
+        discord_member = discord_user.on(server)
+        next if discord_member.nil?
+
+        {
+          id: community.id,
+          modifiable: community.modifiable_by?(discord_member)
+        }
+      end
+    end
+
+    #
     # Deletes a community from the DB and forces ESM to leave it
     #
     # @param id [String] The community's database ID
