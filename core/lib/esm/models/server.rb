@@ -40,7 +40,7 @@ module ESM
     has_many :server_mods, dependent: :destroy
     has_many :server_rewards, dependent: :destroy
     has_one :server_setting, dependent: :destroy
-    has_many :territories, dependent: :destroy
+    has_many :territories, -> { order(:territory_level) }, dependent: :destroy
     has_many :user_gamble_stats, dependent: :destroy
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
@@ -78,16 +78,6 @@ module ESM
       includes(:community).order(:server_id).where("server_id ilike ?", id).first
     end
 
-    def self.clientize
-      all.map(&:clientize)
-    end
-
-    # Checks to see if there are any corrections and provides them for the server id
-    def self.correct_id(server_id)
-      checker = DidYouMean::SpellChecker.new(dictionary: server_ids)
-      checker.correct(server_id)
-    end
-
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
@@ -96,24 +86,9 @@ module ESM
       @token ||= {access: public_id, secret: server_key}
     end
 
-    def recently_created?(time: 30.seconds.ago)
-      created_at.between?(time, Time.current)
-    end
-
-    def clientize
-      {
-        id: server_id,
-        name: "[#{server_id}] #{server_name.presence || "Server name not provided"}"
-      }
-    end
-
     # V1
     def server_reward
       server_rewards.default
-    end
-
-    def territories
-      ESM::Territory.order(:server_id).where(server_id: id).order(:territory_level)
     end
 
     def version
@@ -137,7 +112,10 @@ module ESM
     def time_left_before_restart
       return "Offline" if server_start_time.nil?
 
-      restart_time = server_start_time + server_setting.server_restart_hour.hours + server_setting.server_restart_min.minutes
+      restart_time = server_start_time +
+        server_setting.server_restart_hour.hours +
+        server_setting.server_restart_min.minutes
+
       ESM::Time.distance_of_time_in_words(restart_time)
     end
 
