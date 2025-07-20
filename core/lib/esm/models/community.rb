@@ -62,6 +62,9 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope :player_mode_enabled, -> { where(player_mode_enabled: true) }
+    scope :player_mode_disabled, -> { where(player_mode_enabled: false) }
+
     # =============================================================================
     # CLASS METHODS
     # =============================================================================
