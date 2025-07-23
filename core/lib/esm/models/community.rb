@@ -62,6 +62,10 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope(:by_community_id, lambda do |id|
+      includes(:servers).order(:community_id).where("community_id ilike ?", id)
+    end)
+
     scope :player_mode_enabled, -> { where(player_mode_enabled: true) }
     scope :player_mode_disabled, -> { where(player_mode_enabled: false) }
 
@@ -75,7 +79,7 @@ module ESM
     end
 
     def self.find_by_community_id(id)
-      includes(:servers).order(:community_id).where("community_id ilike ?", id).first
+      by_community_id(id).first
     end
 
     def self.find_by_guild_id(id)
