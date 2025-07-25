@@ -55,8 +55,9 @@ module ESM
     # CALLBACKS
     # =============================================================================
 
-    before_create :generate_public_id
-    before_create :generate_key
+    before_validation :generate_public_id, on: :create
+    before_validation :generate_key, on: :create
+
     after_create :create_server_setting
     after_create :create_default_reward
 
@@ -168,6 +169,8 @@ module ESM
     end
 
     def create_default_reward
+      return if server_rewards.default.exists?
+
       server_rewards.create!(server_id: id)
     end
   end
