@@ -52,13 +52,5 @@ module ESM
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
-
-    def preload(community)
-      @configuration = community.command_configurations.where(command_name: command_name).first
-    end
-
-    def modifiable?
-      command_attributes.any? { |_key, attrs| attrs["modifiable"] }
-    end
   end
 end
