@@ -84,6 +84,11 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
+    def local_id
+      # Removes the community ID from the server ID
+      server_id.split("_", 2).second
+    end
+
     def token
       @token ||= {access: public_id, secret: server_key}
     end
