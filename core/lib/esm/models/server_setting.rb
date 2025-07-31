@@ -6,20 +6,21 @@ module ESM
     # INITIALIZE
     # =============================================================================
 
-    CONFIG_DEFAULTS = {
-      connection_uri: "",
-      log_level: "info",
-      logging_path: "",
-      extdb_conf_path: "",
-      extdb_conf_header_name: "exile",
-      extdb_version: 3,
-      log_output: "extension",
-      database_uri: "",
-      server_mod_name: "@ExileServer",
-      number_locale: "en",
-      exile_logs_search_days: 14,
-      additional_logs: []
-    }.freeze
+    # Attributes that are defined in @esm/config.yml
+    CONFIG_ATTRIBUTES = %i[
+      connection_uri
+      log_level
+      logging_path
+      extdb_conf_path
+      extdb_conf_header_name
+      extdb_version
+      log_output
+      database_uri
+      server_mod_name
+      number_locale
+      exile_logs_search_days
+      additional_logs
+    ].freeze
 
     # =============================================================================
     # DATA STRUCTURE
@@ -109,38 +110,36 @@ module ESM
     ##########################
     # Settings stored in config.yml
     ##########################
-    # Do not add defaults to these
-    # I only want the website to show if something as been set
 
     # Additional log files to include in searches
-    attribute :additional_logs, :json
+    attribute :additional_logs, :json, default: []
 
     # Database connection URI string
-    attribute :database_uri, :text
+    attribute :database_uri, :text, default: nil
 
     # Number of days of logs to search
-    attribute :exile_logs_search_days, :integer
+    attribute :exile_logs_search_days, :integer, default: 14
 
     # ExtDB config section name
-    attribute :extdb_conf_header_name, :string
+    attribute :extdb_conf_header_name, :string, default: nil
 
     # Path to ExtDB config file
-    attribute :extdb_conf_path, :text
+    attribute :extdb_conf_path, :text, default: nil
 
     # ExtDB version override
     attribute :extdb_version, :integer
 
     # Where to send SQF logs (rpt/extension/both)
-    attribute :log_output, :string
+    attribute :log_output, :string, default: "extension"
 
     # ESM extension log file path
-    attribute :logging_path, :text
+    attribute :logging_path, :text, default: nil
 
     # Number formatting locale
-    attribute :number_locale, :string
+    attribute :number_locale, :string, default: "en"
 
     # Exile server mod directory name
-    attribute :server_mod_name, :string
+    attribute :server_mod_name, :string, default: nil
 
     ##########################
     # V1
@@ -176,28 +175,7 @@ module ESM
 
     def server_needs_restarted?
       all_changes = previous_changes.merge(changes)
-      all_changes.except(*CONFIG_DEFAULTS.keys).present?
-    end
-
-    def config_changed?
-      all_changes = previous_changes.merge(changes)
-      changes = all_changes.slice(*CONFIG_DEFAULTS.keys)
-
-      # Hotfix: Additional logs will always appear as [] for the first save
-      changes.delete(:additional_logs) if changes[:additional_logs] == [[], nil]
-
-      changes.present?
-    end
-
-    private
-
-    def set_default_config_values
-      CONFIG_DEFAULTS.each do |key, default_value|
-        value = self[key].presence
-        next if value != default_value
-
-        self[key] = nil
-      end
+      all_changes.except(*CONFIG_ATTRIBUTES).present?
     end
   end
 end
