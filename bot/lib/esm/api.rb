@@ -255,7 +255,8 @@ module ESM
       return if user.nil?
 
       communities = ESM::Community.select(
-        :id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled
+        :id, :guild_id, :dashboard_access_role_ids,
+        :community_name, :player_mode_enabled, :icon_url
       ).where(guild_id: guild_ids)
       return [] if communities.blank?
 
@@ -265,7 +266,7 @@ module ESM
         next if server.nil?
 
         # Keeps the community metadata up to date
-        community.update(community_name: server.name) if community.community_name != server.name
+        community.update(community_name: server.name, icon_url: server.icon_url)
 
         discord_member = discord_user.on(server)
         next if discord_member.nil?
@@ -298,7 +299,8 @@ module ESM
       return if user.nil?
 
       communities = ESM::Community.select(
-        :id, :guild_id, :dashboard_access_role_ids, :community_name, :player_mode_enabled
+        :id, :guild_id, :dashboard_access_role_ids,
+        :community_name, :player_mode_enabled, :icon_url
       ).where(guild_id: guild_ids)
 
       return [] if communities.blank?
@@ -309,7 +311,7 @@ module ESM
         next if server.nil?
 
         # Keeps the community metadata up to date
-        community.update(community_name: server.name) if community.community_name != server.name
+        community.update(community_name: server.name, icon_url: server.icon_url)
 
         discord_member = discord_user.on(server)
         next if discord_member.nil?

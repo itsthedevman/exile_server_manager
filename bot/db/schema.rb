@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_15_003333) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_04_204158) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -93,6 +93,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_15_003333) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "allow_v2_servers", default: false
+    t.text "icon_url"
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["guild_id"], name: "index_communities_on_guild_id", unique: true
     t.index ["public_id"], name: "index_communities_on_public_id", unique: true
