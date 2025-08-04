@@ -44,6 +44,9 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope :with_category, ->(notification_category) { where(notification_category:) }
+    scope :with_type, ->(notification_type) { where(notification_type:) }
+
     # =============================================================================
     # CLASS METHODS
     # =============================================================================
