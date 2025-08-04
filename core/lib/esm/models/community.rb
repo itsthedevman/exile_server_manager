@@ -27,6 +27,7 @@ module ESM
     attribute :welcome_message_enabled, :boolean, default: true
     attribute :welcome_message, :string, default: ""
     attribute :allow_v2_servers, :boolean, default: false
+    attribute :icon_url, :string
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
@@ -96,7 +97,7 @@ module ESM
       return if discord_server.nil?
 
       community = order(:guild_id).where(guild_id: discord_server.id).first_or_initialize
-      community.update!(community_name: discord_server.name)
+      community.update!(community_name: discord_server.name, icon_url: discord_server.icon_url)
       community
     end
 
