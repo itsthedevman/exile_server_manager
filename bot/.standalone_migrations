@@ -1,6 +1,6 @@
 db:
   seeds: db/seeds.rb
-  migrate: db/migrate
+  migrate: ../esm_ruby_core/db/migrate
   schema: db/schema.rb
 config:
   database: config/database.yml
