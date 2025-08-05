@@ -46,6 +46,7 @@ module ESM
 
     scope :with_category, ->(notification_category) { where(notification_category:) }
     scope :with_type, ->(notification_type) { where(notification_type:) }
+    scope :with_any_type, ->(*types) { where(notification_type: types) }
 
     # =============================================================================
     # CLASS METHODS
