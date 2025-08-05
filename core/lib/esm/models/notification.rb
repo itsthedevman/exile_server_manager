@@ -13,6 +13,28 @@ module ESM
       )
     ).freeze
 
+    CATEGORIES = %w[xm8 gambling player].freeze
+
+    TYPES = %w[
+      base-raid
+      flag-stolen
+      flag-restored
+      flag-steal-started
+      protection-money-due
+      protection-money-paid
+      grind-started
+      hack-started
+      charge-plant-started
+      marxet-item-sold
+      loss
+      won
+      money
+      locker
+      respect
+      heal
+      kill
+    ].freeze
+
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
