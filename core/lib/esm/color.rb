@@ -3,25 +3,25 @@
 module ESM
   module Color
     ALL = [
-      BLUE = "#1E354D",
-      RED = "#CE2D4E"
+      BLUE = "#1e354d",
+      RED = "#ce2d4e"
     ].freeze
 
     module Toast
       ALL = [
-        RED = "#C62551",
-        BLUE = "#3ED3FB",
-        GREEN = "#9FDE3A",
-        YELLOW = "#DECA39",
-        ORANGE = "#C64A25",
-        BURNT_ORANGE = "#7D2F00",
-        PURPLE = "#793ADE",
-        LAVENDER = "#344D71",
-        PINK = "#DE3A9F",
-        WHITE = "#FFFFFF",
-        STEEL_GREEN = "#2F4858",
+        RED = "#c62551",
+        BLUE = "#3ed3fb",
+        GREEN = "#9fde3a",
+        YELLOW = "#deca39",
+        ORANGE = "#c64a25",
+        BURNT_ORANGE = "#7d2f00",
+        PURPLE = "#793ade",
+        LAVENDER = "#344d71",
+        PINK = "#de3a9f",
+        WHITE = "#ffffff",
+        STEEL_GREEN = "#2f4858",
         BROWN = "#574143",
-        SAGE = "#E9F6D0"
+        SAGE = "#e9f6d0"
       ].freeze
 
       def self.to_h
