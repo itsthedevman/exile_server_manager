@@ -39,6 +39,7 @@ module ESM
     # DATA STRUCTURE
     # =============================================================================
 
+    attribute :public_id, :string
     attribute :community_id, :integer
     attribute :notification_type, :string
     attribute :notification_title, :text
@@ -97,10 +98,5 @@ module ESM
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
-
-    # TODO: REPLACE
-    def public_id
-      SecureRandom.uuid
-    end
   end
 end
