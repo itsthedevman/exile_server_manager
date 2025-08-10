@@ -37,6 +37,7 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy
     has_one :user_steam_data, dependent: :destroy
+    has_many :user_steam_uid_history, dependent: :nullify
 
     # =============================================================================
     # VALIDATIONS
