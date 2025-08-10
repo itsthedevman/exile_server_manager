@@ -8,6 +8,10 @@ module ESM
       @steam_uid = steam_uid
     end
 
+    def token
+      raise "ESM::SteamAccount#token - not implemented"
+    end
+
     def valid?
       summary.is_a?(Data)
     end
@@ -51,43 +55,58 @@ module ESM
 
     private
 
-    def query
-      {key: ENV["STEAM_TOKEN"], steamids: @steam_uid}
+    def params
+      {key: token, steamids: @steam_uid}
     end
 
     def summary
       @summary ||= lambda do
-        response = HTTParty.get(
+        response = HTTP.get(
           "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002",
-          query:
+          params:
         )
 
-        if !response.ok? || response.body.nil? || response["response"].blank?
-          error!("Steam summary is nil! UID: #{@steam_uid}\nResponse: #{response}")
+        response_body = response.body.to_s
+        data = response_body.to_h
+
+        if !response.status.success? || data.nil?
+          ESM.log!(warn: {
+            message: "Steam summary is nil",
+            steam_uid: @steam_uid,
+            response_body:,
+            data:
+          })
+
           return EMPTY_STRUCT
         end
 
-        data = response.dig("response", "players")&.first
+        data = data.dig(:response, :players)&.first
         if data.blank?
-          error!("Steam players response is blank! UID: #{@steam_uid}\nResponse: #{response}")
+          ESM.log!(warn: {
+            message: "Steam :players response is blank",
+            steam_uid: @steam_uid,
+            response_body:,
+            data:
+          })
+
           return EMPTY_STRUCT
         end
 
         {
-          steam_id: data["steamid"],
-          community_visibility_state: data["communityvisibilitystate"],
-          profile_state: data["profilestate"],
-          persona_name: data["personaname"],
-          last_logoff: data["lastlogoff"],
-          comment_permission: data["commentpermission"],
-          profile_url: data["profileurl"],
-          avatar: data["avatar"],
-          avatar_medium: data["avatarmedium"],
-          avatar_full: data["avatarfull"],
-          persona_state: data["personastate"],
-          primary_clan_id: data["primaryclanid"],
-          time_created: data["timecreated"],
-          persona_state_flags: data["personastateflags"]
+          steam_id: data[:steamid],
+          community_visibility_state: data[:communityvisibilitystate],
+          profile_state: data[:profilestate],
+          persona_name: data[:personaname],
+          last_logoff: data[:lastlogoff],
+          comment_permission: data[:commentpermission],
+          profile_url: data[:profileurl],
+          avatar: data[:avatar],
+          avatar_medium: data[:avatarmedium],
+          avatar_full: data[:avatarfull],
+          persona_state: data[:personastate],
+          primary_clan_id: data[:primaryclanid],
+          time_created: data[:timecreated],
+          persona_state_flags: data[:personastateflags]
         }.to_istruct
       end.call
     end
@@ -101,20 +120,31 @@ module ESM
     #       "EconomyBan" => "none"
     def bans
       @bans ||= lambda do
-        response = HTTParty.get("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1", query:)
-        if !response.ok? || response.body.nil? || response["players"].blank?
-          error!("Steam bans is nil! UID: #{@steam_uid}\nResponse: #{response}")
+        response = HTTP.get("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1", params:)
+
+        response_body = response.body.to_s
+        data = response_body.to_h
+
+        if !response.status.success? || data.nil?
+          ESM.log!(warn: {
+            message: "Steam bans is nil",
+            steam_uid: @steam_uid,
+            response_body:,
+            data:
+          })
+
           return EMPTY_STRUCT
         end
 
-        data = response["players"].first
+        data = data[:players]&.first
+
         {
-          community_banned: data["CommunityBanned"],
-          vac_banned: data["VACBanned"],
-          number_of_vac_bans: data["NumberOfVACBans"],
-          days_since_last_ban: data["DaysSinceLastBan"],
-          number_of_game_bans: data["NumberOfGameBans"],
-          economy_ban: data["EconomyBan"]
+          community_banned: data[:CommunityBanned],
+          vac_banned: data[:VACBanned],
+          number_of_vac_bans: data[:NumberOfVACBans],
+          days_since_last_ban: data[:DaysSinceLastBan],
+          number_of_game_bans: data[:NumberOfGameBans],
+          economy_ban: data[:EconomyBan]
         }.to_istruct
       end.call
     end

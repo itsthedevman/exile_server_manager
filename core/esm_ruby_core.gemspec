@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   # spec.add_dependency "example-gem", "~> 1.0"
   spec.add_dependency "colorize"
   spec.add_dependency "fast_jsonparser"
+  spec.add_dependency "http"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
