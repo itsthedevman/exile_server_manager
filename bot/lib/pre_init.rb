@@ -31,6 +31,20 @@ module Rails
   end
 end
 
+# Require the core Ruby classes
+require "#{__dir__}/esm/model/application_record.rb"
+
+core_path = Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core/lib")
+Dir[core_path.join("**/*.rb")].sort.each { |file| require file }
+
+Dir[ESM.root.join("lib/esm/command/base/**/*.rb")].sort.each do |file|
+  require file
+end
+
+require ESM.root.join("lib/esm/command.rb")
+require ESM.root.join("lib/esm/command/base.rb")
+require ESM.root.join("lib/esm/model/application_command.rb")
+
 #############################
 # Autoload ESM
 #############################
@@ -50,7 +64,22 @@ ESM.loader.tap do |loader|
   # ESM::Jobs::SomeJob -> SomeJob
   loader.push_dir(ESM.root.join("lib", "esm", "jobs"))
 
-  # Don't load extensions, we do that above
+  # Don't load certain models, we do that above
+  # I very must dislike this.
+  loader.ignore(ESM.root.join("lib", "esm", "model", "application_command.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "application_record.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "community.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "notification.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "request.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "server_reward.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "server.rb"))
+  loader.ignore(ESM.root.join("lib", "esm", "model", "user.rb"))
+
+  # Don't load commands, we do that above
+  loader.ignore(ESM.root.join("lib", "esm", "command", "base"))
+  loader.ignore(ESM.root.join("lib", "esm", "command", "base.rb"))
+
+  # Don't load extensions, we do that in esm.rb
   loader.ignore(ESM.root.join("lib", "esm", "extension"))
 
   # Ignore inits

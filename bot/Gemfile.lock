@@ -116,9 +116,6 @@ GEM
       websocket-driver (>= 0.5.1)
     ffi (1.17.0-x86_64-linux-gnu)
     hashids (1.0.6)
-    hashie (5.0.0)
-    hashie-forbidden_attributes (0.1.1)
-      hashie (>= 3.0)
     http-accept (1.7.0)
     http-cookie (1.0.8)
       domain_name (~> 0.5)
@@ -171,9 +168,6 @@ GEM
     opus-ruby (1.0.1)
       ffi
     ostruct (0.6.1)
-    otr-activerecord (2.4.0)
-      activerecord (>= 6.0, < 7.3)
-      hashie-forbidden_attributes (~> 0.1)
     parallel (1.26.3)
     parser (3.3.6.0)
       ast (~> 2.4.1)
@@ -380,7 +374,6 @@ DEPENDENCIES
   mysql2
   neatjson
   openssl
-  otr-activerecord
   pg
   pry
   puma

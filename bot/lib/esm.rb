@@ -50,7 +50,8 @@
 # Load extensions and other useful classes to have
 Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
 
-require "otr-activerecord" if ENV["ESM_ENV"] != "production"
+# Require the core Ruby classes
+require Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core/lib/esm.rb")
 
 # Load Dotenv variables; overwriting any that already exist
 Dotenv.overload
@@ -132,52 +133,6 @@ module ESM
 
     def root
       @root ||= Pathname.new(File.expand_path("."))
-    end
-
-    def logger
-      @logger ||= begin
-        logger = Logger.new("log/#{env}.log", "daily")
-        logger.level = Logger::INFO
-
-        logger.formatter = proc do |severity, datetime, progname = "N/A", msg|
-          header = "#{severity} [#{datetime.utc.strftime("%F %H:%M:%S:%L")}] (#{progname})"
-          body = "\n\t#{msg.to_s.gsub("\n", "\n\t")}\n\n"
-
-          if config.print_to_stdout
-            styled_header =
-              case severity
-              when "TRACE"
-                header.colorize(:cyan)
-              when "INFO"
-                header.colorize(:light_blue)
-              when "DEBUG"
-                header.colorize(:magenta)
-              when "WARN"
-                header.colorize(:yellow)
-              when "ERROR", "FATAL"
-                header.colorize(:red)
-              else
-                header
-              end
-
-            styled_body =
-              case severity
-              when "WARN"
-                body.colorize(:yellow)
-              when "ERROR", "FATAL"
-                body.colorize(:red)
-              else
-                body
-              end
-
-            puts "#{styled_header}#{styled_body}" # rubocop:disable Rails/Output
-          end
-
-          "#{header}#{body}"
-        end
-
-        logger
-      end
     end
 
     def redis
