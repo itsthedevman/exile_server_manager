@@ -41,8 +41,8 @@ module ESM
     # CALLBACKS
     # =============================================================================
 
-    before_create :set_uuid
-    before_create :set_expiration_date
+    before_validation :set_uuid, on: :create
+    before_validation :set_expiration_date, on: :create
 
     # =============================================================================
     # SCOPES

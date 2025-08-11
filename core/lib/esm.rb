@@ -59,12 +59,14 @@ module ESM
     end
 
     def log!(lazy_debug = nil, trace: nil, debug: nil, info: nil, warn: nil, error: nil)
-      logger.trace(trace) if trace
-      logger.debug(lazy_debug) if lazy_debug
-      logger.debug(debug) if debug
-      logger.info(info) if info
-      logger.warn(warn) if warn
-      logger.error(error) if error
+      caller_data = caller_locations(1, 1).first
+
+      log_entry(:trace, caller_data, trace) if trace
+      log_entry(:debug, caller_data, lazy_debug) if lazy_debug
+      log_entry(:debug, caller_data, debug) if debug
+      log_entry(:info, caller_data, info) if info
+      log_entry(:warn, caller_data, warn) if warn
+      log_entry(:error, caller_data, error) if error
     end
 
     def env
