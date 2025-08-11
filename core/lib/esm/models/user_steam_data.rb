@@ -50,6 +50,7 @@ module ESM
     # =============================================================================
 
     def refresh
+      return self unless needs_refresh?
       return self if user.steam_uid.blank?
 
       player_data = ESM::SteamAccount.new(user.steam_uid)
