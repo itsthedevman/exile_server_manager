@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_04_204158) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_07_015524) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -162,15 +162,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_04_204158) do
   end
 
   create_table "notifications", force: :cascade do |t|
-    t.integer "community_id", null: false
+    t.uuid "public_id", null: false
+    t.bigint "community_id", null: false
     t.string "notification_type", null: false
+    t.string "notification_category"
     t.text "notification_title"
     t.text "notification_description"
     t.string "notification_color"
-    t.string "notification_category"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["community_id"], name: "index_notifications_on_community_id"
+    t.index ["public_id"], name: "index_notifications_on_public_id", unique: true
   end
 
   create_table "requests", force: :cascade do |t|
@@ -399,6 +401,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_04_204158) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "user_steam_uid_histories", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "previous_steam_uid"
+    t.string "new_steam_uid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_user_steam_uid_histories_on_created_at"
+    t.index ["previous_steam_uid", "new_steam_uid"], name: "idx_steam_uids"
+    t.index ["user_id"], name: "index_user_steam_uid_histories_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "discord_id", null: false
     t.string "discord_username", null: false
@@ -440,4 +453,5 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_04_204158) do
   add_foreign_key "user_notification_routes", "communities", column: "destination_community_id", on_delete: :cascade
   add_foreign_key "user_notification_routes", "users", on_delete: :cascade
   add_foreign_key "user_steam_data", "users", on_delete: :cascade
+  add_foreign_key "user_steam_uid_histories", "users", on_delete: :nullify
 end

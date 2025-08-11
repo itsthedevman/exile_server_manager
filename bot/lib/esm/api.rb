@@ -113,20 +113,7 @@ module ESM
       return if channel.text? && !ESM.bot.channel_permission?(:send_messages, channel)
 
       message = message.to_h || message
-      if message.is_a?(Hash)
-        message =
-          ESM::Embed.build do |e|
-            e.set_author(name: message.dig(:author, :name), icon_url: message.dig(:author, :icon_url)) if message[:author].present?
-
-            e.title = message[:title] if message[:title]
-            e.description = message[:description] if message[:description]
-            e.color = message[:color] if message[:color]
-
-            message[:fields]&.each do |field|
-              e.add_field(name: field[:name], value: field[:value], inline: field[:inline] || false)
-            end
-          end
-      end
+      message = ESM::Embed.from_hash(message) if message.is_a?(Hash)
 
       ESM.bot.deliver(message, to: channel)
     end
