@@ -144,6 +144,7 @@ module ESM
         notifications =
           notifications.map do |notification|
             {
+              public_id: SecureRandom.uuid,
               community_id: id,
               notification_type: notification["type"],
               notification_title: notification["title"],
