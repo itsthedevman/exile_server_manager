@@ -131,7 +131,7 @@ describe ESM::Websocket do
 
       expect(error_message).not_to be_nil
       expect(error_message.description).to eq("#{discord_user.mention}, #{message.error}")
-      expect(error_message.color).to eq("#C62551")
+      expect(error_message.color).to eq("#c62551")
     end
 
     it "should send an error message (parameters)" do
@@ -150,7 +150,7 @@ describe ESM::Websocket do
 
       expect(error_message).not_to be_nil
       expect(error_message.description).to eq("#{discord_user.mention}, #{message.parameters.first.error}")
-      expect(error_message.color).to eq("#C62551")
+      expect(error_message.color).to eq("#c62551")
     end
   end
 end

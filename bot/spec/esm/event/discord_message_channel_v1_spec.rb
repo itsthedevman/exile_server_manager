@@ -95,7 +95,7 @@ describe ESM::Event::DiscordMessageChannelV1 do
       expect(embed.fields.first.name).to eq("Field 1 Name")
       expect(embed.fields.first.value).to eq("Field 1 Value")
       expect(embed.fields.first.inline).to eq(true)
-      expect(embed.color.upcase).to eq(ESM::Color::BLUE)
+      expect(embed.color).to eq(ESM::Color::BLUE)
     end
 
     it "sends (Invalid/Random Color)" do

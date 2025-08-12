@@ -23,7 +23,7 @@ describe ESM::Embed do
         embed.description = "Description"
         embed.url = "https://www.esmbot.com"
         embed.timestamp = time
-        embed.color = "#3ED3FB"
+        embed.color = "#3ed3fb"
         embed.set_footer(text: "hello", icon_url: "https://i.imgur.com/j69wMDu.jpg")
         embed.image = "https://i.imgur.com/PcMltU7.jpg"
         embed.thumbnail = "https://i.imgur.com/xTG3a1I.jpg"
@@ -38,7 +38,7 @@ describe ESM::Embed do
     expect(esm_embed.description).to eq("Description")
     expect(esm_embed.url).to eq("https://www.esmbot.com")
     expect(esm_embed.timestamp).to eq(time)
-    expect(esm_embed.color).to eq("#3ED3FB")
+    expect(esm_embed.color).to eq("#3ed3fb")
     expect(esm_embed.footer.text).to eq("hello")
     expect(esm_embed.footer.icon_url).to eq("https://i.imgur.com/j69wMDu.jpg")
     expect(esm_embed.image.url).to be("https://i.imgur.com/PcMltU7.jpg")
@@ -61,7 +61,7 @@ describe ESM::Embed do
         embed.description = "Description"
         embed.url = "https://www.esmbot.com"
         embed.timestamp = time
-        embed.color = "#3ED3FB"
+        embed.color = "#3ed3fb"
         embed.set_footer(text: "hello", icon_url: "https://i.imgur.com/j69wMDu.jpg")
         embed.image = "https://i.imgur.com/PcMltU7.jpg"
         embed.thumbnail = "https://i.imgur.com/xTG3a1I.jpg"
@@ -182,7 +182,7 @@ describe ESM::Embed do
           e.color = :green
         end
 
-      expect(embed.to_s).to eq("Description (19): Testing Description\nFields:\n\t#1\n\t  Name (7): Field 1\n\t  Value (7): Field 1\nMetadata:\n\tTimestamp: #{time}\n\tColor: #9FDE3A\n")
+      expect(embed.to_s).to eq("Description (19): Testing Description\nFields:\n\t#1\n\t  Name (7): Field 1\n\t  Value (7): Field 1\nMetadata:\n\tTimestamp: #{time}\n\tColor: #9fde3a\n")
     end
 
     it "returns all information" do
@@ -194,7 +194,7 @@ describe ESM::Embed do
           embed.description = "Description"
           embed.url = "https://www.esmbot.com"
           embed.timestamp = time
-          embed.color = "#3ED3FB"
+          embed.color = "#3ed3fb"
           embed.set_footer(text: "hello", icon_url: "https://i.imgur.com/j69wMDu.jpg")
           embed.image = "https://i.imgur.com/PcMltU7.jpg"
           embed.thumbnail = "https://i.imgur.com/xTG3a1I.jpg"
@@ -202,7 +202,7 @@ describe ESM::Embed do
           embed.add_field(name: "name", value: "value", inline: true)
         end
 
-      expect(embed.to_s).to eq("Title (10): Test embed\nDescription (11): Description\nFields:\n\t#1 <inline>\n\t  Name (4): name\n\t  Value (5): value\nMetadata:\n\tTimestamp: #{time}\n\tColor: #3ED3FB\n\tImage: https://i.imgur.com/PcMltU7.jpg\n\tThumbnail: https://i.imgur.com/xTG3a1I.jpg\n\tURL: https://www.esmbot.com\n\tFooter: hello")
+      expect(embed.to_s).to eq("Title (10): Test embed\nDescription (11): Description\nFields:\n\t#1 <inline>\n\t  Name (4): name\n\t  Value (5): value\nMetadata:\n\tTimestamp: #{time}\n\tColor: #3ed3fb\n\tImage: https://i.imgur.com/PcMltU7.jpg\n\tThumbnail: https://i.imgur.com/xTG3a1I.jpg\n\tURL: https://www.esmbot.com\n\tFooter: hello")
     end
   end
 
