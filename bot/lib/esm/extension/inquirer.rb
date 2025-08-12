@@ -26,7 +26,8 @@ class Inquirer
   #   fruits.grapes? #=> undefined method grapes? for Inquirer
   def initialize(*predicates, default: nil)
     @predicates = predicates.map(&:to_sym)
-    self.class.attr_predicate(*@predicates)
+
+    define_predicates
 
     if default
       default = [default] unless default.is_a?(Array)
@@ -107,8 +108,19 @@ class Inquirer
     end
   end
 
-  alias_method :inspect, :to_s
-
   # This calls `#to_sym` on the return of `#to_s`
   delegate :to_sym, to: :to_s
+
+  private
+
+  def initialize_dup(original)
+    super
+    define_predicates
+  end
+
+  def define_predicates
+    @predicates.each do |predicate|
+      define_singleton_method(:"#{predicate}?") { !!instance_variable_get(:"@#{predicate}") }
+    end
+  end
 end
