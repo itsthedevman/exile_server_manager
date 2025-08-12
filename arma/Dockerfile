@@ -57,7 +57,8 @@ ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/tmp/esm/linux/lib"
 
 # Install PBO library
 RUN rustup update  \
-    && rustup toolchain install stable-i686-unknown-linux-gnu \
+    && rustup target add i686-unknown-linux-gnu \
+    && rustup toolchain install stable-i686-unknown-linux-gnu --force-non-host \
     && cargo install armake2
 
 # SteamCMD
