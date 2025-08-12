@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
@@ -18,7 +24,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             (ruby_3_2.override {
-              jemallocSupport = true;
+              jemallocSupport = false;
               docSupport = false;
             })
 

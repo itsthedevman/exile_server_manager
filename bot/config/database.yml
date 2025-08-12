@@ -25,6 +25,7 @@ arma_test:
   port: "3306"
   username: root
   database: exile_esm
+  password: ""
   database_tasks: false
 
 production:
