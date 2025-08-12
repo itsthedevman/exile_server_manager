@@ -25,6 +25,8 @@
   "dotenv",
   "dotiw",
   "drb",
+  "everythingrb/prelude",
+  "everythingrb/all",
   "eventmachine",
   "fast_jsonparser",
   "faye/websocket",
