@@ -14,7 +14,7 @@ describe "ESMs_system_territory_resetPaymentCounter", :requires_connection, v2: 
     it "resets the counter" do
       response = execute_sqf!(
         <<~SQF
-          #{user.steam_uid.quoted} call ESMs_system_territory_resetPaymentCounter;
+          #{user.steam_uid.in_quotes} call ESMs_system_territory_resetPaymentCounter;
 
           private _territory = #{territory.id} call ESMs_system_territory_get;
           if (isNull _territory) exitWith { false };
@@ -34,7 +34,7 @@ describe "ESMs_system_territory_resetPaymentCounter", :requires_connection, v2: 
     it "exits early" do
       response = execute_sqf!(
         <<~SQF
-          #{user.steam_uid.quoted} call ESMs_system_territory_resetPaymentCounter;
+          #{user.steam_uid.in_quotes} call ESMs_system_territory_resetPaymentCounter;
           true
         SQF
       )

@@ -42,7 +42,7 @@ module ESM
         arma_variable = MAPPING[key]
         if arma_variable.nil?
           warn!(
-            "ServerSetting attribute #{key.quoted} was updated but does not have a MAPPING entry"
+            "ServerSetting attribute #{key.in_quotes} was updated but does not have a MAPPING entry"
           )
 
           next

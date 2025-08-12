@@ -243,7 +243,7 @@ module ESM
         arma_variable = MAPPING[attribute]
         if arma_variable.nil?
           warn!(
-            "Territory attribute #{attribute.quoted} was updated but does not have a MAPPING entry"
+            "Territory attribute #{attribute.in_quotes} was updated but does not have a MAPPING entry"
           )
           next
         end

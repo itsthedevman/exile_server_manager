@@ -15,7 +15,7 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
       response = execute_sqf!(
         <<~SQF
           private _territory = #{territory.id} call ESMs_system_territory_get;
-          [_territory, #{user.steam_uid.quoted}, "moderator"] call ESMs_system_territory_checkAccess
+          [_territory, #{user.steam_uid.in_quotes}, "moderator"] call ESMs_system_territory_checkAccess
         SQF
       )
 
@@ -34,7 +34,7 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
       response = execute_sqf!(
         <<~SQF
           private _territory = #{territory.id} call ESMs_system_territory_get;
-          [_territory, #{user.steam_uid.quoted}, "moderator"] call ESMs_system_territory_checkAccess
+          [_territory, #{user.steam_uid.in_quotes}, "moderator"] call ESMs_system_territory_checkAccess
         SQF
       )
 
@@ -51,7 +51,7 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
       response = execute_sqf!(
         <<~SQF
           private _territory = #{territory.id} call ESMs_system_territory_get;
-          [_territory, #{user.steam_uid.quoted}, "moderator"] call ESMs_system_territory_checkAccess
+          [_territory, #{user.steam_uid.in_quotes}, "moderator"] call ESMs_system_territory_checkAccess
         SQF
       )
 
@@ -64,7 +64,7 @@ describe "ESMs_system_territory_checkAccess", :requires_connection, v2: true do
       response = execute_sqf!(
         <<~SQF
           private _territory = #{territory.id} call ESMs_system_territory_get;
-          [_territory, #{user.steam_uid.quoted}, "owner"] call ESMs_system_territory_checkAccess
+          [_territory, #{user.steam_uid.in_quotes}, "owner"] call ESMs_system_territory_checkAccess
         SQF
       )
 
