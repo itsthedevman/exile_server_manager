@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class UserSteamUidHistory < ApplicationRecord
+  class UserSteamUIDHistory < ApplicationRecord
     # =============================================================================
     # INITIALIZE
     # =============================================================================
