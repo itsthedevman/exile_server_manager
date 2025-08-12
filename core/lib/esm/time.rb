@@ -17,7 +17,8 @@ module ESM
     end
 
     def self.singularize(distance)
-      # DOTIW doesn't singularize the single types. This converts 1 seconds -> 1 second; 1 minutes -> 1 minute, etc.
+      # #distance_of_time_in_words doesn't singularize the single types.
+      # This converts 1 seconds -> 1 second; 1 minutes -> 1 minute, etc.
       distance.gsub(/(?<!\d)1 (?:seconds|minutes|hours|days|weeks|months|years)/i, &:singularize)
     end
 

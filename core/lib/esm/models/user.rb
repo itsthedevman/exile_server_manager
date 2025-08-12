@@ -50,7 +50,7 @@ module ESM
     after_create :create_user_steam_data
     after_create :create_id_defaults
 
-    before_save :insert_steam_uid_history
+    after_save :insert_steam_uid_history
 
     # =============================================================================
     # SCOPES
