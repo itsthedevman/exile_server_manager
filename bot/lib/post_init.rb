@@ -16,7 +16,7 @@ load ESM.root.join("lib", "esm", "model", "server_reward.rb")
 load ESM.root.join("lib", "esm", "model", "server.rb")
 load ESM.root.join("lib", "esm", "model", "user.rb")
 
-info!("Completed in #{timer.stop!}s")
-
 trace!("Trace logging enabled")
 debug!("Debug logging enabled")
+
+info!("Completed in #{timer.stop!}s")

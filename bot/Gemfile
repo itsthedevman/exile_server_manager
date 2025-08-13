@@ -47,6 +47,7 @@ group :development do
   gem "memory_profiler"
   gem "ruby-prof"
   gem "solargraph"
+  gem "ruby-lsp"
   gem "standard"
   gem "rubocop-rspec"
   gem "rubocop-performance"
