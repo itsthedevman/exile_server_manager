@@ -52,8 +52,10 @@
 # Load extensions and other useful classes to have
 Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
 
+ESM_CORE_PATH = Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core", "lib")
+
 # Require the core Ruby classes
-require Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core/lib/esm.rb")
+require ESM_CORE_PATH.join("esm.rb")
 
 # Load Dotenv variables; overwriting any that already exist
 Dotenv.overload

@@ -8,13 +8,12 @@ timer = Timer.start!
 
 ESM.load! unless ESM.loader.setup? && ESM.loader.eager_loaded?
 
-# I very must dislike this.
-load ESM.root.join("lib", "esm", "model", "community.rb")
-load ESM.root.join("lib", "esm", "model", "notification.rb")
-load ESM.root.join("lib", "esm", "model", "request.rb")
-load ESM.root.join("lib", "esm", "model", "server_reward.rb")
-load ESM.root.join("lib", "esm", "model", "server.rb")
-load ESM.root.join("lib", "esm", "model", "user.rb")
+# Load the overwrites
+Dir[ESM_CORE_PATH.join("esm", "models", "*.rb")]
+  .map { |path| File.basename(path, "*.rb") }
+  .map { |filename| ESM.root.join("lib", "esm", "model", filename) }
+  .select(&:exist?)
+  .each { |path| load path }
 
 trace!("Trace logging enabled")
 debug!("Debug logging enabled")

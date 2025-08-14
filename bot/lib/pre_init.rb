@@ -34,8 +34,7 @@ end
 # Require the core Ruby classes
 require "#{__dir__}/esm/model/application_record.rb"
 
-core_path = Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core/lib")
-Dir[core_path.join("**/*.rb")].sort.each { |file| require file }
+Dir[ESM_CORE_PATH.join("**", "*.rb")].sort.each { |file| require file }
 
 Dir[ESM.root.join("lib/esm/command/base/**/*.rb")].sort.each do |file|
   require file
