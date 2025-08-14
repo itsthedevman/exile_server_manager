@@ -80,7 +80,7 @@ module ESM
 
           # This takes an object
           # Territory and Player need to be updated to match
-          player = ESM::Exile::Player.new(server: target_server, player: player.to_istruct)
+          player = ESM::Exile::Player.new(server: target_server, player: player.to_ostruct)
           player.to_embed
         end
 
