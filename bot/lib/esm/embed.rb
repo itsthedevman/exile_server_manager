@@ -122,7 +122,7 @@ module ESM
       if embed_data.blank?
         raise ArgumentError, I18n.translate(
           "exceptions.embed.missing_attributes",
-          attributes: Embed::ATTRIBUTES.map(&:quoted).to_sentence
+          attributes: Embed::ATTRIBUTES.map(&:in_quotes).to_sentence
         )
       end
 
@@ -131,7 +131,7 @@ module ESM
       if invalid_attributes.size > 0
         raise ArgumentError, I18n.translate(
           "exceptions.embed.invalid_attributes",
-          attributes: invalid_attributes.map(&:quoted).to_sentence
+          attributes: invalid_attributes.map(&:in_quotes).to_sentence
         )
       end
 
