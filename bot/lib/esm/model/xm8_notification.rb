@@ -42,7 +42,7 @@ module ESM
       klass = TYPES[type]
       raise InvalidType, "\"#{type}\" is not a valid XM8 notification type" if klass.nil?
 
-      hash[:content] = hash[:content].to_istruct
+      hash[:content] = hash[:content].to_ostruct
 
       notification = klass.new(**hash.without(:type))
       notification.validate!
