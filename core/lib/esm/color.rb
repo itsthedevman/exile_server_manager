@@ -31,7 +31,7 @@ module ESM
 
     # Randomly select a color from the full color pool
     def self.random
-      (ALL + ESM::Color::Toast::ALL).sample.first
+      (ALL + ESM::Color::Toast::ALL).sample
     end
   end
 end
