@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "colorize"
+require "http"
 
 module ESM
   class << self
