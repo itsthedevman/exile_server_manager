@@ -852,6 +852,9 @@ pub fn create_release_build(builder: &mut Builder) -> BuildResult {
 
 pub fn seed_database(builder: &mut Builder) -> BuildResult {
     let sql = Database::generate_sql(&builder.config);
+
+    fs::write(builder.local_build_path.join("seed.sql"), &sql)?;
+
     match builder.build_server.send(Command::Database(sql)) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
