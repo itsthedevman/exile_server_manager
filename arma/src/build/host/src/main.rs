@@ -87,7 +87,7 @@ pub struct Args {
     log_level: LogLevel,
 
     /// The URI of the server hosting esm_bot
-    #[arg(long, default_value_t = String::from("192.168.50.242:3003"))]
+    #[arg(long, default_value_t = String::from("host.docker.internal:3003"))]
     bot_host: String,
 
     /// Forces a full rebuild of everything
