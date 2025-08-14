@@ -197,6 +197,8 @@ GEM
     opus-ruby (1.0.1)
       ffi
     ostruct (0.6.3)
+    otr-activerecord (2.5.0)
+      activerecord (>= 6.0, < 8.1)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -435,6 +437,7 @@ DEPENDENCIES
   mysql2
   neatjson
   openssl
+  otr-activerecord
   pg
   pry
   puma
