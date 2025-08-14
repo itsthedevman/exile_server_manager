@@ -1,15 +1,15 @@
-use std::io::BufReader;
-use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{fs::File, io::BufRead};
-
-use crate::LogLine;
-use common::BuildResult;
+use crate::{BuildResult, LogLine};
 use lazy_static::lazy_static;
 use random_color::RandomColor;
 use regex::Regex;
-
-use crate::Args;
+use std::{
+    collections::HashSet,
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+    time::{Duration, Instant},
+};
 
 #[derive(Debug)]
 pub struct FileReader {
@@ -78,39 +78,106 @@ impl FileReader {
 }
 
 pub struct LogReader {
-    pub files: Vec<FileReader>,
-    pub read: AtomicBool,
     server_path: PathBuf,
     server_args: String,
+    files: Vec<FileReader>,
+    read: AtomicBool,
+    tracked_files: HashSet<PathBuf>, // Keep track of files we're already reading
+    last_scan: Instant,
 }
 
 impl LogReader {
-    pub fn new(args: &Args) -> Self {
-        LogReader {
+    pub fn new(server_path: PathBuf, server_args: String) -> Self {
+        Self {
+            server_path,
+            server_args,
             files: Vec::new(),
-            read: AtomicBool::new(true),
-            server_path: PathBuf::from(&args.a3_server_path),
-            server_args: args.a3_server_args.to_owned(),
+            read: AtomicBool::new(false),
+            tracked_files: HashSet::new(),
+            last_scan: Instant::now(),
+        }
+    }
+
+    // Define your log patterns here - add new ones as needed!
+    fn get_log_patterns(&self) -> Vec<String> {
+        let mut patterns = vec![
+            // ESM logs
+            self.server_path
+                .join("@esm")
+                .join("log")
+                .join("esm.log")
+                .to_string_lossy()
+                .to_string(),
+            // ExtDB logs (your new one!)
+            self.server_path
+                .join("@exileserver")
+                .join("logs")
+                .join("*")
+                .join("*")
+                .join("*")
+                .join("*.log")
+                .to_string_lossy()
+                .to_string(),
+        ];
+
+        // RPT logs (need special handling for profile parsing)
+        if let Some(rpt_pattern) = self.get_rpt_pattern() {
+            patterns.push(rpt_pattern);
+        }
+
+        patterns
+    }
+
+    fn get_rpt_pattern(&self) -> Option<String> {
+        lazy_static! {
+            static ref PROFILES_REGEX: Regex =
+                Regex::new(r#"-profiles=(\w+)"#).unwrap();
+        }
+
+        let captures = PROFILES_REGEX.captures(&self.server_args)?;
+        let profile_name = captures.get(1)?.as_str();
+
+        Some(
+            self.server_path
+                .join(profile_name)
+                .join("*.rpt")
+                .to_string_lossy()
+                .to_string(),
+        )
+    }
+
+    fn scan_for_new_files(&mut self) {
+        if self.last_scan.elapsed() < Duration::from_millis(500) {
+            return;
+        }
+
+        self.last_scan = Instant::now();
+
+        for pattern in self.get_log_patterns() {
+            if let Ok(paths) = glob::glob(&pattern) {
+                for path_result in paths {
+                    if let Ok(path) = path_result {
+                        // Only add files we haven't seen before
+                        if !self.tracked_files.contains(&path) && path.exists() {
+                            self.files.push(FileReader::new(path.clone()));
+                            self.tracked_files.insert(path);
+                        }
+                    }
+                }
+            }
         }
     }
 
     pub fn read_lines(&mut self) -> Vec<LogLine> {
-        for _ in 0..5 {
-            if !self.read.load(Ordering::SeqCst) {
-                return vec![];
-            }
-
-            let new_lines: Vec<LogLine> =
-                self.files.iter_mut().flat_map(|f| f.read_lines()).collect();
-
-            if new_lines.is_empty() {
-                continue;
-            }
-
-            return new_lines;
+        if !self.read.load(Ordering::SeqCst) {
+            return vec![];
         }
 
-        vec![]
+        // Check for new log files
+        self.scan_for_new_files();
+
+        // Read from all active files
+        self.files.iter_mut().flat_map(|f| f.read_lines()).collect()
     }
 
     pub fn stop_reads(&self) {
@@ -120,52 +187,12 @@ impl LogReader {
     pub fn reset(&mut self) -> BuildResult {
         self.stop_reads();
         self.files.clear();
+        self.tracked_files.clear();
+        self.last_scan = Instant::now();
 
-        // @esm/log/esm.log
-        self.files.push(FileReader::new(
-            self.server_path.join("@esm").join("log").join("esm.log"),
-        ));
-
-        // Arma 3 RPT
-        loop {
-            let path = rtp_path(&self.server_path, &self.server_args);
-            if path.is_none() {
-                continue;
-            }
-
-            self.files.push(FileReader::new(path.unwrap()));
-            break;
-        }
-
+        // Start reading - files will be discovered dynamically
         self.read.store(true, Ordering::SeqCst);
 
         Ok(())
     }
-}
-
-fn rtp_path(server_path: &Path, server_args: &str) -> Option<PathBuf> {
-    lazy_static! {
-        static ref PROFILES_REGEX: Regex = Regex::new(r#"-profiles=(\w+)"#).unwrap();
-        static ref RPT_REGEX: Regex = Regex::new(r#".+\.rpt"#).unwrap();
-    };
-
-    let captures = PROFILES_REGEX.captures(server_args).unwrap();
-    let profile_name = captures.get(1)?.as_str();
-
-    glob::glob(
-        &server_path
-            .join(profile_name)
-            .join("*.rpt")
-            .to_string_lossy()
-    )
-    .unwrap()
-    .filter_map(|path| {
-        let path = path.unwrap();
-        if RPT_REGEX.is_match(path.to_str().unwrap()) {
-            return Some(path);
-        }
-
-        None
-    })
-    .next()
 }

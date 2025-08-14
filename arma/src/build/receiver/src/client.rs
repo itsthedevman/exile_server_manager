@@ -1,8 +1,12 @@
 use std::net::ToSocketAddrs;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::log_reader::LogReader;
-use crate::{command::IncomingCommand, transfer::*, write_lock, Command, Database, NetworkCommand};
+use crate::{
+    command::IncomingCommand, transfer::*, write_lock, Command, Database,
+    NetworkCommand,
+};
 use crate::{read_lock, BuildError};
 use colored::Colorize;
 use common::NetworkSend;
@@ -32,7 +36,10 @@ impl Client {
     pub fn new(args: crate::Args) -> Result<Self, BuildError> {
         let transfers = Arc::new(RwLock::new(Transfers::new()));
         let database = Arc::new(Database::new(&args.database_uri)?);
-        let log = Arc::new(RwLock::new(LogReader::new(&args)));
+        let log = Arc::new(RwLock::new(LogReader::new(
+            PathBuf::from(&args.a3_server_path),
+            args.a3_server_args.to_owned(),
+        )));
         let arma = Arc::new(Arma {
             build_path: args.build_path,
             server_path: args.a3_server_path,
@@ -70,21 +77,27 @@ impl Client {
                     println!("{} - Connected to {}", "success".green(), server_addr);
                     client.send(Command::Hello).unwrap();
                 } else {
-                    println!("{} - Failed to connect to {}", "error".red(), server_addr);
+                    println!(
+                        "{} - Failed to connect to {}",
+                        "error".red(),
+                        server_addr
+                    );
                     client.on_disconnect();
                 }
             }
             NetEvent::Accepted(_, _) => unreachable!(),
             NetEvent::Message(_endpoint, input_data) => {
-                let mut network_command: NetworkCommand = match serde_json::from_slice(input_data) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        client.send(Command::Error(e.to_string())).unwrap();
-                        return;
-                    }
-                };
+                let mut network_command: NetworkCommand =
+                    match serde_json::from_slice(input_data) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            client.send(Command::Error(e.to_string())).unwrap();
+                            return;
+                        }
+                    };
 
-                match IncomingCommand::execute(&client, &mut network_command.command) {
+                match IncomingCommand::execute(&client, &mut network_command.command)
+                {
                     Ok(command) => {
                         println!("{:?} - {:?}", command, network_command.command);
                         network_command.command = command;
