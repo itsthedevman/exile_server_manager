@@ -33,7 +33,7 @@ describe ESM::Server do
       it "provides a correction" do
         correction = ESM::Server.correct_id(server_id_partial)
 
-        expect(correction).not_to be_blank, "Checking #{server_id_partial} in #{described_class.server_ids}"
+        expect(correction).not_to be_blank, "Checking #{server_id_partial.inspect} in #{described_class.server_ids.inspect}"
         expect(correction.first).to eq(server.server_id)
       end
     end
