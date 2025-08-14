@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<!--
 ## [Unreleased]
 
 ### Added
@@ -12,14 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Removed
+-->
+
+## [Unreleased]
+
+### Changed
+
+- Updated dependencies across workspace (tokio 1.47, uuid 1.18, regex 1.11, and others)
+
+### Development Changes
+
+- **BREAKING**: Default bot host changed from `192.168.50.242:3003` to `host.docker.internal:3003` for better Docker compatibility
+- Added `bin/db_migrate` script for easy database migration execution
+- Added `--use-existing` flag in release script to skip rebuild and use existing artifacts
+- Improved release script with better GitHub CLI authentication handling and error recovery
+- Enhanced log reader with dynamic log file discovery - automatically finds ExtDB logs and other log files
+- Database seed SQL file now written to build directory for debugging
+- Fixed Rust toolchain installation in Docker for cross-compilation targets
 
 ## [2.0.1] - 12024-12-22
 
 ### Changed
+
 - Fixed client reconnection interval calculation
 
 ## [2.0.0] - 12024-12-20
+
 ### Added
+
 - Added Rust based extension with Windows x32/x64 and Linux x32/x64 support
 - Added `@esm/sql` directory for storing SQL related files
 - Added `@esm/sql/01.sql` for this releases required migrations
@@ -28,46 +49,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added helper function `ESMs_util_command_handleFailure` for handling when a command fails
 - Added helper function `ESMs_util_command_handleSuccess` for handling when a command succeeds
 - Added helper functions for Arrays
-    - `ESMs_util_array_all`: Returns true if all elements match the predicate
-    - `ESMs_util_array_isValidHashMap`: Returns true if an array is in the HashMap format
-    - `ESMs_util_array_map`: Returns a new array containing the results of the code block
+  - `ESMs_util_array_all`: Returns true if all elements match the predicate
+  - `ESMs_util_array_isValidHashMap`: Returns true if an array is in the HashMap format
+  - `ESMs_util_array_map`: Returns a new array containing the results of the code block
 - Added helper functions for HashMaps
-    - `ESMs_util_hashmap_dig`: Recursively "digs" into the hashMap to return the value at the end of the list of keys
-    - `ESMs_util_hashmap_fromArray`: Creates a HashMap from an array
-    - `ESMs_util_hashmap_key`: Returns if the key exists in the hashMap
-    - `ESMs_util_hashmap_toArray`: Converts a hashMap to an array
+  - `ESMs_util_hashmap_dig`: Recursively "digs" into the hashMap to return the value at the end of the list of keys
+  - `ESMs_util_hashmap_fromArray`: Creates a HashMap from an array
+  - `ESMs_util_hashmap_key`: Returns if the key exists in the hashMap
+  - `ESMs_util_hashmap_toArray`: Converts a hashMap to an array
 - Added territory admin bypass for `/territory set_id`
 - Added end-to-end encryption
 - Added Arma 3 stringtable localization
 - Added `config.yml` for extension configuration
-    - `connection_url`: The URL the extension connects to (used for development)
-    - `database_uri`: The full MySQL database URI to the Exile database. Bypass URI discovery through extDB configs
-    - `extdb_conf_header_name`: The header name that contains the configuration for extDB
-    - `extdb_conf_path`: The full file path to the extDB config file. Bypasses extDB config discovery
-    - `extdb_version`: The version of extDB being used. Bypasses extDB version discovery
-    - `log_level`: Controls the verbosity ESM logging
-    - `log_output`: Controls if ESM will log to RPT, to the extension's log, or both
-    - `logging_path`: The full path where ESM will log store its logs
-    - `number_locale`: Controls how numbers are formatted
-    - `server_mod_name`: The name of @ExileServer on this server. Linux uses `@exileserver`
-    - `exile_logs_search_days`: This controls how far back to look when search Exile logs. Defaults to 14 days
-    - `additional_logs`: Useful for any extra files that should be searched when using `/server admin search_logs`
+  - `connection_url`: The URL the extension connects to (used for development)
+  - `database_uri`: The full MySQL database URI to the Exile database. Bypass URI discovery through extDB configs
+  - `extdb_conf_header_name`: The header name that contains the configuration for extDB
+  - `extdb_conf_path`: The full file path to the extDB config file. Bypasses extDB config discovery
+  - `extdb_version`: The version of extDB being used. Bypasses extDB version discovery
+  - `log_level`: Controls the verbosity ESM logging
+  - `log_output`: Controls if ESM will log to RPT, to the extension's log, or both
+  - `logging_path`: The full path where ESM will log store its logs
+  - `number_locale`: Controls how numbers are formatted
+  - `server_mod_name`: The name of @ExileServer on this server. Linux uses `@exileserver`
+  - `exile_logs_search_days`: This controls how far back to look when search Exile logs. Defaults to 14 days
+  - `additional_logs`: Useful for any extra files that should be searched when using `/server admin search_logs`
 - Added extension endpoint `utc_timestamp` for returning the current UTC timestamp
 - Added extension endpoint `set_territory_payment_counter` that sets the counter value for an array of territory IDs.
 - Added server setting that controls if the locker limit will be taken into account when gambling.
 - Added randomized gambling loss messages to stringtable.
 - Added `ESMs_system_territory_encodeID` for encoding a territory ID
 - Overhauled the XM8 notification system:
-    - New database table `xm8_notification` to track all notifications
-    - Notifications no longer vanish into the void if ESM isn't connected - they're safely stored until delivery
-    - Added a proper queue system: store first, deliver when ready
-    - Each notification now has a paper trail from trigger to delivery
+  - New database table `xm8_notification` to track all notifications
+  - Notifications no longer vanish into the void if ESM isn't connected - they're safely stored until delivery
+  - Added a proper queue system: store first, deliver when ready
+  - Each notification now has a paper trail from trigger to delivery
 
 ### Changed
+
 - Changed database ID encoded hashing algorithm to utilize a unique server key making encoded territory IDs unique to each individual server
 - Changed Exile file naming prefix for ESM's server and client functions.
-    - `ESMs` (ESMServer) means a server function
-    - `ESMc` (ESMClient) means a client function
+  - `ESMs` (ESMServer) means a server function
+  - `ESMc` (ESMClient) means a client function
 - Changed file naming scheme from BIS to Exile
 - Changed how ESM responds to invalid territory IDs by returning a generic territory not found message
 - Balanced gambling algorithm to ensure the player gets back what they gambled.
@@ -101,10 +123,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `ESM_fnc_upgradeTerritory` with `ESMs_command_upgrade`
 - Replaced `ESM.key` with `esm.key` and changed data structure
 - Reworked the reconnection workflow to keep attempting to reconnect without limit.
-    - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes between attempts.
+  - The extension will start trying to reconnect every 15 seconds, gradually increasing the wait time, up to a maximum of 5 minutes between attempts.
 - Updated Exile's XM8 functions to the new system
-    - `ExileServer_system_xm8_send`
-	- `ExileServer_system_xm8_sendBaseRaid`
+  - `ExileServer_system_xm8_send`
+  - `ExileServer_system_xm8_sendBaseRaid`
     - `ExileServer_system_xm8_sendChargePlantStarted`
     - `ExileServer_system_xm8_sendCustom`
     - `ExileServer_system_xm8_sendFlagRestored`
@@ -118,6 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `ExileServer_system_xm8_sendCustom` to accept Embed arguments
 
 ### Removed
+
 - Removed `ESM_fnc_attemptReconnect`
 
 [Unreleased]: https://github.com/itsthedevman/esm_arma/compare/v2.0.1..main
