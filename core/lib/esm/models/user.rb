@@ -28,16 +28,29 @@ module ESM
     # =============================================================================
 
     has_many :cooldowns, dependent: :nullify
-    has_many :id_aliases, class_name: "UserAlias", dependent: :destroy
-    has_one :id_defaults, class_name: "UserDefault", dependent: :destroy
+
+    has_many :id_aliases, -> { order(:user_id) }, class_name: "UserAlias", dependent: :destroy
+    has_one :id_defaults, -> { order(:user_id) }, class_name: "UserDefault", dependent: :destroy
+
     has_many :logs, class_name: "Log", foreign_key: "requestors_user_id", dependent: :destroy
-    has_many :my_requests, foreign_key: :requestor_user_id, class_name: "Request", dependent: :destroy
-    has_many :pending_requests, foreign_key: :requestee_user_id, class_name: "Request", dependent: :destroy
-    has_many :user_gamble_stats, dependent: :destroy
+
+    has_many :my_requests,
+      foreign_key: :requestor_user_id,
+      class_name: "Request",
+      dependent: :destroy
+
+    has_many :pending_requests,
+      foreign_key: :requestee_user_id,
+      class_name: "Request",
+      dependent: :destroy
+
+    has_many :user_gamble_stats, -> { order(:user_id) }, dependent: :destroy
+
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy
-    has_one :user_steam_data, dependent: :destroy
+
     has_many :user_steam_uid_history, dependent: :nullify
+    has_one :user_steam_data, -> { order(:user_id) }, dependent: :destroy
 
     # =============================================================================
     # VALIDATIONS
