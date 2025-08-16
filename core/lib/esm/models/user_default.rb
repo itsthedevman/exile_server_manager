@@ -20,8 +20,8 @@ module ESM
     # =============================================================================
 
     belongs_to :user
-    belongs_to :community
-    belongs_to :server
+    belongs_to :community, optional: true
+    belongs_to :server, optional: true
 
     # =============================================================================
     # VALIDATIONS
