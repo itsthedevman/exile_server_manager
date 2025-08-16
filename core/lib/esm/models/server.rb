@@ -66,6 +66,7 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope :matching_server_id, ->(id) { where("server_id ilike ?", id) }
     scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
 
     # =============================================================================
@@ -77,7 +78,7 @@ module ESM
     end
 
     def self.find_by_server_id(id)
-      includes(:community).order(:server_id).where("server_id ilike ?", id).first
+      includes(:community).matching_server_id(id).first
     end
 
     # =============================================================================
