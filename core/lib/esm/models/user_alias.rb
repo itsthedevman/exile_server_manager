@@ -18,6 +18,8 @@ module ESM
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
+    alias_attribute :public_id, :uuid
+
     # =============================================================================
     # ASSOCIATIONS
     # =============================================================================
