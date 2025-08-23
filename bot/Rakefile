@@ -40,7 +40,6 @@ Rake.add_rakelib("tasks")
 
 task default: [:test, "standard:fix"]
 
-# rubocop:disable Rails/RakeEnvironment
 task :environment do
   ESM.load!
 end
@@ -52,5 +51,3 @@ task :bot do
     sleep 0.1
   end
 end
-
-# rubocop:enable Rails/RakeEnvironment

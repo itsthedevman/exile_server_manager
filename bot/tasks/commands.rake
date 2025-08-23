@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 namespace :commands do
+  desc "List all available commands with their usage"
   task list: :environment do
     ESM::Command.load
 
@@ -11,6 +12,7 @@ namespace :commands do
     puts JSON.pretty_generate(commands)
   end
 
+  desc "Delete and re-register all Discord commands"
   task seed: :bot do
     print "Deleting all global commands..."
     ESM.bot.get_application_commands.each(&:delete)
