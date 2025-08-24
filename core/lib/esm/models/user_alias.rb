@@ -32,10 +32,8 @@ module ESM
     # VALIDATIONS
     # =============================================================================
 
-    validates :uuid, uniqueness: true, presence: true
-    validates :value, uniqueness: {scope: [:user_id, :server_id]}
-    validates :value, uniqueness: {scope: [:user_id, :community_id]}
-    validates :value, length: {minimum: 1, maximum: 64}
+    validates :value, presence: true, length: {in: 1..64}
+    validate :value_unique_within_scope
 
     # =============================================================================
     # CALLBACKS
@@ -73,5 +71,31 @@ module ESM
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
+
+    private
+
+    def value_unique_within_scope
+      return if value.blank?
+
+      # Check for data integrity first
+      if server_id.present? && community_id.present?
+        errors.add(:base, "Alias cannot belong to both a server and community")
+        return
+      elsif server_id.blank? && community_id.blank?
+        errors.add(:base, "Alias must belong to either a server or community")
+        return
+      end
+
+      # Now do the actual uniqueness check
+      query = self.class.where(
+        user_id:,
+        value:,
+        server_id: server_id.presence,
+        community_id: community_id.presence
+      )
+
+      query = query.where.not(id:) if persisted?
+      errors.add(:value, "already exists") if query.exists?
+    end
   end
 end
