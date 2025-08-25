@@ -10,7 +10,7 @@ module ESM
     # DATA STRUCTURE
     # =============================================================================
 
-    attribute :uuid, :uuid
+    attribute :public_id, :uuid
     attribute :server_id, :integer
     attribute :search_text, :text
     attribute :requestors_user_id, :string
@@ -41,6 +41,9 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope :expired, -> { where("expires_at < ?", Time.current) }
+    scope :active, -> { where("expires_at >= ?", Time.current) }
+
     # =============================================================================
     # CLASS METHODS
     # =============================================================================
@@ -60,7 +63,7 @@ module ESM
     private
 
     def generate_uuid
-      self.uuid = SecureRandom.uuid
+      self.public_id = SecureRandom.uuid
     end
 
     def set_expiration_date

@@ -10,7 +10,7 @@ module ESM
     # DATA STRUCTURE
     # =============================================================================
 
-    attribute :uuid, :uuid
+    attribute :public_id, :uuid
     attribute :log_id, :integer
     attribute :file_name, :string
     attribute :entries, :json
@@ -49,7 +49,7 @@ module ESM
     private
 
     def generate_uuid
-      self.uuid = SecureRandom.uuid
+      self.public_id = SecureRandom.uuid
     end
   end
 end
