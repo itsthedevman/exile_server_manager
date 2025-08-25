@@ -78,7 +78,7 @@ module ESM
     end
 
     def self.find_by_server_id(id)
-      includes(:community).matching_server_id(id).first
+      includes(:community).with_server_id(id).first
     end
 
     # =============================================================================
