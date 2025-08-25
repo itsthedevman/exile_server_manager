@@ -46,6 +46,13 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
+    def file_date
+      time = entries.first&.fetch("timestamp")
+      return if time.blank?
+
+      Time.parse(time)
+    end
+
     private
 
     def generate_uuid
