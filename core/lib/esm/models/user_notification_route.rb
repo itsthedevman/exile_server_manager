@@ -40,7 +40,7 @@ module ESM
     # DATA STRUCTURE
     # =============================================================================
 
-    attribute :uuid, :uuid
+    attribute :public_id, :uuid
     attribute :user_id, :integer
     attribute :source_server_id, :integer # nil means "any server"
     attribute :destination_community_id, :integer
@@ -64,14 +64,18 @@ module ESM
     # VALIDATIONS
     # =============================================================================
 
-    validates :uuid, :user_id, :destination_community_id, :channel_id, presence: true
-    validates :notification_type, presence: true, uniqueness: {scope: %i[user_id destination_community_id source_server_id channel_id]}
+    validates :public_id, :user_id, :destination_community_id, :channel_id, presence: true
+    validates :notification_type,
+      presence: true,
+      uniqueness: {
+        scope: %i[user_id destination_community_id source_server_id channel_id]
+      }
 
     # =============================================================================
     # CALLBACKS
     # =============================================================================
 
-    before_create :create_uuid
+    before_validation :create_uuid, on: :create
 
     # =============================================================================
     # SCOPES
@@ -93,7 +97,7 @@ module ESM
     private
 
     def create_uuid
-      self.uuid = SecureRandom.uuid
+      self.public_id = SecureRandom.uuid
     end
   end
 end
