@@ -20,10 +20,10 @@ namespace :deploy do
       execute("ln -sf #{admin_repo}/env.prod /$HOME/esm_bot/shared/.env.prod")
 
       # Clone or pull esm_ruby_core
-      core_repo = "$HOME/esm_bot/esm_ruby_core"
+      core_repo = "$HOME/esm_bot/shared/esm_ruby_core"
 
       if !test "[ -d #{core_repo} ]"
-        execute("cd $HOME/esm_bot && git clone esm_core:itsthedevman/esm_ruby_core.git")
+        execute("cd $HOME/esm_bot/shared && git clone esm_core:itsthedevman/esm_ruby_core.git")
       end
       execute("cd #{core_repo} && git pull")
     end

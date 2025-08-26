@@ -49,10 +49,16 @@
 ].each { |gem| require gem }
 
 #############################
-# Load extensions and other useful classes to have
-Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
 
-ESM_CORE_PATH = Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core", "lib")
+# Set up the shared Ruby classes
+base = Pathname.new(File.expand_path("../../", __dir__))
+
+ESM_CORE_PATH =
+  if ENV["ESM_ENV"] == "production"
+    base.join("shared", "esm_ruby_core", "lib")
+  else
+    base.join("esm_ruby_core", "lib")
+  end
 
 # Require the core Ruby classes
 require ESM_CORE_PATH.join("esm.rb")
@@ -64,6 +70,9 @@ Dotenv.overload(".env.prod") if ENV["ESM_ENV"] == "production"
 
 # Default timezone to UTC
 Time.zone_default = Time.find_zone!("UTC")
+
+# Load extensions
+Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
 
 #################################
 # Logging methods!
