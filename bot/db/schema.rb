@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_25_183433) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_26_033918) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -372,7 +372,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_25_183433) do
   end
 
   create_table "user_notification_routes", force: :cascade do |t|
-    t.uuid "uuid", null: false
+    t.uuid "public_id", null: false
     t.integer "user_id", null: false
     t.integer "source_server_id"
     t.integer "destination_community_id", null: false
@@ -383,7 +383,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_25_183433) do
     t.boolean "community_accepted", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["uuid"], name: "index_user_notification_routes_on_uuid"
+    t.index ["public_id"], name: "index_user_notification_routes_on_public_id"
   end
 
   create_table "user_steam_data", force: :cascade do |t|

@@ -3,6 +3,10 @@
 require_relative "../lib/esm"
 require_relative "../spec/support/additions/esm/test"
 
+# =============================================================================
+# BOT INITIALIZATION
+# =============================================================================
+
 puts "Waiting for ESM to start..."
 ESM.run!(async: true)
 
@@ -24,6 +28,10 @@ ESM::BotAttribute.create!(
 )
 puts " done"
 
+# =============================================================================
+# COMMUNITIES
+# =============================================================================
+
 puts "Creating communities..."
 communities = [
   {
@@ -36,31 +44,29 @@ communities = [
   {
     community_id: "esm2",
     community_name: "ESM Test Server 2",
-    guild_id: "901967248653189180"
+    guild_id: "901967248653189180",
+    player_mode_enabled: false
   }
-  # {
-  #   community_id: "zdt",
-  #   community_name: "ZDT",
-  #   guild_id: "421111581267591168",
-  #   player_mode_enabled: false
-  # }
-].map do |community|
-  print "  Creating community for #{community[:community_id]}..."
-  community = ESM::Community.create!(community)
+].map do |community_data|
+  print "  Creating community for #{community_data[:community_id]}..."
+  community = ESM::Community.create!(community_data)
   puts " done"
-
   community
 end
 
 community = communities.first
 puts " done"
 
-print "Unlocking all commands"
+print "Unlocking all commands..."
 ESM::CommandConfiguration.all.update!(allowed_in_text_channels: true, allowlist_enabled: false)
 puts " done"
 
+# =============================================================================
+# SERVERS
+# =============================================================================
+
 print "Creating servers..."
-server = ESM::Server.create!(
+server_1 = ESM::Server.create!(
   community_id: community.id,
   server_id: "esm_malden",
   server_name: "Exile Server Manager",
@@ -69,7 +75,7 @@ server = ESM::Server.create!(
   server_port: "2602"
 )
 
-ESM::Server.create!(
+server_2 = ESM::Server.create!(
   community_id: community.id,
   server_id: "esm_test",
   server_name: "Exile Server Manager (Test)",
@@ -77,9 +83,15 @@ ESM::Server.create!(
   server_ip: "127.0.0.1",
   server_port: "2302"
 )
+puts " done"
 
+# =============================================================================
+# SERVER MODS & REWARDS
+# =============================================================================
+
+print "Creating server mods..."
 ESM::ServerMod.create!(
-  server_id: server.id,
+  server_id: server_1.id,
   mod_name: "Exile",
   mod_link: "https://www.exilemod.com",
   mod_version: "1.0.5",
@@ -87,16 +99,18 @@ ESM::ServerMod.create!(
 )
 
 ESM::ServerMod.create!(
-  server_id: server.id,
+  server_id: server_1.id,
   mod_name: "ADT",
   mod_link: "",
   mod_version: "1",
   mod_required: false
 )
+puts " done"
 
-# This is the default reward
-server.server_rewards.where(reward_id: nil).first.update!(
-  server_id: server.id,
+print "Creating server rewards..."
+# Default reward
+server_1.server_rewards.where(reward_id: nil).first.update!(
+  server_id: server_1.id,
   reward_id: nil,
   reward_items: {
     Exile_Item_WoodDoorKit: 1,
@@ -109,8 +123,9 @@ server.server_rewards.where(reward_id: nil).first.update!(
   respect: 1
 )
 
-server.server_rewards.create!(
-  server_id: server.id,
+# Vehicle reward
+server_1.server_rewards.create!(
+  server_id: server_1.id,
   reward_id: "vehicles",
   reward_items: {},
   reward_vehicles: [
@@ -133,38 +148,115 @@ server.server_rewards.create!(
 )
 puts " done"
 
+# =============================================================================
+# USERS
+# =============================================================================
+
 print "Creating users..."
-[
+users = [
   {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: nil},
   {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: "76561198037177305"},
   {discord_id: "683476391664156700", discord_username: "Bryan V3", steam_uid: ESM::Test.data[:steam_uids].sample}
-].each do |user_info|
+].map do |user_info|
   user = ESM::User.create!(**user_info)
-  ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server.id)
+  ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server_1.id)
+  user
 end
 
-ESM::UserDefault.where(user_id: 1).update(server_id: server.id, community_id: community.id)
-ESM::UserAlias.create!(user_id: 1, server_id: server.id, value: "s")
+# Set defaults and aliases for main user
+ESM::UserDefault.where(user_id: 1).update(server_id: server_1.id, community_id: community.id)
+ESM::UserAlias.create!(user_id: 1, server_id: server_1.id, value: "s")
 ESM::UserAlias.create!(user_id: 1, community_id: community.id, value: "c")
 puts " done"
 
-Redis.new.set("server_key", server.token.to_json)
+# =============================================================================
+# NOTIFICATION ROUTES
+# =============================================================================
 
-puts "Creating logs..."
+# So we can access some test data
+require ESM.root.join("spec/support/additions/esm/test.rb")
 
+puts "Creating user notification routes..."
+user = users.first
+channels = ESM::Test.data.dig(:secondary, :channels)
+
+# Accepted & active routes
+print "  Creating accepted routes..."
+routes_data = [
+  # #general - Territory events from server 1
+  {server: server_1, channel: channels[0], type: "base-raid", enabled: true},
+  {server: server_1, channel: channels[0], type: "flag-stolen", enabled: true},
+  {server: server_1, channel: channels[0], type: "flag-restored", enabled: false},
+
+  # #notifications - Economy events from any server
+  {server: nil, channel: channels[1], type: "protection-money-due", enabled: true},
+  {server: nil, channel: channels[1], type: "marxet-item-sold", enabled: true},
+
+  # #raid-alerts - Combat events from server 2
+  {server: server_2, channel: channels[2], type: "hack-started", enabled: true},
+  {server: server_2, channel: channels[2], type: "grind-started", enabled: true},
+  {server: server_2, channel: channels[2], type: "charge-plant-started", enabled: false}
+]
+
+routes_data.each do |route_data|
+  ESM::UserNotificationRoute.create!(
+    user: user,
+    source_server: route_data[:server],
+    destination_community: community,
+    channel_id: route_data[:channel],
+    notification_type: route_data[:type],
+    enabled: route_data[:enabled],
+    user_accepted: true,
+    community_accepted: true
+  )
+end
+puts " done"
+
+# Pending routes
+print "  Creating pending routes..."
+# Pending community acceptance
+ESM::UserNotificationRoute.create!(
+  user: user,
+  source_server: server_1,
+  destination_community: community,
+  channel_id: channels[0],
+  notification_type: "protection-money-paid",
+  enabled: true,
+  user_accepted: true,
+  community_accepted: false
+)
+
+# Pending user acceptance
+ESM::UserNotificationRoute.create!(
+  user: user,
+  source_server: server_2,
+  destination_community: community,
+  channel_id: channels[2],
+  notification_type: "flag-steal-started",
+  enabled: true,
+  user_accepted: false,
+  community_accepted: true
+)
+puts " done"
+
+# =============================================================================
+# LOGS
+# =============================================================================
+
+print "Creating sample logs..."
 log = ESM::Log.create!(
   public_id: SecureRandom.uuid,
-  requestors_user_id: ESM::User.all.pluck(:id).sample,
-  server:,
+  requestors_user_id: user.id,
+  server: server_1,
   search_text: "robra",
   created_at: 2.hours.ago,
   expires_at: 15.days.from_now
 )
 
-# Create log entries
+# Trading log entries
 ESM::LogEntry.create!(
   public_id: SecureRandom.uuid,
-  log:,
+  log: log,
   file_name: "Exile_TradingLog.log",
   entries: [
     {
@@ -185,10 +277,10 @@ ESM::LogEntry.create!(
   ]
 )
 
-# Second day with timestamped entries
+# More trading entries
 ESM::LogEntry.create!(
   public_id: SecureRandom.uuid,
-  log:,
+  log: log,
   file_name: "Exile_TradingLog.log",
   entries: [
     {
@@ -200,19 +292,14 @@ ESM::LogEntry.create!(
       timestamp: "2025-02-16T09:12:46.000-05:00",
       line_number: 565,
       entry: "[04:12:46:912447 --5:00] [Thread 92200] PLAYER: ( 76561199032144610 ) R NSTR:2 (robra) REMOTE PURCHASED ITEM hlc_20Rnd_762x51_B_M14 FOR 200 POPTABS | PLAYER TOTAL MONEY: 24374"
-    },
-    {
-      timestamp: "2025-02-16T07:55:06.000-05:00",
-      line_number: 523,
-      entry: "[02:55:06:071228 --5:00] [Thread 91468] PLAYER: ( 76561199032144610 ) R NSTR:5 (robra) REMOTE SOLD ITEM: CUP_B_M6LineBacker_USA_W (ID# 18429) with Cargo [\"100Rnd_65x39_caseless_mag_Tracer\",\"arifle_ARX_hex_F\"] FOR 376015 POPTABS AND 37601.5 RESPECT | PLAYER TOTAL MONEY: 377015"
     }
   ]
 )
 
-# Third day with death messages
+# Death log entries
 ESM::LogEntry.create!(
   public_id: SecureRandom.uuid,
-  log:,
+  log: log,
   file_name: "Exile_DeathLog.log",
   entries: [
     {
@@ -229,13 +316,21 @@ ESM::LogEntry.create!(
       timestamp: "2025-02-17T16:12:44.000-05:00",
       line_number: 967,
       entry: "robra died a mysterious death."
-    },
-    {
-      timestamp: "2025-02-17T17:33:21.000-05:00",
-      line_number: 998,
-      entry: "robra died because... Arma."
     }
   ]
 )
-
 puts " done"
+
+# =============================================================================
+# FINALIZATION
+# =============================================================================
+
+Redis.new.set("server_key", server_1.token.to_json)
+
+puts ""
+puts "Seeds completed successfully!"
+puts "Communities: #{ESM::Community.count}"
+puts "Servers: #{ESM::Server.count}"
+puts "Users: #{ESM::User.count}"
+puts "Notification Routes: #{ESM::UserNotificationRoute.count} (#{ESM::UserNotificationRoute.accepted.count} accepted)"
+puts ""
