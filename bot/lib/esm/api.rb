@@ -73,6 +73,16 @@ module ESM
       connection.connection.close(1000, "Server ID changed, reconnecting")
     end
 
+    # Returns true if the server is connected
+    def servers_connected(id:)
+      info!(event: "servers:connected", id:)
+
+      server = ESM::Server.find_by(id:)
+      return if server.nil?
+
+      server.connected?
+    end
+
     #
     # Gets a channel by its ID. The bot must have send access to this channel
     #
