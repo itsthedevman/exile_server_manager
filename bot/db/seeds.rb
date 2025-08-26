@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Rails/Output
-
 require_relative "../lib/esm"
 require_relative "../spec/support/additions/esm/test"
 
@@ -33,7 +31,7 @@ communities = [
     community_name: "ESM Test Server 1",
     guild_id: "452568470765305866",
     logging_channel_id: "901965726305382400",
-    player_mode_enabled: false,
+    player_mode_enabled: false
   },
   {
     community_id: "esm2",
@@ -137,8 +135,8 @@ puts " done"
 
 print "Creating users..."
 [
-  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: "76561198037177305"},
-  {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: ESM::Test.data[:steam_uids].sample},
+  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: nil},
+  {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: "76561198037177305"},
   {discord_id: "683476391664156700", discord_username: "Bryan V3", steam_uid: ESM::Test.data[:steam_uids].sample}
 ].each do |user_info|
   user = ESM::User.create!(**user_info)
@@ -152,4 +150,92 @@ puts " done"
 
 Redis.new.set("server_key", server.token.to_json)
 
-# rubocop:enable Rails/Output
+puts "Creating logs..."
+
+log = ESM::Log.create!(
+  public_id: SecureRandom.uuid,
+  requestors_user_id: ESM::User.all.pluck(:id).sample,
+  server:,
+  search_text: "robra",
+  created_at: 2.hours.ago,
+  expires_at: 15.days.from_now
+)
+
+# Create log entries
+ESM::LogEntry.create!(
+  public_id: SecureRandom.uuid,
+  log:,
+  file_name: "Exile_TradingLog.log",
+  entries: [
+    {
+      timestamp: "2025-02-15T19:03:39.000-05:00",
+      line_number: 1234,
+      entry: "PLAYER: ( 76561199032144610 ) R NSTR:2 (robra) REMOTE PURCHASED ITEM MiniGrenade FOR 125 POPTABS | PLAYER TOTAL MONEY: 24874"
+    },
+    {
+      timestamp: "2025-02-15T19:05:22.000-05:00",
+      line_number: 1236,
+      entry: "PLAYER: ( 76561199032144610 ) R NSTR:2 (robra) REMOTE SOLD ITEM Land_Trophy_01_gold_F_Kit FOR 250000 POPTABS AND 125000 RESPECT | PLAYER TOTAL MONEY: 274874"
+    },
+    {
+      timestamp: "2025-02-15T20:29:52.000-05:00",
+      line_number: 1244,
+      entry: "PLAYER: ( 76561199032144610 ) R NSTR:5 (robra) REMOTE PURCHASED VEHICLE CUP_B_JAS39_HIL FOR 1.2e+06 POPTABS | PLAYER TOTAL MONEY: 55000"
+    }
+  ]
+)
+
+# Second day with timestamped entries
+ESM::LogEntry.create!(
+  public_id: SecureRandom.uuid,
+  log:,
+  file_name: "Exile_TradingLog.log",
+  entries: [
+    {
+      timestamp: "2025-02-16T09:13:32.000-05:00",
+      line_number: 567,
+      entry: "[04:13:32:252334 --5:00] [Thread 94108] PLAYER: ( 76561199032144610 ) R NSTR:2 (robra) REMOTE SOLD ITEM Exile_Item_PlasticBottleEmpty FOR 10 POPTABS AND 1 RESPECT | PLAYER TOTAL MONEY: 24214"
+    },
+    {
+      timestamp: "2025-02-16T09:12:46.000-05:00",
+      line_number: 565,
+      entry: "[04:12:46:912447 --5:00] [Thread 92200] PLAYER: ( 76561199032144610 ) R NSTR:2 (robra) REMOTE PURCHASED ITEM hlc_20Rnd_762x51_B_M14 FOR 200 POPTABS | PLAYER TOTAL MONEY: 24374"
+    },
+    {
+      timestamp: "2025-02-16T07:55:06.000-05:00",
+      line_number: 523,
+      entry: "[02:55:06:071228 --5:00] [Thread 91468] PLAYER: ( 76561199032144610 ) R NSTR:5 (robra) REMOTE SOLD ITEM: CUP_B_M6LineBacker_USA_W (ID# 18429) with Cargo [\"100Rnd_65x39_caseless_mag_Tracer\",\"arifle_ARX_hex_F\"] FOR 376015 POPTABS AND 37601.5 RESPECT | PLAYER TOTAL MONEY: 377015"
+    }
+  ]
+)
+
+# Third day with death messages
+ESM::LogEntry.create!(
+  public_id: SecureRandom.uuid,
+  log:,
+  file_name: "Exile_DeathLog.log",
+  entries: [
+    {
+      timestamp: "2025-02-17T14:23:12.000-05:00",
+      line_number: 892,
+      entry: "robra died because robra was very unlucky."
+    },
+    {
+      timestamp: "2025-02-17T15:45:33.000-05:00",
+      line_number: 934,
+      entry: "robra died due to Arma bugs and is probably very salty right now."
+    },
+    {
+      timestamp: "2025-02-17T16:12:44.000-05:00",
+      line_number: 967,
+      entry: "robra died a mysterious death."
+    },
+    {
+      timestamp: "2025-02-17T17:33:21.000-05:00",
+      line_number: 998,
+      entry: "robra died because... Arma."
+    }
+  ]
+)
+
+puts " done"

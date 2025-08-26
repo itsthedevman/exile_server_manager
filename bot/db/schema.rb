@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_07_015524) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_25_183433) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "plpgsql"
@@ -137,7 +137,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_07_015524) do
   end
 
   create_table "log_entries", force: :cascade do |t|
-    t.uuid "uuid", null: false
+    t.uuid "public_id", null: false
     t.bigint "log_id", null: false
     t.datetime "log_date"
     t.string "file_name", null: false
@@ -145,11 +145,11 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_07_015524) do
     t.index ["log_id", "log_date", "file_name"], name: "index_log_entries_on_log_id_and_log_date_and_file_name"
     t.index ["log_id", "log_date"], name: "index_log_entries_on_log_id_and_log_date"
     t.index ["log_id"], name: "index_log_entries_on_log_id"
-    t.index ["uuid"], name: "index_log_entries_on_uuid"
+    t.index ["public_id"], name: "index_log_entries_on_public_id"
   end
 
   create_table "logs", force: :cascade do |t|
-    t.uuid "uuid", null: false
+    t.uuid "public_id", null: false
     t.integer "server_id", null: false
     t.text "search_text"
     t.string "requestors_user_id"
@@ -157,8 +157,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_07_015524) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["expires_at"], name: "index_logs_on_expires_at"
+    t.index ["public_id"], name: "index_logs_on_public_id", unique: true
     t.index ["server_id"], name: "index_logs_on_server_id"
-    t.index ["uuid"], name: "index_logs_on_uuid", unique: true
   end
 
   create_table "notifications", force: :cascade do |t|
