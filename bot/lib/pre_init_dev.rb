@@ -19,6 +19,6 @@ ESM.logger.level = Logger::TRACE
 Discordrb::LOGGER.debug = false
 
 # ActiveRecord logging
-ActiveRecord::Base.logger.level = Logger::INFO if ActiveRecord::Base.logger.present?
+ActiveRecord::Base.logger = ESM.logger
 
 info!("Completed in #{timer.stop!}s")
