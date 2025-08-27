@@ -184,20 +184,23 @@ channels = ESM::Test.data.dig(:secondary, :channels)
 # Accepted & active routes
 print "  Creating accepted routes..."
 routes_data = [
-  # #general - Territory events from server 1
-  {server: server_1, channel: channels[0], type: "base-raid", enabled: true},
-  {server: server_1, channel: channels[0], type: "flag-stolen", enabled: true},
-  {server: server_1, channel: channels[0], type: "flag-restored", enabled: false},
+  # Specific server events
+  {server: server_1, channel: channels.first, type: "base-raid", enabled: true},
+  {server: server_1, channel: channels.first, type: "flag-stolen", enabled: true},
+  {server: server_1, channel: channels.first, type: "flag-restored", enabled: false},
+  {server: server_1, channel: channels.first, type: "hack-started", enabled: true},
+  {server: server_1, channel: channels.first, type: "grind-started", enabled: true},
+  {server: server_1, channel: channels.first, type: "charge-plant-started", enabled: false},
 
-  # #notifications - Economy events from any server
-  {server: nil, channel: channels[1], type: "protection-money-due", enabled: true},
-  {server: nil, channel: channels[1], type: "marxet-item-sold", enabled: true},
-
-  # #raid-alerts - Combat events from server 2
-  {server: server_2, channel: channels[2], type: "hack-started", enabled: true},
-  {server: server_2, channel: channels[2], type: "grind-started", enabled: true},
-  {server: server_2, channel: channels[2], type: "charge-plant-started", enabled: false}
+  # Global events
+  {server: nil, channel: channels.second, type: "protection-money-due", enabled: true},
+  {server: nil, channel: channels.second, type: "marxet-item-sold", enabled: true}
 ]
+
+# All Events
+ESM::UserNotificationRoute::TYPES.each do |type|
+  routes_data << {server: server_2, channel: channels.third, type:, enabled: true}
+end
 
 routes_data.each do |route_data|
   ESM::UserNotificationRoute.create!(
@@ -220,7 +223,7 @@ ESM::UserNotificationRoute.create!(
   user: user,
   source_server: server_1,
   destination_community: player_mode_community,
-  channel_id: channels[0],
+  channel_id: channels.first,
   notification_type: "protection-money-paid",
   enabled: true,
   user_accepted: true,
@@ -230,9 +233,9 @@ ESM::UserNotificationRoute.create!(
 # Pending user acceptance
 ESM::UserNotificationRoute.create!(
   user: user,
-  source_server: server_2,
+  source_server: nil,
   destination_community: player_mode_community,
-  channel_id: channels[2],
+  channel_id: channels.second,
   notification_type: "flag-steal-started",
   enabled: true,
   user_accepted: false,
