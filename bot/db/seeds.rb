@@ -45,7 +45,7 @@ communities = [
     community_id: "esm2",
     community_name: "ESM Test Server 2",
     guild_id: "901967248653189180",
-    player_mode_enabled: false
+    player_mode_enabled: true
   }
 ].map do |community_data|
   print "  Creating community for #{community_data[:community_id]}..."
@@ -55,6 +55,7 @@ communities = [
 end
 
 community = communities.first
+player_mode_community = communities.second
 puts " done"
 
 print "Unlocking all commands..."
@@ -202,7 +203,7 @@ routes_data.each do |route_data|
   ESM::UserNotificationRoute.create!(
     user: user,
     source_server: route_data[:server],
-    destination_community: community,
+    destination_community: player_mode_community,
     channel_id: route_data[:channel],
     notification_type: route_data[:type],
     enabled: route_data[:enabled],
@@ -218,7 +219,7 @@ print "  Creating pending routes..."
 ESM::UserNotificationRoute.create!(
   user: user,
   source_server: server_1,
-  destination_community: community,
+  destination_community: player_mode_community,
   channel_id: channels[0],
   notification_type: "protection-money-paid",
   enabled: true,
@@ -230,7 +231,7 @@ ESM::UserNotificationRoute.create!(
 ESM::UserNotificationRoute.create!(
   user: user,
   source_server: server_2,
-  destination_community: community,
+  destination_community: player_mode_community,
   channel_id: channels[2],
   notification_type: "flag-steal-started",
   enabled: true,
