@@ -94,6 +94,10 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
+    def global?
+      source_server_id.nil?
+    end
+
     private
 
     def create_uuid

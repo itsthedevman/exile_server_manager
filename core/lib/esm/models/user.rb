@@ -86,6 +86,10 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
+    def public_id
+      discord_id
+    end
+
     def attributes_for_logging
       attributes.except(
         "id", "discord_avatar", "discord_access_token",
