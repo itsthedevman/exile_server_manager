@@ -20,20 +20,26 @@ module ESM
       marxet-item-sold
     ].freeze
 
-    TYPE_PRESETS = {
-      raids: %w[
+    GROUPS = {
+      territory_management: %w[
+        flag-restored
+        protection-money-due
+        protection-money-paid
+      ],
+      base_combat: %w[
         base-raid
         flag-stolen
-        flag-restored
         flag-steal-started
         grind-started
         hack-started
         charge-plant-started
-      ].freeze,
-      payments: %w[
-        protection-money-due
-        protection-money-paid
-      ].freeze
+      ],
+      economy: %w[
+        marxet-item-sold
+      ],
+      custom: %w[
+        custom
+      ]
     }.freeze
 
     # =============================================================================
