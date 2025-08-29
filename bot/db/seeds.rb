@@ -155,8 +155,8 @@ puts " done"
 
 print "Creating users..."
 users = [
-  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: nil},
-  {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: "76561198037177305"},
+  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: "76561198037177305"},
+  {discord_id: "477847544521687040", discord_username: "Bryan V2", steam_uid: ESM::Test.data},
   {discord_id: "683476391664156700", discord_username: "Bryan V3", steam_uid: ESM::Test.data[:steam_uids].sample}
 ].map do |user_info|
   user = ESM::User.create!(**user_info)
@@ -178,31 +178,19 @@ puts " done"
 require ESM.root.join("spec/support/additions/esm/test.rb")
 
 puts "Creating user notification routes..."
-user = users.first
+user, user2, user3 = users
 channels = ESM::Test.data.dig(:secondary, :channels)
 
 # Accepted & active routes
-print "  Creating accepted routes..."
-routes_data = [
-  # Specific server events
+print "  Creating accepted routes for user..."
+accepted_routes_data = [
   {server: server_1, channel: channels.first, type: "base-raid", enabled: true},
   {server: server_1, channel: channels.first, type: "flag-stolen", enabled: true},
-  {server: server_1, channel: channels.first, type: "flag-restored", enabled: false},
-  {server: server_1, channel: channels.first, type: "hack-started", enabled: true},
-  {server: server_1, channel: channels.first, type: "grind-started", enabled: true},
-  {server: server_1, channel: channels.first, type: "charge-plant-started", enabled: false},
-
-  # Global events
   {server: nil, channel: channels.second, type: "protection-money-due", enabled: true},
-  {server: nil, channel: channels.second, type: "marxet-item-sold", enabled: true}
+  {server: nil, channel: channels.second, type: "marxet-item-sold", enabled: false}
 ]
 
-# All Events
-ESM::UserNotificationRoute::TYPES.each do |type|
-  routes_data << {server: server_2, channel: channels.third, type:, enabled: true}
-end
-
-routes_data.each do |route_data|
+accepted_routes_data.each do |route_data|
   ESM::UserNotificationRoute.create!(
     user: user,
     source_server: route_data[:server],
@@ -218,29 +206,55 @@ puts " done"
 
 # Pending routes
 print "  Creating pending routes..."
-# Pending community acceptance
-ESM::UserNotificationRoute.create!(
-  user: user,
-  source_server: server_1,
-  destination_community: player_mode_community,
-  channel_id: channels.first,
-  notification_type: "protection-money-paid",
-  enabled: true,
-  user_accepted: true,
-  community_accepted: false
-)
 
-# Pending user acceptance
-ESM::UserNotificationRoute.create!(
-  user: user,
-  source_server: nil,
-  destination_community: player_mode_community,
-  channel_id: channels.second,
-  notification_type: "flag-steal-started",
-  enabled: true,
-  user_accepted: false,
-  community_accepted: true
-)
+# === PENDING USER ACCEPTANCE  ===
+print "    Creating user pending acceptance routes..."
+ESM::UserNotificationRoute::TYPES.each do |type|
+  ESM::UserNotificationRoute.create!(
+    user: user,
+    source_server: server_2,
+    destination_community: player_mode_community,
+    channel_id: channels.third,
+    notification_type: type,
+    enabled: true,
+    user_accepted: false,
+    community_accepted: true
+  )
+end
+puts " done"
+
+# === PENDING COMMUNITY ACCEPTANCE ===
+
+# User2's requests (community needs to approve)
+print "    Creating user2 community pending routes..."
+ESM::UserNotificationRoute::TYPES.each do |type|
+  ESM::UserNotificationRoute.create!(
+    user: user2,
+    source_server: server_1,
+    destination_community: player_mode_community,
+    channel_id: channels.first,
+    notification_type: type,
+    enabled: true,
+    user_accepted: true,
+    community_accepted: false
+  )
+end
+
+# User3's requests (community needs to approve)
+print "    Creating user3 community pending routes..."
+ESM::UserNotificationRoute::TYPES.each do |type|
+  ESM::UserNotificationRoute.create!(
+    user: user3,
+    source_server: server_2,
+    destination_community: player_mode_community,
+    channel_id: channels.second,
+    notification_type: type,
+    enabled: true,
+    user_accepted: true,
+    community_accepted: false
+  )
+end
+
 puts " done"
 
 # =============================================================================
