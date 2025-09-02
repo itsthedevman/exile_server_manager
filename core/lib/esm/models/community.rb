@@ -63,7 +63,7 @@ module ESM
     # SCOPES
     # =============================================================================
 
-    scope :with_community_id, ->(id) { where("community_id ilike ?", id) }
+    scope :with_community_id, ->(id) { where("#{table_name}.community_id ilike ?", id) }
 
     scope(:by_community_id, lambda do |id|
       includes(:servers).with_community_id(id)
