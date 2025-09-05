@@ -42,6 +42,20 @@ module ESM
       ]
     }.freeze
 
+    TYPE_TO_GROUP = {
+      "flag-restored" => :territory_management,
+      "protection-money-due" => :territory_management,
+      "protection-money-paid" => :territory_management,
+      "base-raid" => :base_combat,
+      "flag-stolen" => :base_combat,
+      "flag-steal-started" => :base_combat,
+      "grind-started" => :base_combat,
+      "hack-started" => :base_combat,
+      "charge-plant-started" => :base_combat,
+      "marxet-item-sold" => :economy,
+      "custom" => :custom
+    }.freeze
+
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
