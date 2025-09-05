@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "esm_ruby_core"
-  spec.version = "0.0.1"
+  spec.version = "2.0.0"
   spec.authors = ["Bryan"]
   spec.email = ["bryan@itsthedevman.com"]
 

@@ -1,35 +1,74 @@
-# EsmRubyCore
+# Exile Server Manager (ESM) - Ruby Core
 
-TODO: Delete this and the text below, and describe your gem
+<p align="center">
+	<a href="https://www.ruby-lang.org/en/">
+		<img src="https://img.shields.io/badge/Ruby-v3.3-green.svg" alt="ruby version">
+	</a>
+	<a href="https://rubygems.org/">
+		<img src="https://img.shields.io/badge/Gem-v2.0.0-orange.svg" alt="gem version">
+	</a>
+</p>
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/esm_ruby_core`. To experiment with that code, run `bin/console` for an interactive prompt.
+ESM Ruby Core is an internal shared library containing the core models, utilities, and business logic used across ESM's Ruby applications. This gem ensures consistency between the Discord bot and website.
+
+> **Note**: This is an internal ESM component. If you're looking to use ESM with your Exile server, please visit [esmbot.com/getting_started](https://esmbot.com/getting_started).
+
+---
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Add to your application's Gemfile:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem "esm_ruby_core", github: "https://github.com/itsthedevman/esm_ruby_core"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Then execute:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
 ```
 
-## Usage
+## For Developers
 
-TODO: Write usage instructions here
+This gem contains the shared foundation for all ESM Ruby applications. Changes here affect both the Discord bot and website.
 
-## Development
+### Requirements
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+- Ruby 3.3+
+- Understanding of:
+  - Active Record
+  - Ruby gems
+  - PostgreSQL
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+### Setup
 
-## Contributing
+#### Method 1: Using Nix (Recommended)
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/esm_ruby_core.
+```bash
+# Install nix and direnv
+# Enable flakes in your nix config
+direnv allow
+```
+
+#### Method 2: Manual Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/itsthedevman/esm_ruby_core
+cd esm_ruby_core
+
+# Install dependencies
+bin/setup
+
+# Run console for testing
+bin/console
+```
+
+## License
+
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
+</a>
+
+ESM is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
