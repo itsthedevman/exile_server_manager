@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    esm_ruby_core (0.0.1)
+    esm_ruby_core (2.0.0)
       colorize
       fast_jsonparser
       http
