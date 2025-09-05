@@ -28,6 +28,7 @@ group :development do
   gem "capistrano-yarn", require: false
 
   # Code formatting and linting
+  gem "ruby-lsp"
   gem "standard"
   gem "rubocop-performance"
   gem "rubocop-rails"
@@ -40,6 +41,8 @@ group :development do
   # SSH and encryption dependencies for Capistrano
   gem "ed25519", require: false
   gem "bcrypt_pbkdf", require: false
+
+  gem "benchmark-ips"
 end
 
 ####################################################################################################
@@ -48,10 +51,10 @@ end
 gem "propshaft"
 
 # Use postgresql as the database for Active Record
-gem "pg", "~> 1.1"
+gem "pg"
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", ">= 5.0"
+gem "puma"
 
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem "turbo-rails"
@@ -80,13 +83,37 @@ gem "everythingrb"
 gem "arel-helpers"
 
 # Authentication
-gem "devise", "~> 4.9"
+gem "devise"
 
 # Authorization
-gem "pundit", "~> 2.5"
+gem "pundit"
 
 # Asset/Javascript compilation
-gem "vite_rails", "~> 3.0"
+gem "vite_rails"
 
 # Slim template engine for Rails views
-gem "slim", "~> 5.2"
+gem "slim"
+
+gem "esm_ruby_core", path: "../esm_ruby_core"
+
+gem "view_component"
+
+gem "omniauth"
+
+gem "omniauth-discord"
+
+gem "omniauth-steam"
+
+gem "ostruct"
+
+gem "omniauth-rails_csrf_protection"
+
+gem "http"
+
+gem "sass-embedded"
+
+gem "semantic"
+
+gem "faker"
+
+gem "dotenv"

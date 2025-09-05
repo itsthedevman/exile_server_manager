@@ -1,0 +1,55 @@
+= update_turbo_frame "log_entry"
+  .card.bg-dark.border-secondary
+    .card-header.border-secondary.d-flex.align-items-center.justify-content-between
+      .d-flex.align-items-center
+        h5.mb-0.text-light.me-3
+          i.bi.bi-file-code.me-2
+          | #{log_entry.file_name || "No File"}
+        span.badge.bg-success
+          = log_entry.file_date&.strftime("%Y-%m-%d") || "Unknown"
+
+      small.text-muted
+        i.bi.bi-eye.me-1
+        | #{log_entry.entries.size} entries
+
+    .card-body.p-0
+      / Log content
+      .position-relative
+        .table-responsive[style="max-height: 70vh; overflow-y: auto;"]
+          table.table.table-sm.table-dark.mb-0.font-monospace[data-controller="log-entry"]
+            tbody
+              - log_entry.entries.each do |entry|
+                tr.log-entry[data-log-entry-target="row"]
+                  td.text-center.pe-3.text-muted.user-select-none[
+                    style="width: 80px; cursor: pointer; vertical-align: middle; padding-top: 0.75rem;"
+                    title="Line #{entry['line_number']}"
+                  ]
+                    = entry["line_number"]
+
+                  td.log-content[style="font-size: 0.85rem; line-height: 1.4; vertical-align: middle; padding: 0.5rem 1rem 0.5rem 0;"]
+                    / Main formatted content
+                    .d-flex.align-items-start.justify-content-between
+                      .flex-grow-1
+                        span.text-info.me-3.d-block[style="white-space: nowrap;"]
+                          = Time.parse(entry["timestamp"]).strftime("%Y-%m-%d at %I:%M:%S %p UTC")
+                        = render_component(LogEntryComponent, entry: entry["entry"], search_text: log.search_text)
+
+                      / Toggle button
+                      button.btn.btn-outline-secondary.btn-sm.ms-2.flex-shrink-0[
+                        data-action="click->log-entry#toggleOriginal"
+                        data-log-entry-row-param=entry['line_number']
+                        title="Show original log entry"
+                        style="font-size: 0.6rem; padding: 0.15rem 0.4rem; margin-top: 0.25rem;"
+                      ]
+                        | ⋯
+
+                    / Original content (hidden by default)
+                    .original-content.d-none.mt-3.pt-3.border-top.border-secondary[
+                      data-log-entry-target="originalContent"
+                      style="font-size: 0.75rem; opacity: 0.8; font-family: 'Courier New', monospace;"
+                    ]
+                      .text-muted.small.mb-2
+                        i.bi.bi-code-square.me-1
+                        | Original log entry:
+                      .text-light.bg-dark.p-2.rounded.border[style="word-wrap: break-word; white-space: pre-wrap;"]
+                        = entry["entry"]

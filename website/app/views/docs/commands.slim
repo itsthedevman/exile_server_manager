@@ -1,0 +1,155 @@
+.container.window
+  .row.g-5
+    / Clean Navigation Sidebar
+    .col-lg-3
+      .sidebar
+        .card.bg-dark.border-secondary
+          .card-header.border-secondary
+            h6.mb-0.text-light
+              i.bi.bi-list.me-2
+              | Navigation
+          .card-body.p-0.pb-3
+            .list-group.list-group-flush[
+              data-bs-spy="scroll"
+              data-bs-target="#commands"
+              data-bs-offset="0"
+              data-bs-smooth-scroll="true"
+            ]
+              - commands_by_domain.each do |(domain, category), commands|
+                a.list-group-item.list-group-item-action.text-light.border-0.bg-transparent.py-3 href="##{category.parameterize}"
+                  .d-flex.align-items-center.justify-content-between
+                    strong.text-primary.fs-5 = "/#{domain}"
+                    span.badge.bg-secondary.small = commands.size
+                / Individual commands
+                - commands.each do |command|
+                  a.list-group-item.list-group-item-action.text-muted.ps-5.border-0.bg-transparent.py-2 href="##{command.name}"
+                    = command.operation
+
+    / Main Content with Info Cards
+    .col-lg-9
+      / Streamlined Header
+      .text-center.mb-5
+        h1.mb-3.text-primary Commands
+        p.lead Command documentation can be found, at any time, by using the #{command_usage(:help, show_arguments: false)} command in Discord.
+
+      / Info Cards at Top
+      .row.g-4.mb-5
+        .col
+          / Argument Colors
+          .card.bg-dark.border-secondary
+            .card-header.border-secondary
+              h5.mb-0.text-light
+                i.bi.bi-palette.me-2
+                | Argument Color Guide
+            .card-body
+              .row.g-4
+                .col-md-3
+                  .text-center.mb-3
+                    span.arg.identifier.d-block.mb-2 server_id
+                    .text-light.fw-medium.small Identifiers
+                    .text-muted.small Which server/community
+                .col-md-3
+                  .text-center.mb-3
+                    span.arg.target.d-block.mb-2 target
+                    .text-light.fw-medium.small Targets
+                    .text-muted.small Who you're acting on
+                .col-md-3
+                  .text-center.mb-3
+                    span.arg.content.d-block.mb-2 amount
+                    .text-light.fw-medium.small Content
+                    .text-muted.small Values & data
+                .col-md-3
+                  .text-center.mb-0
+                    span.arg.option.d-block.mb-2 flags
+                    .text-light.fw-medium.small Options
+                    .text-muted.small How it behaves
+      / Error state
+      - if commands_by_domain.empty?
+        .alert.alert-warning.text-center.py-5
+          i.bi.bi-exclamation-triangle.display-4.text-warning.mb-4
+          h4.text-warning Failed to Load Commands
+          p.mb-4 We couldn't retrieve the command list. Please try refreshing this page.
+          .d-flex.gap-3.justify-content-center
+            button.btn.btn-warning onclick="location.reload()"
+              i.bi.bi-arrow-clockwise.me-2
+              | Refresh Page
+            = link_to join_path, class: "btn btn-outline-warning"
+              i.bi.bi-discord.me-2
+              | Get Support
+
+      / Commands by category
+      #commands
+        - commands_by_domain.each_with_index do |((domain, category), commands), category_index|
+          .mb-5 id=category.to_s.parameterize
+            / Category Header
+            .d-flex.align-items-center.justify-content-between.mb-4.pb-3.border-bottom.border-secondary
+              h2.mb-0.text-primary
+                = category.humanize
+                |< Commands
+              .d-flex.gap-2
+                span.badge.bg-primary.fs-6 = "/#{domain}"
+                span.badge.bg-secondary.fs-6 = "#{commands.size} #{'command'.pluralize(commands.size)}"
+
+            / Commands in this category
+            - commands.each_with_index do |command, index|
+              .card.bg-dark.border-secondary.mb-4 id=command.name
+                .card-body
+                  / Command Header
+                  .d-flex.align-items-start.justify-content-between.mb-4
+                    div.flex-fill
+                      .d-flex.align-items-center.gap-3.mb-3
+                        - if command.type == "admin"
+                          i.bi.bi-shield-lock.text-warning.fs-4[
+                            data-bs-toggle="tooltip"
+                            title="Admin command - may be restricted to certain roles"
+                          ]
+                        h3.mb-0.font-monospace.text-light.anchor-link
+                          = command.usage
+                          = link_to "##{command.name}", class: "ms-2 text-decoration-none"
+                            i.bi.bi-link-45deg.fs-2.text-primary
+
+                      / Command description
+                      .text-muted
+                        = Markdown.to_html(command.description).html_safe
+
+                  / Usage Section
+                  .mb-4
+                    h5.text-warning.mb-3.d-flex.align-items-center
+                      i.bi.bi-terminal.me-2
+                      | Usage
+                    .border.border-secondary.rounded.p-3.bg-body-secondary.bg-opacity-25
+                      .font-monospace.fs-6
+                        = render_component(CommandUsageDocsComponent, command:)
+
+                  / Arguments Section
+                  - if command.arguments.present?
+                    .mb-4
+                      h5.text-info.mb-3.d-flex.align-items-center
+                        i.bi.bi-gear.me-2
+                        | Arguments
+                      .bg-body-secondary.bg-opacity-10.rounded.p-3
+                        = render_component(CommandArgumentDocsComponent, command:)
+
+                  / Examples Section
+                  - if command.examples.present?
+                    .mb-0
+                      h5.text-success.mb-3.d-flex.align-items-center
+                        i.bi.bi-play-circle.me-2
+                        | Examples
+                      .bg-body-secondary.bg-opacity-10.rounded.p-3
+                        = render_component(CommandExampleDocsComponent, command:)
+
+      / Footer
+      .card.bg-primary.bg-opacity-10.border-primary.mt-5
+        .card-body.text-center.py-4
+          h4.text-primary.mb-3 Ready to Use ESM?
+          p.text-muted.mb-4
+            | All these commands work in Discord right now. Get started with our setup guide or invite ESM to your server.
+
+          .d-flex.gap-3.justify-content-center.flex-wrap
+            = link_to getting_started_docs_path, class: "btn btn-primary"
+              i.bi.bi-book.me-2
+              | Setup Guide
+            = link_to invite_path, class: "btn btn-outline-primary"
+              i.bi.bi-discord.me-2
+              | Invite Bot

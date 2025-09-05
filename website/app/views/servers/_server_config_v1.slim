@@ -1,0 +1,68 @@
+/ Advanced Configuration Cards
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-folder.text-warning.me-2
+      | Custom File Paths
+
+  .card-body
+    p.text-muted.small.mb-4
+      | Override default paths for ExtDB and logging. Only modify these if you have custom server configurations.
+
+    .row.g-3
+      .col-6
+        label.form-label.fw-medium Custom ExtDB Path
+        = f.text_field :extdb_conf_path,
+            class: "form-control font-monospace",
+            placeholder: "Leave blank for default"
+        small.form-text.text-muted
+          | Full path to your extDB ini directory
+          br
+          |> Example:
+          code D:\Arma3Servers\@ExileServer
+
+      .col-6
+        label.form-label.fw-medium Custom Logging Path
+        = f.text_field :logging_path,
+            class: "form-control font-monospace",
+            placeholder: "Leave blank for default"
+        small.form-text.text-muted
+          | Full path for ESM logging directory
+          br
+          |> Example:
+          code D:\Arma3Servers\@ExileServer
+
+.card.mb-0
+  .card-header
+    h4.mb-0
+      i.bi.bi-cpu.text-info.me-2
+      | Request Threading
+
+  .card-body
+    p.text-muted.small.mb-4
+      | Configure how ESM processes requests on your server. Exile threading generally provides better FPS.
+
+    .row.g-3
+      .col-6
+        label.form-label.fw-medium Request Thread Type
+        = f.select :request_thread_type,
+            options_for_select([["Exile", "exile"], ["SQF", "sqf"]], f.object.request_thread_type),
+            {},
+            class: "form-select"
+        small.form-text.text-muted
+          strong Recommended: Exile
+          |< for better FPS.
+          br
+          | Use SQF if you notice processing delays.
+
+      .col-6
+        label.form-label.fw-medium Request Tick Rate (seconds)
+        = f.number_field :request_thread_tick,
+            class: "form-control",
+            placeholder: "0.1",
+            min: 0,
+            step: 0.1
+        small.form-text.text-muted
+          | How often ESM checks for requests.
+          br
+          | Lower = faster, higher = less server load.

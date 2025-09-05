@@ -1,0 +1,82 @@
+= content_tag :div, class: "card mb-4", data: { \
+    controller: "server-rewards",
+    server_rewards_items_value: existing_reward_items \
+  }
+  .card-header
+    h4.mb-0
+      i.bi.bi-gift.text-warning.me-2
+      | Player Rewards
+
+  .card-body
+    p.text-muted.small.mb-4
+      | Configure what players receive when using the #{command_usage(:reward, show_arguments: false)} command.
+      br
+      | You can configure how often this command can be used in the Command Configuration section.
+
+    / Currency Rewards
+    = f.fields_for :server_rewards do |f|
+      .mb-4
+        h5.mb-3 Currency Rewards
+        .row.g-3
+          .col-4
+            label.form-label Player Poptabs
+            = f.number_field :player_poptabs,
+                class: "form-control",
+                min: 0,
+                value: server.server_reward&.player_poptabs || 0
+          .col-4
+            label.form-label Locker Poptabs
+            = f.number_field :locker_poptabs,
+                class: "form-control",
+                min: 0,
+                value: server.server_reward&.locker_poptabs || 0
+          .col-4
+            label.form-label Respect
+            = f.number_field :respect,
+                class: "form-control",
+                min: 0,
+                value: server.server_reward&.respect || 0
+
+      / Reward Items
+      .mb-0
+        .d-flex.align-items-center.justify-content-between.mb-3
+          h5.mb-0
+            | Reward Items
+            span.badge.bg-secondary.ms-2[data-server-rewards-target="itemCount"] 0
+          button.btn.btn-outline-primary.btn-sm[
+            type="button"
+            data-action="click->server-rewards#add"
+          ]
+            i.bi.bi-plus.me-1
+            | Add Item
+
+        / Empty state - shown when no items
+        .text-center.py-5[data-server-rewards-target="emptyState"]
+          i.bi.bi-gift.display-4.text-muted.mb-3.d-block
+          h5.text-muted.mb-3 No Reward Items Yet
+          p.text-muted.mb-4
+            | Add items to give players something extra when they use the reward command.
+            br
+            | Perfect for welcome packages or daily login bonuses!
+          button.btn.btn-primary[
+            type="button"
+            data-action="click->server-rewards#add"
+          ]
+            i.bi.bi-plus.me-2
+            | Add Your First Item
+
+        / Items container - hidden when empty
+        div[data-server-rewards-target="itemContainer" style="display: none;"]
+          .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-3
+            small.mb-0
+              i.bi.bi-info-circle.me-1
+              | Items are added to player inventory if space allows, otherwise dropped at their feet
+
+          .table-responsive
+            table.table.table-sm
+              thead.table-dark
+                tr
+                  th Quantity
+                  th Item Classname
+                  th Actions
+              tbody[data-server-rewards-target="itemList"]

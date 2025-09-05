@@ -1,20 +1,50 @@
 nav.navbar.fixed-top.navbar-expand-lg.bg-body-tertiary
   .container-xxl.flex-wrap.flex-lg-nowrap
-    a.navbar-brand[href="#"]
-      img.d-inline-block.align-text-top[src="icon.png" alt="Logo" width="48" height="48"]
-    button.navbar-toggler[type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation"]
+    a.navbar-brand[href=root_path]
+      img.d-inline-block.align-text-top[src="/icon.png" alt="Logo" width="48" height="48"]
+    button.navbar-toggler[
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNavAltMarkup"
+      aria-controls="navbarNavAltMarkup"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    ]
       span.navbar-toggler-icon
     #navbarNavAltMarkup.collapse.navbar-collapse
       .navbar-nav.gap-2
-        = link_to "Getting Started", "", class: "nav-link"
-        = link_to "Docs", "", class: "nav-link"
+        - if current_user
+          = link_to "Dashboard", communities_path, class: "nav-link"
+          = link_to "-", "", class: "nav-link disabled"
+        = link_to "Getting Started", getting_started_docs_path, class: "nav-link"
+        = link_to "Commands", commands_docs_path, class: "nav-link"
         = link_to "-", "", class: "nav-link disabled"
-        = link_to "Invite", "", class: "nav-link"
+        = link_to "Invite", invite_path, class: "nav-link"
         = link_to "-", "", class: "nav-link disabled"
-        = link_to "My Account", "", class: "nav-link"
-        = link_to "My Servers", "", class: "nav-link"
-      .navbar-nav.flex-row.flex-wrap.ms-md-auto.gap-3.gap-lg-0
-        = link_to "", class: "nav-link fs-4"
-          i.bi.bi-github
-        = link_to "", class: "nav-link fs-4"
-          i.bi.bi-discord
+        = link_to "Discover", discover_path, class: "nav-link"
+        = link_to "Support", invite_path, class: "nav-link"
+      .navbar-nav.flex-row.flex-wrap.ms-md-auto.gap-3.gap-lg-2
+        - if current_user
+          li.nav-item.dropdown
+            a.nav-link.dropdown-toggle[
+              href="#" role="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            ]
+              = image_tag current_user.avatar_url,
+                class: "border border-2 border-primary rounded-circle",
+                width: "50", height: "50"
+            ul.dropdown-menu
+              li
+                = link_to "My Account", edit_users_path, class: "dropdown-item"
+              li
+                = button_to "Logout",
+                  logout_path,
+                  class: "dropdown-item",
+                  method: :delete,
+                  data: {turbo: false}
+
+        - else
+          = button_to user_discord_omniauth_authorize_path, class: "btn btn-primary d-flex align-items-center gap-2", data: {turbo: false}
+            i.bi.bi-discord
+            span Login

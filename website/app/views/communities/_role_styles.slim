@@ -1,0 +1,19 @@
+style
+  - current_community.roles.each do |role|
+    - if role.color.present? && role.color != "0"
+      | .choices__item[data-value="#{role.id}"] {
+      |   border-color: ##{role.color} !important;
+      |   color: ##{role.color} !important;
+      |
+      |   .choices__button {
+      |     border-color: ##{role.color} !important;
+      |   }
+      | }
+    - else
+      | .choices__item[data-value="#{role.id}"] {
+      |   border-color: var(--bs-secondary) !important;
+      |
+      |   .choices__button {
+      |     border-color: var(--bs-secondary) !important;
+      |   }
+      | }

@@ -1,0 +1,201 @@
+.container.window
+  / Clean hero section
+  .text-center.mb-5
+    h1.mb-3.text-primary Community Dashboard
+    p.lead.mb-4 Select a community to manage servers and settings.
+
+  / Two-column layout
+  .row.g-5
+    / Left Column - Communities
+    .col-lg-8
+      - if server_communities.size > 0 || player_communities.size > 0
+        / Server Communities Section
+        - if server_communities.size > 0
+          .mb-5
+            .d-flex.align-items-center.mb-2
+              h3.mb-0.me-3
+                i.bi.bi-hdd-network.text-primary.me-2
+                | Server Communities
+
+            p.text-muted.small.mb-4
+              | Full server management access. Configure commands, manage notifications, control server settings.
+
+            .row.g-3
+              - server_communities.each do |community|
+                .col-12
+                  = link_to edit_community_path(community.public_id), class: "text-decoration-none d-block"
+                    .card.bg-dark.border-secondary.community-nav-card
+                      .card-body.d-flex.align-items-center.py-3
+                        / Discord server icon
+                        .me-3.flex-shrink-0
+                          - if community.icon_url.present?
+                            img.rounded src=community.icon_url alt=community.community_name width="48" height="48"
+                          - else
+                            .bg-primary.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                              i.bi.bi-hdd-network.text-white.fs-4
+
+                        / Community info
+                        .flex-grow-1.min-w-0
+                          .d-flex.align-items-center.justify-content-between.mb-1
+                            h5.mb-0.text-light.text-truncate = community.community_name
+
+                          .text-muted.font-monospace.small.mb-2 = community.community_id
+
+                          / Server status
+                          - if community.servers.any?
+                            .d-flex.align-items-center.gap-2.flex-wrap
+                              - online_count = community.servers.select(&:connected?).size
+                              - offline_count = community.servers.size - online_count
+
+                              - if online_count > 0
+                                .d-flex.align-items-center
+                                  .server-status.server-status--online.me-1
+                                  small.text-muted = "#{online_count} online"
+
+                              - if offline_count > 0
+                                .d-flex.align-items-center
+                                  .server-status.server-status--offline.me-1
+                                  small.text-muted = "#{offline_count} offline"
+                          - else
+                            small.text-muted.fst-italic No servers registered
+
+                        / Arrow indicator
+                        .ms-3.flex-shrink-0
+                          i.bi.bi-chevron-right.text-muted
+
+        / Player Communities Section
+        - if player_communities.size > 0
+          .mb-5
+            .d-flex.align-items-center.mb-2
+              h3.mb-0.me-3
+                i.bi.bi-people.text-info.me-2
+                | Player Communities
+
+            p.text-muted.small.mb-4
+              | Personal notification routing. Get XM8 alerts in Discord channels you choose.
+
+            .row.g-3
+              - player_communities.each do |community|
+                .col-12
+                  = link_to edit_community_path(community.public_id), class: "text-decoration-none d-block"
+                    .card.bg-dark.border-secondary.community-nav-card.community-nav-card--player
+                      .card-body.d-flex.align-items-center.py-3
+                        / Discord server icon
+                        .me-3.flex-shrink-0
+                          - if community.icon_url.present?
+                            img.rounded src=community.icon_url alt=community.community_name width="48" height="48"
+                          - else
+                            .bg-info.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                              i.bi.bi-people.text-white.fs-4
+
+                        / Community info
+                        .flex-grow-1.min-w-0
+                          h5.mb-1.text-light.text-truncate = community.community_name
+                          .text-muted.font-monospace.small.mb-2 = community.community_id
+
+                          / XM8 routing feature
+                          .d-flex.align-items-center
+                            i.bi.bi-arrow-left-right.text-info.me-2
+                            small.text-muted XM8 Notification Routing
+
+                        / Arrow indicator
+                        .ms-3.flex-shrink-0
+                          i.bi.bi-chevron-right.text-muted
+
+        hr.pb-4
+
+        / Info banners based on what they have
+        - if server_communities.size > 0 && player_communities.size == 0
+          .alert.alert-info.border-info.bg-info.bg-opacity-10
+            .d-flex.align-items-center
+              i.bi.bi-lightbulb.text-info.me-3.fs-4
+              div
+                h6.mb-1.text-info Also manage XM8 notifications?
+                p.mb-0.text-muted.small Join Discord servers as a player to route notifications to your personal channels.
+
+        - elsif player_communities.size > 0 && server_communities.size == 0
+          .alert.alert-primary.border-primary.bg-primary.bg-opacity-10
+            .d-flex.align-items-center
+              i.bi.bi-lightbulb.text-primary.me-3.fs-4
+              div
+                h6.mb-1.text-primary Run your own server?
+                p.mb-0.text-muted.small ESM also provides server management tools for Discord communities.
+
+        / Bottom invite section
+        .card.bg-secondary.bg-opacity-10.border-secondary
+          .card-body.py-3
+            .d-flex.align-items-center.justify-content-between
+              div
+                h6.mb-1.text-light Need to Add ESM to Another Server?
+                p.text-muted.mb-0.small Invite ESM to additional Discord servers.
+              = link_to invite_path, class: "btn btn-outline-primary", target: "_blank"
+                i.bi.bi-plus.me-2
+                | Invite ESM
+
+      - else
+        / Enhanced empty state for left column
+        .card.bg-dark.border-secondary.text-center
+          .card-body.py-5
+            i.bi.bi-plus-circle.display-1.text-muted.mb-3
+            h3.text-light.mb-3 No Communities Yet
+            p.text-muted.mb-4
+              | ESM needs to be invited to your Discord server to get started.
+
+            = link_to invite_path, class: "btn btn-primary btn-lg", target: "_blank"
+              i.bi.bi-discord.me-2
+              | Invite ESM Bot
+
+    / Right Column - Information & Help
+    .col-lg-4
+      .sidebar
+        / Troubleshooting Card
+        .card.bg-warning.bg-opacity-10.border-warning.mb-4
+          .card-header.border-warning
+            h6.mb-0.text-warning
+              i.bi.bi-question-circle.me-2
+              | Not Seeing Your Community?
+          .card-body
+            h6.text-warning.mb-2 Common Issues:
+            ul.small.text-muted.mb-3
+              li ESM bot not invited to your Discord server
+              li You don't have admin permissions in that server
+              li Community is in Player Mode but you need Server Mode
+              li You need to link your Discord account first
+
+            h6.text-warning.mb-2 Quick Fixes:
+            ul.small.text-muted.mb-0
+              li
+                = link_to "Re-invite ESM", invite_path, class: "text-warning"
+                |  with admin permissions
+              li Check your Discord server roles
+              li Use #{command_usage(:mode, show_arguments: false)} in Discord to switch modes
+
+        / Getting Started Card
+        .card.bg-success.bg-opacity-10.border-success.mb-4
+          .card-header.border-success
+            h6.mb-0.text-success
+              i.bi.bi-rocket-takeoff.me-2
+              | New to ESM?
+          .card-body
+            p.small.text-muted.mb-3
+              | Get your server connected in just a few minutes with our step-by-step guides.
+
+            .d-grid.gap-2
+              = link_to getting_started_docs_path, class: "btn btn-outline-success btn-sm"
+                i.bi.bi-book.me-2
+                | Getting Started
+
+        / Support Card
+        .card.bg-secondary.bg-opacity-10.border-secondary
+          .card-header.border-secondary
+            h6.mb-0.text-light
+              i.bi.bi-life-preserver.me-2
+              | Need Help?
+          .card-body
+            p.small.text-muted.mb-3
+              | Having issues? Our community is here to help with setup, troubleshooting, and questions.
+
+            .d-grid.gap-2
+              = link_to join_path, class: "btn btn-outline-secondary btn-sm"
+                i.bi.bi-discord.me-2
+                | Discord Support

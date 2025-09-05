@@ -1,0 +1,287 @@
+.container.window
+  .row.justify-content-center
+    .col-lg-8
+      h1.mb-4.text-primary Terms of Service
+      p.text-muted.mb-5 Last updated: #{Date.current.strftime("%B %d, %Y")}
+
+      // Human-Readable Summary
+      .card.bg-warning.bg-opacity-10.border-warning.mb-5
+        .card-header.border-warning
+          h3.mb-0.text-warning
+            i.bi.bi-exclamation-triangle.me-2
+            | The Important Stuff (Plain English)
+        .card-body
+          .row.g-4
+            .col-md-6
+              h6.text-warning.mb-2 What ESM Is
+              ul.small.mb-0
+                li Free Discord bot for Arma 3 Exile servers
+                li Web dashboard for server management
+                li Notification system for players
+                li Open source project, not a business
+
+            .col-md-6
+              h6.text-warning.mb-2 Your Responsibilities
+              ul.small.mb-0
+                li Don't be a jerk or break laws
+                li Don't try to hack or abuse the system
+                li Respect other communities and players
+                li Follow Discord and Steam's rules too
+
+          .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mt-3.mb-0
+            p.small.mb-2
+              strong.text-warning We provide ESM "as-is":
+              |< No guarantees it'll work perfectly, but we try our best to keep it running.
+            p.small.mb-0
+              strong.text-warning If something goes wrong:
+              |< We're not liable for server issues, lost data, or drama in your community.
+
+      // Full Legal Terms
+      h2.mb-4 Complete Terms of Service
+
+      h3.mb-3 What ESM Is & What You're Agreeing To
+
+      p.mb-4 Exile Server Manager (ESM) is a free, open-source project that provides:
+      ul.mb-4
+        li Discord bot integration for Arma 3 Exile servers
+        li Web-based management dashboard for server administrators
+        li Real-time notification system for players
+        li Remote server administration tools
+
+      p.mb-4 By using ESM (the bot, website, or any related services), you agree to follow these terms. If you don't agree, please don't use ESM.
+
+      h3.mb-3 User Requirements
+
+      .card.bg-dark.border-secondary.mb-4
+        .card-body
+          h5.text-light.mb-3 To Use ESM, You Must:
+          ul.mb-0
+            li Be at least 13 years old (or meet your local age requirements)
+            li Have valid Discord and Steam accounts
+            li Provide accurate information when registering
+            li Follow all applicable laws and regulations
+            li Respect Discord's and Steam's Terms of Service
+
+      .card.bg-dark.border-secondary.mb-4
+        .card-body
+          h5.text-light.mb-3 Server Administrators Must Also:
+          ul.mb-0
+            li Have legitimate rights to the server you're registering
+            li Ensure your server complies with Arma 3/Bohemia Interactive's terms
+            li Not use ESM for any illegal or harmful activities
+            li Maintain reasonable security practices
+
+      h3.mb-3 What You Can & Can't Do
+
+      h4.mb-2.text-success Encouraged Uses
+      ul.mb-4
+        li Managing your Exile server through Discord
+        li Helping players with territories and notifications
+        li Building community around your server
+        li Contributing to ESM's open-source development
+        li Sharing feedback and suggestions
+
+      h4.mb-2.text-danger Prohibited Activities
+      .alert.alert-danger.border-danger.bg-danger.bg-opacity-10.mb-4
+        h6.text-danger.mb-2 You may NOT:
+        ul.small.mb-0
+          li Try to hack, exploit, or abuse ESM's systems
+          li Spam commands or flood the bot with requests
+          li Impersonate other users or communities
+          li Use ESM to harass, threaten, or harm others
+          li Share or distribute malicious content
+          li Attempt to reverse engineer or copy ESM's code for commercial use
+          li Use ESM for any illegal activities
+          li Circumvent security measures or access restrictions
+
+      h4.mb-2.text-warning Server-Specific Rules
+      p.mb-3 As a server administrator, you also agree not to:
+      ul.mb-4
+        li Register servers you don't actually control
+        li Use fake or misleading server information
+        li Configure ESM in ways that violate platform terms (Discord, Steam, etc.)
+        li Share your server authentication keys with unauthorized parties
+
+      h3.mb-3 Content & Intellectual Property
+
+      h4.mb-2.text-info ESM's Content & Licensing
+      p.mb-4
+        | ESM's source code (bot, website, and Arma 3 mod) is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (
+        = link_to "CC BY-NC-SA 4.0", "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+        |) . This means:
+
+      .row.g-3.mb-4
+        .col-md-6
+          .card.bg-success.bg-opacity-10.border-success.h-100
+            .card-body
+              h6.text-success.mb-2 You CAN:
+              ul.small.mb-0
+                li Use ESM's code for non-commercial purposes
+                li Modify and adapt it for your needs
+                li Share your changes with others
+                li Study how everything works
+
+        .col-md-6
+          .card.bg-warning.bg-opacity-10.border-warning.h-100
+            .card-body
+              h6.text-warning.mb-2 You MUST:
+              ul.small.mb-0
+                li Give proper credit to ESM
+                li Share your modifications under the same license
+                li Keep it non-commercial
+                li Not use ESM's name/logo without permission
+
+      .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-4
+        p.small.mb-0
+          strong Commercial use?
+          |< If you want to use ESM's code for commercial purposes, you'll need separate permission from us.
+
+      h4.mb-2.text-info Your Content
+      p.mb-3 When you use ESM, you might provide:
+      ul.mb-4
+        li Community and server information
+        li Custom notification templates
+        li Configuration settings
+        li Feedback and suggestions
+
+      p.mb-4 You keep ownership of your content, but you give us permission to:
+      ul.mb-4
+        li Store and process it to provide ESM's services
+        li Display it in your community dashboards
+        li Use aggregated, anonymized data for service improvements
+        li Share configuration examples (with identifying info removed)
+
+      h3.mb-3 Service Availability & Limitations
+
+      .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
+        .card-body
+          h5.text-light.mb-3 "As-Is" Service
+          p.mb-3 ESM is provided as-is, without warranties. This means:
+          ul.mb-0
+            li We can't guarantee 100% uptime (though we try for 99%+)
+            li Features might have bugs or change over time
+            li We might need to take the service down for maintenance
+            li Some features depend on third-party services (Discord, Steam)
+
+      .card.bg-info.bg-opacity-10.border-info.mb-4
+        .card-body
+          h5.text-info.mb-3 Rate Limits & Fair Use
+          p.mb-3 To keep ESM running smoothly for everyone:
+          ul.mb-0
+            li Commands have cooldowns to prevent spam
+            li Excessive API usage may be temporarily restricted
+            li Obvious abuse will result in account suspension
+            li Server connections are limited by available resources
+
+      h3.mb-3 Privacy & Data
+
+      p.mb-4
+        | How we handle your data is covered in our
+        =< link_to "Privacy Policy", privacy_policy_legal_path, class: "text-primary"
+        | . Key points:
+      ul.mb-4
+        li We collect only what's needed for ESM to work
+        li We don't sell data or use it for advertising
+        li You can delete your account and data anytime
+        li Some data may be shared with community safety partners (limited identifiers only)
+
+      h3.mb-3 Liability & Disclaimers
+
+      .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-4
+        h6.text-warning.mb-2 Important Legal Stuff
+        p.mb-2 ESM is a community project, not a commercial service. We provide it for free and do our best, but:
+        ul.small.mb-0
+          li We're not responsible for data loss, server downtime, or technical issues
+          li We can't guarantee ESM will meet your specific needs
+          li Community disputes, player issues, and server management remain your responsibility
+          li We're not liable for any damages arising from ESM's use or inability to use it
+
+      h4.mb-2.text-danger Limitation of Liability
+      p.mb-4 To the maximum extent permitted by law, ESM's developers and contributors won't be liable for:
+      ul.mb-4
+        li Any indirect, incidental, or consequential damages
+        li Loss of data, profits, or business opportunities
+        li Server crashes, player disputes, or community issues
+        li Third-party actions or content
+
+      h3.mb-3 Account Termination
+
+      h4.mb-2.text-warning When We Might Suspend/Ban Accounts
+      ul.mb-4
+        li Violating these terms or our community guidelines
+        li Attempting to hack or abuse ESM's systems
+        li Harassment of other users or communities
+        li Illegal activity or behavior
+        li Excessive resource usage or system abuse
+
+      h4.mb-2.text-info Your Rights
+      ul.mb-4
+        li You can delete your account anytime through the web dashboard
+        li We'll try to give you notice before suspension (except for serious violations)
+        li You can appeal suspensions through our support channels
+        li Data deletion follows the timeline in our Privacy Policy
+
+      h3.mb-3 Changes to These Terms
+
+      p.mb-4 We might update these terms occasionally. When we do:
+      ul.mb-4
+        li We'll post the new version on our website
+        li We'll announce major changes on Discord
+        li Continued use means you accept the new terms
+        li You can delete your account if you disagree
+
+      h3.mb-3 Governing Law & Disputes
+
+      p.mb-4 These terms are governed by Delaware law, United States. For any legal disputes:
+      ul.mb-4
+        li We'll try to resolve it informally first through our support channels
+        li Formal disputes will be handled in appropriate US courts
+        li You waive any right to jury trial or class action lawsuits
+        li Small claims court is acceptable for smaller issues
+
+      h3.mb-3 Miscellaneous Legal Stuff
+
+      h4.mb-2.text-muted Entire Agreement
+      p.mb-3 These terms, plus our Privacy Policy, are the complete agreement between us. They replace any previous agreements.
+
+      h4.mb-2.text-muted Severability
+      p.mb-3 If part of these terms is found to be invalid, the rest still applies.
+
+      h4.mb-2.text-muted Assignment
+      p.mb-3 We might transfer our rights and obligations to someone else (like if the project changes hands). You can't transfer your account to someone else.
+
+      h4.mb-2.text-muted Force Majeure
+      p.mb-4 We're not responsible for service interruptions caused by things beyond our control (natural disasters, internet outages, zombie apocalypse, etc.).
+
+      h3.mb-3 Open Source & Community
+
+      .card.bg-success.bg-opacity-10.border-success.mb-4
+        .card-body
+          h5.text-success.mb-3 ESM's Philosophy
+          p.mb-3 ESM is built for the community, by the community:
+          ul.mb-0
+            li Source code is freely available for review and contribution
+            li We welcome feedback, bug reports, and feature suggestions
+            li The goal is making Exile servers more enjoyable for everyone
+            li Commercial use or competing services require permission
+
+      h3.mb-3 Contact & Support
+
+      p.mb-4 Questions about these terms? Need help with ESM?
+      ul.mb-0
+        li
+          strong Email:
+          |<
+          a href="mailto:bryan@itsthedevman.com" bryan@itsthedevman.com
+        li
+          strong Discord:
+          |<
+          = link_to "ESM Support Server", join_path, target: "_blank"
+        li
+          strong Issues:
+          |<
+          a href="https://github.com/itsthedevman/esm_bot/issues" target="_blank" GitHub Issues
+
+      .alert.alert-info.border-info.bg-info.bg-opacity-10.mt-5.mb-0
+        h6.text-info.mb-2 Thanks for Using ESM!
+        p.mb-0 These terms might look scary, but they're just here to protect everyone and keep ESM running smoothly. If something doesn't make sense or seems unfair, please let us know - we're always open to feedback.

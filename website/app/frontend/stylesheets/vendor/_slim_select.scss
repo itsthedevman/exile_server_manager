@@ -1,0 +1,181 @@
+@import "slim-select/scss";
+
+.ss-main {
+    --ss-primary-color: #{$primary};
+    --ss-bg-color: #{$input-bg};
+    --ss-font-color: #{$input-color};
+    --ss-font-placeholder-color: #{$input-placeholder-color};
+    --ss-disabled-color: #{$input-disabled-bg};
+    --ss-border-color: #{$input-border-color};
+    --ss-focus-color: #{$input-focus-border-color};
+    --ss-border-radius: #{$input-border-radius};
+    --ss-main-height: #{$input-height};
+
+    background-color: var(--ss-bg-color);
+    background-image: none !important;
+    border-color: var(--ss-border-color);
+    padding: #{$input-padding-y} #{$input-padding-x};
+
+    // Add smooth transitions for validation states
+    transition:
+        border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+
+    .ss-single {
+        color: var(--ss-font-color);
+        margin: 0;
+        padding: 0;
+    }
+
+    .ss-arrow path {
+        stroke: #{$input-color};
+        opacity: 0.75;
+        transition: stroke 0.15s ease-in-out;
+    }
+
+    // Validation states
+    &.is-invalid {
+        padding-right: #{$input-padding-x} !important;
+        border-color: #{$danger} !important;
+
+        // Match Bootstrap's invalid focus state
+        &:focus-within {
+            border-color: #{$danger} !important;
+            box-shadow: 0 0 0 0.25rem #{rgba($danger, 0.25)} !important;
+        }
+
+        // Make the arrow red too for consistency
+        .ss-arrow path {
+            stroke: #{$danger} !important;
+        }
+    }
+
+    &.is-valid {
+        padding-right: #{$input-padding-x} !important;
+        border-color: #{$success} !important;
+
+        &:focus-within {
+            border-color: #{$success} !important;
+            box-shadow: 0 0 0 0.25rem #{rgba($success, 0.25)} !important;
+        }
+
+        // Make the arrow green too
+        .ss-arrow path {
+            stroke: #{$success} !important;
+        }
+    }
+
+    // Disabled state styling
+    &.ss-disabled {
+        padding-right: #{$input-padding-x} !important;
+        background-color: #{$input-disabled-bg} !important;
+        border-color: #{$input-disabled-border-color} !important;
+        opacity: 1;
+
+        .ss-single {
+            color: #{$input-disabled-color} !important;
+        }
+
+        .ss-arrow path {
+            stroke: #{$input-disabled-color} !important;
+            opacity: 0.5;
+        }
+    }
+}
+
+.ss-content {
+    --ss-bg-color: #{$dropdown-bg};
+    --ss-font-color: #{$dropdown-color};
+    --ss-border-color: #{$dropdown-border-color};
+
+    background-color: var(--ss-bg-color);
+    background-image: none !important;
+    border-color: var(--ss-border-color);
+    box-shadow: #{$dropdown-box-shadow};
+    padding-right: 0.75em;
+
+    .ss-search {
+        @extend .px-0;
+        @extend .pt-2;
+        @extend .pb-1;
+
+        background-color: var(--ss-bg-color);
+
+        input {
+            background-color: #{$input-bg};
+            border: #{$input-border-width} solid #{$input-border-color};
+            border-radius: #{$input-border-radius};
+            color: #{$input-color};
+            padding: #{$input-padding-y} #{$input-padding-x};
+            font-size: #{$input-font-size};
+            line-height: #{$input-line-height};
+
+            &:focus {
+                border-color: #{$input-focus-border-color};
+                box-shadow: #{$input-focus-box-shadow};
+                outline: 0;
+            }
+
+            &::placeholder {
+                color: #{$input-placeholder-color};
+                opacity: 1;
+            }
+        }
+    }
+
+    .ss-list {
+        .ss-option {
+            &.ss-selected,
+            &:not(.ss-disabled).ss-selected {
+                background-color: #{rgba($primary, 0.1)} !important;
+                color: #{$white} !important;
+                border-left: 3px solid #{$primary};
+                padding-left: calc(var(--ss-spacing-l) * 3 - 3px);
+            }
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.08) !important;
+                color: #{$light} !important;
+                border-left: 3px solid transparent;
+                padding-left: calc(var(--ss-spacing-l) * 3 - 3px);
+            }
+        }
+
+        // Also target the more specific optgroup version
+        .ss-optgroup .ss-option {
+            &:not(.ss-disabled).ss-selected {
+                background-color: #{rgba($primary, 0.3)} !important;
+                color: #{$white} !important;
+            }
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.08) !important;
+                color: #{$light} !important;
+            }
+        }
+    }
+}
+
+// Make sure invalid-feedback shows properly after Slim Select
+.ss-main + .invalid-feedback {
+    display: block !important;
+}
+
+.ss-selectall {
+    // Replace with a simple dash/checkbox icon
+    &::before {
+        content: "☐"; // or use bi-square icon
+        margin-right: 0.5rem;
+        color: $esm-warm-gray-500;
+    }
+
+    &.ss-selected::before {
+        content: "☑"; // or use bi-check-square
+        color: $esm-ui-info; // Your nice blue instead of green
+    }
+
+    // Hide the default checkmark
+    svg {
+        display: none;
+    }
+}

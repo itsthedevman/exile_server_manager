@@ -1,0 +1,372 @@
+.container.window
+  / Hero Section
+  .text-center.mb-5
+    h1.mb-3.text-primary Getting Started with ESM
+    p.lead.mb-4 Ready to use ESM? Here's how everything works and what you need to get up and running.
+
+  / How ESM Works Section
+  .card.bg-primary.bg-opacity-10.border-primary.mb-5
+    .card-body
+      h3.text-primary.mb-4
+        i.bi.bi-diagram-3.me-2
+        | How ESM Works
+
+      .row.g-4
+        .col-lg-8
+          p.mb-4 ESM has three main components that work together to connect your Arma 3 server with Discord:
+
+          .row.g-3.mb-4
+            .col-md-4
+              .card.bg-dark.border-secondary.h-100
+                .card-body.text-center.py-3
+                  i.bi.bi-server.text-warning.fs-2.mb-2
+                  h6.text-warning Arma 3 Mod
+                  p.small.text-muted.mb-0 Installed on your server to communicate with ESM
+
+            .col-md-4
+              .card.bg-dark.border-secondary.h-100
+                .card-body.text-center.py-3
+                  i.bi.bi-discord.text-info.fs-2.mb-2
+                  h6.text-info Discord Bot
+                  p.small.text-muted.mb-0 Processes commands and sends notifications
+
+            .col-md-4
+              .card.bg-dark.border-secondary.h-100
+                .card-body.text-center.py-3
+                  i.bi.bi-speedometer2.text-success.fs-2.mb-2
+                  h6.text-success Web Dashboard
+                  p.small.text-muted.mb-0 Configure settings and manage everything
+
+        .col-lg-4
+          .card.bg-body.border.h-100
+            .card-body.d-flex.flex-column.justify-content-center.align-items-center.text-center.py-4
+              h6.text-muted.mb-3 Data Flow
+              .small.text-muted
+                | Discord Command
+                br
+                | ↓
+                br
+                | ESM Bot
+                br
+                | ↓
+                br
+                | Arma 3 Server
+                br
+                | ↓
+                br
+                | Response to Discord
+
+  / What You Need Section
+  .row.g-5.mb-5
+    .col-lg-6
+      .card.bg-info.bg-opacity-10.border-info.h-100
+        .card-header.border-info
+          h4.mb-0.text-info
+            i.bi.bi-person.me-2
+            | As a Player
+        .card-body
+          h6.text-light.mb-3 You Need:
+          ul.mb-4
+            li A Discord account
+            li A Steam account
+            li Access to a Discord server with ESM
+            li To be on a server that has ESM installed
+
+          h6.text-light.mb-3 What You Get:
+          ul.mb-4
+            li Discord commands for server interaction
+            li Real-time XM8 notifications (raids, payments, sales)
+            li Territory management from Discord
+            li Stats checking, gambling, and rewards
+
+          .d-grid
+            = link_to player_setup_docs_path, class: "btn btn-info btn-lg"
+              | Player Setup Guide
+
+    .col-lg-6
+      .card.bg-success.bg-opacity-10.border-success.h-100
+        .card-header.border-success
+          h4.mb-0.text-success
+            i.bi.bi-gear.me-2
+            | As a Server Admin
+        .card-body
+          h6.text-light.mb-3 You Need:
+          ul.mb-4
+            li An Arma 3 dedicated server
+            li MySQL database (ExtDB2/3)
+            li Discord server with admin permissions
+            li Ability to install server mods
+
+          h6.text-light.mb-3 What You Get:
+          ul.mb-4
+            li Remote server administration via Discord
+            li Advanced player notification system
+            li Web-based configuration dashboard
+            li Comprehensive logging and monitoring
+
+          .d-grid
+            = link_to server_setup_docs_path, class: "btn btn-success btn-lg"
+              | Server Setup Guide
+
+  hr.my-5
+
+  / Core Systems Deep Dive
+  .mb-5
+    h2.text-center.mb-5 Understanding ESM's Core Systems
+
+    / XM8 Notification System
+    .card.bg-warning.bg-opacity-10.border-warning.mb-4
+      .card-header.border-warning
+        h4.mb-0.text-warning
+          i.bi.bi-bell.me-2
+          | XM8 Notification System
+      .card-body
+        .row.g-4
+          .col-lg-8
+            p.mb-3 ESM intercepts your Exile server's XM8 notifications and routes them to Discord, so you never miss important events even when offline.
+
+            h6.text-light.mb-2 Available Notifications:
+            .row.g-3
+              .col-md-6
+                ul.small.text-muted.mb-0
+                  li <strong>Base Raids</strong> - Territory under attack
+                  li <strong>Flag Events</strong> - Theft, restoration, stealing started
+                  li <strong>Protection Money</strong> - Due dates and payments
+                  li <strong>Combat Events</strong> - Grinding, hacking, explosives
+              .col-md-6
+                ul.small.text-muted.mb-0
+                  li <strong>MarXet Sales</strong> - Items sold on marketplace
+                  li <strong>Territory Management</strong> - Player additions/removals
+                  li <strong>Custom Events</strong> - Server-defined notifications
+
+            .alert.border.border-secondary.bg-dark.mt-3.mb-0
+              h6.text-warning.mb-2 Notification Routing
+              p.small.mb-0 You can route notifications to specific Discord channels in Player Mode communities. Set up custom routes through the web dashboard to control where different notification types go.
+
+          .col-lg-4.d-flex.align-items-stretch
+            .card.bg-dark.border-0.w-100
+              .card-body.d-flex.flex-column.justify-content-center.align-items-center.text-center.py-4
+                i.bi.bi-arrow-right.text-warning.fs-2.mb-3
+                h6.text-warning Default Behavior
+                p.small.text-muted.mb-2 Notifications go to your Discord DMs by default
+                p.small.text-muted.mb-0 Opt out with #{command_usage(:preferences, show_arguments: false)}
+
+    / Command System
+    .card.bg-info.bg-opacity-10.border-info.mb-4
+      .card-header.border-info
+        h4.mb-0.text-info
+          i.bi.bi-terminal.me-2
+          | Command System & Permissions
+      .card-body
+        .row.g-4
+          .col-lg-8
+            p.mb-3 ESM commands are organized by domain and have different permission levels. Understanding where you can use which commands is crucial.
+
+            .table-responsive
+              table.table.table-dark.mb-3
+                thead
+                  tr
+                    th Command Type
+                    th Community Text Channels
+                    th Direct Message with ESM
+                tbody
+                  tr
+                    td.text-info <strong>Player Commands</strong>
+                    td
+                      span.text-success Yes
+                      small.text-muted.d-block (if community allows)
+                    td.text-success Yes
+                  tr
+                    td.text-warning <strong>Admin Commands</strong>
+                    td
+                      span.text-success Yes
+                      small.text-muted.d-block (if community allows)
+                    td.text-danger No
+
+            .alert.border-secondary.bg-dark.mb-0.d-flex.flex-column.flex-fill
+              h6.text-danger.mb-2 Community Control
+              p.small.mb-0 Communities can disable commands, restrict them to specific roles, set custom cooldowns, and control which channels they work in. If a command doesn't work, try it in DM or ask an admin.
+
+          .col-lg-4.d-flex.align-items-stretch
+            .card.bg-dark.border-0.w-100.d-flex.flex-column
+              .card-body.d-flex.flex-column.justify-content-between
+                div
+                  h6.text-info.mb-3 Command Structure
+                .font-monospace.small.text-muted.mb-3
+                  | /domain action target
+                  br
+                  | /domain scope action target
+
+                h6.text-info.mb-2 Examples:
+                ul.small.text-muted.mb-0.list-unstyled
+                  li.mb-1
+                    | Check your stats:
+                    .font-monospace.ms-2.mt-1 = command_usage(:me, show_arguments: false)
+                  li.mb-1
+                    | List your bases:
+                    .font-monospace.ms-2.mt-1 = command_usage(:territories, show_arguments: false)
+                  li
+                    | Admin heal:
+                    .font-monospace.ms-2.mt-1 = command_usage(:player, show_arguments: false)
+
+    / Territory Management
+    .card.bg-success.bg-opacity-10.border-success.mb-4
+      .card-header.border-success
+        h4.mb-0.text-success
+          i.bi.bi-house.me-2
+          | Territory Management
+      .card-body
+        .row.g-4
+          .col-lg-8
+            p.mb-3 ESM provides comprehensive territory management through Discord, including payments, upgrades, member management, and role assignments.
+
+            .row.g-3
+              .col-md-6
+                h6.text-light.mb-2 Player Features:
+                ul.small.text-muted.mb-0
+                  li Pay protection money remotely
+                  li Upgrade territory levels
+                  li View territory information and members
+                  li Set custom territory IDs for easy reference
+                  li Check payment due dates
+
+              .col-md-6
+                h6.text-light.mb-2 Admin Features:
+                ul.small.text-muted.mb-0
+                  li Add/remove territory members
+                  li Promote/demote member roles
+                  li Restore accidentally deleted territories
+                  li View all server territories
+                  li Manage territory permissions
+
+            .alert.border-secondary.bg-dark.mt-3.mb-0
+              h6.text-success.mb-2 Territory IDs
+              p.small.mb-0 Territories get auto-generated IDs like "abcxyz" for easy reference. You can set custom IDs with #{command_usage(:set_id, show_arguments: false)} to make them more memorable.
+
+          .col-lg-4.d-flex.align-items-stretch
+            .card.bg-dark.border-0.w-100
+              .card-body
+                h6.text-success.mb-3 Key Commands
+                ul.small.text-muted.mb-0.list-unstyled
+                  li.font-monospace = command_usage(:territories, show_arguments: false)
+                  li.font-monospace = command_usage(:pay, show_arguments: false)
+                  li.font-monospace = command_usage(:upgrade, show_arguments: false)
+                  li.font-monospace = command_usage(:add, show_arguments: false)
+                  li.font-monospace = command_usage(:remove, show_arguments: false)
+                  li.font-monospace = command_usage(:promote, show_arguments: false)
+
+  / Player vs Server Mode
+  .card.bg-secondary.bg-opacity-10.border-secondary.mb-5
+    .card-body
+      h4.text-light.mb-4
+        i.bi.bi-toggle-on.me-2
+        | Player Mode vs Server Mode
+
+      .row.g-4
+        .col-lg-6
+          .card.bg-info.bg-opacity-10.border-info.h-100.d-flex.flex-column
+            .card-header.border-info
+              h5.mb-0.text-info Player Mode Communities
+            .card-body.d-flex.flex-column
+              p.small.text-muted.mb-3 Discord servers running in Player Mode focus on providing notification routing and player features.
+
+              .flex-fill
+                h6.text-light.mb-2 Features Available:
+                ul.small.text-muted.mb-0
+                  li XM8 notification routing to channels
+                  li Player commands in DMs and text channels
+                  li Notification preference management
+                  li User alias and default settings
+
+              .alert.border-secondary.bg-dark.mb-0.mt-auto
+                p.small.mb-0 <strong>Perfect for:</strong> Gaming communities that want their members to get notifications in Discord channels rather than just DMs.
+
+        .col-lg-6
+          .card.bg-warning.bg-opacity-10.border-warning.h-100.d-flex.flex-column
+            .card-header.border-warning
+              h5.mb-0.text-warning Server Mode Communities
+            .card-body.d-flex.flex-column
+              p.small.text-muted.mb-3 Discord servers running in Server Mode provide full server management capabilities for server owners.
+
+              .flex-fill
+                h6.text-light.mb-2 Features Available:
+                ul.small.text-muted.mb-3
+                  li All Player Mode features
+                  li Admin commands for server management
+                  li Web dashboard configuration
+                  li Command permission management
+                  li Custom notification templates
+
+              .alert.border-secondary.bg-dark.mb-0.mt-auto
+                p.small.mb-0 <strong>Perfect for:</strong> Server administrators who want to manage their servers through Discord and the web dashboard.
+
+  / Advanced Features
+  .mb-5
+    h3.text-center.mb-5 Advanced Features
+
+    .row.g-4
+      .col-lg-6
+        .card.bg-dark.border-secondary.h-100
+          .card-body
+            h5.text-primary.mb-3
+              i.bi.bi-bookmark.me-2
+              | Aliases & Defaults
+            p.text-muted.mb-3 Create shortcuts for frequently used servers and communities to make commands faster and easier.
+
+            h6.text-light.mb-2 Aliases:
+            p.small.text-muted.mb-3
+              | Create short names like "main" for "abc4_altis_main". Set them up in your account settings.
+
+            h6.text-light.mb-2 Defaults:
+            p.small.text-muted.mb-0
+              | Set a default community/server so you can omit IDs from commands. When you use #{command_usage(:me, show_arguments: false)}, ESM knows which server you mean. Also configured in your account settings.
+
+      .col-lg-6
+        .card.bg-dark.border-secondary.h-100
+          .card-body
+            h5.text-warning.mb-3
+              i.bi.bi-dice-6.me-2
+              | Gambling System
+            p.text-muted.mb-3 Gamble poptabs with server-configured odds, payouts, and limits. Each server has customizable settings.
+
+            h6.text-light.mb-2 How It Works:
+            p.small.text-muted.mb-3
+              | Payout = AmountGambled × (random(Min,Mid,Max) × Percentage + Modifier)
+
+            h6.text-light.mb-2 Server Controls:
+            ul.small.text-muted.mb-0
+              li Win percentage (default: 35%)
+              li Payout modifiers and randomizers
+              li Locker capacity limits
+              li Custom win/loss messages
+
+  hr.my-4
+
+  / Quick Actions
+  .row.g-4.mt-3
+    .col-md-4
+      .card.bg-success.bg-opacity-10.border-success.h-100
+        .card-body.text-center
+          i.bi.bi-search.text-success.fs-2.mb-3
+          h5.text-success.mb-3 Find Server IDs
+          p.text-muted.mb-3 Don't know your community or server ID?
+          = link_to discover_path, class: "btn btn-outline-success"
+            | ID Lookup Tool
+
+    .col-md-4
+      .card.bg-info.bg-opacity-10.border-info.h-100
+        .card-body.text-center
+          i.bi.bi-terminal.text-info.fs-2.mb-3
+          h5.text-info.mb-3 Browse Commands
+          p.text-muted.mb-3 See what ESM can do with the full command list
+          = link_to commands_docs_path, class: "btn btn-outline-info"
+            | View Commands
+
+    .col-md-4
+      .card.bg-warning.bg-opacity-10.border-warning.h-100
+        .card-body.text-center
+          i.bi.bi-question-circle.text-warning.fs-2.mb-3
+          h5.text-warning.mb-3 Need Help?
+          p.text-muted.mb-3 Join our community for support and updates
+          = link_to join_path, class: "btn btn-outline-warning"
+            | Discord Support

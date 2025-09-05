@@ -38,5 +38,11 @@ module EsmWebsiteV2
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Set the default URL options
+    routes.default_url_options = {
+      host: Rails.env.production? ? "esmbot.com" : "localhost:3000",
+      protocol: Rails.env.production? ? "https" : "http"
+    }
   end
 end

@@ -1,0 +1,75 @@
+.container.window
+  .row
+    .col-3
+      / Back Navigation & Community Header
+      .card.mb-4
+        .card-body
+          = link_to edit_community_path(log.server.community), class: "d-flex align-items-center text-decoration-none text-muted mb-3", data: {turbo: false}
+            i.bi.bi-arrow-left.me-2
+            span Back to Community
+
+          / Community info with logo space
+          .d-flex.align-items-center
+            / Community logo
+            .me-3.flex-shrink-0
+              - if log.server.community.icon_url.present?
+                img.rounded src=log.server.community.icon_url alt=log.server.community.community_name width="48" height="48"
+              - else
+                .bg-primary.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                  i.bi.bi-hdd-network.text-white.fs-4
+            div
+              h4.mb-1.fw-bold = log.server.community.community_name
+              small.text-muted.fw-medium = log.server.server_id
+
+      / Search Details
+      .card.mb-4
+        .card-header.py-3
+          h5.mb-0.fw-bold.text-uppercase.small
+            i.bi.bi-search.me-2
+            | Search Info
+        .card-body
+          .mb-2
+            small.text-muted.fw-medium QUERY
+            .font-monospace.text-warning = log.search_text
+          .mb-2
+            small.text-muted.fw-medium REQUESTED BY
+            .text-light = log.user.discord_username
+          .mb-0
+            small.text-muted.fw-medium EXECUTED
+            .text-light = log.created_at.strftime("%B %d, %Y at %I:%M %p")
+
+      / Results by Date
+      .card
+        .card-header.py-3
+          h5.mb-0.fw-bold.text-uppercase.small
+            i.bi.bi-calendar.me-2
+            | Log Files
+
+        .list-group.list-group-flush
+          - log.log_entries.each do |entry|
+            = link_to community_log_path(current_community, log, file_id: entry.public_id),
+              class: class_names( \
+                "list-group-item border-secondary py-3",
+                "bg-primary bg-opacity-25": params[:file_id] == entry.public_id,
+              )
+              .d-flex.align-items-center.justify-content-between
+                div
+                  .fw-medium.text-light.mb-1
+                    = entry.file_date&.strftime("%B %d") || "Unknown Date"
+                  small.text-muted.d-block = entry.file_name
+                span.badge.bg-secondary = entry.entries.size
+
+    / Main log viewer
+    - if params[:file_id]
+      / Header section
+      .col
+        .text-center.mb-4
+          h1.mb-2 Server Logs
+          p.lead.text-muted Search results for "#{log.search_text}"
+
+        // Entries
+        = turbo_frame "log_entry",
+          src: community_log_entry_path(current_community, log, entry_id: params[:file_id]),
+          class: "col"
+          .text-center
+            .spinner-border.text-primary.mb-4 role="status"

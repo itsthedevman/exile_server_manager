@@ -1,91 +1,157 @@
-.container.mt-5
-  .min-vh-100.d-flex.flex-column
-    .text-center.mt-5.mb-5
-      h2.mb-2
-        | Interact with E
-        span.text-danger x
-        | ile like never before
-      p.text-muted
-        | Developed exclusively for Arma 3 Exile, ESM is the bridge between Discord and your Exile server(s)
-      .text-center.mt-4
-        = link_to "Learn More", "#learn-more",
-          class: "btn btn-secondary btn-lg text-white mt-3",
-          data: { bs_smooth_scroll: "true" }
+.vh-100.d-flex.align-items-center.justify-content-center.text-center.position-relative
+  .container
+    .row.justify-content-center
+      .col-lg-10.col-xl-8
+        h1.display-2.mb-4.text-primary.fw-bold
+          | Your Exile Server's
+          br
+          | Management Platform
 
-    #learn-more
-      .mb-5
-        h2
-          = "30 Powerful "
-          = link_to "Commands", ""
-        p
-          em Do you need to compensate a player but don't feel like starting Arma?
-          |  Adjust a player's poptabs and respect with
-          code !player
-          br
-          em Want to give new players a welcome gift? Maybe as a weekly reward?
-          code<> !reward
-          |  has your back.
-          br
-          em Big clan dispute? Do you need to remove someone from your territory that second?
-          |  Look no further than
-          code !remove
-          br
-          | From territory management, gambling, and doggos; to compensation, logs, and executing SQF. ESM has commands for players and server admins alike.
-          br
-          | All accessible from any device that runs Discord.
-          br
-          em Neat, huh?
-          br
-          = link_to "Learn More", ""
+        p.lead.mb-5.text-muted.fs-4
+          | ESM connects your Arma 3 server to Discord with real-time notifications, territory management, and admin tools.
+          br.d-none.d-md-block
+          strong.text-light Stop logging into the game just to help players.
 
-      .mb-5.text-end
-        h2 Offline XM8 Notifications
-        p
-          | By taking control of the XM8 notification system, ESM adds
-          span.text-danger.cursor-pointer(
-            data-bs-toggle="tooltip"
-            data-bs-html="true"
-            data-bs-title="These new types include<ul class='mb-0 ps-3'><li>Custom</li><li>MarXet Item Sold</li><li>Grind Started</li><li>Hack Started</li><li>Charge Plant Started</li><li>Flag Steal Started<span class='text-danger'>*</span></li></ul><small><span class='text-danger'>*</span> optional</small>"
-          )
-            |  6 new notification types
-          | and notifies
-          span.text-danger(
-            data-bs-toggle="tooltip"
-            data-bs-title="Players must be registered with ESM"
-          ) players using Discord
-          | .
-          br
-          | Each XM8 notification is completely customizable. The title, the content, and even color can be changed.
-          br
-          em Can't settle on one message?
-          |  ESM allows you to create as many as you want; randomly picking one before sending.
-          br
-          | This way you can provide the recipient motivation, feedback, or perhaps even remind them to hydrate...
-          br
-          em All while their base is being raided.
-          br
-          = link_to "Learn More", ""
+        .d-flex.gap-4.justify-content-center.flex-wrap.mb-5
+          = link_to getting_started_docs_path, class: "btn btn-primary btn-lg px-5 py-3"
+            i.bi.bi-rocket-takeoff.me-2
+            | Get Started
+          = link_to commands_docs_path, class: "btn btn-outline-light btn-lg px-5 py-3"
+            i.bi.bi-book.me-2
+            | Browse Commands
 
-      .mb-5
-        h2 Fully customizable
-        p
-          | ESM is shipped ready to go and requires only a basic setup process; allowing you to add ESM to your server(s) within minutes.
-          br
-          | Each server linked to ESM can be fully customized from its rewards, to logging and payments.
-          br
-          em Want to increase the stakes for gambling?
-          |  You can tweak every part of the
-          = link_to "equation", ""
-          |  to make it
-          em just right
-          | .
-          br
-          em Don't want command to be used? Maybe you want to limit it to a Discord role?
-          |  With a few exceptions, you can fully customize each command to your liking.
+        .d-flex.justify-content-center.gap-5.flex-wrap.text-muted.small
+          .d-flex.align-items-center
+            i.bi.bi-shield-check.text-success.me-2
+            | Trusted Since 2018
+          .d-flex.align-items-center
+            i.bi.bi-terminal.text-info.me-2
+            | #{command_count}+ Commands
+          .d-flex.align-items-center
+            i.bi.bi-heart.text-danger.me-2
+            | Open Source
 
-      .text-center.mt-5
-        = link_to "", class: "btn btn-primary btn-lg text-white me-3" do
-          = image_tag "discord_white.svg", size: "36x41", class: "me-2"
-          | Invite to Discord
-        = link_to "Get Started", "",
-          class: "btn btn-secondary btn-lg text-white mt-3 mt-md-0"
+.py-5.bg-secondary.bg-opacity-10
+  .container
+    .row.mb-5
+      .col-12.text-center
+        h2.display-6.text-light.mb-5 What Server Admins Get
+
+    .row.g-4.mb-5
+      .col-lg-4
+        .card.h-100.bg-dark.border-secondary
+          .card-body.p-4
+            .text-center.mb-4
+              i.bi.bi-lightning-charge.text-primary.fs-1.mb-3
+
+            h4.mb-3.text-light.text-center Remote Server Control
+            p.text-muted.mb-4
+              | Give players poptabs while you're out. Execute SQF code from your phone. Reset stuck players instantly. Manage your server from anywhere - no more rushing home for emergencies.
+
+            .bg-body.rounded.p-3.border
+              .font-monospace.small.text-muted
+                .mb-1 = command_usage(:sqf, show_arguments: false)
+                .mb-1 = command_usage(:player, show_arguments: false)
+                .mb-0 = command_usage(:reset, show_arguments: false)
+
+      .col-lg-4
+        .card.h-100.bg-dark.border-secondary
+          .card-body.p-4
+            .text-center.mb-4
+              i.bi.bi-people-fill.text-success.fs-1.mb-3
+
+            h4.mb-3.text-light.text-center Player Management
+            p.text-muted.mb-4
+              | Fix player issues without logging in. Send server-wide announcements. Reset command cooldowns. Handle everything from Discord while you're away from your desk.
+
+            .bg-body.rounded.p-3.border
+              .font-monospace.small.text-muted
+                .mb-1 = command_usage(:reset_cooldown, show_arguments: false)
+                .mb-1 = command_usage(:broadcast, show_arguments: false)
+                .mb-0 = command_usage(:player, show_arguments: false)
+
+      .col-lg-4
+        .card.h-100.bg-dark.border-secondary
+          .card-body.p-4
+            .text-center.mb-4
+              i.bi.bi-journal-code.text-info.fs-1.mb-3
+
+            h4.mb-3.text-light.text-center Logging & Monitoring
+            p.text-muted.mb-4
+              | Track who did what and when. Search logs with regex patterns. Get alerts when servers go offline. Know everything happening on your server, 24/7.
+
+            .bg-body.rounded.p-3.border
+              .font-monospace.small.text-muted
+                .mb-1 = command_usage(:whois, show_arguments: false)
+                .mb-1 = command_usage(:info, show_arguments: false)
+                .mb-0 = command_usage(:logs, show_arguments: false)
+
+.py-5.bg-dark.bg-opacity-25
+  .container
+    .text-center.mb-5
+      h3.display-6.text-primary What Your Players Get
+
+    .row.g-4.mb-5
+      .col-md-4
+        .text-center.p-4
+          i.bi.bi-shield-exclamation.text-danger.display-4.mb-4
+          h5.text-danger.mb-3 Never Miss a Raid
+          p.text-muted Instant Discord alerts when your base is under attack, even when you're offline
+          small.text-light.font-monospace XM8 notifications → Discord DMs
+
+      .col-md-4
+        .text-center.p-4
+          i.bi.bi-credit-card.text-warning.display-4.mb-4
+          h5.text-warning.mb-3 Pay Bills Remotely
+          p.text-muted Handle protection money and territory upgrades from Discord instead of logging in
+          small.text-secondary.font-monospace
+            = command_usage(:pay, show_arguments: false)
+            | ,
+            =< command_usage(:upgrade, show_arguments: false)
+
+      .col-md-4
+        .text-center.p-4
+          i.bi.bi-gift.text-success.display-4.mb-4
+          h5.text-success.mb-3 Custom Rewards
+          p.text-muted Server-configured rewards and bonuses that keep players engaged and coming back
+          small.text-secondary.font-monospace = command_usage(:reward, show_arguments: false)
+
+
+.py-5.bg-primary.bg-opacity-10
+  .container.py-4
+    .row.justify-content-center
+      .col-lg-8.text-center
+        h2.display-6.text-primary.mb-5 Built to Last
+
+        .mb-5
+          .h1.text-success.fw-bold.mb-3 7 Years, 99% Uptime
+          p.fs-5.text-muted
+            | ESM has been running Exile servers since 2018 - through busy weekend raids, 3 AM emergencies, and everything in between. It's the reliable infrastructure you don't have to think about.
+
+        .card.bg-dark.border-success
+          .card-body.p-4
+            h4.text-success.mb-3
+              i.bi.bi-rocket-takeoff.me-2
+              | Simple Setup
+            p.mb-0.text-muted
+              | Invite the bot to Discord, register your server, drop one mod file in your server folder. Done.
+              br
+              | No complex configs, no weird dependencies, no PhD required.
+
+.py-5.bg-secondary.bg-opacity-25
+  .container
+    .row.justify-content-center
+      .col-lg-6.text-center
+        h3.display-6.mb-4.text-primary Ready to Try It?
+        p.text-muted.mb-5.fs-5
+          | ESM is free, open source, and actively maintained.
+          br
+          | Join thousands of servers already using it.
+
+        .d-flex.gap-4.justify-content-center.flex-wrap
+          = link_to getting_started_docs_path, class: "btn btn-primary btn-lg px-5"
+            i.bi.bi-book.me-2
+            | Setup Guide
+          = link_to invite_path, class: "btn btn-outline-primary btn-lg px-5"
+            i.bi.bi-discord.me-2
+            | Add to Discord

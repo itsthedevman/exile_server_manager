@@ -1,0 +1,214 @@
+.container.window
+  / Hero Section
+  .text-center.mb-5
+    h1.mb-3.text-info Player Setup
+    p.lead.mb-4 Link your Steam and Discord accounts to use ESM features on any server
+
+    .d-flex.justify-content-center.gap-4.mb-4
+      .d-flex.align-items-center
+        .badge.bg-info.rounded-circle.me-2 i
+        small.text-muted Setup time: 2 minutes
+      .d-flex.align-items-center
+        .badge.bg-success.rounded-circle.me-2 ✓
+        small.text-muted Works on any ESM server
+
+  / Overview Cards
+  .row.g-3.justify-content-center.mb-5
+    .col-lg-3.col-md-4.col-6
+      .text-center.py-3
+        i.bi.bi-person-check.text-primary.fs-2.mb-2
+        h6.text-primary Register
+        small.text-muted Link accounts
+    .col-lg-3.col-md-4.col-6
+      .text-center.py-3
+        i.bi.bi-discord.text-success.fs-2.mb-2
+        h6.text-success Join Discord
+        small.text-muted Find a server
+    .col-lg-3.col-md-4.col-6
+      .text-center.py-3
+        i.bi.bi-controller.text-warning.fs-2.mb-2
+        h6.text-warning Play
+        small.text-muted Start gaming
+
+  .row.g-5
+    / Main Content
+    .col-lg-8
+      / Step 1: Register Accounts
+      .card.mb-5.border-start.border-primary.border-4
+        .card-header.bg-primary.bg-opacity-10
+          h3.mb-0.text-primary
+            i.bi.bi-person-plus.me-2
+            | Register Your Accounts
+
+        .card-body
+          p.mb-4 ESM needs to know who you are on both Discord and Steam to work properly.
+
+          .card.bg-primary.bg-opacity-10.border-primary.mb-4
+            .card-body.text-center.py-4
+              i.bi.bi-link-45deg.text-primary.fs-1.mb-3
+              h5.text-primary.mb-3 Link Steam & Discord
+              p.mb-4 Connect both accounts so ESM knows you're the same person everywhere
+              = link_to register_path, class: "btn btn-primary btn-lg"
+                i.bi.bi-person-check.me-2
+                | Register with ESM
+
+          .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
+            h6.text-info.mb-2 What happens during registration?
+            ul.small.mb-0
+              li You'll log into both Steam and Discord through secure OAuth
+              li ESM creates your account and links the two services
+              li You can now use Discord commands on any ESM-enabled server
+              li Your registration works across all communities using ESM
+
+      / Step 2: Join a Discord with ESM
+      .card.mb-5.border-start.border-success.border-4
+        .card-header.bg-success.bg-opacity-10
+          h3.mb-0.text-success
+            i.bi.bi-discord.me-2
+            | Join a Discord with ESM
+
+        .card-body
+          p.mb-4 You need to be in a Discord server that has ESM installed to use the commands.
+
+          .row.g-4.mb-4
+            .col-md-6
+              .card.bg-dark.border-secondary.h-100
+                .card-body.d-flex.flex-column.py-4
+                  .text-center.mb-3
+                    i.bi.bi-people.text-success.fs-2.mb-3
+                    h6.text-success.mb-3 Ask Your Server Admin
+                  .flex-fill
+                    p.small.text-muted.mb-3 Most Exile server admins can invite you to their Discord community
+                    .badge.bg-success.bg-opacity-25.w-100 Most Common
+
+            .col-md-6
+              .card.bg-dark.border-secondary.h-100
+                .card-body.d-flex.flex-column.py-4
+                  .text-center.mb-3
+                    i.bi.bi-plus-circle.text-info.fs-2.mb-3
+                    h6.text-info.mb-3 Invite ESM to Your Discord
+                  .flex-fill.text-center
+                    p.small.text-muted.mb-3 Add the bot to your own Discord server
+                    = link_to invite_path, target: "_blank", class: "btn btn-outline-info btn-sm"
+                      | Invite Bot
+
+          .card.bg-dark.border-secondary
+            .card-body
+              h6.text-light.mb-3
+                i.bi.bi-search.text-warning.me-2
+                | Need to Look Up Server IDs?
+              p.small.text-muted.mb-3
+                | Use our lookup tool to find community and server IDs if you only know the Discord server name or IP address
+              = link_to discover_path, class: "btn btn-outline-warning btn-sm"
+                i.bi.bi-compass.me-2
+                | ID Lookup Tool
+
+      / Ready to Play!
+      .card.border-success.bg-success.bg-opacity-10
+        .card-header.bg-success.bg-opacity-10
+          h3.mb-0.text-success
+            i.bi.bi-controller.me-2
+            | You're Ready to Play!
+
+        .card-body
+          p.mb-4 Try these commands in Discord to get started and explore what ESM can do.
+
+          .row.g-4.mb-4
+            .col-md-6
+              .card.bg-dark.border-secondary.h-100
+                .card-body.d-flex.flex-column
+                  h6.text-light.mb-3
+                    i.bi.bi-info-circle.text-info.me-2
+                    | Basic Commands
+                  .flex-fill
+                    .list-group.list-group-flush.bg-transparent
+                      .list-group-item.bg-transparent.border-0.px-0.py-1
+                        .d-flex.justify-content-between.align-items-center
+                          span.font-monospace.small #{command_usage(:help, show_arguments: false)}
+                          small.text-muted See all commands
+                      .list-group-item.bg-transparent.border-0.px-0.py-1
+                        .d-flex.justify-content-between.align-items-center
+                          span.font-monospace.small #{command_usage(:me, show_arguments: false)}
+                          small.text-muted Check your stats
+                      .list-group-item.bg-transparent.border-0.px-0.py-1
+                        .d-flex.justify-content-between.align-items-center
+                          span.font-monospace.small #{command_usage(:territories, show_arguments: false)}
+                          small.text-muted See your bases
+                      .list-group-item.bg-transparent.border-0.px-0.py-1
+                        .d-flex.justify-content-between.align-items-center
+                          span.font-monospace.small #{command_usage(:servers, show_arguments: false)}
+                          small.text-muted List servers
+
+            .col-md-6
+              .card.bg-dark.border-secondary.h-100
+                .card-body.d-flex.flex-column
+                  h6.text-light.mb-3
+                    i.bi.bi-star.text-warning.me-2
+                    | Useful Features
+                  .flex-fill
+                    ul.small.text-muted.mb-0
+                      li.mb-2 Get raid alerts automatically sent to Discord
+                      li.mb-2 Pay territory protection money from Discord
+                      li.mb-2 Receive MarXet sales notifications instantly
+                      li.mb-2 Manage base permissions remotely
+                      li.mb-2 Gamble poptabs and claim rewards
+                      li Check server uptime and player counts
+
+          .text-center
+            h4.text-success.mb-3 Have Fun Gaming!
+            p.text-muted.mb-4 You're all set to use ESM features on any server. Join the action and enjoy the enhanced Exile experience.
+
+            .d-flex.gap-3.justify-content-center.flex-wrap
+              = link_to commands_docs_path, class: "btn btn-success"
+                i.bi.bi-book.me-2
+                | Browse All Commands
+              = link_to discover_path, class: "btn btn-outline-success"
+                i.bi.bi-compass.me-2
+                | Find Server IDs
+
+    / Sidebar
+    .col-lg-4
+      .sidebar
+        / Benefits Card
+        .card.bg-success.bg-opacity-10.border-success.mb-4
+          .card-header.border-success
+            h6.mb-0.text-success
+              i.bi.bi-gift.me-2
+              | Why Register?
+          .card-body
+            ul.small.mb-0
+              li.mb-2 Works on any ESM-enabled server instantly
+              li.mb-2 Get real-time notifications on Discord
+              li.mb-2 Manage territories without logging in
+              li.mb-2 Set up custom notification routing
+
+        / Already Registered Card
+        .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
+          .card-header.border-secondary
+            h6.mb-0.text-light
+              i.bi.bi-person-check.me-2
+              | Already Registered?
+          .card-body
+            p.small.mb-3
+              | If you've already linked your accounts, you can start using commands right away.
+
+            p.small.mb-0
+              | Try #{command_usage(:me, show_arguments: false)} in any Discord server with ESM to test your setup.
+
+        / Need Help Card
+        .card.bg-warning.bg-opacity-10.border-warning
+          .card-header.border-warning
+            h6.mb-0.text-warning
+              i.bi.bi-question-circle.me-2
+              | Need Help?
+          .card-body
+            p.small.mb-3
+              | Having trouble with registration or commands?
+
+            .d-grid.gap-2
+              = link_to getting_started_docs_path, class: "btn btn-outline-warning btn-sm"
+                i.bi.bi-book.me-2
+                | Getting Started Guide
+              = link_to join_path, class: "btn btn-outline-warning btn-sm"
+                i.bi.bi-discord.me-2
+                | Get Support

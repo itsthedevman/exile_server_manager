@@ -1,0 +1,86 @@
+/ Server Identity Card
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-server.text-primary.me-2
+      | Server Identity
+
+  .card-body
+    / Server ID Section
+    .mb-4
+      h5.mb-2
+        span.text-danger *
+        |< Server ID
+      p.text-muted.small.mb-3
+        | The unique identifier players use in Discord commands. Keep it short and memorable!
+        br
+        em Examples: 'altis', 'tanoa', 'exile_1'
+
+      .input-group
+        span.input-group-text.bg-secondary.border-secondary.fw-bold
+          = "#{current_community.community_id}_"
+        = f.text_field :server_id,
+            class: "form-control border-secondary",
+            placeholder: "altis",
+            required: true,
+            value: f.object.local_id
+
+    / Server Name Display (read-only)
+    .mb-0
+      h5.mb-2
+        | Server Name
+        small.text-muted.fw-normal.ms-2
+          | (Auto-detected)
+      p.text-muted.small.mb-3
+        | This name is automatically set by your server on connection and cannot be changed from the dashboard
+
+      .form-control.bg-dark.text-muted[readonly]
+        = server.server_name.presence || "Server name will appear here once connected"
+
+/ Connection Details Card
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-globe.text-success.me-2
+      | Connection Details
+
+  .card-body
+    p.text-muted.small.mb-4
+      | The IP address and port where players connect to your server. This information helps players bookmark and share your server.
+
+    .row.g-3.mb-4
+      .col-8
+        label.form-label.fw-medium
+          span.text-danger *
+          |< IP Address
+        = f.text_field :server_ip,
+            class: "form-control",
+            placeholder: "123.123.123.123",
+            required: true
+        .invalid-feedback Please enter a valid IP address
+
+      .col-4
+        label.form-label.fw-medium
+          span.text-danger *
+          |< Port
+        = f.number_field :server_port,
+            class: "form-control",
+            placeholder: "2302",
+            min: 1,
+            max: 65535,
+            required: true
+        .invalid-feedback Please enter a valid port number
+
+    / Server Visibility Section
+    .mb-0
+      h5.mb-2 Server Visibility
+      p.text-muted.small.mb-3
+        | Control whether your server appears in public listings. Private servers work normally but won't be shown to new players.
+
+      = f.select :server_visibility,
+          options_for_select([ \
+            ["Public - Show in server lists and join messages", "public"],
+            ["Private - Hidden from public listings", "private"] \
+          ], f.object.server_visibility),
+          {},
+          class: "form-select"

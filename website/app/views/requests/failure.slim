@@ -1,0 +1,34 @@
+.min-vh-100.d-flex.align-items-center.justify-content-center
+  .container-fluid
+    .row.justify-content-center
+      .col-10.col-md-6.col-lg-5.col-xl-4
+        .text-center
+          / Error icon
+          .mb-4
+            .bg-secondary.bg-opacity-25.rounded-circle.d-inline-flex.align-items-center.justify-content-center.border.border-secondary.border-opacity-50 style="width: 120px; height: 120px;"
+              i.bi.bi-exclamation-triangle.text-danger style="font-size: 3.5rem;"
+
+          / Clean heading
+          h1.fw-bold.text-light.mb-3 Failed to #{verb.capitalize} Request
+
+          / Simple explanation
+          p.text-muted.fs-5.mb-4
+            | Something went wrong while processing your request.
+            br
+            | Don't worry - you can try again!
+
+          / Help card with retry command
+          .card.bg-dark.border-secondary.p-4.mb-4
+            .card-body.p-0
+              h6.text-light.mb-3.fw-semibold
+                i.bi.bi-chat-left-text.text-info.me-2
+                | Try this in a private message with me:
+              = command_usage(verb, arguments: {uuid: request.uuid_short})
+
+          / Close instruction and support
+          p.text-muted.small.mb-1
+            | You may safely close this window or tab.
+          p.text-muted.small.mb-0
+            | Need help?
+            = link_to join_path, class: "text-decoration-none text-info"
+              |< Join our Discord support server

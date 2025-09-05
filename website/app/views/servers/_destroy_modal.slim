@@ -1,0 +1,59 @@
+= render "shared/modal", id: "destroy_server_modal", class: "modal-lg", **local_assigns do
+  .modal-header.border-danger.bg-danger.bg-opacity-10
+    h4.modal-title.text-danger.mb-0
+      i.bi.bi-exclamation-triangle.text-danger.me-2
+      | Delete Server: #{server.server_id}
+    button.btn-close.btn-close-white[
+      type="button"
+      data-bs-dismiss="modal"
+      aria-label="Close"
+    ]
+
+  .modal-body
+    .alert.alert-danger.border-danger.bg-danger.bg-opacity-10
+      h6.text-danger.fw-bold Are you absolutely sure?
+      p.mb-0.small
+        | This action cannot be undone. This will permanently delete the server and all associated data.
+
+    p.mb-3
+      | This will remove all data for
+      code.text-danger =< server.server_id
+      |  including:
+
+    ul.list-unstyled.mb-4
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Server settings and configuration
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Player cooldowns and preferences
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Gambling statistics
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Server mods and rewards
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Parsed logs and historical data
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Territory data
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10
+      p.mb-0.small
+        strong Recovery:
+        |< You can re-register this server later, but all historical data will be lost permanently.
+
+  .modal-footer.border-top
+    button.btn.btn-outline-secondary[
+      type="button"
+      data-bs-dismiss="modal"
+    ] Cancel
+
+    = button_to community_server_path(current_community, server),
+        method: :delete,
+        class: "btn btn-danger",
+        data: {turbo: false}
+      i.bi.bi-trash.me-2
+      | Delete #{server.server_id}

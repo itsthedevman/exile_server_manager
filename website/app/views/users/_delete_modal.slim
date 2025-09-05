@@ -1,0 +1,51 @@
+= render "shared/modal", id: "delete_modal", class: "modal-lg" do
+  .modal-header.border-danger.bg-danger.bg-opacity-10
+    h4.modal-title.text-danger.mb-0
+      i.bi.bi-exclamation-triangle.text-danger.me-2
+      | Delete Account: #{current_user.discord_username}
+    button.btn-close[
+      type="button"
+      data-bs-dismiss="modal"
+      aria-label="Close"
+    ]
+
+  .modal-body
+    .alert.alert-danger.border-danger.bg-danger.bg-opacity-10
+      h6.text-danger.fw-bold Important Information
+      p.mb-0.small
+        | This only removes your account from Exile Server Manager - it does not affect any servers you've joined.
+
+    p.mb-3
+      | Deleting your account will remove:
+
+    ul.list-unstyled.mb-4
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Your Discord and Steam account linking
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | All saved aliases and defaults
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | XM8 notification routing preferences
+      li.mb-2
+        i.bi.bi-x-circle.text-danger.me-2
+        | Command cooldowns and usage history
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10
+      p.mb-0.small
+        strong Recovery:
+        |< You can always re-create your account by logging back into our website with Discord.
+
+  .modal-footer.border-top
+    button.btn.btn-outline-secondary[
+      type="button"
+      data-bs-dismiss="modal"
+    ] Cancel
+
+    = button_to users_path,
+        method: :delete,
+        class: "btn btn-danger",
+        data: { turbo: false }
+      i.bi.bi-trash.me-2
+      | Delete My Account

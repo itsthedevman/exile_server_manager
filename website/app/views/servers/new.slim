@@ -1,0 +1,184 @@
+= render "communities/container", **local_assigns do
+  div[data-controller="server-new" data-server-new-ids-value="#{existing_server_ids}"]
+    / Hero section - cleaner, more focused
+    .text-center.mb-5
+      h1.mb-3.text-primary Register New Server
+      p.lead.text-muted Choose your ESM version and configure your server
+
+    / Version selection cards - updated styling
+    .mb-5
+      h5.fw-medium.mb-3.text-center Choose ESM Version
+
+      .row.g-4.justify-content-center
+        .col-md-5
+          .card.h-100.border-2.selectable-card.selected[data-server-new-target="v2Card"]
+            .card-header.text-center.bg-success.bg-opacity-10.border-success
+              h4.mb-0.text-success
+                i.bi.bi-rocket-takeoff.me-2
+                | ESM v2
+              .badge.bg-success.mt-2 RECOMMENDED
+            .card-body.d-flex.flex-column
+              ul.list-unstyled.mb-4
+                li.mb-2
+                  i.bi.bi-check-circle.text-success.me-2
+                  | Works on Linux + Windows servers
+                li.mb-2
+                  i.bi.bi-check-circle.text-success.me-2
+                  | Minimal setup, powerful controls
+                li.mb-2
+                  i.bi.bi-check-circle.text-success.me-2
+                  | Reliable XM8 delivery
+                li.mb-2
+                  i.bi.bi-check-circle.text-success.me-2
+                  | Runs quietly alongside your server
+                li.mb-2
+                  i.bi.bi-check-circle.text-success.me-2
+                  | Search logs with advanced patterns
+              .mt-auto
+                button.btn.btn-outline-success.w-100[
+                  type="button"
+                  data-action="click->server-new#onVersionSelected"
+                  data-version="2"
+                ]
+                  | Choose v2 (Recommended)
+
+        .col-md-5
+          .card.h-100.border-2.selectable-card[data-server-new-target="v1Card"]
+            .card-header.text-center.bg-secondary.bg-opacity-10.border-secondary
+              h4.mb-0.text-secondary
+                i.bi.bi-clock-history.me-2
+                | ESM Classic
+              .badge.bg-secondary.mt-2 Legacy Option
+            .card-body.d-flex.flex-column
+              ul.list-unstyled.mb-4.text-muted
+                li.mb-2
+                  i.bi.bi-windows.text-info.me-2
+                  | Windows servers only
+                li.mb-2
+                  i.bi.bi-shield-check.text-secondary.me-2
+                  | Battle-tested since 2018
+                li.mb-2
+                  i.bi.bi-speedometer.text-warning.me-2
+                  | Performance matches server load
+                li.mb-2
+                  i.bi.bi-info-circle.text-info.me-2
+                  | Still supported for legacy setups
+              .mt-auto
+                small.text-muted.mb-2.d-block
+                  | Only choose if you have specific requirements for Classic
+                button.btn.btn-outline-secondary.w-100[
+                  type="button"
+                  data-action="click->server-new#onVersionSelected"
+                  data-version="1"
+                ]
+                  | Use Classic Instead
+
+    / Server Configuration Form
+    .card.border-primary
+      .card-header.bg-primary.bg-opacity-10.border-primary
+        h4.mb-0.text-primary
+          i.bi.bi-server.me-2
+          | Server Configuration
+
+      = form_with model: ESM::Server.new,
+        url: community_servers_path(current_community.public_id),
+        scope: "server",
+        data: {server_new_target: "form", turbo: false} do |f|
+
+        = f.hidden_field :ui_version, data: {server_new_target: "version"}
+
+        .card-body
+          / Server Identity Section
+          .mb-4
+            h5.mb-3
+              i.bi.bi-tag.text-info.me-2
+              | Server Identity
+
+            .row.g-3
+              .col-12
+                label.form-label.fw-medium
+                  span.text-danger *
+                  |< Server ID
+                  small.text-muted.ms-2 (what players type in Discord)
+                .input-group
+                  span.input-group-text.bg-secondary.border-secondary.fw-bold
+                    = "#{current_community.community_id}_"
+                  = f.text_field :server_id,
+                      class: "form-control border-secondary",
+                      placeholder: "altis",
+                      required: true
+                .form-text.text-muted.mt-1
+                  i.bi.bi-lightbulb.me-1
+                  | Keep it short and memorable! Players will type this in commands.
+
+          hr.my-4
+
+          / Connection Details Section
+          .mb-4
+            h5.mb-3
+              i.bi.bi-globe.text-success.me-2
+              | Connection Details
+
+            .row.g-3
+              .col-md-8
+                label.form-label.fw-medium
+                  span.text-danger *
+                  |< Server IP Address
+                = f.text_field :server_ip,
+                    class: "form-control",
+                    placeholder: "123.123.123.123",
+                    required: true
+                .form-text.text-muted Your server's public IP address
+
+              .col-md-4
+                label.form-label.fw-medium
+                  span.text-danger *
+                  |< Port
+                = f.number_field :server_port,
+                    class: "form-control",
+                    placeholder: "2302",
+                    min: 1,
+                    max: 65535,
+                    required: true
+                .form-text.text-muted Default: 2302
+
+          hr.my-4
+
+          / Visibility Settings
+          .mb-0
+            h5.mb-3
+              i.bi.bi-eye.text-warning.me-2
+              | Server Visibility
+
+            = f.select :server_visibility,
+                options_for_select([ \
+                  ["Public - Visible in server lists", "public"],
+                  ["Private - Hidden from public view", "private"] \
+                ]),
+                {},
+                class: "form-select"
+            .form-text.text-muted.mt-1
+              | Private servers work normally but won't appear in public server listings
+
+        / Action footer
+        .card-footer.border-primary.bg-transparent
+          .d-flex.gap-3.justify-content-end
+            = link_to community_path(current_community),
+                class: "btn btn-outline-secondary d-flex align-items-center"
+              i.bi.bi-arrow-left.me-2
+              | Cancel
+            = f.submit class: "btn btn-success btn-lg px-4 d-flex align-items-center"
+              i.bi.bi-plus-circle.me-2
+              | Register Server
+
+    / Help Section at Bottom
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.mt-4
+      .d-flex.align-items-start
+        i.bi.bi-info-circle.text-info.me-3.mt-1
+        div
+          h6.text-info.mb-2 What happens next?
+          ol.small.mb-0
+            li You'll be taken to the server configuration page
+            li Download your <code>esm.key</code> authentication file
+            li Install the @esm mod on your server
+            li Your server will appear online once connected

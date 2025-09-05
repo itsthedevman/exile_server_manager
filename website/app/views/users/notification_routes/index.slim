@@ -1,0 +1,31 @@
+= render "users/container", **local_assigns do
+  .text-center.mb-4
+    h1.mb-2 My XM8 Notification Routes
+    p.lead.text-muted Manage where your game notifications get sent in Discord
+
+  / Main Routes Section
+  .mb-5
+    - if routes.size > 0
+      .d-flex.align-items-center.justify-content-between.mb-4
+        h2.mb-0 My Active Routes
+        button.btn.btn-primary[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#create_route_modal"
+        ]
+          i.bi.bi-plus-circle.me-2
+          | Create New Route
+
+    / Route cards
+    #routes-container.row.g-4
+      - if routes.size > 0
+        - routes.each do |route_data|
+          = render_component( \
+            NotificationRouteCardComponent,
+            paths: route_card_paths,
+            **route_data,
+          )
+      - else
+        = render "no_routes"
+
+= render "create_modal", **local_assigns

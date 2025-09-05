@@ -1,0 +1,54 @@
+= render "shared/modal", id: "edit_mod_modal", class: "modal-lg" do
+  .modal-header.border-warning.bg-warning.bg-opacity-10
+    h4.modal-title.text-warning.mb-0
+      i.bi.bi-pencil-square.text-warning.me-2
+      | Edit Server Mod
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  div[data-server-mods-target="editForm"]
+    .modal-body
+      p.text-muted.small.mb-4
+        | Update mod information to keep your players informed about modset changes.
+
+      .row.g-3.mb-4
+        .col-8
+          = label_tag "edit_mod_name", class: "form-label fw-medium" do
+            span.text-danger *
+            | Mod Name
+          = text_field_tag "edit_mod_name", nil,
+              class: "form-control",
+              placeholder: "@Exile",
+              name: nil,
+              required: true
+
+        .col-4
+          = label_tag "edit_mod_version", "Version", class: "form-label fw-medium"
+          = text_field_tag "edit_mod_version", nil,
+              class: "form-control",
+              name: nil,
+              placeholder: "1.0.4"
+
+      .mb-4
+        = label_tag "edit_mod_link", "Download Link", class: "form-label fw-medium"
+        = url_field_tag "edit_mod_link", nil,
+            class: "form-control",
+            name: nil,
+            placeholder: "https://steamcommunity.com/workshop"
+
+      .mb-0
+        .form-check.form-switch
+          = check_box_tag "edit_mod_required", "1", false, class: "form-check-input", name: nil
+          = label_tag "edit_mod_required", class: "form-check-label fw-medium" do
+            | Required Mod
+            span.badge.bg-warning.text-dark.ms-2 Important
+        small.form-text.text-muted.mt-1 Show players which mods they need to join
+
+    .modal-footer.border-top.d-flex.justify-content-between
+      div
+      div
+        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
+        = button_tag "edit_mod_save",
+            class: "btn btn-primary ms-2",
+            data: { action: "click->server-mods#update", mod_id: "" } do
+          i.bi.bi-check-circle.me-2
+          | Save Changes

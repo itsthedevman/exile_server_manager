@@ -1,0 +1,44 @@
+.col-6 id="#{notification.dom_id}"
+  .card.h-100.bg-dark.border-secondary
+    / Card header with type and actions
+    .card-header.d-flex.justify-content-between.align-items-center.py-2.border-secondary
+      span.small.text-light
+        = "#{notification.notification_category.humanize} #{notification.notification_type.underscore.humanize}"
+
+      .d-flex.gap-1
+        = link_to edit_community_notification_path(current_community, notification),
+          class: "btn btn-outline-primary btn-sm",
+          data: {"turbo-prefetch": false, "turbo-frame": "edit_notification_modal_frame"},
+          title: "Edit notification"
+          i.bi.bi-pencil
+
+        = link_to community_notification_path( \
+            current_community, notification,
+            filter: params[:filter] \
+          ),
+          method: :delete,
+          class: "btn btn-danger btn-sm",
+          data: { \
+            turbo_confirm: "Are you sure you want to delete this notification?",
+            turbo_method: :delete \
+          },
+          title: "Delete notification"
+          i.bi.bi-trash
+
+    / Discord-style preview
+    .card-body.p-0.d-flex.flex-column.flex-fill
+      = content_tag :div,
+        class: class_names( \
+          "discord-embed", "p-3", "rounded-bottom", "flex-fill", "d-flex", "flex-column",
+          "random" => notification.notification_color == "random" \
+        ),
+        style: class_names( \
+          "border-left-color: #{notification.notification_color};" => \
+            notification.notification_color != "random" \
+        )
+        - if notification.notification_title.present?
+          .text-light.fw-medium.mb-2.fs-6
+            = truncate(notification.notification_title, length: 50)
+
+        .text-muted.mb-2.flex-fill
+          = truncate(notification.notification_description, length: 100)

@@ -1,0 +1,98 @@
+= render "communities/container", **local_assigns do
+  / Centered header like other pages
+  .text-center.mb-4
+    h1.mb-2
+      | Edit #{server.server_id}
+    p.lead.text-muted Configure your server settings
+
+    / Download dropdown - available for both versions
+    .d-flex.justify-content-center.mt-3
+      .dropdown
+        button.btn.btn-info.dropdown-toggle[
+          type="button"
+          data-bs-toggle="dropdown"
+        ]
+          i.bi.bi-download.me-2
+          | Download Files
+        ul.dropdown-menu
+          - if server.ui_v2?
+            li
+              = link_to latest_download_path,
+                class: "dropdown-item",
+                data: {turbo: false}
+                i.bi.bi-file-zip.text-primary.me-2
+                | @esm
+                small.text-muted
+                  |< (v#{ENV["MOD_VERSION"]})
+            li
+              hr.dropdown-divider
+            li
+              = link_to server_token_community_server_path(current_community, server),
+                class: "dropdown-item",
+                data: {turbo: false}
+                i.bi.bi-key.text-warning.me-2
+                | esm.key
+            li
+              = link_to server_config_community_server_path(current_community, server, format: :yml),
+                class: "dropdown-item",
+                data: {turbo: false}
+                i.bi.bi-file-code.text-info.me-2
+                | config.yml
+          - else
+            li
+              = link_to classic_download_path,
+                class: "dropdown-item",
+                data: {turbo: false}
+                i.bi.bi-file-zip.text-primary.me-2
+                | @ESM
+            li
+              hr.dropdown-divider
+            li
+              = link_to key_community_server_path(current_community, server),
+                class: "dropdown-item",
+                data: {turbo: false}
+                i.bi.bi-key.text-warning.me-2
+                | esm.key
+
+  = render "servers/version_picker", **local_assigns
+  = render "servers/destroy_modal", **local_assigns
+
+  = content_tag :div, data: { controller: "server-edit",
+    server_edit_ids_value: existing_server_ids,
+    server_mods_mods_value: existing_server_mods,
+  }
+    = form_with model: [current_community, server],
+      url: community_server_path(current_community, server),
+      scope: :server,
+      method: :patch,
+      data: {server_edit_target: "form"} do |f|
+
+      = render "servers/server_info", f:, **local_assigns
+      = render "servers/server_mods", f:, **local_assigns
+      = render "servers/server_rewards", f:, **local_assigns
+
+      = f.fields_for :server_settings, server.server_setting do |f|
+        = render "servers/server_settings", f:, **local_assigns
+
+        - if server.ui_v2?
+          = render "servers/server_config", f:, **local_assigns
+        - else
+          = render "servers/server_config_v1", f:, **local_assigns
+
+      / Final Action Footer - for power users who went through everything
+      .d-flex.justify-content-between.align-items-center.pt-4.mt-4.border-top
+        div
+          button.btn.btn-danger[
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#destroy_server_modal"
+          ] Delete Server
+
+        .d-flex.gap-3
+          = link_to "Cancel", edit_community_server_path(current_community, server),
+            class: "btn btn-outline-secondary"
+
+          = f.submit "Save All Settings",
+              class: "btn btn-success px-4"
+            i.bi.bi-check-circle.me-2
+            | Save All Settings

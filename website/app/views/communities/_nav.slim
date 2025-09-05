@@ -1,0 +1,115 @@
+#dashboard-sidebar
+  / Back Navigation & Community Header
+  .card.mb-4
+    .card-body
+      = link_to communities_path, class: "d-flex align-items-center text-decoration-none text-muted mb-3"
+        i.bi.bi-arrow-left.me-2
+        span Back to Communities
+
+      .d-flex.align-items-center
+        / Community logo
+        .me-3.flex-shrink-0
+          - if current_community.icon_url.present?
+            img.rounded src=current_community.icon_url alt=current_community.community_name width="48" height="48"
+          - elsif current_community.player_mode_enabled?
+            .bg-info.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+              i.bi.bi-people.text-white.fs-4
+          - else
+            .bg-primary.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+              i.bi.bi-hdd-network.text-white.fs-4
+        div
+          h4.mb-1.fw-bold = current_community.community_name
+          small.text-muted.fw-medium = current_community.community_id
+
+  - if current_community.server_mode_enabled?
+    / Servers Section
+    .card.mb-4
+      .card-header.py-3
+        h5.mb-0.fw-bold.text-uppercase.small
+          i.bi.bi-hdd-network.me-2
+          | Servers
+
+      .list-group.list-group-flush
+        - if current_community.servers.size > 0
+          - current_community.servers.sort_by(:server_id).insensitive.each do |nav_server|
+            = link_to community_server_path(current_community, nav_server),
+              class: class_names( \
+                "list-group-item list-group-item-action d-flex align-items-center py-3",
+                "bg-primary bg-opacity-25": local_assigns[:server] && nav_server.id == server.id \
+              )
+
+              / Server status indicator
+              - if nav_server.connected?
+                .server-status.server-status--online.me-3
+              - elsif nav_server.disconnected_at&.> 1.hour.ago
+                .server-status.server-status--warning.me-3
+              - else
+                .server-status.server-status--offline.me-3
+
+              .flex-grow-1.min-w-0
+                .d-flex.align-items-center.gap-2.mb-1
+                  .fw-medium
+                    => nav_server.server_id
+                    small
+                      - if nav_server.ui_v2?
+                        | [
+                        span.text-info v2
+                        | ]
+                      - else
+                        | [
+                        span.text-warning classic
+                        | ]
+                small.text-muted.d-block.text-truncate = nav_server.server_name || "No name set"
+
+        / Register New Server Link
+        = link_to new_community_server_path(current_community),
+          class: "list-group-item list-group-item-action d-flex align-items-center py-3 text-success"
+
+          i.bi.bi-plus-circle.me-3
+          span.fw-medium Register New Server
+
+  / Community Management Section
+  .card
+    .card-header.py-3
+      h5.mb-0.fw-bold.text-uppercase.small
+        i.bi.bi-gear.me-2
+        | Community
+
+    .list-group.list-group-flush
+      - if current_community.server_mode_enabled?
+        = link_to community_commands_path(current_community),
+          class: class_names( \
+            "list-group-item list-group-item-action d-flex align-items-center py-3",
+            "bg-primary bg-opacity-25": controller_name == "commands" \
+          )
+
+          i.bi.bi-terminal.me-3
+          span.fw-medium Commands
+
+        = link_to community_notifications_path(current_community),
+          class: class_names( \
+            "list-group-item list-group-item-action d-flex align-items-center py-3",
+            "bg-primary bg-opacity-25": controller_name == "notifications" \
+          )
+
+          i.bi.bi-bell.me-3
+          span.fw-medium Notifications
+
+      = link_to edit_community_path(current_community),
+        class: class_names( \
+          "list-group-item list-group-item-action d-flex align-items-center py-3",
+          "bg-primary bg-opacity-25": controller_name == "communities" && action_name == "edit" \
+        )
+
+        i.bi.bi-building.me-3
+        span.fw-medium Settings
+
+      = link_to community_notification_routes_path(current_community),
+        class: class_names( \
+          "list-group-item list-group-item-action d-flex align-items-center py-3",
+          "bg-primary bg-opacity-25": \
+            controller_name == "notification_routes" \
+        )
+
+        i.bi.bi-arrow-left-right.me-3
+        span.fw-medium XM8 Routing

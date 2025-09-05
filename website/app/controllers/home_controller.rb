@@ -2,6 +2,7 @@
 
 class HomeController < ApplicationController
   def index
-    render locals: {}
+    command_count = ESM::CommandDetail.all.size
+    render locals: {command_count:}
   end
 end

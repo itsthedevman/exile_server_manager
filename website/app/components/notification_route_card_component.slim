@@ -1,0 +1,49 @@
+.col-6[id=route_card_dom_id]
+  .card.bg-dark.border-secondary.h-100.route-card[data-controller="routes"]
+    .card-header.border-secondary.d-flex.align-items-center.justify-content-between.py-3
+      div
+        h6.mb-1.text-light
+          i.bi.bi-hash.me-1
+          = channel.name
+        - if community
+          small.text-muted = community.community_name
+
+      = button_to destroy_many_path(ids: all_routes.map(&:public_id)),
+        method: :delete,
+        class: "btn btn-outline-danger btn-sm",
+        data: { \
+          controller: "confirm",
+          confirm_message_value: "Remove all routes for this channel?",
+          turbo: false,
+        },
+        title: "Delete routes"
+        i.bi.bi-trash
+
+    .card-body.p-3
+      / Source info
+      .mb-3
+        small.text-muted.fw-medium FROM
+        .d-flex.align-items-center.gap-2.mb-2
+          i.bi.bi-server.text-warning
+          - if server.nil?
+            span.badge.bg-info.small Global
+          - else
+            span.text-light = server.server_name
+
+      / Notification toggles
+      .mb-3
+        / Territory Events
+        - if (group_name, routes = territory_management_routes(all_routes)) && routes.size > 0
+          = render_route_group(group_name, routes)
+
+        / Combat Events
+        - if (group_name, routes = base_combat_routes(all_routes)) && routes.size > 0
+          = render_route_group(group_name, routes)
+
+        / Economy Events
+        - if (group_name, routes = economy_routes(all_routes)) && routes.size > 0
+          = render_route_group(group_name, routes)
+
+        / Custom Events
+        - if (group_name, routes = custom_routes(all_routes)) && routes.size > 0
+          = render_route_group(group_name, routes)

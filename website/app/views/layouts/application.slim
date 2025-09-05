@@ -6,6 +6,8 @@ html
     meta[name="viewport" content="width=device-width,initial-scale=1"]
     meta[name="apple-mobile-web-app-capable" content="yes"]
     meta[name="mobile-web-app-capable" content="yes"]
+    meta[name="turbo-prefetch" content="false"]
+    meta[name="turbo-refresh-method" content="morph"]
     = csrf_meta_tags
     = csp_meta_tag
     = yield :head
@@ -20,4 +22,6 @@ html
     #nav-container
       = render partial: "shared/nav", locals: local_assigns
     #main-container
+      = render partial: "shared/toast_container", locals: local_assigns
       = yield
+    = render partial: "shared/footer", locals: local_assigns

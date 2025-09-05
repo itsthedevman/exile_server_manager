@@ -1,0 +1,148 @@
+= update_turbo_modal "edit_notification_modal"
+  = content_tag :div, nil,
+    data: { \
+      controller: "notifications",
+      notifications_max_title_length_value: ESM::EMBED::TITLE_LENGTH_MAX,
+      notifications_max_description_length_value: ESM::EMBED::DESCRIPTION_LENGTH_MAX,
+      notifications_variables_value: variables \
+    }
+    .modal-header.border-warning.bg-warning.bg-opacity-10
+      h4.modal-title.text-warning.mb-0
+        i.bi.bi-plus-circle.text-warning.me-2
+        | Edit Notification
+      button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+    = form_with model: [current_community, notification],
+        url: community_notification_path(current_community, notification),
+        scope: :notification,
+        data: {notifications_target: "form"} do |f|
+
+      .modal-body
+        / Row 1: Configuration + Live Preview
+        .row.g-4.mb-4
+          / Left Column - Configuration
+          .col-md-6
+            h5.text-warning.mb-3
+              i.bi.bi-gear.me-2
+              | Configuration
+
+            / Type Selection
+            .mb-4
+              = f.label :notification_type, class: "form-label fw-medium"
+                span.text-danger.me-1 *
+                | Notification Type
+
+              = f.select :notification_type,
+                  grouped_options_for_select( \
+                    grouped_notification_types,
+                    "#{notification.notification_category}_#{notification.notification_type}" \
+                  ),
+                  { prompt: "Select notification type..." },
+                  class: "form-select", data: { \
+                    notifications_target: "type",
+                    action: "input->notifications#onTypeChanged" \
+                  }
+
+            / Color Selection
+            .mb-0
+              = f.label :notification_color, class: "form-label fw-medium"
+                span.text-danger.me-1 *
+                | Embed Color
+              .row.g-2
+                .col-6
+                  = f.select :notification_color,
+                    options_for_select(colors, notification_color),
+                    {},
+                    class: "form-select", data: {\
+                      notifications_target: "colorSelect",
+                      action: "input->notifications#onColorChanged" \
+                    }
+
+                .col-6
+                  = f.color_field :notification_custom_color,
+                      class: "form-control d-none",
+                      data: { \
+                        notifications_target: "colorPicker",
+                        action: "input->notifications#onColorChanged" \
+                      },
+                      style: "height: 38px;",
+                      value: custom_color || "#3ED3FB"
+
+          / Right Column - Live Preview
+          .col-md-6
+            .card.bg-dark.border-secondary.mt-4
+              .card-header.py-2
+                h6.mb-0.text-light
+                  i.bi.bi-eye.me-2
+                  | Live Preview
+              .card-body.p-3
+                .discord-embed.p-3.rounded[data-notifications-target="livePreview"]
+                  #title.text-light.fw-medium.mb-1.fs-6 Preview title will appear here
+                  #description.p.mb-1.text-muted Preview message will appear here
+                  #footer.small.text-muted
+                    | [sample_server_id] sample_server_name
+
+        / Row 2: Message Content (Full Width)
+        .row.mb-4
+          .col-12
+            h5.text-warning.mb-3
+              i.bi.bi-type.me-2
+              | Message Content
+
+            .row.g-4
+              / Title Input
+              .col-12
+                = f.label :notification_title, "Title", class: "form-label fw-medium"
+                = f.text_field :notification_title,
+                    class: "form-control",
+                    placeholder: "Your notification title here",
+                    data: { \
+                      notifications_target: "title",
+                      action: "input->notifications#onTitleChanged" \
+                    },
+                    maxlength: ESM::EMBED::TITLE_LENGTH_MAX
+                .d-flex.justify-content-between.mt-1
+                  = link_to_tab discord_markdown_docs_url, class: "text-decoration-none" do
+                    small.text-info
+                      i.bi.bi-markdown.me-1
+                      | Discord markdown supported
+                  small.text-muted
+                    span[data-notifications-target="titleLength"] 0
+                    | /#{ESM::EMBED::TITLE_LENGTH_MAX}
+
+              / Message Input
+              .col-12
+                = f.label :notification_description, class: "form-label fw-medium"
+                  span.text-danger.me-1 *
+                  | Message
+                = f.text_area :notification_description,
+                    class: "form-control",
+                    rows: 6,
+                    placeholder: "Your notification message here",
+                    data: { \
+                      notifications_target: "description",
+                      action: "input->notifications#onDescriptionChanged" \
+                    },
+                    maxlength: ESM::EMBED::DESCRIPTION_LENGTH_MAX
+                .d-flex.justify-content-between.mt-1
+                  small.text-muted Variables will be replaced when sent
+                  small.text-muted
+                    span[data-notifications-target="descriptionLength"] 0
+                    | /#{ESM::EMBED::DESCRIPTION_LENGTH_MAX}
+
+        / Row 3: Variables (Full Width)
+        .row
+          .col-12
+            .card.bg-secondary.bg-opacity-10.border-secondary
+              .card-body.py-3
+                .d-flex.align-items-center.justify-content-between.mb-3
+                  h6.mb-0.text-light.fw-medium
+                    i.bi.bi-code.me-2
+                    | Available Variables
+                  small.text-muted Click to insert at cursor position
+                .d-flex.flex-wrap.gap-2[data-notifications-target="variableChips"]
+                  / Populated by Stimulus based on selected notification type
+
+      .modal-footer
+        button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
+        = f.submit "Save Notification", class: "btn btn-success text-white"

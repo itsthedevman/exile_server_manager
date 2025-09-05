@@ -1,0 +1,50 @@
+= render "communities/container", **local_assigns do
+  / Page header with server admin focus
+  .text-center.mb-4
+    h1.mb-2 XM8 Notification Routing
+    p.lead.text-muted Manage notification routing for your Discord server members
+
+  / Pending Requests Section
+  - if pending_routes.size > 0
+    .card.border-warning.bg-warning.bg-opacity-10.mb-5
+      .card-header.border-warning.d-flex.align-items-center.justify-content-between
+        h3.mb-0.text-warning
+          i.bi.bi-clock-history.me-2
+          | Pending Requests Require Your Attention
+
+      .card-body
+        p.text-muted.small.mb-4
+          | Players have requested to route their notifications to your Discord channels. Accept or decline each request.
+
+        .row.g-3
+          - pending_routes.each do |user, grouped_routes|
+            - grouped_routes.each do |route_data|
+              = render_component(RouteRequestCardComponent, user:, **route_data)
+
+  / Route cards
+  .mb-3
+    .row.g-3
+      - if routes.size > 0
+        - routes.each do |user, grouped_routes|
+          .col-12[id=user.dom_id]
+            .card.mb-3
+              .card-body.py-3
+                .d-flex.align-items-center.justify-content-between
+                  .d-flex.align-items-center
+                    img.rounded-circle.me-3[
+                      src=user.avatar_url
+                      alt=user.discord_username
+                      width="48"
+                      height="48"
+                    ]
+                    div
+                      h6.mb-0 = user.discord_username
+
+            .row.g-3.mb-5
+              - grouped_routes.each do |route_data|
+                = render_component( \
+                  NotificationRouteCardComponent,
+                  user:, paths: route_card_paths,
+                  **route_data)
+      - else
+        = render "no_routes"

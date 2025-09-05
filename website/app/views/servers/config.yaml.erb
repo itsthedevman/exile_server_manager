@@ -1,0 +1,157 @@
+##################################
+##
+## ESM Server Configuration
+##
+## This file configures the ESM extension.
+##
+## IMPORTANT:
+##   This is a generated file.
+##   Modifications to this file will not reflect on ESM's website.
+##
+##   Incorrect configuration can break server functionality.
+##   Edit at your own risk! When in doubt, ask in the ESM Discord.
+##
+##################################
+
+#########################
+## Core Settings
+#########################
+
+###
+## Database connection string in URI format
+## Format: mysql://user:password@host:port/database_name
+##
+## When set, this overrides ExtDB configuration.
+## If not set, ESM reads database settings from the ExtDB INI file.
+###
+<%= render_setting("database_uri", settings) %>
+
+###
+## Number formatting locale
+## Controls how numbers display (thousands/decimal separators)
+##
+## Examples:
+##   "en"    - 12,345.67 (English)
+##   "de_DE" - 12.345,67 (German)
+##   "fr_FR" - 12 345,67 (French)
+##
+## Default: "en"
+## See: https://lh.2xlibre.net/locales/
+###
+<%= render_setting("number_locale", settings) %>
+
+###
+## Directory containing Exile server files
+##
+## Default varies by OS:
+##   Windows: "@ExileServer"
+##   Linux: "@exileserver"
+###
+<%= render_setting("server_mod_name", settings) %>
+
+#########################
+## ExtDB Settings
+#########################
+
+###
+## Database configuration section name in ExtDB config
+## Identifies which database settings to use
+##
+## Ignored if database_uri is set
+## Default: "exile"
+###
+<%= render_setting("extdb_conf_header_name", settings) %>
+
+###
+## Path to ExtDB configuration file
+## Must be a valid INI file with database settings
+##
+## Default locations:
+##   Windows ExtDB2: "<server_path>\@ExileServer\extdb-conf.ini"
+##   Windows ExtDB3: "<server_path>\@ExileServer\extdb3-conf.ini"
+##   Linux ExtDB2: "<server_path>/@exileserver/extdb-conf.ini"
+##   Linux ExtDB3: "<server_path>/@exileserver/extdb3-conf.ini"
+##
+## Ignored if database_uri is set
+###
+<%= render_setting("extdb_conf_path", settings) %>
+
+###
+## ExtDB version override
+## Only set this if automatic detection fails
+## Default: Auto-detected
+###
+<%= render_setting("extdb_version", settings) %>
+
+#########################
+## Log Processing
+#########################
+
+###
+## Additional log files to search
+## Can be relative to server directory or absolute paths
+##
+## Examples:
+##   Relative: "logs/server.log" -> "<server_dir>/logs/server.log"
+##   Absolute: "/home/steam/logs/error.log" or "C:\servers\logs\rpt"
+###
+<%= render_setting("additional_logs", settings) %>
+
+###
+## How many days of logs to search
+## Logs are organized in YYYY/MM/DD folders
+##
+## Example: 7 searches the last week of logs
+## Default: 14 days
+###
+<%= render_setting("exile_logs_search_days", settings) %>
+
+#########################
+## Logging Configuration
+#########################
+
+###
+## Where to send SQF log messages
+## Options:
+##   "rpt"       - Arma 3 RPT log only
+##   "extension" - ESM extension log only
+##   "both"      - Both RPT and extension logs
+## Default: "extension"
+###
+<%= render_setting("log_output", settings) %>
+
+###
+## ESM extension log file location
+## Default: "<server_path>/@esm/log/esm.log"
+###
+<%= render_setting("logging_path", settings) %>
+
+#########################
+## Development Settings
+#########################
+##
+## WARNING: These settings are for testing and debugging only.
+## Changing them on a live server can cause issues with performance and stability.
+## Only modify if you're instructed by ESM support or if you're certain about the changes.
+##
+
+###
+## ESM server connection endpoint
+## Only modify for development/testing
+###
+<%= render_setting("connection_uri", settings) %>
+
+###
+## Log detail level
+## Options (from most to least verbose):
+##   "trace" - Everything, including low-level debugging details (very verbose)
+##   "debug" - Detailed information for debugging
+##   "info"  - General information about normal operation
+##   "warn"  - Warning messages for potentially problematic situations
+##   "error" - Only error messages and critical issues
+##
+## Default: "info"
+##
+## Note: "trace" and "debug" levels will significantly increase log file size
+###
+<%= render_setting("log_level", settings) %>

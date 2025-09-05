@@ -1,0 +1,52 @@
+.col-md-6
+  .card.bg-dark.border-warning.border-opacity-50.h-100
+    .card-body
+      / User header with avatar
+      .d-flex.align-items-center.mb-3
+        img.rounded-circle.me-3[
+          src=user.avatar_url
+          alt=user.discord_username
+          width="48"
+          height="48"
+        ]
+        h5.mb-0.text-light = user.discord_username
+
+      / Channel and server info
+      .mb-3
+        .d-flex.align-items-center.gap-2
+          span.text-info.fw-semibold
+            i.bi.bi-hash
+            = channel.name
+          span.text-muted.small
+            i.bi.bi-arrow-left.mx-1
+            |> from
+            span.badge.bg-secondary
+              = server&.server_id || "any server"
+
+      / Notification groups
+      - if (group_name, routes = territory_management_routes(all_routes)) && routes.size > 0
+        = render_route_group(group_name, routes)
+
+      - if (group_name, routes = base_combat_routes(all_routes)) && routes.size > 0
+        = render_route_group(group_name, routes)
+
+      - if (group_name, routes = economy_routes(all_routes)) && routes.size > 0
+        = render_route_group(group_name, routes)
+
+      - if (group_name, routes = custom_routes(all_routes)) && routes.size > 0
+        = render_route_group(group_name, routes)
+
+    .card-footer.bg-transparent.border-warning.border-opacity-25
+      .d-flex.gap-2.justify-content-end
+        = button_to decline_community_notification_routes_path,
+          class: "btn btn-danger",
+          method: :patch,
+          data: {turbo: false}
+          = hidden_field_tag :ids, all_routes.map(&:public_id).to_json
+          | Decline
+        = button_to accept_community_notification_routes_path,
+          class: "btn btn-success",
+          method: :patch,
+          data: {turbo: false}
+          = hidden_field_tag :ids, all_routes.map(&:public_id).to_json
+          | Accept

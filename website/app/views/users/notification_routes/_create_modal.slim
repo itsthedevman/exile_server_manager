@@ -1,0 +1,244 @@
+= render "shared/modal",
+  id: "create_route_modal",
+  class: "modal-lg",
+  data: { \
+    bs_focus: false, bs_backdrop: "static", bs_keyboard: "false",
+    controller: "route-new", route_new_presets_value: {},
+  }
+  .modal-header.border-primary.bg-primary.bg-opacity-10
+    h4.modal-title.text-primary.mb-0
+      i.bi.bi-arrow-left-right.me-2
+      | Create Notification Route
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  .modal-body
+    / Step 1: Source Selection
+    .mb-4
+      h5.fw-medium.mb-3 Where are the notifications coming from?
+
+      .row.g-3
+        .col-md-6
+          .card.border-2.selectable-card[data-route-new-target="sourceAny"]
+            .card-body.text-center.py-3
+              i.bi.bi-globe.text-info.fs-3.mb-2
+              h6.mb-1.text-info Any Server
+              small.text-muted.mb-3.d-block Route from all servers
+              button.btn.btn-outline-info.btn-sm.w-100[
+                type="button"
+                data-id="any"
+                data-action="click->route-new#onSourceCardChanged"
+              ]
+                | Select
+
+        .col-md-6
+          .card.border-2.selectable-card[data-route-new-target="sourceCustom"]
+            .card-body.text-center.py-3
+              i.bi.bi-server.text-success.fs-3.mb-2
+              h6.mb-1.text-success Specific Servers
+              small.text-muted.mb-3.d-block Choose which servers
+              button.btn.btn-outline-success.btn-sm.w-100[
+                type="button"
+                data-id="custom"
+                data-action="click->route-new#onSourceCardChanged"
+              ]
+                | Select
+
+      / Server Selection (shown when specific is selected)
+      .mt-3.d-none[data-route-new-target="sourceSelect"]
+        = label_tag "servers", class: "form-label fw-medium"
+          i.bi.bi-server.text-success.me-2
+          | Select Servers
+        = select_tag "servers",
+            [],
+            class: "form-select",
+            multiple: true,
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: server_select_data,
+              slim_select_placeholder_value: "Choose servers...",
+              slim_select_allow_deselect_value: true,
+              route_new_target: "selectedServers",
+              action: [ \
+                slim_select_stimulus_actions("route-new"),
+                "change->route-new#onSelectedServerChanged",
+              ].join(" "),
+            }
+        small.form-text.text-muted.mt-1 Select one or more servers to route notifications from
+
+    / Step 2: Notification Types
+    .mb-4
+      h5.fw-medium.mb-3 Which notification types?
+
+      .row.g-3
+        .col-md-3.col-6
+          .card.border-2.selectable-card[data-route-new-target="presetEverything"]
+            .card-body.text-center.py-3
+              i.bi.bi-bell-fill.text-primary.fs-4.mb-2
+              h6.small.mb-0.text-primary Everything
+              button.btn.btn-outline-primary.btn-sm.w-100.mt-2[
+                type="button"
+                data-id="everything"
+                data-action="click->route-new#onPresetCardChanged"
+              ]
+                | Select
+
+        .col-md-3.col-6
+          .card.border-2.selectable-card[data-route-new-target="presetRaid"]
+            .card-body.text-center.py-3
+              i.bi.bi-shield-exclamation.text-danger.fs-4.mb-2
+              h6.small.mb-0.text-danger Raids
+              button.btn.btn-outline-danger.btn-sm.w-100.mt-2[
+                type="button"
+                data-id="raid"
+                data-action="click->route-new#onPresetCardChanged"
+              ]
+                | Select
+
+        .col-md-3.col-6
+          .card.border-2.selectable-card[data-route-new-target="presetMoney"]
+            .card-body.text-center.py-3
+              i.bi.bi-currency-dollar.text-success.fs-4.mb-2
+              h6.small.mb-0.text-success Money
+              button.btn.btn-outline-success.btn-sm.w-100.mt-2[
+                type="button"
+                data-id="money"
+                data-action="click->route-new#onPresetCardChanged"
+              ]
+                | Select
+
+        .col-md-3.col-6
+          .card.border-2.selectable-card[data-route-new-target="presetCustom"]
+            .card-body.text-center.py-3
+              i.bi.bi-ui-checks.text-info.fs-4.mb-2
+              h6.small.mb-0.text-info Pick & Choose
+              button.btn.btn-outline-info.btn-sm.w-100.mt-2[
+                type="button"
+                data-id="custom"
+                data-action="click->route-new#onPresetCardChanged"
+              ]
+                | Select
+
+      / Custom Type Selection (shown when custom is selected)
+      .mt-3.d-none[data-route-new-target="typeSelect"]
+        = label_tag "notification_types", class: "form-label fw-medium"
+          i.bi.bi-list-check.text-info.me-2
+          | Select Notification Types
+        = select_tag "notification_types",
+            [],
+            class: "form-select",
+            multiple: true,
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: notification_type_select_data,
+              slim_select_placeholder_value: "Choose notification types...",
+              slim_select_allow_deselect_value: true,
+              route_new_target: "selectedTypes",
+              action: [ \
+                slim_select_stimulus_actions("route-new"),
+                "change->route-new#onTypesChanged",
+              ].join(" "),
+            }
+        small.form-text.text-muted.mt-1 Pick specific notification types to route
+
+    / Step 3: Destination
+    .mb-4
+      h5.fw-medium.mb-3 Where should notifications go?
+
+      / Community Selection
+      .mb-3
+        = label_tag "community", class: "form-label fw-medium"
+          i.bi.bi-discord.text-primary.me-2
+          | Discord Community
+        = select_tag "community",
+            [],
+            class: "form-select",
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: community_select_data,
+              slim_select_placeholder_value: "Choose a community...",
+              slim_select_allow_deselect_value: true,
+              slim_select_close_on_select_value: true,
+              route_new_target: "selectedCommunity",
+              action: [ \
+                slim_select_stimulus_actions("route-new"),
+                "change->route-new#onCommunityChanged",
+              ].join(" "),
+            }
+        small.form-text.text-muted.mt-1 Select the Discord server to route notifications to
+
+      / Channel Selection
+      .mb-3
+        = label_tag "channel", class: "form-label fw-medium"
+          i.bi.bi-hash.text-info.me-2
+          | Notification Channel
+        = select_tag "channel",
+            [],
+            class: "form-select",
+            data: { \
+              controller: "slim-select",
+              slim_select_placeholder_value: "Select a channel...",
+              slim_select_allow_deselect_value: true,
+              slim_select_close_on_select_value: true,
+              route_new_target: "selectedChannel",
+              action: [ \
+                slim_select_stimulus_actions("route-new"),
+                "change->route-new#onChannelChanged",
+              ].join(" "),
+            }
+        small.form-text.text-muted.mt-1 Choose which channel will receive the notifications
+
+    / Preview Card
+    .card.bg-secondary.bg-opacity-10.border-secondary
+      .card-header.py-2
+        h6.mb-0.text-light
+          i.bi.bi-eye.me-2
+          | Route Preview
+
+      / Empty state
+      .card-body.py-4.text-center.text-muted.d-none
+        i.bi.bi-arrow-up.me-2
+        | Configure your route above to see a preview
+
+      .card-body.py-3
+        / Inline flow visualization
+        .row.mb-3
+          .col-4
+            small.text-muted.fw-medium.d-block.mb-1 FROM
+            .d-flex.gap-2[data-route-new-target="previewSelectedServers"]
+
+          .col-1.d-flex.align-items-center
+            i.bi.bi-arrow-right.text-primary
+
+          .col
+            small.text-muted.fw-medium.d-block.mb-1 TO
+            span[data-route-new-target="previewTo"]
+
+        / Types as pills inline
+        small.text-muted.fw-medium.d-block.mb-1 TYPES:
+        .d-flex.align-items-center.gap-2.flex-wrap[data-route-new-target="previewSelectedTypes"]
+
+    / Info Alert
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.mt-4.mb-0
+      .d-flex.align-items-start
+        i.bi.bi-info-circle.text-info.me-3.mt-1
+        div
+          h6.text-info.mb-2 Approval Required
+          p.small.mb-0
+            | Once created, a community admin must approve this route before notifications start flowing. You'll be notified when your request is accepted.
+
+    = form_with url: users_notification_routes_path,
+      method: :post,
+      data: {route_new_target: "form", turbo: false},
+      class: "d-none"
+      span[data-routes-new-storage]
+
+  .modal-footer.border-top
+    .d-flex.align-items-center.justify-content-between.w-100
+      div
+      .d-flex.gap-2
+        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
+          | Cancel
+        = button_tag class: "btn btn-success ms-2",
+          data: {action: "click->route-new#onCreateClicked"}
+          i.bi.bi-plus-circle.me-2
+          | Create Route

@@ -1,0 +1,211 @@
+= render "communities/role_styles"
+= render "communities/destroy_modal"
+
+= render "communities/container", **local_assigns do
+  div[data-controller="community-edit"]
+    / Header section
+    .text-center.mb-4
+      h1.mb-2 Community Settings
+      p.lead.text-muted = "Configure #{current_community.community_name} (#{current_community.community_id})"
+
+    = turbo_frame_tag "community_edit" do
+      = form_with model: current_community,
+          url: community_path(current_community.public_id),
+          scope: :community,
+          method: :patch,
+          data: {community_edit_target: "form"} do |f|
+
+        / Community ID Section
+        .card.mb-4
+          .card-header
+            h4.mb-0
+              i.bi.bi-tag.me-2.text-info
+              | Community ID
+          .card-body
+            p.text-muted.small
+              | Your community's unique identifier for ESM commands. Players use this when referencing your community or servers.
+
+            .row
+              .col-md-6
+                = f.hidden_field :current_community_id, value: current_community.community_id
+                = f.text_field :community_id,
+                    value: current_community.community_id,
+                    class: "form-control"
+
+        / Logging Configuration Section
+        - if current_community.server_mode_enabled?
+          .card.mb-4
+            .card-header
+              h4.mb-0
+                i.bi.bi-journal-text.me-2.text-success
+                | Logging Configuration
+            .card-body
+              / Log Channel Selection
+              .mb-4
+                h5.mb-3
+                  i.bi.bi-hash.text-info.me-2
+                  | Discord Log Channel
+                p.text-muted.small.mb-3
+                  | Where server events and notifications get posted.
+
+                .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.py-2
+                  i.bi.bi-shield-exclamation.text-warning.me-2
+                  strong.text-warning Private channel recommended
+                  | - logs may contain player IPs and sensitive data
+
+                .row
+                  .col-md-8
+                    = channel_select_tag \
+                      "community[logging_channel_id]",
+                      current_community.channels,
+                      class: "form-control",
+                      selected: current_community.logging_channel_id
+
+              hr.my-3
+
+              / Log Events - Clearer descriptions
+              .mb-0
+                h5.mb-3
+                  i.bi.bi-toggles.text-info.me-2
+                  | What Gets Logged
+                p.text-muted.small.mb-3 Control the noise level in your log channel
+
+                .row.g-3
+                  .col-md-6
+                    .card.bg-dark.border-secondary.h-100
+                      .card-body
+                        .form-check.form-switch
+                          = f.check_box :log_reconnect_event, class: "form-check-input"
+                          = f.label :log_reconnect_event, class: "form-check-label fw-medium" do
+                            i.bi.bi-plug.text-success.me-2
+                            | Connection Events
+                        small.text-muted.mt-2.d-block
+                          | "Server altis is now online" messages
+                          br
+                          em.text-info Recommended: ON for monitoring uptime
+
+                  .col-md-6
+                    .card.bg-dark.border-secondary.h-100
+                      .card-body
+                        .form-check.form-switch
+                          = f.check_box :log_discord_log_event, class: "form-check-input"
+                          = f.label :log_discord_log_event, class: "form-check-label fw-medium" do
+                            i.bi.bi-terminal.text-warning.me-2
+                            | Action Logging
+                        small.text-muted.mt-2.d-block
+                          | All messages from your Arma servers
+                          br
+                          em.text-warning Warning: Can be spammy
+
+                  .col-md-6
+                    .card.bg-dark.border-secondary.h-100
+                      .card-body
+                        .form-check.form-switch
+                          = f.check_box :log_xm8_event, class: "form-check-input"
+                          = f.label :log_xm8_event, class: "form-check-label fw-medium" do
+                            i.bi.bi-bell.text-info.me-2
+                            | XM8 Delivery Receipts
+                        small.text-muted.mt-2.d-block
+                          | Confirmation when players get notifications
+                          br
+                          em.text-secondary Mostly for debugging issues
+
+        / Access Management Section
+        .card.mb-4
+          .card-header
+            h4.mb-0
+              i.bi.bi-key.me-2.text-warning
+              | Access Management
+          .card-body
+            / Territory Management
+            .mb-4
+              h5.mb-2
+                i.bi.bi-shield-check.text-info.me-2
+                | Territory Admin Roles
+              p.text-muted.small.mb-3
+                | Users with these roles will be able to run territory based commands as the owner, regardless of them being a member of that territory.
+
+              = f.select :territory_admin_ids,
+                [], {}, multiple: "",
+                data: {roles: territory_admin_roles, controller: "role-selector"}
+
+            hr.my-3
+
+            / Dashboard Access
+            .mb-0
+              h5.mb-2
+                i.bi.bi-speedometer2.text-info.me-2
+                | Dashboard Admin Roles
+              p.text-muted.small.mb-3
+                | Users with these roles will have full management access to this community's server dashboard. Useful for communities with non-admin developers.
+
+              = f.select :dashboard_access_role_ids,
+                [], {}, multiple: "",
+                data: {roles: access_roles, controller: "role-selector"}
+
+        / Welcome Message Section
+        .card.mb-4
+          .card-header.d-flex.align-items-center.justify-content-between
+            h4.mb-0
+              i.bi.bi-door-open.text-primary.me-2
+              | New Member Welcome
+
+            .form-check.form-switch
+              = f.check_box :welcome_message_enabled,
+                  class: "form-check-input",
+                  data: {action: "click->community-edit#onWelcomeMessageToggleClick"}
+              = f.label :welcome_message_enabled, class: "form-check-label"
+                span.text-muted Enable
+
+          .card-body
+            .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-3[
+              class=class_names("d-none": !f.object.welcome_message_enabled)
+              data-community-edit-target="welcomeMessageEnabled"
+            ]
+              i.bi.bi-check-circle.text-success.me-2
+              | Currently active - new Discord members will receive an automated welcome
+
+            .alert.alert-secondary.border-secondary.bg-secondary.bg-opacity-10.mb-3[
+              class=class_names("d-none": f.object.welcome_message_enabled)
+              data-community-edit-target="welcomeMessageDisabled"
+            ]
+              i.bi.bi-pause-circle.text-secondary.me-2
+              | Currently disabled - toggle above to activate
+
+            p.text-muted.small.mb-3
+              | ESM automatically greets new Discord members with:
+            ul.small.text-muted.mb-3
+              li Basic ESM commands and features
+              li Your community ID for easy reference
+              li Optional: Your custom message below
+
+            .row
+              .col
+                = f.text_area :welcome_message,
+                  class: "form-control",
+                  rows: 5,
+                  disabled: !current_community.welcome_message_enabled,
+                  placeholder: "Add a personal touch! Maybe server rules, getting started tips, or a friendly greeting...",
+                  data: {action: "input->community-edit#onWelcomeMessageInput"}
+
+                .d-flex.justify-content-between.mt-2
+                  = link_to_tab discord_markdown_docs_url, class: "text-decoration-none" do
+                    small.text-info
+                      i.bi.bi-markdown.me-1
+                      | Discord markdown supported
+                  small.text-muted
+                    span[data-community-edit-target="welcomeMessageLength"]
+                      = current_community.welcome_message.length
+                    | /1000
+
+        / Action Buttons
+        .d-flex.justify-content-between.align-items-center.pt-4.border-top
+          .d-flex.gap-3
+            button.btn.btn-danger[
+              type="button"
+              data-bs-toggle="modal"
+              data-bs-target="#destroy-community-modal"
+            ] Delete Community
+
+          .d-flex.gap-3
+            = f.submit "Save Changes", class: "btn btn-primary"

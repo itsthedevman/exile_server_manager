@@ -1,0 +1,147 @@
+@use "colors" as *;
+
+@import "vendor/bootstrap";
+@import "vendor/choices";
+@import "vendor/just_validate";
+@import "vendor/slim_select";
+@import "color_classes";
+
+$nav-offset: calc(map-get($spacers, 5) + map-get($spacers, 4));
+
+@import "dashboard";
+@import "notifications";
+@import "toast";
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-top: $nav-offset; // Push content down for fixed navbar
+}
+
+footer {
+    margin-top: auto; // Sticky footer magic
+}
+
+code {
+    background: $esm-warm-gray-800;
+    color: lighten($esm-warm-gray-100, 10%);
+
+    border: 1px solid rgba($esm-warm-gray-100, 0.3);
+    border-radius: 2px;
+
+    padding-top: 2px;
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+#main-container {
+    flex: 1; // Takes up remaining space
+    @extend .container-fluid;
+    @extend .px-0;
+
+    .window {
+        @extend .my-5;
+    }
+}
+
+.selectable-card {
+    // Map each Bootstrap color to its styling
+    @each $color, $value in $theme-colors {
+        &.selected {
+            // When the card contains a button with this color variant
+            &:has(.btn-outline-#{$color}) {
+                @extend .bg-opacity-10;
+                @extend .border-#{$color};
+                @extend .bg-#{$color};
+
+                // Convert the outline button to filled
+                .btn-outline-#{$color} {
+                    @extend .btn-#{$color};
+                }
+            }
+        }
+    }
+}
+
+.command {
+    @extend .d-inline-block;
+    @extend .font-monospace;
+
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin: 0 2px;
+    color: $esm-warm-gray-300;
+}
+
+.arg {
+    @extend .d-inline-block;
+    @extend .font-monospace;
+
+    font-weight: 600;
+    border-radius: 3px;
+    font-size: 0.95em;
+
+    padding-top: 2px;
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+.arg.identifier {
+    background: rgba($esm-ui-info, 0.15);
+    color: lighten($esm-ui-info, 25%);
+    border: 1px solid rgba($esm-ui-info, 0.3);
+}
+
+.arg.target {
+    background: rgba($esm-ui-warning, 0.15);
+    color: lighten($esm-ui-warning, 20%);
+    border: 1px solid rgba($esm-ui-warning, 0.3);
+}
+
+.arg.content {
+    background: rgba($esm-ui-success, 0.15);
+    color: lighten($esm-ui-success, 25%);
+    border: 1px solid rgba($esm-ui-success, 0.3);
+}
+
+.arg.option {
+    background: rgba($esm-ui-danger, 0.15);
+    color: lighten($esm-ui-danger, 25%);
+    border: 1px solid rgba($esm-ui-danger, 0.3);
+}
+
+.sidebar {
+    @extend .sticky-top;
+    @extend .overflow-y-auto;
+    @extend .mb-3;
+
+    max-height: calc(97vh - $nav-offset);
+
+    // Add the padding from the .window class
+    top: calc($nav-offset + map-get($spacers, 5)) !important;
+}
+
+/* Hide the icon by default */
+.anchor-link .bi-link-45deg {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Show it on hover */
+.anchor-link:hover .bi-link-45deg {
+    opacity: 1;
+}
+
+.transfer-btn:hover {
+    color: rgba(255, 255, 255, 0.75) !important;
+
+    // And if you want to make the small text lighter too:
+    small {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+}
+
+.route-row:hover .route-delete.d-none {
+    display: block !important;
+}

@@ -1,0 +1,231 @@
+= render "users/container", **local_assigns do
+  / Header section
+  .text-center.mb-4
+    h1.mb-2 My Account
+    p.lead.text-muted Manage your ESM profile and preferences
+
+  / Profile Card
+  .card.mb-4
+    .card-header
+      h4.mb-0
+        i.bi.bi-person.text-primary.me-2
+        | Profile
+
+    .card-body
+      .row.g-4
+        / Discord Profile
+        .col-md-6
+          h5.mb-3
+            i.bi.bi-discord.text-primary.me-2
+            | Discord Profile
+
+          .d-flex.align-items-start.mb-3
+            img.rounded-circle.me-3.border.border-2.border-primary[
+              src=current_user.avatar_url
+              alt=current_user.discord_username
+              width="64"
+              height="64"
+            ]
+            div.flex-fill
+              .mb-2
+                label.form-label.small.text-muted.fw-medium USERNAME
+                .text-light = current_user.discord_username
+              .mb-2
+                label.form-label.small.text-muted.fw-medium DISCORD ID
+                .text-light.font-monospace = current_user.discord_id
+
+          .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
+            h6.text-info.mb-2 Not the correct account?
+            p.small.mb-2 Please follow these steps to switch accounts:
+            ol.small.mb-0
+              li Log out by clicking your avatar in the top right
+              li Click Login at the top right
+              li On Discord's login screen, click the "Not you?" link
+
+        / Steam Profile
+        .col-md-6
+          h5.mb-3
+            i.bi.bi-steam.text-success.me-2
+            | Steam Profile
+
+          - if current_user.registered?
+            .d-flex.align-items-start.mb-3
+              - if current_user.steam_data&.avatar
+                img.rounded-circle.me-3.border.border-2.border-success[
+                  src=current_user.steam_data.avatar
+                  alt=current_user.steam_data.username
+                  width="64"
+                  height="64"
+                ]
+              - else
+                img.rounded-circle.me-3.border.border-2.border-success[
+                  src=image_url("default_steam_avatar.png")
+                  alt="Default Steam Avatar"
+                  width="64"
+                  height="64"
+                ]
+
+              div.flex-fill
+                .mb-2
+                  label.form-label.small.text-muted.fw-medium USERNAME
+                  .text-light = current_user.steam_data&.username
+                .mb-2
+                  label.form-label.small.text-muted.fw-medium STEAM UID
+                  .text-light.font-monospace
+                    = link_to current_user.steam_uid, current_user.steam_data&.profile_url, target: "_blank", class: "text-light text-decoration-none"
+
+            .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-0
+              h6.text-warning.mb-2 Danger Zone
+              p.small.mb-3 This will unlink your Steam account but keep your Discord registration
+              = link_to "Deregister", deregister_users_path,
+                class: "btn btn-danger btn-sm"
+
+          - else
+            .text-center.py-4
+              i.bi.bi-steam.display-4.text-muted.mb-3
+              h6.text-light.mb-3 Link Your Steam Account
+              p.text-muted.mb-4 Connect your Steam account to use ESM to its fullest potential
+              = button_to user_steam_omniauth_authorize_path,
+                class: "btn btn-success text-white", data: {turbo: false}
+                i.bi.bi-steam.me-2
+                | Sign in through Steam
+
+  = form_with model: current_user, url: users_path, scope: :user, method: :patch do |f|
+    / Defaults Card
+    = f.fields_for :defaults do |f|
+      .card.mb-4
+        .card-header
+          h4.mb-0
+            i.bi.bi-star.text-warning.me-2
+            | Defaults
+
+        .card-body
+          p.text-muted.small.mb-4
+            | These community and/or servers will be used if no community or server ID is provided for a command
+            small.text-muted.fst-italic.ms-1
+              | * with some exceptions
+
+          .row.g-3
+            .col-md-6
+              = f.label :community_id, "Default Community", class: "form-label fw-medium"
+              = f.select :community_id, [], {}, class: "form-select",
+                  data: { \
+                    controller: "slim-select",
+                    slim_select_placeholder_value: "Select Community",
+                    slim_select_allow_deselect_value: true,
+                    slim_select_data_value: default_community_select_data,
+                  }
+              small.text-muted.mt-1 Used when no community ID is specified
+
+            .col-md-6
+              = f.label :server_id, "Default Server", class: "form-label fw-medium"
+              = f.select :server_id, [], {}, class: "form-select",
+                  data: { \
+                    controller: "slim-select",
+                    slim_select_placeholder_value: "Select Server",
+                    slim_select_allow_deselect_value: true,
+                    slim_select_data_value: default_server_select_data,
+                  }
+              small.text-muted.mt-1 Used when no server ID is specified
+
+    / Aliases Card
+    = f.fields_for :aliases do |f|
+      = content_tag :div, nil, data: { \
+        controller: "aliases",
+        aliases_data_value: id_aliases,
+        action: [\
+          "alias-new:create->aliases#set",
+          "alias-edit:update->aliases#set",
+        ].join(" "),
+      }
+        = render "users/add_alias_modal", **local_assigns
+        = render "users/edit_alias_modal", **local_assigns
+
+        .card.mb-4
+          .card-header.d-flex.align-items-center.justify-content-between
+            h4.mb-0
+              i.bi.bi-bookmark.text-info.me-2
+              | Aliases
+              span.badge.bg-secondary.ms-2[data-aliases-target="count"]
+                = id_aliases.size
+            button.btn.btn-outline-primary.btn-sm[
+              type="button"
+              data-bs-toggle="modal"
+              data-bs-target="#add_alias_modal"
+            ]
+              i.bi.bi-plus.me-1
+              | Add Alias
+
+          .card-body
+            p.text-muted.small.mb-4
+              | Create shortcuts for frequently used communities and servers. Aliases are unique to you and can be used in place of community/server IDs.
+
+            / Aliases cards
+            / Placeholders or empty state (shown initially)
+            .d-flex.flex-column.gap-3
+              div[data-aliases-target="placeholder"]
+                - id_aliases.size.times do
+                  .card.bg-secondary.bg-opacity-10.border-secondary
+                    .card-body.d-flex.align-items-center.justify-content-between
+                      .d-flex.align-items-center.gap-3
+                        .bg-secondary.rounded.placeholder-glow style="width: 40px; height: 40px;"
+                        div
+                          .placeholder.bg-secondary style="width: 120px; height: 20px;"
+                          .placeholder.bg-secondary.mt-1 style="width: 80px; height: 16px;"
+                      .placeholder.bg-secondary style="width: 60px; height: 32px;"
+              = content_tag :div, nil, class: class_names( \
+                "text-center", "py-5",
+                "d-none" => id_aliases.size > 0 \
+              ), data: {aliases_target: "emptyState"}
+                i.bi.bi-bookmark.display-4.text-muted.mb-3.d-block
+                h5.text-muted.mb-3 No Aliases Created Yet
+                p.text-muted.mb-4
+                  | Create shortcuts for your favorite communities and servers to make commands faster and easier.
+                  br
+                  | Instead of typing long IDs, use simple names like "main" or "home"!
+                button.btn.btn-primary[
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#add_alias_modal"
+                ]
+                  i.bi.bi-plus.me-2
+                  | Create Your First Alias
+
+            / Real content (hidden initially)
+            .d-flex.flex-column.gap-3.d-none[data-aliases-target="container"]
+
+    / Save Section
+    .d-flex.justify-content-between.align-items-center.pb-4.mb-4.border-bottom
+      div
+
+      .d-flex.gap-3
+        = link_to "Cancel", edit_users_path, class: "btn btn-outline-secondary btn-lg"
+
+        = f.submit "Save All Settings", class: "btn btn-success text-white btn-lg"
+          i.bi.bi-check-circle.me-2
+          | Save All Settings
+
+  / Danger Zone Card
+  .card.border-danger.bg-danger.bg-opacity-10
+    .card-header.border-danger
+      h4.mb-0
+        i.bi.bi-exclamation-triangle.text-danger.me-2
+        | Danger Zone
+
+    .card-body
+      .d-flex.align-items-center.justify-content-between
+        div
+          h6.text-danger.mb-1 Delete Account
+          p.text-muted.mb-0 You can delete your account at any time. Logging back into our website will re-create your account.
+        button.btn.btn-danger[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#delete_modal"
+        ]
+          i.bi.bi-trash.me-2
+          | Delete Account
+
+= render "users/delete_modal"
+
+- if params[:already_registered] && session[:transferring_steam_uid]
+  = render "users/already_registered_modal"

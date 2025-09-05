@@ -1,0 +1,52 @@
+footer.border-top.border-secondary.py-5.mt-auto
+  .container
+    .row.g-4
+      .col-lg-4
+        .d-flex.align-items-center.mb-3
+          img.me-2[src="/icon.png" alt="ESM Logo" width="32" height="32"]
+          h6.mb-0.text-light Exile Server Manager
+        p.text-muted.small
+          | Connect your Arma 3 server to Discord with real-time notifications,
+          |< territory management, and admin tools.
+        p.text-muted.small.mb-0
+          |> Open source and built with
+          i.bi.bi-heart-fill.text-exile-red
+          |< for the Exile community.
+          br
+          | Version v#{ENV["MOD_VERSION"]}
+
+      .col-lg-2.col-md-6
+        h6.text-light.mb-3 Tools
+        ul.list-unstyled.small
+          li.mb-2 = link_to "Download", latest_download_path, class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "RPT Parser", rpt_parser_tools_path, class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "Server Discovery", discover_path, class: "text-muted text-decoration-none"
+
+      .col-lg-2.col-md-6
+        h6.text-light.mb-3 Source Code
+        ul.list-unstyled.small
+          li.mb-2
+            = link_to "Arma Mod", "https://github.com/itsthedevman/esm_arma", class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "Discord Bot", "https://github.com/itsthedevman/esm_bot", class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "Website", "https://github.com/itsthedevman/esm_website", class: "text-muted text-decoration-none"
+
+      .col-lg-2.col-md-6
+        h6.text-light.mb-3 Community
+        ul.list-unstyled.small
+          li.mb-2 = link_to "Invite Bot", invite_path, class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "Report Issue", join_path, class: "text-muted text-decoration-none"
+
+      .col-lg-2.col-md-6
+        h6.text-light.mb-3 Legal
+        ul.list-unstyled.small
+          li.mb-2 = link_to "Privacy Policy", privacy_policy_legal_path, class: "text-muted text-decoration-none"
+          li.mb-2 = link_to "Terms of Service", terms_of_service_legal_path, class: "text-muted text-decoration-none"
+
+    hr.border-secondary.my-4
+    .row.align-items-center
+      .col
+        p.text-muted.small.mb-0
+            | © 2018 - #{Date.current.year} Exile Server Manager
+            br
+            | Licensed under
+            =< link_to "CC BY-NC-SA 4.0", "https://creativecommons.org/licenses/by-nc-sa/4.0/", class: "text-muted"

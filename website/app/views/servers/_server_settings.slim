@@ -1,0 +1,302 @@
+/ Server Operations Card
+- if server.ui_v2?
+  .card.mb-4
+    .card-header
+      h4.mb-0
+        i.bi.bi-clock.text-info.me-2
+        | Server Operations
+        span.badge.bg-info.ms-2 NEW
+
+    .card-body
+      / Restart Configuration
+      .mb-0
+        h5.mb-3
+          i.bi.bi-arrow-clockwise.text-success.me-2
+          | Restart Schedule
+        p.text-muted.small.mb-4
+          | Configure when your server restarts. ESM uses this to calculate and display remaining time until the next restart for players.
+
+        .row.g-3
+          .col-6
+            label.form-label.fw-medium Restart Hour (24-hour format)
+            = f.number_field :server_restart_hour,
+                class: "form-control",
+                placeholder: "3",
+                min: 0,
+                max: 23,
+                value: server.server_setting&.server_restart_hour || 3
+            small.form-text.text-muted
+              | 0 = midnight, 15 = 3 PM
+
+          .col-6
+            label.form-label.fw-medium Restart Minutes
+            = f.number_field :server_restart_min,
+                class: "form-control",
+                placeholder: "0",
+                min: 0,
+                max: 59,
+                value: server.server_setting&.server_restart_min || 0
+
+/ Player Economy Card
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-currency-dollar.text-warning.me-2
+      | Player Economy
+
+  .card-body
+    / Gambling Section
+    .mb-4
+      .d-flex.align-items-center.justify-content-between.mb-3
+        h5.mb-0
+          i.bi.bi-dice-6.text-danger.me-2
+          | Gambling Configuration
+        small.text-muted
+          | Used by #{command_usage(:gamble, show_arguments: false)}
+
+      .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-4
+        h6.mb-2.text-info How Gambling Works
+        p.small.mb-2
+          | When a player wins, ESM calculates their payout using:
+          br
+          code.text-warning AmountGambled × (random(Randomizer) × Percentage + Modifier)
+        p.small.mb-0
+          strong Pro tip:
+          |< Lower win percentages with higher payouts create more exciting, riskier gameplay
+
+      / Core Gambling Settings
+      .row.g-3.mb-4
+        .col-6
+          label.form-label.fw-medium Win Chance
+          .input-group
+            = f.number_field :gambling_win_percentage,
+                class: "form-control",
+                min: 0, max: 100,
+                value: server.server_setting&.gambling_win_percentage || 35
+            span.input-group-text %
+          small.form-text.text-muted Default: 35%
+
+        - if server.ui_v2?
+          .col-6
+            .form-check.form-switch.mt-4
+              = f.check_box :gambling_locker_limit_enabled,
+                  class: "form-check-input",
+                  checked: server.server_setting&.gambling_locker_limit_enabled != false
+              = f.label :gambling_locker_limit_enabled, class: "form-check-label fw-medium" do
+                | Enforce Locker Capacity Limits
+                span.badge.bg-info.ms-2 NEW
+            small.form-text.text-muted.mt-1 Prevents gambling when player's locker is near full
+
+    / Advanced Payout Configuration
+    .border.border-secondary.rounded.p-3.bg-body-secondary.bg-opacity-25
+      .d-flex.align-items-center.justify-content-between.mb-3
+        h6.mb-0.text-light Advanced Payout Settings
+        small.text-muted Most servers can leave these as default
+
+      .row.g-3.mb-3
+        .col-6
+          label.form-label.fw-medium Base Payout
+          .input-group
+            = f.number_field :gambling_payout_base,
+                class: "form-control",
+                min: 0, max: 100,
+                value: server.server_setting&.gambling_payout_base || 95
+            span.input-group-text %
+          small.form-text.text-muted How much of the bet is returned on win
+
+        .col-6
+          label.form-label.fw-medium Payout Modifier
+          = f.number_field :gambling_modifier,
+              class: "form-control",
+              min: 0, step: 0.1,
+              value: server.server_setting&.gambling_modifier || 1
+          small.form-text.text-muted Multiplier for winnings (≥ 1 recommended)
+
+      .mb-0
+        h6.mb-2.text-light Randomizer Range
+        .row.g-2
+          .col-4
+            label.form-label.small Minimum
+            = f.number_field :gambling_payout_randomizer_min,
+                class: "form-control form-control-sm",
+                min: 0, step: 0.1,
+                value: server.server_setting&.gambling_payout_randomizer_min || 0
+          .col-4
+            label.form-label.small Middle
+            = f.number_field :gambling_payout_randomizer_mid,
+                class: "form-control form-control-sm",
+                min: 0, step: 0.1,
+                value: server.server_setting&.gambling_payout_randomizer_mid || 0.5
+          .col-4
+            label.form-label.small Maximum
+            = f.number_field :gambling_payout_randomizer_max,
+                class: "form-control form-control-sm",
+                min: 0, step: 0.1,
+                value: server.server_setting&.gambling_payout_randomizer_max || 1
+
+/ Territory Management Card
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-house.text-success.me-2
+      | Territory Management
+
+  .card-body
+    / Payment Controls
+    .mb-0
+      h5.mb-3
+        i.bi.bi-credit-card.text-info.me-2
+        | Payment Controls
+      p.text-muted.small.mb-4
+        | Configure limits and fees for territory-related payments made through Discord
+
+      .row.g-3.mb-3
+        .col-4
+          label.form-label.fw-medium Payment Limit
+          = f.number_field :max_payment_count,
+              class: "form-control",
+              min: 0,
+              value: server.server_setting&.max_payment_count || 0
+          small.form-text.text-muted 0 for unlimited payments before server join required
+
+        .col-4
+          label.form-label.fw-medium Payment Tax
+          .input-group
+            = f.number_field :territory_payment_tax,
+                class: "form-control",
+                min: 0, max: 100,
+                value: server.server_setting&.territory_payment_tax || 0
+            span.input-group-text %
+          small.form-text.text-muted Tax on #{command_usage(:pay, show_arguments: false)} command
+
+        .col-4
+          label.form-label.fw-medium Upgrade Tax
+          .input-group
+            = f.number_field :territory_upgrade_tax,
+                class: "form-control",
+                min: 0, max: 100,
+                value: server.server_setting&.territory_upgrade_tax || 0
+            span.input-group-text %
+          small.form-text.text-muted Tax on #{command_usage(:upgrade, show_arguments: false)} command
+
+/ Event Logging Card
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-journal-text.text-primary.me-2
+      | Event Logging
+
+  .card-body
+    p.text-muted.small.mb-4
+      | Choose which player actions get logged to your community's logging channel
+
+    / Administrative Actions
+    .card.bg-dark.border-secondary.mb-4
+      .card-body
+        h5.mb-3
+          i.bi.bi-shield-lock.text-warning.me-2
+          | Administrative Actions
+        .row.g-3
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_exec,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_exec != false
+              = f.label :logging_exec, class: "form-check-label fw-medium" do
+                | SQF Code Execution
+            small.text-muted.d-block.mt-1 #{command_usage(:sqf, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_modify_player,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_modify_player != false
+              = f.label :logging_modify_player, class: "form-check-label fw-medium" do
+                | Player Modifications
+            small.text-muted.d-block.mt-1 #{command_usage(:player, show_arguments: false)} command usage
+
+    / Economy Actions
+    .card.bg-dark.border-secondary.mb-4
+      .card-body
+        h5.mb-3
+          i.bi.bi-piggy-bank.text-success.me-2
+          | Economy Actions
+        .row.g-3
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_gamble,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_gamble == true
+              = f.label :logging_gamble, class: "form-check-label fw-medium" do
+                | Gambling Activity
+            small.text-muted.d-block.mt-1 #{command_usage(:gamble, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_reward_player,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_reward_player != false
+              = f.label :logging_reward_player, class: "form-check-label fw-medium" do
+                | Player Rewards
+            small.text-muted.d-block.mt-1 #{command_usage(:reward, show_arguments: false)} command usage
+
+    / Territory Actions
+    .card.bg-dark.border-secondary.mb-0
+      .card-body
+        h5.mb-3
+          i.bi.bi-people.text-info.me-2
+          | Territory Actions
+        .row.g-3
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_add_player_to_territory,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_add_player_to_territory != false
+              = f.label :logging_add_player_to_territory, class: "form-check-label fw-medium" do
+                | Add Player to Territory
+            small.text-muted.d-block.mt-1 #{command_usage(:add, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_remove_player_from_territory,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_remove_player_from_territory != false
+              = f.label :logging_remove_player_from_territory, class: "form-check-label fw-medium" do
+                | Remove Player from Territory
+            small.text-muted.d-block.mt-1 #{command_usage(:remove, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_promote_player,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_promote_player != false
+              = f.label :logging_promote_player, class: "form-check-label fw-medium" do
+                | Promote Player
+            small.text-muted.d-block.mt-1 #{command_usage(:promote, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_demote_player,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_demote_player != false
+              = f.label :logging_demote_player, class: "form-check-label fw-medium" do
+                | Demote Player
+            small.text-muted.d-block.mt-1 #{command_usage(:demote, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_pay_territory,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_pay_territory != false
+              = f.label :logging_pay_territory, class: "form-check-label fw-medium" do
+                | Territory Payments
+            small.text-muted.d-block.mt-1 #{command_usage(:pay, show_arguments: false)} command usage
+
+          .col-6
+            .form-check.form-switch
+              = f.check_box :logging_upgrade_territory,
+                  class: "form-check-input",
+                  checked: server.server_setting&.logging_upgrade_territory != false
+              = f.label :logging_upgrade_territory, class: "form-check-label fw-medium" do
+                | Territory Upgrades
+            small.text-muted.d-block.mt-1 #{command_usage(:upgrade, show_arguments: false)} command usage

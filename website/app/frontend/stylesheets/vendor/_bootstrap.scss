@@ -1,0 +1,48 @@
+$primary: $esm-ui-primary;
+$secondary: $esm-ui-secondary;
+$success: $esm-ui-success;
+$info: $esm-ui-info;
+$warning: $esm-ui-warning;
+$danger: $esm-ui-danger;
+$light: $esm-warm-gray-300;
+$dark: $esm-warm-gray-800;
+
+$white: #ffffff;
+$gray-100: $esm-warm-gray-100;
+$gray-200: $esm-warm-gray-200;
+$gray-300: $esm-warm-gray-300;
+$gray-400: $esm-warm-gray-400;
+$gray-500: $esm-warm-gray-500;
+$gray-600: $esm-warm-gray-600;
+$gray-700: $esm-warm-gray-700;
+$gray-800: $esm-warm-gray-800;
+$gray-900: $esm-warm-gray-900;
+$black: #000000;
+
+// Dark theme body/background colors
+$body-bg: $esm-warm-gray-900;
+$body-color: $esm-warm-gray-200;
+
+// Card and component backgrounds
+$card-bg: $esm-warm-gray-800;
+$modal-content-bg: $esm-warm-gray-800;
+$popover-bg: $esm-warm-gray-800;
+
+$tooltip-bg: $esm-warm-gray-700;
+$tooltip-color: $esm-warm-gray-100;
+
+// Border colors
+$border-color: $esm-warm-gray-600;
+
+// =============================================================================
+
+$border-radius: 0;
+$border-radius-sm: 0;
+$border-radius-lg: 0;
+$border-radius-xl: 0;
+$border-radius-xxl: 0;
+
+$bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
+
+@import "bootstrap/scss/bootstrap";
+@import "bootstrap-icons/font/bootstrap-icons";
