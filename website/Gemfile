@@ -42,6 +42,10 @@ group :development do
   gem "htmlbeautifier"          # HTML/ERB formatter
 end
 
+group :test do
+  gem "database_cleaner-active_record"
+end
+
 ####################################################################################################
 ## Core Infrastructure
 ####################################################################################################
@@ -110,4 +114,4 @@ gem "ostruct"                   # OpenStruct for dynamic objects
 gem "esm_ruby_core", path: "../esm_ruby_core"
 gem "everythingrb"              # Method extensions
 gem "sortsmith"                 # Sorting utilities
-gem "spec_forge"                # API testing suite
+gem "spec_forge", path: "../spec_forge"                # API testing suite

@@ -1,0 +1,88 @@
+global:
+  variables:
+    # Create some test users we can reference
+    test_user_1: factories.user
+    test_user_2: factories.user
+    test_user_3: factories.user
+
+# Batch lookup tests
+batch_lookup_users:
+  path: /users
+  method: get
+  expectations:
+  # Basic steam_uid lookup
+  - name: "Lookup by steam_uid"
+    query:
+      steam_uids:
+      - global.variables.test_user_1.steam_uid
+    expect:
+      status: 200
+      json:
+        matcher.and:
+        - matcher.have_size: 1
+        - matcher.all:
+            matcher.include:
+              steam_uid: global.variables.test_user_1.steam_uid
+              discord_id: global.variables.test_user_1.discord_id
+
+  # Basic discord_id lookup
+  - name: "Lookup by discord_id"
+    query:
+      discord_ids:
+      - global.variables.test_user_2.discord_id
+    expect:
+      status: 200
+      json:
+        matcher.and:
+        - matcher.have_size: 1
+        - matcher.all:
+            matcher.include:
+              discord_id: global.variables.test_user_2.discord_id
+              steam_uid: global.variables.test_user_2.steam_uid
+
+  # Multiple IDs at once
+  - name: "Lookup multiple users"
+    query:
+      steam_uids:
+      - global.variables.test_user_1.steam_uid
+      - global.variables.test_user_2.steam_uid
+    expect:
+      status: 200
+      json:
+        matcher.have_size: 2
+
+  # Non-existent user returns nil
+  - name: "Non-existent steam_uid returns nil discord_id"
+    query:
+      steam_uids:
+      - "7656999999999999"
+    expect:
+      status: 200
+      json:
+      - steam_uid: "7656999999999999"
+        discord_id: nil
+
+# Single user lookup tests
+show_user:
+  path: /users/{id}
+  method: get
+  expectations:
+  # Basic existing user lookup
+  - name: "Get existing user"
+    query:
+      id: global.variables.test_user_1.discord_id
+    expect:
+      status: 200
+      json:
+        discord_id: global.variables.test_user_1.discord_id
+        steam_uid: global.variables.test_user_1.steam_uid
+
+  # Non-existent user
+  - name: "Get non-existent user"
+    query:
+      id: "99999999999999999"
+    expect:
+      status: 200
+      json:
+        discord_id: "99999999999999999"
+        steam_uid: nil
