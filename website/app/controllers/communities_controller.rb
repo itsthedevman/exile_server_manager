@@ -36,13 +36,6 @@ class CommunitiesController < AuthenticatedController
     render locals: {community_roles:, territory_admin_roles:, access_roles:}
   end
 
-  def can_change_id
-    # return render json: true if params[:id] == params[:new_community_id]
-
-    # community = Community.find_by_community_id(params[:new_community_id])
-    # render json: community.nil?
-  end
-
   def update
     community_id = params.dig(:community, :community_id)
     community_id = community_id.downcase if community_id.present?
