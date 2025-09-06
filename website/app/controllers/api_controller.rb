@@ -21,13 +21,17 @@ class ApiController < ApplicationController
 
   def extract_bearer_token
     auth_header = request.headers["Authorization"]
-    return nil if auth_header.blank?
+    return if auth_header.blank?
 
     auth_header.match(/^Bearer (.+)$/i)&.captures&.first
   end
 
   def unauthorized!(message = "Unauthorized")
     raise Exceptions::UnauthorizedError, message
+  end
+
+  def bad_request!(message = "Bad request")
+    raise Exceptions::BadRequestError, message
   end
 
   def payload_too_large!(message = "Payload too large")

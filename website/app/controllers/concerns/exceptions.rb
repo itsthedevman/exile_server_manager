@@ -7,6 +7,9 @@ module Exceptions
   class UnauthorizedError < StandardError
   end
 
+  class BadRequestError < StandardError
+  end
+
   class PayloadTooLargeError < StandardError
   end
 end

@@ -7,6 +7,7 @@ module RescueHandlers
     # === RESCUE HANDLERS ===
     rescue_from Exceptions::NotFoundError, with: :render_not_found
     rescue_from Exceptions::UnauthorizedError, with: :render_unauthorized
+    rescue_from Exceptions::BadRequestError, with: :render_bad_request
     rescue_from Exceptions::PayloadTooLargeError, with: :render_payload_too_large
     rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
 
@@ -47,6 +48,18 @@ module RescueHandlers
       format.json { render json: {error: message}, status: :unauthorized }
       format.turbo_stream do
         render turbo_stream: create_error_toast(message), status: :unauthorized
+      end
+    end
+  end
+
+  def render_bad_request(exception)
+    message = exception.message || "Bad request"
+
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, alert: message) }
+      format.json { render json: {error: message}, status: :bad_request }
+      format.turbo_stream do
+        render turbo_stream: create_error_toast(message), status: :bad_request
       end
     end
   end

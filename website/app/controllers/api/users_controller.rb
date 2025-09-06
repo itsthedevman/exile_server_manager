@@ -46,7 +46,9 @@ module Api
     private
 
     def lookup_by_steam_uids(steam_uids_input)
-      steam_uids = parse_id_array(steam_uids_input)
+      steam_uids = steam_uids_input.to_a || []
+
+      bad_request! unless steam_uids.is_a?(Array)
       validate_batch_size!(steam_uids, "steam_uids")
 
       # Fetch all users in one query
@@ -65,7 +67,9 @@ module Api
     end
 
     def lookup_by_discord_ids(discord_ids_input)
-      discord_ids = parse_id_array(discord_ids_input)
+      discord_ids = discord_ids_input.to_a || []
+
+      bad_request! unless discord_ids.is_a?(Array)
       validate_batch_size!(discord_ids, "discord_ids")
 
       # Fetch all users in one query
@@ -81,12 +85,6 @@ module Api
           steam_uid: user_mapping[discord_id]
         }
       end
-    end
-
-    def parse_id_array(input)
-      return input if input.is_a?(Array)
-
-      input.to_a || []
     end
 
     def validate_batch_size!(array, field_name)
