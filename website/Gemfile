@@ -1,119 +1,113 @@
 source "https://rubygems.org"
 
-# Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
+# Core Rails framework
 gem "rails", "~> 8.0.2"
 
 ####################################################################################################
-## Groups
+## Development & Test Groups
 ####################################################################################################
 
 group :development, :test do
-  # Debugging support
+  # Interactive debugging console
   gem "pry"
   gem "pry-remote"
 
-  # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
+  # Security vulnerability scanner
   gem "brakeman", require: false
 end
 
 group :development do
-  # Use console on exceptions pages [https://github.com/rails/web-console]
-  gem "web-console"
+  # === Debugging & Profiling ===
+  gem "web-console"             # Better error pages with REPL
+  gem "rack-mini-profiler"      # Performance profiling toolbar
+  gem "benchmark-ips"           # Iterations per second benchmarking
 
-  # Deployment tools
+  # === Deployment ===
   gem "capistrano", require: false
   gem "capistrano-asdf", require: false
   gem "capistrano-bundler", require: false
   gem "capistrano-rails", require: false
   gem "capistrano-yarn", require: false
 
-  # Code formatting and linting
-  gem "ruby-lsp"
-  gem "standard"
-  gem "rubocop-performance"
-  gem "rubocop-rails"
-  gem "rubocop-rspec"
-
-  # Profiling and debugging
-  gem "rack-mini-profiler"
-  gem "htmlbeautifier"
-
-  # SSH and encryption dependencies for Capistrano
+  # SSH dependencies for Capistrano
   gem "ed25519", require: false
   gem "bcrypt_pbkdf", require: false
 
-  gem "benchmark-ips"
+  # === Code Quality & Formatting ===
+  gem "ruby-lsp"                # VS Code Ruby support
+  gem "standard"                # Ruby style guide enforcer
+  gem "rubocop-performance"     # Performance-focused cops
+  gem "rubocop-rails"           # Rails-specific cops
+  gem "rubocop-rspec"           # RSpec best practices
+  gem "htmlbeautifier"          # HTML/ERB formatter
 end
 
 ####################################################################################################
+## Core Infrastructure
+####################################################################################################
 
-# The modern asset pipeline for Rails [https://github.com/rails/propshaft]
-gem "propshaft"
+# Database
+gem "pg"                        # PostgreSQL adapter
 
-# Use postgresql as the database for Active Record
-gem "pg"
+# Web Server
+gem "puma"                      # Multi-threaded web server
+gem "thruster", require: false  # HTTP/2, caching, compression layer for Puma
 
-# Use the Puma web server [https://github.com/puma/puma]
-gem "puma"
+# Caching & Background Jobs (Solid* suite - DB-backed adapters)
+gem "solid_cache"               # Database-backed Rails.cache
+gem "solid_queue"               # Database-backed Active Job
+gem "solid_cable"               # Database-backed Action Cable
 
-# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
-gem "turbo-rails"
+# Performance
+gem "bootsnap", require: false  # Faster boot through caching
 
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-gem "stimulus-rails"
+####################################################################################################
+## Frontend & Assets
+####################################################################################################
 
-# Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
-gem "solid_cache"
-gem "solid_queue"
-gem "solid_cable"
+# Asset Pipeline
+gem "propshaft"                 # Modern asset pipeline (simpler than Sprockets)
+gem "vite_rails"                # Vite integration for JS/CSS bundling
+gem "sass-embedded"             # Dart Sass for stylesheets
 
-# Reduces boot times through caching; required in config/boot.rb
-gem "bootsnap", require: false
+# Hotwire Stack
+gem "turbo-rails"               # SPA-like navigation without the complexity
+gem "stimulus-rails"            # Modest JavaScript framework
 
-# Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
-gem "thruster", require: false
+# View Layer
+gem "slim"                      # Cleaner template syntax than ERB
+gem "view_component"            # Encapsulated, testable view components
 
-# Markdown parsing
-gem "kramdown"
-gem "kramdown-parser-gfm"
+# Content Processing
+gem "kramdown"                  # Markdown to HTML converter
+gem "kramdown-parser-gfm"       # GitHub Flavored Markdown support
 
-# Utilities and helpers
-gem "sortsmith"
-gem "everythingrb"
-gem "arel-helpers"
+####################################################################################################
+## Authentication & Authorization
+####################################################################################################
 
-# Authentication
-gem "devise"
+gem "devise"                    # Complete authentication solution
+gem "pundit"                    # Simple, robust authorization
 
-# Authorization
-gem "pundit"
-
-# Asset/Javascript compilation
-gem "vite_rails"
-
-# Slim template engine for Rails views
-gem "slim"
-
-gem "esm_ruby_core", path: "../esm_ruby_core"
-
-gem "view_component"
-
+# OAuth Providers
 gem "omniauth"
-
+gem "omniauth-rails_csrf_protection"
 gem "omniauth-discord"
-
 gem "omniauth-steam"
 
-gem "ostruct"
+####################################################################################################
+## Utilities & Custom
+####################################################################################################
 
-gem "omniauth-rails_csrf_protection"
+# External Dependencies
+gem "http"                      # Clean HTTP client
+gem "semantic"                  # Semantic versioning helper
+gem "faker"                     # Fake data generation
+gem "dotenv"                    # Environment variable management
+gem "ostruct"                   # OpenStruct for dynamic objects
 
-gem "http"
-
-gem "sass-embedded"
-
-gem "semantic"
-
-gem "faker"
-
-gem "dotenv"
+# My Libraries
+gem "esm_ruby_core", path: "../esm_ruby_core"
+gem "everythingrb"              # Method extensions
+gem "sortsmith"                 # Sorting utilities
+gem "spec_forge"                # API testing suite
