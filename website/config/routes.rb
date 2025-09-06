@@ -15,6 +15,11 @@ Rails.application.routes.draw do
     "https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline"
   end
 
+  # Legacy Redirects
+  get "/portal/server", to: redirect("/communities")
+  get "player_dashboard", to: redirect("/account")
+  get "server_dashboard", to: redirect("/communities")
+
   ##################################################################################################
 
   # /
@@ -34,6 +39,18 @@ Rails.application.routes.draw do
       collection do
         delete :destroy_many
       end
+    end
+  end
+
+  # /api
+  namespace :api do
+    # /api/v1
+    scope :v1 do
+      # /api/v1/users?discord_ids=IDS
+      match "users", to: "users#index", via: [:get, :post]
+
+      # /api/v1/users/:id
+      resources :users, only: [:show]
     end
   end
 
@@ -152,38 +169,3 @@ Rails.application.routes.draw do
   # /up
   get :up, to: "rails/health#show", as: :rails_health_check
 end
-
-# # Custom error routes
-# match "/404", to: "errors#not_found", via: :all
-# match "/500", to: "errors#internal_server_error", via: :all
-
-# # Redirects
-# get "/portal/server", to: redirect("/communities")
-# get "player_dashboard", to: redirect("/account")
-# get "server_dashboard", to: redirect("/communities")
-
-# # Auth
-# get "login", to: "index#login"
-# get "register", to: "users#register"
-# post "link/steam", to: "users#authorize_steam"
-
-# # Logs
-# get "logs/:id(/:entry_id)", to: "logs#show", as: :log
-
-# # Requires authentication routes below!
-# resources :communities, only: %i[index edit update destroy] do
-#   member do
-#     get "can_change_id"
-#   end
-# end
-
-# # API
-# namespace :api do
-#   scope :v1 do
-#     match "users", to: "users#index", via: [:get, :post] # /api/v1/users?discord_ids=IDS
-
-#     resources :users, param: :discord_id, only: [
-#       :show # /api/v1/users/:discord_id
-#     ]
-#   end
-# end

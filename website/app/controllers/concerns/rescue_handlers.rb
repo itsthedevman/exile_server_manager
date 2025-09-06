@@ -6,6 +6,8 @@ module RescueHandlers
   included do
     # === RESCUE HANDLERS ===
     rescue_from Exceptions::NotFoundError, with: :render_not_found
+    rescue_from Exceptions::UnauthorizedError, with: :render_unauthorized
+    rescue_from Exceptions::PayloadTooLargeError, with: :render_payload_too_large
     rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
 
     # Validation failures with save!/create!/update!
@@ -33,6 +35,30 @@ module RescueHandlers
       format.turbo_stream do
         render turbo_stream: create_error_toast("The requested item was not found"),
           status: :not_found
+      end
+    end
+  end
+
+  def render_unauthorized(exception = nil)
+    message = exception&.message || "Unauthorized"
+
+    respond_to do |format|
+      format.html { redirect_to login_path, alert: message }
+      format.json { render json: {error: message}, status: :unauthorized }
+      format.turbo_stream do
+        render turbo_stream: create_error_toast(message), status: :unauthorized
+      end
+    end
+  end
+
+  def render_payload_too_large(exception)
+    message = exception.message || "Request payload too large"
+
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, alert: message) }
+      format.json { render json: {error: message}, status: :payload_too_large }
+      format.turbo_stream do
+        render turbo_stream: create_error_toast(message), status: :payload_too_large
       end
     end
   end
