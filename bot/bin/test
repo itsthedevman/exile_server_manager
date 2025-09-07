@@ -84,7 +84,7 @@ run_suite() {
 # Recursive function to walk directories and run specs
 walk_and_run() {
     local dir="$1"
-    local relative_path="${2:-}"
+    local relative_path="${2:-spec}"
 
     # Check if we've been interrupted
     if [ "$INTERRUPTED" = true ]; then
@@ -92,7 +92,7 @@ walk_and_run() {
     fi
 
     # Build the display name
-    local display_name="${relative_path:-spec}"
+    local display_name="${relative_path}"
 
     # Check if this directory has any spec files directly in it
     local has_direct_specs=false
