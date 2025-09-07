@@ -6,7 +6,7 @@ FactoryBot.define do
     # association :source_server, factory: :server # The server requires a community
     association :user
 
-    uuid { SecureRandom.uuid }
+    public_id { SecureRandom.uuid }
     source_server_id { nil }
     notification_type { "base-raid" }
     enabled { true }
