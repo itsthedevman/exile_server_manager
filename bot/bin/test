@@ -1,7 +1,189 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-readonly args=("$@")
+# Trap ctrl-c to exit cleanly
+trap "echo -e '\n${RED}Test suite interrupted by user${NC}'; exit 130" INT SIGTERM
 
-ESM_ENV=test bundle exec rspec spec "${args[@]}"
+# Store all arguments to pass to rspec
+RSPEC_ARGS="$@"
+
+# Arrays to track results
+declare -a FAILED_SUITES=()
+declare -a PASSED_SUITES=()
+TOTAL_FAILURES=0
+TOTAL_PASSES=0
+
+# Function to run a test suite
+run_suite() {
+    local suite_path="$1"
+    local suite_name="$2"
+
+    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}Running: ${NC}${suite_name}"
+    echo -e "${BLUE}Path: ${NC}${suite_path}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+
+    # Run rspec with the provided arguments
+    bin/rspec ${suite_path} ${RSPEC_ARGS} &
+    CURRENT_PID=$!
+    wait $CURRENT_PID
+    local exit_code=$?
+    CURRENT_PID=""
+
+    # Check if we were interrupted
+    if [ "$INTERRUPTED" = true ]; then
+        echo -e "${YELLOW}Suite interrupted: ${suite_name}${NC}"
+        FAILED_SUITES+=("${suite_name} (interrupted)")
+        ((TOTAL_FAILURES++))
+        return 0
+    fi
+
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✓ ${suite_name} passed${NC}"
+        PASSED_SUITES+=("${suite_name}")
+        ((TOTAL_PASSES++))
+    else
+        echo -e "${RED}✗ ${suite_name} failed (exit code: ${exit_code})${NC}"
+        FAILED_SUITES+=("${suite_name} (exit: ${exit_code})")
+        ((TOTAL_FAILURES++))
+    fi
+
+    return 0  # Always return 0 to continue running
+}
+
+# Function to find and run specs in subdirectories
+run_subdirectory_specs() {
+    local base_dir="$1"
+    local parent_name="$2"
+
+    # First run any *_spec.rb files directly in this directory
+    if ls ${base_dir}/*_spec.rb 2>/dev/null | grep -q .; then
+        run_suite "${base_dir}/*_spec.rb" "${parent_name} (root specs)"
+    fi
+
+    # Then run specs in each subdirectory
+    for dir in ${base_dir}/*/; do
+        if [ -d "$dir" ]; then
+            local dir_name=$(basename "$dir")
+
+            # Check if directory has any spec files (recursively)
+            if find "$dir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
+                run_suite "${dir}" "${parent_name}/${dir_name}"
+            fi
+        fi
+    done
+}
+
+echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║                ESM Test Suite Runner                 ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
+
+if [ -n "$RSPEC_ARGS" ]; then
+    echo -e "${YELLOW}Additional RSpec arguments: ${NC}${RSPEC_ARGS}"
+fi
+
+# Start timer
+START_TIME=$(date +%s)
+
+# Run @esm specs
+if [ -d "spec/@esm" ]; then
+    run_suite "spec/@esm" "@esm"
+fi
+
+# Run top-level esm specs
+if ls spec/esm/*_spec.rb 2>/dev/null | grep -q .; then
+    run_suite "spec/esm/*_spec.rb" "esm (root)"
+fi
+
+# Run command specs
+if [ -d "spec/esm/command" ]; then
+    # Base command specs
+    if [ -d "spec/esm/command/base" ]; then
+        run_suite "spec/esm/command/base" "esm/command/base"
+    fi
+
+    # Root command specs
+    if ls spec/esm/command/*_spec.rb 2>/dev/null | grep -q .; then
+        run_suite "spec/esm/command/*_spec.rb" "esm/command (root)"
+    fi
+
+    # Command subdirectories
+    for dir in spec/esm/command/*/; do
+        if [ -d "$dir" ] && [ "$(basename "$dir")" != "base" ]; then
+            dir_name=$(basename "$dir")
+            run_suite "${dir}" "esm/command/${dir_name}"
+        fi
+    done
+fi
+
+# Run other esm subdirectory specs
+for dir in spec/esm/*/; do
+    if [ -d "$dir" ]; then
+        dir_name=$(basename "$dir")
+        # Skip command directory as we handled it separately
+        if [ "$dir_name" != "command" ]; then
+            # Check if it has subdirectories with specs or direct specs
+            if find "$dir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
+                # Check if it has subdirectories
+                if find "$dir" -mindepth 1 -type d 2>/dev/null | grep -q .; then
+                    # Has subdirectories, process them separately
+                    run_subdirectory_specs "$dir" "esm/${dir_name}"
+                else
+                    # No subdirectories, just run the directory
+                    run_suite "${dir}" "esm/${dir_name}"
+                fi
+            fi
+        fi
+    fi
+done
+
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+# Print summary
+echo -e "\n${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║                    TEST SUMMARY                      ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}\n"
+
+if [ "$INTERRUPTED" = true ]; then
+    echo -e "${YELLOW}⚠️  Test run was interrupted by user${NC}\n"
+fi
+
+echo -e "${BLUE}Total time: ${MINUTES}m ${SECONDS}s${NC}"
+echo -e "${GREEN}Passed suites: ${TOTAL_PASSES}${NC}"
+echo -e "${RED}Failed suites: ${TOTAL_FAILURES}${NC}\n"
+
+if [ ${#PASSED_SUITES[@]} -gt 0 ]; then
+    echo -e "${GREEN}✓ Passed:${NC}"
+    for suite in "${PASSED_SUITES[@]}"; do
+        echo -e "  ${GREEN}• ${suite}${NC}"
+    done
+    echo ""
+fi
+
+if [ ${#FAILED_SUITES[@]} -gt 0 ]; then
+    echo -e "${RED}✗ Failed:${NC}"
+    for suite in "${FAILED_SUITES[@]}"; do
+        echo -e "  ${RED}• ${suite}${NC}"
+    done
+    echo ""
+
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║         ⚠️  SOME TEST SUITES FAILED  ⚠️              ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
+    exit 1
+else
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║         ✅  ALL TEST SUITES PASSED!  ✅              ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
+    exit 0
+fi
