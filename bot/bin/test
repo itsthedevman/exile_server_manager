@@ -7,11 +7,30 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Trap ctrl-c to exit cleanly
-trap "echo -e '\n${RED}Test suite interrupted by user${NC}'; exit 130" INT SIGTERM
+# Flag to track if we should stop running more tests
+INTERRUPTED=false
+CURRENT_PID=""
+
+# Trap ctrl-c to stop current test and skip remaining ones
+trap 'handle_interrupt' INT SIGTERM
+
+handle_interrupt() {
+    echo -e "\n${YELLOW}Interrupting test run... Stopping current suite${NC}"
+    INTERRUPTED=true
+    # Kill the current rspec process if it exists
+    if [ -n "$CURRENT_PID" ] && kill -0 "$CURRENT_PID" 2>/dev/null; then
+        kill -TERM "$CURRENT_PID" 2>/dev/null
+        wait "$CURRENT_PID" 2>/dev/null
+    fi
+}
 
 # Store all arguments to pass to rspec
 RSPEC_ARGS="$@"
+
+# Check if --format was provided, if not use progress format
+if [[ ! " $RSPEC_ARGS " =~ " --format" ]]; then
+    RSPEC_ARGS="--format=progress $RSPEC_ARGS"
+fi
 
 # Arrays to track results
 declare -a FAILED_SUITES=()
@@ -21,6 +40,11 @@ TOTAL_PASSES=0
 
 # Function to run a test suite
 run_suite() {
+    # Check if we've been interrupted
+    if [ "$INTERRUPTED" = true ]; then
+        return 0
+    fi
+
     local suite_path="$1"
     local suite_name="$2"
 
@@ -57,91 +81,72 @@ run_suite() {
     return 0  # Always return 0 to continue running
 }
 
-# Function to find and run specs in subdirectories
-run_subdirectory_specs() {
-    local base_dir="$1"
-    local parent_name="$2"
+# Recursive function to walk directories and run specs
+walk_and_run() {
+    local dir="$1"
+    local relative_path="${2:-}"
 
-    # First run any *_spec.rb files directly in this directory
-    if ls ${base_dir}/*_spec.rb 2>/dev/null | grep -q .; then
-        run_suite "${base_dir}/*_spec.rb" "${parent_name} (root specs)"
+    # Check if we've been interrupted
+    if [ "$INTERRUPTED" = true ]; then
+        return 0
     fi
 
-    # Then run specs in each subdirectory
-    for dir in ${base_dir}/*/; do
-        if [ -d "$dir" ]; then
-            local dir_name=$(basename "$dir")
+    # Build the display name
+    local display_name="${relative_path:-spec}"
 
-            # Check if directory has any spec files (recursively)
-            if find "$dir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
-                run_suite "${dir}" "${parent_name}/${dir_name}"
+    # Check if this directory has any spec files directly in it
+    local has_direct_specs=false
+    if ls "${dir}"/*_spec.rb 2>/dev/null | grep -q .; then
+        has_direct_specs=true
+    fi
+
+    # Check if this directory has subdirectories
+    local has_subdirs=false
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            has_subdirs=true
+            break
+        fi
+    done
+
+    # If it has direct specs but no subdirs, run the whole directory
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = false ]; then
+        run_suite "${dir}" "${display_name}"
+        return 0
+    fi
+
+    # If it has direct specs and subdirs, run the direct specs first
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = true ]; then
+        run_suite "${dir}/*_spec.rb" "${display_name} (root)"
+    fi
+
+    # Now walk through subdirectories
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            local subdir_name=$(basename "$subdir")
+            local new_path="${relative_path:+${relative_path}/}${subdir_name}"
+
+            # Check if this subdirectory contains any specs (recursively)
+            if find "$subdir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
+                walk_and_run "$subdir" "$new_path"
             fi
         fi
     done
 }
 
 echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
-echo -e "${YELLOW}║                ESM Test Suite Runner                 ║${NC}"
+echo -e "${YELLOW}║              ESM Test Suite Runner                   ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
 
 if [ -n "$RSPEC_ARGS" ]; then
-    echo -e "${YELLOW}Additional RSpec arguments: ${NC}${RSPEC_ARGS}"
+    echo -e "${YELLOW}RSpec arguments: ${NC}${RSPEC_ARGS}"
 fi
 
 # Start timer
 START_TIME=$(date +%s)
 
-# Run @esm specs
-if [ -d "spec/@esm" ]; then
-    run_suite "spec/@esm" "@esm"
-fi
-
-# Run top-level esm specs
-if ls spec/esm/*_spec.rb 2>/dev/null | grep -q .; then
-    run_suite "spec/esm/*_spec.rb" "esm (root)"
-fi
-
-# Run command specs
-if [ -d "spec/esm/command" ]; then
-    # Base command specs
-    if [ -d "spec/esm/command/base" ]; then
-        run_suite "spec/esm/command/base" "esm/command/base"
-    fi
-
-    # Root command specs
-    if ls spec/esm/command/*_spec.rb 2>/dev/null | grep -q .; then
-        run_suite "spec/esm/command/*_spec.rb" "esm/command (root)"
-    fi
-
-    # Command subdirectories
-    for dir in spec/esm/command/*/; do
-        if [ -d "$dir" ] && [ "$(basename "$dir")" != "base" ]; then
-            dir_name=$(basename "$dir")
-            run_suite "${dir}" "esm/command/${dir_name}"
-        fi
-    done
-fi
-
-# Run other esm subdirectory specs
-for dir in spec/esm/*/; do
-    if [ -d "$dir" ]; then
-        dir_name=$(basename "$dir")
-        # Skip command directory as we handled it separately
-        if [ "$dir_name" != "command" ]; then
-            # Check if it has subdirectories with specs or direct specs
-            if find "$dir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
-                # Check if it has subdirectories
-                if find "$dir" -mindepth 1 -type d 2>/dev/null | grep -q .; then
-                    # Has subdirectories, process them separately
-                    run_subdirectory_specs "$dir" "esm/${dir_name}"
-                else
-                    # No subdirectories, just run the directory
-                    run_suite "${dir}" "esm/${dir_name}"
-                fi
-            fi
-        fi
-    fi
-done
+# Walk through the entire spec directory
+walk_and_run "spec"
 
 # Calculate elapsed time
 END_TIME=$(date +%s)
