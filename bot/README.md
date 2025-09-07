@@ -1,10 +1,13 @@
-# Exile Server Manager (ESM)
+<p align="center">
+	<img src="esm.svg" alt="ESM Logo" width="100" height="100">
+</p>
+<h1 align="center">Exile Server Manager (ESM)</h1>
 
 <p align="center">
 	<a href="https://www.ruby-lang.org/en/">
-		<img src="https://img.shields.io/badge/Ruby-v3.2.2-green.svg" alt="ruby version">
+		<img src="https://img.shields.io/badge/Ruby-v3.3.3-green.svg" alt="ruby version">
 	</a>
-	<a href="https://www.esmbot.com/releases">
+	<a href="https://www.esmbot.com/">
 		<img src="https://img.shields.io/badge/ESM-v2.4.0-blue.svg" alt="esm version">
 	</a>
 </p>
