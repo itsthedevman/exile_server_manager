@@ -139,6 +139,24 @@ class ServersController < AuthenticatedController
     send_data(config, filename: "config.yml")
   end
 
+  def available
+    # When we're validating the provided server ID, we need to make sure validation passes
+    # if the ID hasn't been changed.
+    if params[:server_id]
+      server = current_community.servers.select(:server_id).find_by(public_id: params[:server_id])
+      not_found! if server.nil?
+
+      if server.local_id == params[:id]
+        render json: {available: true}
+        return
+      end
+    end
+
+    exists = current_community.servers.with_local_id(params[:id]).exists?
+
+    render json: {available: !exists}
+  end
+
   private
 
   def find_server

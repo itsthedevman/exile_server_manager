@@ -72,12 +72,17 @@ Rails.application.routes.draw do
 
     # /communities/:community_id/servers
     resources :servers, param: :server_id do
+      collection do
+        get :available
+      end
+
       member do
         get :key # V1
         get :server_config
         get :server_token
         patch :disable_v2
         patch :enable_v2
+        get :available
       end
     end
 

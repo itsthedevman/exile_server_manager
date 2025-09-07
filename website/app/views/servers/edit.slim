@@ -58,7 +58,8 @@
   = render "servers/destroy_modal", **local_assigns
 
   = content_tag :div, data: { controller: "server-edit",
-    server_edit_ids_value: existing_server_ids,
+    server_edit_server_id_check_path_value: \
+      available_community_server_path(current_community, server),
     server_mods_mods_value: existing_server_mods,
   }
     = form_with model: [current_community, server],
