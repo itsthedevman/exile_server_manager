@@ -32,8 +32,9 @@ module ESM
     # VALIDATIONS
     # =============================================================================
 
-    validates :value, presence: true, length: {in: 1..64}
-    validate :value_unique_within_scope
+    validates :value, uniqueness: {scope: [:user_id, :server_id]}
+    validates :value, uniqueness: {scope: [:user_id, :community_id]}
+    validates :value, length: {minimum: 1, maximum: 64}
 
     # =============================================================================
     # CALLBACKS
