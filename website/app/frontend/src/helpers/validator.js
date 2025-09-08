@@ -294,7 +294,10 @@ class Validator {
         } else {
           // Turbo form - flag it and use requestSubmit
           this.isSubmitting = true;
-          this.form.requestSubmit();
+
+          setTimeout(() => {
+            this.form.requestSubmit();
+          }, 0);
         }
       }
     } else {
