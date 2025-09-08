@@ -80,7 +80,14 @@ class ServersController < AuthenticatedController
     # Cause the server to reconnect
     ESM.bot.update_server(server.id) if server.server_setting.server_needs_restarted?
 
-    render turbo_stream: create_success_toast("Server #{server.server_id} has been updated")
+    render turbo_stream: [
+      turbo_stream.replace(
+        "nav_servers_list",
+        partial: "communities/nav_servers_list",
+        locals: {current_community: current_community.reload, server:}
+      ),
+      create_success_toast("Server #{server.server_id} has been updated")
+    ]
   end
 
   def destroy
