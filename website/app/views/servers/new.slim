@@ -109,8 +109,7 @@
                     = "#{current_community.community_id}_"
                   = f.text_field :server_id,
                       class: "form-control border-secondary",
-                      placeholder: "altis",
-                      required: true
+                      placeholder: "altis"
                 .form-text.text-muted.mt-1
                   i.bi.bi-lightbulb.me-1
                   | Keep it short and memorable! Players will type this in commands.
@@ -130,8 +129,7 @@
                   |< Server IP Address
                 = f.text_field :server_ip,
                     class: "form-control",
-                    placeholder: "123.123.123.123",
-                    required: true
+                    placeholder: "123.123.123.123"
                 .form-text.text-muted Your server's public IP address
 
               .col-md-4
@@ -142,8 +140,7 @@
                     class: "form-control",
                     placeholder: "2302",
                     min: 1,
-                    max: 65535,
-                    required: true
+                    max: 65535
                 .form-text.text-muted Default: 2302
 
           hr.my-4
