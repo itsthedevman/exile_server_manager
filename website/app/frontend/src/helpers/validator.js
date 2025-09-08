@@ -1,13 +1,15 @@
 import $ from "cash-dom";
 import * as R from "ramda";
-import debounce from "lodash/debounce";
+import { debounce } from "lodash";
 import axios from "axios";
 
-class Validator {
+export default class Validator {
   constructor(form, options = {}) {
     this.form = $(form)[0];
     this.fields = [];
     this.errors = {};
+    this.validationCache = new Map();
+
     this.options = {
       errorClass: "is-invalid",
       successClass: "is-valid",
@@ -17,413 +19,77 @@ class Validator {
       validateOnInput: true,
       ...options,
     };
+
     this.callbacks = {
       onSuccess: [],
       onFail: [],
     };
 
-    // Cache for async validations
-    this.validationCache = new Map();
+    this.isSubmitting = false;
 
-    this.init();
+    this.#initialize();
   }
 
-  init() {
-    if (this.form) {
-      // Track if we're programmatically submitting after validation
-      this.isSubmitting = false;
-
-      // Prevent form submission and validate instead
-      $(this.form).on("submit", async (e) => {
-        // If this is our programmatic submission, let it through
-        if (this.isSubmitting) {
-          this.isSubmitting = false; // Reset for next time
-          return;
-        }
-
-        e.preventDefault();
-        await this.validate();
-      });
-    }
-  }
-
-  // Helper to detect if element is using Slim Select
-  isSlimSelect(el) {
-    // Check if the element has been initialized with Slim Select
-    // Slim Select adds a data attribute and hides the original select
-    return (
-      el &&
-      el.tagName === "SELECT" &&
-      (el.style.display === "none" || $(el).hasClass("ss-hide")) &&
-      $(el).siblings(".ss-main").length > 0
-    );
-  }
-
-  // Get the Slim Select container for a select element
-  getSlimSelectContainer(el) {
-    return $(el).siblings(".ss-main")[0];
-  }
+  //////////////////////////////////////////////////////////////////////////////
+  // Public API
+  //////////////////////////////////////////////////////////////////////////////
 
   addField(selector, rules = []) {
-    const field = {
-      selector,
-      rules,
-      validated: false,
-      touched: false, // Track if user has interacted with the field
-    };
-
+    const field = { selector, rules, validated: false, touched: false };
     this.fields.push(field);
 
-    const el = $(field.selector)[0];
-    if (el) {
-      // Add real-time validation with async support
-      if (this.options.validateOnBlur) {
-        // For Slim Select, we need to handle blur differently
-        if (this.isSlimSelect(el)) {
-          const container = this.getSlimSelectContainer(el);
+    const el = $(selector)[0];
+    if (!el) return this;
 
-          if (container) {
-            $(container).on("blur", async () => {
-              field.touched = true;
-              await this.validateField(field);
-            });
-          }
-        } else {
-          $(el).on("blur", async () => {
-            field.touched = true;
-            await this.validateField(field);
-          });
-        }
-      }
-
-      if (this.options.validateOnInput) {
-        $(el).on(
-          "input",
-          debounce(async () => {
-            field.touched = true;
-            await this.validateField(field);
-          }, 300)
-        );
-      }
-    }
-
+    this.#bindFieldEvents(field, el);
     return this;
-  }
-
-  async validateField(field, forceValidation = false) {
-    const el = $(field.selector)[0];
-    if (!el) return true;
-
-    // Don't show errors until field has been touched (unless forced during form submission)
-    if (!field.touched && !forceValidation) {
-      return true;
-    }
-
-    const value = el.value;
-
-    // Clear previous errors for this field
-    this.clearFieldError(field.selector);
-
-    // Process rules in order - FAST FAIL on first error
-    for (const ruleObj of field.rules) {
-      let valid = true;
-      let errorMsg = ruleObj.errorMessage || "Invalid value";
-
-      try {
-        if (ruleObj.rule === "required") {
-          valid = R.trim(value) !== "";
-          errorMsg = ruleObj.errorMessage || "This field is required";
-        } else if (ruleObj.rule === "minLength") {
-          valid = value.length >= ruleObj.value;
-          errorMsg =
-            ruleObj.errorMessage || `Minimum length is ${ruleObj.value}`;
-        } else if (ruleObj.rule === "maxLength") {
-          valid = value.length <= ruleObj.value;
-          errorMsg =
-            ruleObj.errorMessage || `Maximum length is ${ruleObj.value}`;
-        } else if (ruleObj.rule === "customRegexp") {
-          valid = ruleObj.value.test(value);
-          errorMsg = ruleObj.errorMessage || "Invalid format";
-        } else if (ruleObj.rule === "ajax") {
-          // Check cache first if caching is enabled
-          const cacheKey = ruleObj.cache
-            ? `${field.selector}-ajax-${value}`
-            : null;
-
-          if (cacheKey && this.validationCache.has(cacheKey)) {
-            valid = this.validationCache.get(cacheKey);
-          } else {
-            valid = await this.performAjaxValidation(value, ruleObj);
-
-            // Cache the result if caching is enabled
-            if (cacheKey) {
-              this.validationCache.set(cacheKey, valid);
-            }
-          }
-
-          errorMsg = ruleObj.errorMessage || "Validation failed";
-        } else if (typeof ruleObj.validator === "function") {
-          // Check cache for custom validators if caching is enabled
-          const cacheKey = ruleObj.cache
-            ? `${field.selector}-custom-${value}`
-            : null;
-
-          if (cacheKey && this.validationCache.has(cacheKey)) {
-            valid = this.validationCache.get(cacheKey);
-          } else {
-            // Support both sync and async validators
-            const result = ruleObj.validator(value, el);
-            valid = await Promise.resolve(result);
-
-            // Cache the result if caching is enabled
-            if (cacheKey) {
-              this.validationCache.set(cacheKey, valid);
-            }
-          }
-        }
-      } catch (e) {
-        valid = false;
-        errorMsg = e.message || errorMsg;
-      }
-
-      // FAST FAIL - stop on first rule error
-      if (!valid) {
-        this.showFieldError(field.selector, errorMsg);
-        field.validated = false;
-        return false;
-      }
-    }
-
-    // All rules passed for this field
-    this.showFieldSuccess(field.selector);
-    field.validated = true;
-    return true;
-  }
-
-  async performAjaxValidation(value, rule) {
-    try {
-      const config = {
-        url: rule.url,
-        method: rule.method || "GET",
-        ...rule.config, // Allow custom axios config
-      };
-
-      // Handle params based on method
-      if (config.method.toUpperCase() === "GET") {
-        config.params = rule.params ? rule.params(value) : { value };
-      } else {
-        config.data = rule.data ? rule.data(value) : { value };
-      }
-
-      const response = await axios(config);
-
-      // Allow custom response handler or default to checking response.data
-      if (rule.responseHandler) {
-        return rule.responseHandler(response);
-      }
-
-      return response.data === true || response.data.valid === true;
-    } catch (error) {
-      console.error("AJAX validation failed:", error);
-      return false;
-    }
   }
 
   async validate() {
     this.errors = {};
-    let isValid = true;
-    let firstErrorField = null;
 
-    // Validate all fields - STOP on first field with an error
-    for (const field of this.fields) {
-      const fieldValid = await this.validateField(field, true); // Force validation
-      if (!fieldValid) {
-        isValid = false;
-        firstErrorField = field; // Track the first field with an error
-        break; // STOP HERE - don't validate remaining fields
-      }
-    }
+    // Use Ramda to process fields until we find an invalid one
+    const validateField = async (field) => {
+      const isValid = await this.#validateField(field, true);
+      if (!isValid) throw field; // Use throw to break early
+      return field;
+    };
 
-    // If validation failed, scroll to the first error
-    if (!isValid && firstErrorField) {
-      const el = $(firstErrorField.selector)[0];
-      if (el) {
-        // Get the element to scroll to (handle SlimSelect)
-        let scrollTarget = el;
-        if (this.isSlimSelect(el)) {
-          const container = this.getSlimSelectContainer(el);
-          if (container) {
-            scrollTarget = container;
-          }
-        }
+    try {
+      await R.pipe(R.map(validateField), (promises) => Promise.all(promises))(
+        this.fields
+      );
 
-        // Scroll to the element with some offset from top
-        const offset = 400;
-        const elementPosition =
-          scrollTarget.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - offset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        // Optional: Try to focus the field after scrolling
-        setTimeout(() => {
-          if (!this.isSlimSelect(el) && el.focus) {
-            el.focus();
-          }
-        }, 500); // Wait for scroll animation to finish
-      }
-    }
-
-    // Execute callbacks
-    if (isValid) {
-      this.callbacks.onSuccess.forEach((cb) => cb());
-      // If no onSuccess callbacks and we have a form, submit it
-      if (this.callbacks.onSuccess.length === 0 && this.form) {
-        // Check if form has Turbo disabled
-        const turboDisabled =
-          this.form.dataset.turbo === "false" ||
-          this.form.dataset.turbo === false ||
-          this.form.getAttribute("data-turbo") === "false";
-
-        if (turboDisabled) {
-          // Non-Turbo form - use regular submit (doesn't trigger events)
-          this.form.submit();
-        } else {
-          // Turbo form - flag it and use requestSubmit
-          this.isSubmitting = true;
-
-          setTimeout(() => {
-            this.form.requestSubmit();
-          }, 0);
-        }
-      }
-    } else {
-      this.callbacks.onFail.forEach((cb) => cb());
-    }
-
-    return isValid;
-  }
-
-  showFieldError(selector, message) {
-    const el = $(selector)[0];
-    if (!el) return;
-
-    // Check if this is a Slim Select element
-    if (this.isSlimSelect(el)) {
-      const container = this.getSlimSelectContainer(el);
-
-      if (container) {
-        // Apply error styling to the Slim Select container
-        $(container)
-          .removeClass(this.options.successClass)
-          .addClass("is-invalid");
-
-        // Find or create error element after the Slim Select container
-        let errorEl = $(container).siblings(".invalid-feedback")[0];
-
-        if (!errorEl) {
-          // Create new error element after the Slim Select container
-          errorEl = $(`<div class="invalid-feedback d-block"></div>`)[0];
-          $(container).after(errorEl);
-        }
-
-        $(errorEl).text(message).show();
-      }
-    } else {
-      // Regular input handling
-      $(el).removeClass(this.options.successClass).addClass("is-invalid");
-
-      // Find or create error element
-      let errorEl = $(el).siblings(".invalid-feedback")[0];
-      if (!errorEl) {
-        // Look for existing invalid-feedback in parent (for input groups)
-        errorEl = $(el).parent().find(".invalid-feedback")[0];
-      }
-
-      if (!errorEl) {
-        // Create new error element
-        errorEl = $(`<div class="invalid-feedback"></div>`)[0];
-        $(el).after(errorEl);
-      }
-
-      $(errorEl).text(message).show();
-    }
-  }
-
-  showFieldSuccess(selector) {
-    const el = $(selector)[0];
-    if (!el) return;
-
-    // Check if this is a Slim Select element
-    if (this.isSlimSelect(el)) {
-      const container = this.getSlimSelectContainer(el);
-
-      if (container) {
-        // Remove error styling from the Slim Select container
-        $(container).removeClass("is-invalid");
-
-        // Make sure to hide ALL error messages (siblings and in parent)
-        $(container).siblings(".invalid-feedback").remove();
-        $(container).parent().find(".invalid-feedback").remove();
-      }
-    } else {
-      // Regular input handling - just remove error styling
-      $(el).removeClass("is-invalid");
-
-      // Hide error message
-      $(el).siblings(".invalid-feedback").hide();
-      $(el).parent().find(".invalid-feedback").hide();
-    }
-  }
-
-  clearFieldError(selector) {
-    const el = $(selector)[0];
-    if (!el) return;
-
-    // Check if this is a Slim Select element
-    if (this.isSlimSelect(el)) {
-      const container = this.getSlimSelectContainer(el);
-      if (container) {
-        $(container).removeClass("is-invalid");
-        // Remove all error feedback elements
-        $(container).siblings(".invalid-feedback").remove();
-        $(container).parent().find(".invalid-feedback").remove();
-      }
-    } else {
-      // Regular input handling
-      $(el).removeClass("is-invalid");
-      $(el).siblings(".invalid-feedback").hide();
-      $(el).parent().find(".invalid-feedback").hide();
+      // All fields valid
+      this.#executeCallbacks("onSuccess");
+      this.#handleFormSubmission();
+      return true;
+    } catch (firstErrorField) {
+      // First invalid field found
+      this.#scrollToError(firstErrorField);
+      this.#executeCallbacks("onFail");
+      return false;
     }
   }
 
   clearAllErrors() {
-    // Clear all field errors and reset validation state
-    this.fields.forEach((field) => {
-      this.clearFieldError(field.selector);
+    R.forEach((field) => {
+      this.#clearFieldError(field.selector);
       field.validated = false;
-      field.touched = false; // Also reset touched state
-    });
+      field.touched = false;
+    })(this.fields);
 
-    // Clear the errors object
     this.errors = {};
   }
 
   clearCache(selector = null) {
     if (selector) {
-      // Clear cache for specific field
-      const keysToDelete = [];
-      for (const key of this.validationCache.keys()) {
-        if (key.startsWith(selector)) {
-          keysToDelete.push(key);
-        }
-      }
-      keysToDelete.forEach((key) => this.validationCache.delete(key));
+      const keysToDelete = R.filter(
+        (key) => key.startsWith(selector),
+        Array.from(this.validationCache.keys())
+      );
+      R.forEach((key) => this.validationCache.delete(key))(keysToDelete);
     } else {
-      // Clear entire cache
       this.validationCache.clear();
     }
   }
@@ -438,7 +104,337 @@ class Validator {
     return this;
   }
 
-  // Add some common validation rules as static methods
+  //////////////////////////////////////////////////////////////////////////////
+  // Private Methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  #initialize() {
+    if (!this.form) return;
+
+    $(this.form).on("submit", async (e) => {
+      if (this.isSubmitting) {
+        this.isSubmitting = false;
+        return;
+      }
+
+      e.preventDefault();
+      await this.validate();
+    });
+  }
+
+  #bindFieldEvents(field, el) {
+    const { validateOnBlur, validateOnInput } = this.options;
+
+    if (validateOnBlur) {
+      const blurTarget = this.#isSlimSelect(el)
+        ? this.#getSlimSelectContainer(el)
+        : el;
+
+      if (blurTarget) {
+        $(blurTarget).on("blur", async () => {
+          field.touched = true;
+          await this.#validateField(field);
+        });
+      }
+    }
+
+    if (validateOnInput) {
+      $(el).on(
+        "input",
+        debounce(async () => {
+          field.touched = true;
+          await this.#validateField(field);
+        }, 300)
+      );
+    }
+  }
+
+  async #validateField(field, forceValidation = false) {
+    const el = $(field.selector)[0];
+    if (!el) return true;
+
+    if (!field.touched && !forceValidation) return true;
+
+    const value = el.value;
+    this.#clearFieldError(field.selector);
+
+    // Process rules with early exit on first failure
+    for (const rule of field.rules) {
+      const { isValid, errorMsg } = await this.#processRule(
+        rule,
+        value,
+        el,
+        field
+      );
+
+      if (!isValid) {
+        this.#showFieldError(field.selector, errorMsg);
+        field.validated = false;
+        return false;
+      }
+    }
+
+    this.#showFieldSuccess(field.selector);
+    field.validated = true;
+    return true;
+  }
+
+  async #processRule(rule, value, el, field) {
+    const { rule: ruleName, errorMessage: customErrorMsg } = rule;
+    let isValid = true;
+    let errorMsg = customErrorMsg || "Invalid value";
+
+    try {
+      switch (ruleName) {
+        case "required":
+          isValid = R.trim(value) !== "";
+          errorMsg = customErrorMsg || "This field is required";
+          break;
+
+        case "minLength":
+          isValid = value.length >= rule.value;
+          errorMsg = customErrorMsg || `Minimum length is ${rule.value}`;
+          break;
+
+        case "maxLength":
+          isValid = value.length <= rule.value;
+          errorMsg = customErrorMsg || `Maximum length is ${rule.value}`;
+          break;
+
+        case "customRegexp":
+          isValid = rule.value.test(value);
+          errorMsg = customErrorMsg || "Invalid format";
+          break;
+
+        case "ajax":
+          isValid = await this.#handleAjaxRule(rule, value, field);
+          errorMsg = customErrorMsg || "Validation failed";
+          break;
+
+        default:
+          if (typeof rule.validator === "function") {
+            isValid = await this.#handleCustomValidator(rule, value, el, field);
+          }
+      }
+    } catch (error) {
+      isValid = false;
+      errorMsg = error.message || errorMsg;
+    }
+
+    return { isValid, errorMsg };
+  }
+
+  async #handleAjaxRule(rule, value, field) {
+    const cacheKey = rule.cache ? `${field.selector}-ajax-${value}` : null;
+
+    if (cacheKey && this.validationCache.has(cacheKey)) {
+      return this.validationCache.get(cacheKey);
+    }
+
+    const isValid = await this.#performAjaxValidation(value, rule);
+
+    if (cacheKey) {
+      this.validationCache.set(cacheKey, isValid);
+    }
+
+    return isValid;
+  }
+
+  async #handleCustomValidator(rule, value, el, field) {
+    const cacheKey = rule.cache ? `${field.selector}-custom-${value}` : null;
+
+    if (cacheKey && this.validationCache.has(cacheKey)) {
+      return this.validationCache.get(cacheKey);
+    }
+
+    const result = await Promise.resolve(rule.validator(value, el));
+
+    if (cacheKey) {
+      this.validationCache.set(cacheKey, result);
+    }
+
+    return result;
+  }
+
+  async #performAjaxValidation(value, rule) {
+    try {
+      const config = {
+        url: rule.url,
+        method: rule.method || "GET",
+        ...rule.config,
+      };
+
+      const isGet = config.method.toUpperCase() === "GET";
+      const paramData = rule.params ? rule.params(value) : { value };
+
+      if (isGet) {
+        config.params = paramData;
+      } else {
+        config.data = rule.data ? rule.data(value) : paramData;
+      }
+
+      const response = await axios(config);
+
+      return rule.responseHandler
+        ? rule.responseHandler(response)
+        : response.data === true || response.data.valid === true;
+    } catch (error) {
+      console.error("AJAX validation failed:", error);
+      return false;
+    }
+  }
+
+  #executeCallbacks(type) {
+    R.forEach((callback) => callback())(this.callbacks[type]);
+  }
+
+  #handleFormSubmission() {
+    if (this.callbacks.onSuccess.length > 0 || !this.form) return;
+
+    const turboDisabled = R.any(
+      (value) => value === "false" || value === false,
+      [this.form.dataset.turbo, this.form.getAttribute("data-turbo")]
+    );
+
+    if (turboDisabled) {
+      this.form.submit();
+    } else {
+      this.isSubmitting = true;
+
+      setTimeout(() => {
+        this.form.requestSubmit();
+      }, 0);
+    }
+  }
+
+  #scrollToError(errorField) {
+    const el = $(errorField.selector)[0];
+    if (!el) return;
+
+    const scrollTarget = this.#isSlimSelect(el)
+      ? this.#getSlimSelectContainer(el) || el
+      : el;
+
+    const offset = 400;
+    const elementPosition =
+      scrollTarget.getBoundingClientRect().top + window.pageYOffset;
+    const offsetPosition = elementPosition - offset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth",
+    });
+
+    setTimeout(() => {
+      if (!this.#isSlimSelect(el) && el.focus) {
+        el.focus();
+      }
+    }, 500);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // SlimSelect Helpers
+  //////////////////////////////////////////////////////////////////////////////
+
+  #isSlimSelect(el) {
+    return (
+      el?.tagName === "SELECT" &&
+      (el.style.display === "none" || $(el).hasClass("ss-hide")) &&
+      $(el).siblings(".ss-main").length > 0
+    );
+  }
+
+  #getSlimSelectContainer(el) {
+    return $(el).siblings(".ss-main")[0];
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Error Display Methods
+  //////////////////////////////////////////////////////////////////////////////
+
+  #showFieldError(selector, message) {
+    const el = $(selector)[0];
+    if (!el) return;
+
+    if (this.#isSlimSelect(el)) {
+      this.#showSlimSelectError(el, message);
+    } else {
+      this.#showRegularError(el, message);
+    }
+  }
+
+  #showSlimSelectError(el, message) {
+    const container = this.#getSlimSelectContainer(el);
+    if (!container) return;
+
+    $(container).removeClass(this.options.successClass).addClass("is-invalid");
+
+    let errorEl = $(container).siblings(".invalid-feedback")[0];
+
+    if (!errorEl) {
+      errorEl = $(`<div class="invalid-feedback d-block"></div>`)[0];
+      $(container).after(errorEl);
+    }
+
+    $(errorEl).text(message).show();
+  }
+
+  #showRegularError(el, message) {
+    $(el).removeClass(this.options.successClass).addClass("is-invalid");
+
+    let errorEl =
+      $(el).siblings(".invalid-feedback")[0] ||
+      $(el).parent().find(".invalid-feedback")[0];
+
+    if (!errorEl) {
+      errorEl = $(`<div class="invalid-feedback"></div>`)[0];
+      $(el).after(errorEl);
+    }
+
+    $(errorEl).text(message).show();
+  }
+
+  #showFieldSuccess(selector) {
+    const el = $(selector)[0];
+    if (!el) return;
+
+    if (this.#isSlimSelect(el)) {
+      this.#showSlimSelectSuccess(el);
+    } else {
+      this.#showRegularSuccess(el);
+    }
+  }
+
+  #showSlimSelectSuccess(el) {
+    const container = this.#getSlimSelectContainer(el);
+    if (!container) return;
+
+    $(container).removeClass("is-invalid");
+    $(container).siblings(".invalid-feedback").remove();
+    $(container).parent().find(".invalid-feedback").remove();
+  }
+
+  #showRegularSuccess(el) {
+    $(el).removeClass("is-invalid");
+    $(el).siblings(".invalid-feedback").hide();
+    $(el).parent().find(".invalid-feedback").hide();
+  }
+
+  #clearFieldError(selector) {
+    const el = $(selector)[0];
+    if (!el) return;
+
+    if (this.#isSlimSelect(el)) {
+      this.#showSlimSelectSuccess(el); // Same as success for clearing
+    } else {
+      this.#showRegularSuccess(el); // Same as success for clearing
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Static Rule Helpers
+  //////////////////////////////////////////////////////////////////////////////
+
   static rules = {
     required: (errorMessage = "This field is required") => ({
       rule: "required",
@@ -463,25 +459,22 @@ class Validator {
       errorMessage,
     }),
 
-    // Enhanced ajax rule helper with caching
     ajax: (url, options = {}) => ({
       rule: "ajax",
       url,
       method: options.method || "GET",
-      params: options.params, // Function that returns params
-      data: options.data, // Function that returns data for POST
-      config: options.config, // Additional axios config
-      responseHandler: options.responseHandler, // Custom response handler
-      cache: options.cache !== false, // Cache by default
+      params: options.params,
+      data: options.data,
+      config: options.config,
+      responseHandler: options.responseHandler,
+      cache: options.cache !== false,
       errorMessage: options.errorMessage || "Validation failed",
     }),
 
     custom: (validator, errorMessage = "Invalid value", cache = false) => ({
       validator,
       errorMessage,
-      cache, // Allow caching for custom validators too
+      cache,
     }),
   };
 }
-
-export default Validator;
