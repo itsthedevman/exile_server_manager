@@ -1,18 +1,15 @@
 import ApplicationController from "./application_controller";
-import * as R from "ramda";
 import $ from "../helpers/cash_dom";
-import JustValidate from "just-validate";
+import Validator from "../helpers/validator";
 import CardSelector from "../helpers/card_selector";
 
 // Connects to data-controller="server-new"
 export default class extends ApplicationController {
   static targets = ["form", "v1Card", "v2Card", "version"];
-  static values = { ids: Array };
+  static values = { ids: Array, serverIdCheckPath: String };
 
   connect() {
-    this.validator = new JustValidate(this.formTarget, {
-      submitFormAutomatically: true,
-    });
+    this.validator = new Validator(this.formTarget);
 
     this.cards = new CardSelector({
       1: $(this.v1CardTarget),
@@ -36,18 +33,20 @@ export default class extends ApplicationController {
         { rule: "required" },
         {
           rule: "customRegexp",
-          value: /\S+/gi,
+          value: /\S+/i,
           errorMessage: "Server ID cannot contain whitespace",
         },
         {
           rule: "customRegexp",
-          value: /\w+/gi,
+          value: /\w+/i,
           errorMessage: "Server ID cannot contain any symbols",
         },
         {
-          validator: (value, _context) => {
-            return !R.includes(value, this.idsValue);
-          },
+          rule: "ajax",
+          url: this.serverIdCheckPathValue,
+          params: (value) => ({ id: value }),
+          responseHandler: (response) => response.data.available,
+          cache: true,
           errorMessage: "Server ID already exists",
         },
       ])

@@ -1,6 +1,7 @@
 import $ from "cash-dom";
 import * as R from "ramda";
 import debounce from "lodash/debounce";
+import axios from "axios";
 
 class Validator {
   constructor(form, options = {}) {
@@ -21,15 +22,18 @@ class Validator {
       onFail: [],
     };
 
+    // Cache for async validations
+    this.validationCache = new Map();
+
     this.init();
   }
 
   init() {
     if (this.form) {
       // Prevent form submission and validate instead
-      $(this.form).on("submit", (e) => {
+      $(this.form).on("submit", async (e) => {
         e.preventDefault();
-        this.validate();
+        await this.validate();
       });
     }
   }
@@ -63,22 +67,22 @@ class Validator {
 
     const el = $(field.selector)[0];
     if (el) {
-      // Add real-time validation
+      // Add real-time validation with async support
       if (this.options.validateOnBlur) {
         // For Slim Select, we need to handle blur differently
         if (this.isSlimSelect(el)) {
           const container = this.getSlimSelectContainer(el);
 
           if (container) {
-            $(container).on("blur", () => {
+            $(container).on("blur", async () => {
               field.touched = true;
-              this.validateField(field);
+              await this.validateField(field);
             });
           }
         } else {
-          $(el).on("blur", () => {
+          $(el).on("blur", async () => {
             field.touched = true;
-            this.validateField(field);
+            await this.validateField(field);
           });
         }
       }
@@ -86,9 +90,9 @@ class Validator {
       if (this.options.validateOnInput) {
         $(el).on(
           "input",
-          debounce(() => {
+          debounce(async () => {
             field.touched = true;
-            this.validateField(field);
+            await this.validateField(field);
           }, 300)
         );
       }
@@ -111,31 +115,69 @@ class Validator {
     // Clear previous errors for this field
     this.clearFieldError(field.selector);
 
+    // Process rules in order - FAST FAIL on first error
     for (const ruleObj of field.rules) {
       let valid = true;
       let errorMsg = ruleObj.errorMessage || "Invalid value";
 
-      if (ruleObj.rule === "required") {
-        valid = R.trim(value) !== "";
-        errorMsg = ruleObj.errorMessage || "This field is required";
-      } else if (ruleObj.rule === "minLength") {
-        valid = value.length >= ruleObj.value;
-        errorMsg = ruleObj.errorMessage || `Minimum length is ${ruleObj.value}`;
-      } else if (ruleObj.rule === "maxLength") {
-        valid = value.length <= ruleObj.value;
-        errorMsg = ruleObj.errorMessage || `Maximum length is ${ruleObj.value}`;
-      } else if (ruleObj.rule === "customRegexp") {
-        valid = ruleObj.value.test(value);
-        errorMsg = ruleObj.errorMessage || "Invalid format";
-      } else if (typeof ruleObj.validator === "function") {
-        try {
-          valid = await Promise.resolve(ruleObj.validator(value, el));
-        } catch (e) {
-          valid = false;
-          errorMsg = e.message || errorMsg;
+      try {
+        if (ruleObj.rule === "required") {
+          valid = R.trim(value) !== "";
+          errorMsg = ruleObj.errorMessage || "This field is required";
+        } else if (ruleObj.rule === "minLength") {
+          valid = value.length >= ruleObj.value;
+          errorMsg =
+            ruleObj.errorMessage || `Minimum length is ${ruleObj.value}`;
+        } else if (ruleObj.rule === "maxLength") {
+          valid = value.length <= ruleObj.value;
+          errorMsg =
+            ruleObj.errorMessage || `Maximum length is ${ruleObj.value}`;
+        } else if (ruleObj.rule === "customRegexp") {
+          valid = ruleObj.value.test(value);
+          errorMsg = ruleObj.errorMessage || "Invalid format";
+        } else if (ruleObj.rule === "ajax") {
+          // Check cache first if caching is enabled
+          const cacheKey = ruleObj.cache
+            ? `${field.selector}-ajax-${value}`
+            : null;
+
+          if (cacheKey && this.validationCache.has(cacheKey)) {
+            valid = this.validationCache.get(cacheKey);
+          } else {
+            valid = await this.performAjaxValidation(value, ruleObj);
+
+            // Cache the result if caching is enabled
+            if (cacheKey) {
+              this.validationCache.set(cacheKey, valid);
+            }
+          }
+
+          errorMsg = ruleObj.errorMessage || "Validation failed";
+        } else if (typeof ruleObj.validator === "function") {
+          // Check cache for custom validators if caching is enabled
+          const cacheKey = ruleObj.cache
+            ? `${field.selector}-custom-${value}`
+            : null;
+
+          if (cacheKey && this.validationCache.has(cacheKey)) {
+            valid = this.validationCache.get(cacheKey);
+          } else {
+            // Support both sync and async validators
+            const result = ruleObj.validator(value, el);
+            valid = await Promise.resolve(result);
+
+            // Cache the result if caching is enabled
+            if (cacheKey) {
+              this.validationCache.set(cacheKey, valid);
+            }
+          }
         }
+      } catch (e) {
+        valid = false;
+        errorMsg = e.message || errorMsg;
       }
 
+      // FAST FAIL - stop on first rule error
       if (!valid) {
         this.showFieldError(field.selector, errorMsg);
         field.validated = false;
@@ -143,30 +185,62 @@ class Validator {
       }
     }
 
-    // Field is valid
+    // All rules passed for this field
     this.showFieldSuccess(field.selector);
     field.validated = true;
     return true;
+  }
+
+  async performAjaxValidation(value, rule) {
+    try {
+      const config = {
+        url: rule.url,
+        method: rule.method || "GET",
+        ...rule.config, // Allow custom axios config
+      };
+
+      // Handle params based on method
+      if (config.method.toUpperCase() === "GET") {
+        config.params = rule.params ? rule.params(value) : { value };
+      } else {
+        config.data = rule.data ? rule.data(value) : { value };
+      }
+
+      const response = await axios(config);
+
+      // Allow custom response handler or default to checking response.data
+      if (rule.responseHandler) {
+        return rule.responseHandler(response);
+      }
+
+      return response.data === true || response.data.valid === true;
+    } catch (error) {
+      console.error("AJAX validation failed:", error);
+      return false;
+    }
   }
 
   async validate() {
     this.errors = {};
     let isValid = true;
 
-    // Validate all fields - force validation even for untouched fields
+    // Validate all fields - STOP on first field with an error
     for (const field of this.fields) {
       const fieldValid = await this.validateField(field, true); // Force validation
       if (!fieldValid) {
         isValid = false;
+        break; // STOP HERE - don't validate remaining fields
       }
     }
 
     // Execute callbacks
     if (isValid) {
       this.callbacks.onSuccess.forEach((cb) => cb());
-      // If no onSuccess callbacks and we have a form, use requestSubmit for Turbo
+      // If no onSuccess callbacks and we have a form, submit it
       if (this.callbacks.onSuccess.length === 0 && this.form) {
-        this.form.requestSubmit();
+        // Use submit() instead of requestSubmit() to avoid retriggering validation
+        // This works for both Turbo and non-Turbo forms
+        this.form.submit();
       }
     } else {
       this.callbacks.onFail.forEach((cb) => cb());
@@ -280,6 +354,22 @@ class Validator {
     this.errors = {};
   }
 
+  clearCache(selector = null) {
+    if (selector) {
+      // Clear cache for specific field
+      const keysToDelete = [];
+      for (const key of this.validationCache.keys()) {
+        if (key.startsWith(selector)) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach((key) => this.validationCache.delete(key));
+    } else {
+      // Clear entire cache
+      this.validationCache.clear();
+    }
+  }
+
   onSuccess(callback) {
     this.callbacks.onSuccess.push(callback);
     return this;
@@ -315,9 +405,23 @@ class Validator {
       errorMessage,
     }),
 
-    custom: (validator, errorMessage = "Invalid value") => ({
+    // Enhanced ajax rule helper with caching
+    ajax: (url, options = {}) => ({
+      rule: "ajax",
+      url,
+      method: options.method || "GET",
+      params: options.params, // Function that returns params
+      data: options.data, // Function that returns data for POST
+      config: options.config, // Additional axios config
+      responseHandler: options.responseHandler, // Custom response handler
+      cache: options.cache !== false, // Cache by default
+      errorMessage: options.errorMessage || "Validation failed",
+    }),
+
+    custom: (validator, errorMessage = "Invalid value", cache = false) => ({
       validator,
       errorMessage,
+      cache, // Allow caching for custom validators too
     }),
   };
 }

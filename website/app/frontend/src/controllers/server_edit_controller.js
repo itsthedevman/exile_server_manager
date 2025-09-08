@@ -1,9 +1,6 @@
 import ApplicationController from "./application_controller";
-import JustValidate from "just-validate";
-import { allowTurbo } from "../helpers/just_validate";
+import Validator from "../helpers/validator";
 import { disableSubmitOnEnter } from "../helpers/forms";
-import axios from "axios";
-import $ from "../helpers/cash_dom";
 
 // Connects to data-controller="server-edit"
 export default class extends ApplicationController {
@@ -12,7 +9,7 @@ export default class extends ApplicationController {
   static values = { serverIdCheckPath: String };
 
   connect() {
-    this.validator = new JustValidate(this.formTarget);
+    this.validator = new Validator(this.formTarget);
 
     this.#initializeValidator();
   }
@@ -25,28 +22,20 @@ export default class extends ApplicationController {
         { rule: "required" },
         {
           rule: "customRegexp",
-          value: /\S+/gi,
+          value: /^\S+$/i,
           errorMessage: "Server ID cannot contain whitespace",
         },
         {
           rule: "customRegexp",
-          value: /\w+/gi,
+          value: /^\w+$/i,
           errorMessage: "Server ID cannot contain any symbols",
         },
         {
-          validator: (value, _context) => () =>
-            new Promise(async (resolve) => {
-              try {
-                const response = await axios.get(this.serverIdCheckPathValue, {
-                  params: { id: value },
-                });
-
-                resolve(response.data.available);
-              } catch (error) {
-                console.error("Server ID check failed:", error);
-                resolve(false);
-              }
-            }),
+          rule: "ajax",
+          url: this.serverIdCheckPathValue,
+          params: (value) => ({ id: value }),
+          responseHandler: (response) => response.data.available,
+          cache: true,
           errorMessage: "Server ID already exists",
         },
       ])
@@ -68,6 +57,5 @@ export default class extends ApplicationController {
       ]);
 
     disableSubmitOnEnter();
-    allowTurbo(this.validator);
   }
 }

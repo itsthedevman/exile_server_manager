@@ -1,5 +1,9 @@
 = render "communities/container", **local_assigns do
-  div[data-controller="server-new" data-server-new-ids-value="#{existing_server_ids}"]
+  div[
+    data-controller="server-new"
+    data-server-new-ids-value="#{existing_server_ids}"
+    data-server-new-server-id-check-path-value="#{available_community_servers_path(current_community, format: :json)}",
+  ]
     / Hero section - cleaner, more focused
     .text-center.mb-5
       h1.mb-3.text-primary Register New Server
