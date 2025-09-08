@@ -30,8 +30,17 @@ class Validator {
 
   init() {
     if (this.form) {
+      // Track if we're programmatically submitting after validation
+      this.isSubmitting = false;
+
       // Prevent form submission and validate instead
       $(this.form).on("submit", async (e) => {
+        // If this is our programmatic submission, let it through
+        if (this.isSubmitting) {
+          this.isSubmitting = false; // Reset for next time
+          return;
+        }
+
         e.preventDefault();
         await this.validate();
       });
@@ -238,9 +247,20 @@ class Validator {
       this.callbacks.onSuccess.forEach((cb) => cb());
       // If no onSuccess callbacks and we have a form, submit it
       if (this.callbacks.onSuccess.length === 0 && this.form) {
-        // Use submit() instead of requestSubmit() to avoid retriggering validation
-        // This works for both Turbo and non-Turbo forms
-        this.form.submit();
+        // Check if form has Turbo disabled
+        const turboDisabled =
+          this.form.dataset.turbo === "false" ||
+          this.form.dataset.turbo === false ||
+          this.form.getAttribute("data-turbo") === "false";
+
+        if (turboDisabled) {
+          // Non-Turbo form - use regular submit (doesn't trigger events)
+          this.form.submit();
+        } else {
+          // Turbo form - flag it and use requestSubmit
+          this.isSubmitting = true;
+          this.form.requestSubmit();
+        }
       }
     } else {
       this.callbacks.onFail.forEach((cb) => cb());
