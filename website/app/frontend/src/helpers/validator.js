@@ -232,13 +232,48 @@ class Validator {
   async validate() {
     this.errors = {};
     let isValid = true;
+    let firstErrorField = null;
 
     // Validate all fields - STOP on first field with an error
     for (const field of this.fields) {
       const fieldValid = await this.validateField(field, true); // Force validation
       if (!fieldValid) {
         isValid = false;
+        firstErrorField = field; // Track the first field with an error
         break; // STOP HERE - don't validate remaining fields
+      }
+    }
+
+    // If validation failed, scroll to the first error
+    if (!isValid && firstErrorField) {
+      const el = $(firstErrorField.selector)[0];
+      if (el) {
+        // Get the element to scroll to (handle SlimSelect)
+        let scrollTarget = el;
+        if (this.isSlimSelect(el)) {
+          const container = this.getSlimSelectContainer(el);
+          if (container) {
+            scrollTarget = container;
+          }
+        }
+
+        // Scroll to the element with some offset from top
+        const offset = 400;
+        const elementPosition =
+          scrollTarget.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+
+        // Optional: Try to focus the field after scrolling
+        setTimeout(() => {
+          if (!this.isSlimSelect(el) && el.focus) {
+            el.focus();
+          }
+        }, 500); // Wait for scroll animation to finish
       }
     }
 
