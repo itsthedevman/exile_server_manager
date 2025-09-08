@@ -56,6 +56,10 @@ Rails.application.routes.draw do
 
   # /communities
   resources :communities, param: :community_id do
+    member do
+      get :available
+    end
+
     # /communities/:community_id/channels
     resources :channels, only: %i[index], param: :channel_id
 

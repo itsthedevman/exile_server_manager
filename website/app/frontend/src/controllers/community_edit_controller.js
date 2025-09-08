@@ -1,6 +1,5 @@
 import ApplicationController from "./application_controller";
-import JustValidate from "just-validate";
-import { allowTurbo } from "../helpers/just_validate";
+import Validator from "../helpers/validator";
 import $ from "../helpers/cash_dom";
 
 // Connects to data-controller="community-edit"
@@ -12,11 +11,14 @@ export default class extends ApplicationController {
     "welcomeMessageDisabled",
   ];
 
+  static values = {
+    communityIdCheckPath: String,
+  };
+
   connect() {
-    this.validator = new JustValidate(this.formTarget);
+    this.validator = new Validator(this.formTarget);
 
     this.#initializeValidator();
-    allowTurbo(this.validator);
   }
 
   onWelcomeMessageToggleClick(event) {
@@ -55,6 +57,14 @@ export default class extends ApplicationController {
       .addField("#community_community_id", [
         { rule: "required" },
         { rule: "minLength", value: 2 },
+        {
+          rule: "ajax",
+          url: this.communityIdCheckPathValue,
+          params: (value) => ({ id: value }),
+          responseHandler: (response) => response.data.available,
+          cache: true,
+          errorMessage: "Community ID already exists",
+        },
       ])
       .addField("#community_welcome_message", [
         { rule: "maxLength", value: 1000 },

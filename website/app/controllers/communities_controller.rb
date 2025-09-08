@@ -86,6 +86,16 @@ class CommunitiesController < AuthenticatedController
     redirect_to communities_path
   end
 
+  def available
+    if current_community.community_id == params[:id]
+      render json: {available: true}
+      return
+    end
+
+    exists = ESM::Community.with_community_id(params[:id]).exists?
+    render json: {available: !exists}
+  end
+
   private
 
   def role_to_hash(role, selected: false)

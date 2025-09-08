@@ -2,7 +2,10 @@
 = render "communities/destroy_modal"
 
 = render "communities/container", **local_assigns do
-  div[data-controller="community-edit"]
+  div[
+    data-controller="community-edit"
+    data-community-edit-community-id-check-path-value="#{available_community_path(current_community)}"
+  ]
     / Header section
     .text-center.mb-4
       h1.mb-2 Community Settings
