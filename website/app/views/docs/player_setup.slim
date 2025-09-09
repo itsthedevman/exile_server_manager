@@ -32,7 +32,7 @@
 
   .row.g-5
     / Main Content
-    .col-lg-8
+    .col-lg-8.order-2.order-lg-1
       / Step 1: Register Accounts
       .card.mb-5.border-start.border-primary.border-4
         .card-header.bg-primary.bg-opacity-10
@@ -113,31 +113,31 @@
         .card-body
           p.mb-4 Try these commands in Discord to get started and explore what ESM can do.
 
-          .row.g-4.mb-4
+          .row.g-lg-4.mb-4
             .col-md-6
-              .card.bg-dark.border-secondary.h-100
-                .card-body.d-flex.flex-column
-                  h6.text-light.mb-3
+              .card.bg-dark.border-secondary.mb-4
+                .card-header.border-secondary
+                  h6.mb-0.text-light
                     i.bi.bi-info-circle.text-info.me-2
                     | Basic Commands
-                  .flex-fill
-                    .list-group.list-group-flush.bg-transparent
-                      .list-group-item.bg-transparent.border-0.px-0.py-1
-                        .d-flex.justify-content-between.align-items-center
-                          span.font-monospace.small #{command_usage(:help, show_arguments: false)}
-                          small.text-muted See all commands
-                      .list-group-item.bg-transparent.border-0.px-0.py-1
-                        .d-flex.justify-content-between.align-items-center
-                          span.font-monospace.small #{command_usage(:me, show_arguments: false)}
-                          small.text-muted Check your stats
-                      .list-group-item.bg-transparent.border-0.px-0.py-1
-                        .d-flex.justify-content-between.align-items-center
-                          span.font-monospace.small #{command_usage(:territories, show_arguments: false)}
-                          small.text-muted See your bases
-                      .list-group-item.bg-transparent.border-0.px-0.py-1
-                        .d-flex.justify-content-between.align-items-center
-                          span.font-monospace.small #{command_usage(:servers, show_arguments: false)}
-                          small.text-muted List servers
+
+                .card-body
+                  .d-flex.flex-column.gap-3
+                    .d-flex.flex-column.flex-md-row.justify-content-md-between.align-items-md-center.pb-3.border-bottom.border-secondary
+                      .text-warning.fw-bold.font-monospace.mb-1.mb-md-0 = command_usage(:help, show_arguments: false)
+                      span.text-muted.small See all commands
+
+                    .d-flex.flex-column.flex-md-row.justify-content-md-between.align-items-md-center.pb-3.border-bottom.border-secondary
+                      .text-warning.fw-bold.font-monospace.mb-1.mb-md-0 = command_usage(:me, show_arguments: false)
+                      span.text-muted.small Check your stats
+
+                    .d-flex.flex-column.flex-md-row.justify-content-md-between.align-items-md-center.pb-3.border-bottom.border-secondary
+                      .text-warning.fw-bold.font-monospace.mb-1.mb-md-0 = command_usage(:territories, show_arguments: false)
+                      span.text-muted.small See your bases
+
+                    .d-flex.flex-column.flex-md-row.justify-content-md-between.align-items-md-center
+                      .text-warning.fw-bold.font-monospace.mb-1.mb-md-0 = command_usage(:servers, show_arguments: false)
+                      span.text-muted.small List servers
 
             .col-md-6
               .card.bg-dark.border-secondary.h-100
@@ -164,7 +164,7 @@
                 | Browse All Commands
 
     / Sidebar
-    .col-lg-4
+    .col-lg-4.order-1.order-lg-2
       .sidebar
         / Benefits Card
         .card.bg-success.bg-opacity-10.border-success.mb-4
