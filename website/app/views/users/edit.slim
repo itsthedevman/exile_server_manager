@@ -14,7 +14,7 @@
     .card-body
       .row.g-4
         / Discord Profile
-        .col-md-6
+        .col-md-6.d-flex.flex-column
           h5.mb-3
             i.bi.bi-discord.text-primary.me-2
             | Discord Profile
@@ -26,7 +26,7 @@
               width="64"
               height="64"
             ]
-            div.flex-fill
+            div
               .mb-2
                 label.form-label.small.text-muted.fw-medium USERNAME
                 .text-light = current_user.discord_username
@@ -34,7 +34,7 @@
                 label.form-label.small.text-muted.fw-medium DISCORD ID
                 .text-light.font-monospace = current_user.discord_id
 
-          .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
+          .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0.flex-fill
             h6.text-info.mb-2 Not the correct account?
             p.small.mb-2 Please follow these steps to switch accounts:
             ol.small.mb-0
@@ -43,7 +43,7 @@
               li On Discord's login screen, click the "Not you?" link
 
         / Steam Profile
-        .col-md-6
+        .col-md-6.d-flex.flex-column
           h5.mb-3
             i.bi.bi-steam.text-success.me-2
             | Steam Profile
@@ -65,7 +65,7 @@
                   height="64"
                 ]
 
-              div.flex-fill
+              div
                 .mb-2
                   label.form-label.small.text-muted.fw-medium USERNAME
                   .text-light = current_user.steam_data&.username
@@ -74,14 +74,13 @@
                   .text-light.font-monospace
                     = link_to current_user.steam_uid, current_user.steam_data&.profile_url, target: "_blank", class: "text-light text-decoration-none"
 
-            .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-0
+            .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-0.flex-fill
               h6.text-warning.mb-2 Danger Zone
               p.small.mb-3 This will unlink your Steam account but keep your Discord registration
-              = link_to "Deregister", deregister_users_path,
-                class: "btn btn-danger btn-sm"
+              = link_to "Deregister", deregister_users_path, class: "btn btn-danger btn-sm"
 
           - else
-            .text-center.py-4
+            .text-center.py-4.flex-fill.d-flex.flex-column.justify-content-center
               i.bi.bi-steam.display-4.text-muted.mb-3
               h6.text-light.mb-3 Link Your Steam Account
               p.text-muted.mb-4 Connect your Steam account to use ESM to its fullest potential
