@@ -13,17 +13,40 @@ nav.navbar.fixed-top.navbar-expand-lg.bg-body-tertiary
       span.navbar-toggler-icon
     #navbarNavAltMarkup.collapse.navbar-collapse
       .navbar-nav.gap-2
+        .d-block.d-lg-none.mb-3
         - if current_user
           = link_to "Dashboard", communities_path, class: "nav-link"
-          = link_to "-", "", class: "nav-link disabled"
+          = nav_spacer
         = link_to "Getting Started", getting_started_docs_path, class: "nav-link"
         = link_to "Commands", commands_docs_path, class: "nav-link"
-        = link_to "-", "", class: "nav-link disabled"
+        = nav_spacer
         = link_to "Invite", invite_path, class: "nav-link"
-        = link_to "-", "", class: "nav-link disabled"
+        = nav_spacer
         = link_to "Discover", discover_path, class: "nav-link"
         = link_to "Support", join_path, class: "nav-link"
-      .navbar-nav.flex-row.flex-wrap.ms-md-auto.gap-3.gap-lg-2
+
+        / Mobile-only user nav items
+        .d-block.d-lg-none
+          - if current_user
+            = nav_spacer
+
+            = link_to "My Account", edit_users_path,
+              class: "nav-link d-flex align-items-center gap-2"
+
+            = button_to "Logout", logout_path,
+                class: "btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 py-3 mt-4",
+                method: :delete,
+                data: {turbo: false}
+          - else
+            .mt-3
+              = button_to user_discord_omniauth_authorize_path,
+                  class: "btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-3",
+                  data: {turbo: false}
+                i.bi.bi-discord.fs-5
+                span.fw-medium Login with Discord
+
+      / Desktop-only user section (right side)
+      .d-none.d-lg-block.navbar-nav.flex-row.flex-wrap.ms-md-auto.gap-3.gap-lg-2
         - if current_user
           li.nav-item.dropdown
             a.nav-link.dropdown-toggle[
@@ -45,6 +68,8 @@ nav.navbar.fixed-top.navbar-expand-lg.bg-body-tertiary
                   data: {turbo: false}
 
         - else
-          = button_to user_discord_omniauth_authorize_path, class: "btn btn-primary d-flex align-items-center gap-2", data: {turbo: false}
+          = button_to user_discord_omniauth_authorize_path,
+          class: "btn btn-primary d-flex align-items-center gap-2",
+          data: {turbo: false}
             i.bi.bi-discord
             span Login
