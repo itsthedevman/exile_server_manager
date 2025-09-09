@@ -5,7 +5,12 @@ class ApplicationController < ActionController::Base
   include RescueHandlers
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  allow_browser versions: {
+    safari: "13+",
+    chrome: "80+",
+    firefox: "80+",
+    edge: "80+"
+  }
 
   delegate :create_toast,
     :create_info_toast, :create_success_toast,
