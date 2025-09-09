@@ -5,6 +5,7 @@ import * as R from "ramda";
 import JustValidate from "just-validate";
 import { allowTurbo } from "../helpers/just_validate";
 import { disableSubmitOnEnter } from "../helpers/forms";
+import { debounce } from "lodash";
 
 const DEFAULT_DESCRIPTION = "Preview message";
 
@@ -43,10 +44,13 @@ export default class extends ApplicationController {
     };
 
     this.onColorChanged(); // This will call #renderLivePreview
+    this.onTitleChanged({ currentTarget: this.titleTarget });
+    this.onDescriptionChanged({ currentTarget: this.descriptionTarget });
 
     this.#bindFocusEvents();
     this.#initializeValidator();
     this.#renderVariableChips();
+    this.#setupUndoRedo();
   }
 
   onTypeChanged(_event) {
@@ -94,13 +98,16 @@ export default class extends ApplicationController {
     const variable = $(event.currentTarget).data("variable");
     const variableText = `{{ ${variable} }}`;
 
-    // Use last focused field, or default to description
     const targetElement =
       this.lastFocusedField || $("#notification_notification_description")[0];
 
+    this.#saveUndoState(targetElement);
     this.#insertAtCursor(targetElement, variableText);
 
-    // Refocus the field so they can keep typing
+    this.nextTick(() => {
+      this.#saveUndoState(targetElement);
+    });
+
     targetElement.focus();
   }
 
@@ -123,6 +130,51 @@ export default class extends ApplicationController {
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  #setupUndoRedo() {
+    const setupElement = (element) => {
+      if (element.undoHistory) return;
+
+      element.undoHistory = [element.value || ""];
+      element.undoIndex = 0;
+      element.hasUnsavedChanges = false;
+
+      // Debounced save function
+      const debouncedSave = debounce(() => {
+        this.#saveUndoState(element);
+        element.hasUnsavedChanges = false;
+      }, 800);
+
+      // Track typing changes
+      $(element).on("input", () => {
+        element.hasUnsavedChanges = true;
+        debouncedSave();
+      });
+
+      // Keyboard shortcuts
+      $(element).on("keydown", (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+
+        const key = e.key.toLowerCase();
+
+        if (key === "z" && !e.shiftKey) {
+          e.preventDefault();
+          // Save any unsaved changes first
+          if (element.hasUnsavedChanges) {
+            this.#saveUndoState(element);
+            element.hasUnsavedChanges = false;
+          }
+          this.#undoState(element);
+        } else if (key === "y" || (key === "z" && e.shiftKey)) {
+          e.preventDefault();
+          this.#redoState(element);
+        }
+      });
+    };
+
+    // Setup both elements
+    R.forEach(setupElement, [this.titleTarget, this.descriptionTarget]);
+  }
 
   #initializeValidator() {
     this.validator
@@ -331,5 +383,39 @@ export default class extends ApplicationController {
 
     // Trigger input event so your change handlers fire
     element.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  #saveUndoState(element) {
+    const history = element.undoHistory;
+    const currentValue = element.value;
+
+    if (currentValue === history[element.undoIndex]) {
+      return;
+    }
+
+    element.undoHistory = history.slice(0, element.undoIndex + 1);
+    element.undoHistory.push(currentValue);
+    element.undoIndex = element.undoHistory.length - 1;
+
+    if (element.undoHistory.length > 50) {
+      element.undoHistory.shift();
+      element.undoIndex--;
+    }
+  }
+
+  #undoState(element) {
+    if (element.undoIndex > 0) {
+      element.undoIndex--;
+      element.value = element.undoHistory[element.undoIndex];
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+
+  #redoState(element) {
+    if (element.undoIndex < element.undoHistory.length - 1) {
+      element.undoIndex++;
+      element.value = element.undoHistory[element.undoIndex];
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    }
   }
 }
