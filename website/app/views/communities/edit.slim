@@ -125,19 +125,20 @@
               i.bi.bi-key.me-2.text-warning
               | Access Management
           .card-body
-            / Territory Management
-            .mb-4
-              h5.mb-2
-                i.bi.bi-shield-check.text-info.me-2
-                | Territory Admin Roles
-              p.text-muted.small.mb-3
-                | Users with these roles will be able to run territory based commands as the owner, regardless of them being a member of that territory.
+            - if current_community.server_mode_enabled?
+              / Territory Management
+              .mb-4
+                h5.mb-2
+                  i.bi.bi-shield-check.text-info.me-2
+                  | Territory Admin Roles
+                p.text-muted.small.mb-3
+                  | Users with these roles will be able to run territory based commands as the owner, regardless of them being a member of that territory.
 
-              = f.select :territory_admin_ids,
-                [], {}, multiple: "",
-                data: {roles: territory_admin_roles, controller: "role-selector"}
+                = f.select :territory_admin_ids,
+                  [], {}, multiple: "",
+                  data: {roles: territory_admin_roles, controller: "role-selector"}
 
-            hr.my-3
+              hr.my-3
 
             / Dashboard Access
             .mb-0
