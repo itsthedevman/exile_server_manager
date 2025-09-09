@@ -33,7 +33,12 @@ class CommunitiesController < AuthenticatedController
       role_to_hash(role, selected:)
     end
 
-    render locals: {community_roles:, territory_admin_roles:, access_roles:}
+    Rails.logger.info("DEBUG: #{current_community.logging_channel_id}")
+    render locals: {
+      territory_admin_roles:,
+      access_roles:,
+      logging_channel_select_data: load_logging_channel_select_data
+    }
   end
 
   def update
@@ -45,9 +50,9 @@ class CommunitiesController < AuthenticatedController
       return
     end
 
-    community_params = permit_community_params
-    (community_params[:territory_admin_ids] ||= []).compact_blank!
-    (community_params[:dashboard_access_role_ids] ||= []).compact_blank!
+    permitted_params = permit_update_params!
+    (permitted_params[:territory_admin_ids] ||= []).compact_blank!
+    (permitted_params[:dashboard_access_role_ids] ||= []).compact_blank!
 
     # The ID has changed, update the community and servers
     if community_id.present? && community_id != current_community.community_id
@@ -63,7 +68,7 @@ class CommunitiesController < AuthenticatedController
       current_community.update_community_id!(community_id)
     end
 
-    current_community.update!(community_params)
+    current_community.update!(permitted_params)
 
     render turbo_stream: create_success_toast("<code>#{community_id}</code> has been updated")
   end
@@ -107,13 +112,24 @@ class CommunitiesController < AuthenticatedController
     }
   end
 
-  def permit_community_params
+  def permit_update_params!
     # Purposely not including :community_id
     params.require(:community).permit(
       :logging_channel_id,
       :log_reconnect_event, :log_xm8_event, :log_discord_log_event,
       :welcome_message_enabled, :welcome_message,
       territory_admin_ids: [], dashboard_access_role_ids: []
+    )
+  end
+
+  def load_logging_channel_select_data
+    helpers.group_data_from_collection_for_slim_select(
+      current_community.channels,
+      ->(category) { category[:name] },
+      ->(channel) { channel[:id] },
+      ->(channel) { channel[:name] },
+      placeholder: true,
+      selected: current_community.logging_channel_id
     )
   end
 end

@@ -27,7 +27,7 @@ module SlimSelectHelper
         if selected_value.is_a?(Proc)
           selected_value.call(item, value)
         else
-          selected_value
+          value == selected_value
         end
 
       selected = false if selected.nil?

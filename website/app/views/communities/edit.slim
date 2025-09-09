@@ -58,11 +58,16 @@
 
                 .row
                   .col-md-8
-                    = channel_select_tag \
-                      "community[logging_channel_id]",
-                      current_community.channels,
-                      class: "form-control",
-                      selected: current_community.logging_channel_id
+                    = select_tag "community[logging_channel_id]",
+                      [],
+                      class: "form-select",
+                      data: { \
+                        controller: "slim-select",
+                        slim_select_placeholder_value: "Select a channel...",
+                        slim_select_allow_deselect_value: true,
+                        slim_select_close_on_select_value: true,
+                        slim_select_data_value: logging_channel_select_data,
+                      }
 
               hr.my-3
 

@@ -47,6 +47,13 @@ module ESM
       ESM.bot.community_modifiable_by?(id, user.id)
     end
 
+    #
+    # Channel/Category: {id:, name:, position:, type:, ?category:}
+    #
+    # [
+    #   [{name: <discord_server_name>}, Array<Channel>] # Un-categorized channels
+    #   [category_hash, Array<Channel>]... # Categories + channels
+    # ]
     def channels
       @channels ||= ESM.bot.community_channels(id)
     end
