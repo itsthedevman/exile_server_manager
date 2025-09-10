@@ -233,12 +233,22 @@
       span[data-routes-new-storage]
 
   .modal-footer.border-top
-    .d-flex.align-items-center.justify-content-between.w-100
+    / Mobile
+    .row.g-2.w-100.d-flex.d-lg-none
+      .col-6
+        button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"] Cancel
+      .col-6
+        = button_tag class: "btn btn-success w-100",
+            data: {action: "click->route-new#onCreateClicked"}
+          i.bi.bi-plus-circle.me-2
+          | Create Route
+
+    / Desktop
+    .d-none.d-lg-flex.align-items-center.justify-content-between.w-100
       div
       .d-flex.gap-2
-        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
-          | Cancel
+        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
         = button_tag class: "btn btn-success ms-2",
-          data: {action: "click->route-new#onCreateClicked"}
+            data: {action: "click->route-new#onCreateClicked"}
           i.bi.bi-plus-circle.me-2
           | Create Route

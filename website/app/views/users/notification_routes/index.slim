@@ -6,7 +6,19 @@
   / Main Routes Section
   .mb-5
     - if routes.size > 0
-      .d-flex.align-items-center.justify-content-between.mb-4
+      / Mobile
+      .d-block.d-lg-none.mb-4
+        h2.mb-3 My Active Routes
+        button.btn.btn-primary.w-100[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#create_route_modal"
+        ]
+          i.bi.bi-plus-circle.me-2
+          | Create New Route
+
+      / Desktop
+      .d-none.d-lg-flex.align-items-center.justify-content-between.mb-4
         h2.mb-0 My Active Routes
         button.btn.btn-primary[
           type="button"
