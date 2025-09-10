@@ -38,14 +38,31 @@
         |< You can always re-create your account by logging back into our website with Discord.
 
   .modal-footer.border-top
-    button.btn.btn-outline-secondary[
-      type="button"
-      data-bs-dismiss="modal"
-    ] Cancel
+    / Mobile
+    .row.g-2.w-100.d-flex.d-lg-none
+      .col-6
+        button.btn.btn-outline-secondary.w-100[
+          type="button"
+          data-bs-dismiss="modal"
+        ] Cancel
+      .col-6
+        = button_to users_path,
+            method: :delete,
+            class: "btn btn-danger w-100",
+            data: { turbo: false }
+          i.bi.bi-trash.me-2
+          | Delete
 
-    = button_to users_path,
-        method: :delete,
-        class: "btn btn-danger",
-        data: { turbo: false }
-      i.bi.bi-trash.me-2
-      | Delete My Account
+    / Desktop
+    .d-none.d-lg-block
+      button.btn.btn-outline-secondary[
+        type="button"
+        data-bs-dismiss="modal"
+      ] Cancel
+
+      = button_to users_path,
+          method: :delete,
+          class: "btn btn-danger",
+          data: { turbo: false }
+        i.bi.bi-trash.me-2
+        | Delete
