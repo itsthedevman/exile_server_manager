@@ -154,18 +154,18 @@
 
         / Welcome Message Section
         .card.mb-4
-          .card-header.d-flex.align-items-center.justify-content-between
-            h4.mb-0
-              i.bi.bi-door-open.text-primary.me-2
-              | New Member Welcome
+          .card-header
+            .d-flex.flex-column.flex-md-row.align-items-md-center.justify-content-md-between.gap-2
+              h4.mb-0
+                i.bi.bi-door-open.text-primary.me-2
+                | New Member Welcome
 
-            .form-check.form-switch
-              = f.check_box :welcome_message_enabled,
-                  class: "form-check-input",
-                  data: {action: "click->community-edit#onWelcomeMessageToggleClick"}
-              = f.label :welcome_message_enabled, class: "form-check-label"
-                span.text-muted Enable
-
+              .form-check.form-switch
+                = f.check_box :welcome_message_enabled,
+                    class: "form-check-input",
+                    data: {action: "click->community-edit#onWelcomeMessageToggleClick"}
+                = f.label :welcome_message_enabled, class: "form-check-label"
+                  span.text-muted Enable
           .card-body
             .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-3[
               class=class_names("d-none": !f.object.welcome_message_enabled)
@@ -208,13 +208,12 @@
                     | /1000
 
         / Action Buttons
-        .d-flex.justify-content-between.align-items-center.pt-4.border-top
-          .d-flex.gap-3
+        .pt-4.border-top
+          .d-flex.flex-column.flex-md-row.justify-content-md-between.align-items-md-center.gap-4
             button.btn.btn-danger[
               type="button"
               data-bs-toggle="modal"
               data-bs-target="#destroy-community-modal"
             ] Delete Community
 
-          .d-flex.gap-3
             = f.submit "Save Changes", class: "btn btn-primary"

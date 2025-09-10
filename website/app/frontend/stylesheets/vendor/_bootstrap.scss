@@ -46,3 +46,15 @@ $bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
 
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-icons/font/bootstrap-icons";
+
+@media (min-width: 992px) {
+    .border-bottom-lg-0 {
+        border-bottom: 0 !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .w-md-auto {
+        width: auto !important;
+    }
+}

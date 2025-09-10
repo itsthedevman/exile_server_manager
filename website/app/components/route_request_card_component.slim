@@ -37,7 +37,25 @@
         = render_route_group(group_name, routes)
 
     .card-footer.bg-transparent.border-warning.border-opacity-25
-      .d-flex.gap-2.justify-content-end
+      / Mobile
+      .row.g-2.d-flex.d-lg-none
+        .col-6
+          = button_to decline_community_notification_routes_path,
+            class: "btn btn-danger w-100",
+            method: :patch,
+            data: {turbo: false}
+            = hidden_field_tag :ids, all_routes.map(&:public_id).to_json
+            | Decline
+        .col-6
+          = button_to accept_community_notification_routes_path,
+            class: "btn btn-success w-100",
+            method: :patch,
+            data: {turbo: false}
+            = hidden_field_tag :ids, all_routes.map(&:public_id).to_json
+            | Accept
+
+      / Desktop
+      .d-none.d-lg-flex.gap-2.justify-content-end
         = button_to decline_community_notification_routes_path,
           class: "btn btn-danger",
           method: :patch,

@@ -124,7 +124,7 @@
         / Bottom invite section
         .card.bg-secondary.bg-opacity-10.border-secondary
           .card-body.py-3
-            .d-flex.align-items-center.justify-content-between
+           .d-flex.flex-column.flex-md-row.align-items-md-center.justify-content-md-between.gap-3
               div
                 h6.mb-1.text-light Need to Add ESM to Another Server?
                 p.text-muted.mb-0.small Invite ESM to additional Discord servers.
@@ -143,59 +143,58 @@
 
             = link_to invite_path, class: "btn btn-primary btn-lg", target: "_blank"
               i.bi.bi-discord.me-2
-              | Invite ESM Bot
+              | Invite ESM
 
     / Right Column - Information & Help
     .col-lg-4
-      .sidebar
-        / Troubleshooting Card
-        .card.bg-warning.bg-opacity-10.border-warning.mb-4
-          .card-header.border-warning
-            h6.mb-0.text-warning
-              i.bi.bi-question-circle.me-2
-              | Not Seeing Your Community?
-          .card-body
-            h6.text-warning.mb-2 Common Issues:
-            ul.small.text-muted.mb-3
-              li ESM bot not invited to your Discord server
-              li You don't have admin permissions in that server
-              li Community is in Player Mode but you need Server Mode
-              li You need to link your Discord account first
+      / Troubleshooting Card
+      .card.bg-warning.bg-opacity-10.border-warning.mb-4
+        .card-header.border-warning
+          h6.mb-0.text-warning
+            i.bi.bi-question-circle.me-2
+            | Not Seeing Your Community?
+        .card-body
+          h6.text-warning.mb-2 Common Issues:
+          ul.small.text-muted.mb-3
+            li ESM bot not invited to your Discord server
+            li You don't have admin permissions in that server
+            li Community is in Player Mode but you need Server Mode
+            li You need to link your Discord account first
 
-            h6.text-warning.mb-2 Quick Fixes:
-            ul.small.text-muted.mb-0
-              li
-                = link_to "Re-invite ESM", invite_path, class: "text-warning"
-                |  with admin permissions
-              li Check your Discord server roles
-              li Use #{command_usage(:mode, show_arguments: false)} in Discord to switch modes
+          h6.text-warning.mb-2 Quick Fixes:
+          ul.small.text-muted.mb-0
+            li
+              = link_to "Re-invite ESM", invite_path, class: "text-warning"
+              |  with admin permissions
+            li Check your Discord server roles
+            li Use #{command_usage(:mode, show_arguments: false)} in Discord to switch modes
 
-        / Getting Started Card
-        .card.bg-success.bg-opacity-10.border-success.mb-4
-          .card-header.border-success
-            h6.mb-0.text-success
-              i.bi.bi-rocket-takeoff.me-2
-              | New to ESM?
-          .card-body
-            p.small.text-muted.mb-3
-              | Get your server connected in just a few minutes with our step-by-step guides.
+      / Getting Started Card
+      .card.bg-success.bg-opacity-10.border-success.mb-4
+        .card-header.border-success
+          h6.mb-0.text-success
+            i.bi.bi-rocket-takeoff.me-2
+            | New to ESM?
+        .card-body
+          p.small.text-muted.mb-3
+            | Get your server connected in just a few minutes with our step-by-step guides.
 
-            .d-grid.gap-2
-              = link_to getting_started_docs_path, class: "btn btn-outline-success btn-sm"
-                i.bi.bi-book.me-2
-                | Getting Started
+          .d-grid.gap-2
+            = link_to getting_started_docs_path, class: "btn btn-outline-success btn-sm"
+              i.bi.bi-book.me-2
+              | Getting Started
 
-        / Support Card
-        .card.bg-secondary.bg-opacity-10.border-secondary
-          .card-header.border-secondary
-            h6.mb-0.text-light
-              i.bi.bi-life-preserver.me-2
-              | Need Help?
-          .card-body
-            p.small.text-muted.mb-3
-              | Having issues? Our community is here to help with setup, troubleshooting, and questions.
+      / Support Card
+      .card.bg-secondary.bg-opacity-10.border-secondary
+        .card-header.border-secondary
+          h6.mb-0.text-light
+            i.bi.bi-life-preserver.me-2
+            | Need Help?
+        .card-body
+          p.small.text-muted.mb-3
+            | Having issues? Our community is here to help with setup, troubleshooting, and questions.
 
-            .d-grid.gap-2
-              = link_to join_path, class: "btn btn-outline-secondary btn-sm"
-                i.bi.bi-discord.me-2
-                | Discord Support
+          .d-grid.gap-2
+            = link_to join_path, class: "btn btn-outline-secondary btn-sm"
+              i.bi.bi-discord.me-2
+              | Discord Support
