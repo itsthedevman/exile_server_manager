@@ -223,10 +223,11 @@
               p.small.text-muted.mb-3
                 | Send #{command_usage(:servers, show_arguments: false)} to ESM in Discord
               .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-0
-                .d-flex.align-items-center
-                  i.bi.bi-check-circle.text-success.me-2
-                  strong.text-success Expected Result:
-                  span.text-muted.ms-2 Your server should show as "online"
+                .d-flex.flex-column.flex-md-row.align-items-md-center
+                  .d-flex.align-items-center.mb-1.mb-md-0
+                    i.bi.bi-check-circle.text-success.me-2
+                    strong.text-success Expected Result:
+                  span.text-muted.ms-md-2 Your server should show as "online"
 
           .card.bg-dark.border-info.mb-4
             .card-body
@@ -236,10 +237,11 @@
               p.small.text-muted.mb-3
                 | Try #{command_usage(:sqf, arguments: {execute: "systemTime"})} in Discord
               .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-0
-                .d-flex.align-items-center
-                  i.bi.bi-check-circle.text-success.me-2
-                  strong.text-success Expected Result:
-                  span.text-muted.ms-2 Should return the current server time
+                .d-flex.flex-column.flex-md-row.align-items-md-center
+                  .d-flex.align-items-center.mb-1.mb-md-0
+                    i.bi.bi-check-circle.text-success.me-2
+                    strong.text-success Expected Result:
+                  span.text-muted.ms-md-2 Should return the current server time
 
           .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mt-4.mb-0
             h6.text-warning.mb-2
