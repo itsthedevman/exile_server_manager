@@ -37,7 +37,7 @@
 
   .row.g-5
     / Main Content
-    .col-lg-8
+    .col-lg-8.order-2.order-lg-1
       / Upgrade Warning Card
       .card.border-warning.bg-warning.bg-opacity-10.mb-5
         .card-body
@@ -158,15 +158,16 @@
           / Download Section
           .card.bg-primary.bg-opacity-10.border-primary.mb-4
             .card-body
-              .d-flex.align-items-center.justify-content-between
-                div
+              .row.g-3
+                .col-12.col-lg-9
                   h6.text-primary.mb-1
                     i.bi.bi-download.me-2
                     | Download @esm v2
                   p.small.text-muted.mb-0 Get the latest cross-platform version
-                = link_to latest_download_path, target: "_blank", class: "btn btn-primary"
-                  i.bi.bi-download.me-2
-                  | Download
+                .col-12.col-lg-3
+                  = link_to latest_download_path, target: "_blank", class: "btn btn-primary btn-lg w-100"
+                    i.bi.bi-download.me-2
+                    | Download
 
           / Installation Steps
           .row.g-3
@@ -269,64 +270,63 @@
                 | Web Dashboard
 
     / Sidebar
-    .col-lg-4
-      .sidebar
-        / What's New Card
-        .card.bg-info.bg-opacity-10.border-info.mb-4
-          .card-header.border-info
-            h6.mb-0.text-info
-              i.bi.bi-stars.me-2
-              | What's New in v2?
-          .card-body
-            ul.small.mb-0
-              li Cross-platform Windows & Linux support
-              li Rust-based architecture for better performance
-              li Enhanced log searching with regex patterns
-              li Improved XM8 notification system
+    .col-lg-4.order-1.order-lg-2
+      / What's New Card
+      .card.bg-info.bg-opacity-10.border-info.mb-4
+        .card-header.border-info
+          h6.mb-0.text-info
+            i.bi.bi-stars.me-2
+            | What's New in v2?
+        .card-body
+          ul.small.mb-0
+            li Cross-platform Windows & Linux support
+            li Rust-based architecture for better performance
+            li Enhanced log searching with regex patterns
+            li Improved XM8 notification system
 
-        / Requirements Card
-        .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
-          .card-header.border-secondary
-            h6.mb-0.text-light
-              i.bi.bi-list-check.me-2
-              | Requirements
-          .card-body
-            ul.small.mb-0
-              li Arma 3 Dedicated Server
-              li MySQL Database (ExtDB2/3)
-              li Discord server with admin permissions
-              li Ability to upload server mods and extensions
+      / Requirements Card
+      .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
+        .card-header.border-secondary
+          h6.mb-0.text-light
+            i.bi.bi-list-check.me-2
+            | Requirements
+        .card-body
+          ul.small.mb-0
+            li Arma 3 Dedicated Server
+            li MySQL Database (ExtDB2/3)
+            li Discord server with admin permissions
+            li Ability to upload server mods and extensions
 
-        / File Reference Card
-        .card.bg-info.bg-opacity-10.border-info.mb-4
-          .card-header.border-info
-            h6.mb-0.text-info
-              i.bi.bi-files.me-2
-              | Important Files
-          .card-body
-            h6.text-info.mb-2 Download from Dashboard:
-            ul.small.mb-3
-              li <code>esm.key</code> - Server authentication
-              li <code>config.yml</code> - Advanced settings (optional)
+      / File Reference Card
+      .card.bg-info.bg-opacity-10.border-info.mb-4
+        .card-header.border-info
+          h6.mb-0.text-info
+            i.bi.bi-files.me-2
+            | Important Files
+        .card-body
+          h6.text-info.mb-2 Download from Dashboard:
+          ul.small.mb-3
+            li <code>esm.key</code> - Server authentication
+            li <code>config.yml</code> - Advanced settings (optional)
 
-            h6.text-info.mb-2 Run on MySQL:
-            ul.small.mb-0
-              li <code>01.sql</code> - Core database structure
-              li <code>02.sql</code> - V2 compatibility updates
+          h6.text-info.mb-2 Run on MySQL:
+          ul.small.mb-0
+            li <code>01.sql</code> - Core database structure
+            li <code>02.sql</code> - V2 compatibility updates
 
-        / Need Help Card
-        .card.bg-warning.bg-opacity-10.border-warning
-          .card-header.border-warning
-            h6.mb-0.text-warning
-              i.bi.bi-question-circle.me-2
-              | Need Help?
-          .card-body
-            p.small.mb-3
-              |> Having issues? Check <code>@esm/log/esm.log</code> first, then join our
-              = link_to "Discord support server", join_path, class: "text-warning"
-              |  for assistance.
+      / Need Help Card
+      .card.bg-warning.bg-opacity-10.border-warning
+        .card-header.border-warning
+          h6.mb-0.text-warning
+            i.bi.bi-question-circle.me-2
+            | Need Help?
+        .card-body
+          p.small.mb-3
+            |> Having issues? Check <code>@esm/log/esm.log</code> first, then join our
+            = link_to "Discord support server", join_path, class: "text-warning"
+            |  for assistance.
 
-            .d-grid
-              = link_to join_path, class: "btn btn-outline-warning btn-sm"
-                i.bi.bi-discord.me-2
-                | Get Support
+          .d-grid
+            = link_to join_path, class: "btn btn-outline-warning btn-sm"
+              i.bi.bi-discord.me-2
+              | Get Support

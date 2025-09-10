@@ -165,47 +165,46 @@
 
     / Sidebar
     .col-lg-4.order-1.order-lg-2
-      .sidebar
-        / Benefits Card
-        .card.bg-success.bg-opacity-10.border-success.mb-4
-          .card-header.border-success
-            h6.mb-0.text-success
-              i.bi.bi-gift.me-2
-              | Why Register?
-          .card-body
-            ul.small.mb-0
-              li.mb-2 Works on any ESM-enabled server instantly
-              li.mb-2 Get real-time notifications on Discord
-              li.mb-2 Manage territories without logging in
-              li.mb-2 Set up custom notification routing
+      / Benefits Card
+      .card.bg-success.bg-opacity-10.border-success.mb-4
+        .card-header.border-success
+          h6.mb-0.text-success
+            i.bi.bi-gift.me-2
+            | Why Register?
+        .card-body
+          ul.small.mb-0
+            li.mb-2 Works on any ESM-enabled server instantly
+            li.mb-2 Get real-time notifications on Discord
+            li.mb-2 Manage territories without logging in
+            li.mb-2 Set up custom notification routing
 
-        / Already Registered Card
-        .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
-          .card-header.border-secondary
-            h6.mb-0.text-light
-              i.bi.bi-person-check.me-2
-              | Already Registered?
-          .card-body
-            p.small.mb-3
-              | If you've already linked your accounts, you can start using commands right away.
+      / Already Registered Card
+      .card.bg-secondary.bg-opacity-10.border-secondary.mb-4
+        .card-header.border-secondary
+          h6.mb-0.text-light
+            i.bi.bi-person-check.me-2
+            | Already Registered?
+        .card-body
+          p.small.mb-3
+            | If you've already linked your accounts, you can start using commands right away.
 
-            p.small.mb-0
-              | Try #{command_usage(:me, show_arguments: false)} in any Discord server with ESM to test your setup.
+          p.small.mb-0
+            | Try #{command_usage(:me, show_arguments: false)} in any Discord server with ESM to test your setup.
 
-        / Need Help Card
-        .card.bg-warning.bg-opacity-10.border-warning
-          .card-header.border-warning
-            h6.mb-0.text-warning
-              i.bi.bi-question-circle.me-2
-              | Need Help?
-          .card-body
-            p.small.mb-3
-              | Having trouble with registration or commands?
+      / Need Help Card
+      .card.bg-warning.bg-opacity-10.border-warning
+        .card-header.border-warning
+          h6.mb-0.text-warning
+            i.bi.bi-question-circle.me-2
+            | Need Help?
+        .card-body
+          p.small.mb-3
+            | Having trouble with registration or commands?
 
-            .d-grid.gap-2
-              = link_to getting_started_docs_path, class: "btn btn-outline-warning btn-sm"
-                i.bi.bi-book.me-2
-                | Getting Started Guide
-              = link_to join_path, class: "btn btn-outline-warning btn-sm"
-                i.bi.bi-discord.me-2
-                | Get Support
+          .d-grid.gap-2
+            = link_to getting_started_docs_path, class: "btn btn-outline-warning btn-sm"
+              i.bi.bi-book.me-2
+              | Getting Started Guide
+            = link_to join_path, class: "btn btn-outline-warning btn-sm"
+              i.bi.bi-discord.me-2
+              | Get Support

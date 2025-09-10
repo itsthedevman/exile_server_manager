@@ -36,9 +36,11 @@ code {
 }
 
 #main-container {
-    flex: 1; // Takes up remaining space
     @extend .container-fluid;
     @extend .px-0;
+    @extend .overflow-x-hidden;
+    
+    flex: 1; // Takes up remaining space
 
     .window {
         @extend .my-5;
