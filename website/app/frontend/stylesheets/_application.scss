@@ -147,6 +147,16 @@ code {
     }
 }
 
-.route-row:hover .route-delete.d-none {
+.route-row .route-delete.d-lg-none {
     display: block !important;
+}
+
+@media (min-width: 992px) {
+    .route-row .route-delete {
+        display: none !important;
+    }
+
+    .route-row:hover .route-delete {
+        display: block !important;
+    }
 }

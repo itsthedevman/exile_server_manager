@@ -127,7 +127,7 @@ class NotificationRouteCardComponent < ApplicationComponent
     button_to(
       routing_path(route),
       method: :delete,
-      class: "btn btn-link btn-sm p-0 text-danger route-delete d-none",
+      class: "btn btn-link btn-sm p-0 text-danger route-delete d-lg-none",
       title: "Delete #{route.notification_type.titleize} route"
     ) do
       content_tag(:i, "", class: "bi bi-trash small")
