@@ -174,10 +174,22 @@
                 span.arg.identifier.d-none[data-alias-edit-target="serverPreviewAfter"]
 
     .modal-footer.border-top
-      .d-flex.align-items-center.justify-content-between.w-100
-        small.text-muted
-          i.bi.bi-info-circle.text-info.me-1
-          | You can edit or delete aliases later
+      / Mobile
+      .d-block.d-lg-none.w-100
+        .row.g-2
+          .col-6
+            button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"]
+              | Cancel
+          .col-6
+            = button_tag type: "button",
+                class: "btn btn-success w-100",
+                data: { action: "click->alias-edit#update" } do
+              i.bi.bi-plus-circle.me-2
+              | Update Alias
+
+      / Desktop
+      .d-none.d-lg-flex.align-items-center.justify-content-between.w-100
+        div
         .d-flex.gap-2
           button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
             | Cancel

@@ -194,15 +194,23 @@
             .d-flex.flex-column.gap-3.d-none[data-aliases-target="container"]
 
     / Save Section
-    .d-flex.justify-content-between.align-items-center.pb-4.mb-4.border-bottom
-      div
+    .pb-4.mb-4.border-bottom
+      / Mobile
+      .d-block.d-lg-none
+        .row.g-2
+          .col-5
+            = link_to "Cancel", edit_users_path, class: "btn btn-outline-secondary btn-lg w-100"
+          .col-7
+            = f.submit "Save All Settings", class: "btn btn-success text-white btn-lg w-100"
 
-      .d-flex.gap-3
-        = link_to "Cancel", edit_users_path, class: "btn btn-outline-secondary btn-lg"
-
-        = f.submit "Save All Settings", class: "btn btn-success text-white btn-lg"
-          i.bi.bi-check-circle.me-2
-          | Save All Settings
+      / Desktop
+      .d-none.d-lg-flex.justify-content-between.align-items-center
+        div
+        .d-flex.gap-3
+          = link_to "Cancel", edit_users_path, class: "btn btn-outline-secondary btn-lg"
+          = f.submit "Save All Settings", class: "btn btn-success text-white btn-lg"
+            i.bi.bi-check-circle.me-2
+            | Save All Settings
 
   / Danger Zone Card
   .card.border-danger.bg-danger.bg-opacity-10
@@ -212,7 +220,21 @@
         | Danger Zone
 
     .card-body
-      .d-flex.align-items-center.justify-content-between
+      / Mobile
+      .d-block.d-lg-none
+        .mb-3
+          h6.text-danger.mb-1 Delete Account
+          p.text-muted.mb-0 You can delete your account at any time. Logging back into our website will re-create your account.
+        button.btn.btn-danger.w-100[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#delete_modal"
+        ]
+          i.bi.bi-trash.me-2
+          | Delete Account
+
+      / Desktop
+      .d-none.d-lg-flex.align-items-center.justify-content-between
         div
           h6.text-danger.mb-1 Delete Account
           p.text-muted.mb-0 You can delete your account at any time. Logging back into our website will re-create your account.
