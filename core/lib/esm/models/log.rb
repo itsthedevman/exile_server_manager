@@ -53,10 +53,16 @@ module ESM
     # =============================================================================
 
     def link
-      if ESM.env.production?
-        "https://www.esmbot.com/logs/#{public_id}"
-      else
-        "http://localhost:3000/logs/#{public_id}"
+      @link ||= begin
+        community_pid = ESM::Community.joins(:servers)
+          .where(servers: {id: server_id})
+          .pick(:public_id)
+
+        if ESM.env.production?
+          "https://www.esmbot.com/communities/#{community_pid}/logs/#{public_id}"
+        else
+          "http://localhost:3000/communities/#{community_pid}/logs/#{public_id}"
+        end
       end
     end
 
