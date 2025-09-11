@@ -72,7 +72,33 @@ export default class extends ApplicationController {
               </div>
             </div>
           </div>
-          <div class="col-2">
+
+          <!-- Mobile -->
+          <div class="col-12 d-lg-none mt-3">
+            <div class="row g-2">
+              <div class="col-6">
+                <button class="btn btn-outline-primary btn-sm w-100"
+                        type="button"
+                        title="Edit alias"
+                        data-action="click->aliases#edit"
+                        data-id="${id}">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-outline-danger btn-sm w-100"
+                        type="button"
+                        title="Delete alias"
+                        data-action="click->aliases#delete"
+                        data-id="${id}">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop -->
+          <div class="col-2 d-none d-lg-block">
             <div class="d-flex gap-1 justify-content-end">
               <button class="btn btn-outline-primary btn-sm"
                       type="button"
