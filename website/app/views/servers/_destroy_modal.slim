@@ -46,14 +46,32 @@
         |< You can re-register this server later, but all historical data will be lost permanently.
 
   .modal-footer.border-top
-    button.btn.btn-outline-secondary[
-      type="button"
-      data-bs-dismiss="modal"
-    ] Cancel
+    / Mobile
+    .d-block.d-lg-none.w-100
+      .row.g-2
+        .col-6
+          button.btn.btn-outline-secondary.w-100[
+            type="button"
+            data-bs-dismiss="modal"
+          ] Cancel
+        .col-6
+          = button_to community_server_path(current_community, server),
+              method: :delete,
+              class: "btn btn-danger w-100",
+              data: {turbo: false}
+            i.bi.bi-trash.me-2
+            | Delete
 
-    = button_to community_server_path(current_community, server),
-        method: :delete,
-        class: "btn btn-danger",
-        data: {turbo: false}
-      i.bi.bi-trash.me-2
-      | Delete #{server.server_id}
+    / Desktop
+    .d-none.d-lg-flex.justify-content-end.align-items-center.w-100
+      .d-flex.gap-2
+        button.btn.btn-outline-secondary[
+          type="button"
+          data-bs-dismiss="modal"
+        ] Cancel
+        = button_to community_server_path(current_community, server),
+            method: :delete,
+            class: "btn btn-danger",
+            data: {turbo: false}
+          i.bi.bi-trash.me-2
+          | Delete #{server.server_id}

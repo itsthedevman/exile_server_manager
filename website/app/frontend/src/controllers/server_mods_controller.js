@@ -133,7 +133,7 @@ export default class extends ApplicationController {
       : "";
 
     return `
-      <div class="col-6">
+      <div class="col-12 col-lg-6">
         <div class="card bg-dark border-secondary h-100 position-relative">
           ${requiredBadge}
           <div class="card-body d-flex flex-column">

@@ -18,19 +18,19 @@
       .mb-4
         h5.mb-3 Currency Rewards
         .row.g-3
-          .col-4
+          .col-12.col-lg-4
             label.form-label Player Poptabs
             = f.number_field :player_poptabs,
                 class: "form-control",
                 min: 0,
                 value: server.server_reward&.player_poptabs || 0
-          .col-4
+          .col-12.col-lg-4
             label.form-label Locker Poptabs
             = f.number_field :locker_poptabs,
                 class: "form-control",
                 min: 0,
                 value: server.server_reward&.locker_poptabs || 0
-          .col-4
+          .col-12.col-lg-4
             label.form-label Respect
             = f.number_field :respect,
                 class: "form-control",

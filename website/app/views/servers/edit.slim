@@ -81,19 +81,26 @@
           = render "servers/server_config_v1", f:, **local_assigns
 
       / Final Action Footer - for power users who went through everything
-      .d-flex.justify-content-between.align-items-center.pt-4.mt-4.border-top
-        div
-          button.btn.btn-danger[
-            type="button"
-            data-bs-toggle="modal"
-            data-bs-target="#destroy_server_modal"
-          ] Delete Server
+      .d-flex.flex-column.flex-lg-row.justify-content-lg-between.align-items-lg-center.pt-4.mt-4.border-top.gap-3.gap-lg-0
+        / Delete button - always visible
+        button.btn.btn-danger.w-100.w-lg-auto[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#destroy_server_modal"
+        ] Delete Server
 
-        .d-flex.gap-3
+        / Mobile: Stacked save buttons
+        .d-flex.d-lg-none.flex-column.gap-2.w-100
+          = f.submit "Save All Settings", class: "btn btn-success px-4 btn-lg"
+            i.bi.bi-check-circle.me-2
+            | Save All Settings
+          = link_to "Cancel", edit_community_server_path(current_community, server),
+            class: "btn btn-outline-secondary btn-lg"
+
+        / Desktop: Side by side save buttons
+        .d-none.d-lg-flex.gap-3
           = link_to "Cancel", edit_community_server_path(current_community, server),
             class: "btn btn-outline-secondary"
-
-          = f.submit "Save All Settings",
-              class: "btn btn-success px-4"
+          = f.submit "Save All Settings", class: "btn btn-success px-4"
             i.bi.bi-check-circle.me-2
             | Save All Settings

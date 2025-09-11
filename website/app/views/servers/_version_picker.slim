@@ -2,53 +2,67 @@
   .card-body
     - if server.ui_v2?
       / Currently on V2
-      .d-flex.align-items-center.justify-content-between
-        .d-flex.align-items-center
-          i.bi.bi-check-circle.text-success.fs-1.me-3
+      .d-flex.flex-column.flex-lg-row.align-items-start.align-items-lg-center.gap-3.gap-lg-4
+        .d-flex.align-items-start.gap-3.flex-grow-1
+          i.bi.bi-check-circle.text-success.fs-2.fs-lg-1
           div
-            h5.mb-1.text-success ESM v2 Active
-            p.text-muted.mb-0 Modern architecture with cross-platform support and reliable XM8 delivery.
+            h4.mb-2.text-success.fs-5.fs-lg-4 ESM v2 Active
+            p.text-muted.mb-0.small
+              | Modern architecture with cross-platform support and reliable XM8 delivery.
 
-        button.btn.btn-outline-info[data-bs-toggle="collapse" data-bs-target="#v2Help"]
+        button.btn.btn-outline-info.w-100.w-lg-auto[
+          data-bs-toggle="collapse"
+          data-bs-target="#v2Help"
+          aria-expanded="#{params[:migrating] ? "true" : "false"}"
+        ]
           i.bi.bi-question-circle.me-2
-          | Need Help with v2?
-      #v2Help[class=class_names("collapse mt-3", show: params[:migrating])]
+          span.d-none.d-sm-inline Need Help with v2?
+          span.d-sm-none Help
+
+      / Collapsible Help Section
+      #v2Help.collapse.mt-4[class=class_names("show" => params[:migrating])]
         .card.bg-info.bg-opacity-10.border-info
           .card-body
             .row.g-4
-              .col-6
-                h6.text-info.mb-2
+              / Migration Help
+              .col-12.col-lg-6
+                h6.text-info.mb-3
                   i.bi.bi-arrow-up-circle.me-2
                   | Migration from Classic
                 p.small.text-muted.mb-3 Recently upgraded from Classic?
+
                 ul.small.text-muted.mb-3
                   li Review migration steps and database changes
                   li Download fresh config files from dashboard
                   li
                     |> Verify
                     code 01.sql
-                    |<>  and
+                    |<> and
                     code 02.sql
-                    |<  were both executed
+                    |< were both executed
                   li
                     |> Check
                     code @esm/log/esm.log
-                    |<  for errors
+                    |< for errors
                   li
                     |> Ensure
                     code esm.key
-                    |<  is in the
+                    |<> is in the
                     code @esm
-                    |  directory
+                    |< directory
+
                 = link_to server_setup_docs_path(migrating: true),
-                  class: "btn btn-outline-info btn-sm"
+                  class: "btn btn-outline-info btn-sm w-100 w-lg-auto"
+                  i.bi.bi-book.me-2
                   | Migration Guide
 
-              .col-6
-                h6.text-warning.mb-2
+              / Troubleshooting
+              .col-12.col-lg-6
+                h6.text-warning.mb-3
                   i.bi.bi-tools.me-2
                   | Common Setup Issues
 
+                / Database Issues
                 .mb-3
                   h6.small.text-warning.mb-2 Database Migration Errors
                   p.small.text-muted.mb-2 Foreign key constraint failures, table doesn't exist, etc.
@@ -56,12 +70,13 @@
                     li
                       |> Run
                       code 01.sql
-                      |<>  AND
+                      |<> AND
                       code 02.sql
-                      |<  in that exact order
+                      |< in that exact order
                     li Don't run partial scripts or copy-paste sections
                     li Check that your MySQL user has CREATE permissions
 
+                / Connection Issues
                 .mb-3
                   h6.small.text-warning.mb-2 Server Won't Connect
                   p.small.text-muted.mb-2 Dashboard shows offline, commands don't work
@@ -69,70 +84,72 @@
                     li
                       |> Verify
                       code @esm
-                      |<>  is in your
+                      |<> is in your
                       code -servermod
-                      |>  parameter
+                      |< parameter
                     li
                       |> Check that
                       code esm.key
-                      |<>  is directly in the
+                      |<> is directly in the
                       code @esm
-                      |>  folder
+                      |< folder
                     li
                       |> Look at
                       code @esm/log/esm.log
-                      |<  for connection errors
+                      |< for connection errors
 
-              .row.pe-0
-                .col-6.offset-6.pe-0
-                  .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mt-3.mb-0
-                    .d-flex.align-items-center.justify-content-between
-                      small.text-warning.mb-0.col
-                        i.bi.bi-exclamation-triangle.me-2
-                        strong Need to switch back to Classic?
-                        br
+            / Switch Back Warning
+            .row.mt-3
+              .col-12.col-lg-6.offset-lg-6
+                .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-0
+                  .d-flex.flex-column.flex-lg-row.align-items-center.gap-2.gap-lg-3
+                    small.text-warning.mb-0.flex-grow-1.text-center.text-lg-start
+                      i.bi.bi-exclamation-triangle.me-2
+                      strong Need to switch back to Classic?
+                      span.d-block.d-lg-inline.mt-1.mt-lg-0
                         |> After switching back, make sure to redownload and install your
                         code esm.key
-                        |<  file.
-                      = button_to disable_v2_community_server_path(current_community, server),
-                          method: :patch, class: "btn btn-outline-warning btn-sm ms-3",
-                          data: {turbo: false}
-                        | Switch to Classic
+                        |< file.
+                    = button_to disable_v2_community_server_path(current_community, server),
+                        method: :patch,
+                        class: "btn btn-outline-warning btn-sm w-100 w-lg-auto",
+                        data: {turbo: false}
+                      i.bi.bi-arrow-left.me-1
+                      | Switch to Classic
 
     - else
-      / Currently on Classic - show upgrade option
-      .row.g-4
-        .col-9
-          .d-flex.align-items-center.mb-3
-            .me-3
-              i.bi.bi-clock-history.text-secondary.fs-1
-            div
-              h5.mb-1.text-secondary ESM Classic Active
-              p.text-muted.mb-0
-                | Battle-tested since 2018
+      / Currently on Classic
+      .d-flex.flex-column.flex-lg-row.align-items-start.align-items-lg-center.gap-3.gap-lg-4.mb-4
+        .d-flex.align-items-start.gap-3.flex-grow-1
+          i.bi.bi-clock-history.text-secondary.fs-2.fs-lg-1
+          div
+            h4.mb-1.text-secondary.fs-5.fs-lg-4 ESM Classic Active
+            p.text-muted.mb-0.small Battle-tested since 2018
 
-        .col-3.text-end
-          = button_to enable_v2_community_server_path(current_community, server),
-            method: :patch,
-            class: "btn btn-success",
-            data: {turbo: false}
-            i.bi.bi-arrow-up-circle.me-2
-            | Upgrade to v2
-      .row
-        .col
-          .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-0
-            h6.text-success.mb-2
-              i.bi.bi-rocket-takeoff.me-2
-              | ESM v2 Available - Recommended Upgrade
+        = button_to enable_v2_community_server_path(current_community, server),
+          method: :patch,
+          class: "btn btn-success w-100 w-lg-auto",
+          data: {turbo: false}
+          i.bi.bi-arrow-up-circle.me-2
+          span Upgrade to
+          |< v2
 
-            .row.g-4
-              .col-md-6
-                ul.small.mb-0
-                  li Works on Linux + Windows servers
-                  li Minimal setup, powerful controls when needed
-                  li Reliable XM8 delivery - no more missed notifications
-              .col-md-6
-                ul.small.mb-0
-                  li Runs quietly alongside your server
-                  li Search logs with advanced patterns
-                  li Auto-generates configuration files
+      / V2 Benefits
+      .alert.alert-success.border-success.bg-success.bg-opacity-10.mb-0
+        h6.text-success.mb-3
+          i.bi.bi-rocket-takeoff.me-2
+          | ESM v2 Available - Recommended Upgrade
+
+        .row.g-3.g-lg-4
+          .col-12.col-lg-6
+            h6.text-light.mb-2 New Features:
+            ul.small.mb-0
+              li Works on Linux + Windows servers
+              li Minimal setup, powerful controls when needed
+              li Reliable XM8 delivery - no more missed notifications
+          .col-12.col-lg-6
+            h6.text-light.mb-2 Performance:
+            ul.small.mb-0
+              li Runs quietly alongside your server
+              li Search logs with advanced patterns
+              li Auto-generates configuration fil

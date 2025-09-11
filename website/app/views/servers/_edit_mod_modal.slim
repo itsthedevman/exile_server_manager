@@ -42,12 +42,27 @@
             span.badge.bg-warning.text-dark.ms-2 Important
         small.form-text.text-muted.mt-1 Show players which mods they need to join
 
-    .modal-footer.border-top.d-flex.justify-content-between
-      div
-      div
-        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
-        = button_tag "edit_mod_save",
-            class: "btn btn-primary ms-2",
-            data: { action: "click->server-mods#update", mod_id: "" } do
-          i.bi.bi-check-circle.me-2
-          | Save Changes
+    .modal-footer.border-top
+      / Mobile
+      .d-block.d-lg-none.w-100
+        .row.g-2
+          .col-6
+            button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"]
+              | Cancel
+          .col-6
+            = button_tag "edit_mod_save",
+                class: "btn btn-primary w-100",
+                data: { action: "click->server-mods#update", mod_id: "" } do
+              i.bi.bi-check-circle.me-2
+              | Save
+
+      / Desktop
+      .d-none.d-lg-flex.justify-content-end.align-items-center.w-100
+        .d-flex.gap-2
+          button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
+            | Cancel
+          = button_tag "edit_mod_save",
+              class: "btn btn-primary",
+              data: { action: "click->server-mods#update", mod_id: "" } do
+            i.bi.bi-check-circle.me-2
+            | Save Changes

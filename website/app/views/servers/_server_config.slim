@@ -1,13 +1,21 @@
 / Mid-Point Save - For users who don't need advanced config
-.d-flex.justify-content-between.align-items-center.py-4.my-4.border-top.border-bottom
-  .me-2
+.d-flex.flex-column.flex-lg-row.align-items-lg-center.justify-content-lg-between.py-4.my-4.border-top.border-bottom.gap-3.gap-lg-0
+  .flex-grow-1.text-center.text-lg-start
     h5.mb-1.text-success Most servers are configured!
     small.text-muted The settings above cover 90% of server configurations. Advanced options are below if needed.
 
-  .d-flex.gap-3
+  / Mobile
+  .d-flex.d-lg-none.flex-column.gap-2.w-100
+    = f.button "commit", class: "btn btn-success btn-lg", type: "submit" do
+      i.bi.bi-check-circle.me-2
+      | Save Settings
     = link_to "Cancel", edit_community_server_path(current_community, server),
       class: "btn btn-outline-secondary btn-lg"
 
+  / Desktop
+  .d-none.d-lg-flex.gap-3
+    = link_to "Cancel", edit_community_server_path(current_community, server),
+      class: "btn btn-outline-secondary btn-lg"
     = f.button "commit", class: "btn btn-success btn-lg", type: "submit" do
       i.bi.bi-check-circle.me-2
       | Save Settings
@@ -45,14 +53,14 @@
         | Configure ExtDB settings for database connectivity. Ignored if Database URI is set above.
 
       .row.g-3.mb-3
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium Config File Path
           = f.text_field :extdb_conf_path,
               class: "form-control font-monospace",
               placeholder: "Leave blank for auto-detection"
           small.form-text.text-muted Path to your extdb3-conf.ini file
 
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium Database Section
           = f.text_field :extdb_conf_header_name,
               class: "form-control font-monospace",
@@ -60,7 +68,7 @@
           small.form-text.text-muted Section name in your ExtDB config
 
       .row.g-3
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium ExtDB Version
           = f.select :extdb_version,
               options_for_select([ \
@@ -97,7 +105,7 @@
 
   .card-body
     .row.g-3
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Number Format
         = f.text_field :number_locale,
             class: "form-control font-monospace",
@@ -109,7 +117,7 @@
           code de_DE
           |  (12.345,67)
 
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Server Mod Directory
         = f.text_field :server_mod_name,
             class: "form-control font-monospace",
@@ -133,7 +141,7 @@
         | Configure where ESM writes its own diagnostic and debug information
 
       .row.g-3
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium Log Output Destination
           = f.select :log_output,
               options_for_select([ \
@@ -146,7 +154,7 @@
               class: "form-select"
           small.form-text.text-muted Where ESM sends log messages
 
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium ESM Log File Path
           = f.text_field :logging_path,
               class: "form-control font-monospace",
@@ -171,7 +179,7 @@
         | Configure how ESM searches through your server logs when using #{command_usage(:logs, show_arguments: false)}
 
       .row.g-3.mb-4
-        .col-6
+        .col-12.col-lg-6
           label.form-label.fw-medium Search Time Range
           .input-group
             = f.number_field :exile_logs_search_days,

@@ -10,7 +10,7 @@
       | Override default paths for ExtDB and logging. Only modify these if you have custom server configurations.
 
     .row.g-3
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Custom ExtDB Path
         = f.text_field :extdb_conf_path,
             class: "form-control font-monospace",
@@ -21,7 +21,7 @@
           |> Example:
           code D:\Arma3Servers\@ExileServer
 
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Custom Logging Path
         = f.text_field :logging_path,
             class: "form-control font-monospace",
@@ -43,7 +43,7 @@
       | Configure how ESM processes requests on your server. Exile threading generally provides better FPS.
 
     .row.g-3
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Request Thread Type
         = f.select :request_thread_type,
             options_for_select([["Exile", "exile"], ["SQF", "sqf"]], f.object.request_thread_type),
@@ -55,7 +55,7 @@
           br
           | Use SQF if you notice processing delays.
 
-      .col-6
+      .col-12.col-lg-6
         label.form-label.fw-medium Request Tick Rate (seconds)
         = f.number_field :request_thread_tick,
             class: "form-control",

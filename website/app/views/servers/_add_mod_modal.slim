@@ -40,15 +40,35 @@
           span.badge.bg-warning.text-dark.ms-2 Important
       small.form-text.text-muted.mt-1 Show players which mods they need to join
 
-  .modal-footer.border-top.d-flex.justify-content-between
-    div
+  .modal-footer.border-top
+    / Mobile
+    .d-block.d-lg-none.w-100
+      .row.g-2.mb-3
+        .col-12
+          small.text-muted.text-center.d-block
+            i.bi.bi-info-circle.text-info.me-1
+            | You can modify mod details later if needed
+      .row.g-2
+        .col-6
+          button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"]
+            | Cancel
+        .col-6
+          = button_tag type: "button",
+              class: "btn btn-success w-100",
+              data: { action: "click->server-mods#create" } do
+            i.bi.bi-plus-circle.me-2
+            | Add Mod
+
+    / Desktop
+    .d-none.d-lg-flex.justify-content-between.align-items-center.w-100
       small.text-muted
-        i.bi.bi-info-circle.me-1
+        i.bi.bi-info-circle.text-info.me-1
         | You can modify mod details later if needed
-    div
-      button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
-      = button_tag type: "button",
-          class: "btn btn-success ms-2",
-          data: { action: "click->server-mods#create" } do
-        i.bi.bi-plus-circle.me-2
-        | Add Mod
+      .d-flex.gap-2
+        button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
+          | Cancel
+        = button_tag type: "button",
+            class: "btn btn-success",
+            data: { action: "click->server-mods#create" } do
+          i.bi.bi-plus-circle.me-2
+          | Add Mod
