@@ -10,7 +10,7 @@
             p.text-muted.mb-0.small
               | Modern architecture with cross-platform support and reliable XM8 delivery.
 
-        button.btn.btn-outline-info.w-100.w-lg-auto[
+        button.btn.btn-outline-info[
           data-bs-toggle="collapse"
           data-bs-target="#v2Help"
           aria-expanded="#{params[:migrating] ? "true" : "false"}"
@@ -99,23 +99,23 @@
                       |< for connection errors
 
             / Switch Back Warning
-            .row.mt-3
-              .col-12.col-lg-6.offset-lg-6
-                .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-0
-                  .d-flex.flex-column.flex-lg-row.align-items-center.gap-2.gap-lg-3
-                    small.text-warning.mb-0.flex-grow-1.text-center.text-lg-start
-                      i.bi.bi-exclamation-triangle.me-2
-                      strong Need to switch back to Classic?
-                      span.d-block.d-lg-inline.mt-1.mt-lg-0
-                        |> After switching back, make sure to redownload and install your
-                        code esm.key
-                        |< file.
-                    = button_to disable_v2_community_server_path(current_community, server),
-                        method: :patch,
-                        class: "btn btn-outline-warning btn-sm w-100 w-lg-auto",
-                        data: {turbo: false}
-                      i.bi.bi-arrow-left.me-1
-                      | Switch to Classic
+            .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mt-4.mb-0
+              .row.g-3.align-items-center
+                .col-12.col-lg-8
+                  small.text-warning.mb-0
+                    i.bi.bi-exclamation-triangle.me-2
+                    strong Need to switch back to Classic?
+                    span.d-block.mt-1
+                      |> After switching back, make sure to redownload and install your
+                      code esm.key
+                      |< file.
+                .col-12.col-lg-4.text-lg-end
+                  = button_to disable_v2_community_server_path(current_community, server),
+                      method: :patch,
+                      class: "btn btn-outline-warning btn-sm",
+                      data: {turbo: false}
+                    i.bi.bi-arrow-left.me-1
+                    | Switch to Classic
 
     - else
       / Currently on Classic
@@ -128,10 +128,10 @@
 
         = button_to enable_v2_community_server_path(current_community, server),
           method: :patch,
-          class: "btn btn-success w-100 w-lg-auto",
+          class: "btn btn-success",
           data: {turbo: false}
           i.bi.bi-arrow-up-circle.me-2
-          span Upgrade to
+          span.d-none.d-sm-inline Upgrade to
           |< v2
 
       / V2 Benefits
@@ -152,4 +152,4 @@
             ul.small.mb-0
               li Runs quietly alongside your server
               li Search logs with advanced patterns
-              li Auto-generates configuration fil
+              li Auto-generates configuration files
