@@ -1,16 +1,35 @@
 = update_turbo_frame "log_entry"
+  / Log Entry Header
   .card.bg-dark.border-secondary
-    .card-header.border-secondary.d-flex.align-items-center.justify-content-between
-      .d-flex.align-items-center
-        h5.mb-0.text-light.me-3
-          i.bi.bi-file-code.me-2
-          | #{log_entry.file_name || "No File"}
-        span.badge.bg-success
-          = log_entry.file_date&.strftime("%Y-%m-%d") || "Unknown"
+    .card-header.border-secondary
+      / Mobile
+      .d-block.d-lg-none
+        / File name on its own line
+        .d-flex.align-items-center.mb-2
+          i.bi.bi-file-code.text-info.me-2
+          h5.mb-0.text-light.text-truncate
+            = log_entry.file_name || "No File"
 
-      small.text-muted
-        i.bi.bi-eye.me-1
-        | #{log_entry.entries.size} entries
+        / Date and entry count on second line
+        .d-flex.align-items-center.justify-content-between
+          span.badge.bg-success.fs-6
+            = log_entry.file_date&.strftime("%Y-%m-%d") || "Unknown"
+          small.text-muted
+            i.bi.bi-eye.me-1
+            | #{log_entry.entries.size} entries
+
+      / Desktop
+      .d-none.d-lg-flex.align-items-center.justify-content-between
+        .d-flex.align-items-center
+          h5.mb-0.text-light.me-3
+            i.bi.bi-file-code.me-2
+            | #{log_entry.file_name || "No File"}
+          span.badge.bg-success
+            = log_entry.file_date&.strftime("%Y-%m-%d") || "Unknown"
+
+        small.text-muted
+          i.bi.bi-eye.me-1
+          | #{log_entry.entries.size} entries
 
     .card-body.p-0
       / Log content
