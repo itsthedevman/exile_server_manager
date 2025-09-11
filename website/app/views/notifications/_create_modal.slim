@@ -157,5 +157,17 @@
                   / Populated by Stimulus based on selected notification type
 
       .modal-footer
-        button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
-        = f.submit "Create Notification", class: "btn btn-success text-white"
+        / Mobile
+        .d-block.d-lg-none.w-100
+          .row.g-2
+            .col-6
+              button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"]
+                | Cancel
+            .col-6
+              = f.submit "Create", class: "btn btn-success text-white w-100"
+
+        / Desktop
+        .d-none.d-lg-flex.gap-2.justify-content-end
+          button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
+            | Cancel
+          = f.submit "Create Notification", class: "btn btn-success text-white"

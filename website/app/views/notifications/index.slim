@@ -4,25 +4,57 @@
     p.lead.text-muted Customize Discord notifications for your community
 
   / Top Action Bar
-  .d-flex.align-items-center.justify-content-between.mb-4
-    .d-flex.align-items-center.gap-3
-      h4.mb-0
-        i.bi.bi-bell.text-warning.me-2
-        | Notifications
-        span#notification_count.badge.bg-secondary.ms-2 = notifications.size
+  .mb-4
+    / Mobile
+    .d-block.d-lg-none
+      / Title row
+      .d-flex.align-items-center.justify-content-between.mb-3
+        h4.mb-0
+          i.bi.bi-bell.text-warning.me-2
+          | Notifications
+          span#notification_count.badge.bg-secondary.ms-2 = notifications.size
 
-      / Filter
-      = form_with url: community_notifications_path(current_community),
-          method: :get, class: "d-flex align-items-center gap-2" do |f|
-        label.form-label.small.text-muted.mb-0.text-nowrap Filter:
-        = f.select :filter,
-            options_for_select(filters, params[:filter] || "all"),
-            {},
-            {class: "form-select form-select-sm col-3", onchange: "this.form.requestSubmit();"}
+      / Filter and create button row
+      .row.g-2
+        .col-7
+          = form_with url: community_notifications_path(current_community),
+              method: :get, class: "d-flex align-items-center gap-2" do |f|
+            label.form-label.small.text-muted.mb-0.text-nowrap.me-2 Filter:
+            = f.select :filter,
+                options_for_select(filters, params[:filter] || "all"),
+                {},
+                {class: "form-select form-select-sm flex-grow-1", onchange: "this.form.requestSubmit();"}
+        .col-5
+          button.btn.btn-primary.w-100[
+            data-bs-toggle="modal"
+            data-bs-target="#create_notification_modal"
+          ]
+            i.bi.bi-plus.me-1
+            | Create
 
-    button.btn.btn-primary data-bs-toggle="modal" data-bs-target="#create_notification_modal"
-      i.bi.bi-plus.me-1
-      | Create Notification
+    / Desktop
+    .d-none.d-lg-flex.align-items-center.justify-content-between
+      .d-flex.align-items-center.gap-3
+        h4.mb-0
+          i.bi.bi-bell.text-warning.me-2
+          | Notifications
+          span#notification_count.badge.bg-secondary.ms-2 = notifications.size
+
+        / Filter
+        = form_with url: community_notifications_path(current_community),
+            method: :get, class: "d-flex align-items-center gap-2" do |f|
+          label.form-label.small.text-muted.mb-0.text-nowrap Filter:
+          = f.select :filter,
+              options_for_select(filters, params[:filter] || "all"),
+              {},
+              {class: "form-select form-select-sm col-3", onchange: "this.form.requestSubmit();"}
+
+      button.btn.btn-primary[
+        data-bs-toggle="modal"
+        data-bs-target="#create_notification_modal"
+      ]
+        i.bi.bi-plus.me-1
+        | Create Notification
 
   / Card Gallery
   - if notifications.size > 0
