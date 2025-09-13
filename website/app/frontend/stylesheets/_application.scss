@@ -38,7 +38,7 @@ code {
 #main-container {
     @extend .container-fluid;
     @extend .px-0;
-    @extend .overflow-x-hidden;
+    // @extend .overflow-x-hidden;
 
     flex: 1; // Takes up remaining space
 
