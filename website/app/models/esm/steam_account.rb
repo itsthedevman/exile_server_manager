@@ -35,7 +35,7 @@ module ESM
     # =============================================================================
 
     def token
-      Rails.application.credentials.steam.token
+      Settings.steam.token
     end
   end
 end

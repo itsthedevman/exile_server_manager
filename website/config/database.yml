@@ -80,8 +80,9 @@ production:
   primary: &primary_production
     <<: *default
     database: esm_production
-    username: esm
-    password: <%= ENV["ESM_DATABASE_PASSWORD"] %>
+    host: <%= ENV["POSTGRES_HOST"] %>
+    username: <%= ENV["POSTGRES_USERNAME"] %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
   cache:
     <<: *primary_production
     database: esm_production_cache

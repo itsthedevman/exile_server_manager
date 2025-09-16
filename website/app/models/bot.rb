@@ -7,7 +7,7 @@ class Bot
   # @return [String] the invite URL for the bot
   #
   def self.invite_url
-    client_id = Rails.application.credentials.discord.id
+    client_id = Settings.discord.id
 
     redirect_uri = URI.encode_uri_component(
       Rails.env.production? ? "https://esmbot.com" : "http://localhost:3000"

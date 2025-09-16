@@ -12,7 +12,7 @@ class Discord
       if token
         "Bearer #{token}"
       else
-        "Bot #{Rails.application.credentials.discord[:token]}"
+        "Bot #{Settings.discord.token}"
       end
 
     @client = HTTP.auth(auth)

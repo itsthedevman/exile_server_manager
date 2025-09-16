@@ -109,9 +109,11 @@ gem "semantic"                  # Semantic versioning helper
 gem "faker"                     # Fake data generation
 gem "dotenv"                    # Environment variable management
 gem "ostruct"                   # OpenStruct for dynamic objects
+gem "config"                    # YAML based configuration
+gem "dry-validation"
 
 # My Libraries
 gem "esm_ruby_core", path: "../esm_ruby_core"
 gem "everythingrb"              # Method extensions
 gem "sortsmith"                 # Sorting utilities
-gem "spec_forge", path: "../spec_forge"                # API testing suite
+gem "spec_forge"                # API testing suite

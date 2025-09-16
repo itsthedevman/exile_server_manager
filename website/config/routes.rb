@@ -127,8 +127,8 @@ Rails.application.routes.draw do
       # https://github.com/itsthedevman/esm_arma/releases/download/v2.0.1/@esm-201.zip
       [
         "https://github.com/itsthedevman/esm_arma/releases/download",
-        "/v#{ENV["MOD_VERSION"]}",
-        "/@esm-#{ENV["MOD_VERSION"].delete(".")}.zip"
+        "/v#{Settings.mod_version}",
+        "/@esm-#{Settings.mod_version.delete(".")}.zip"
       ].join
     )
   )

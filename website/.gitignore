@@ -53,3 +53,7 @@ node_modules
 
 /config/credentials/production.key
 /config/credentials/production.yml.enc
+
+config/settings.local.yml
+config/settings/*.local.yml
+config/environments/*.local.yml
