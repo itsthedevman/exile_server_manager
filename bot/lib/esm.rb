@@ -51,13 +51,11 @@
 #############################
 
 # Set up the shared Ruby classes
-base = Pathname.new(File.expand_path("../../", __dir__))
-
 ESM_CORE_PATH =
   if ENV["ESM_ENV"] == "production"
-    base.join("shared", "esm_ruby_core", "lib")
+    Pathname.new(File.expand_path("../../../", __dir__)).join("shared", "esm_ruby_core", "lib")
   else
-    base.join("esm_ruby_core", "lib")
+    Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core", "lib")
   end
 
 # Require the core Ruby classes
