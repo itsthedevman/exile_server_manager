@@ -14,7 +14,6 @@ end
 
 group :development do
   # === Debugging & Profiling ===
-  gem "pry"                               # Interactive debugging console
   gem "awesome_print"                     # Pretty print objects
   gem "active_record_query_trace"         # See where SQL queries come from
   gem "memory_profiler"                   # Memory usage analysis
@@ -85,7 +84,6 @@ gem "standalone_migrations"               # Database migrations outside Rails
 ## Discord Bot Framework
 ####################################################################################################
 
-
 gem "discordrb",                          # Discord integration (custom fork with subcommand fixes)
   git: "https://github.com/itsthedevman/discordrb.git",
   branch: "fix/group-subcommand-mixing"
@@ -128,6 +126,9 @@ gem "openssl"                             # SSL/TLS support
 # CLI & Output
 gem "colorize"                            # Colorized terminal output
 gem "terminal-table"                      # ASCII tables for CLI
+
+# Debugging
+gem "pry"                               # Interactive debugging console
 
 ####################################################################################################
 ## Web Server & Core Infrastructure
