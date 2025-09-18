@@ -127,15 +127,36 @@ module ESM
 
   class << self
     def bot
-      @bot ||= ESM::Bot.new
+      @bot ||= begin
+        ESM.logger.info "Creating new bot instance..."
+        bot = ESM::Bot.new
+        ESM.logger.info "Bot instance created"
+        bot
+      end
     end
 
     def run!(async: false, **)
+      ESM.logger.info "=== BOT CONNECTION ATTEMPT ==="
+      ESM.logger.info "Time: #{Time.now}"
+      ESM.logger.info "Async: #{async}"
+
+      # Test Discord's gateway first
+      require "net/http"
+      begin
+        ESM.logger.info "Testing Discord gateway reachability..."
+        uri = URI("https://discord.com/api/gateway")
+        response = Net::HTTP.get_response(uri)
+        ESM.logger.info "Gateway response: #{response.code}"
+      rescue => e
+        ESM.logger.error "Gateway test failed: #{e.message}"
+      end
+
       require_relative "post_init"
       require_relative "post_init_dev" if ESM.env.development?
 
-      # Start the bot
+      ESM.logger.info "About to call bot.run..."
       bot.run(async:, **)
+      ESM.logger.info "bot.run returned"
     end
 
     # Load everything right meow
