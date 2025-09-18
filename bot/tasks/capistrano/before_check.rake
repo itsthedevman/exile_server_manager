@@ -25,7 +25,9 @@ namespace :deploy do
       if !test "[ -d #{core_repo} ]"
         execute("cd $HOME/esm_bot/shared && git clone esm_core:itsthedevman/esm_ruby_core.git")
       end
+
       execute("cd #{core_repo} && git pull")
+      execute("ln -sf #{core_repo} $HOME/esm_bot/releases/esm_ruby_core")
     end
   end
 end
