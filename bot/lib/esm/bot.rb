@@ -37,17 +37,22 @@ module ESM
     attr_reader :config, :metadata, :delivery_overseer
 
     def initialize
+      ESM.logger.info "Bot initializing"
       @timer = Timer.new
       @waiting_for = {}
       @mutex = Mutex.new
       @delivery_overseer = ESM::Bot::DeliveryOverseer.new
 
+      ESM.logger.info "About to call bot.super"
       super(token: ESM.config.token, intents: INTENTS)
+      ESM.logger.info "Bot initialized"
     end
 
     def run(async: false, skip_initialization: false)
+      ESM.logger.info "Bot.run called"
       @timer.start!
 
+      ESM.logger.info "Loading commands"
       ESM::Command.load
 
       # This is needed for console. Otherwise the console's connection would start receiving events
@@ -57,11 +62,14 @@ module ESM
         return
       end
 
+      ESM.logger.info "Binding events"
       # Binds the Discord Events
       bind_events!
 
       # Start the bot
+      ESM.logger.info "Starting bot"
       super(async)
+      ESM.logger.info "Started bot"
     end
 
     def stop
