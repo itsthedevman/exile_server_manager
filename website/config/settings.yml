@@ -4,6 +4,7 @@ discord:
   id: ""
   token: ""
   secret: ""
+  logging_webhook_url: ""
 
 steam:
   token: ""
