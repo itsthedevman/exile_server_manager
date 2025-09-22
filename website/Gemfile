@@ -113,7 +113,8 @@ gem "config"                    # YAML based configuration
 gem "dry-validation"
 
 # My Libraries
-gem "esm_ruby_core", path: "../esm_ruby_core"
+gem "esm_ruby_core",
+  path: (ENV["RAILS_ENV"] == "production") ? "/opt/esm_ruby_core" : "../esm_ruby_core"
 gem "everythingrb"              # Method extensions
 gem "sortsmith"                 # Sorting utilities
 gem "spec_forge"                # API testing suite

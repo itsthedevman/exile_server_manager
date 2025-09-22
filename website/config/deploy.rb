@@ -4,11 +4,14 @@
 lock "~> 3.19.2"
 
 set :application, "esm_website"
-set :repo_url, "esm_website:itsthedevman/esm_website.git"
+
+set :repo_url, "deploy_esm_website:itsthedevman/esm_website.git"
 set :branch, :main
 
-set :rails_env, "production"
+set :deploy_to, "/opt/esm_website"
 set :keep_releases, 5
+
+set :rails_env, "production"
 
 # Set up ASDF environment manually (bypassing capistrano-asdf gem as it doesn't support asdf 0.16+)
 set :default_env, {
