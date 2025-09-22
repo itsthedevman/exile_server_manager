@@ -65,6 +65,10 @@ Config.setup do |config|
     required(:steam).hash do
       required(:token).filled(:string)
     end
+
+    if Rails.env.production?
+      required(:secret_key_base).filled(:string)
+    end
   end
 
   # Evaluate ERB in YAML config files at load time.
