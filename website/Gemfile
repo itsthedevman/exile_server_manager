@@ -22,17 +22,6 @@ group :development do
   gem "rack-mini-profiler"      # Performance profiling toolbar
   gem "benchmark-ips"           # Iterations per second benchmarking
 
-  # === Deployment ===
-  gem "capistrano", require: false
-  gem "capistrano-asdf", require: false
-  gem "capistrano-bundler", require: false
-  gem "capistrano-rails", require: false
-  gem "capistrano-yarn", require: false
-
-  # SSH dependencies for Capistrano
-  gem "ed25519", require: false
-  gem "bcrypt_pbkdf", require: false
-
   # === Code Quality & Formatting ===
   gem "ruby-lsp"                # VS Code Ruby support
   gem "standard"                # Ruby style guide enforcer
