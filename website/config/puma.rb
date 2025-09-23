@@ -38,8 +38,8 @@ else
   bind "unix://#{tmp_directory}/sockets/puma.sock"
 
   # Logging
-  stdout_redirect "#{app_directory}/log/puma.stdout.log",
-    "#{app_directory}/log/puma.stderr.log",
+  stdout_redirect "/opt/esm_website/shared/log/puma.stdout.log",
+    "/opt/esm_website/shared/log/puma.stderr.log",
     true
 
   # PID management
