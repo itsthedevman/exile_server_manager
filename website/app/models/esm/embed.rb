@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  module EMBED
+  module Embed
     TITLE_LENGTH_MAX = 256
     DESCRIPTION_LENGTH_MAX = 2048
     FIELD_NAME_LENGTH_MAX = 256

@@ -6,8 +6,8 @@
   = content_tag :div, nil,
     data: { \
       controller: "notifications",
-      notifications_max_title_length_value: ESM::EMBED::TITLE_LENGTH_MAX,
-      notifications_max_description_length_value: ESM::EMBED::DESCRIPTION_LENGTH_MAX,
+      notifications_max_title_length_value: ESM::Embed::TITLE_LENGTH_MAX,
+      notifications_max_description_length_value: ESM::Embed::DESCRIPTION_LENGTH_MAX,
       notifications_variables_value: variables \
     }
     .modal-header.border-primary.bg-primary.bg-opacity-10
@@ -121,7 +121,7 @@
                       | Discord markdown supported
                   small.text-muted
                     span[data-notifications-target="titleLength"] 0
-                    | /#{ESM::EMBED::TITLE_LENGTH_MAX}
+                    | /#{ESM::Embed::TITLE_LENGTH_MAX}
 
               / Message Input
               .col-12
@@ -136,12 +136,12 @@
                       notifications_target: "description",
                       action: "input->notifications#onDescriptionChanged" \
                     },
-                    maxlength: ESM::EMBED::DESCRIPTION_LENGTH_MAX
+                    maxlength: ESM::Embed::DESCRIPTION_LENGTH_MAX
                 .d-flex.justify-content-between.mt-1
                   small.text-muted Variables will be replaced when sent
                   small.text-muted
                     span[data-notifications-target="descriptionLength"] 0
-                    | /#{ESM::EMBED::DESCRIPTION_LENGTH_MAX}
+                    | /#{ESM::Embed::DESCRIPTION_LENGTH_MAX}
 
         / Row 3: Variables (Full Width)
         .row
