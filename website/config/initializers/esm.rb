@@ -2,10 +2,14 @@
 
 Rails.application.config.to_prepare do
   # Explicitly require core models
-  core_path = Pathname.new(File.expand_path("../../../", __dir__))
-    .join("esm_ruby_core/lib")
+  core_path =
+    if (path = ENV["ESM_RUBY_PATH"]) && path.present?
+      Pathname.new(path)
+    else
+      Pathname.new(File.expand_path("../../../", __dir__)).join("esm_ruby_core")
+    end
 
-  Dir[core_path.join("**/*.rb")].sort.each do |file|
+  Dir[core_path.join("lib/**/*.rb")].sort.each do |file|
     load file
   end
 
