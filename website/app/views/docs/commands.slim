@@ -22,7 +22,7 @@
                     span.badge.bg-secondary.small = commands.size
                 / Individual commands
                 - commands.each do |command|
-                  a.list-group-item.list-group-item-action.text-muted.ps-5.border-0.bg-transparent.py-2 href="##{command.name}"
+                  a.list-group-item.list-group-item-action.text-muted.ps-5.border-0.bg-transparent.py-2 href="##{command.usage.parameterize}"
                     = command.operation
 
     / Main Content with Info Cards
