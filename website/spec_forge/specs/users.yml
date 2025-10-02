@@ -1,20 +1,32 @@
 global:
-  variables:
-    user_one: factories.user
-    user_two: factories.user
-    user_three: factories.user
+  callbacks:
+  - before_file: prepare_database
+    after_file: cleanup_database
 
 index_users:
   url: /users.json
   method: get
   debug: true
+  variables:
+    user_one: factories.user
+    user_two: factories.user
+    user_three: factories.user
   expectations:
   - query:
       steam_uids:
-      - global.variables.user_one.steam_uid
-      - global.variables.user_two.steam_uid
+      - variables.user_one.steam_uid
+      - variables.user_two.steam_uid
     expect:
       status: 200
       json:
-      - discord_id: global.variables.user_one.discord_id
-      - discord_id: global.variables.user_two.discord_id
+      - discord_id: variables.user_one.discord_id
+      - discord_id: variables.user_two.discord_id
+  - query:
+      discord_ids:
+      - variables.user_one.discord_id
+      - variables.user_two.discord_id
+    expect:
+      status: 200
+      json:
+      - steam_uid: variables.user_one.steam_uid
+      - steam_uid: variables.user_two.steam_uid

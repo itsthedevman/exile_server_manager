@@ -34,10 +34,12 @@ SpecForge.configure do |config|
     DatabaseCleaner.clean_with(:deletion, {except: %w[api_tokens]})
   end
 
-  config.rspec.around(:each) do |example|
-    DatabaseCleaner.cleaning do
-      example.run
-    end
+  config.define_callback :prepare_database do |context|
+    DatabaseCleaner.start
+  end
+
+  config.define_callback :cleanup_database do |context|
+    DatabaseCleaner.clean
   end
 
   config.on_debug do
@@ -78,6 +80,8 @@ SpecForge.configure do |config|
       puts "  Expected: #{expected_json}"
       puts "  Actual keys: #{response.body.keys}" if response.body.is_a?(Hash)
     end
+
+    puts inspect
 
     puts "=" * 80 + "\n"
   end
