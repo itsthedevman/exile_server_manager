@@ -46,7 +46,7 @@ module Api
     private
 
     def lookup_by_steam_uids(steam_uids_input)
-      steam_uids = steam_uids_input.to_a || []
+      steam_uids = steam_uids_input.to_a.uniq || []
 
       bad_request! unless steam_uids.is_a?(Array)
       validate_batch_size!(steam_uids, "steam_uids")
@@ -67,7 +67,7 @@ module Api
     end
 
     def lookup_by_discord_ids(discord_ids_input)
-      discord_ids = discord_ids_input.to_a || []
+      discord_ids = discord_ids_input.to_a.uniq || []
 
       bad_request! unless discord_ids.is_a?(Array)
       validate_batch_size!(discord_ids, "discord_ids")
