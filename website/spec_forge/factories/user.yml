@@ -1,7 +1,6 @@
 user:
   class: ESM::User
   attributes:
-
     discord_id:
       faker.number.number:
         digits: 17
