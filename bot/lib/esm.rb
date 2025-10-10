@@ -64,7 +64,7 @@ require ESM_CORE_PATH.join("esm.rb")
 # Load Dotenv variables; overwriting any that already exist
 Dotenv.overload
 Dotenv.overload(".env.test") if ENV["ESM_ENV"] == "test"
-Dotenv.overload(".env.prod") if ENV["ESM_ENV"] == "production"
+Dotenv.overload(".env.production") if ENV["ESM_ENV"] == "production"
 
 # Default timezone to UTC
 Time.zone_default = Time.find_zone!("UTC")
