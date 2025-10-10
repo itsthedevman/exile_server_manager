@@ -54,6 +54,9 @@ gem "solid_cable"               # Database-backed Action Cable
 # Performance
 gem "bootsnap", require: false  # Faster boot through caching
 
+# Communication
+gem "drb" # Distributed Ruby (DRb) for remote object communication
+
 ####################################################################################################
 ## Frontend & Assets
 ####################################################################################################
