@@ -22,6 +22,21 @@ module ESM
       additional_logs
     ].freeze
 
+    CONFIG_DEFAULTS = {
+      connection_uri: "",
+      log_level: "info",
+      logging_path: "",
+      extdb_conf_path: "",
+      extdb_conf_header_name: "exile",
+      extdb_version: 3,
+      log_output: "extension",
+      database_uri: "",
+      server_mod_name: "@ExileServer",
+      number_locale: "en",
+      exile_logs_search_days: 14,
+      additional_logs: []
+    }.with_indifferent_access.freeze
+
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
@@ -161,6 +176,8 @@ module ESM
     # CALLBACKS
     # =============================================================================
 
+    before_save :set_default_config_values
+
     # =============================================================================
     # SCOPES
     # =============================================================================
@@ -176,6 +193,17 @@ module ESM
     def server_needs_restarted?
       all_changes = previous_changes.merge(changes)
       all_changes.except(*CONFIG_ATTRIBUTES).present?
+    end
+
+    private
+
+    def set_default_config_values
+      CONFIG_DEFAULTS.each do |key, default_value|
+        value = self[key].presence
+        next if value != default_value
+
+        self[key] = nil
+      end
     end
   end
 end
