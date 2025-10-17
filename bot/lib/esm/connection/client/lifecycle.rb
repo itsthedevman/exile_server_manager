@@ -41,6 +41,8 @@ module ESM
           close
         rescue ESM::Exception::SendableError => e
           send_error(e.data)
+        rescue ESM::Exception::RequestTimeout
+          nil # Ignore
         rescue => e
           error!(error: e)
         ensure
