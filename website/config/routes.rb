@@ -15,11 +15,6 @@ Rails.application.routes.draw do
     "https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline"
   end
 
-  # Legacy Redirects
-  get "/portal/server", to: redirect("/communities")
-  get "player_dashboard", to: redirect("/account")
-  get "server_dashboard", to: redirect("/communities")
-
   ##################################################################################################
 
   # /
@@ -177,4 +172,29 @@ Rails.application.routes.draw do
 
   # /up
   get :up, to: "rails/health#show", as: :rails_health_check
+
+  ##################################################################################################
+
+  # Legacy Redirects
+  get :"tools/id_parser", to: redirect("/discover")
+  get :"portal/server", to: redirect("/communities")
+  get :player_dashboard, to: redirect("/account")
+  get :server_dashboard, to: redirect("/communities")
+
+  get :wiki, to: redirect("/docs/getting_started")
+
+  namespace :wiki do
+    get :"api(/:function)", to: redirect("/docs/getting_started")
+    get :"changelog(/:date)", to: redirect("/docs/getting_started")
+    get :commands, to: redirect("/docs/commands")
+    get :gambling, to: redirect("/docs/getting_started")
+    get :getting_started_v2, to: redirect("/docs/getting_started")
+    get :getting_started, to: redirect("/docs/getting_started")
+    get :notification_configuration, to: redirect("/docs/getting_started")
+    get :player_mode, to: redirect("/docs/getting_started")
+    get :player_xm8_notification_routing, to: redirect("/docs/getting_started")
+    get :privacy, to: redirect("/legal/privacy_policy")
+    get :server_xm8_notification_routing, to: redirect("/docs/getting_started")
+    get :tos, to: redirect("/legal/terms_of_service")
+  end
 end
