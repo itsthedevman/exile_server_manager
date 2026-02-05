@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+mod_version: "2.0.1"
+
+discord:
+  id: "test_discord_id"
+  token: "test_discord_token"
+  secret: "test_discord_secret"
+  logging_webhook_url: "https://example.com/webhook"
+
+steam:
+  token: "test_steam_api_key"

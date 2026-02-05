@@ -33,6 +33,8 @@ end
 
 group :test do
   gem "database_cleaner-active_record"
+  gem "rspec-rails"
+  gem "webmock"
 end
 
 ####################################################################################################
@@ -87,9 +89,10 @@ gem "pundit"                    # Simple, robust authorization
 
 # OAuth Providers
 gem "omniauth"
+gem "omniauth-openid"
 gem "omniauth-rails_csrf_protection"
 gem "omniauth-discord"
-gem "omniauth-steam"
+# omniauth-steam is handled by lib/omniauth/strategies/steam.rb --- the gem has a bug with multi-json (as of 2026-02)
 
 ####################################################################################################
 ## Utilities & Custom
