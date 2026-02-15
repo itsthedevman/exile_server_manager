@@ -115,7 +115,7 @@ class NotificationRouteCardComponent < ApplicationComponent
       title: "Missing channel permissions or channel has been deleted"
     ) do
       safe_join([
-        content_tag(:i, "", class: "bi bi-exclamation-circle text-danger"),
+        content_tag(:i, "", class: "bi bi-exclamation-triangle text-warning"),
         content_tag(:span, route.notification_type.titleize, class: "small text-muted")
       ])
     end
