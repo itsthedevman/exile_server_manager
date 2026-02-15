@@ -31,6 +31,19 @@
     / Route cards
     #routes-container.row.g-4
       - if routes.size > 0
+        - if routes.any? { |r| r[:channel].nil? }
+          .col-12
+            .alert.alert-warning.border-warning.d-flex.align-items-start
+              i.bi.bi-exclamation-triangle.text-warning.me-3.fs-5
+              div
+                h6.text-warning.mb-2 Some routes may have issues
+                p.small.mb-0
+                  |> We couldn't access one or more channel(s). This might mean the channel was deleted,
+                  |> or ESM doesn't have permission to access it.
+                  br
+                  |> Check the routes below marked with
+                  i.bi.bi-exclamation-triangle.text-warning.small
+                  |< .
         - routes.each do |route_data|
           = render_component( \
             NotificationRouteCardComponent,

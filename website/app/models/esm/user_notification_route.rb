@@ -44,11 +44,11 @@ module ESM
 
           routes = routes.filter_map do |_, routes|
             route = routes.first
-            channel = route.channel
-            next if channel.nil? # Ensures they have access to the channel
 
+            channel = route.channel
             server = route.source_server
             community = route.destination_community
+
             routes = routes.sort_by(&:notification_type)
 
             {channel:, server:, community:, routes:}
@@ -73,11 +73,11 @@ module ESM
         channel_id,
         user_id:,
         community_id: destination_community_id
-      ).to_istruct
+      )&.to_istruct
     end
 
     def channel_name
-      channel.name
+      channel&.name
     end
   end
 end

@@ -49,6 +49,10 @@ class NotificationRouteCardComponent < ApplicationComponent
     route.user_accepted? && route.community_accepted?
   end
 
+  def channel_missing?
+    @channel.nil?
+  end
+
   def group_dom_id(group_name)
     "#{route_card_dom_id}-#{group_name}"
   end
@@ -81,7 +85,9 @@ class NotificationRouteCardComponent < ApplicationComponent
 
   def render_route_controls(route)
     content_tag(:div, class: "d-flex align-items-center gap-2 flex-grow-1") do
-      if route_pending?(route)
+      if channel_missing?
+        render_missing_channel(route)
+      elsif route_pending?(route)
         render_pending_route(route)
       else
         render_route_checkbox(route)
@@ -97,6 +103,19 @@ class NotificationRouteCardComponent < ApplicationComponent
     ) do
       safe_join([
         content_tag(:i, "", class: "bi bi-clock text-warning"),
+        content_tag(:span, route.notification_type.titleize, class: "small text-muted")
+      ])
+    end
+  end
+
+  def render_missing_channel(route)
+    content_tag(
+      :div,
+      class: "d-flex align-items-center gap-2",
+      title: "Missing channel permissions or channel has been deleted"
+    ) do
+      safe_join([
+        content_tag(:i, "", class: "bi bi-exclamation-circle text-danger"),
         content_tag(:span, route.notification_type.titleize, class: "small text-muted")
       ])
     end
@@ -124,6 +143,8 @@ class NotificationRouteCardComponent < ApplicationComponent
   end
 
   def render_route_delete_button(route)
+    return if channel.nil?
+
     button_to(
       routing_path(route),
       method: :delete,

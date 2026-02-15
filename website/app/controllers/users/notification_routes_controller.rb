@@ -6,7 +6,9 @@ module Users
       routes = current_user.user_notification_routes
         .by_user_community_channel_and_server
         .values
-        .first || []
+        .first
+        &.sort_by { |r| r[:channel].nil? ? -1 : 1 } || []
+      # &.sort_by(:channel)&.nil_first&.sort || []
 
       all_communities = ESM::Community.select(:id, :community_id, :community_name)
         .order("UPPER(community_id)")
