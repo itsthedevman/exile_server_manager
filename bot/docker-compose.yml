@@ -22,7 +22,7 @@ services:
     profiles:
       - bot
   postgres-db:
-    image: postgres
+    image: postgres:17
     container_name: ESM_DB_POSTGRES
     restart: always
     environment:
