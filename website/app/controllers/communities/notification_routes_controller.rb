@@ -8,10 +8,12 @@ module Communities
       pending_routes = current_community.user_notification_routes
         .pending_community_acceptance
         .by_user_community_channel_and_server
+        .transform_values { |v| v.sort_by.dig(:channel).method(:name).nil_first.sort }
 
       routes = current_community.user_notification_routes
         .accepted
         .by_user_community_channel_and_server
+        .transform_values { |v| v.sort_by.dig(:channel).method(:name).nil_first.sort }
 
       render locals: {
         pending_routes:,

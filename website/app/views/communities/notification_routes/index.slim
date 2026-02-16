@@ -40,6 +40,20 @@
                     div
                       h6.mb-0 = user.discord_username
 
+            - if grouped_routes.any? { |r| r[:channel].nil? }
+              .col-12
+                .alert.alert-warning.border-warning.d-flex.align-items-start
+                  i.bi.bi-exclamation-triangle.text-warning.me-3.fs-5
+                  div
+                    h6.text-warning.mb-2 Some routes may have issues
+                    p.small.mb-0
+                      |> We couldn't access one or more channel(s). This might mean the channel was deleted,
+                      |> or ESM doesn't have permission to access it.
+                      br
+                      |> Check the routes below marked with
+                      i.bi.bi-exclamation-triangle.text-warning.small
+                      |< .
+
             .row.g-3.mb-5
               - grouped_routes.each do |route_data|
                 = render_component( \
