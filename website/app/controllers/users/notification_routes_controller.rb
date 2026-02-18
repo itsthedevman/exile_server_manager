@@ -12,7 +12,8 @@ module Users
         &.nil_first
         &.sort || []
 
-      all_communities = ESM::Community.select(:id, :community_id, :community_name)
+      user_communities = ESM::Community.select(:id, :community_id, :community_name)
+        .where(id: current_user.joined_community_ids)
         .order("UPPER(community_id)")
         .load
 
@@ -21,14 +22,16 @@ module Users
         .order("UPPER(server_id)")
         .load
         .group_by(&:community)
-        .sort_by.method(:first).case_insensitive
+        .sort_by
+        .method(:first)
+        .case_insensitive
         .to_a
         .to_h
 
       render locals: {
         routes:,
         community_select_data: helpers.generate_community_select_data(
-          all_communities,
+          user_communities,
           value_method: ->(community) { "#{community.community_id}:#{community.community_name}" }
         ),
         server_select_data: helpers.generate_server_select_data(

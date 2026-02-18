@@ -61,6 +61,10 @@ module ESM
       community_permissions.select { |c| c[:modifiable] }.key_map(:id)
     end
 
+    def joined_community_ids
+      community_permissions.key_map(:id)
+    end
+
     def server_communities
       @server_communities ||= ESM::Community.all
         .includes(:servers)
