@@ -56,11 +56,7 @@ export default class extends ApplicationController {
       "grind-started",
       "hack-started",
     ],
-    money: [
-      "marxet-item-sold",
-      "protection-money-due",
-      "protection-money-paid",
-    ],
+    money: ["marxet-item-sold", "protection-money-due", "protection-money-paid"],
   };
 
   loadChannels = throttle(() => this.#loadChannels(), 1000);
@@ -153,14 +149,10 @@ export default class extends ApplicationController {
     this.validator.validate().then((isValid) => {
       if (!isValid) return;
 
-      const types =
-        this.presets[this.selectedPreset] || $(this.selectedTypesTarget).val();
+      const types = this.presets[this.selectedPreset] || $(this.selectedTypesTarget).val();
 
       const extractID = R.compose(R.head, R.split(":"));
-      const server_ids =
-        this.selectedSource === "any"
-          ? "any"
-          : R.map(extractID, $(this.selectedServersTarget).val());
+      const server_ids = this.selectedSource === "any" ? "any" : R.map(extractID, $(this.selectedServersTarget).val());
 
       const community_id = extractID($(this.selectedCommunityTarget).val());
       const channel_id = extractID($(this.selectedChannelTarget).val());
@@ -258,9 +250,7 @@ export default class extends ApplicationController {
   #renderPreviewCommunity() {
     const toElem = $(this.previewToTarget);
 
-    const communityName = $(this.selectedCommunityTarget)
-      .val()
-      .split(":", 2)[1];
+    const communityName = $(this.selectedCommunityTarget).val().split(":", 2)[1];
 
     if (R.isNil(communityName)) {
       toElem.html(`<small class="text-muted">Waiting for selection...</small>`);
@@ -269,7 +259,7 @@ export default class extends ApplicationController {
 
     let html = `
       <span class="badge bg-primary">${communityName}</span>
-      <span class="text-muted mx-1">→</span>
+      <i class="bi bi-arrow-right text-secondary mx-2 mt-1"></i>
     `;
 
     const channelName = $(this.selectedChannelTarget).val().split(":", 2)[1];
