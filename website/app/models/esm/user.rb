@@ -57,26 +57,22 @@ module ESM
       @community_permissions ||= ESM.bot.user_community_permissions(id, discord_server_ids)
     end
 
-    def admin_community_ids
+    def modifiable_community_ids
       community_permissions.select { |c| c[:modifiable] }.key_map(:id)
-    end
-
-    def player_community_ids
-      community_permissions.key_map(:id)
     end
 
     def server_communities
       @server_communities ||= ESM::Community.all
         .includes(:servers)
         .order("UPPER(community_id)")
-        .where(id: admin_community_ids, player_mode_enabled: false)
+        .where(id: modifiable_community_ids, player_mode_enabled: false)
     end
 
     def player_communities
       @player_communities ||= ESM::Community.all
         .includes(:servers)
         .order("UPPER(community_id)")
-        .where(id: player_community_ids, player_mode_enabled: true)
+        .where(id: modifiable_community_ids, player_mode_enabled: true)
     end
 
     def avatar_url
