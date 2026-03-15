@@ -56,6 +56,8 @@ direnv allow
 
    Wait for the MySQL container to fully initialize before proceeding.
 
+   > **Firewall**: Port `54321` must be allowed through your firewall. The build host (`src/build/host`) listens on this port, and the build receiver (`src/build/receiver`) connects to it to receive build instructions during the build process.
+
 3. **Create the Exile database**
 
    ```bash
