@@ -8,9 +8,9 @@ services:
       - "./tools/server/mpmissions:/arma3server/mpmissions"
       - "./tools/server/test.log:/arma3server/test.log"
       - "./tools/server/test.rpt:/tmp/test.rpt"
-      - "server-data:/arma3server"
-      - "steam-data:/steamcmd"
-      - "tmp-data:/tmp"
+      - "./.docker-volumes/server-data:/arma3server"
+      - "./.docker-volumes/steam-data:/steamcmd"
+      - "./.docker-volumes/tmp-data:/tmp"
     tty: true
     networks:
       - dev
@@ -23,12 +23,13 @@ services:
       MYSQL_ROOT_PASSWORD: password12345
     command: >
       --mysql-native-password=ON
+      --authentication_policy=mysql_native_password
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - ./.docker-volumes/mysql-data:/var/lib/mysql
       - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
     networks:
       - dev
@@ -41,19 +42,13 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysqlv1-data:/var/lib/mysql
+      - ./.docker-volumes/mysqlv1-data:/var/lib/mysql
       - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
     networks:
       - dev
     profiles:
       - v1
 
-volumes:
-  mysql-data:
-  mysqlv1-data:
-  server-data:
-  steam-data:
-  tmp-data:
 
 networks:
   dev:
