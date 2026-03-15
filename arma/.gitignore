@@ -34,7 +34,7 @@ config.yml
 build_config.yml
 *.zip
 
-.build-sha
+src/esm/.build-sha
 
 # Because it's a big mod
 tools/server/@exile/addons/*.pbo
@@ -46,3 +46,6 @@ tools/server/@exileserver/logs
 .direnv/
 .env
 tools/wrappers/
+
+# Docker volumes
+.docker-volumes/
