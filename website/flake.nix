@@ -28,8 +28,8 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            ruby_3_3
-            (with ruby_3_3.gems; [
+            ruby_3_4
+            (with ruby_3_4.gems; [
               htmlbeautifier
             ])
             bundler
