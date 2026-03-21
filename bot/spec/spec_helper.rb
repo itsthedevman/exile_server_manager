@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
-# Set to false for indefinite
+# Set to false for indefinite wait_timeout
 SPEC_TIMEOUT_SECONDS = 10
+
+# Maximum time (in seconds) an individual test is allowed to run before being killed
+SPEC_EXAMPLE_TIMEOUT = 30
 LOG_LEVEL = false
 
 require_relative "config"
@@ -25,8 +28,12 @@ RSpec.configure do |config|
     ESM::Test.reset!
     ESM::Connection::Server.pause
 
-    # Run the test!
-    DatabaseCleaner.cleaning { example.run }
+    # Run the test with a timeout
+    DatabaseCleaner.cleaning do
+      Timeout.timeout(SPEC_EXAMPLE_TIMEOUT, nil, "Test exceeded #{SPEC_EXAMPLE_TIMEOUT}s timeout: #{example.full_description}") do
+        example.run
+      end
+    end
   end
 end
 

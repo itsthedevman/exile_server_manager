@@ -532,11 +532,10 @@ describe ESM::Command::Base do
         cooldown = create(
           :cooldown, :inactive,
           steam_uid: user.steam_uid,
-          community_id: community.id,
           command_name: command.command_name
         )
 
-        execute!
+        execute!(channel_type: :dm)
 
         expect(previous_command.current_cooldown).to be_kind_of(ESM::Cooldown)
         expect(previous_command.current_cooldown.valid?).to be(true)

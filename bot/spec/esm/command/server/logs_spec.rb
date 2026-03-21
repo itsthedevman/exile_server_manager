@@ -25,7 +25,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
           embed = ESM::Test.messages.first.content
           expect(embed.description).to match(
-            /you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i
+            /you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i
           )
 
           expect(ESM::Log.all.size).to eq(1)
@@ -47,7 +47,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
           embed = ESM::Test.messages.first.content
           expect(embed.description).to match(
-            /you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i
+            /you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i
           )
 
           expect(ESM::Log.all.size).to eq(1)
@@ -84,7 +84,7 @@ describe ESM::Command::Server::Logs, category: "command" do
           wait_for { ESM::Test.messages.size }.to eq(1)
 
           embed = ESM::Test.messages.first.content
-          expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i)
+          expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i)
 
           expect(ESM::Log.all.size).to eq(1)
           expect(ESM::Log.all.first.search_text).to eq(steam_uid)
@@ -155,7 +155,7 @@ describe ESM::Command::Server::Logs, category: "command" do
 
           embed = latest_message
           expect(embed.description).to match(
-            /you may review the results here:\shttp:\/\/localhost:3000\/logs\/.+\s+_link expires on `.+`_/i
+            /you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i
           )
 
           expect(ESM::Log.all.size).to eq(1)

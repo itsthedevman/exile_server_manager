@@ -329,8 +329,9 @@ module ESM
         def initialize(user: nil, server: nil, channel: nil, arguments: {})
           command_class = self.class
 
-          # This can be modified on the fly. Disconnect it from the class
+          # These can be modified on the fly. Disconnect them from the class
           self.skipped_actions = skipped_actions.dup
+          self.requirements = requirements.dup
 
           @name = command_class.command_name
           @category = command_class.category

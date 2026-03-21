@@ -84,7 +84,7 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
           # Handle taxes
           tax = respond_to?(:territory_payment_tax) ? territory_payment_tax : 0
-          tax = (territory_protection_price * (tax / 100.0)).to_i if tax > 0
+          tax = (territory_protection_price * (tax / 100.0)).round if tax > 0
 
           expect(user.exile_account.locker).to eq(locker_balance - territory_protection_price - tax)
 

@@ -38,6 +38,55 @@ declare -a PASSED_SUITES=()
 TOTAL_FAILURES=0
 TOTAL_PASSES=0
 
+# Arrays to hold collected suites (path:::name pairs)
+declare -a ALL_SUITES=()
+
+# Recursive function to collect all test suites
+collect_suites() {
+    local dir="$1"
+    local relative_path="${2:-spec}"
+    local display_name="${relative_path}"
+
+    # Check if this directory has any spec files directly in it
+    local has_direct_specs=false
+    if ls "${dir}"/*_spec.rb 2>/dev/null | grep -q .; then
+        has_direct_specs=true
+    fi
+
+    # Check if this directory has subdirectories
+    local has_subdirs=false
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            has_subdirs=true
+            break
+        fi
+    done
+
+    # If it has direct specs but no subdirs, add the whole directory
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = false ]; then
+        ALL_SUITES+=("${dir}:::${display_name}")
+        return 0
+    fi
+
+    # If it has direct specs and subdirs, add the direct specs
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = true ]; then
+        ALL_SUITES+=("${dir}/*_spec.rb:::${display_name} (root)")
+    fi
+
+    # Now walk through subdirectories
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            local subdir_name=$(basename "$subdir")
+            local new_path="${relative_path:+${relative_path}/}${subdir_name}"
+
+            # Check if this subdirectory contains any specs (recursively)
+            if find "$subdir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
+                collect_suites "$subdir" "$new_path"
+            fi
+        fi
+    done
+}
+
 # Function to run a test suite
 run_suite() {
     # Check if we've been interrupted
@@ -47,13 +96,15 @@ run_suite() {
 
     local suite_path="$1"
     local suite_name="$2"
+    local suite_index="$3"
+    local suite_total="$4"
 
     echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}Running: ${NC}${suite_name}"
+    echo -e "${BLUE}[${suite_index}/${suite_total}] Running: ${NC}${suite_name}"
     echo -e "${BLUE}Path: ${NC}${suite_path}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 
-    # Run rspec with the provided arguments
+    # Run rspec
     bin/rspec ${suite_path} ${RSPEC_ARGS} &
     CURRENT_PID=$!
     wait $CURRENT_PID
@@ -81,59 +132,6 @@ run_suite() {
     return 0  # Always return 0 to continue running
 }
 
-# Recursive function to walk directories and run specs
-walk_and_run() {
-    local dir="$1"
-    local relative_path="${2:-spec}"
-
-    # Check if we've been interrupted
-    if [ "$INTERRUPTED" = true ]; then
-        return 0
-    fi
-
-    # Build the display name
-    local display_name="${relative_path}"
-
-    # Check if this directory has any spec files directly in it
-    local has_direct_specs=false
-    if ls "${dir}"/*_spec.rb 2>/dev/null | grep -q .; then
-        has_direct_specs=true
-    fi
-
-    # Check if this directory has subdirectories
-    local has_subdirs=false
-    for subdir in "${dir}"/*/; do
-        if [ -d "$subdir" ]; then
-            has_subdirs=true
-            break
-        fi
-    done
-
-    # If it has direct specs but no subdirs, run the whole directory
-    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = false ]; then
-        run_suite "${dir}" "${display_name}"
-        return 0
-    fi
-
-    # If it has direct specs and subdirs, run the direct specs first
-    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = true ]; then
-        run_suite "${dir}/*_spec.rb" "${display_name} (root)"
-    fi
-
-    # Now walk through subdirectories
-    for subdir in "${dir}"/*/; do
-        if [ -d "$subdir" ]; then
-            local subdir_name=$(basename "$subdir")
-            local new_path="${relative_path:+${relative_path}/}${subdir_name}"
-
-            # Check if this subdirectory contains any specs (recursively)
-            if find "$subdir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
-                walk_and_run "$subdir" "$new_path"
-            fi
-        fi
-    done
-}
-
 echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║              ESM Test Suite Runner                   ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
@@ -145,8 +143,29 @@ fi
 # Start timer
 START_TIME=$(date +%s)
 
-# Walk through the entire spec directory
-walk_and_run "spec"
+# Collect all test suites
+collect_suites "spec"
+
+# Shuffle the suites
+SHUFFLED_SUITES=()
+while IFS= read -r line; do
+    SHUFFLED_SUITES+=("$line")
+done < <(printf '%s\n' "${ALL_SUITES[@]}" | shuf)
+
+TOTAL_SUITES=${#SHUFFLED_SUITES[@]}
+echo -e "${BLUE}Found ${TOTAL_SUITES} test suites (randomized)${NC}"
+
+# Run each suite
+for i in "${!SHUFFLED_SUITES[@]}"; do
+    if [ "$INTERRUPTED" = true ]; then
+        break
+    fi
+
+    entry="${SHUFFLED_SUITES[$i]}"
+    suite_path="${entry%%:::*}"
+    suite_name="${entry##*:::}"
+    run_suite "$suite_path" "$suite_name" "$((i + 1))" "$TOTAL_SUITES"
+done
 
 # Calculate elapsed time
 END_TIME=$(date +%s)
