@@ -8,10 +8,6 @@ timer = Timer.start!
 I18n.load_path += Dir[File.expand_path("config/locales/**/*.yml")]
 I18n.reload!
 
-# Steam
-SteamWebApi.configure do |config|
-  config.api_key = ESM.config.steam_api_key
-end
 
 # Make the computer understand us
 ActiveSupport::Inflector.inflections(:en) do |inflect|

@@ -41,7 +41,6 @@
   "securerandom",
   "semantic",
   "socket",
-  "steam_web_api",
   "steam-condenser",
   "terminal-table",
   "yaml",

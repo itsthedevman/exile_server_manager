@@ -75,7 +75,7 @@ gem "i18n"                                # Internationalization support
 ## Database & Storage
 ####################################################################################################
 
-gem "pg"                                  # PostgreSQL adapter
+gem "pg", "~> 1.5.9"                      # PostgreSQL adapter (pinned for Ruby 3.4 stability)
 gem "redis"                               # In-memory data store for caching/sessions
 gem "otr-activerecord"                    # ActiveRecord without Rails
 gem "standalone_migrations"               # Database migrations outside Rails
@@ -94,7 +94,6 @@ gem "faye-websocket"                      # WebSocket client
 ####################################################################################################
 
 # Steam platform integration
-gem "steam_web_api"                       # Official Steam Web API wrapper
 gem "steam-condenser"                     # Steam server queries and RCON
 
 # HTTP client
