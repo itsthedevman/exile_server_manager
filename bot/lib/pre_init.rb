@@ -18,7 +18,6 @@ end
 
 # Make active support happy
 ActiveSupport::Cache.format_version = 7.1
-ActiveSupport.to_time_preserves_timezone = :zone # Rails 8.1
 
 # Required by standalone_migrations
 module Rails
