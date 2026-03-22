@@ -113,15 +113,13 @@ GEM
     erubi (1.13.1)
     event_emitter (0.2.6)
     eventmachine (1.2.7)
-    everythingrb (0.9.1)
+    everythingrb (1.0.0)
       json (~> 2.10)
       ostruct (~> 0.6)
     factory_bot (6.5.6)
       activesupport (>= 6.1.0)
     faker (3.6.1)
       i18n (>= 1.8.11, < 2)
-    faraday (0.17.6)
-      multipart-post (>= 1.2, < 3)
     fast_jsonparser (0.6.0)
     faye-websocket (0.12.0)
       eventmachine (>= 0.12.0)
@@ -179,7 +177,6 @@ GEM
     multi_json (1.19.1)
     multi_xml (0.8.1)
       bigdecimal (>= 3.1, < 5)
-    multipart-post (2.4.1)
     mutex_m (0.3.0)
     mysql2 (0.5.7)
       bigdecimal
@@ -188,7 +185,7 @@ GEM
       net-ssh (>= 2.6.5, < 8.0.0)
     net-sftp (4.0.0)
       net-ssh (>= 5.0.0, < 8.0.0)
-    net-ssh (7.3.1)
+    net-ssh (7.3.2)
     netrc (0.11.0)
     nio4r (2.7.5)
     nokogiri (1.19.2-aarch64-linux-gnu)
@@ -391,8 +388,6 @@ GEM
     steam-condenser (1.3.11)
       multi_json (~> 1.6)
       multi_xml (~> 0.5)
-    steam_web_api (0.0.3)
-      faraday (~> 0.9)
     stringio (3.2.0)
     sucker_punch (3.3.0)
       concurrent-ruby (~> 1.0)
@@ -492,7 +487,6 @@ DEPENDENCIES
   standalone_migrations
   standard
   steam-condenser
-  steam_web_api
   sucker_punch
   terminal-table
   timecop

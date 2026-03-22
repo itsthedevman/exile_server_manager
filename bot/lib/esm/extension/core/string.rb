@@ -41,4 +41,33 @@ class String
       ActiveSupport::Inflector.classify(self)
     end
   end
+
+  alias_method :to_h, :parse_json
+
+  def to_deep_h
+    recursive_convert = lambda do |object|
+      case object
+      when Array
+        object.map { |v| recursive_convert.call(v) }
+      when String
+        parsed = object.parse_json
+
+        # If it parsed successfully as JSON, recursively convert it
+        if parsed.is_a?(Array) || parsed.is_a?(Hash)
+          recursive_convert.call(parsed)
+        else
+          object
+        end
+      when Hash
+        object.transform_values { |v| recursive_convert.call(v) }
+      else
+        object
+      end
+    end
+
+    result = self.parse_json
+    return if result.nil?
+
+    recursive_convert.call(result)
+  end
 end
