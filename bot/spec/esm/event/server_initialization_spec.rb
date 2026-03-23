@@ -60,7 +60,7 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   it "creates territories" do
     expect(ESM::Territory.where(server_id: server.id).size).to eq(10)
 
-    data = message.data.territory_data.to_a.map { |t| t.to_arma_hashmap.to_istruct }
+    data = message.data.territory_data.parse_json.map { |t| t.to_arma_hashmap.to_istruct }
     data.each do |territory_data|
       territory = ESM::Territory.where(server_id: server.id, territory_level: territory_data.level).first
       expect(territory).not_to be_nil

@@ -76,7 +76,7 @@ module ESM
                 .gsub("<br/>", "\\n") # Handle <br/>
                 .gsub("<br />", "\\n") # Handle <br />
                 .gsub("<br></br>", "\\n") # Handle <br></br>
-                .to_a
+                .parse_json
             else
               input
             end

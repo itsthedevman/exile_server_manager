@@ -52,18 +52,20 @@ module ESM
       def store_territory_data
         @model.territories.delete_all
 
-        territories =
-          @message.data.territory_data.to_a.map do |data|
-            data = ESM::Arma::HashMap.from(data).to_istruct
+        territory_data = @message.data.territory_data
+        territory_data = territory_data.parse_json if territory_data.is_a?(String)
 
-            {
-              server_id: @model.id,
-              territory_level: data.level,
-              territory_purchase_price: data.purchase_price,
-              territory_radius: data.radius,
-              territory_object_count: data.object_count
-            }
-          end
+        territories = territory_data.map do |data|
+          data = ESM::Arma::HashMap.from(data).to_istruct
+
+          {
+            server_id: @model.id,
+            territory_level: data.level,
+            territory_purchase_price: data.purchase_price,
+            territory_radius: data.radius,
+            territory_object_count: data.object_count
+          }
+        end
 
         ESM::Territory.import(territories)
       end
@@ -71,7 +73,7 @@ module ESM
       def store_metadata
         @tcp_client.set_metadata(
           vg_enabled: @message.data.vg_enabled,
-          vg_max_sizes: @message.data.vg_max_sizes.to_a
+          vg_max_sizes: @message.data.vg_max_sizes
         )
       end
 
