@@ -34,7 +34,7 @@ module Communities
     end
 
     def accept
-      ids = params[:ids].to_a
+      ids = params[:ids].parse_json
       not_found! if ids.blank?
 
       routes = current_community.user_notification_routes.where(public_id: ids)
@@ -49,7 +49,7 @@ module Communities
     end
 
     def decline
-      ids = params[:ids].to_a
+      ids = params[:ids].parse_json
       not_found! if ids.blank?
 
       routes = current_community.user_notification_routes.where(public_id: ids)

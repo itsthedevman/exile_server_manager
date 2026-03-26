@@ -97,7 +97,7 @@ module ESM
 
         response.body
           .to_s # JSON
-          .to_a # Array<Hash>
+          .parse_json # Array<Hash>
           .key_map(:id)
       end
     end
