@@ -38,5 +38,13 @@ FactoryBot.define do
         create(:server_reward, server: server)
       end
     end
+
+    trait :with_callbacks do
+      after(:build) do |server|
+        # Re-enable callbacks that were skipped
+        server.class.set_callback(:create, :after, :create_server_setting)
+        server.class.set_callback(:create, :after, :create_default_reward)
+      end
+    end
   end
 end

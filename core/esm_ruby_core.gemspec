@@ -17,9 +17,13 @@ Gem::Specification.new do |spec|
   spec.add_dependency "http"
   spec.add_dependency "ostruct"
 
+  spec.add_development_dependency "actionview"
   spec.add_development_dependency "database_cleaner-active_record"
   spec.add_development_dependency "factory_bot"
   spec.add_development_dependency "faker"
+  spec.add_development_dependency "neatjson"
   spec.add_development_dependency "pg"
   spec.add_development_dependency "rspec"
+  spec.add_development_dependency "semantic"
+  spec.add_development_dependency "timecop"
 end

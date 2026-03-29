@@ -2,19 +2,28 @@
 
 require "bundler/setup"
 require "active_support/all"
+require "action_view"
 require "ostruct"
+require "semantic"
+require "neatjson"
 
 # Load database connection and ApplicationRecord first
 require_relative "support/database"
 
-# Load ESM stubs before loading the gem
-require_relative "support/esm_stubs"
-
-# Load the gem
+# Load the gem first
 require "esm"
 
-# Load all models from the gem
+# Load ESM stubs AFTER loading the gem to override the stub methods
+require_relative "support/esm_stubs"
+
+# Load ESM utilities and models
 gem_lib_path = File.expand_path("../lib", __dir__)
+require File.join(gem_lib_path, "esm", "time")
+require File.join(gem_lib_path, "esm", "json")
+require File.join(gem_lib_path, "esm", "regex")
+require File.join(gem_lib_path, "esm", "color")
+
+# Load all models from the gem
 Dir[File.join(gem_lib_path, "esm", "models", "*.rb")].sort.each { |f| require f }
 
 # Load test dependencies
