@@ -67,7 +67,7 @@ module ESM
         )
 
         response_body = response.body.to_s
-      data = response_body.parse_json
+        data = response_body.parse_json
 
         if !response.status.success? || data.nil?
           ESM.log!(warn: {

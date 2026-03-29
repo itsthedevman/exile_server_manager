@@ -68,7 +68,7 @@ module ESM
 
     scope :with_server_id, ->(id) { where("server_id ilike ?", id) }
     scope :by_server_id_fuzzy, ->(id) { where("server_id ilike ?", "%#{id}%") }
-    scope :with_local_id, ->(local_id) { where("server_id ilike ?", "%_#{local_id}") }
+    scope :with_local_id, ->(local_id) { where("server_id ilike ?", "%\\_#{sanitize_sql_like(local_id)}") }
 
     # =============================================================================
     # CLASS METHODS

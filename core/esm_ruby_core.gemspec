@@ -15,4 +15,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "colorize"
   spec.add_dependency "fast_jsonparser"
   spec.add_dependency "http"
+  spec.add_dependency "ostruct"
+
+  spec.add_development_dependency "database_cleaner-active_record"
+  spec.add_development_dependency "factory_bot"
+  spec.add_development_dependency "faker"
+  spec.add_development_dependency "pg"
+  spec.add_development_dependency "rspec"
 end
