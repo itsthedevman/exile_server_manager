@@ -20,10 +20,12 @@ export function allowTurbo(validator) {
     validator.formSubmitHandler
   );
 
+  let validationPassed = false;
+
   validator.formSubmitHandler = function (event) {
-    // Check if this is a "real" submission (after validation passed)
-    if (event.isTrusted === false || event.detail?.skipValidation) {
-      // This is our programmatic submit, let it through
+    // If validation already passed, let the submission through to Turbo
+    if (validationPassed) {
+      validationPassed = false;
       return;
     }
 
@@ -35,15 +37,13 @@ export function allowTurbo(validator) {
     validator.validateHandler(event).then(() => {
       if (!validator.isValid) {
         return;
-      } else {
-        // Create a custom event that bypasses validation
-        const submitEvent = new Event("submit", {
-          bubbles: true,
-          cancelable: true,
-        });
-        submitEvent.detail = { skipValidation: true };
-        form.dispatchEvent(submitEvent);
       }
+
+      // Set flag before submitting so we bypass validation on next pass
+      // Use setTimeout to defer to next event loop tick - fixes timing issues
+      // when requestSubmit is called from within an async handler
+      validationPassed = true;
+      setTimeout(() => form.requestSubmit(), 0);
     });
   };
 

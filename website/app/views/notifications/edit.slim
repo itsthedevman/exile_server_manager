@@ -151,10 +151,10 @@
               button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"]
                 | Cancel
             .col-6
-              = f.submit "Save", class: "btn btn-success text-white w-100"
+              = f.submit "Save", class: "btn btn-success text-white w-100", data: {notifications_target: "submitButton"}
 
         / Desktop
         .d-none.d-lg-flex.gap-2.justify-content-end
           button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"]
             | Cancel
-          = f.submit "Save Notification", class: "btn btn-success text-white"
+          = f.submit "Save Notification", class: "btn btn-success text-white", data: {notifications_target: "submitButton"}

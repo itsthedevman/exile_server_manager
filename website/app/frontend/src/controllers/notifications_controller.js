@@ -22,6 +22,7 @@ export default class extends ApplicationController {
     "titleLength",
     "descriptionLength",
     "variableChips",
+    "submitButton",
   ];
 
   static values = {
@@ -43,6 +44,15 @@ export default class extends ApplicationController {
       footer: `[${this.previewValues.global.serverID}] ${this.previewValues.global.serverName}`,
     };
 
+    // Store initial values for dirty checking
+    this.initialValues = {
+      type: $(this.typeTarget).val(),
+      colorSelect: $(this.colorSelectTarget).val(),
+      colorPicker: $(this.colorPickerTarget).val(),
+      title: $(this.titleTarget).val(),
+      description: $(this.descriptionTarget).val(),
+    };
+
     this.onColorChanged(); // This will call #renderLivePreview
     this.onTitleChanged({ currentTarget: this.titleTarget });
     this.onDescriptionChanged({ currentTarget: this.descriptionTarget });
@@ -51,10 +61,12 @@ export default class extends ApplicationController {
     this.#initializeValidator();
     this.#renderVariableChips();
     this.#setupUndoRedo();
+    this.#updateSubmitButtonState();
   }
 
   onTypeChanged(_event) {
     this.#renderVariableChips();
+    this.#updateSubmitButtonState();
   }
 
   onTitleChanged(event) {
@@ -65,6 +77,7 @@ export default class extends ApplicationController {
     $(this.titleLengthTarget).html(title.length);
 
     this.#renderLivePreview();
+    this.#updateSubmitButtonState();
   }
 
   onDescriptionChanged(event) {
@@ -75,6 +88,7 @@ export default class extends ApplicationController {
     $(this.descriptionLengthTarget).html(description.length);
 
     this.#renderLivePreview();
+    this.#updateSubmitButtonState();
   }
 
   onColorChanged(_event) {
@@ -92,6 +106,7 @@ export default class extends ApplicationController {
     }
 
     this.#renderLivePreview();
+    this.#updateSubmitButtonState();
   }
 
   onVariableClicked(event) {
@@ -417,5 +432,18 @@ export default class extends ApplicationController {
       element.value = element.undoHistory[element.undoIndex];
       element.dispatchEvent(new Event("input", { bubbles: true }));
     }
+  }
+
+  #updateSubmitButtonState() {
+    const isDirty =
+      $(this.typeTarget).val() !== this.initialValues.type ||
+      $(this.colorSelectTarget).val() !== this.initialValues.colorSelect ||
+      $(this.colorPickerTarget).val() !== this.initialValues.colorPicker ||
+      $(this.titleTarget).val() !== this.initialValues.title ||
+      $(this.descriptionTarget).val() !== this.initialValues.description;
+
+    this.submitButtonTargets.forEach((button) => {
+      button.disabled = !isDirty;
+    });
   }
 }
