@@ -5,6 +5,7 @@ PATH
       colorize
       fast_jsonparser
       http
+      ostruct
 
 GEM
   remote: https://rubygems.org/
