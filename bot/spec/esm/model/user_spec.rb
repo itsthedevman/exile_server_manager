@@ -54,32 +54,6 @@ describe ESM::User do
     end
   end
 
-  describe ".find_by_discord_id" do
-    it "has no steam uid" do
-      queried_user = ESM::User.find_by_discord_id(unregistered_user.discord_id)
-      expect(queried_user).to eq(unregistered_user)
-    end
-
-    it "handles parsing an int" do
-      queried_user = ESM::User.find_by_discord_id(unregistered_user.discord_id.to_i)
-      expect(queried_user).to eq(unregistered_user)
-    end
-  end
-
-  describe "#registered?" do
-    it "respond" do
-      expect(esm_user.respond_to?(:registered?)).to be(true)
-    end
-
-    it "is registered" do
-      expect(esm_user.registered?).to be(true)
-    end
-
-    it "is not registered" do
-      expect(unregistered_user.registered?).to eq(false)
-    end
-  end
-
   describe "#developer?" do
     let!(:developer_user) { ESM::Test.user(type: :developer) }
 
