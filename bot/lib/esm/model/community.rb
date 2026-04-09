@@ -11,13 +11,13 @@ module ESM
     end
 
     def logging_channel
-      ESM.bot.channel(logging_channel_id)
+      ESM.discord_bot.channel(logging_channel_id)
     rescue
       nil
     end
 
     def discord_server
-      ESM.bot.server(guild_id)
+      ESM.discord_bot.server(guild_id)
     rescue
       nil
     end
@@ -44,7 +44,7 @@ module ESM
       channel = logging_channel
       return if channel.nil?
 
-      ESM.bot.deliver(message, to: channel)
+      ESM.discord_bot.deliver(message, to: channel)
     end
 
     def modifiable_by?(guild_member)

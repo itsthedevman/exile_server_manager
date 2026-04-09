@@ -123,7 +123,7 @@ module ESM
           reason =
             if reason.present?
               reason
-            elsif ESM.bot.stopping?
+            elsif ESM.discord_bot.stopping?
               I18n.t("server_disconnect.reasons.restart")
             end
 
@@ -146,7 +146,7 @@ module ESM
           event_class =
             case message.data.function_name
             when "send_to_channel"
-              Event::SendToChannel
+              Discord::Event::SendToChannel
             when "send_xm8_notification"
               Event::SendXm8Notification
             end

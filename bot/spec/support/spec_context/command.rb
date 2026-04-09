@@ -42,7 +42,7 @@ RSpec.shared_context("command") do
         user.discord_user.pm.id
       end
 
-    channel = ESM.bot.channel(channel) unless channel.is_a?(Discordrb::Channel)
+    channel = ESM.discord_bot.channel(channel) unless channel.is_a?(Discordrb::Channel)
 
     data = {
       id: "", # ID of interaction
@@ -88,7 +88,7 @@ RSpec.shared_context("command") do
 
     respond_to_prompt(prompt_response) if prompt_response
 
-    event = Discordrb::Events::ApplicationCommandEvent.new(data.deep_stringify_keys, ESM.bot)
+    event = Discordrb::Events::ApplicationCommandEvent.new(data.deep_stringify_keys, ESM.discord_bot)
 
     # In normal operation, #event_hook will receive the ApplicationCommandEvent above
     # SpecApplicationCommandEvent overwrites `#defer` and `#edit_response` to avoid
@@ -99,7 +99,7 @@ RSpec.shared_context("command") do
       return
     end
 
-    event = ESM::Event::ApplicationCommand.new(event)
+    event = ESM::Discord::Event::ApplicationCommand.new(event)
     @previous_command = command_class.new(
       user: event.user,
       server: event.server,
@@ -132,6 +132,6 @@ RSpec.shared_context("command") do
         e.message
       end
 
-    ESM.bot.deliver(message, to: ESM::Test.channel(in: community))
+    ESM.discord_bot.deliver(message, to: ESM::Test.channel(in: community))
   end
 end

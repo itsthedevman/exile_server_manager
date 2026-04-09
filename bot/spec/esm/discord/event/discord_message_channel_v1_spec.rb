@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Event::DiscordMessageChannelV1 do
+describe ESM::Discord::Event::DiscordMessageChannelV1 do
   let!(:community) { create(:esm_community) }
   let!(:server) { create(:server, community_id: community.id) }
 

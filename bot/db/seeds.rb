@@ -10,7 +10,7 @@ require_relative "../spec/support/additions/esm/test"
 puts "Waiting for ESM to start..."
 ESM.run!(async: true)
 
-until ESM.bot.ready?
+until ESM.discord_bot.ready?
   sleep 1
 end
 puts " done"

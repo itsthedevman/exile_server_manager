@@ -10,7 +10,7 @@ module ESM
         @server = server
         @params = parameters
         @community = @server.community
-        @guild = ESM.bot.server(@community.guild_id)
+        @guild = ESM.discord_bot.server(@community.guild_id)
       end
 
       def run!

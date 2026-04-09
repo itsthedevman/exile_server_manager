@@ -92,9 +92,9 @@ module ESM
     def channel(id:, **filters)
       info!(event: "channel", id:, filters:)
 
-      channel = ESM.bot.channel(id)
+      channel = ESM.discord_bot.channel(id)
       return if channel.nil?
-      return unless ESM.bot.channel_permission?(:send_messages, channel)
+      return unless ESM.discord_bot.channel_permission?(:send_messages, channel)
 
       if (community_id = filters[:community_id])
         community = ESM::Community.find_by(id: community_id)
@@ -117,15 +117,15 @@ module ESM
     def channel_send(id:, message:)
       info!(event: "channel:send", id: id, message: message)
 
-      channel = ESM.bot.channel(id) || ESM.bot.user(id)
+      channel = ESM.discord_bot.channel(id) || ESM.discord_bot.user(id)
       channel = channel.pm if channel.is_a?(Discordrb::User)
       return if channel.nil?
-      return if channel.text? && !ESM.bot.channel_permission?(:send_messages, channel)
+      return if channel.text? && !ESM.discord_bot.channel_permission?(:send_messages, channel)
 
       message = message.to_h || message
       message = ESM::Embed.from_hash(message) if message.is_a?(Hash)
 
-      ESM.bot.deliver(message, to: channel)
+      ESM.discord_bot.deliver(message, to: channel)
     end
 
     #
@@ -146,7 +146,7 @@ module ESM
 
       # Get the channels the bot (and user if applicable) has access to
       channels = server.channels.filter_map do |channel|
-        bot_can_read = ESM.bot.channel_permission?(:send_messages, channel)
+        bot_can_read = ESM.discord_bot.channel_permission?(:send_messages, channel)
         user_can_read = true
         user_can_read = user.channel_permission?(:read_messages, channel) if user
         next unless bot_can_read && user_can_read

@@ -26,7 +26,7 @@ FactoryBot.define do
     factory :primary_community do
       transient do
         data { ESM::Test.data[:primary] }
-        discord_server { ESM.bot.server(data[:server_id]) }
+        discord_server { ESM.discord_bot.server(data[:server_id]) }
       end
 
       community_name { discord_server.name }
@@ -43,7 +43,7 @@ FactoryBot.define do
     factory :secondary_community do
       transient do
         data { ESM::Test.data[:secondary] }
-        discord_server { ESM.bot.server(data[:server_id]) }
+        discord_server { ESM.discord_bot.server(data[:server_id]) }
       end
 
       community_name { discord_server.name }

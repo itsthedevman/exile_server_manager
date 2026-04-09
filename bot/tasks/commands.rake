@@ -13,14 +13,14 @@ namespace :commands do
   end
 
   desc "Delete and re-register all Discord commands"
-  task seed: :bot do
+  task seed: :discord_bot do
     print "Deleting all global commands..."
-    ESM.bot.get_application_commands.each(&:delete)
+    ESM.discord_bot.get_application_commands.each(&:delete)
     puts " done"
 
     ESM::Community.all.each do |community|
       print "  Deleting commands for #{community.community_id}..."
-      ESM.bot.get_application_commands(server_id: community.guild_id).each(&:delete)
+      ESM.discord_bot.get_application_commands(server_id: community.guild_id).each(&:delete)
       puts " done"
 
       print "  Registering commands for #{community.community_id}..."

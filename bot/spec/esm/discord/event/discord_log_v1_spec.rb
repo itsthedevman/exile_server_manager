@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
-describe ESM::Event::DiscordLogV1 do
+describe ESM::Discord::Event::DiscordLogV1 do
   it "needs tests"
 end

@@ -152,7 +152,7 @@ module ESM
           dm_allowed = dm_preferences_by_user_id[user.id]
           next unless dm_allowed
 
-          message = ESM.bot.deliver(embed, to: user.discord_user, block: true)
+          message = ESM.discord_bot.deliver(embed, to: user.discord_user, block: true)
           status[:direct_message] = message.nil? ? :failure : :success
         end
       end
@@ -171,7 +171,7 @@ module ESM
           .transform_values! { |r| r.map(&:user) }
 
         users_by_channel_id.each do |channel_id, users|
-          notification_message = ESM.bot.deliver(embed, to: channel_id, embed_message: "#{@xm8_type.titleize} - #{users.map(&:mention).join(" ")}", block: true)
+          notification_message = ESM.discord_bot.deliver(embed, to: channel_id, embed_message: "#{@xm8_type.titleize} - #{users.map(&:mention).join(" ")}", block: true)
 
           users.each do |user|
             status = @statuses_by_user[user] ||= {direct_message: :ignored, custom_routes: {sent: 0, expected: 0}}

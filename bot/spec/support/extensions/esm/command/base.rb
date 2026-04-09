@@ -11,7 +11,7 @@ module ESM
           opts[:description] = "Defaulted testing description"
         end
 
-        super(name, type, **opts)
+        super
       end
     end
   end

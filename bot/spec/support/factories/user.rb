@@ -5,7 +5,7 @@ FactoryBot.define do
     transient do
       user do
         user_id = ESM::Test.data[:primary][:users].sample
-        discord_user = ESM.bot.user(user_id)
+        discord_user = ESM.discord_bot.user(user_id)
 
         {
           id: user_id,
@@ -28,7 +28,7 @@ FactoryBot.define do
     factory :developer do
       transient do
         user { ESM::Test.data[:dev] }
-        discord_user { ESM.bot.user(user[:id]) }
+        discord_user { ESM.discord_bot.user(user[:id]) }
       end
 
       discord_id { user[:id] }
@@ -41,7 +41,7 @@ FactoryBot.define do
       transient do
         user do
           user_id = ESM::Test.data[:secondary][:users].sample
-          discord_user = ESM.bot.user(user_id)
+          discord_user = ESM.discord_bot.user(user_id)
 
           {
             id: user_id,
@@ -61,7 +61,7 @@ FactoryBot.define do
       transient do
         user do
           user_data = ESM::Test.data[guild_type][:role_users].sample
-          discord_user = ESM.bot.user(user_data[:id])
+          discord_user = ESM.discord_bot.user(user_data[:id])
 
           user_data.merge(
             name: discord_user.username,
@@ -83,7 +83,7 @@ FactoryBot.define do
           owner_id = ESM::Test.data[guild_type][:owner_id]
           raise "'owner_id' entry in '#{guild_type}' test data is invalid" if owner_id.blank?
 
-          discord_user = ESM.bot.user(owner_id)
+          discord_user = ESM.discord_bot.user(owner_id)
 
           {
             id: owner_id,

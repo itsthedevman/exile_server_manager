@@ -66,14 +66,14 @@ module ESM
           # Send the confirmation request
           reply(embed)
 
-          response = ESM.bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
+          response = ESM.discord_bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
           if response.nil? || response.downcase == I18n.t("no").downcase
             return reply(I18n.t("commands.broadcast.cancellation_reply"))
           end
 
           # Get all of the users to broadcast to
           users = load_users
-          users.each { |user| ESM.bot.deliver(broadcast_embed(server_ids: @server_id_sentence), to: user.discord_id) }
+          users.each { |user| ESM.discord_bot.deliver(broadcast_embed(server_ids: @server_id_sentence), to: user.discord_id) }
 
           # Send the success message back
           reply(

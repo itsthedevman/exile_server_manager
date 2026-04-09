@@ -122,7 +122,7 @@ module ESM
             return user if user&.discord_user
 
             if target_string.discord_id?
-              discord_user = ESM.bot.user(target_string)
+              discord_user = ESM.discord_bot.user(target_string)
 
               # The target_string does not exist in the database
               # but it is a valid discord user
@@ -399,7 +399,7 @@ module ESM
 
         # Convenience method for replying back to the event's channel
         def reply(message)
-          ESM.bot.deliver(message, to: current_channel, block: true)
+          ESM.discord_bot.deliver(message, to: current_channel, block: true)
         end
 
         def edit_message(message, content)
@@ -469,7 +469,7 @@ module ESM
               e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", uuid: request.uuid_short))
             end
 
-          ESM.bot.deliver(embed, to: target)
+          ESM.discord_bot.deliver(embed, to: target)
         end
 
         def create_or_update_cooldown

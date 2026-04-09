@@ -75,6 +75,7 @@ ESM.loader.tap do |loader|
 
   # Don't load extensions, we do that in esm.rb
   loader.ignore(ESM.root.join("lib", "esm", "extension"))
+  loader.ignore(ESM.root.join("lib", "esm", "discord", "extension"))
 
   # Ignore inits
   loader.ignore(ESM.root.join("lib", "esm", "database.rb"))

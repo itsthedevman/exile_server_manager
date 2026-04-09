@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-describe ESM::Event::ServerCreate do
-  let!(:event) { ESM::Event::ServerCreate.new(ESM.bot.server(ESM::Community::ESM_ID)) }
+describe ESM::Discord::Event::ServerCreate do
+  let!(:event) { ESM::Discord::Event::ServerCreate.new(ESM.discord_bot.server(ESM::Community::ESM_ID)) }
   let(:community) { ESM::Community.find_by_guild_id(ESM::Community::ESM_ID) }
 
   it "should be valid" do

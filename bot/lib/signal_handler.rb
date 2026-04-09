@@ -30,7 +30,7 @@ class SignalHandler
   def handle_signal(signal)
     puts "Handling #{signal} signal..."
 
-    ESM.bot.stop
+    ESM.discord_bot.stop
 
     exit
   end

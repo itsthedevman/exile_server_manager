@@ -16,11 +16,11 @@ module ESM
         end
 
         def on_request_accepted
-          ESM.bot.deliver("accepted", to: @request.requestor.discord_user)
+          ESM.discord_bot.deliver("accepted", to: @request.requestor.discord_user)
         end
 
         def on_request_declined
-          ESM.bot.deliver("declined", to: @request.requestor.discord_user)
+          ESM.discord_bot.deliver("declined", to: @request.requestor.discord_user)
         end
       end
     end

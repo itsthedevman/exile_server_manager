@@ -52,7 +52,7 @@ module ESM
           community = target_community || current_community
           return false if community.nil?
 
-          server = ESM.bot.server(community.guild_id.to_i)
+          server = ESM.discord_bot.server(community.guild_id.to_i)
           guild_member = current_user.on(server)
           return false if guild_member.nil?
 

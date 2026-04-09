@@ -18,7 +18,7 @@ module ESM
     class << self
       attr_reader :all, :by_type, :by_namespace
 
-      delegate :application_command, :register_application_command, to: "::ESM.bot"
+      delegate :application_command, :register_application_command, to: "::ESM.discord_bot"
     end
 
     def self.[](command_name)
@@ -207,7 +207,7 @@ module ESM
       end
 
       # It's a group and it may have subgroups or subcommands
-      ::ESM.bot.register_application_command(name, "C - If you are seeing this, something went wrong", server_id: community_discord_id) do |builder|
+      ::ESM.discord_bot.register_application_command(name, "C - If you are seeing this, something went wrong", server_id: community_discord_id) do |builder|
         segments_or_command.each do |name, segments_or_command|
           # It's a command!
           if all.include?(segments_or_command)

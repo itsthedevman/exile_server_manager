@@ -59,7 +59,7 @@ module ESM
       end
 
       def channel(opts = {})
-        ESM.bot.channel(opts[:in].channel_ids.sample)
+        ESM.discord_bot.channel(opts[:in].channel_ids.sample)
       end
 
       def redis
@@ -99,7 +99,7 @@ module ESM
         redis.del("test")
         redis.del("server_key")
 
-        ESM.bot.delivery_overseer.queue.clear # Otherwise messages from other tests may leak between each other
+        ESM.discord_bot.delivery_overseer.queue.clear # Otherwise messages from other tests may leak between each other
 
         ESM::Connection::Server.pause
       end

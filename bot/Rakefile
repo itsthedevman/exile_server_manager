@@ -44,10 +44,10 @@ task :environment do
   ESM.load!
 end
 
-task :bot do
+task :discord_bot do
   ESM.run!(async: true)
 
-  until ESM.bot.ready?
+  until ESM.discord_bot.ready?
     sleep 0.1
   end
 end

@@ -62,7 +62,7 @@ module ESM
           requestor_embed = embed_from_hash!(response.data.requestor)
 
           # Send to the requestee first since they can be the requestor
-          ESM.bot.deliver(requestee_embed, to: target_user)
+          ESM.discord_bot.deliver(requestee_embed, to: target_user)
 
           # And if they are the same person, don't send them the second message
           return if same_user?
@@ -92,7 +92,7 @@ module ESM
               )
             )
 
-            ESM.bot.deliver(embed, to: target_user)
+            ESM.discord_bot.deliver(embed, to: target_user)
 
             # Don't send essentially the same message twice
             return if same_user?

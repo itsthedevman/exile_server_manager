@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Event::SendToChannel, :requires_connection, v2: true do
+describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
   include_context "connection"
 
   let!(:channel) { ESM::Test.channel(in: community) }

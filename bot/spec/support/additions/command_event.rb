@@ -29,7 +29,7 @@ class CommandEvent
       }
     }
 
-    message = Discordrb::Message.new(data, ESM.bot)
-    Discordrb::Commands::CommandEvent.new(message, ESM.bot)
+    message = Discordrb::Message.new(data, ESM.discord_bot)
+    Discordrb::Commands::CommandEvent.new(message, ESM.discord_bot)
   end
 end

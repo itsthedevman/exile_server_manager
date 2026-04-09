@@ -385,7 +385,7 @@ module ESM
           return text if text.present?
         end
 
-        text = "This argument is optional#{default_value? ? "" : "."}"
+        text = "This argument is optional#{"." unless default_value?}"
         text += " and it defaults to `#{default_value}`." if default_value?
         text
       end

@@ -10,7 +10,7 @@ describe ESM do
   end
 
   it "should have a valid bot" do
-    expect(ESM.bot).not_to be_nil
+    expect(ESM.discord_bot).not_to be_nil
   end
 
   it "should have i18n loaded" do

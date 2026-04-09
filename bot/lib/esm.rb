@@ -70,6 +70,7 @@ Time.zone_default = Time.find_zone!("UTC")
 
 # Load extensions
 Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
+Dir["#{__dir__}/esm/discord/extension/**/*.rb"].sort.each { |extension| require extension }
 
 #################################
 # Logging methods!
@@ -123,8 +124,8 @@ module ESM
   }.freeze
 
   class << self
-    def bot
-      @bot ||= ESM::Bot.new
+    def discord_bot
+      @discord_bot ||= ESM::Discord::Bot.new
     end
 
     def run!(async: false, **)
@@ -133,7 +134,9 @@ module ESM
       require_relative "post_init"
       require_relative "post_init_dev" if ESM.env.development?
 
-      bot.run(async:, **)
+      ESM::API.run
+
+      discord_bot.run(async:, **)
     end
 
     # Load everything right meow

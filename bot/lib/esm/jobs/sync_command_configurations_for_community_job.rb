@@ -2,6 +2,7 @@
 
 class SyncCommandConfigurationsForCommunityJob
   include ::SuckerPunch::Job
+
   workers 5
 
   def perform(community_id, configurations)

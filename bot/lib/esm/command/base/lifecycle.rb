@@ -17,7 +17,7 @@ module ESM
           # @!visibility private
           #
           def event_hook(event)
-            event = ESM::Event::ApplicationCommand.new(event)
+            event = ESM::Discord::Event::ApplicationCommand.new(event)
             event.on_execution(self)
           end
         end
@@ -74,7 +74,7 @@ module ESM
         # @note Don't load `target_user` from the request. If the arguments contain a target, it will handle it
         def from_request(request)
           @request = request
-          @current_channel = ESM.bot.channel(request.requested_from_channel_id)
+          @current_channel = ESM.discord_bot.channel(request.requested_from_channel_id)
           @current_user = request.requestor
 
           # Initialize our command from the request

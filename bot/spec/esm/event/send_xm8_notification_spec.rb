@@ -244,7 +244,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   context "when the notification fails to send to direct message" do
     before do
       # Failures are when the message fails to send
-      allow(ESM.bot).to receive(:deliver).and_return(nil)
+      allow(ESM.discord_bot).to receive(:deliver).and_return(nil)
     end
 
     it "updates the database with a failure to send" do

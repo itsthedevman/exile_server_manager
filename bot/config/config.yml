@@ -38,7 +38,7 @@ default:
   websocket_connection_overseer:
     check_every: 3
 
-  # ESM::Bot::DeliveryOverseer
+  # ESM::DiscordBot::DeliveryOverseer
   bot_delivery_overseer:
     check_every: 0.5
 

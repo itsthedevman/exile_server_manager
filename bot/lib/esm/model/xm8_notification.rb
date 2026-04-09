@@ -133,7 +133,7 @@ module ESM
         dm_allowed = preferences_by_user_id[user.id]
         next unless dm_allowed
 
-        message = ESM.bot.deliver(to_embed, to: user.discord_user, block: true)
+        message = ESM.discord_bot.deliver(to_embed, to: user.discord_user, block: true)
 
         states[message ? :success : :failure][uuid] << DETAILS_DM
       end
@@ -156,7 +156,7 @@ module ESM
         .transform_values { |g| g.map { |(_channel_id, user_id)| user_lookup[user_id] } }
 
       users_by_channel_id.each do |channel_id, users|
-        message = ESM.bot.deliver(
+        message = ESM.discord_bot.deliver(
           to_embed,
           to: channel_id,
           embed_message: "#{type.titleize} - #{users.map(&:mention).join(" ")}",

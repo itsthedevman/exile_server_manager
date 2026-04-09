@@ -77,8 +77,11 @@ module ESM
       def process_server_command
         return if !ALLOWLISTED_SERVER_COMMANDS.include?(@message.command)
 
+        # Discord events are in ESM::Discord::Event, game-server events are in ESM::Event
+        namespace = @message.command.start_with?("discord_") ? "ESM::Discord::Event" : "ESM::Event"
+
         # Build the class and call it
-        "ESM::Event::#{@message.command.classify}V1".constantize.new(
+        "#{namespace}::#{@message.command.classify}V1".constantize.new(
           connection: @connection,
           server: @connection.server,
           parameters: @message.parameters.first

@@ -260,7 +260,7 @@ module ESM
           def register_root_command(community_discord_id, command_name)
             check_for_valid_configuration!
 
-            ::ESM.bot.register_application_command(
+            ::ESM.discord_bot.register_application_command(
               command_name,
               description,
               server_id: community_discord_id

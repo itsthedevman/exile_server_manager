@@ -54,7 +54,7 @@ module ESM
       return if discord_id.nil?
 
       @discord_user ||= lambda do
-        discord_user = ESM.bot.user(discord_id)
+        discord_user = ESM.discord_bot.user(discord_id)
         return if discord_user.nil?
 
         # Keep the discord user data up-to-date
@@ -77,7 +77,7 @@ module ESM
     def discord_servers
       return if discord_id.nil?
 
-      @discord_servers ||= ESM.bot.servers.values.select do |server|
+      @discord_servers ||= ESM.discord_bot.servers.values.select do |server|
         server.users.any? { |user| user.id.to_s == discord_id }
       end
     end

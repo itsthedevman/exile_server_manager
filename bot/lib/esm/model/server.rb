@@ -33,7 +33,7 @@ module ESM
 
       return if community.logging_channel_id.blank?
 
-      ESM.bot.deliver(
+      ESM.discord_bot.deliver(
         I18n.t("exceptions.extension_error", server_id: server_id, id: uuid),
         to: community.logging_channel_id
       )

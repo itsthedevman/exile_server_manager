@@ -207,7 +207,7 @@ module ESM
 
       EventMachine.cancel_timer(@ping_timer) if @ping_timer
 
-      info!(bot_stopping: ESM.bot.stopping?, server_id: @server.server_id, uptime: @server.uptime)
+      info!(bot_stopping: ESM.discord_bot.stopping?, server_id: @server.server_id, uptime: @server.uptime)
 
       embed = @server.status_embed(:disconnected)
       @server.community&.log_event(:reconnect, embed)

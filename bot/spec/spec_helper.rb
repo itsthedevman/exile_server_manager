@@ -41,4 +41,4 @@ end
 # HEY! LISTEN! The following lines must be the last code to execute in this file
 ESM.run!(async: true)
 ESM::Test.wait_until { ESM::Database.connected? }
-ESM::Test.wait_until { ESM.bot.ready? }
+ESM::Test.wait_until { ESM.discord_bot.ready? }
