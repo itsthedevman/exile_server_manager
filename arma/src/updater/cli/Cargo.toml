@@ -1,0 +1,14 @@
+[package]
+name = "esm_updater_cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "esm_updater"
+path = "src/main.rs"
+
+[dependencies]
+updater_lib = { path = "../lib" }
+clap = { version = "4", features = ["derive"] }
+env_logger = "0.11"
+log = "0.4"
