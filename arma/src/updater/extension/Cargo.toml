@@ -1,0 +1,16 @@
+[package]
+name = "esm_updater"
+version = "0.1.0"
+authors = ["Bryan <WolfkillArcadia@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "esm_updater"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+arma-rs = "1"
+lazy_static = "1"
+log = "0.4"
+log4rs = "1"
+updater_lib = { path = "../lib" }

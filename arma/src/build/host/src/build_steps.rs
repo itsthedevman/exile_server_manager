@@ -423,6 +423,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                     New-Item -Path '{build_path}\\@esm\\addons' -ItemType Directory -ErrorAction SilentlyContinue;
                     New-Item -Path '{server_path}\\@esm' -ItemType Directory -ErrorAction SilentlyContinue;
                     New-Item -Path '{server_path}\\@esm\\addons' -ItemType Directory -ErrorAction SilentlyContinue;
+                    New-Item -Path '{server_path}\\@esm\\log' -ItemType Directory -ErrorAction SilentlyContinue;
                 ",
                 build_path = builder.remote_build_path_str(),
                 server_path = builder.remote.server_path,
@@ -453,6 +454,7 @@ pub fn prepare_directories(builder: &mut Builder) -> BuildResult {
                 fi;
 
                 mkdir -p "{server_path}/@esm/addons";
+                mkdir -p "{server_path}/@esm/log";
             "#,
             build_path = builder.remote_build_path_str(),
             server_path = builder.remote.server_path,
@@ -615,6 +617,10 @@ destination_file="{build_path}/{addon}.pbo";
         fs_extra::dir::copy(source_dir, target_dir, &options)
             .map_err(|e| e.to_string())?;
     }
+
+    // Write the @esm version sidecar so the updater knows the installed mod version
+    let esm_version = esm_crate_version(&builder.local_git_path);
+    fs::write(build_path.join("version"), format!("{esm_version}\n"))?;
 
     // Copy the mod over
     Directory::transfer(
@@ -813,7 +819,95 @@ cp "{build_path}/esm/target/{build_target}/{build_dir}/libesm_arma.so" "{build_p
         .print_to_remote()
         .execute_remote(&builder.build_server)?;
 
+    build_updater_extension(builder)
+}
+
+fn build_updater_extension(builder: &mut Builder) -> BuildResult {
+    let updater_path =
+        builder.local_git_path.join("src").join("updater");
+
+    // Transfer the updater crate tree (lib + extension) to the remote.
+    // The extension's Cargo.toml uses `updater_lib = { path = "../lib" }`,
+    // so both must arrive under the same parent directory.
+    Directory::transfer(
+        builder,
+        updater_path,
+        builder.remote_build_path().to_owned(),
+    )?;
+
+    let build_path = builder.remote_build_path_str();
+    let build_target = &builder.extension_build_target;
+    let file_name = match builder.args.build_arch() {
+        BuildArch::X32 => "esm_updater",
+        BuildArch::X64 => "esm_updater_x64",
+    };
+
+    let mut release_flag = "";
+    let mut build_dir = "debug";
+
+    if builder.args.release {
+        release_flag = "--release";
+        build_dir = "release";
+    }
+
+    let script = match builder.args.build_os() {
+        BuildOS::Windows => {
+            format!(
+                r#"
+cd '{build_path}\updater\extension';
+rustup run stable-{build_target} cargo build --target {build_target} {release_flag};
+
+Copy-Item '{build_path}\updater\extension\target\{build_target}\{build_dir}\esm_updater.dll' -Destination '{build_path}\@esm\{file_name}.dll';
+            "#
+            )
+        }
+        BuildOS::Linux => {
+            format!(
+                r#"
+cd {build_path}/updater/extension;
+
+rustup run stable-{build_target} cargo build --target {build_target} {release_flag};
+
+cp "{build_path}/updater/extension/target/{build_target}/{build_dir}/libesm_updater.so" "{build_path}/@esm/{file_name}.so"
+"#
+            )
+        }
+    };
+
+    System::new()
+        .script(script)
+        .target_os(builder.build_os())
+        .add_error_detection(r"error: .+")
+        .add_detection(r"warning")
+        .print_as("cargo (esm_updater)")
+        .print_to_remote()
+        .execute_remote(&builder.build_server)?;
+
     Ok(())
+}
+
+/// Reads the version string from `src/esm/Cargo.toml`.
+/// Falls back to `"0.0.0"` if the file cannot be read or the version line
+/// is not found.
+fn esm_crate_version(local_git_path: &Path) -> String {
+    let cargo_toml =
+        local_git_path.join("src").join("esm").join("Cargo.toml");
+
+    let contents = match fs::read_to_string(&cargo_toml) {
+        Ok(c) => c,
+        Err(_) => return "0.0.0".into(),
+    };
+
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("version = \"") {
+            if let Some(version) = rest.strip_suffix('"') {
+                return version.to_string();
+            }
+        }
+    }
+
+    "0.0.0".into()
 }
 
 pub fn create_release_build(builder: &mut Builder) -> BuildResult {

@@ -43,6 +43,7 @@ pub const REDIS_SERVER_KEY: &str = "server_key";
 pub const REDIS_SERVER_KEY_CONFIRM: &str = "server_key_set";
 
 pub const ADDONS: &[&str] = &[
+    "esm_updater",
     "exile_server_manager",
     "exile_server_overwrites",
     "exile_server_xm8",

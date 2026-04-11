@@ -6,6 +6,7 @@ members = [
     "src/build/compiler",
     "src/esm",
     "src/updater/lib",
+    "src/updater/extension",
     "src/updater/cli",
 ]
 default-members = ["src/esm"]

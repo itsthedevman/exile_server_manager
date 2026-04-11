@@ -119,6 +119,7 @@ impl Builder {
         let file_watcher = FileWatcher::new(&local_git_path, &local_build_path)
             .watch(&local_git_path.join("src").join("@esm"))
             .watch(&local_git_path.join("src").join("esm"))
+            .watch(&local_git_path.join("src").join("updater"))
             .watch(&local_git_path.join("src").join("message"))
             .watch(&local_git_path.join("src").join("build").join("receiver"))
             .watch(&local_git_path.join("src").join("build").join("common"))
@@ -296,6 +297,10 @@ impl Builder {
             )
             || has_directory_changed(
                 &self.file_watcher,
+                &self.local_git_path.join("src").join("updater"),
+            )
+            || has_directory_changed(
+                &self.file_watcher,
                 &self.local_git_path.join("src").join("message"),
             )
     }
@@ -391,6 +396,22 @@ impl Builder {
             ("esm_x64.dll", rebuild_extension && is_windows && is_x64),
             ("esm.so", rebuild_extension && !is_windows && !is_x64),
             ("esm_x64.so", rebuild_extension && !is_windows && is_x64),
+            (
+                "esm_updater.dll",
+                rebuild_extension && is_windows && !is_x64,
+            ),
+            (
+                "esm_updater_x64.dll",
+                rebuild_extension && is_windows && is_x64,
+            ),
+            (
+                "esm_updater.so",
+                rebuild_extension && !is_windows && !is_x64,
+            ),
+            (
+                "esm_updater_x64.so",
+                rebuild_extension && !is_windows && is_x64,
+            ),
         ]
         .iter()
         .filter_map(|i| if i.1 { Some(i.0) } else { None })

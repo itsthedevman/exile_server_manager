@@ -20,7 +20,7 @@ readonly crate_version=$(
         cut -d@ -f2
 )
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
-readonly total_steps=8
+readonly total_steps=11
 
 step=0
 tag_created=false
@@ -122,29 +122,61 @@ else
     echo_step "Building esm.dll"
     run_command ./bin/build --only=extension --release --target=windows --x32
     run_command cp $public_dir/esm.dll $release_dir/@esm
+    run_command cp $public_dir/esm_updater.dll $release_dir/@esm
 
     ##################################
     # Extension - Windows (x64)
     echo_step "Building esm_x64.dll"
     run_command ./bin/build --only=extension --release --target=windows
     run_command cp $public_dir/esm_x64.dll $release_dir/@esm
+    run_command cp $public_dir/esm_updater_x64.dll $release_dir/@esm
 
     ##################################
     # Extension - Linux (x32)
     echo_step "Building esm.so"
     run_command ./bin/build --only=extension --release --target=linux --x32
     run_command cp $build_dir/esm.so $release_dir/@esm
+    run_command cp $build_dir/esm_updater.so $release_dir/@esm
 
     ##################################
     # Extension - Linux (x64)
     echo_step "Building esm_x64.so"
     run_command ./bin/build --only=extension --release --target=linux
     run_command cp $build_dir/esm_x64.so $release_dir/@esm
+    run_command cp $build_dir/esm_updater_x64.so $release_dir/@esm
+
+    ##################################
+    # CLI - Linux
+    echo_step "Building esm_updater CLI (Linux)"
+    run_command cargo build --release -p esm_updater_cli \
+        --target x86_64-unknown-linux-gnu
+    run_command mkdir -p $release_dir/@esm/bin
+    run_command cp \
+        target/x86_64-unknown-linux-gnu/release/esm_updater \
+        $release_dir/@esm/bin/esm_updater
+
+    ##################################
+    # CLI - Windows
+    # Built via the Windows remote host (same path as the DLL builds above).
+    # The Windows build step copies the binary to $public_dir/bin/.
+    # TODO: add --only=cli support to bin/build and route through the remote.
+    echo_step "Building esm_updater CLI (Windows) — skipped (manual step)"
+    echo_with_prefix "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
 
     ##################################
     # Zipping
     echo_step "Zipping $zip_filename"
     cd $release_dir && zip -r $zip_filename ./@esm
+
+    ##################################
+    # @esm.zip install bundle (updater artifacts only, for first-time install)
+    echo_step "Zipping @esm-install.zip"
+    cd $release_dir && zip @esm-install.zip \
+        @esm/esm_updater.dll \
+        @esm/esm_updater_x64.dll \
+        @esm/esm_updater.so \
+        @esm/esm_updater_x64.so \
+        @esm/bin/esm_updater
 fi
 
 ##################################
@@ -162,7 +194,8 @@ function create_gh_release() {
     gh release create v$crate_version \
         --generate-notes \
         --draft \
-        "$release_dir/$zip_filename"
+        "$release_dir/$zip_filename" \
+        "$release_dir/@esm-install.zip"
 }
 
 if [[ "$skip_release" == false ]] && confirm "Create a GitHub release for v$crate_version?"; then
