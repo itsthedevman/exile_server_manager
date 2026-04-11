@@ -20,23 +20,14 @@ use updater_lib::Updater;
 /// - `"pending:<component>:<reason>"` — update available but deferred.
 /// - `"error:internal"` — unexpected panic caught (should never happen).
 pub fn check_update() -> String {
-    let deadline = Instant::now()
-        + Duration::from_millis(crate::CONFIG.updater_timeout_ms);
+    let deadline =
+        Instant::now() + Duration::from_millis(crate::CONFIG.updater_timeout_ms);
 
-    // Wrap in catch_unwind as a last-resort backstop.
-    // run_boot_check is designed to never panic, but transitive deps might.
-    // A panic crossing the FFI boundary into Arma is undefined behaviour.
-    let result = std::panic::catch_unwind(|| Updater::run_boot_check(deadline));
-
-    match result {
-        Ok(Ok(boot_result)) => boot_result.to_status_string(),
-        Ok(Err(error)) => {
+    match Updater::run_boot_check(deadline) {
+        Ok(boot_result) => boot_result.to_status_string(),
+        Err(error) => {
             log::error!("[check_update] update failed: {error}");
             format!("error:{error}")
-        }
-        Err(_) => {
-            log::error!("[check_update] panic caught — this is a bug, please report it");
-            "error:internal".into()
         }
     }
 }
