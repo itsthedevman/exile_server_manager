@@ -10,15 +10,16 @@ use updater_lib::Updater;
 /// Check for and apply an ESM extension update.
 ///
 /// Computes a deadline from `config.updater_timeout_ms`, then delegates to
-/// `updater_lib::Updater::run_boot_check`. Always returns a short ASCII
-/// string safe to log from SQF — never panics or blocks indefinitely.
+/// `updater_lib::Updater::run_boot_check`. Always returns a human-readable
+/// string logged to the Arma RPT — never panics or blocks indefinitely.
 ///
 /// Possible return values:
-/// - `"ok"` — no update needed, or check failed safely (fail-open).
-/// - `"disabled"` — updater is disabled in `config.yml`.
-/// - `"updated:esm:X.Y.Z"` — extension was updated successfully.
-/// - `"pending:<component>:<reason>"` — update available but deferred.
-/// - `"error:internal"` — unexpected panic caught (should never happen).
+/// - `"No updates available."` — running version is current, or check failed
+///   safely (fail-open).
+/// - `"Auto-updater is disabled."` — updater disabled in `config.yml`.
+/// - `"Successfully updated <component> to v<X.Y.Z>."` — swap succeeded.
+/// - `"Update pending for <component>: <reason>."` — update deferred.
+/// - `"Update failed: <reason>."` — error surfaced from `run_boot_check`.
 pub fn check_update() -> String {
     let deadline =
         Instant::now() + Duration::from_millis(crate::CONFIG.updater_timeout_ms);
@@ -27,7 +28,7 @@ pub fn check_update() -> String {
         Ok(boot_result) => boot_result.to_status_string(),
         Err(error) => {
             log::error!("[check_update] update failed: {error}");
-            format!("error:{error}")
+            format!("Update failed: {error}.")
         }
     }
 }

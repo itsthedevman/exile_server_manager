@@ -48,19 +48,17 @@ pub enum BootCheckResult {
 }
 
 impl BootCheckResult {
-    /// Convert to the compact status string returned to SQF via callExtension.
-    ///
-    /// Format: `"ok"`, `"disabled"`, `"updated:<component>:<version>"`, or
-    /// `"pending:<component>:<reason>"`.
+    /// Convert to a human-readable status string logged to the Arma RPT via
+    /// `diag_log` in the `esm_updater` preInit script.
     pub fn to_status_string(&self) -> String {
         match self {
-            BootCheckResult::Ok => "ok".into(),
-            BootCheckResult::Disabled => "disabled".into(),
+            BootCheckResult::Ok => "No updates available.".into(),
+            BootCheckResult::Disabled => "Auto-updater is disabled.".into(),
             BootCheckResult::Updated { component, version } => {
-                format!("updated:{component}:{version}")
+                format!("Successfully updated {component} to v{version}.")
             }
             BootCheckResult::Pending { component, reason } => {
-                format!("pending:{component}:{reason}")
+                format!("Update pending for {component}: {reason}.")
             }
         }
     }

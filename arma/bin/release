@@ -25,6 +25,20 @@ readonly total_steps=11
 step=0
 tag_created=false
 skip_release=false
+dry_run=false
+skip_build=false
+
+for arg in "$@"; do
+    case $arg in
+    --use-existing)
+        skip_build=true
+        ;;
+    --dry-run)
+        dry_run=true
+        skip_release=true
+        ;;
+    esac
+done
 
 ##################################
 # Functions
@@ -60,32 +74,23 @@ function confirm() {
 
 ##################################
 # Check for the git tag
-echo_with_prefix "Checking for git tag"
-
-if git show-ref --tags "v$crate_version" --quiet; then
-    if ! confirm "Tag v$crate_version already exists - continue?"; then
-        exit 1
-    fi
-elif confirm "Tag v$crate_version does not exist - create tag?"; then
-    git tag -a "v$crate_version"
-    tag_created=true
+if [[ "$dry_run" == true ]]; then
+    echo_with_prefix "Dry run — skipping tag creation and GitHub release"
 else
-    echo_with_prefix "Tag skipped - Github release will not created"
-    skip_release=true
+    echo_with_prefix "Checking for git tag"
+
+    if git show-ref --tags "v$crate_version" --quiet; then
+        if ! confirm "Tag v$crate_version already exists - continue?"; then
+            exit 1
+        fi
+    elif confirm "Tag v$crate_version does not exist - create tag?"; then
+        git tag -a "v$crate_version"
+        tag_created=true
+    else
+        echo_with_prefix "Tag skipped - Github release will not be created"
+        skip_release=true
+    fi
 fi
-
-# At the top with other variables
-skip_build=false
-
-# Parse arguments before main logic
-for arg in "$@"; do
-    case $arg in
-    --use-existing)
-        skip_build=true
-        shift
-        ;;
-    esac
-done
 
 # Where the build steps start
 if [[ "$skip_build" == true ]]; then

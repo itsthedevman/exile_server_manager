@@ -1,27 +1,23 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use chrono::prelude::*;
 use compiler::{Compiler, CompilerError, Data};
 use json_comments::StripComments;
-use lazy_static::lazy_static;
 use regex::Captures;
 use serde_json::Value;
 
-lazy_static! {
-    static ref CONSTANTS: HashMap<String, Value> = {
-        let file_path = crate::builder::GIT_PATH
-            .join("src")
-            .join("@esm")
-            .join("constants.jsonc");
+fn load_constants(git_path: &Path) -> HashMap<String, Value> {
+    let file_path = git_path
+        .join("src")
+        .join("@esm")
+        .join("constants.jsonc");
 
-        let contents = std::fs::read_to_string(file_path)
-            .expect("Missing file esm_arma/src/@esm/constants.jsonc");
+    let contents = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|_| panic!("Missing file: {}", file_path.display()));
 
-        // Remove the comments :(
-        let contents = StripComments::new(contents.as_bytes());
-
-        serde_json::from_reader(contents).expect("Failed to parse content in constants.jsonc")
-    };
+    let stripped = StripComments::new(contents.as_bytes());
+    serde_json::from_reader(stripped)
+        .expect("Failed to parse constants.jsonc")
 }
 
 type CompilerResult = Result<Option<String>, CompilerError>;
@@ -50,11 +46,13 @@ const REGEX_TYPE_CHECK_NEGATED: &str =
     r"!type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 const REGEX_TYPE_CHECK: &str = r"type\?\((.+)?,\s*(ARRAY|BOOL|HASH|STRING|NIL)?\)";
 
-pub fn bind_replacements(compiler: &mut Compiler) {
-    // The order of these matter
-    // Macros without arguments are first
-    // Macros that could end up with another macro being used as an argument
-    // need to be last
+pub fn bind_replacements(compiler: &mut Compiler, git_path: &Path) {
+    // Load constants from disk once; capture in the closure for replace_const.
+    let constants = std::sync::Arc::new(load_constants(git_path));
+
+    // The order of these matter.
+    // Macros without arguments are first.
+    // Macros that could end up with another macro as an argument come last.
     compiler
         .replace(REGEX_CURRENT_YEAR, current_year)
         .replace(REGEX_FILE_NAME, file_name)
@@ -75,8 +73,10 @@ pub fn bind_replacements(compiler: &mut Compiler) {
         .replace(REGEX_NIL_NEGATED, not_nil)
         .replace(REGEX_NIL, nil)
         .replace(REGEX_NULL, null)
-        .replace(REGEX_CONST, replace_const)
-        .replace(REGEX_LOCALIZE, localize);
+        .replace(REGEX_LOCALIZE, localize)
+        .replace(REGEX_CONST, move |context: &Data, matches: &Captures| {
+            replace_const_with(context, matches, &constants)
+        });
 }
 
 fn localize(context: &Data, matches: &Captures) -> CompilerResult {
@@ -464,7 +464,11 @@ fn null(context: &Data, matches: &Captures) -> CompilerResult {
     Ok(Some(format!("isNull {content}")))
 }
 
-fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
+fn replace_const_with(
+    context: &Data,
+    matches: &Captures,
+    constants: &HashMap<String, Value>,
+) -> CompilerResult {
     let content = match matches.get(1) {
         Some(m) => m.as_str(),
         None => {
@@ -476,8 +480,7 @@ fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
         }
     };
 
-    // Load the constant
-    let constant = match CONSTANTS.get(content) {
+    let constant = match constants.get(content) {
         Some(c) => c,
         None => return Ok(None),
     };
@@ -489,14 +492,14 @@ fn replace_const(context: &Data, matches: &Captures) -> CompilerResult {
         Value::String(s) => format!("\"{s}\""),
         _ => {
             return Err(format!(
-                "{} -> const! - Constant \"{constant}\" returns an object/array. These are not supported at this time",
+                "{} -> const! - Constant \"{constant}\" returns an object/array. \
+                 These are not supported at this time",
                 context.file_path
             )
             .into())
         }
     };
 
-    // Replace
     Ok(Some(replacement))
 }
 
@@ -851,16 +854,28 @@ mod tests {
 
     #[test]
     fn it_replaces_constants() {
-        let output =
-            compile!(r#"const!(EXAMPLE_STRING);"#, REGEX_CONST, replace_const);
+        // Load constants from the test repo tree
+        let git_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|p| p.join(".git").is_dir())
+            .expect("could not find git root");
+
+        let constants = std::sync::Arc::new(load_constants(git_path));
+
+        let c = std::sync::Arc::clone(&constants);
+        let wrapper = move |ctx: &Data, caps: &Captures| replace_const_with(ctx, caps, &c);
+
+        let output = compile!(r#"const!(EXAMPLE_STRING);"#, REGEX_CONST, wrapper);
         assert_eq!(output, r#""Hello world!";"#);
 
-        let output =
-            compile!(r#"const!(EXAMPLE_NUMBER);"#, REGEX_CONST, replace_const);
+        let c = std::sync::Arc::clone(&constants);
+        let wrapper = move |ctx: &Data, caps: &Captures| replace_const_with(ctx, caps, &c);
+        let output = compile!(r#"const!(EXAMPLE_NUMBER);"#, REGEX_CONST, wrapper);
         assert_eq!(output, r#"69;"#);
 
-        let output =
-            compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, replace_const);
+        let c = std::sync::Arc::clone(&constants);
+        let wrapper = move |ctx: &Data, caps: &Captures| replace_const_with(ctx, caps, &c);
+        let output = compile!(r#"const!(EXAMPLE_BOOL);"#, REGEX_CONST, wrapper);
         assert_eq!(output, r#"false;"#)
     }
 
