@@ -25,7 +25,6 @@
               "x86_64-unknown-linux-gnu"
               "i686-unknown-linux-gnu"
               "x86_64-pc-windows-gnu"
-              "i686-pc-windows-gnu"
             ];
           };
       in
@@ -40,6 +39,14 @@
             openssl_3
             openssl.dev
 
+            # Windows cross-compilation (x86_64 only; i686 requires a real
+            # Windows build host — Nix's i686 mingw lacks DWARF unwind for
+            # libstd, and cross-compiling via cargo-xwin/MSVC hits arma-rs
+            # safe32_ symbol mismatches and SSE2-intrinsic inlining issues
+            # that aren't worth solving while 64-bit Arma is widely available).
+            pkgsCross.mingwW64.buildPackages.gcc
+            pkgsCross.mingwW64.buildPackages.binutils
+
             # Docker tools (for containerization)
             docker-compose
             docker-client
@@ -50,6 +57,10 @@
 
           shellHook = ''
             OPENSSL_LIB="${pkgs.openssl_3.out}/lib"
+
+            # Make winpthreads available only to the Windows cross-compile target,
+            # not to the native Linux linker.
+            export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib"
 
             echo "setting up binary wrappers..."
             mkdir -p tools/wrappers
