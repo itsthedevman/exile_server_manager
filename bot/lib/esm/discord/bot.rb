@@ -71,6 +71,7 @@ module ESM
         @esm_status = :stopping
 
         ESM::API.stop
+        ESM::Website::API.stop
         ESM::Connection::Server.stop
 
         # V1

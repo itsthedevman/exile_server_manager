@@ -135,6 +135,7 @@ module ESM
       require_relative "post_init_dev" if ESM.env.development?
 
       ESM::API.run
+      ESM::Website::API.run
 
       discord_bot.run(async:, **)
     end

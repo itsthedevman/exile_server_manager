@@ -44,6 +44,16 @@ services:
       - redis-data:/data
     networks:
       - esm
+  nats:
+    image: nats:2
+    container_name: ESM_NATS
+    restart: always
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    networks:
+      - esm
 volumes:
   postgres-data:
   redis-data:
