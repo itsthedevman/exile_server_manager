@@ -7,7 +7,7 @@ module ESM
       # Delegator over Discordrb::Events::ApplicationCommandEvent
       #
       class ApplicationCommand
-        delegate :user, :channel, :options, :respond, :edit_response, :delete_response, to: :@event
+        delegate :user, :options, :respond, :edit_response, :delete_response, to: :@event
 
         def initialize(event)
           @event = event
@@ -32,6 +32,14 @@ module ESM
           return if @event.server_id.nil?
 
           @event.server
+        end
+
+        #
+        # discordrb 3.8+ only populates Interaction#channel from a nested `channel` object in the
+        # interaction payload. Fall back to the bot's channel cache using channel_id when it isn't present.
+        #
+        def channel
+          @event.channel || ESM.discord_bot.channel(@event.channel_id)
         end
 
         def on_execution(command_class)

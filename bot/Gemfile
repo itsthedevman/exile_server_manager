@@ -85,8 +85,7 @@ gem "standalone_migrations"               # Database migrations outside Rails
 ####################################################################################################
 
 gem "discordrb",                          # Discord integration (custom fork with subcommand fixes)
-  git: "https://github.com/itsthedevman/discordrb.git",
-  branch: "fix/group-subcommand-mixing"
+  git: "https://github.com/shardlab/discordrb.git"
 gem "faye-websocket"                      # WebSocket client
 
 ####################################################################################################
@@ -135,6 +134,12 @@ gem "pry"                               # Interactive debugging console
 
 gem "puma"                                # Multi-threaded web server
 gem "rake"                                # Ruby build tool
+
+####################################################################################################
+## Inter-Process Communication
+####################################################################################################
+
+gem "nats-pure"                           # NATS request/reply transport (website ↔ bot)
 
 ####################################################################################################
 ## Custom Libraries
