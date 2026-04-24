@@ -1,9 +1,10 @@
 use crate::*;
 pub use base64::prelude::*;
-use openssl::{
-    rand::rand_bytes,
-    symm::{Cipher, Crypter, Mode},
+use aes_gcm::{
+    Aes256Gcm, Key, Nonce,
+    aead::{Aead, KeyInit, Payload},
 };
+use rand::{RngCore, rngs::OsRng};
 
 const NONCE_SIZE: u8 = 12; // GCM typically uses 12 bytes for nonce
 const TAG_SIZE: usize = 16; // GCM authentication tag is 16 bytes
@@ -53,50 +54,31 @@ pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String
     let encryption_key = &server_key[0..32];
 
     // Generate nonce
-    let mut nonce = vec![0; NONCE_SIZE as usize];
-    if let Err(e) = rand_bytes(&mut nonce) {
-        error!("[encrypt_message] Failed to generate nonce. {e:?}");
-        return Err(e.to_string());
-    }
+    let mut nonce_bytes = [0u8; NONCE_SIZE as usize];
+    OsRng.fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
 
-    // Setup GCM encryption
-    let cipher = Cipher::aes_256_gcm();
-    let mut encrypter =
-        Crypter::new(cipher, Mode::Encrypt, encryption_key, Some(&nonce))
-            .map_err(|e| format!("Failed to create cipher: {e}"))?;
+    // Setup cipher
+    let key = Key::<Aes256Gcm>::from_slice(encryption_key);
+    let cipher = Aes256Gcm::new(key);
 
-    // Add session ID as authenticated data if provided
-    if let Some(session_id) = &*lock!(SESSION_ID) {
-        encrypter
-            .aad_update(session_id.as_bytes())
-            .map_err(|e| format!("Failed to update aad: {e}"))?;
-    }
+    // Build payload with AAD (session_id if set)
+    let session_id_guard = lock!(SESSION_ID);
+    let aad = session_id_guard
+        .as_deref()
+        .map(str::as_bytes)
+        .unwrap_or(b"");
+    let payload = Payload { msg: data, aad };
 
-    // Allocate buffer for encrypted data
-    let mut packet = vec![0; data.len() + cipher.block_size()];
-    let mut count = encrypter
-        .update(data, &mut packet)
-        .map_err(|e| format!("Failed to update cipher: {e}"))?;
-
-    count += encrypter
-        .finalize(&mut packet[count..])
-        .map_err(|e| format!("Failed to finalize cipher: {e}"))?;
-
-    packet.truncate(count);
-
-    // Get authentication tag
-    let mut tag = vec![0u8; TAG_SIZE];
-    encrypter
-        .get_tag(&mut tag)
-        .map_err(|e| format!("Failed to get tag: {e}"))?;
-
-    // Append tag to encrypted data
-    packet.extend_from_slice(&tag);
+    // Encrypt; output is ciphertext || 16-byte GCM tag
+    let mut packet = cipher
+        .encrypt(nonce, payload)
+        .map_err(|e| format!("Encryption failed: {e}"))?;
 
     // Insert nonce at specified positions
     let nonce_indices = lock!(INDICES).clone();
     for (loop_index, nonce_index) in nonce_indices.iter().enumerate() {
-        packet.insert(*nonce_index as usize, nonce[loop_index])
+        packet.insert(*nonce_index as usize, nonce_bytes[loop_index]);
     }
 
     Ok(packet)
@@ -132,43 +114,26 @@ pub fn decrypt_request(
         return Err(format!("Nonce must contain at least {NONCE_SIZE} bytes"));
     }
 
-    // Split off authentication tag
     if packet.len() < TAG_SIZE {
         return Err("Encrypted data too short".into());
     }
 
-    let tag = packet.split_off(packet.len() - TAG_SIZE);
+    // Setup cipher
+    let key = Key::<Aes256Gcm>::from_slice(&server_key[0..32]);
+    let cipher = Aes256Gcm::new(key);
 
-    // Setup GCM decryption
-    let cipher = Cipher::aes_256_gcm();
+    // Build payload with AAD; packet = ciphertext || tag (aes-gcm validates tag)
+    let session_id_guard = lock!(SESSION_ID);
+    let aad = session_id_guard
+        .as_deref()
+        .map(str::as_bytes)
+        .unwrap_or(b"");
+    let payload = Payload { msg: &packet, aad };
 
-    let mut decrypter =
-        Crypter::new(cipher, Mode::Decrypt, &server_key[0..32], Some(&nonce))
-            .map_err(|e| format!("Failed to create cipher: {e}"))?;
-
-    // Add session ID as authenticated data if provided
-    if let Some(session_id) = &*lock!(SESSION_ID) {
-        decrypter
-            .aad_update(session_id.as_bytes())
-            .map_err(|e| format!("Failed to perform aad update: {e}"))?;
-    }
-
-    // Set expected tag
-    decrypter
-        .set_tag(&tag)
-        .map_err(|e| format!("Failed to set tag: {e}"))?;
-
-    // Decrypt
-    let mut plaintext = vec![0; packet.len() + cipher.block_size()];
-    let mut count = decrypter
-        .update(&packet, &mut plaintext)
-        .map_err(|e| format!("Failed to update cipher: {e}"))?;
-
-    count += decrypter
-        .finalize(&mut plaintext[count..])
-        .map_err(|e| format!("Failed to finalize cipher: {e}"))?;
-
-    plaintext.truncate(count);
+    let nonce = Nonce::from_slice(&nonce[..NONCE_SIZE as usize]);
+    let plaintext = cipher
+        .decrypt(nonce, payload)
+        .map_err(|e| format!("Decryption failed: {e}"))?;
 
     Ok(plaintext)
 }
