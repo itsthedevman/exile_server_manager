@@ -58,7 +58,7 @@ impl Container {
     }
 }
 
-pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String> {
+pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<(), String> {
     let file_content = match std::fs::read_to_string(&string_table_path) {
         Ok(c) => c,
         Err(_) => {
@@ -178,24 +178,24 @@ pub fn convert_yaml_to_xml(string_table_path: PathBuf) -> Result<String, String>
         ))
         .finalize();
 
-    match xml_builder.build_from_json(&stringtable_json) {
-        Ok(xml) => {
-            // Remove the stringtable.yml from build
-            if let Err(e) = std::fs::remove_file(&string_table_path) {
-                return Err(format!(
-                    "Failed to delete {}. Reason: {}",
-                    string_table_path.display(),
-                    e
-                )
-                .into());
-            }
+    let xml = xml_builder
+        .build_from_json(&stringtable_json)
+        .map_err(|e| format!("Failed to convert stringtable.yml to xml. Reason: {e}"))?;
 
-            Ok(xml)
-        }
-        Err(e) => {
-            Err(format!("Failed to convert stringtable.yml to xml. Reason: {e}").into())
-        }
-    }
+    let xml_path = string_table_path.with_file_name("stringtable.xml");
+    std::fs::write(&xml_path, xml).map_err(|e| {
+        format!("Failed to write {}. Reason: {}", xml_path.display(), e)
+    })?;
+
+    std::fs::remove_file(&string_table_path).map_err(|e| {
+        format!(
+            "Failed to delete {}. Reason: {}",
+            string_table_path.display(),
+            e
+        )
+    })?;
+
+    Ok(())
 }
 
 // https://stackoverflow.com/a/38406885
