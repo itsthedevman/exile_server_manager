@@ -24,6 +24,7 @@ bot/test_*.yml
 bot/target/
 bot/vendor/
 bot/Cargo.lock
+bot/spec/test_data.yml
 
 # core/
 core/.bundle/
