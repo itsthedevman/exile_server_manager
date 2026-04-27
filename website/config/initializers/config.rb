@@ -66,6 +66,13 @@ Config.setup do |config|
       required(:token).filled(:string)
     end
 
+    required(:nats).hash do
+      required(:url).filled(:string)
+      required(:subject_prefix).filled(:string)
+      required(:request_timeout).filled(:integer)
+      required(:shared_secret_env).filled(:string)
+    end
+
     if Rails.env.production?
       required(:secret_key_base).filled(:string)
     end

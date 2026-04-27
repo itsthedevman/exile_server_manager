@@ -46,6 +46,9 @@
             redis
             hiredis
 
+            # IPC broker (website ↔ bot)
+            nats-server
+
             # Build dependencies
             pkg-config
             openssl

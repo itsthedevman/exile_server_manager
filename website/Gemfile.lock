@@ -229,6 +229,12 @@ GEM
     multi_xml (0.8.1)
       bigdecimal (>= 3.1, < 5)
     mutex_m (0.3.0)
+    nats-pure (2.5.0)
+      base64
+      concurrent-ruby (~> 1.0)
+      json
+      securerandom
+      uri
     net-http (0.9.1)
       uri (>= 0.11.1)
     net-imap (0.6.3)
@@ -526,6 +532,7 @@ DEPENDENCIES
   http
   kramdown
   kramdown-parser-gfm
+  nats-pure
   omniauth
   omniauth-discord
   omniauth-openid
