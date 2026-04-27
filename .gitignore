@@ -5,6 +5,7 @@ result-*
 
 # bot/
 bot/.bundle/
+bot/log/
 bot/.yardoc
 bot/_yardoc/
 bot/coverage/

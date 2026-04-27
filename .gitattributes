@@ -1,0 +1,12 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Mark the database schema as having been generated.
+website/db/schema.rb linguist-generated
+
+# Mark vendored files as having been vendored.
+website/vendor/* linguist-vendored
+
+# Rails credentials diffing
+website/config/credentials/*.yml.enc diff=rails_credentials
+website/config/credentials.yml.enc diff=rails_credentials
