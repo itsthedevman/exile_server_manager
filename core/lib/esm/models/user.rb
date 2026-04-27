@@ -82,6 +82,12 @@ module ESM
       order(:discord_id).where(discord_id: id).first
     end
 
+    def self.from_steam_uid(uid)
+      return if uid.blank?
+
+      find_by_steam_uid(uid)
+    end
+
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
