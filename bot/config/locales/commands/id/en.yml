@@ -1,0 +1,12 @@
+---
+en:
+  commands:
+    id:
+      description: Displays the current Community's community ID for ESM
+      examples:
+        - description: Returns the community's ID
+      embed:
+        description: "**%{community_name}'s** community ID is **`%{community_id}`**"
+        field:
+          name: Want to list all registered servers for this community?
+          value: "```%{command}```"

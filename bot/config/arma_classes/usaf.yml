@@ -1,0 +1,18 @@
+usaf:
+  name: "USAF MOD"
+  categories:
+    magazines_rockets:
+      name: "Magazines (Rockets)"
+      entries:
+        USAF_1Rnd_MK20: "Mk-20 Rockeye"
+
+    vehicle_plane:
+      name: "Vehicle (Plane)"
+      entries:
+        USAF_A10: "A-10C Thunderbolt II"
+        USAF_F22_Heavy: "F-22A Raptor (Heavy)"
+        USAF_F22_EWP_AA: "F-22A Raptor (EWP-AA)"
+        USAF_F22_EWP_AG: "F-22A Raptor (EWP-AG)"
+        USAF_F22: "F-22A Raptor"
+        USAF_F35A: "F-35A Lightning II (Heavy)"
+        USAF_F35A_STEALTH: "F-35A Lightning II"

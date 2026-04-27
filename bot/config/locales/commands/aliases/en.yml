@@ -1,0 +1,7 @@
+---
+en:
+  commands:
+    aliases:
+      description: Lists your custom aliases
+      examples:
+        - description: Returns a list of your custom aliases

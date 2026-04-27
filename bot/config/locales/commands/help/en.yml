@@ -1,0 +1,97 @@
+en:
+  commands:
+    help:
+      arguments:
+        category:
+          description: The categories can be found by just using `/help`
+      description: A helpful command. An unhelpful description
+      examples:
+      - description: Displays information about getting started with Exile Server Manager
+      - description: Displays all player commands
+        arguments:
+          with: player commands
+      - description: Displays all admin commands
+        arguments:
+          with: admin commands
+      - description: Displays all commands
+        arguments:
+          with: commands
+      - description: Displays detailed information about the `/territory set_id` command
+        arguments:
+          with: "/territory set_id"
+      categories:
+        name: Categories
+        value: |-
+          ```
+          /help with:commands
+          ```List all commands
+
+          ```
+          /help with:<command_name>
+          ```Get information about the provided command
+      getting_started:
+        title: Well, hello there %{user}!
+        description: |-
+          It looks like you found my help command! One of %{command_count_player} player commands that I respond to, %{command_count_total} in total.
+          _Oh, where are my manners?_
+          My name is **Exile Server Manager**, or ESM for short. I am a command bot that allows you to interact with any Arma 3 server that is registered with me!
+        fields:
+          commands:
+            name: "**Looking for my commands?**"
+            value: |-
+              List player commands:
+              ```/help with:player commands```
+              List admin commands _(commands available to certain roles only!)_:
+              ```/help with:admin commands```
+              List all commands:
+              ```/help with:commands```
+              Commands and their details are also available in an easier to read format on my website: https://esmbot.com/wiki/commands
+
+          command:
+            name: "**Want to see examples or more information about a command?**"
+            value: |-
+              Just send me ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+              For example:
+              ```/help with:/community servers``` _(Note: The slash for the command you are searching for may be omitted)_
+          privacy:
+            name: "**Privacy Policy**"
+            value: |-
+              By using ESM or any of its services, you are agreeing to its [Privacy Policy](https://www.esmbot.com/wiki/privacy).
+              _TL;DR - it is one of those "no duh" type of policies:
+              ESM has access to your publicly accessible Discord and Steam information, and information you provide ESM and its services.
+              Your information is used for the functionality of the bot only._
+      commands:
+        player:
+          title: Player Commands
+          description: |-
+            These commands are for players to interact with their character in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode enabled.
+
+            _**Note:** Communities have the ability to disable or limit access to commands for their servers, regardless of where the command is used_
+
+            More information about a particular command can be found by using:
+            ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+            For example:
+            ```/help with:/community servers``` _(Note: The slash for the command you are searching for may be omitted)_
+        admin:
+          title: Admin Commands
+          description: |-
+            These commands are locked by default and may only be used by a community's admins and any allowed roles.
+
+            More information about a particular command can be found by using:
+            ```/help with:<command_name>```Replacing `<command_name>` with the name of the command.
+
+            For example:
+            ```/help with:/community admin find_player``` _(Note: The slash for the command you are searching for may be omitted)_
+        development:
+          title: Development Commands
+          description: These commands are only available in development mode.
+      command:
+        title: "`%{name}` Documentation"
+        note: "**Note:**"
+        limited_to: This command is available only in a %{channel_type} channel with me.
+        allowlist_enabled: This command may be only available to certain roles.
+        usage: "**__Usage__**"
+        arguments: "**__Arguments__**"
+        examples: "**__Examples__**"

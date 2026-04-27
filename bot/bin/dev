@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# Start the bot
+bundle exec ruby bin/esm.rb

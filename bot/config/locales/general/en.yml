@@ -1,0 +1,163 @@
+en:
+  commands:
+    arguments:
+      community_id:
+        description: "The ID, or alias, for the community that you want to run this command on"
+        description_extra: |-
+          Community IDs are composed of a few characters that are configured by the server owner
+          You may find this by by using the `/community id` on the Discord server for that community
+          You may omit this argument if you have a default community set
+        optional_text: |-
+          This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
+      target:
+        description: "The user that you want to run this command on"
+        description_extra: |-
+          This argument accepts any of the following:
+          A Discord mention, e.g. `@discord_mention`
+          A Discord ID, e.g. `123456789012345678`
+          or a Steam 64 ID (Steam UID), e.g. `76561234567890123`
+      server_id:
+        description: "The ID, or alias, for the server that you want to run this command on"
+        description_extra: |-
+          Server IDs are composed of a community ID and a custom name, separated by an underscore
+          For example: `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`
+          You may omit this argument if you have a default server set
+        optional_text: |-
+          This argument may be excluded if a server is set as a default for you, or the Discord community if you are using this command in a text channel
+      territory_id:
+        description: "The ID for the territory that you want to run this command on"
+        description_extra: |-
+          Territory IDs are often 3-6 characters long, or a custom one set using the `/territory set_id` command.
+          Want to see all of your territories? Try using the `/server my territories` command
+      command:
+        description: A slash command (e.g. `/server reward` with or without the `/`)
+  "yes": "Yes"
+  "no": "No"
+  invalid_response: |-
+    I'm sorry, I don't know how to reply to your response.
+    I was expecting %{expected}
+  failure_to_communicate: "Looks like what we've got here is failure to communicate. I am unable to help you. Goodbye"
+  request_timed_out: |-
+    I'm sorry %{user}, `%{server_id}` never replied to your command
+    Here was the command you ran: ```%{command_message}``` Please wait a few minutes and try again.
+  datetime:
+    dotiw:
+      words_connector: ", "
+      two_words_connector: " and "
+      last_word_connector: ", and "
+      seconds:
+        one: 1 second
+        other: "%{count} seconds"
+      minutes:
+        one: 1 minute
+        other: "%{count} minutes"
+      hours:
+        one: 1 hour
+        other: "%{count} hours"
+      days:
+        one: 1 day
+        other: "%{count} days"
+      weeks:
+        one: 1 week
+        other: "%{count} weeks"
+      months:
+        one: 1 month
+        other: "%{count} months"
+      years:
+        one: 1 year
+        other: "%{count} years"
+      less_than_x: "less than %{distance}"
+    distance_in_words:
+      half_a_minute: "half a minute"
+      less_than_x_seconds:
+        one: "less than 1 second"
+        other: "less than %{count} seconds"
+      x_seconds:
+        one: "1 second"
+        other: "%{count} seconds"
+      less_than_x_minutes:
+        one: "less than a minute"
+        other: "less than %{count} minutes"
+      x_minutes:
+        one: "1 minute"
+        other: "%{count} minutes"
+      about_x_hours:
+        one: "about 1 hour"
+        other: "about %{count} hours"
+      x_days:
+        one: "1 day"
+        other: "%{count} days"
+      about_x_months:
+        one: "about 1 month"
+        other: "about %{count} months"
+      x_months:
+        one: "1 month"
+        other: "%{count} months"
+      about_x_years:
+        one: "about 1 year"
+        other: "about %{count} years"
+      over_x_years:
+        one: "over 1 year"
+        other: "over %{count} years"
+      almost_x_years:
+        one: "almost 1 year"
+        other: "almost %{count} years"
+  seconds: "%{count} seconds"
+  minutes: "%{count} minutes"
+  hours: "%{count} hours"
+  days: "%{count} days"
+  weeks: "%{count} weeks"
+  months: "%{count} months"
+  years: "%{count} years"
+  territories: "Territories"
+  name: "Name"
+  general: "General"
+  currency: "Currency"
+  scoreboard: "Scoreboard"
+  health: "Health"
+  money: "Money"
+  locker: "Locker"
+  respect: "Respect"
+  hunger: "Hunger"
+  thirst: "Thirst"
+  kills: "Kills"
+  deaths: "Deaths"
+  kd_ratio: "KD Ratio"
+  you_are_dead: "You are dead"
+  poptab: "poptab"
+  poptabs: "poptabs"
+  server_id: "Server ID"
+  ip: "IP"
+  port: "Port"
+  map: "Map"
+  players: "Players"
+  game_version: "Game Version"
+  required_mods: "Required Mods"
+  optional_mods: "Optional Mods"
+  continued: "continued"
+  territory: "Territory"
+  territory_id: "Territory ID"
+  flag_status: "Flag Status"
+  next_due_date: "Next Due Date"
+  last_paid: "Last Paid"
+  price_to_renew_protection: "Price to renew protection"
+  level: "Level"
+  radius: "Radius"
+  current: "Current"
+  max_objects: "Max Objects"
+  price: "Price"
+  owner: "Owner"
+  moderators: "Moderators"
+  build_rights: "Builders"
+  dm: "Direct Message"
+  text: "Text"
+  message: "Message"
+  xm8_notification: "XM8 notification"
+  uptime: "Uptime"
+  server_connected: "**Server is now online**"
+  server_disconnect:
+    base: "**Server has gone offline**"
+    footer: "ESM will reconnect automatically when your server is back online"
+    reasons:
+      restart: "ESM is restarting. Your server will reconnect shortly"
+      settings_update: "The server's settings have been updated. Your server will reconnect shortly"

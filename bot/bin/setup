@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+if [[ ! -f ".env" ]]; then
+  echo "Failed - Missing .env file. Did you forget to create/sym link it?"
+  exit 1
+fi
+
+bundle install
+bundle exec rake db:drop
+
+if [[ -f "db/schema.rb" ]]; then
+  rm db/schema.rb
+fi
+
+bundle exec rake db:create
+bundle exec rake db:migrate
+bundle exec rake db:migrate RAILS_ENV=test
+bundle exec ruby db/seeds.rb

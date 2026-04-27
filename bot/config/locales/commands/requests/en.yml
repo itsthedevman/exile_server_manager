@@ -1,0 +1,7 @@
+---
+en:
+  commands:
+    requests:
+      description: Lists your pending command requests
+      examples:
+        - description: Returns a list of your pending requests

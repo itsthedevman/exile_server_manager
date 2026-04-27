@@ -1,0 +1,29 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+*.log*
+*.log.age
+
+# rspec failure tracking
+.rspec_status
+
+.byebug_history
+*.code-workspace
+.DS_Store
+.env
+test_*.yml
+
+target/
+vendor/
+
+# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
+# More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
+Cargo.lock
+
+.direnv/
+.env

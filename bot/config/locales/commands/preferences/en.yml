@@ -1,0 +1,37 @@
+en:
+  commands:
+    preferences:
+      description: View, allow, or deny notifications on a per server basis.
+      description_extra: All notifications are enabled by default, this command allows for fine grained tuning.
+      examples:
+      - description: Displays your notification preferences for `esm_malden`
+        arguments:
+          for: esm_malden
+      - description: Allows `esm_malden` to send you all notification types
+        arguments:
+          for: esm_malden
+          action: Allow
+      - description: Blocks `esm_altis` from sending you the Protection money paid XM8 notification
+        arguments:
+          for: esm_altis
+          action: Deny
+          type: Protection money paid
+      arguments:
+        action:
+          description: Controls if the notification will be sent to you. Valid options are `Allow` and `Deny`
+        type:
+          description: The notification type. See `/help with:/my preferences` for more information.
+          description_extra: |-
+            Valid options are:
+            - All
+            - Custom
+            - Base raid
+            - Flag stolen
+            - Flag restored
+            - Flag steal started
+            - Protection money due
+            - Protection money paid
+            - Grind started
+            - Hack started
+            - Charge plant started
+            - Marxet item sold

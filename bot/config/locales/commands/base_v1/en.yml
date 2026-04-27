@@ -1,0 +1,10 @@
+---
+en:
+  commands:
+    base_v1:
+      description: A test command
+      examples:
+        - description: A test example
+        - description: An example with args
+          arguments:
+            target: foo

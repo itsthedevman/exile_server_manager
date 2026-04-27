@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Flag to track if we should stop running more tests
+INTERRUPTED=false
+CURRENT_PID=""
+
+# Trap ctrl-c to stop current test and skip remaining ones
+trap 'handle_interrupt' INT SIGTERM
+
+handle_interrupt() {
+    echo -e "\n${YELLOW}Interrupting test run... Stopping current suite${NC}"
+    INTERRUPTED=true
+    # Kill the current rspec process if it exists
+    if [ -n "$CURRENT_PID" ] && kill -0 "$CURRENT_PID" 2>/dev/null; then
+        kill -TERM "$CURRENT_PID" 2>/dev/null
+        wait "$CURRENT_PID" 2>/dev/null
+    fi
+}
+
+# Store all arguments to pass to rspec
+RSPEC_ARGS="$@"
+
+# Check if --format was provided, if not use progress format
+if [[ ! " $RSPEC_ARGS " =~ " --format" ]]; then
+    RSPEC_ARGS="--format=progress $RSPEC_ARGS"
+fi
+
+# Arrays to track results
+declare -a FAILED_SUITES=()
+declare -a PASSED_SUITES=()
+TOTAL_FAILURES=0
+TOTAL_PASSES=0
+
+# Arrays to hold collected suites (path:::name pairs)
+declare -a ALL_SUITES=()
+
+# Recursive function to collect all test suites
+collect_suites() {
+    local dir="$1"
+    local relative_path="${2:-spec}"
+    local display_name="${relative_path}"
+
+    # Check if this directory has any spec files directly in it
+    local has_direct_specs=false
+    if ls "${dir}"/*_spec.rb 2>/dev/null | grep -q .; then
+        has_direct_specs=true
+    fi
+
+    # Check if this directory has subdirectories
+    local has_subdirs=false
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            has_subdirs=true
+            break
+        fi
+    done
+
+    # If it has direct specs but no subdirs, add the whole directory
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = false ]; then
+        ALL_SUITES+=("${dir}:::${display_name}")
+        return 0
+    fi
+
+    # If it has direct specs and subdirs, add the direct specs
+    if [ "$has_direct_specs" = true ] && [ "$has_subdirs" = true ]; then
+        ALL_SUITES+=("${dir}/*_spec.rb:::${display_name} (root)")
+    fi
+
+    # Now walk through subdirectories
+    for subdir in "${dir}"/*/; do
+        if [ -d "$subdir" ]; then
+            local subdir_name=$(basename "$subdir")
+            local new_path="${relative_path:+${relative_path}/}${subdir_name}"
+
+            # Check if this subdirectory contains any specs (recursively)
+            if find "$subdir" -name "*_spec.rb" -type f 2>/dev/null | grep -q .; then
+                collect_suites "$subdir" "$new_path"
+            fi
+        fi
+    done
+}
+
+# Function to run a test suite
+run_suite() {
+    # Check if we've been interrupted
+    if [ "$INTERRUPTED" = true ]; then
+        return 0
+    fi
+
+    local suite_path="$1"
+    local suite_name="$2"
+    local suite_index="$3"
+    local suite_total="$4"
+
+    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}[${suite_index}/${suite_total}] Running: ${NC}${suite_name}"
+    echo -e "${BLUE}Path: ${NC}${suite_path}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+
+    # Run rspec
+    bin/rspec ${suite_path} ${RSPEC_ARGS} &
+    CURRENT_PID=$!
+    wait $CURRENT_PID
+    local exit_code=$?
+    CURRENT_PID=""
+
+    # Check if we were interrupted
+    if [ "$INTERRUPTED" = true ]; then
+        echo -e "${YELLOW}Suite interrupted: ${suite_name}${NC}"
+        FAILED_SUITES+=("${suite_name} (interrupted)")
+        ((TOTAL_FAILURES++))
+        return 0
+    fi
+
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✓ ${suite_name} passed${NC}"
+        PASSED_SUITES+=("${suite_name}")
+        ((TOTAL_PASSES++))
+    else
+        echo -e "${RED}✗ ${suite_name} failed (exit code: ${exit_code})${NC}"
+        FAILED_SUITES+=("${suite_name} (exit: ${exit_code})")
+        ((TOTAL_FAILURES++))
+    fi
+
+    return 0  # Always return 0 to continue running
+}
+
+echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║              ESM Test Suite Runner                   ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
+
+if [ -n "$RSPEC_ARGS" ]; then
+    echo -e "${YELLOW}RSpec arguments: ${NC}${RSPEC_ARGS}"
+fi
+
+# Start timer
+START_TIME=$(date +%s)
+
+# Collect all test suites
+collect_suites "spec"
+
+# Shuffle the suites
+SHUFFLED_SUITES=()
+while IFS= read -r line; do
+    SHUFFLED_SUITES+=("$line")
+done < <(printf '%s\n' "${ALL_SUITES[@]}" | shuf)
+
+TOTAL_SUITES=${#SHUFFLED_SUITES[@]}
+echo -e "${BLUE}Found ${TOTAL_SUITES} test suites (randomized)${NC}"
+
+# Run each suite
+for i in "${!SHUFFLED_SUITES[@]}"; do
+    if [ "$INTERRUPTED" = true ]; then
+        break
+    fi
+
+    entry="${SHUFFLED_SUITES[$i]}"
+    suite_path="${entry%%:::*}"
+    suite_name="${entry##*:::}"
+    run_suite "$suite_path" "$suite_name" "$((i + 1))" "$TOTAL_SUITES"
+done
+
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+# Print summary
+echo -e "\n${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║                    TEST SUMMARY                      ║${NC}"
+echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}\n"
+
+if [ "$INTERRUPTED" = true ]; then
+    echo -e "${YELLOW}⚠️  Test run was interrupted by user${NC}\n"
+fi
+
+echo -e "${BLUE}Total time: ${MINUTES}m ${SECONDS}s${NC}"
+echo -e "${GREEN}Passed suites: ${TOTAL_PASSES}${NC}"
+echo -e "${RED}Failed suites: ${TOTAL_FAILURES}${NC}\n"
+
+if [ ${#PASSED_SUITES[@]} -gt 0 ]; then
+    echo -e "${GREEN}✓ Passed:${NC}"
+    for suite in "${PASSED_SUITES[@]}"; do
+        echo -e "  ${GREEN}• ${suite}${NC}"
+    done
+    echo ""
+fi
+
+if [ ${#FAILED_SUITES[@]} -gt 0 ]; then
+    echo -e "${RED}✗ Failed:${NC}"
+    for suite in "${FAILED_SUITES[@]}"; do
+        echo -e "  ${RED}• ${suite}${NC}"
+    done
+    echo ""
+
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║         ⚠️  SOME TEST SUITES FAILED  ⚠️              ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
+    exit 1
+else
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║         ✅  ALL TEST SUITES PASSED!  ✅              ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
+    exit 0
+fi

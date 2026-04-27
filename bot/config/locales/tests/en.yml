@@ -1,0 +1,25 @@
+en:
+  test: "This is a test" # Do not delete (for tests)
+  test_base:
+    _integer: "one"
+    _preserve: "two"
+    _display_as: "three"
+    _default: "default"
+  commands:
+    argument_descriptions:
+      examples:
+      - description: "testing"
+      arguments:
+        with_locale:
+          description: "An argument description"
+          description_extra: "An argument description extra"
+          optional_text: "An argument optional text"
+    argument_required:
+      examples:
+      - description: "testing"
+    server_command:
+      examples:
+      - description: "testing"
+    target_command:
+      examples:
+      - description: "testing"

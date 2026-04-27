@@ -1,0 +1,7 @@
+---
+en:
+  commands:
+    base:
+      description: A test command
+      examples:
+        - description: A test example

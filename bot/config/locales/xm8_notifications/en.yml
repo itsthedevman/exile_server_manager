@@ -1,0 +1,60 @@
+en:
+  xm8_notifications:
+    recipient_steam_uids: "Recipient Steam UIDs"
+    footer: "These notifications can be configured via the Admin Dashboard"
+    invalid_type:
+      title: "(Undeliverable) XM8 Notification for `%{server}`"
+      description: |-
+        **Error:**
+        The provided notification type of `%{type}` is not valid.
+
+        **Remedy:**
+        Please provide a valid type in your XM8 notification request.
+        You can find the valid XM8 notification types on my [wiki](https://www.esmbot.com/wiki/xm8_notifications)
+    invalid_attributes:
+      title: "(Undeliverable) XM8 Notification for `%{server}`"
+      description: |-
+        **Error:**
+        The provided `%{type}` notification attributes are missing or invalid.
+
+        **Remedy:**
+        Please provide the correct attributes for your notification in your XM8 notification request.
+        You can find the valid XM8 notification attributes on my [wiki](https://www.esmbot.com/wiki/xm8_notifications)
+    v1:
+      log:
+        title: "(Delivered) `%{type}` XM8 Notification for `%{server}`"
+        description: |-
+          **Title:**
+          %{title}
+          **Description:**
+          %{description}
+        message_statuses:
+          name: "**Notification Statuses**"
+          values:
+            direct_message:
+              success: "DM notified"
+              failure: "DM blocked, bot blocked, or Discord is having issues"
+              ignored: "DM turned off"
+            custom_routes:
+              none: ""
+              success: "Sent to %{number_sent} custom routes"
+              failure: "Sent to %{number_sent} of %{number_expected} custom routes"
+        unregistered_steam_uids: "**Unregistered Steam UIDs**"
+      invalid_attributes:
+        custom:
+          error: "Missing `title` and/or `body` attributes in message field"
+          remedy: "Please provide a valid string for `title` and/or `body`. This string cannot be empty or whitespace."
+        marxet_item_sold:
+          error: "Missing `item` and `amount` attributes in message field"
+          remedy: "Please provide a valid string for `item` and `amount`. This string cannot be empty or whitespace."
+        title: "(Undeliverable) XM8 Notification for `%{server}`"
+        description: |-
+          **Error:**
+          %{error}
+
+          **Remedy:**
+          %{remedy}
+        log_message:
+          base: "The following message has been sent:\n"
+          title: "**Title:**\n%{title}"
+          message: "Message:**\n%{message}"

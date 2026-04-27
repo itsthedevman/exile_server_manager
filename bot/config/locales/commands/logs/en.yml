@@ -1,0 +1,19 @@
+---
+en:
+  commands:
+    logs:
+      description: Searches the last 14 days worth of Trading, Territory, and Death logs
+      examples:
+        - description: Parses the logs on `esm_malden` for @some_player's Steam UID and returns any matched lines
+          arguments:
+            for: "@some_player"
+            "on": esm_malden
+        - description: Parses the logs on `esm_altis` for `Exile_Chopper_Hummingbird_Green` and returns any matched lines
+          arguments:
+            for: Exile_Chopper_Hummingbird_Green
+            "on": esm_altis
+      arguments:
+        query:
+          description: This be a target (Discord Mention, Discord ID, or Steam UID) or a search term.
+      errors:
+        no_logs: Hey %{user}, I was unable to find any logs that match your query.
