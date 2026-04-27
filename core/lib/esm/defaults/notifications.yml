@@ -1,0 +1,158 @@
+# The default notifications for Communities
+
+gambling:
+  - color: "random"
+    description: "You lost **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs remaining."
+    title: "Maybe next time **{{ userName }}**!"
+    type: "loss"
+
+  - color: "random"
+    description: "You just lost **{{ amountChanged }}** poptabs, but that doesn't have to happen anymore. This [website](http://www.gamblersanonymous.org/ga/) has some awesome resources to help you get over your addiction. If you won't do it for yourself, please, do it for your community. You have **{{ lockerAfter }}** poptabs left."
+    title: "Look **{{ userName }}**, there is still hope."
+    type: "loss"
+
+  - color: "random"
+    description: "I'm serious, don't. You can't afford to. You lost **{{ amountChanged }}** poptabs and you have **{{ lockerAfter }}** poptabs left."
+    title: "Don't quit your day job **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You lost **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs remaining."
+    title: "RIPs, you are not a winner **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You just lost **{{ amountChanged }}** poptabs, but don't worry! Try gambling again and maybe you'll win it back. :wink:\nYou have **{{ lockerAfter }}** poptabs left."
+    title: "I'm sorry **{{ userName }}**"
+    type: "loss"
+
+  - color: "random"
+    description: "You won **{{ amountChanged }}** poptabs. You now have **{{ lockerAfter }}** poptabs"
+    title: "Damn, you won **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "You're one step closer to a new attack helicopter! You won **{{ amountChanged }}** poptabs, and have a total of **{{ lockerAfter }}** poptabs in your locker"
+    title: "Guess what **{{ userName }}**?"
+    type: "won"
+
+  - color: "random"
+    description: "Congratulations, you won **{{ amountChanged }}** poptabs, this is just enough to afford one month of FarmersOnly.com, **PREMIUM**"
+    title: "**{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "You just won **{{ amountChanged }}** poptabs. You have **{{ lockerAfter }}** poptabs in your locker"
+    title: "Slow down **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "Yes, you just won **{{ amountChanged }}** poptabs. Yes, your locker balance is now **{{ lockerAfter }}** poptabs. But did you know gambling is a serious addiction? We are concerned about you, so we found [this](http://www.gamblersanonymous.org/ga/) for you."
+    title: "Hey **{{ userName }}**"
+    type: "won"
+
+  - color: "random"
+    description: "They just won **{{ amountChanged }}** poptabs. **{{ userTag }}**, you have **{{ lockerAfter }}** poptabs now."
+    title: "Looks like drinks are on **{{ userName }}**"
+    type: "won"
+
+xm8:
+  - color: "random"
+    description: "Hop on quick, **{{ territoryName }}** (`{{ territoryID }}`) is being raided"
+    title: "Oh noes! {{ territoryName }} is being raided!"
+    type: "base-raid"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** flag has been stolen! Go get it back!"
+    title: "Flag Stolen `({{ territoryID }})`"
+    type: "flag-stolen"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** flag has been restored! Good job getting it back!"
+    title: "Flag Restored `({{ territoryID }})`"
+    type: "flag-restored"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** protection money is due today!\nUse `/territory pay on:{{ serverID }} territory:{{ territoryID }}` to make a payment!"
+    title: "Protection Money Due `({{ territoryID }})`"
+    type: "protection-money-due"
+
+  - color: "random"
+    description: "**{{ territoryName }}'s** protection money has been paid"
+    title: "Protection Money Paid `({{ territoryID }})`"
+    type: "protection-money-paid"
+
+  - color: "random"
+    description: "Someone set us up the bomb. **{{ territoryName }}** is about to go BOOM!"
+    title: "Charge Planted `({{ territoryID }})`"
+    type: "charge-plant-started"
+
+  - color: "random"
+    description: "Some scalliwag is tryna grind yer locks! **{{ territoryName }}** is being raided!"
+    title: "Grinding Started `({{ territoryID }})`"
+    type: "grind-started"
+
+  - color: "random"
+    description: "H4x0rs are trying to get into your stuff! **{{ territoryName }}** is being robbed! "
+    title: "Hacking Started `({{ territoryID }})`"
+    type: "hack-started"
+
+  - color: "random"
+    description: "Someone is trying to steal **{{ territoryName }}'s** flag!"
+    title: "Flag Steal Started `({{ territoryID }})`"
+    type: "flag-steal-started"
+
+  - color: "random"
+    description: "You just sold **{{ item }}** for **{{ amount }}** poptabs"
+    title: "Item sold on MarXet"
+    type: "marxet-item-sold"
+player:
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s money by {{ modifiedAmount }} poptabs. They used to have {{ previousAmount }} poptabs, they now have {{ newAmount }}."
+    title: ""
+    type: "money"
+
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s locker by {{ modifiedAmount }} poptabs. They used to have {{ previousAmount }} poptabs, they now have {{ newAmount }}."
+    title: ""
+    type: "locker"
+
+  - color: "random"
+    description: "{{ userTag }}, you've modified `{{ targetUID }}`'s respect by {{ modifiedAmount }} points. They used to have {{ previousAmount }}, they now have {{ newAmount }}."
+    title: ""
+    type: "respect"
+
+  - color: "random"
+    description: "Heroes never die!"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "The doctor is in"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "Ze healing is not rewarding as ze hurting"
+    title: ""
+    type: "heal"
+
+  - color: "random"
+    description: "Whoops... zat vas not medicine."
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "Side effects may include nausea, headaches... and death!"
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "Snake? SNAAAAAAAAKE!!!"
+    title: ""
+    type: "kill"
+
+  - color: "random"
+    description: "{{ targetUID }} has died of dysentery"
+    title: ""
+    type: "kill"
