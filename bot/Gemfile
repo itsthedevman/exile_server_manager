@@ -146,5 +146,5 @@ gem "nats-pure"                           # NATS request/reply transport (websit
 ####################################################################################################
 
 gem "esm_ruby_core",                      # ESM core functionality
-  path: "../esm_ruby_core"
+  path: "../core"
 gem "everythingrb"                        # Method extensions and utilities

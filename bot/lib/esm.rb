@@ -54,7 +54,7 @@ ESM_CORE_PATH =
   if (path = ENV["ESM_RUBY_CORE_PATH"]) && path.present?
     Pathname.new(path).join("lib")
   else
-    Pathname.new(File.expand_path("../../", __dir__)).join("esm_ruby_core", "lib")
+    Pathname.new(File.expand_path("../../", __dir__)).join("core", "lib")
   end
 
 # Require the core Ruby classes

@@ -6,7 +6,7 @@ Rails.application.config.to_prepare do
     if (path = ENV["ESM_RUBY_PATH"]) && path.present?
       Pathname.new(path)
     else
-      Pathname.new(File.expand_path("../../../", __dir__)).join("esm_ruby_core")
+      Pathname.new(File.expand_path("../../../", __dir__)).join("core")
     end
 
   Dir[core_path.join("lib/**/*.rb")].sort.each do |file|
