@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+docker compose exec -T mysql_db mysql -uroot -ppassword12345 < exile.sql
+docker compose exec -T mysql_db mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/01.sql
+docker compose exec -T mysql_db mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/02.sql

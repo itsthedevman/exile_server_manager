@@ -1,0 +1,55 @@
+[package]
+name = "esm"
+version = "2.0.1"
+authors = ["Bryan <WolfkillArcadia@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "esm_arma"
+crate-type = ["cdylib", "rlib"]
+
+# [[bin]]
+# name = "esm_bin"
+# path = "src/bin/bin.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arma-rs = { version = "1.11", features = ["uuid", "serde_json", "chrono"] }
+chrono = { version = "0.4", features = ["serde"] }
+harsh = "0.2"
+lazy_static = "1.5"
+log = "0.4"
+log4rs = "1.3"
+message-io = { version = "0.18", default-features = false, features = ["tcp"] }
+mysql_async = "0.34"
+parking_lot = { version = "0.12", features = ["serde", "deadlock_detection"] }
+rand = "0.8"
+rust-ini = "0.21"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+serde_repr = "0.1"
+serde_derive = "1.0"
+tokio = { version = "1.47", features = ["full"] }
+uuid = { version = "1.18", features = ["serde", "v4", "fast-rng"] }
+aes-gcm = "0.10"
+base64 = "0.22"
+flate2 = "1.1"
+num-format = "0.4"
+unicode-segmentation = "1.12"
+regex = "1.11"
+humantime = "2.2"
+
+[dev-dependencies]
+pretty_assertions = "1"
+tempfile = "3.20"
+
+[dependencies.mysql_common]
+version = "0.32"
+features = ["chrono"]
+
+[features]
+# Using features to control environments
+development = []
+test = []

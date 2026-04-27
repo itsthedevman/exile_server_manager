@@ -1,0 +1,555 @@
+#
+# This file is a YAML representation of Arma 3's stringtable.xml containers and keys
+# This file is read in and transformed into the full stringtable.xml file that we know and love
+#
+# Note: The build process will transform this data into something XML can understand. All "id"
+# values defined will automatically have `STR_ESM_` prepended to them
+#
+# Syntax:
+#
+# Each root key represents a <Container> entry in the resulting XML. The associated value
+# to these keys represent a single <Key> entry.
+#
+# For example:
+#
+# # YAML                                        # XML
+# MyNewContainer:                               # <Container name="MyNewContainer">
+#   MyLocalizedString:                          #   <Key ID="STR_ESM_MyLocalizedString">
+#     arguments:                                #     <!-- %1 - Some argument | %2 - Another -->
+#     - Some argument                           #
+#     - Another                                 #
+#     english: "Hello %1, how are you %2?"      #     <English>Hello %1, how are you %2?</English>
+#     german: "Hallo %1, wie geht es dir %2?"   #     <German>Hallo %1, wie geht es dir %2?</German>
+#                                               #   </Key>
+#   AnotherString:                              #   <Key ID="STR_ESM_AnotherString">
+#                                               #     <!-- None -->
+#     english: "This is short"                  #     <English>This is short</English>
+#                                               #   </Key>
+#                                               # </Container>
+#
+#
+# Formatting:
+#   - Discord markdown is supported
+#   - Any new line characters will be replaced with an Arma 3 line break (<br/>) when compiled.
+#     These will then be converted back to new lines by the bot. This is because XML does not
+#     support new line characters and will be normalized to a space
+#
+
+################################################################################
+# Commonly used words, phrases, errors, etc.
+General:
+  Success:
+    english: "Success"
+
+  Territory:
+    english: "Territory"
+
+  Player:
+    english: "Player"
+
+  Target:
+    english: "Target"
+
+  Receipt:
+    english: "Receipt"
+
+  Function:
+    english: "Function"
+
+  Poptabs:
+    arguments:
+    - "Number of poptabs"
+    english: "%1 poptab(s)"
+
+  PlayerNeedsToJoin:
+    arguments:
+    - "Player mention"
+    - "Server ID"
+    english: "Hey %1, you **need to join** `%2` first before you can run commands on it"
+
+  TargetNeedsToJoin:
+    arguments:
+    - "Player mention"
+    - "Target mention or Steam UID"
+    - "Server ID"
+    english: "Hey %1, %2 **needs to join** `%3` first before you can use them as a target in a command on this server"
+
+  AlivePlayer:
+    arguments:
+    - "Player mention"
+    - "Server ID"
+    english: "Hey %1, you are dead. You must be alive on `%2` in order to use this command"
+
+  NullFlag:
+    arguments:
+    - "Player mention"
+    - "Territory ID"
+    - "Server ID"
+    english: "Hey %1, I was unable to find a territory with the ID of `%2`. Please double check that you typed the correct ID. You may also send me `/server my territories for:%3` to see your territories"
+
+  NullFlag_Admin:
+    arguments:
+    - "Function name"
+    english: "Function %1 was called but the territory flag was not found in game"
+
+  StolenFlag:
+    arguments:
+    - "Player mention"
+    - "Territory ID"
+    english: "Not to worry you, %1, but `%2`'s flag has been stolen at some point. The flag must be returned before you can perform this action"
+
+  TooPoor:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you do not have enough poptabs in your locker"
+
+  TooPoor_WithCost:
+    arguments:
+    - "Player mention"
+    - "Cost"
+    - "Current locker amount"
+    english: "Hey %1, you do not have enough poptabs in your locker. It costs **%2** and you have **%3**"
+
+  MissingTerritoryAccess:
+    arguments:
+    - "Player mention"
+    - "Territory ID"
+    english: "%1, you do not have permission to perform this action on `%2`"
+
+  MissingTerritoryAccess_Admin:
+    english: "Player attempted to perform an action on Territory but they do not have access"
+
+  ResponseAuthor:
+    arguments:
+    - "Server ID"
+    english: "Sent from %1"
+
+  LockerBefore:
+    english: "Locker before"
+
+  LockerAfter:
+    english: "Locker after"
+
+################################################################################
+# /territory add_player
+ESMs_command_add:
+  Add_CannotAddSelf:
+    arguments:
+    - "Player mention"
+    english: Hey %1, you cannot add yourself to this territory
+
+  Add_ExistingRights:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    english: "Hey %1, %2 already has build rights"
+
+  # Discord message to the user who requested to add the player
+  # This message is only sent if the requestor is not the requestee
+  Add_Response_Requestor_Title:
+    english: "Added player to territory"
+
+  Add_Response_Requestor_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hi %1, %2 has been added to territory `%3`"
+
+  # Discord message to player who is being added
+  Add_Response_Requestee_Title:
+    arguments:
+    - "Territory name"
+    english: "Welcome to %1!"
+
+  Add_Response_Requestee_Description:
+    arguments:
+    - "Target mention"
+    - "Territory ID"
+    english: "Hi %1, you've been added to territory `%2`"
+
+  # Discord message to logging channel
+  Add_Log_Title:
+    english: "`ESMs_command_add` executed successfully"
+
+  Add_Log_Description:
+    english: "Player added Target to territory"
+
+ESMs_command_demote:
+  Demote_CannotDemoteOwner:
+    arguments:
+    - "Player mention"
+    english: "%1, you have no power here!"
+
+  Demote_CannotDemoteBuilder:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you cannot demote someone who is already at the lowest rank. If you are looking to remove the player from the territory, use `/territory remove_player`"
+
+  Demote_CannotDemoteNothing:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you can't demote someone you have no power over."
+
+  # Discord message to player
+  Demote_Response_Title:
+    english: "Player demoted"
+
+  Demote_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hey %1, `%2` has been demoted to builder in territory `%3`"
+
+  # Discord message to logging channel
+  Demote_Log_Title:
+    english: "`ESMs_command_demote` executed successfully"
+
+  Demote_Log_Description:
+    english: "Player demoted Target in territory"
+
+################################################################################
+# /territory upgrade
+ESMs_command_upgrade:
+  Upgrade_MaxLevel:
+    arguments:
+    - "Player mention"
+    - "Territory ID"
+    english: "Hey %1, `%2` cannot be upgrade as that it is already at the highest level"
+
+  # Toast message to player
+  Upgrade_Toast_Title:
+    english: "Territory upgraded!"
+
+  Upgrade_Toast_Description:
+    arguments:
+    - "Territory level"
+    - "Territory radius"
+    english: "Your territory has reached level %1 and now has a new radius of %2 meters."
+
+  # Discord message to player
+  Upgrade_Response_Title:
+    arguments:
+    - "Territory ID"
+    - "Territory level"
+    english: "`%1` has been upgraded to level %2"
+
+  Upgrade_Response_Range_Title:
+    english: "**New range**"
+
+  Upgrade_Response_Range_Value:
+    arguments:
+    - "Range"
+    english: "%1 meters"
+
+  Upgrade_Response_Objects_Title:
+    english: "Objects / Max objects"
+
+  Upgrade_Response_Objects_Value:
+    arguments:
+    - "Current object count"
+    - "Max object count"
+    english: "%1 / %2"
+
+  Upgrade_Response_Receipt:
+    arguments:
+    - "Locker balance before"
+    - "Upgrade cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |-
+      ```
+               Locker:  +%1
+         Flag upgrade:  -%2
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
+      ```
+
+  # Discord message to logging channel
+  Upgrade_Log_Title:
+    english: "`ESMs_command_upgrade` executed successfully"
+
+  Upgrade_Log_Description:
+    arguments:
+    - "Territory level"
+    - "Locker balance before"
+    - "Upgrade cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |
+      Territory upgraded to level %1
+      ```
+               Locker:  +%2
+         Flag upgrade:  -%3
+      Convenience fee:  -%4 (%5%6)
+              Balance:  =%7 poptab(s)
+      ```
+################################################################################
+# /territory remove_player
+ESMs_command_remove:
+  Remove_CannotRemoveOwner:
+    arguments:
+    - "Player mention"
+    english: "%1, you have no power here!"
+
+  Remove_CannotRemoveNothing:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you can't remove someone you have no power over."
+
+  # Discord message to player
+  Remove_Response_Title:
+    arguments:
+    - "Territory ID"
+    english: "Successfully removed player from territory `%1`"
+
+  Remove_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target UID"
+    english: "Hey %1, `%2` has been removed"
+
+  # Discord message to logging channel
+  Remove_Log_Title:
+    english: "`ESMs_command_remove` executed successfully"
+
+  Remove_Log_Description:
+    english: "Player removed Target from territory"
+
+################################################################################
+# /territory pay
+ESMs_command_pay:
+  Pay_Response_Title:
+    arguments:
+    - "Territory ID"
+    english: "Successfully paid protection money for territory `%1`"
+
+  Pay_Response_Receipt:
+    arguments:
+    - "Locker balance before"
+    - "Protection cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |-
+      ```
+               Locker:  +%1
+       Protection fee:  -%2
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
+      ```
+
+  Pay_Log_Title:
+    english: "`ESMs_command_pay` executed successfully"
+
+  Pay_Log_Description:
+    arguments:
+    - "Locker balance before"
+    - "Protection cost"
+    - "Tax amount"
+    - "Tax percentage"
+    - "The percent sign. Because Arma"
+    - "Locker balance after"
+    english: |-
+      Territory protection money paid
+      ```
+               Locker:  +%1
+       Protection fee:  -%2
+      Convenience fee:  -%3 (%4%5)
+              Balance:  =%6 poptab(s)
+      ```
+################################################################################
+# /territory promote_player
+ESMs_command_promote:
+  Promote_ExistingRights:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    english: "Hey %1, %2 is already a moderator"
+
+  Promote_MissingRights:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory name"
+    english: |-
+      Hey %1, %2 is not a member this territory.
+      You may add them by using `/territory add_player`.
+
+  # Discord message to player
+  Promote_Response_Title:
+    english: "Player promoted"
+
+  Promote_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Target mention"
+    - "Territory ID"
+    english: "Hey %1, `%2` has been promoted to moderator in territory `%3`"
+
+  # Discord message to logging channel
+  Promote_Log_Title:
+    english: "`ESMs_command_promote` executed successfully"
+
+  Promote_Log_Description:
+    english: "Player promoted Target in territory"
+
+################################################################################
+# /server gamble
+ESMs_command_gamble:
+  Gamble_CannotGambleNothing:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, you cannot gamble nothing!"
+
+  Gamble_LockerFull:
+    arguments:
+    - "Player mention"
+    english: "Hey %1, your locker is full"
+
+  # Discord message to player
+  Gamble_Response_Title_Win:
+    english: "Winner winner!"
+
+  Gamble_Response_Title_Loss:
+    english: "Better luck next time!"
+
+  Gambling_Response_Description_Win:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Poptabs won"
+    - "Poptabs profit"
+    - "Locker amount"
+    english: |-
+      Congrats %1!
+      You gambled %2 poptabs and won %3 poptabs _(**+%4** poptab profit)_.
+      You now have **%5** poptabs in your locker.
+
+  Gambling_Response_Description_WinMaxLocker:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Poptabs won"
+    - "Poptabs profit"
+    - "Locker amount"
+    english: |-
+      Congrats %1!
+      You gambled %2 poptabs and won %3 poptabs _(**+%4** poptab profit)_.
+      Your locker maxed out at **%5** poptabs due to server limits.
+
+  Gambling_Response_Description_Loss_1:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "Whoops! %1, you just lost %2 poptabs. On the bright side, you're now qualified for a PhD in 'How to Make Money Disappear'. Congrats, Dr. Unlucky! Your remaining %3 poptabs are now trembling in fear."
+
+  Gambling_Response_Description_Loss_2:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, you've bravely sacrificed %2 poptabs to the gambling gods. Surely they're appeased now, right? Your remaining %3 poptabs are tingling with anticipation. The next big win could be just a click away!"
+
+  Gambling_Response_Description_Loss_3:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, those %2 poptabs were just holding you back. Now your streamlined %3 poptab force is lean, mean, and ready to take on the house! Who needs a battle plan when you've got moxie?"
+
+  Gambling_Response_Description_Loss_4:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "Oh no, %1! %2 poptabs just vanished into thin air. But don't worry, I'm sure your remaining %3 poptabs are lucky. Like, really lucky. Probably. Maybe. Why not find out?"
+
+  Gambling_Response_Description_Loss_5:
+    arguments:
+    - "Player mention"
+    - "Gamble amount"
+    - "Locker amount"
+    english: "%1, you didn't lose %2 poptabs - you invested in future winning karma! Those %3 poptabs you have left? They're practically multiplying already. Can you hear the jackpot calling your name?"
+
+  # Discord message to logging channel
+  Gamble_Log_Title:
+    english: "`ESMs_command_gamble` executed successfully"
+
+  Gamble_Log_Description:
+    arguments:
+    - "Gamble status (won/lost)"
+    english: "Player gambled and %1"
+
+################################################################################
+# /server admin modify_player
+ESMs_command_player:
+  Player_Log_Title:
+    english: "`ESMs_command_player` executed successfully"
+  Player_Log_Description_Money:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's money has been modified by %1 poptabs. They now have %2 poptabs."
+  Player_Log_Description_Respect:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's respect has been modified by %1. They now have %2 respect."
+  Player_Log_Description_Locker:
+    arguments:
+    - "Modified by amount"
+    - "Total amount"
+    english: "Target's locker has been modified by %1 poptabs. They now have %2 poptabs."
+  Player_Log_Description_Heal:
+    english: "Target has been healed"
+  Player_Log_Description_Kill:
+    english: "Target has been killed"
+
+################################################################################
+# /server reward
+ESMs_command_reward:
+  Reward_PlayerPoptabs:
+    english: "Poptabs added to your player"
+  Reward_LockerPoptabs:
+    english: "Poptabs added to your locker"
+  Reward_Respect:
+    english: "Respect"
+  Reward_InvalidClassName_Title:
+    english: "**Invalid Reward Item**"
+  Reward_InvalidClassName_Description:
+    arguments:
+    - "Item classname"
+    english: |-
+      The item `%1` is configured as a reward but could not be found in your server's config.
+
+      This usually means either:
+      - The item name is misspelled
+      - The mod that adds this item isn't installed
+      - The mod isn't loaded in the correct order
+
+      The reward cannot be delivered until this is fixed. Double-check the item name and required mods.
+  Reward_Response_Title:
+    english: "**Reward Package Delivered!**"
+  Reward_Response_Description:
+    arguments:
+    - "Player mention"
+    - "Receipt"
+    english: |-
+      Hey %1, here's what you just received:
+      %2
+  Reward_Log_Title:
+    english: "`ESMs_command_reward` executed successfully"
+  Reward_Log_Description:
+    arguments:
+    - "Receipt"
+    english: |-
+      Player received the following:
+      %1

@@ -1,0 +1,55 @@
+services:
+  arma_server:
+    build: .
+    container_name: ESM_ARMA_SERVER
+    volumes:
+      - "./tools/server/@exile:/arma3server/@exile"
+      - "./tools/server/@exileserver:/arma3server/@exileserver"
+      - "./tools/server/mpmissions:/arma3server/mpmissions"
+      - "./tools/server/test.log:/arma3server/test.log"
+      - "./tools/server/test.rpt:/tmp/test.rpt"
+      - "./.docker-volumes/server-data:/arma3server"
+      - "./.docker-volumes/steam-data:/steamcmd"
+      - "./.docker-volumes/tmp-data:/tmp"
+    tty: true
+    networks:
+      - dev
+    extra_hosts: # Allows linux host to use host.docker.internal.
+      - "host.docker.internal:host-gateway"
+  mysql_db:
+    image: mysql:8
+    container_name: ESM_DB_MYSQL
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    command: >
+      --mysql-native-password=ON
+      --authentication_policy=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.docker-volumes/mysql-data:/var/lib/mysql
+      - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
+    networks:
+      - dev
+  mysql_db_v1:
+    image: mysql:5.7
+    container_name: ESM_DB_MYSQL_V1
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.docker-volumes/mysqlv1-data:/var/lib/mysql
+      - ./exile.sql:/docker-entrypoint-initdb.d/exile.sql
+    networks:
+      - dev
+    profiles:
+      - v1
+
+
+networks:
+  dev:
+    driver: bridge

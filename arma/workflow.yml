@@ -1,0 +1,76 @@
+# From Arma
+initialize:
+  - Initializes logging
+  - Takes an input of required attributes from the A3 server and sends them to the bot
+  - Loads in esm.key and connects to the bot
+  - Remember, there is a bug here where the restart_times are required, lets change that
+discord_log:
+  - Sends a log package to the bot
+discord_message_channel:
+  - Sends a log package to the bot
+xm8_notification:
+  - Sends a notification package to the bot
+hash_id:
+  - May not be needed
+  - Requests the bot for a hash of the database ID
+dll_log:
+  - Logs a message to the extensions log
+reconnect:
+  - Attempts to reconnect to the bot
+command_response:
+  - A single command's reponse to the bot
+increment_payment_counter:
+  - Increments the payment counter in the database for a territory
+reset_payment_counter:
+  - Resets the payment counter to 0 in the database for a territory
+
+# From Discord
+post_initialization:
+  - Sets some variables in the DLL, such as server_id, max_payment_count
+  - Connects to the database
+  - Sends some variables to the A3 server, including the packet from the bot
+echo:
+  - May not be needed
+  - Replies back to the bot with the same message that was sent
+allterritories:
+  - Queries the database
+territories:
+  - Queries the database
+restore:
+  - Queries the database
+me:
+  - Queries the database
+reset:
+  - Queries the database
+info:
+  - Queries the database
+stuck:
+  - Queries the database
+setterritoryid:
+  - Queries the database
+pay:
+  - Checks to see if the requested territory has exceeded the payment amount
+  - Calls function on A3 server
+add:
+  - Calls function on A3 server
+remove:
+  - Calls function on A3 server
+promote:
+  - Calls function on A3 server
+demote:
+  - Calls function on A3 server
+gamble:
+  - Calls function on A3 server
+upgrade:
+  - Calls function on A3 server
+player:
+  - Calls function on A3 server
+exec:
+  - Calls function on A3 server
+reward:
+  - Calls function on A3 server
+transfer:
+  - Calls function on A3 server
+logs:
+  - Parses the logs for the requested parameters
+  - Sends response back to Bot

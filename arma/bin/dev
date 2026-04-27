@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly args=("$@")
+
+echo "<esm_bt> - Running tests..."
+cargo test --workspace
+
+exec "./bin/build" --target=linux --start-server "${args[@]}"

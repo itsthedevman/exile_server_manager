@@ -1,0 +1,9 @@
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+
+# Tell cc-based build scripts (zstd-sys, libz-sys, etc.) to use the mingw cross-compiler
+[env]
+CC_x86_64_pc_windows_gnu = "x86_64-w64-mingw32-gcc"
+AR_x86_64_pc_windows_gnu = "x86_64-w64-mingw32-ar"
+

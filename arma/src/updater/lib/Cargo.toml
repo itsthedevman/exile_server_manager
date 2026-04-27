@@ -1,0 +1,32 @@
+[package]
+name = "updater_lib"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+# Enables sign_for_test and other helpers visible to integration test crates.
+testing = ["dep:rand"]
+
+[dependencies]
+ureq = { version = "2", features = ["tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+semver = { version = "1", features = ["serde"] }
+flate2 = "1"
+tar = "0.4"
+sha2 = "0.10"
+hex = "0.4"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+thiserror = "1"
+log = "0.4"
+rand = { version = "0.8", optional = true }
+
+[dev-dependencies]
+tiny_http = "0.12"
+tempfile = "3"
+rand = "0.8"
+
+[[test]]
+name = "integration_test"
+required-features = ["testing"]

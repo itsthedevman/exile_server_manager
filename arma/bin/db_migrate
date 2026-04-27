@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly root_dir="$(pwd)"
+readonly sql_files="$root_dir/src/@esm/sql/*.sql"
+readonly password="${MYSQL_PASSWORD:-password12345}"
+readonly database="${MYSQL_PASSWORD:-exile_esm}"
+
+function call_mysql() {
+    mysql -uroot -p"$password" --host 127.0.0.1 "$database" "$@"
+}
+
+# Make sure the SQL directory exists
+if [[ ! -d "$root_dir/src/@esm/sql" ]]; then
+    echo "Error: SQL directory not found"
+    exit 1
+fi
+
+# Loop through each SQL file and execute it
+for file in $sql_files; do
+    if [[ -f "$file" ]]; then
+        echo "Executing $file..."
+        call_mysql <"$file"
+    fi
+done
+
+echo "All SQL files executed successfully"
