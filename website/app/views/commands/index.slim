@@ -1,0 +1,16 @@
+= render "communities/role_styles"
+
+= render "communities/container", **local_assigns do
+  .text-center.mb-4
+    h1.mb-2 Command Configuration
+    p.lead.text-muted Configure which commands are available and how they behave
+
+  - commands_by_category.each do |category, commands|
+    .mb-5
+      h2.border-bottom.border-secondary.pb-2.mb-4
+        = "#{category.humanize} Commands"
+
+      .row.g-4
+        - commands.each do |command|
+          .col-xl-6
+            = render "commands/command_card", command:, **local_assigns

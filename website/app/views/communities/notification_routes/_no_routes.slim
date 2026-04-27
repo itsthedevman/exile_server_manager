@@ -1,0 +1,28 @@
+.py-5
+  .text-center
+    i.bi.bi-people.display-1.text-muted.mb-4
+    h4.text-light.mb-3 No Active Notification Routes Yet
+    p.text-muted.mb-4
+      | Your Discord server members haven't set up any notification routing yet.
+      br
+      | Once they create routes, you'll be able to manage them here.
+
+  .card.bg-info.bg-opacity-10.border-info.mt-4
+    .card-body
+      h6.text-info.mb-3
+        i.bi.bi-lightbulb.me-2
+        | How It Works
+      ul.text-muted.small.mb-0.text-start
+        li Players use #{command_usage(:register, show_arguments: false)} to link their accounts
+        li They create notification routes to send XM8 alerts to Discord channels
+        li You approve or decline each route request
+        li Once approved, their game notifications flow to your channels
+
+  .alert.alert-secondary.border-secondary.bg-secondary.bg-opacity-10.mt-4
+    .d-flex.align-items-center
+      i.bi.bi-info-circle.text-light.me-3
+      div
+        p.small.mb-0
+          strong.text-light Share this with your players:
+          |>  They can create routes by visiting their
+          = link_to "account settings", users_notification_routes_path, class: "text-info"

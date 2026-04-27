@@ -1,0 +1,9 @@
+= content_tag :div,
+  nil,
+  class: "modal #{class_names(*local_assigns[:class])}",
+  tabindex: "-1",
+  data: local_assigns[:data] || {},
+  id: local_assigns[:id] do
+  .modal-dialog
+    .modal-content
+      = yield

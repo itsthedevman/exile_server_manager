@@ -1,0 +1,32 @@
+.container.window
+  .row.justify-content-center
+    .col-lg-8.text-center
+      .mb-4
+        i.bi.bi-search.display-1.text-muted
+
+      h1.mb-3.text-primary 404 - Not Found
+
+      p.lead.mb-4
+        | The page you're looking for doesn't exist or has been moved.
+
+
+      .d-flex.gap-3.justify-content-center.flex-wrap
+        = link_to root_path, class: "btn btn-primary"
+          i.bi.bi-house.me-2
+          | Go Home
+
+        = link_to communities_path, class: "btn btn-outline-secondary"
+          i.bi.bi-speedometer2.me-2
+          | Dashboard
+
+        = link_to getting_started_docs_path, class: "btn btn-outline-info"
+          i.bi.bi-book.me-2
+          | Getting Started
+
+      .mt-5
+        .alert.alert-info.border-info.bg-info.bg-opacity-10
+          h6.text-info.mb-2 Need Help?
+          p.mb-0.small
+            | If you believe this is an error, please
+            =< link_to "join our Discord", join_path, class: "text-info"
+            |  and let us know.

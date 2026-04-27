@@ -1,0 +1,47 @@
+= render "shared/modal", id: "already_registered_modal", class: "modal-lg", data: {controller: "auto-modal"} do
+  .modal-header.border-warning.bg-warning.bg-opacity-10
+    h4.modal-title.text-warning
+      i.bi.bi-exclamation-triangle.me-2
+      | Steam Account Already Registered
+    button.btn-close[
+      type="button"
+      data-bs-dismiss="modal"
+      aria-label="Close"
+    ]
+
+  .modal-body.p-4
+    / Clear explanation of the issue
+    .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.mb-4
+      .d-flex.align-items-start
+        i.bi.bi-info-circle.text-warning.fs-4.me-3.mt-1
+        div
+          h6.text-warning.mb-2 This Steam account is already linked to another Discord account
+          p.mb-0.text-muted.small
+            | ESM only allows each Steam account to be registered once, but we can transfer it to your current Discord account.
+
+    / Direct button choices
+    h5.mb-3 What would you like to do?
+
+    .d-grid.gap-3
+      = button_to transfer_users_path,
+          method: :patch,
+          class: "btn btn-outline-success btn-lg text-start w-100 p-4 transfer-btn",
+          data: {turbo: false}
+        .d-flex.align-items-center
+          i.bi.bi-arrow-left-right.fs-3.me-3
+          div
+            .fw-bold Transfer Steam Account
+            small.text-muted.d-block.mt-1
+              | Move the Steam account to this Discord account
+              span.text-warning.ms-2 (unlinks from other account)
+
+      = button_to transfer_users_path(cancel: true),
+          method: :patch,
+          class: "btn btn-outline-secondary btn-lg text-start w-100 p-4",
+          data: {bs_dismiss: "modal", turbo: false}
+        .d-flex.align-items-center
+          i.bi.bi-x-circle.fs-3.me-3
+          div
+            .fw-bold Cancel Registration
+            small.text-muted.d-block.mt-1
+              | Go back and try with a different Steam account

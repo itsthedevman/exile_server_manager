@@ -1,0 +1,92 @@
+.discord-embed {
+    background: $esm-warm-gray-900;
+    color: $white;
+
+    border-left: 3px solid $esm-toast-red;
+
+    &.random {
+        animation: border-random 60s infinite;
+
+        @keyframes border-random {
+            0%,
+            100% {
+                border-left-color: $esm-toast-red;
+            }
+            8% {
+                border-left-color: $esm-toast-pink;
+            }
+            16% {
+                border-left-color: $esm-toast-purple;
+            }
+            24% {
+                border-left-color: $esm-toast-lavender;
+            }
+            32% {
+                border-left-color: $esm-toast-blue;
+            }
+            40% {
+                border-left-color: $esm-toast-steel-green;
+            }
+            48% {
+                border-left-color: $esm-toast-green;
+            }
+            56% {
+                border-left-color: $esm-toast-sage;
+            }
+            64% {
+                border-left-color: $esm-toast-yellow;
+            }
+            72% {
+                border-left-color: $esm-toast-orange;
+            }
+            80% {
+                border-left-color: $esm-toast-burnt-orange;
+            }
+            88% {
+                border-left-color: $esm-toast-brown;
+            }
+            96% {
+                border-left-color: $esm-toast-white;
+            }
+        }
+    }
+}
+
+// Variable dropdown styling
+.dropdown-menu {
+    .dropdown-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: $esm-ui-primary;
+        font-weight: 600;
+    }
+
+    .dropdown-item-text {
+        white-space: normal;
+
+        code {
+            background: rgba($esm-ui-primary, 0.1);
+            color: $esm-ui-primary;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+    }
+}
+
+// Color picker enhancement
+input[type="color"] {
+    border: 1px solid $esm-warm-gray-600;
+    border-radius: $border-radius;
+    padding: 2px;
+
+    &::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+        border: none;
+        border-radius: calc(#{$border-radius} - 2px);
+    }
+}

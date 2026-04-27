@@ -1,0 +1,35 @@
+@use "sass:map";
+
+.choices__inner {
+    padding: unset !important;
+    min-height: unset !important;
+}
+
+.choices__input,
+.choices__inner,
+.choices__list {
+    background-color: var(--bs-body-bg) !important;
+}
+
+.choices__list,
+.choices__inner {
+    border-color: var(--bs-border-color) !important;
+}
+
+.choices__item {
+    @extend .mt-1;
+    @extend .ms-1;
+
+    border-radius: $border-radius !important;
+    background-color: transparent !important;
+    border-color: var(--bs-secondary) !important;
+    color: var(--bs-secondary-color) !important;
+}
+
+.choices__button {
+    border-color: var(--bs-secondary);
+}
+
+.choices__input {
+    padding-bottom: calc(map.get($spacers, 2) - 3px) !important;
+}

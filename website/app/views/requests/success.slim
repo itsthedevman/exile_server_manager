@@ -1,0 +1,22 @@
+.min-vh-100.d-flex.align-items-center.justify-content-center
+  .container-fluid
+    .row.justify-content-center
+      .col-10.col-md-6.col-lg-5.col-xl-4
+        .text-center
+          / Success icon
+          .mb-4
+            .bg-secondary.bg-opacity-25.rounded-circle.d-inline-flex.align-items-center.justify-content-center.border.border-secondary.border-opacity-50 style="width: 120px; height: 120px;"
+              i.bi.bi-check-circle.text-success style="font-size: 3.5rem;"
+
+          / Clean heading
+          h1.fw-bold.text-light.mb-3 Request #{verb.capitalize}!
+
+          / Simple explanation
+          p.text-muted.fs-5.mb-4
+            | Your request has been processed successfully.
+            br
+            | You may safely close this page.
+
+          / Close instruction
+          p.text-muted.small.mb-0
+            | You may safely close this window or tab.

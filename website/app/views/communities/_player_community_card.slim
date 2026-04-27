@@ -1,0 +1,11 @@
+= link_to edit_community_path(community.public_id), class: "text-decoration-none d-block h-100"
+  .card.h-100.community-card.community-card--player
+    .card-body.d-flex.flex-column
+      h5.card-title.mb-2.text-light = community.community_name
+      p.card-text.text-muted.small.mb-3 = community.community_id
+
+      / XM8 info - pushed to bottom
+      .mt-auto
+        .d-flex.align-items-center
+          i.bi.bi-arrow-left-right.text-info.me-2
+          small.text-muted XM8 Notification Routing

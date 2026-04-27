@@ -1,0 +1,9 @@
+.position-fixed[aria-live="polite" aria-atomic="true" style="z-index: 1050;"]
+  #toast-container.toast-container
+    - flash.each do |type, message|
+      - next if type == "timedout"
+
+      - if message.is_a?(Hash)
+        = render_component(ToastComponent, color: type, **message.symbolize_keys)
+      - else
+        = render_component(ToastComponent, title: type.titleize, body: message)

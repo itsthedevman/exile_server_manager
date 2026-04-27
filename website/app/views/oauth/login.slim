@@ -1,0 +1,15 @@
+.login-redirect.d-flex.align-items-center.justify-content-center.vh-100
+  .text-center
+    .spinner-border.text-primary.mb-4 role="status"
+    h4.text-light.mb-2 Connecting to Discord
+    p.text-muted Just a moment while we redirect you...
+
+= form_with url: user_discord_omniauth_authorize_path,
+           method: :post,
+           class: "d-none",
+           data: { controller: "auto-submit" } do |form|
+
+javascript:
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelector("form").submit();
+  });

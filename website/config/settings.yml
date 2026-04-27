@@ -1,0 +1,16 @@
+mod_version: "2.0.1"
+
+discord:
+  id: ""
+  token: ""
+  secret: ""
+  logging_webhook_url: ""
+
+steam:
+  token: ""
+
+nats:
+  url: "nats://127.0.0.1:4222"
+  subject_prefix: "esm.bot.rpc."
+  request_timeout: 10
+  shared_secret_env: "API_AUTH_KEY"

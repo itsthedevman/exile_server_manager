@@ -1,0 +1,40 @@
+= content_tag :div, data: {controller: "server-mods", server_mods_mods_value: existing_server_mods}
+  .card.mb-4
+    .card-header.d-flex.align-items-center.justify-content-between
+      h4.mb-0
+        i.bi.bi-puzzle.text-info.me-2
+        | Server Mods
+        span.badge.bg-secondary.ms-2[data-server-mods-target="modCount"] 0
+      button.btn.btn-outline-primary.btn-sm[
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#add_mod_modal"
+      ]
+        i.bi.bi-plus.me-1
+        | Add Mod
+
+    .card-body
+      p.text-muted.small.mb-4
+        | This mod list appears when players check your server info in Discord.
+
+      / Mods container
+      div[data-server-mods-target="modsContainer"]
+        / Empty state - shown when no mods
+        .text-center.py-5[data-server-mods-target="emptyState"]
+          i.bi.bi-puzzle.display-4.text-muted.mb-3.d-block
+          h5.text-muted.mb-3 No Mods Added Yet
+          p.text-muted.mb-4 Add mods to help your players prepare the right modset for your server
+          button.btn.btn-primary[
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#add_mod_modal"
+          ]
+            i.bi.bi-plus.me-2
+            | Add Your First Mod
+
+        / Mods list - populated by JS
+        .row.g-3[data-server-mods-target="modsList" style="display: none;"]
+
+  / Include modals for add/edit functionality
+  = render "servers/add_mod_modal"
+  = render "servers/edit_mod_modal"

@@ -1,0 +1,142 @@
+= content_tag :div,
+  class: "card h-100",
+  data: {controller: "command-configuration", command_configuration_id_value: command.name}
+  = form_with model: command.configuration,
+      url: community_command_path(current_community, command.name),
+      scope: "command_configuration",
+      method: :patch,
+      class: "d-flex flex-column h-100" do |f|
+
+    / Header
+    .card-header.py-3
+      .d-flex.align-items-center
+        - if command.admin?
+          i.bi.bi-shield-lock.text-warning.me-2[...]
+        .font-monospace.text-primary.fw-medium.fs-5
+          = command_usage(command.name.to_sym, show_arguments: false)
+
+    / Command configuration body
+    .card-body.flex-fill
+      / Cooldown section
+      - if command.attributes["cooldown_time"]["modifiable"]
+        .mb-3
+          h6.mb-3
+            i.bi.bi-clock.text-info.me-2
+            | Cooldown
+          .row.g-2
+            .col-6
+              = f.number_field :cooldown_quantity,
+                class: "form-control",
+                min: 1,
+                placeholder: "2",
+                data: {command_configuration_target: "cooldownQuantity"}
+            .col-6
+              = f.select :cooldown_type,
+                options_for_select(cooldown_types, command.configuration.cooldown_type),
+                {},
+                class: "form-select",
+                data: {command_configuration_target: "cooldownType"}
+
+      / Options section
+      h6.mb-3
+        i.bi.bi-gear.text-info.me-2
+        | Options
+
+      / Enabled toggle
+      - if command.attributes["enabled"]["modifiable"]
+        .form-check.form-switch.mb-3
+          = f.check_box :enabled,
+            class: "form-check-input",
+            id: "command_configuration_#{command.name}_enabled",
+            data: { \
+              command_configuration_target: "enable",
+              action: "input->command-configuration#onEnableClicked",
+            }
+
+          = f.label :enabled,
+            for: "command_configuration_#{command.name}_enabled",
+            class: "form-check-label" do
+            | Enabled
+            i.bi.bi-info-circle.text-muted.ms-2[
+              data-bs-toggle="tooltip"
+              title="Enable or disable this command for your community"
+            ]
+
+      / Notify when disabled
+      - if command.attributes["enabled"]["modifiable"]
+        .form-check.form-switch.mb-3
+          = f.check_box :notify_when_disabled,
+            class: "form-check-input",
+            id: "command_configuration_#{command.name}_notify_when_disabled",
+            data: {command_configuration_target: "notifyWhenDisabled"}
+
+          = f.label :notify_when_disabled,
+            for: "command_configuration_#{command.name}_notify_when_disabled",
+            class: "form-check-label" do
+            | Notify when disabled
+            i.bi.bi-info-circle.text-muted.ms-2[
+              data-bs-toggle="tooltip"
+              title="Tell users the command is disabled instead of ignoring it"
+            ]
+
+      / Text channels allowed
+      - if command.attributes["allowed_in_text_channels"]["modifiable"]
+        .form-check.form-switch.mb-3
+          = f.check_box :allowed_in_text_channels,
+            class: "form-check-input",
+            id: "command_configuration_#{command.name}_allowed_in_text_channels",
+            data: {command_configuration_target: "allowInTextChannels"}
+
+          = f.label :allowed_in_text_channels,
+            for: "command_configuration_#{command.name}_allowed_in_text_channels",
+            class: "form-check-label" do
+            | Allow in text channels
+
+      / Allowlist section
+      - if command.attributes["allowlist_enabled"]["modifiable"]
+        = content_tag :div, data: { \
+          command_configuration_target: "allowlistedRoleIds" \
+        }
+          .form-check.form-switch
+            = f.check_box :allowlist_enabled,
+              class: "form-check-input",
+              id: "command_configuration_#{command.name}_allowlist_enabled",
+              data: { \
+                command_configuration_target: "allowlistEnabled",
+                action: "input->command-configuration#onAllowlistEnableClicked",
+              }
+
+            = f.label :allowlist_enabled,
+              for: "command_configuration_#{command.name}_allowlist_enabled",
+              class: "form-check-label" do
+              | Use role allowlist
+
+          - if command.attributes["allowlisted_role_ids"]["modifiable"]
+            .mt-3
+              label.form-label.mb-2
+                i.bi.bi-person-badge.text-info.me-2
+                | Allowed Roles
+              = f.select :allowlisted_role_ids,
+                  [], {},
+                  multiple: "",
+                  class: "form-control",
+                  data: { \
+                    roles: allowlist_roles(command),
+                    controller: "role-selector",
+                    role_selector_id_value: command.name,
+                    action: stimulus_event_action_string( \
+                      event: "enableChanged",
+                      from: "command-configuration",
+                      to: "role-selector",
+                      method: "handleEnableChange",
+                      global: true) \
+                  }
+
+    / Save button
+    .card-footer.border-top.d-flex.justify-content-between.align-items-center
+      = link_to commands_docs_path(anchor: command.name),
+          class: "text-muted text-decoration-none small"
+        i.bi.bi-book.me-2
+        | Documentation
+
+      = f.submit "Save Changes", class: "btn btn-primary btn-sm"

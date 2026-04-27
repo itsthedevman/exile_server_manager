@@ -1,0 +1,138 @@
+= f.fields_for :preferences, current_user.user_notification_preferences do |f|
+  / Notification Preferences Card
+  .card.mb-4
+    .card-header
+      h4.mb-0
+        i.bi.bi-bell.text-warning.me-2
+        | XM8 Notification Preferences
+
+    .card-body
+      p.text-muted.small.mb-4
+        | Control which XM8 notifications you receive by default. These settings apply to all servers unless overridden by specific routing rules.
+
+      / Territory Events
+      .card.bg-dark.border-secondary.mb-4
+        .card-body
+          h5.mb-3
+            i.bi.bi-house.text-success.me-2
+            | Territory Events
+          .row.g-3
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :base_raid,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :base_raid, class: "form-check-label fw-medium" do
+                  | Base Raids
+              small.text-muted.d-block.mt-1 When your territory is under attack
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :flag_stolen,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :flag_stolen, class: "form-check-label fw-medium" do
+                  | Flag Stolen
+              small.text-muted.d-block.mt-1 When your territory flag is stolen
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :flag_restored,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :flag_restored, class: "form-check-label fw-medium" do
+                  | Flag Restored
+              small.text-muted.d-block.mt-1 When your territory flag is restored
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :flag_steal_started,
+                    class: "form-check-input",
+                    checked: false
+                = f.label :flag_steal_started, class: "form-check-label fw-medium" do
+                  | Flag Steal Started
+              small.text-muted.d-block.mt-1 When someone starts stealing your flag
+
+      / Combat Events
+      .card.bg-dark.border-secondary.mb-4
+        .card-body
+          h5.mb-3
+            i.bi.bi-crosshair.text-danger.me-2
+            | Combat Events
+          .row.g-3
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :grind_started,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :grind_started, class: "form-check-label fw-medium" do
+                  | Grind Started
+              small.text-muted.d-block.mt-1 When someone starts grinding your territory
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :hack_started,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :hack_started, class: "form-check-label fw-medium" do
+                  | Hack Started
+              small.text-muted.d-block.mt-1 When someone starts hacking your territory
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :charge_plant_started,
+                    class: "form-check-input",
+                    checked: false
+                = f.label :charge_plant_started, class: "form-check-label fw-medium" do
+                  | Charge Plant Started
+              small.text-muted.d-block.mt-1 When explosives are planted at your territory
+
+      / Economy Events
+      .card.bg-dark.border-secondary.mb-4
+        .card-body
+          h5.mb-3
+            i.bi.bi-currency-dollar.text-warning.me-2
+            | Economy Events
+          .row.g-3
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :protection_money_due,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :protection_money_due, class: "form-check-label fw-medium" do
+                  | Protection Money Due
+              small.text-muted.d-block.mt-1 When territory payments are due
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :protection_money_paid,
+                    class: "form-check-input",
+                    checked: false
+                = f.label :protection_money_paid, class: "form-check-label fw-medium" do
+                  | Protection Money Paid
+              small.text-muted.d-block.mt-1 When territory payments are made
+
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :marxet_item_sold,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :marxet_item_sold, class: "form-check-label fw-medium" do
+                  | MarXet Item Sold
+              small.text-muted.d-block.mt-1 When your marketplace items sell
+
+      / Custom Events
+      .card.bg-dark.border-secondary.mb-0
+        .card-body
+          h5.mb-3
+            i.bi.bi-gear.text-info.me-2
+            | Custom Events
+          .row.g-3
+            .col-md-6
+              .form-check.form-switch
+                = f.check_box :custom,
+                    class: "form-check-input",
+                    checked: true
+                = f.label :custom, class: "form-check-label fw-medium" do
+                  | Custom Notifications
+              small.text-muted.d-block.mt-1 Server-defined custom notification events

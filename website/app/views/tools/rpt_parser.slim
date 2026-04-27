@@ -1,0 +1,112 @@
+.container.window
+  / Hero Section
+  .text-center.mb-5
+    h1.mb-3.text-primary RPT Parser
+    p.lead.mb-4 Upload your Arma 3 server RPT file to automatically detect and explain errors
+
+    .d-flex.justify-content-center.gap-4.mb-4
+      .d-flex.align-items-center
+        .badge.bg-info.rounded-circle.me-2 i
+        small.text-muted Processing time: seconds
+      .d-flex.align-items-center
+        .badge.bg-success.rounded-circle.me-2 ✓
+        small.text-muted Works locally in your browser
+
+  / Parser Interface
+  = content_tag :div, data: { controller: "rpt-parser" } do
+    .card.bg-dark.border-secondary.mb-4
+      .card-header.border-secondary
+        h4.mb-0.text-light
+          i.bi.bi-file-text.text-info.me-2
+          | Upload RPT File
+      .card-body
+        / Upload Section
+        .mb-4
+          .input-group.input-group-lg
+            input.form-control.border-secondary type="file" accept=".rpt,.log,.txt" data-rpt-parser-target="fileInput" data-action="change->rpt-parser#onFileSelected"
+            button.btn.btn-primary type="button" data-action="click->rpt-parser#parseFile" data-rpt-parser-target="parseButton" disabled=true
+              i.bi.bi-gear.me-2
+              | Parse RPT
+
+          small.text-muted.mt-2 data-rpt-parser-target="fileName"
+            | No file selected
+
+        / Options
+        .row.g-3
+          .col-md-6
+            .form-check.form-switch
+              input#remove-duplicate-errors.form-check-input type="checkbox" checked=true data-rpt-parser-target="removeDuplicates"
+              label.form-check-label[for="remove-duplicate-errors"] Remove duplicate errors
+          .col-md-6
+            .form-check.form-switch
+              input#show-explanations.form-check-input type="checkbox" checked=true data-rpt-parser-target="showExplanations"
+              label.form-check-label[for="show-explanations"] Show error explanations
+
+    / Loading State
+    .card.bg-dark.border-secondary.mb-4.d-none data-rpt-parser-target="loadingCard"
+      .card-body.text-center.py-5
+        .spinner-border.text-primary.mb-3 role="status"
+          span.visually-hidden Loading...
+        h5.text-light Processing RPT file...
+        p.text-muted Please wait while we analyze your server log
+
+    / Error State
+    .card.bg-danger.bg-opacity-10.border-danger.mb-4.d-none data-rpt-parser-target="errorCard"
+      .card-header.border-danger
+        h5.mb-0.text-danger
+          i.bi.bi-exclamation-triangle.me-2
+          | Processing Error
+      .card-body
+        p.mb-0 data-rpt-parser-target="errorMessage" Something went wrong...
+
+    / Results Section
+    .card.bg-dark.border-secondary.d-none data-rpt-parser-target="resultsCard"
+      .card-header.border-secondary.d-flex.align-items-center.justify-content-between
+        h4.mb-0.text-light
+          i.bi.bi-bug.text-warning.me-2
+          | Parsing Results
+        .d-flex.align-items-center.gap-3
+          span.badge.bg-primary.fs-6 data-rpt-parser-target="errorCount" 0 errors found
+          button.btn.btn-outline-secondary.btn-sm data-action="click->rpt-parser#reset"
+            i.bi.bi-arrow-clockwise.me-1
+            | Parse Another
+
+      .card-body
+        / Success message when no errors
+        .alert.alert-success.border-success.bg-success.bg-opacity-10.d-none data-rpt-parser-target="successAlert"
+          .d-flex.align-items-center
+            i.bi.bi-check-circle.text-success.me-3.fs-4
+            div
+              h6.mb-1.text-success Great news!
+              p.mb-0 No errors were found in your RPT file. Your server appears to be running cleanly.
+
+        / Error list
+        .row.g-3 data-rpt-parser-target="errorsList"
+          / Errors will be populated here by JavaScript
+
+  / Info Section
+  .row.g-4.mt-5
+    .col-lg-8
+      .card.bg-info.bg-opacity-10.border-info
+        .card-header.border-info
+          h5.mb-0.text-info
+            i.bi.bi-lightbulb.me-2
+            | How It Works
+        .card-body
+          ol.mb-0
+            li.mb-2 Upload your server's RPT file (usually found in your Arma 3 server directory)
+            li.mb-2 The parser scans through each line looking for error patterns
+            li.mb-2 Common errors are automatically detected and categorized
+            li Error explanations help you understand and fix the issues
+
+    .col-lg-4
+      .card.bg-warning.bg-opacity-10.border-warning
+        .card-header.border-warning
+          h6.mb-0.text-warning
+            i.bi.bi-exclamation-triangle.me-2
+            | Important Notes
+        .card-body
+          ul.small.mb-0
+            li.mb-2 All processing happens in your browser - files never leave your computer
+            li.mb-2 Not all errors may be detected, but common ones should be caught
+            li Large files may take a few moments to process

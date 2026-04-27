@@ -1,0 +1,49 @@
+@use "./colors" as *;
+
+#toast-container {
+    position: fixed !important;
+    top: calc($nav-offset + 2em) !important;
+    right: 1em;
+    z-index: 1050;
+}
+
+$toast-bg: $esm-warm-gray-800;
+
+.toast {
+    --bs-toast-border-color: transparent;
+    --bs-toast-header-border-color: transparent;
+    --bs-toast-header-bg: #{$toast-bg};
+    --bs-toast-bg: #{$toast-bg};
+
+    background-color: var(--bs-toast-bg);
+    border: 0;
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: #{$secondary};
+}
+
+.toast-red,
+.toast-error {
+    --bs-toast-header-color: #{$esm-toast-red};
+    border-left-color: #{$esm-toast-red};
+}
+
+.toast-blue,
+.toast-info,
+.toast-notice {
+    --bs-toast-header-color: #{$esm-toast-blue};
+    border-left-color: #{$esm-toast-blue};
+}
+
+.toast-green,
+.toast-success {
+    --bs-toast-header-color: #{$esm-toast-green};
+    border-left-color: #{$esm-toast-green};
+}
+
+.toast-yellow,
+.toast-warn,
+.toast-alert {
+    --bs-toast-header-color: #{$esm-toast-yellow};
+    border-left-color: #{$esm-toast-yellow};
+}

@@ -1,0 +1,14 @@
+.toast.fade.show[
+  class=color_class
+  role="alert"
+  aria-live="assertive"
+  aria-atomic="true"
+  data-controller="toasts"
+  data-toasts-target="toast"
+]
+  .toast-header.pb-0.pt-3.pe-3
+    strong.me-auto = sanitize title
+    - if subtitle.present?
+      small.text-body-secondary = sanitize subtitle
+    button.btn-close type="button" data-bs-dismiss="toast" aria-label="Close"
+  .toast-body = sanitize body
