@@ -13,7 +13,7 @@ GIT
       rest-client (>= 2.0.0)
 
 PATH
-  remote: ../esm_ruby_core
+  remote: ../core
   specs:
     esm_ruby_core (2.0.0)
       colorize

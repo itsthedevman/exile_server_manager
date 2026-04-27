@@ -65,7 +65,7 @@
             postgresql_15
             redis
             hiredis
-            mysql80
+            mysql84
 
             # IPC broker
             nats-server
