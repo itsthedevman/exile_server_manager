@@ -858,9 +858,10 @@ mod tests {
         let git_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .ancestors()
             .find(|p| p.join(".git").is_dir())
-            .expect("could not find git root");
+            .expect("could not find git root")
+            .join("arma");
 
-        let constants = std::sync::Arc::new(load_constants(git_path));
+        let constants = std::sync::Arc::new(load_constants(&git_path));
 
         let c = std::sync::Arc::clone(&constants);
         let wrapper = move |ctx: &Data, caps: &Captures| replace_const_with(ctx, caps, &c);

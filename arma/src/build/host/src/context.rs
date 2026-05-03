@@ -94,7 +94,11 @@ pub struct Args {
 
 impl Args {
     pub fn build_arch(&self) -> BuildArch {
-        if self.x32 { BuildArch::X32 } else { BuildArch::X64 }
+        if self.x32 {
+            BuildArch::X32
+        } else {
+            BuildArch::X64
+        }
     }
 
     pub fn build_os(&self) -> BuildOS {
@@ -241,7 +245,8 @@ impl BuildContext {
             || self.args.only_build() == "mod"
             || has_directory_changed(
                 &self.file_watcher,
-                &self.git_path
+                &self
+                    .git_path
                     .join("src")
                     .join("@esm")
                     .join("addons")
@@ -263,12 +268,12 @@ impl BuildContext {
 }
 
 fn find_git_root() -> Result<PathBuf, BuildError> {
-    let mut dir = std::env::current_dir()
-        .map_err(|e| BuildError::General(e.to_string()))?;
+    let mut dir =
+        std::env::current_dir().map_err(|e| BuildError::General(e.to_string()))?;
 
     loop {
         if dir.join(".git").is_dir() {
-            return Ok(dir);
+            return Ok(dir.join("arma"));
         }
         if !dir.pop() {
             return Err(BuildError::General(

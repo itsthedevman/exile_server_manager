@@ -77,7 +77,6 @@ pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
     let exec_output = Command::new("docker")
         .args([
             "exec",
-            "-t",
             container,
             "mysql",
             &format!("-u{user}"),

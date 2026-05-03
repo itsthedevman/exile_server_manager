@@ -51,6 +51,14 @@ pub fn check_for_exile_files(ctx: &mut BuildContext) -> BuildResult {
 
 /// Update the Arma 3 server via SteamCMD (only if files are absent or --update).
 pub fn update_arma(ctx: &mut BuildContext) -> BuildResult {
+    ctx.target.run(
+        "if [ ! -f /steamcmd/steamcmd.sh ]; then \
+           mkdir -p /steamcmd && \
+           wget -qO- 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz' \
+             | tar zxf - -C /steamcmd; \
+         fi",
+    )?;
+
     let script = format!(
         "cd /steamcmd; \
          ./steamcmd.sh +force_install_dir {ARMA_PATH} \

@@ -3,7 +3,6 @@ FROM ubuntu:latest
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 WORKDIR /arma3server
-VOLUME /steamcmd
 STOPSIGNAL SIGINT
 EXPOSE 2302/udp 2303/udp 2304/udp 2305/udp 2306/udp
 
@@ -39,7 +38,3 @@ RUN apt-get update \
     && apt-get clean autoclean \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-
-# SteamCMD
-RUN mkdir -p /steamcmd \
-    && wget -qO- 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz' | tar zxf - -C /steamcmd

@@ -113,7 +113,7 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
         return Ok(());
     }
 
-    if !ctx.args.start_server() {
+    if !ctx.args.start_server() && !ctx.args.update_arma() {
         if !ctx.rebuild_mod() && !ctx.rebuild_extension() {
             let dim = display::color::DIM;
             println!(
@@ -130,6 +130,10 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
 
     if server::needs_arma_update(ctx) {
         run_step(ctx, "Updating Arma", server::update_arma)?;
+    }
+
+    if !ctx.args.start_server() {
+        return Ok(());
     }
 
     run_step(ctx, "Stopping server", server::kill_arma)?;
