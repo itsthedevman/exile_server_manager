@@ -27,6 +27,11 @@ module ESM
     # ASSOCIATIONS
     # =============================================================================
 
+    has_many :owned_communities,
+      class_name: "Community",
+      foreign_key: :owner_user_id,
+      dependent: :restrict_with_error
+
     has_many :cooldowns, dependent: :nullify
 
     has_many :id_aliases, -> { order(:user_id) }, class_name: "UserAlias", dependent: :destroy
@@ -69,6 +74,11 @@ module ESM
     # SCOPES
     # =============================================================================
 
+    scope(:by_discord_id, lambda do |id|
+      id = id.to_s unless id.is_a?(String)
+      order(:discord_id).where(discord_id: id) 
+    end)
+
     # =============================================================================
     # CLASS METHODS
     # =============================================================================
@@ -78,8 +88,7 @@ module ESM
     end
 
     def self.find_by_discord_id(id)
-      id = id.to_s unless id.is_a?(String)
-      order(:discord_id).where(discord_id: id).first
+      by_discord_id(id).first
     end
 
     def self.from_steam_uid(uid)

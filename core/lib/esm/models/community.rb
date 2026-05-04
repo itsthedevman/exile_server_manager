@@ -37,6 +37,8 @@ module ESM
     # ASSOCIATIONS
     # =============================================================================
 
+    belongs_to :owner_user, class_name: "User", optional: true
+
     has_many :command_configurations, dependent: :destroy
     has_many :cooldowns, dependent: :destroy
     has_many :id_defaults, class_name: "CommunityDefault", dependent: :destroy
