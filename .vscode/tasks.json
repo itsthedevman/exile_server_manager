@@ -6,23 +6,12 @@
     {
       "label": "Generate Active Record migration (bot)",
       "type": "shell",
-      "command": "source ${userHome}/.asdf/asdf.sh && cd ${workspaceFolder}/bot && bundle exec rake db:new_migration name=${input:migrationName}",
+      "command": "cd ${workspaceFolder}/bot && direnv exec . bundle exec rake db:new_migration name=${input:migrationName}",
       "presentation": {
         "echo": false,
         "clear": true
       },
       "problemMatcher": []
-    },
-    {
-      "label": "Kill Arma",
-      "type": "shell",
-      "command": "taskkill /IM \"arma3server_x64.exe\" /F; taskkill /IM \"arma3server.exe\" /F",
-      "problemMatcher": [],
-      "presentation": {
-        "echo": false,
-        "reveal": "never",
-        "clear": true
-      }
     }
   ],
   "inputs": [
