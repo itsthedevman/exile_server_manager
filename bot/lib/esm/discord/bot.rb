@@ -88,6 +88,7 @@ module ESM
         mention(&method(:esm_mention))
         ready(&method(:esm_ready))
         server_create(&method(:esm_server_create))
+        server_update(&method(:esm_server_update))
         user_ban(&method(:esm_user_ban))
         user_unban(&method(:esm_user_unban))
         member_join(&method(:esm_member_join))
@@ -144,6 +145,11 @@ module ESM
       def esm_server_create(event)
         # This event is raised when a server is created respective to the bot
         ESM::Discord::Event::ServerCreate.new(event.server).run!
+      end
+
+      def esm_server_update(event)
+        # Raised when a Discord server is updated. 
+        ESM::Discord::Event::ServerUpdate.new(event).run!
       end
 
       def esm_user_ban(event)

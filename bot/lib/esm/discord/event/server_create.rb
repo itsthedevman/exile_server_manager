@@ -13,6 +13,9 @@ module ESM
         end
 
         def run!
+          # Associate the owner to the community
+          @community.update!(owner_user_id: @user.id)
+
           # Send the welcome message
           send_welcome
         end
