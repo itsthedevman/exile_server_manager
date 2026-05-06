@@ -98,6 +98,10 @@
           shellHook = ''
             export LANG=C.UTF-8
 
+            # Ruby: user gem bindir on PATH so binstubs (ruby-lsp, solargraph, etc.)
+            # installed via `bundle install` are discoverable by editors and shells.
+            export PATH="$(ruby -e 'puts Gem.user_dir')/bin:$PATH"
+
             # Website: dart-sass paths so sass-embedded uses system binary
             export SASS_PATH=${dart-sass}/bin/sass
             export SASS_EMBEDDED_HOST_PATH=${dart-sass}/bin/dart-sass-embedded
@@ -146,8 +150,7 @@
               fi
             fi
 
-            # NOTE: bundle install is intentionally not run here.
-            # Run it per-subdir: cd bot && bundle install, cd website && bundle install, etc.
+            bundle install
           '';
 
           # Rust env vars
