@@ -150,7 +150,7 @@
               fi
             fi
 
-            bundle install
+            bundle check > /dev/null 2>&1 || bundle install
           '';
 
           # Rust env vars
