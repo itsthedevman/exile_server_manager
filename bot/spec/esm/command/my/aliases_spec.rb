@@ -73,11 +73,11 @@ describe ESM::Command::My::Aliases, category: "command" do
             "Community Aliases",
             community_alias.value,
             community.community_id,
-            community.community_name.truncate(20),
+            community.community_name,
             "Server Aliases",
             server_alias.value,
             server.server_id,
-            server.server_name.truncate(20),
+            server.server_name,
             "Aliases can be managed"
           )
         end
