@@ -2,7 +2,20 @@
 
 module ESM
   class Community < ApplicationRecord
-    ESM_ID = "452568470765305866"
+    #
+    # Whether this community is the developer's home guild.
+    #
+    # Drives developer-only behavior such as the ESM-branded welcome message
+    # on member join and cross-community command access for support work.
+    # The reference guild ID comes from `ESM.config.developer_guild_id`
+    # (typically wired via the `DEVELOPER_GUILD_ID` env var).
+    #
+    # @return [Boolean] true when this community's `guild_id` matches the
+    #   configured developer guild
+    #
+    def esm_community?
+      guild_id.present? && guild_id == ESM.config.developer_guild_id
+    end
 
     def self.community_ids
       ESM.cache.fetch("community_ids", expires_in: ESM.config.cache.community_ids) do

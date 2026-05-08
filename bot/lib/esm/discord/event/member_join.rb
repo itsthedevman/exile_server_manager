@@ -14,7 +14,7 @@ module ESM
           return if !@community.welcome_message_enabled?
 
           thread = Thread.new do
-            if @community.guild_id == ESM::Community::ESM_ID
+            if @community.esm_community?
               send_esm_welcome_message
             else
               send_community_welcome_message
