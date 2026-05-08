@@ -59,12 +59,13 @@ module ESM
       {key: token, steamids: @steam_uid}
     end
 
+    def fetch(url)
+      HTTP.get(url, params:)
+    end
+
     def summary
       @summary ||= lambda do
-        response = HTTP.get(
-          "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002",
-          params:
-        )
+        response = fetch("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002")
 
         response_body = response.body.to_s
         data = response_body.parse_json
@@ -120,7 +121,7 @@ module ESM
     #       "EconomyBan" => "none"
     def bans
       @bans ||= lambda do
-        response = HTTP.get("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1", params:)
+        response = fetch("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1")
 
         response_body = response.body.to_s
         data = response_body.parse_json
