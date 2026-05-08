@@ -290,13 +290,7 @@ module ESM
           end
 
         while match.nil? && counter < 99
-          response =
-            if ESM.env.test?
-              ESM::Test.wait_for_response(timeout: timeout)
-            else
-              # Add the await event
-              responding_user.await!(timeout: timeout)
-            end
+          response = responding_user.await!(timeout: timeout)
 
           # We timed out
           break if response.nil?
@@ -368,12 +362,7 @@ module ESM
 
         # Event will be nil if it times out
         timeout = expires_at - ::Time.zone.now
-        event =
-          if ESM.env.test?
-            ESM::Test.wait_for_response(timeout: timeout)
-          else
-            add_await!(Discordrb::Events::MessageEvent, {from: user_id, in: channel_id, timeout: timeout})
-          end
+        event = add_await!(Discordrb::Events::MessageEvent, {from: user_id, in: channel_id, timeout: timeout})
 
         @mutex.synchronize do
           @waiting_for[user_id]&.delete_if { |id| id == channel_id }
