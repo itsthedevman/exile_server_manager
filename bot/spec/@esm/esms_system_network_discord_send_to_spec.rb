@@ -12,9 +12,9 @@ describe "ESMs_system_network_discord_send_to", :requires_connection, v2: true d
         SQF
       )
 
-      wait_for { ESM::Test.messages }.not_to be_empty
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-      content = ESM::Test.messages.first.content
+      content = ESM.discord_bot.test_outbox.first.content
       expect(content).to eq("*Sent from `#{server.server_id}`*\nThis is a message")
     end
   end
@@ -30,9 +30,9 @@ describe "ESMs_system_network_discord_send_to", :requires_connection, v2: true d
         SQF
       )
 
-      wait_for { ESM::Test.messages }.not_to be_empty
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-      content = ESM::Test.messages.first.content
+      content = ESM.discord_bot.test_outbox.first.content
       expect(content).to be_kind_of(ESM::Embed)
 
       expect(content.title).to eq("This is a title")
@@ -45,7 +45,7 @@ describe "ESMs_system_network_discord_send_to", :requires_connection, v2: true d
       expect(field.value).to eq("Field value")
       expect(field.inline).to eq(false)
 
-      sent_to_channel = ESM::Test.messages.first.destination
+      sent_to_channel = ESM.discord_bot.test_outbox.first.destination
       expect(sent_to_channel.id).to eq(channel.id)
     end
   end

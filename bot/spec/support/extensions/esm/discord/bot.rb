@@ -73,14 +73,25 @@ module ESM
       end
 
       #
-      # Lazily-built {ESM::Test::Inbox} that backs the test-mode `await!` /
+      # Lazily-built {Spec::Inbox} that backs the test-mode `await!` /
       # `add_await!` overrides. Specs queue replies through this and lib/
       # code consumes them as if Discord had delivered the message.
       #
-      # @return [ESM::Test::Inbox]
+      # @return [Spec::Inbox]
       #
       def test_inbox
-        @test_inbox ||= ESM::Test::Inbox.new
+        @test_inbox ||= Spec::Inbox.new
+      end
+
+      #
+      # Lazily-built {Spec::Outbox} that backs the Discordrb::Channel
+      # send_message / send_embed extension. Replaces `ESM::Test.messages`,
+      # mirroring `test_inbox` to make the producer/consumer relationship clear.
+      #
+      # @return [Spec::Outbox]
+      #
+      def test_outbox
+        @test_outbox ||= Spec::Outbox.new
       end
 
       #
@@ -202,7 +213,7 @@ module ESM
         @pm_channels[user_id] ||= begin
           channel = Discordrb::Channel.new(
             {
-              "id" => ESM::Test::Snowflake.next,
+              "id" => Spec::Snowflake.next,
               "type" => 1,
               "recipients" => [{"id" => user_id.to_s, "username" => @users[user_id]&.username || "unknown"}]
             },

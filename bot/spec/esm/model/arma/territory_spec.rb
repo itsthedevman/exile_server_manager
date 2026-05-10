@@ -6,9 +6,9 @@ describe ESM::Exile::Territory, v2: true do
   let!(:settings) { server.server_setting }
 
   let!(:territory_example) do
-    owner_uid = Faker::ESM.steam_uid
-    moderator_uids = Array.new(2) { Faker::ESM.steam_uid }
-    builder_uids = Array.new(2) { Faker::ESM.steam_uid }
+    owner_uid = Faker::Steam.uid
+    moderator_uids = Array.new(2) { Faker::Steam.uid }
+    builder_uids = Array.new(2) { Faker::Steam.uid }
 
     create(
       :exile_territory,

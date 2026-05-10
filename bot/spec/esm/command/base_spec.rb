@@ -371,9 +371,9 @@ describe ESM::Command::Base do
 
       it "send error (StandardError)" do
         execute!(command_class: ESM::Command::Test::ErrorCommand, handle_error: true)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        error = ESM::Test.messages.first.content
+        error = ESM.discord_bot.test_outbox.first.content
         expect(error.description).to match(
           /an error occurred while processing your request.[[:space:]]Will you please join my \[Discord\]\(https...esmbot.com.join\) and post the following error code in the `#get-help-here` channel so my developer can fix it for you\?[[:space:]]Thank you![[:space:]]```\w+```/i
         )
@@ -749,7 +749,7 @@ describe ESM::Command::Base do
           }.to raise_error(ESM::Exception::CheckFailureNoMessage)
 
           # It did not send a message
-          expect(ESM::Test.messages.size).to eq(0)
+          expect(ESM.discord_bot.test_outbox.size).to eq(0)
         end
 
         it "enabled: false, allowlist_enabled: false, allowlisted: false, allowed: true" do
@@ -1122,10 +1122,10 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(true)
 
-      wait_for { ESM::Test.messages.size }.to eq(2)
+      ESM.discord_bot.test_outbox.await_size(2)
 
-      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
-      expect(ESM::Test.messages.second.second).to eq("accepted")
+      expect(ESM.discord_bot.test_outbox.first.content).to be_a(ESM::Embed)
+      expect(ESM.discord_bot.test_outbox.second.content).to eq("accepted")
     end
 
     it "is declined" do
@@ -1134,10 +1134,10 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(false)
 
-      wait_for { ESM::Test.messages.size }.to eq(2)
+      ESM.discord_bot.test_outbox.await_size(2)
 
-      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
-      expect(ESM::Test.messages.second.second).to eq("declined")
+      expect(ESM.discord_bot.test_outbox.first.content).to be_a(ESM::Embed)
+      expect(ESM.discord_bot.test_outbox.second.content).to eq("declined")
     end
   end
 end

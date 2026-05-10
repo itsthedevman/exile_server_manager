@@ -82,11 +82,11 @@ RSpec.shared_examples("arma_error_null_flag") do
       expect(error.data.description).to match("I was unable to find a territory")
     end
 
-    wait_for { ESM::Test.messages.size }.to eq(1)
+    ESM.discord_bot.test_outbox.await_size(1)
 
     # Admin log
     expect(
-      ESM::Test.messages.retrieve("territory flag was not found in game")
+      ESM.discord_bot.test_outbox.retrieve("territory flag was not found in game")
     ).not_to be_nil
   end
 end
@@ -97,11 +97,11 @@ RSpec.shared_examples("arma_error_missing_territory_access") do
       expect(error.data.description).to match("you do not have permission")
     end
 
-    wait_for { ESM::Test.messages.size }.to eq(1)
+    ESM.discord_bot.test_outbox.await_size(1)
 
     # Admin log
     expect(
-      ESM::Test.messages.retrieve("Player attempted to perform an action on Territory")
+      ESM.discord_bot.test_outbox.retrieve("Player attempted to perform an action on Territory")
     ).not_to be_nil
   end
 end
@@ -162,9 +162,9 @@ RSpec.shared_examples("arma_discord_logging_enabled") do
   it "is expected to send a log message to the discord server" do
     execute_command
 
-    wait_for { ESM::Test.messages.size }.to be >= 2
+    ESM.discord_bot.test_outbox.await_size(2)
 
-    log_message = ESM::Test.messages.retrieve(message)
+    log_message = ESM.discord_bot.test_outbox.retrieve(message)
     expect(log_message).not_to be_nil
     expect(log_message.destination.id.to_s).to eq(community.logging_channel_id)
 
@@ -186,7 +186,7 @@ RSpec.shared_examples("arma_discord_logging_disabled") do
   it "is expected not to send a log message to the discord server" do
     execute_command
 
-    log_message = ESM::Test.messages.retrieve(message)
+    log_message = ESM.discord_bot.test_outbox.retrieve(message)
     expect(log_message).to be_nil
   end
 end

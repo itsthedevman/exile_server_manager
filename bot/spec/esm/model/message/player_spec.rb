@@ -20,7 +20,7 @@ describe ESM::Message::Player, v2: true do
     end
 
     context "when the input is an instance of ESM::User::Ephemeral" do
-      let(:user) { ESM::User::Ephemeral.new(Faker::ESM.steam_uid) }
+      let(:user) { ESM::User::Ephemeral.new(Faker::Steam.uid) }
 
       it "uses the steam_uid for most attributes" do
         expect(player).to be_instance_of(described_class)

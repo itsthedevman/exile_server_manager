@@ -32,7 +32,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       execute!(arguments: {community_id: community.community_id})
 
       wait_for_completion!
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
 
       expect(embed.title).to eq(server.server_name)
       expect(embed.description).to eq(I18n.t("commands.servers.offline"))
@@ -49,7 +49,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       execute!(arguments: {community_id: community.community_id})
       wait_for_completion!
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
 
       expect(embed.title).to eq(server.server_name)
       expect(embed.fields.size).to eq(5)
@@ -72,7 +72,7 @@ describe ESM::Command::Community::Servers, category: "command" do
       execute!(arguments: {community_id: community.community_id})
       wait_for_completion!
 
-      expect(ESM::Test.messages.size).to eq(1)
+      expect(ESM.discord_bot.test_outbox.size).to eq(1)
     end
   end
 end

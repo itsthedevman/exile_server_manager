@@ -34,7 +34,7 @@ RSpec.shared_context("connection") do
 
   let(:territory_moderators) { [] }
   let(:territory_build_rights) { [] }
-  let(:territory_owner) { Faker::ESM.steam_uid }
+  let(:territory_owner) { Faker::Steam.uid }
   let(:territory) do
     owner_uid = territory_owner
     create(
@@ -70,12 +70,23 @@ RSpec.shared_context("connection") do
     # server initialization
     ESM::Test.territory_admin_uids = territory_admin_uids
 
-    connection_server.resume
+    # The server.connected? check is flakey: Arma is genuinely connected but
+    # the @connections map occasionally hasn't seen the public_id yet. Pause +
+    # resume forces a fresh reconnect. Up to 3 attempts before we give up.
+    max_attempts = 3
+    attempts = 0
+    begin
+      attempts += 1
+      connection_server.resume
 
-    wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
+      wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
+      wait(timeout: 5).for { server.reload.connected? }.to be(true)
+    rescue RSpec::Expectations::ExpectationNotMetError
+      raise "esm_arma never connected after #{max_attempts} attempts. From the esm_arma repo, please run `bin/bot_testing`" if attempts >= max_attempts
 
-    wait_for { server.reload.connected? }.to be(true),
-      "esm_arma never connected. From the esm_arma repo, please run `bin/bot_testing`"
+      connection_server.pause
+      retry
+    end
 
     server.reset!
   rescue ActiveRecord::ConnectionNotEstablished

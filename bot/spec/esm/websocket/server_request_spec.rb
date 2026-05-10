@@ -68,9 +68,9 @@ describe ESM::Websocket::ServerRequest do
       message = OpenStruct.new(commandID: request.id, error: "This is an error")
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this is an error/i)
     end
 
@@ -78,9 +78,9 @@ describe ESM::Websocket::ServerRequest do
       message = {commandID: request.id, error: "", parameters: [{error: "This is an error"}]}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this is an error/i)
     end
 
@@ -91,9 +91,9 @@ describe ESM::Websocket::ServerRequest do
       message = {commandID: request.id, parameters: []}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this failed a check/i)
     end
   end

@@ -5,7 +5,7 @@ FactoryBot.define do
     skip_create
 
     transient do
-      id { ESM::Test::Snowflake.next }
+      id { Spec::Snowflake.next }
       name { Faker::Company.name }
       owner { build(:discord_user) }
       # Symbols or strings; built into channels after the server exists.
@@ -54,6 +54,13 @@ FactoryBot.define do
       server.instance_variable_set(:@chunked, true)
 
       ESM.discord_bot.cache_server(server)
+    end
+
+    # Standard channel set for command specs: a general channel for slash-command
+    # invocations, a logging channel for the community's audit log, and a
+    # commands channel that some allowlists key off.
+    trait :with_command_channels do
+      channels { %i[general logging commands] }
     end
   end
 end

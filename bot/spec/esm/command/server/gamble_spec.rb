@@ -14,9 +14,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed).not_to be(nil)
           expect(embed.title).not_to be_blank
           expect(embed.description).not_to be_blank
@@ -29,9 +29,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed).not_to be(nil)
           expect(embed.title).not_to be_blank
           expect(embed.description).not_to be_blank
@@ -43,9 +43,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
           request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "all"})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed).not_to be(nil)
           expect(embed.title).not_to be_blank
           expect(embed.description).not_to be_blank
@@ -59,9 +59,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
           request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "100000000"})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/not enough poptabs/i)
         end
       end
@@ -89,7 +89,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it "returns the gambling stats for the server" do
           execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "stats"})
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed).not_to be(nil)
           expect(embed.title).to match("Gambling statistics")
           expect(embed.fields.size).to eq(14)
@@ -100,7 +100,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it "returns the gambling stats for the server" do
           execute!(channel_type: :dm, arguments: {server_id: server.server_id})
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed).not_to be(nil)
           expect(embed.title).to match("Gambling statistics")
           expect(embed.fields.size).to eq(14)
@@ -145,9 +145,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it "is expected to reply back with the stats" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.retrieve(
+          embed = ESM.discord_bot.test_outbox.retrieve(
             "Gambling statistics for `#{server.server_id}`"
           )&.content
 
@@ -182,9 +182,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it(it_message || "is expected to gamble the amount and won") do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to be > 1
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.retrieve("Winner winner!")&.content
+          embed = ESM.discord_bot.test_outbox.retrieve("Winner winner!")&.content
 
           expect(embed).not_to be(nil)
           expect(embed.description).to match("#{won_amount_delimited} poptabs")
@@ -217,9 +217,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it(it_message || "is expected to gamble the amount and lost") do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to be > 1
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.retrieve("Better luck next time!")&.content
+          embed = ESM.discord_bot.test_outbox.retrieve("Better luck next time!")&.content
 
           expect(embed).not_to be(nil)
           expect(embed.description).to match("#{loss_amount_delimited} poptabs")
@@ -486,9 +486,9 @@ describe ESM::Command::Server::Gamble, category: "command" do
           it "is expected to succeed but caps the locker amount to maxDeposit" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to be > 1
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.retrieve("Winner winner!")&.content
+            embed = ESM.discord_bot.test_outbox.retrieve("Winner winner!")&.content
 
             expect(embed).not_to be(nil)
             expect(embed.description).to match("poptabs due to server limits")

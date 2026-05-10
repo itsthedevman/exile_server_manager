@@ -15,15 +15,15 @@ describe ESM::Event::Xm8NotificationV1 do
     community.update(log_xm8_event: log_xm8_event)
 
     expect { wsc.send_xm8_notification(**attributes) }.not_to raise_error
-    wait_for { ESM::Test.messages.size }.to eq(expected_messages.size)
+    ESM.discord_bot.test_outbox.await_size(expected_messages.size)
 
     # To ensure all messages have been sent
     sleep(1)
-    wait_for { ESM::Test.messages.size }.to eq(expected_messages.size)
+    ESM.discord_bot.test_outbox.await_size(expected_messages.size)
 
     # Check the embeds
     expected_messages.each_with_index do |message, index|
-      embed = ESM::Test.messages[index].second
+      embed = ESM.discord_bot.test_outbox[index].second
       expect(embed.title).to eq(message[:title])
       expect(embed.description).to eq(message[:description])
     end

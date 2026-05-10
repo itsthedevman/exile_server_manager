@@ -14,7 +14,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       it "returns a boolean" do
         execute!(arguments: {code: "true"})
 
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).to eq("Input:\n```ruby\ntrue\n```\nOutput:\n```ruby\ntrue\n```")
       end
     end
@@ -23,7 +23,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       it "returns a string" do
         execute!(arguments: {code: "'test'"})
 
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).to eq("Input:\n```ruby\n'test'\n```\nOutput:\n```ruby\n\"test\"\n```")
       end
     end
@@ -32,7 +32,7 @@ describe ESM::Command::Development::Eval, category: "command" do
       it "returns an integer" do
         execute!(arguments: {code: "2 + 3"})
 
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).to eq("Input:\n```ruby\n2 + 3\n```\nOutput:\n```ruby\n5\n```")
       end
     end

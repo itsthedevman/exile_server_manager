@@ -15,9 +15,9 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
           request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, territory_id: territory_id})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to eq("Hey #{user.mention}, you successfully upgraded territory `#{territory_id}` for **#{response.cost.to_poptab}**.\nYour territory has reached level **#{response.level}** and now has a radius of **#{response.range}** meters.\nAfter this transaction, you have **#{response.locker.to_poptab}** left in your locker.")
         end
       end
@@ -56,18 +56,18 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
         it "upgrades the territory using poptabs from the player's locker" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Player response
           expect(
-            ESM::Test.messages.retrieve(
+            ESM.discord_bot.test_outbox.retrieve(
               "`#{territory.encoded_id}` has been upgraded to level #{territory.level + 1}"
             )
           ).not_to be(nil)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("Territory upgraded to level #{territory.level + 1}")
+            ESM.discord_bot.test_outbox.retrieve("Territory upgraded to level #{territory.level + 1}")
           ).not_to be(nil)
 
           user.exile_account.reload

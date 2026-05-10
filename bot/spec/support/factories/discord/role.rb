@@ -5,7 +5,7 @@ FactoryBot.define do
     skip_create
 
     transient do
-      id { ESM::Test::Snowflake.next }
+      id { Spec::Snowflake.next }
       name { Faker::Job.title }
       server { nil }
       permissions { 0 }

@@ -42,8 +42,8 @@ describe ESM::Websocket::Request::Overseer do
       expect(server_connection.requests.size).to eq(iterations + 1)
       sleep(1)
       expect(server_connection.requests.size).to eq(iterations)
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      expect(ESM::Test.messages.first.content.description).to match(/never replied to your command/i)
+      ESM.discord_bot.test_outbox.await_size(1)
+      expect(ESM.discord_bot.test_outbox.first.content.description).to match(/never replied to your command/i)
     end
   end
 end

@@ -13,9 +13,9 @@ describe ESM::Command::Server::Stuck, category: "command" do
           wsc.flags.SUCCESS = true
           execute!(arguments: {server_id: server.server_id})
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
@@ -25,15 +25,15 @@ describe ESM::Command::Server::Stuck, category: "command" do
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/you've been reset successfully. please join the server to spawn back in/i)
         end
@@ -45,9 +45,9 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
           execute!(arguments: {server_id: server.server_id})
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
@@ -57,15 +57,15 @@ describe ESM::Command::Server::Stuck, category: "command" do
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(
             /i was not successful at resetting your player on `.+`\. please join the server again, and if you are still stuck, close arma 3 and attempt this command again\./i
@@ -80,7 +80,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
       include_context "connection"
 
       let!(:player) do
-        account = create(:exile_account, uid: Faker::ESM.steam_uid)
+        account = create(:exile_account, uid: Faker::Steam.uid)
 
         # Important bit here -> damage: 1
         create(:exile_player, account_uid: account.uid, damage: 1)
@@ -99,11 +99,11 @@ describe ESM::Command::Server::Stuck, category: "command" do
 
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
           embed = latest_message
           expect(embed.description).to match("you've been reset successfully")

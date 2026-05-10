@@ -6,8 +6,12 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   let(:discord_server) { build(:discord_server, channels: [:logging], roles: %i[territory_admin]) }
   let(:territory_admin_role) { discord_server.roles.find { |r| r.name == "territory_admin" } }
   let(:user) do
-    user_record = create(:user)
-    build(:discord_member, server: discord_server, user: user_record.discord_user, roles: [territory_admin_role])
+    user_record = create(
+      :user,
+      :with_discord_member,
+      discord_server: discord_server,
+      discord_member_roles: [territory_admin_role]
+    )
     user_record.role_id = territory_admin_role.id
     user_record
   end

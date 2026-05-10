@@ -17,9 +17,9 @@ describe ESM::Discord::Bot do
     describe "Sending a string message" do
       it "sends (Channel)" do
         ESM.discord_bot.deliver("Hello!", to: channel.id.to_s)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM::Test.messages.first
+        message_array = ESM.discord_bot.test_outbox.first
 
         # Channel tests
         expect(message_array.first).not_to be_nil
@@ -34,9 +34,9 @@ describe ESM::Discord::Bot do
 
       it "sends (User)" do
         ESM.discord_bot.deliver("Hello!", to: user.discord_id)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM::Test.messages.first
+        message_array = ESM.discord_bot.test_outbox.first
 
         # Channel tests
         expect(message_array.first).not_to be_nil
@@ -59,9 +59,9 @@ describe ESM::Discord::Bot do
           end
 
         ESM.discord_bot.deliver(embed, to: channel.id.to_s)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM::Test.messages.first
+        message_array = ESM.discord_bot.test_outbox.first
 
         # Channel tests
         expect(message_array.first).not_to be_nil
@@ -77,9 +77,9 @@ describe ESM::Discord::Bot do
 
       it "sends (User)" do
         ESM.discord_bot.deliver("Hello!", to: user.discord_id)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM::Test.messages.first
+        message_array = ESM.discord_bot.test_outbox.first
 
         # Channel tests
         expect(message_array.first).not_to be_nil
@@ -100,8 +100,8 @@ describe ESM::Discord::Bot do
       ESM.discord_bot.deliver("Hello, how are you today?", to: user)
       ESM.discord_bot.await_response(user.discord_id, expected: %w[good bad])
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      message_array = ESM::Test.messages.first
+      ESM.discord_bot.test_outbox.await_size(1)
+      message_array = ESM.discord_bot.test_outbox.first
 
       # Channel
       expect(message_array.first).not_to be_nil
@@ -128,10 +128,10 @@ describe ESM::Discord::Bot do
       # Start the request (this is blocking)
       ESM.discord_bot.await_response(user.discord_id, expected: ["i do", "i don't"])
 
-      wait_for { ESM::Test.messages.size }.to eq(2)
+      ESM.discord_bot.test_outbox.await_size(2)
 
       # Channel
-      message_array = ESM::Test.messages.first
+      message_array = ESM.discord_bot.test_outbox.first
       expect(message_array.destination).not_to be_nil
       expect(message_array.destination).to be_kind_of(Discordrb::Channel)
       expect(message_array.destination.text?).to be(true)
@@ -142,7 +142,7 @@ describe ESM::Discord::Bot do
       expect(message_array.content).to eq("Who wants to party?!?")
 
       # Invalid response
-      response = ESM::Test.messages.second.content
+      response = ESM.discord_bot.test_outbox.second.content
       expect(response).not_to be_nil
       expect(response).to eq("I'm sorry, I don't know how to reply to your response.\nI was expecting `i do` or `i don't`")
     end

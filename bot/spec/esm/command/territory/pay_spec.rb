@@ -17,9 +17,9 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/has successfully received the payment/i)
         end
       end
@@ -66,18 +66,18 @@ describe ESM::Command::Territory::Pay, category: "command" do
           execute_command
 
           # Player response, admin log, xm8 notification
-          wait_for { ESM::Test.messages.size }.to be >= 2
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Player response
           expect(
-            ESM::Test.messages.retrieve(
+            ESM.discord_bot.test_outbox.retrieve(
               "Successfully paid protection money for territory `#{territory.encoded_id}`"
             )
           ).not_to be(nil)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("Territory protection money paid")
+            ESM.discord_bot.test_outbox.retrieve("Territory protection money paid")
           ).not_to be(nil)
 
           user.exile_account.reload

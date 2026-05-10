@@ -5,7 +5,7 @@ FactoryBot.define do
     skip_create
 
     transient do
-      id { ESM::Test::Snowflake.next }
+      id { Spec::Snowflake.next }
       username { Faker::Internet.username(specifier: 6..16) }
       bot_account { false }
     end

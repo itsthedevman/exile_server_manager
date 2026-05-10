@@ -21,30 +21,30 @@ describe ESM::Command::Server::Reset, category: "command" do
           wsc.flags.SUCCESS = true
 
           execute!(arguments: {server_id: server.server_id})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
 
           # Checks for requestees message
-          expect(ESM::Test.messages.size).to eq(2)
+          expect(ESM.discord_bot.test_outbox.size).to eq(2)
 
           # Process the request
           request = previous_command.request
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/i've reset all stuck players\./i)
         end
@@ -55,30 +55,30 @@ describe ESM::Command::Server::Reset, category: "command" do
           wsc.flags.SUCCESS = false
 
           execute!(arguments: {server_id: server.server_id})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
 
           # Checks for requestees message
-          expect(ESM::Test.messages.size).to eq(2)
+          expect(ESM.discord_bot.test_outbox.size).to eq(2)
 
           # Process the request
           request = previous_command.request
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/i was unable to find anyone who was stuck\./i)
         end
@@ -89,9 +89,9 @@ describe ESM::Command::Server::Reset, category: "command" do
           wsc.flags.SUCCESS = true
 
           execute!(arguments: {server_id: server.server_id, target: second_user.steam_uid})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           # Checks for requestees message
@@ -102,15 +102,15 @@ describe ESM::Command::Server::Reset, category: "command" do
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
         end
@@ -124,9 +124,9 @@ describe ESM::Command::Server::Reset, category: "command" do
           second_user.destroy
 
           execute!(arguments: {server_id: server.server_id, target: steam_uid})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
@@ -136,15 +136,15 @@ describe ESM::Command::Server::Reset, category: "command" do
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/has been reset successfully. please instruct them to join the server again to confirm\./i)
         end
@@ -155,9 +155,9 @@ describe ESM::Command::Server::Reset, category: "command" do
           wsc.flags.SUCCESS = false
 
           execute!(arguments: {server_id: server.server_id, target: second_user.mention})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
@@ -167,15 +167,15 @@ describe ESM::Command::Server::Reset, category: "command" do
           expect(request).not_to be_nil
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           wait_for { connection.requests }.to be_blank
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.content
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to match(/is not stuck\. please have them join the server again, and if they are still stuck, instruct them to close arma 3 and then attempt this command again\./i)
         end
@@ -193,7 +193,7 @@ describe ESM::Command::Server::Reset, category: "command" do
 
       before do
         # So there is at least one non-stuck player
-        account = create(:exile_account, uid: Faker::ESM.steam_uid)
+        account = create(:exile_account, uid: Faker::Steam.uid)
         create(:exile_player, account_uid: account.uid)
       end
 
@@ -202,7 +202,7 @@ describe ESM::Command::Server::Reset, category: "command" do
 
         let!(:players) do
           5.times.map do
-            account = create(:exile_account, uid: Faker::ESM.steam_uid)
+            account = create(:exile_account, uid: Faker::Steam.uid)
 
             # Important bit here -> damage: 1
             create(:exile_player, account_uid: account.uid, damage: 1)
@@ -214,11 +214,11 @@ describe ESM::Command::Server::Reset, category: "command" do
 
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
           embed = latest_message
           expect(embed.description).to match("reset all stuck players")
@@ -235,11 +235,11 @@ describe ESM::Command::Server::Reset, category: "command" do
 
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(2)
+            ESM.discord_bot.test_outbox.await_size(2)
 
             accept_request
 
-            wait_for { ESM::Test.messages.size }.to eq(3)
+            ESM.discord_bot.test_outbox.await_size(3)
 
             embed = latest_message
             expect(embed.description).to match("has been reset successfully")
@@ -264,7 +264,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           let!(:arguments) { {target: player.account_uid, server_id: server.server_id} }
 
           let!(:player) do
-            account = create(:exile_account, uid: Faker::ESM.steam_uid)
+            account = create(:exile_account, uid: Faker::Steam.uid)
 
             # Important bit here -> damage: 1
             create(:exile_player, account_uid: account.uid, damage: 1)

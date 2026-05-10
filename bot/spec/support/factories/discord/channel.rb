@@ -5,7 +5,7 @@ FactoryBot.define do
     skip_create
 
     transient do
-      id { ESM::Test::Snowflake.next }
+      id { Spec::Snowflake.next }
       name { Faker::Internet.username(specifier: 6..16) }
       server { nil }
       # Discord channel types: 0 = text, 1 = DM, 2 = voice, 5 = announcement, ...

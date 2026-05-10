@@ -21,9 +21,9 @@ describe ESM::Command::Server::Logs, category: "command" do
           execute!(arguments: {server_id: server.server_id, target: second_user.steam_uid})
 
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i
           )
@@ -43,9 +43,9 @@ describe ESM::Command::Server::Logs, category: "command" do
           execute!(arguments: {server_id: server.server_id, target: "testing"})
 
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i
           )
@@ -66,9 +66,9 @@ describe ESM::Command::Server::Logs, category: "command" do
 
           execute!(arguments: {server_id: server.server_id, target: "testing"})
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/hey .+, i was unable to find any logs that match your query./i)
         end
       end
@@ -81,9 +81,9 @@ describe ESM::Command::Server::Logs, category: "command" do
           execute!(arguments: {server_id: server.server_id, target: steam_uid})
 
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/you may review the results here:\shttp:\/\/localhost:3000\/communities\/.+\/logs\/.+\s+_link expires on `.+`_/i)
 
           expect(ESM::Log.all.size).to eq(1)
@@ -136,7 +136,7 @@ describe ESM::Command::Server::Logs, category: "command" do
   end
 
   describe "V2", v2: true do
-    let!(:steam_uid) { Faker::ESM.steam_uid }
+    let!(:steam_uid) { Faker::Steam.uid }
 
     describe "#on_execute", requires_connection: true do
       include_context "connection"
@@ -151,7 +151,7 @@ describe ESM::Command::Server::Logs, category: "command" do
         it "creates Log and LogEntries and it sends the user a link" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
           embed = latest_message
           expect(embed.description).to match(

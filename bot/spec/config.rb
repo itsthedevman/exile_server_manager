@@ -86,4 +86,34 @@ RSpec.configure do |config|
 
   # Timeout for rspec/wait, default timeout for requests
   config.wait_timeout = (SPEC_TIMEOUT_SECONDS == false) ? 999_999_999 : SPEC_TIMEOUT_SECONDS
+
+  ##############################################################################
+  # rspec-rebound — retry flaky specs once, log every retry to .rspec_flakes.log
+  # so we can see which tests actually flake instead of silently masking them.
+  ##############################################################################
+  config.default_retry_count = 1
+  config.verbose_retry = true
+  config.display_try_failure_messages = true
+  config.clear_lets_on_failure = true
+
+  # Drop the AR connection pool between attempts. The dominant residual flake
+  # (`undefined method 'cmd_tuples' for nil` inside DatabaseCleaner) comes from
+  # a stray background thread leaving a PG connection in a half-reset state.
+  # disconnect! evicts every connection so the retry gets a fresh one. Also
+  # clear the in-memory message stores so the retry's assertions don't see
+  # leftovers from the failed attempt.
+  config.retry_callback = proc do |_example|
+    ActiveRecord::Base.connection_pool.disconnect!
+    ESM.discord_bot.test_outbox.clear
+    ESM.discord_bot.test_inbox.clear
+  end
+
+  # Append a row to .rspec_flakes.log every time a spec fails-then-passes on
+  # retry. Use this to find the worst offenders and fix root causes; retries
+  # are insurance, not a substitute for diagnosis.
+  config.flaky_test_callback = proc do |example|
+    File.open(ESM.root.join(".rspec_flakes.log"), "a") do |f|
+      f.puts "#{Time.now.iso8601}\t#{example.location}\t#{example.full_description}"
+    end
+  end
 end

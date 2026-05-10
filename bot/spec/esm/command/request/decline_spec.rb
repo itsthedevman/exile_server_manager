@@ -21,7 +21,7 @@ describe ESM::Command::Request::Decline, category: "command" do
       it "declines the request" do
         execute!(user: user_2, channel_type: :dm, arguments: {uuid: request.uuid_short})
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be(nil)
         expect(ESM::Request.all.size).to eq(0)
       end

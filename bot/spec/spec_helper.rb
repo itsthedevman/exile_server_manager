@@ -23,10 +23,10 @@ RSpec.configure do |config|
       example: example.description
     )
 
-    ESM::Test.messages.clear
+    ESM.discord_bot.test_outbox.clear
+    ESM.discord_bot.test_inbox.clear
     ESM::Test.territory_admin_uids = []
     ESM::Test.skip_cooldown = false
-    ESM.discord_bot.test_inbox.clear
     ESM.discord_bot.delivery_overseer.queue.clear
     ESM::Connection::Server.pause
 

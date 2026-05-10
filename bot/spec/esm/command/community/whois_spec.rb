@@ -56,7 +56,7 @@ describe ESM::Command::Community::Whois, category: "command" do
 
     context "when the target is an unregistered steam uid" do
       it "returns information about the steam user" do
-        execute!(arguments: {target: Faker::ESM.steam_uid})
+        execute!(arguments: {target: Faker::Steam.uid})
 
         response = latest_message
         expect(response).not_to be_nil

@@ -10,24 +10,28 @@ RSpec.shared_context("command") do
   let(:discord_server) do
     build(
       :discord_server,
-      channels: %i[general logging commands],
+      :with_command_channels,
       owner: user_is_owner ? discord_user : build(:discord_user)
     )
   end
 
   let!(:community) { create(:community, discord_server: discord_server) }
   let!(:user) do
-    build(:discord_member, server: discord_server, user: discord_user) unless user_is_owner
-
     args = respond_to?(:user_args) ? user_args : []
-    create(:user, *args, discord_user: discord_user)
+
+    # When the user is the server owner, the discord_server factory has
+    # already registered them as a member; using :with_discord_member would
+    # double-register.
+    if user_is_owner
+      create(:user, *args, discord_user: discord_user)
+    else
+      create(:user, :with_discord_member, *args, discord_user: discord_user, discord_server: discord_server)
+    end
   end
   let(:command_class) { described_class }
   let(:command) { @previous_command || command_class.new }
   let(:server) { create(:server, community_id: community.id) }
-  let(:second_discord_user) { build(:discord_user) }
-  let!(:_register_second_member) { build(:discord_member, server: discord_server, user: second_discord_user) }
-  let(:second_user) { create(:user, discord_user: second_discord_user) }
+  let(:second_user) { create(:user, :with_discord_member, discord_server: discord_server) }
   let(:default_text_channel) { discord_server.channels.find { |channel| channel.name == "general" } || discord_server.channels.first }
 
   #

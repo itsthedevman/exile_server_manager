@@ -8,11 +8,34 @@ FactoryBot.define do
 
     discord_id { discord_user.id.to_s }
     discord_username { discord_user.username }
-    steam_uid { Faker::ESM.steam_uid }
+    steam_uid { Faker::Steam.uid }
     user_steam_data
 
     trait :unregistered do
       steam_uid { nil }
+    end
+
+    # Register the user as a member of `discord_server` after the AR record is built.
+    # `discord_member_roles` is forwarded to the :discord_member factory so callers
+    # can attach roles in one shot.
+    trait :with_discord_member do
+      transient do
+        discord_server { nil }
+        discord_member_roles { [] }
+      end
+
+      after(:build) do |user, evaluator|
+        if evaluator.discord_server.nil?
+          raise ArgumentError, "create(:user, :with_discord_member) requires `discord_server:`"
+        end
+
+        build(
+          :discord_member,
+          server: evaluator.discord_server,
+          user: user.discord_user,
+          roles: evaluator.discord_member_roles
+        )
+      end
     end
 
     factory :developer do

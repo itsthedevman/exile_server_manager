@@ -21,7 +21,7 @@ describe ESM::Command::Community::Mode, category: "command" do
 
         execute!(**execution_args)
 
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be_nil
 
         community.reload
@@ -45,7 +45,7 @@ describe ESM::Command::Community::Mode, category: "command" do
 
         execute!(**execution_args)
 
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be_nil
         community.reload
 

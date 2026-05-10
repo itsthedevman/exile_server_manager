@@ -59,24 +59,10 @@ def wait_until(timeout: 30)
 end
 
 #
-# All messages captured by the in-memory message store, in insertion order.
-#
-# @return [Array]
-#
-def messages
-  ESM::Test.messages.contents
-end
-
-#
-# The first captured message (oldest), or nil when the store is empty.
-#
-def earliest_message
-  ESM::Test.messages.earliest
-end
-
-#
-# The most recently captured message, or nil when the store is empty.
+# The most recently captured outbox message's content, or nil when the outbox
+# is empty. Non-blocking; pair with `ESM.discord_bot.test_outbox.await_size(N)`
+# when you need to wait for messages to arrive before reading.
 #
 def latest_message
-  ESM::Test.messages.latest
+  ESM.discord_bot.test_outbox.latest
 end

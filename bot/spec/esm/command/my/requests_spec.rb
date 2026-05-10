@@ -17,7 +17,7 @@ describe ESM::Command::My::Requests, category: "command" do
       it "returns a list of them" do
         execute!(channel_type: :dm)
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be(nil)
         expect(embed.title).to eq("Pending Requests")
 

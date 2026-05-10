@@ -8,7 +8,7 @@ describe ESM::Request do
       :request,
       requestor_user_id: user_1.id,
       requestee_user_id: user_2.id,
-      requested_from_channel_id: ESM::Test::Snowflake.next,
+      requested_from_channel_id: Spec::Snowflake.next,
       command_name: "id"
     )
   end

@@ -26,9 +26,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
             expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.first.content
+            embed = ESM.discord_bot.test_outbox.first.content
             expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned the following: ```true```/i))
           end
         end
@@ -44,9 +44,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
             expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.first.content
+            embed = ESM.discord_bot.test_outbox.first.content
             expect(embed).to have_attributes(description: a_string_matching(/executed your code successfully and the code returned nothing/i))
           end
         end
@@ -65,9 +65,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
             expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.first.content
+            embed = ESM.discord_bot.test_outbox.first.content
             expect(embed).to have_attributes(
               description: a_string_matching(/executed your code successfully on `#{user.steam_uid}`/i)
             )
@@ -88,9 +88,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
             expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.first.content
+            embed = ESM.discord_bot.test_outbox.first.content
             expect(embed).to have_attributes(
               description: a_string_matching(
                 /has informed me that `#{user.steam_uid}` is not online or has not joined the server/i
@@ -131,9 +131,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             )
 
             wait_for { connection.requests }.to be_blank
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
-            embed = ESM::Test.messages.first.content
+            embed = ESM.discord_bot.test_outbox.first.content
             expect(embed).to have_attributes(
               description: a_string_matching(/executed your code successfully on `#{steam_uid}`/i)
             )
@@ -162,9 +162,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             arguments: {server_id: server.server_id, code_to_execute: "_test = true;\n_test"}
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content
@@ -183,9 +183,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content
@@ -207,9 +207,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content
@@ -241,9 +241,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content
@@ -273,9 +273,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content
@@ -301,9 +301,9 @@ describe ESM::Command::Server::Sqf, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages }.not_to be_empty
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
 
-          message = ESM::Test.messages.first
+          message = ESM.discord_bot.test_outbox.first
           expect(message).not_to be_nil
 
           result_embed = message.content

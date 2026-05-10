@@ -59,15 +59,15 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
 
           # Checks for requestees message
-          expect(ESM::Test.messages.size).to eq(2)
+          expect(ESM.discord_bot.test_outbox.size).to eq(2)
 
           # Process the request
           request = previous_command.request
@@ -76,15 +76,15 @@ describe ESM::Command::Territory::Add, category: "command" do
           # Reset before responding. With the synchronous V1 fake the response
           # round-trip completes and queues follow-up deliveries immediately,
           # so clearing AFTER respond would race the delivery_overseer.
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           # Wait for the server to respond
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          expect(ESM::Test.messages.size).to eq(2)
+          expect(ESM.discord_bot.test_outbox.size).to eq(2)
         end
       end
 
@@ -99,18 +99,18 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          expect(ESM::Test.messages.size).to eq(0)
+          expect(ESM.discord_bot.test_outbox.size).to eq(0)
 
           # We don't create a request for this
           expect(ESM::Request.all.size).to eq(0)
 
           # Reset so we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Wait for the server to respond
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          expect(ESM::Test.messages.size).to eq(1)
+          expect(ESM.discord_bot.test_outbox.size).to eq(1)
         end
       end
     end
@@ -128,7 +128,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       include_context "connection"
 
       let!(:territory) do
-        owner_uid = Faker::ESM.steam_uid
+        owner_uid = Faker::Steam.uid
         create(
           :exile_territory,
           owner_uid: owner_uid,
@@ -155,7 +155,7 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
@@ -164,23 +164,23 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 3: Target's add notification
           # 4: Requestor's confirmation
           # 5: Discord log
-          wait_for { ESM::Test.messages.size }.to eq(5)
+          ESM.discord_bot.test_outbox.await_size(5)
 
           # The last messages are not always in order...
           # Requestee message
           expect(
-            ESM::Test.messages.retrieve(/Welcome to #{territory.name}!/i)
+            ESM.discord_bot.test_outbox.retrieve(/Welcome to #{territory.name}!/i)
           ).not_to be_nil
 
           # Requestor message
           expect(
-            ESM::Test.messages.retrieve(
+            ESM.discord_bot.test_outbox.retrieve(
               /#{second_user.mention} has been added to territory `#{territory.encoded_id}`/
             )
           ).not_to be_nil
 
           # Admin log on the community's discord server
-          log_message = ESM::Test.messages.retrieve("Player added Target to territory")
+          log_message = ESM.discord_bot.test_outbox.retrieve("Player added Target to territory")
           expect(log_message).not_to be_nil
           expect(log_message.destination.id.to_s).to eq(community.logging_channel_id)
 
@@ -229,7 +229,7 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
@@ -238,10 +238,10 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 3: Target's add notification
           # 4: Requestor's confirmation
           # 5: Discord log
-          wait_for { ESM::Test.messages.size }.to eq(5)
+          ESM.discord_bot.test_outbox.await_size(5)
 
           expect(
-            ESM::Test.messages.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
+            ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
 
@@ -258,10 +258,10 @@ describe ESM::Command::Territory::Add, category: "command" do
           # No request message is sent for oneself
           # 1: Success message
           # 2: Discord log
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           expect(
-            ESM::Test.messages.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
+            ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
       end
@@ -304,14 +304,14 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 2: Request notice
           # 3: Discord log
           # 4: Failure notification
-          wait_for { ESM::Test.messages.size }.to eq(4)
+          ESM.discord_bot.test_outbox.await_size(4)
 
           expect(
-            ESM::Test.messages.retrieve("territory flag was not found in game")
+            ESM.discord_bot.test_outbox.retrieve("territory flag was not found in game")
           ).not_to be_nil
 
           expect(
-            ESM::Test.messages.retrieve(/i was unable to find a territory with the ID of `#{territory.encoded_id}`/i)
+            ESM.discord_bot.test_outbox.retrieve(/i was unable to find a territory with the ID of `#{territory.encoded_id}`/i)
           ).not_to be_nil
         end
       end
@@ -328,7 +328,7 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
@@ -336,14 +336,14 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 2: Request notice
           # 3: Discord log
           # 4: Failure notification
-          wait_for { ESM::Test.messages.size }.to eq(4)
+          ESM.discord_bot.test_outbox.await_size(4)
 
           expect(
-            ESM::Test.messages.retrieve("Player attempted to perform an action on Territory but they do not have access")
+            ESM.discord_bot.test_outbox.retrieve("Player attempted to perform an action on Territory but they do not have access")
           ).not_to be_nil
 
           expect(
-            ESM::Test.messages.retrieve("#{user.mention}, you do not have permission")
+            ESM.discord_bot.test_outbox.retrieve("#{user.mention}, you do not have permission")
           ).not_to be_nil
         end
       end
@@ -361,10 +361,10 @@ describe ESM::Command::Territory::Add, category: "command" do
 
           # No request message is sent for oneself
           # 1: Player failure message
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
           expect(
-            ESM::Test.messages.retrieve("#{user.mention}, you cannot add yourself to this territory")
+            ESM.discord_bot.test_outbox.retrieve("#{user.mention}, you cannot add yourself to this territory")
           ).not_to be_nil
         end
       end
@@ -385,17 +385,17 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Player only Discord message
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
           expect(
-            ESM::Test.messages.retrieve(
+            ESM.discord_bot.test_outbox.retrieve(
               "#{user.mention}, #{second_user.mention} already has build rights"
             )
           ).not_to be_nil
@@ -415,17 +415,17 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Player only Discord message
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
           expect(
-            ESM::Test.messages.retrieve("need to join")
+            ESM.discord_bot.test_outbox.retrieve("need to join")
           ).not_to be_nil
         end
       end
@@ -443,17 +443,17 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           accept_request
 
           # 1: Request
           # 2: Request notice
           # 3: Player only Discord message
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
           expect(
-            ESM::Test.messages.retrieve("needs to join")
+            ESM.discord_bot.test_outbox.retrieve("needs to join")
           ).not_to be_nil
         end
       end

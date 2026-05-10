@@ -8,7 +8,7 @@ describe ESM::Command::Community::Id, category: "command" do
     it "returns the community's ID" do
       execute!
 
-      response = ESM::Test.messages.first.content
+      response = ESM.discord_bot.test_outbox.first.content
       expect(response).not_to be_nil
       expect(response.description).to match(/community id is/i)
       expect(response.fields.size).to eq(1)

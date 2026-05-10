@@ -51,15 +51,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     context "when the target is provided" do
       it "resets the target's cooldowns for this community" do
         execute!(arguments: {target: second_user.mention}, prompt_response: "yes")
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for your community/i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for all commands\. this change will be applied to every server your community has registered with me\./i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -73,15 +73,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     context "when the target and command name are provided" do
       it "resets the target's cooldowns for the provided command in this community" do
         execute!(arguments: {target: second_user.mention, command: "me"}, prompt_response: "yes")
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for `me` on every server your community has registered with me\./i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for `me`\. this change will be applied to every server your community has registered with me\./i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -99,15 +99,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           prompt_response: "yes"
         )
 
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for `me` . this change will only be applied to `#{server.server_id}`/i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for `me`. this change will only be applied to `#{server.server_id}`/i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -121,15 +121,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     context "when the target and server id are provided" do
       it "resets the target's cooldowns for all commands, but only for the provided server" do
         execute!(arguments: {target: second_user.mention, server_id: server.server_id}, prompt_response: "yes")
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset #{target_regex}'s cooldowns for all commands on `#{server.server_id}`/i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for all commands\. this change will only be applied to `#{server.server_id}`/i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -143,15 +143,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     context "when the command name is provided" do
       it "resets all cooldowns for the provided command for every server in this community" do
         execute!(arguments: {command: "me"}, prompt_response: "yes")
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset everyone's cooldowns for `me` on every server your community has registered with me.`/i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting everyone's cooldowns for `me`\. this change will be applied to every server your community has registered with me\./i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -165,15 +165,15 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     context "when the command and server id are provided" do
       it "resets all cooldowns for the provided command for all servers in this community" do
         execute!(arguments: {command: "me", server_id: server.server_id}, prompt_response: "yes")
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.first.content
+        response = ESM.discord_bot.test_outbox.first.content
         expect(response).not_to be(nil)
         expect(response.description).to match(/hey #{target_regex}, i have reset everyone's cooldowns for `me` on `#{server.server_id}`/i)
 
         # Check confirmation embed
-        confirmation_embed = ESM::Test.messages.first.content
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
 
         expect(confirmation_embed.description).to match(/just to confirm, i will be resetting everyone's cooldowns for `me`\. this change will only be applied to `#{server.server_id}`/i)
         expect(confirmation_embed.fields.size).to eq(1)
@@ -199,10 +199,10 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           prompt_response: "no"
         )
 
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         # Check success message
-        response = ESM::Test.messages.second.second
+        response = ESM.discord_bot.test_outbox.second.content
         expect(response).not_to be(nil)
         expect(response).to match(/i've cancelled your request/i)
       end
