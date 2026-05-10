@@ -119,6 +119,7 @@ module ESM
           return if @public_id.nil?
 
           model = ESM::Server.find_by_public_id(@public_id)
+          return if model.nil?
 
           reason =
             if reason.present?
