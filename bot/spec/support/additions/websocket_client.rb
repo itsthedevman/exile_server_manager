@@ -1,100 +1,128 @@
 # frozen_string_literal: true
 
-require "faye/websocket"
-require "eventmachine"
 require_relative "websocket_client/responses"
 
-# Certain parts of this class are written a particular way as to not disturb the "DLL"'s core functionality
+#
+# In-process replacement for the V1 Arma "DLL" client. Pre-rework, this used Faye::WebSocket +
+# EventMachine to connect to the bot's localhost WebSocket server, which was slow (~500ms
+# handshake per spec), order-dependent (shared EM reactor), and unnecessary for tests.
+#
+# The new implementation registers a fake `ESM::Websocket` subclass directly in
+# `ESM::Websocket.connections[server_id]`. When the bot calls `connection.deliver!(request)`, this
+# fake synchronously routes the request to the matching `response_<command>` method (defined in
+# `WebsocketClient::Responses`) and dispatches the synthetic reply through the same
+# `ServerRequest#process` pipeline production uses.
+#
+# The public spec API (`flags`, `connected?`, `disconnect!`, `send_xm8_notification`) is preserved.
+#
 class WebsocketClient
   include WebsocketClient::Responses
 
-  attr_reader :ws, :flags, :server_id
+  attr_reader :server_id, :flags, :connection
 
+  #
+  # Build a fake client that's already connected and registered.
+  #
+  # @param server [ESM::Server]
+  #
   def initialize(server)
-    @thread = Thread.new do
-      EventMachine.run do
-        @ws = Faye::WebSocket::Client.new(
-          "ws://0.0.0.0:#{ENV["WEBSOCKET_PORT"]}",
-          [],
-          headers: {"authorization" => "basic #{Base64.strict_encode64("arma_server:#{server.server_key}")}"}
-        )
+    @server = server
+    @server_id = server.server_id
+    @flags = OpenStruct.new
+    @connected = false
 
-        @ws.on(:message, &method(:on_message))
-        @ws.on(:open, &method(:on_open))
-        @ws.on(:close, &method(:on_close))
-        @ws.on(:error, &method(:on_error))
-        @logging_server_id = server.server_id
+    # Authenticate against the server_key the same way production does. If the
+    # key doesn't match a real ESM::Server, we leave @connected false so specs
+    # that test rejection of bad keys can verify that path.
+    ar_server = ESM::Server.where(server_key: server.server_key).first
+    return if ar_server.nil?
 
-        send_initialization_message
-      rescue => e
-        error!(e)
-      end
+    @connection = WebsocketClient::FakeConnection.new(server: ar_server, client: self)
+    @connection.ready = true
+
+    # Synchronously hand-shake. The bot needs the `server_initialization`
+    # message to populate server data and reply with `post_initialization`.
+    deliver_to_bot(**initialization_payload)
+    @connected = true
+  end
+
+  #
+  # @return [Boolean] whether the handshake completed
+  #
+  def connected?
+    @connected
+  end
+
+  #
+  # Tear down the registration. Idempotent.
+  #
+  def disconnect!
+    return if @connection.nil?
+
+    ESM::Websocket.remove_connection(@connection)
+    @connection = nil
+    @connected = false
+  end
+
+  #
+  # Push an xm8 notification message TO the bot.
+  #
+  # @param type [String] notification type (e.g. "base-raid")
+  # @param recipients [Array<String>] steam UIDs to notify
+  # @param message [String, Hash] notification body
+  #
+  def send_xm8_notification(type:, recipients:, message:, **extras)
+    payload = {type: type, recipients: {r: recipients}.to_json}.merge(extras)
+    payload[:message] = message.is_a?(Hash) ? message.to_json : message
+
+    deliver_to_bot(command: "xm8_notification", parameters: [payload])
+  end
+
+  #
+  # Hook called by {FakeConnection#deliver!} when the bot sends a request to
+  # "Arma". Looks up the response config and dispatches to the matching
+  # `response_<command>` handler defined in {Responses}.
+  #
+  # @param json [String] the bot's outgoing message JSON
+  #
+  def receive_from_bot(json)
+    @data = json.to_ostruct
+    config = WebsocketClient::Responses::CONFIG[@data.command.to_sym]
+
+    if config.nil?
+      ESM.logger.error("WebsocketClient#receive_from_bot") { "Missing config for command `#{@data.command}`" }
+      return
     end
 
-    @flags = OpenStruct.new
+    send_ignore_message if config[:send_ignore_message]
+
+    public_send(:"response_#{@data.command}")
   end
 
-  def on_message(event)
-    @data = event.data.to_ostruct
-
-    info!(event.data)
-
-    command_config = WebsocketClient::Responses::CONFIG[@data.command.to_sym]
-    return ESM.logger.error("#{self.class}##{__method__}") { "Missing command config for `#{@data.command}`" } if command_config.nil?
-
-    send_ignore_message if command_config[:send_ignore_message]
-    # delay(command_config[:delay]) if command_config[:delay]
-
-    send(:"response_#{@data.command}")
-  end
-
-  def on_open(_event)
-  end
-
-  def on_close(_event)
-  end
-
-  def on_error(event)
-    ESM.logger.debug("#{self.class}##{__method__}") { "#{@logging_server_id} | ON ERROR\nMessage: #{event.message}" }
-  end
-
-  def connected?
-    @connected || false
-  end
-
-  def on_ping(event)
-  end
-
-  def disconnect!
-    @ws.close
-    Thread.kill(@thread)
-  end
-
+  #
+  # Used by Responses to send the canned reply back to the bot. The
+  # `:commandID` key is auto-attached so the bot's ServerRequest matches
+  # the reply to the original request.
+  #
   def send_response(**args)
     args[:commandID] = @data.commandID if @data
-    @ws.send(DiscordReturn.new(**args).to_json)
-  end
 
-  def send_xm8_notification(type:, recipients:, message:, **args)
-    notification = {
-      type: type,
-      recipients: {r: recipients}.to_json
-    }.merge(args)
-
-    notification[:message] =
-      if message.is_a?(Hash)
-        message.to_json
-      else
-        message
-      end
-
-    send_response(command: "xm8_notification", parameters: [notification])
+    deliver_to_bot(**args)
   end
 
   private
 
-  def send_initialization_message
-    send_response(
+  def deliver_to_bot(**payload)
+    json = DiscordReturn.new(**payload).to_json
+    @connection.simulate_arma_message(json)
+  end
+
+  def send_ignore_message
+    deliver_to_bot(commandID: @data&.commandID, ignore: true)
+  end
+
+  def initialization_payload
+    {
       command: "server_initialization",
       parameters: [{
         server_name: Faker::Commerce.product_name,
@@ -114,14 +142,8 @@ class WebsocketClient
         territory_level_9: {level: 9, purchase_price: 45_000, radius: 135, object_count: 270},
         territory_level_10: {level: 10, purchase_price: 50_000, radius: 150, object_count: 300}
       }]
-    )
-  end
-
-  def send_ignore_message
-    send_response(ignore: true)
-  end
-
-  def delay(range)
-    sleep Faker::Number.between(from: range.min, to: range.max)
+    }
   end
 end
+
+require_relative "websocket_client/fake_connection"

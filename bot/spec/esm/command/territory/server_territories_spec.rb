@@ -16,10 +16,10 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
         it "orders the results by id" do
           execute!(arguments: {server_id: server.server_id})
 
-          request = connection.requests.first
+          request = connection.last_request
           expect(request).not_to be_nil
-          wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to be > 3
+          expect(connection.requests).to be_blank
+          expect(ESM::Test.messages.size).to be > 3
 
           expect(previous_command.arguments.order_by).to eq("territory_name")
           expect(response).to eq(request.response.sort_by(&:territory_name))
@@ -30,10 +30,10 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
         it "orders the results by name" do
           execute!(arguments: {server_id: server.server_id, order_by: "territory_name"})
 
-          request = connection.requests.first
+          request = connection.last_request
           expect(request).not_to be_nil
-          wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to be > 3
+          expect(connection.requests).to be_blank
+          expect(ESM::Test.messages.size).to be > 3
 
           expect(previous_command.arguments.order_by).to eq("territory_name")
           expect(response).to eq(request.response.sort_by(&:territory_name))
@@ -44,10 +44,10 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
         it "orders the results by owner uid" do
           execute!(arguments: {server_id: server.server_id, order_by: "owner_uid"})
 
-          request = connection.requests.first
+          request = connection.last_request
           expect(request).not_to be_nil
-          wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to be > 3
+          expect(connection.requests).to be_blank
+          expect(ESM::Test.messages.size).to be > 3
 
           expect(previous_command.arguments.order_by).to eq("owner_uid")
           expect(response).to eq(request.response.sort_by(&:owner_uid))
@@ -89,7 +89,7 @@ describe ESM::Command::Territory::ServerTerritories, category: "command" do
 
       let(:territories) do
         5.times.map do
-          owner_uid = ESM::Test.steam_uid
+          owner_uid = Faker::ESM.steam_uid
           create(
             :exile_territory,
             owner_uid: owner_uid,

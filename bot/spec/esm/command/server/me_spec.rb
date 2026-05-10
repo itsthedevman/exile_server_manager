@@ -11,18 +11,16 @@ describe ESM::Command::Server::Me, category: "command" do
       context "when the command is executed" do
         it "returns information about the player" do
           execute!(arguments: {server_id: server.server_id})
-          request = connection.requests.first
 
-          wait_for { connection.requests }.to be_blank
+          expect(connection.requests).to be_blank
           expect(ESM::Test.messages).not_to be_blank
 
           embed = ESM::Test.messages.first.content
-          server_response = request.command.response
 
           expect(embed.title).to match(/.+'s stats on `#{server.server_id}`/)
           expect(embed.fields.size).to be >= 3
 
-          if server_response.territories.present?
+          if response.territories.present?
             expect(embed.fields.size).to eq(4)
             expect(embed.fields[3].name).to eq("__Territories__")
             expect(embed.fields[3].value).not_to be_blank

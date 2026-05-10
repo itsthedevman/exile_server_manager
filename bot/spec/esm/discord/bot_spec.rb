@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 describe ESM::Discord::Bot do
-  let(:user) { ESM::Test.user }
-  let(:community) { ESM::Test.community }
-  let(:channel) { ESM::Test.channel(in: community) }
+  let(:user) { create(:user) }
+  let(:community) { create(:community) }
+  let(:channel) { community.discord_server.channels.first }
 
   it "is not nil" do
     expect(ESM.discord_bot).not_to be_nil
@@ -96,7 +96,7 @@ describe ESM::Discord::Bot do
 
   describe "#await_response" do
     it "sends and replies (Correct)" do
-      ESM::Test.response = "good"
+      ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, content: "good")
       ESM.discord_bot.deliver("Hello, how are you today?", to: user)
       ESM.discord_bot.await_response(user.discord_id, expected: %w[good bad])
 
@@ -117,11 +117,13 @@ describe ESM::Discord::Bot do
     it "sends and replies (Incorrect)" do
       ESM.discord_bot.deliver("Who wants to party?!?", to: channel)
 
-      # Set the initial response
-      ESM::Test.response = "Me!"
-
-      # "Reply" to the message correctly after 1 second
-      ESM::Test.reply_in("I do", wait: 0.5)
+      # Initial wrong reply, then a correct one .5s later — the bot should
+      # accept the second
+      ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, content: "Me!")
+      Thread.new do
+        sleep(0.5)
+        ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, content: "I do")
+      end
 
       # Start the request (this is blocking)
       ESM.discord_bot.await_response(user.discord_id, expected: ["i do", "i don't"])
@@ -156,15 +158,15 @@ describe ESM::Discord::Bot do
     let(:message) { Faker::String.random }
 
     it "waits for the reply" do
-      ESM::Test.response = message
-      event = ESM.discord_bot.wait_for_reply(user_id: user.id, channel_id: channel.id)
+      ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, channel: channel, content: message)
+      event = ESM.discord_bot.wait_for_reply(user_id: user.discord_id, channel_id: channel.id)
       expect(event).not_to be_nil
       expect(event.message.content).to eq(message)
     end
 
     it "waits for the reply (With block)" do
-      ESM::Test.response = message
-      ESM.discord_bot.wait_for_reply(user_id: user.id, channel_id: channel.id) do |event|
+      ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, channel: channel, content: message)
+      ESM.discord_bot.wait_for_reply(user_id: user.discord_id, channel_id: channel.id) do |event|
         expect(event).not_to be_nil
         expect(event.message.content).to eq(message)
       end
@@ -176,17 +178,15 @@ describe ESM::Discord::Bot do
 
     it "is waiting for a reply" do
       thread = Thread.new do
-        expect(ESM::Test.response).to be_nil
-
-        event = ESM.discord_bot.wait_for_reply(user_id: user.id, channel_id: channel.id)
+        event = ESM.discord_bot.wait_for_reply(user_id: user.discord_id, channel_id: channel.id)
         expect(event).not_to be_nil
         expect(event.message.content).to eq(message)
       end
 
       sleep(0.2)
-      expect(ESM.discord_bot.waiting_for_reply?(user_id: user.id, channel_id: channel.id)).to be(true)
+      expect(ESM.discord_bot.waiting_for_reply?(user_id: user.discord_id, channel_id: channel.id)).to be(true)
 
-      ESM::Test.response = message
+      ESM.discord_bot.test_inbox.queue_reply(from: user.discord_user, channel: channel, content: message)
       thread.join
     end
   end

@@ -85,7 +85,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
       include_context "connection"
 
       let!(:territory) do
-        owner_uid = ESM::Test.steam_uid
+        owner_uid = Faker::ESM.steam_uid
         create(
           :exile_territory,
           owner_uid: owner_uid,

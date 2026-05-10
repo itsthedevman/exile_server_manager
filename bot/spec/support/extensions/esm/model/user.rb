@@ -2,7 +2,7 @@
 
 module ESM
   class User
-    attr_accessor :guild_type, :role_id, :connected
+    attr_accessor :role_id, :connected
 
     def deregister!
       update!(steam_uid: nil)

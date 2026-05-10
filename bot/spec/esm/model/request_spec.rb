@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
 describe ESM::Request do
-  let!(:user_1) { ESM::Test.user }
-  let!(:user_2) { ESM::Test.user }
+  let!(:user_1) { create(:user) }
+  let!(:user_2) { create(:user) }
   let(:request) do
-    channel_id = [ESM::Community::ESM_SPAM_CHANNEL, ESM::Community::Secondary::SPAM_CHANNEL].sample
-
     create(
       :request,
       requestor_user_id: user_1.id,
       requestee_user_id: user_2.id,
-      requested_from_channel_id: channel_id,
+      requested_from_channel_id: ESM::Test::Snowflake.next,
       command_name: "id"
     )
   end

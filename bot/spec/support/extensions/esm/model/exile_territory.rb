@@ -120,7 +120,7 @@ module ESM
     alias_method :add_builder!, :add_builders!
 
     def revoke_membership(steam_uid)
-      self.owner_uid = ESM::Test.steam_uid if owner_uid == steam_uid
+      self.owner_uid = Faker::ESM.steam_uid if owner_uid == steam_uid
       moderators.delete(steam_uid)
       build_rights.delete(steam_uid)
       save! if changed?

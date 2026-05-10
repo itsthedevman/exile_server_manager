@@ -136,7 +136,7 @@ describe ESM::Command::Server::Logs, category: "command" do
   end
 
   describe "V2", v2: true do
-    let!(:steam_uid) { ESM::Test.steam_uid }
+    let!(:steam_uid) { Faker::ESM.steam_uid }
 
     describe "#on_execute", requires_connection: true do
       include_context "connection"

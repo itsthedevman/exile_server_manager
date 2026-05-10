@@ -193,7 +193,7 @@ describe ESM::Command::Server::Reset, category: "command" do
 
       before do
         # So there is at least one non-stuck player
-        account = create(:exile_account, uid: ESM::Test.steam_uid)
+        account = create(:exile_account, uid: Faker::ESM.steam_uid)
         create(:exile_player, account_uid: account.uid)
       end
 
@@ -202,7 +202,7 @@ describe ESM::Command::Server::Reset, category: "command" do
 
         let!(:players) do
           5.times.map do
-            account = create(:exile_account, uid: ESM::Test.steam_uid)
+            account = create(:exile_account, uid: Faker::ESM.steam_uid)
 
             # Important bit here -> damage: 1
             create(:exile_player, account_uid: account.uid, damage: 1)
@@ -264,7 +264,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           let!(:arguments) { {target: player.account_uid, server_id: server.server_id} }
 
           let!(:player) do
-            account = create(:exile_account, uid: ESM::Test.steam_uid)
+            account = create(:exile_account, uid: Faker::ESM.steam_uid)
 
             # Important bit here -> damage: 1
             create(:exile_player, account_uid: account.uid, damage: 1)

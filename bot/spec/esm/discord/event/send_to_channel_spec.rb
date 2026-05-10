@@ -3,7 +3,7 @@
 describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
   include_context "connection"
 
-  let!(:channel) { ESM::Test.channel(in: community) }
+  let!(:channel) { community.discord_server.channels.first }
 
   before do
     server.update!(server_version: "2.0.0")

@@ -2,37 +2,46 @@
 
 class WebsocketClient
   module Responses
-    # This controls how the websocket server treats the command.
+    # Per-command response config.
     # Valid options:
-    #   send_ignore_message [Boolean] Does this command need to send the ignore message. This matches the expected behavior from the DLL
-    #   delay [Range] Delay sending the response by some random number between this range (in seconds). Simulates the delay from the Arma server
+    #   send_ignore_message [Boolean] Does this command need to send the ignore message first?
+    #     Matches the expected behavior from the DLL.
     CONFIG = {
       server_success_command: {},
       server_error_command: {},
       post_initialization: {send_ignore_message: true},
-      me: {delay: 0..1},
-      territories: {delay: 0..1},
-      pay: {send_ignore_message: true, delay: 0..3},
-      gamble: {send_ignore_message: true, delay: 0..3},
-      setterritoryid: {delay: 0..1},
-      add: {send_ignore_message: true, delay: 0..3},
-      allterritories: {send_ignore_message: true, delay: 0..3},
-      exec: {send_ignore_message: true, delay: 0..3},
-      promote: {send_ignore_message: true, delay: 0..3},
-      demote: {send_ignore_message: true, delay: 0..3},
-      remove: {send_ignore_message: true, delay: 0..3},
-      upgrade: {send_ignore_message: true, delay: 0..3},
-      restore: {delay: 0..1},
-      player: {send_ignore_message: true, delay: 0..3},
-      reward: {send_ignore_message: true, delay: 0..3},
-      info: {send_ignore_message: true, delay: 0..3},
-      stuck: {delay: 0..1},
-      reset: {delay: 0..1},
-      logs: {delay: 0..1}
+      me: {},
+      territories: {},
+      pay: {send_ignore_message: true},
+      gamble: {send_ignore_message: true},
+      setterritoryid: {},
+      add: {send_ignore_message: true},
+      allterritories: {send_ignore_message: true},
+      exec: {send_ignore_message: true},
+      promote: {send_ignore_message: true},
+      demote: {send_ignore_message: true},
+      remove: {send_ignore_message: true},
+      upgrade: {send_ignore_message: true},
+      restore: {},
+      player: {send_ignore_message: true},
+      reward: {send_ignore_message: true},
+      info: {send_ignore_message: true},
+      stuck: {},
+      reset: {},
+      logs: {},
+      base_v1: {}
     }.freeze
 
     def response_server_success_command
       send_response
+    end
+
+    # BaseV1 is the generic test command. The bot sends a base_v1 request, we
+    # acknowledge with an ignore so ServerRequest doesn't try to dispatch the
+    # response back into on_response (specs use BaseV1 for plumbing checks
+    # only and rarely set up a full current_user/command context).
+    def response_base_v1
+      send_response(ignore: true)
     end
 
     def response_server_error_command

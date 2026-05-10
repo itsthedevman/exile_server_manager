@@ -3,7 +3,9 @@
 describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   include_context "connection"
 
-  let!(:second_user) { ESM::Test.user }
+  # Multiple channels so the "separate channels" test can route to distinct ones.
+  let(:discord_server) { build(:discord_server, channels: %i[logging general]) }
+  let!(:second_user) { create(:user) }
   let!(:territory_owner) { user.steam_uid }
   let!(:territory_moderators) { [second_user.steam_uid] }
 
@@ -286,7 +288,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   end
 
   context "when the recipients have custom routes" do
-    let(:channel_id) { ESM::Test.channel(in: community).id }
+    let(:channel_id) { community.discord_server.channels.first.id }
     let(:destination_community) { community }
 
     before do
@@ -366,7 +368,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
             :user_notification_route,
             user: second_user,
             destination_community:,
-            channel_id: ESM::Test.channel(in: destination_community).id
+            channel_id: destination_community.discord_server.channels.last.id
           )
         ]
       end
@@ -403,7 +405,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
             user: second_user,
             destination_community:,
             channel_id:,
-            source_server_id: ESM::Test.server(for: community).id
+            source_server_id: create(:server, community_id: community.id).id
           )
         ]
       end

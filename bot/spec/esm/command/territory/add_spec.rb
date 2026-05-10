@@ -73,11 +73,13 @@ describe ESM::Command::Territory::Add, category: "command" do
           request = previous_command.request
           expect(request).not_to be_nil
 
+          # Reset before responding. With the synchronous V1 fake the response
+          # round-trip completes and queues follow-up deliveries immediately,
+          # so clearing AFTER respond would race the delivery_overseer.
+          ESM::Test.messages.clear
+
           # Respond to the request
           request.respond(true)
-
-          # Reset so we can track the response
-          ESM::Test.messages.clear
 
           # Wait for the server to respond
           wait_for { ESM::Test.messages.size }.to eq(2)
@@ -126,7 +128,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       include_context "connection"
 
       let!(:territory) do
-        owner_uid = ESM::Test.steam_uid
+        owner_uid = Faker::ESM.steam_uid
         create(
           :exile_territory,
           owner_uid: owner_uid,

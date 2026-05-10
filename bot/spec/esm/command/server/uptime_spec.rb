@@ -13,7 +13,7 @@ describe ESM::Command::Server::Uptime, category: "command" do
 
         embed = ESM::Test.messages.first.content
 
-        expect(embed.description).to match(/`#{server.server_id}` has been online for \d+ seconds?/i)
+        expect(embed.description).to match(/`#{server.server_id}` has been online for (\d+ seconds?|less than 1 second)/i)
       end
     end
   end

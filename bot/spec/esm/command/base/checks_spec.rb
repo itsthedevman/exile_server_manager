@@ -7,7 +7,7 @@ describe ESM::Command::Base::Checks do
 
   before do
     command.current_user = user
-    command.current_channel = ESM::Test.channel(in: community)
+    command.current_channel = community.discord_server.channels.first
   end
 
   describe "#registered_target_user!" do

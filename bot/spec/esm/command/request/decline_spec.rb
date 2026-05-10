@@ -5,14 +5,14 @@ describe ESM::Command::Request::Decline, category: "command" do
   include_examples "validate_command"
 
   describe "#execute" do
-    let!(:user_2) { ESM::Test.user }
+    let!(:user_2) { create(:user) }
 
     let!(:request) do
       create(
         :request,
         requestor_user_id: user.id,
         requestee_user_id: user_2.id,
-        requested_from_channel_id: ESM::Test.channel(in: community).id,
+        requested_from_channel_id: community.discord_server.channels.first.id,
         command_name: "id"
       )
     end

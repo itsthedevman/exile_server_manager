@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe Discordrb::User do
-  let!(:esm_user) { ESM::Test.user }
+  let!(:esm_user) { create(:user) }
   let!(:discord_user) { esm_user.discord_user }
 
   before do

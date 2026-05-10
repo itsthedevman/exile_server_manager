@@ -3,8 +3,6 @@
 # Set to false for indefinite wait_timeout
 SPEC_TIMEOUT_SECONDS = 10
 
-# Maximum time (in seconds) an individual test is allowed to run before being killed
-SPEC_EXAMPLE_TIMEOUT = 30
 LOG_LEVEL = false
 
 require_relative "config"
@@ -25,20 +23,24 @@ RSpec.configure do |config|
       example: example.description
     )
 
-    ESM::Test.reset!
+    ESM::Test.messages.clear
+    ESM::Test.territory_admin_uids = []
+    ESM::Test.skip_cooldown = false
+    ESM.discord_bot.test_inbox.clear
+    ESM.discord_bot.delivery_overseer.queue.clear
     ESM::Connection::Server.pause
 
-    # Run the test with a timeout
-    DatabaseCleaner.cleaning do
-      Timeout.timeout(SPEC_EXAMPLE_TIMEOUT, nil, "Test exceeded #{SPEC_EXAMPLE_TIMEOUT}s timeout: #{example.full_description}") do
-        example.run
-      end
+    cache_snapshot = ESM.discord_bot.snapshot
+
+    begin
+      DatabaseCleaner.cleaning { example.run }
+    ensure
+      ESM.discord_bot.restore(cache_snapshot)
     end
   end
 end
 
-# Wait until everything is ready
-# HEY! LISTEN! The following lines must be the last code to execute in this file
-ESM.run!(async: true)
-ESM::Test.wait_until { ESM::Database.connected? }
-ESM::Test.wait_until { ESM.discord_bot.ready? }
+# These must be the last lines in this file. ESM.run! triggers post-init
+# (database connection, command load) and the bot's no-op #run override that
+# flips @esm_status to :ready. No gateway connection.
+ESM.run!

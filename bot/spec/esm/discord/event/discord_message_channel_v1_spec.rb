@@ -10,7 +10,7 @@ describe ESM::Discord::Event::DiscordMessageChannelV1 do
 
   describe "Errors" do
     it "does not send to other community channel" do
-      params = OpenStruct.new(channelID: ESM::Community::Secondary::SPAM_CHANNEL, message: "TESTING!")
+      params = OpenStruct.new(channelID: ESM::Test::Snowflake.next, message: "TESTING!")
 
       expect { event(params).run! }.not_to raise_error
       wait_for { ESM::Test.messages.size }.to eq(1)

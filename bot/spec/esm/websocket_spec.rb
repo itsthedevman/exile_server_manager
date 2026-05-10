@@ -21,7 +21,7 @@ describe ESM::Websocket do
   end
 
   describe "Connections" do
-    let!(:second_community) { create(:secondary_community) }
+    let!(:second_community) { create(:community) }
     let!(:second_server) { create(:server, community_id: second_community.id) }
     let!(:second_connection) { WebsocketClient.new(second_server) }
 
@@ -50,7 +50,7 @@ describe ESM::Websocket do
     it "should deliver" do
       connection = ESM::Websocket.connections[esm_malden.server_id]
 
-      user = ESM::Test.user.discord_user
+      user = create(:user).discord_user
       command = ESM::Command::Test::BaseV1.new
 
       request = ESM::Websocket::Request.new(
@@ -63,7 +63,9 @@ describe ESM::Websocket do
 
       ESM::Websocket.deliver!(esm_malden.server_id, request)
 
-      expect(connection.requests.size).to eq(1)
+      # The synchronous fake processes the response immediately and clears the
+      # queue, so we verify via the most-recent-request handle instead.
+      expect(connection.last_request).to eq(request)
     end
   end
 
@@ -74,8 +76,7 @@ describe ESM::Websocket do
     end
 
     let!(:ws_connection) { ESM::Websocket.connections[esm_malden.server_id] }
-    let!(:channel) { ESM.discord_bot.channel(ESM::Community::ESM_SPAM_CHANNEL) }
-    let!(:discord_user) { user.discord_user }
+    let!(:channel) { esm_community.discord_server.channels.first }
 
     let(:request) do
       request = ESM::Websocket::Request.new(
@@ -130,7 +131,7 @@ describe ESM::Websocket do
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eq("#{discord_user.mention}, #{message.error}")
+      expect(error_message.description).to eq("#{user.discord_user.mention}, #{message.error}")
       expect(error_message.color).to eq("#c62551")
     end
 
@@ -149,7 +150,7 @@ describe ESM::Websocket do
       error_message = ESM::Test.messages.first.second
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eq("#{discord_user.mention}, #{message.parameters.first.error}")
+      expect(error_message.description).to eq("#{user.discord_user.mention}, #{message.parameters.first.error}")
       expect(error_message.color).to eq("#c62551")
     end
   end

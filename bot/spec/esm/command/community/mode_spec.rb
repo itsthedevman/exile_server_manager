@@ -2,7 +2,7 @@
 
 describe ESM::Command::Community::Mode, category: "command" do
   include_context "command" do
-    let!(:user_args) { [:owner] }
+    let(:user_is_owner) { true }
   end
 
   include_examples "validate_command", requires_registration: false
@@ -58,7 +58,7 @@ describe ESM::Command::Community::Mode, category: "command" do
       context "when there are servers" do
         before do
           # Create a server so there is one
-          ESM::Test.server(for: community)
+          create(:server, community_id: community.id)
         end
 
         it "raises an exception" do
@@ -77,7 +77,7 @@ describe ESM::Command::Community::Mode, category: "command" do
 
     context "when the user is not the owner" do
       it "raises an exception" do
-        non_owner = ESM::Test.user
+        non_owner = create(:user)
 
         execution_args = {
           user: non_owner,

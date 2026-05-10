@@ -80,7 +80,7 @@ describe ESM::Command::Server::Stuck, category: "command" do
       include_context "connection"
 
       let!(:player) do
-        account = create(:exile_account, uid: ESM::Test.steam_uid)
+        account = create(:exile_account, uid: Faker::ESM.steam_uid)
 
         # Important bit here -> damage: 1
         create(:exile_player, account_uid: account.uid, damage: 1)

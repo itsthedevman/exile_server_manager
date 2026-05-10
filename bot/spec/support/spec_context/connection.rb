@@ -1,9 +1,28 @@
 # frozen_string_literal: true
 
 RSpec.shared_context("connection") do
-  let!(:community) { ESM::Test.community }
-  let!(:user) { ESM::Test.user }
-  let!(:server) { ESM::Test.server(for: community) }
+  # When nested inside "command", inherit its community/user so the
+  # channel/discord_server/community/member lineage stays consistent. Without
+  # this, `Community.from_discord` first_or_initializes a fresh community with
+  # the schema default `player_mode_enabled: true` and admin command checks
+  # all fail with "not available in player mode".
+  let!(:community) do
+    super()
+  rescue NoMethodError
+    if respond_to?(:discord_server, true)
+      create(:community, discord_server: discord_server)
+    else
+      create(:community)
+    end
+  end
+  
+  let!(:user) do
+    super()
+  rescue NoMethodError
+    create(:user)
+  end
+
+  let!(:server) { create(:server, community_id: community.id) }
   let!(:connection_server) { ESM::Connection::Server }
 
   # Define this in your context and include any steam uids you'd like to be
@@ -15,7 +34,7 @@ RSpec.shared_context("connection") do
 
   let(:territory_moderators) { [] }
   let(:territory_build_rights) { [] }
-  let(:territory_owner) { ESM::Test.steam_uid }
+  let(:territory_owner) { Faker::ESM.steam_uid }
   let(:territory) do
     owner_uid = territory_owner
     create(

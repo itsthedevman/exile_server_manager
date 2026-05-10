@@ -155,7 +155,7 @@ describe ESM::Command::Server::Territories, category: "command" do
       context "when the player has territories" do
         let!(:territories) do
           territories = []
-          owner_uid = ESM::Test.steam_uid
+          owner_uid = Faker::ESM.steam_uid
 
           territories << create(
             :exile_territory,
@@ -173,8 +173,8 @@ describe ESM::Command::Server::Territories, category: "command" do
             server_id: server.id
           )
 
-          owner_uid = ESM::Test.steam_uid
-          moderator = ESM::Test.steam_uid
+          owner_uid = Faker::ESM.steam_uid
+          moderator = Faker::ESM.steam_uid
           territories << create(
             :exile_territory,
             owner_uid: owner_uid,

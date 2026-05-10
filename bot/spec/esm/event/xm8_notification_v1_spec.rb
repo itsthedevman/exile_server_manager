@@ -3,12 +3,13 @@
 describe ESM::Event::Xm8NotificationV1 do
   include_context "connection_v1"
 
-  let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server(for: community) }
-  let!(:user) { ESM::Test.user }
-  let!(:second_user) { ESM::Test.user }
+  let!(:community) { create(:community) }
+  let!(:server) { create(:server, community_id: community.id) }
+  let!(:user) { create(:user) }
+  let!(:second_user) { create(:user) }
   let!(:recipients) { [user.steam_uid, second_user.steam_uid] }
   let(:territory) { TerritoryGenerator.generate.to_ostruct }
+  let(:notification_channel_id) { community.discord_server.channels.first.id.to_s }
 
   def run_test(log_xm8_event: false, expected_messages: [])
     community.update(log_xm8_event: log_xm8_event)
@@ -58,7 +59,7 @@ describe ESM::Event::Xm8NotificationV1 do
         enabled: false,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL
+        channel_id: notification_channel_id
       )
 
       results = nil
@@ -73,7 +74,7 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL,
+        channel_id: notification_channel_id,
         user_accepted: false
       )
 
@@ -81,7 +82,7 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL,
+        channel_id: notification_channel_id,
         community_accepted: false
       )
 
@@ -97,14 +98,14 @@ describe ESM::Event::Xm8NotificationV1 do
         :user_notification_route,
         user: user,
         destination_community: community,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL
+        channel_id: notification_channel_id
       )
 
       create(
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL
+        channel_id: notification_channel_id
       )
 
       results = nil
@@ -122,15 +123,15 @@ describe ESM::Event::Xm8NotificationV1 do
         user: user,
         destination_community: community,
         source_server_id: server.id,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL
+        channel_id: notification_channel_id
       )
 
       create(
         :user_notification_route,
         user: second_user,
         destination_community: community,
-        source_server_id: ESM::Test.server(for: community).id,
-        channel_id: ESM::Community::ESM_SPAM_CHANNEL
+        source_server_id: create(:server, community_id: community.id).id,
+        channel_id: notification_channel_id
       )
 
       results = nil

@@ -3,12 +3,32 @@
 RSpec.shared_context("command") do
   attr_reader :previous_command
 
-  let!(:community) { ESM::Test.community }
-  let!(:user) { ESM::Test.user(*(respond_to?(:user_args) ? user_args : [])) }
-  let(:command_class) { described_class } # This can be overwritten
+  # Override in a spec when the user must be the discord_server's owner.
+  let(:user_is_owner) { false }
+
+  let(:discord_user) { build(:discord_user) }
+  let(:discord_server) do
+    build(
+      :discord_server,
+      channels: %i[general logging commands],
+      owner: user_is_owner ? discord_user : build(:discord_user)
+    )
+  end
+
+  let!(:community) { create(:community, discord_server: discord_server) }
+  let!(:user) do
+    build(:discord_member, server: discord_server, user: discord_user) unless user_is_owner
+
+    args = respond_to?(:user_args) ? user_args : []
+    create(:user, *args, discord_user: discord_user)
+  end
+  let(:command_class) { described_class }
   let(:command) { @previous_command || command_class.new }
-  let(:server) { ESM::Test.server(for: community) }
-  let(:second_user) { ESM::Test.user }
+  let(:server) { create(:server, community_id: community.id) }
+  let(:second_discord_user) { build(:discord_user) }
+  let!(:_register_second_member) { build(:discord_member, server: discord_server, user: second_discord_user) }
+  let(:second_user) { create(:user, discord_user: second_discord_user) }
+  let(:default_text_channel) { discord_server.channels.find { |channel| channel.name == "general" } || discord_server.channels.first }
 
   #
   # Executes the command as a user in a text or pm channel.
@@ -34,12 +54,12 @@ RSpec.shared_context("command") do
     command = command_class.new
 
     channel =
-      if (channel = opts.delete(:channel))
-        channel
+      if (override = opts.delete(:channel))
+        override
       elsif ESM::Command::Base::TEXT_CHANNEL_TYPES.include?(channel_type)
-        ESM::Test.data[user.guild_type][:channels].sample
+        default_text_channel
       else
-        user.discord_user.pm.id
+        send_as.discord_user.pm
       end
 
     channel = ESM.discord_bot.channel(channel) unless channel.is_a?(Discordrb::Channel)
@@ -86,7 +106,7 @@ RSpec.shared_context("command") do
       data[:data][:options] = [{type: 1, name: command.command_name, options: options}]
     end
 
-    respond_to_prompt(prompt_response) if prompt_response
+    respond_to_prompt(prompt_response, user: send_as, channel: channel) if prompt_response
 
     event = Discordrb::Events::ApplicationCommandEvent.new(data.deep_stringify_keys, ESM.discord_bot)
 
@@ -116,8 +136,9 @@ RSpec.shared_context("command") do
     wait_for { previous_command.timers.public_send(event.to_sym).finished? }.to be(true)
   end
 
-  def respond_to_prompt(response)
-    ESM::Test.response = response
+  def respond_to_prompt(response, user: discord_user, channel: default_text_channel)
+    discord_user_obj = user.respond_to?(:discord_user) ? user.discord_user : user
+    ESM.discord_bot.test_inbox.queue_reply(from: discord_user_obj, channel: channel, content: response)
   end
 
   def accept_request
@@ -132,6 +153,6 @@ RSpec.shared_context("command") do
         e.message
       end
 
-    ESM.discord_bot.deliver(message, to: ESM::Test.channel(in: community))
+    ESM.discord_bot.deliver(message, to: default_text_channel)
   end
 end

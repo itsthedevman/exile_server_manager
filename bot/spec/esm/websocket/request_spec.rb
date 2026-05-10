@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe ESM::Websocket::Request do
-  let(:user) { ESM::Test.user }
+  let(:user) { create(:user) }
 
   it "accepts string for command name" do
     request = ESM::Websocket::Request.new(

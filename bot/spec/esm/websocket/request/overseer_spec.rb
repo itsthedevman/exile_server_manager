@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 describe ESM::Websocket::Request::Overseer do
-  let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server(for: community) }
-  let!(:user) { ESM::Test.user }
+  let!(:community) { create(:community) }
+  let!(:server) { create(:server, community_id: community.id) }
+  let!(:user) { create(:user) }
   let!(:connection) { WebsocketClient.new(server) }
 
   before do

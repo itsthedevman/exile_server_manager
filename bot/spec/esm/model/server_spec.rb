@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 describe ESM::Server do
-  let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server(for: community) }
+  let!(:community) { create(:community) }
+  let!(:server) { create(:server, community_id: community.id) }
 
   describe "#correct" do
     subject(:server_id) { server.server_id }
