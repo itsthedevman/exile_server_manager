@@ -19,34 +19,34 @@ describe ESM::Discord::Bot do
         ESM.discord_bot.deliver("Hello!", to: channel.id.to_s)
         ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM.discord_bot.test_outbox.first
+        message = ESM.discord_bot.test_outbox.first
 
         # Channel tests
-        expect(message_array.first).not_to be_nil
-        expect(message_array.first).to be_kind_of(Discordrb::Channel)
-        expect(message_array.first.text?).to be(true)
+        expect(message.destination).not_to be_nil
+        expect(message.destination).to be_kind_of(Discordrb::Channel)
+        expect(message.destination.text?).to be(true)
 
         # Message tests
-        expect(message_array.second).not_to be_nil
-        expect(message_array.second).to be_kind_of(String)
-        expect(message_array.second).to eq("Hello!")
+        expect(message.content).not_to be_nil
+        expect(message.content).to be_kind_of(String)
+        expect(message.content).to eq("Hello!")
       end
 
       it "sends (User)" do
         ESM.discord_bot.deliver("Hello!", to: user.discord_id)
         ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM.discord_bot.test_outbox.first
+        message = ESM.discord_bot.test_outbox.first
 
         # Channel tests
-        expect(message_array.first).not_to be_nil
-        expect(message_array.first).to be_kind_of(Discordrb::Channel)
-        expect(message_array.first.pm?).to be(true)
+        expect(message.destination).not_to be_nil
+        expect(message.destination).to be_kind_of(Discordrb::Channel)
+        expect(message.destination.pm?).to be(true)
 
         # Message tests
-        expect(message_array.second).not_to be_nil
-        expect(message_array.second).to be_kind_of(String)
-        expect(message_array.second).to eq("Hello!")
+        expect(message.content).not_to be_nil
+        expect(message.content).to be_kind_of(String)
+        expect(message.content).to eq("Hello!")
       end
     end
 
@@ -61,35 +61,35 @@ describe ESM::Discord::Bot do
         ESM.discord_bot.deliver(embed, to: channel.id.to_s)
         ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM.discord_bot.test_outbox.first
+        message = ESM.discord_bot.test_outbox.first
 
         # Channel tests
-        expect(message_array.first).not_to be_nil
-        expect(message_array.first).to be_kind_of(Discordrb::Channel)
-        expect(message_array.first.text?).to be(true)
+        expect(message.destination).not_to be_nil
+        expect(message.destination).to be_kind_of(Discordrb::Channel)
+        expect(message.destination.text?).to be(true)
 
         # Message tests
-        expect(message_array.second).not_to be_nil
-        expect(message_array.second).to be_kind_of(ESM::Embed)
-        expect(message_array.second.title).to eq(embed.title)
-        expect(message_array.second.description).to eq(embed.description)
+        expect(message.content).not_to be_nil
+        expect(message.content).to be_kind_of(ESM::Embed)
+        expect(message.content.title).to eq(embed.title)
+        expect(message.content.description).to eq(embed.description)
       end
 
       it "sends (User)" do
         ESM.discord_bot.deliver("Hello!", to: user.discord_id)
         ESM.discord_bot.test_outbox.await_size(1)
 
-        message_array = ESM.discord_bot.test_outbox.first
+        message = ESM.discord_bot.test_outbox.first
 
         # Channel tests
-        expect(message_array.first).not_to be_nil
-        expect(message_array.first).to be_kind_of(Discordrb::Channel)
-        expect(message_array.first.pm?).to be(true)
+        expect(message.destination).not_to be_nil
+        expect(message.destination).to be_kind_of(Discordrb::Channel)
+        expect(message.destination.pm?).to be(true)
 
         # Message tests
-        expect(message_array.second).not_to be_nil
-        expect(message_array.second).to be_kind_of(String)
-        expect(message_array.second).to eq("Hello!")
+        expect(message.content).not_to be_nil
+        expect(message.content).to be_kind_of(String)
+        expect(message.content).to eq("Hello!")
       end
     end
   end
@@ -101,17 +101,17 @@ describe ESM::Discord::Bot do
       ESM.discord_bot.await_response(user.discord_id, expected: %w[good bad])
 
       ESM.discord_bot.test_outbox.await_size(1)
-      message_array = ESM.discord_bot.test_outbox.first
+      message = ESM.discord_bot.test_outbox.first
 
       # Channel
-      expect(message_array.first).not_to be_nil
-      expect(message_array.first).to be_kind_of(Discordrb::Channel)
-      expect(message_array.first.pm?).to be(true)
+      expect(message.destination).not_to be_nil
+      expect(message.destination).to be_kind_of(Discordrb::Channel)
+      expect(message.destination.pm?).to be(true)
 
       # Message tests
-      expect(message_array.second).not_to be_nil
-      expect(message_array.second).to be_kind_of(String)
-      expect(message_array.second).to eq("Hello, how are you today?")
+      expect(message.content).not_to be_nil
+      expect(message.content).to be_kind_of(String)
+      expect(message.content).to eq("Hello, how are you today?")
     end
 
     it "sends and replies (Incorrect)" do
@@ -131,15 +131,15 @@ describe ESM::Discord::Bot do
       ESM.discord_bot.test_outbox.await_size(2)
 
       # Channel
-      message_array = ESM.discord_bot.test_outbox.first
-      expect(message_array.destination).not_to be_nil
-      expect(message_array.destination).to be_kind_of(Discordrb::Channel)
-      expect(message_array.destination.text?).to be(true)
+      message = ESM.discord_bot.test_outbox.first
+      expect(message.destination).not_to be_nil
+      expect(message.destination).to be_kind_of(Discordrb::Channel)
+      expect(message.destination.text?).to be(true)
 
       # Message tests
-      expect(message_array.content).not_to be_nil
-      expect(message_array.content).to be_kind_of(String)
-      expect(message_array.content).to eq("Who wants to party?!?")
+      expect(message.content).not_to be_nil
+      expect(message.content).to be_kind_of(String)
+      expect(message.content).to eq("Who wants to party?!?")
 
       # Invalid response
       response = ESM.discord_bot.test_outbox.second.content

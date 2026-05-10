@@ -23,7 +23,7 @@ describe ESM::Event::Xm8NotificationV1 do
 
     # Check the embeds
     expected_messages.each_with_index do |message, index|
-      embed = ESM.discord_bot.test_outbox[index].second
+      embed = ESM.discord_bot.test_outbox[index].content
       expect(embed.title).to eq(message[:title])
       expect(embed.description).to eq(message[:description])
     end

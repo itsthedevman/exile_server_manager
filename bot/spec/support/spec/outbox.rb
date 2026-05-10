@@ -68,6 +68,7 @@ module Spec
 
       loop do
         return true if size >= n
+        
         if Time.now >= deadline
           raise "test_outbox#await_size: expected at least #{n} message(s), still at #{size} after #{timeout}s"
         end
@@ -94,6 +95,10 @@ module Spec
 
     def destinations
       to_a.map(&:destination)
+    end
+
+    def [](index)
+      to_a[index]
     end
 
     def first

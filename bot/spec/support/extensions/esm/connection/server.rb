@@ -8,15 +8,21 @@ module ESM
       end
 
       def pause
-        @server.block!
+        info!(state: :pausing)
 
+        @server.block!
         @connection_manager.disconnect_all
+
+        info!(state: :paused)
       end
 
       def resume
-        @connection_manager.disconnect_all
+        info!(state: :resuming)
 
+        @connection_manager.disconnect_all
         @server.unblock!
+
+        info!(state: :resumed)
       end
     end
   end
