@@ -1,3 +1,5 @@
+name: esm_arma
+
 services:
   arma_server:
     build: .
