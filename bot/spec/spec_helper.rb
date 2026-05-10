@@ -3,7 +3,7 @@
 # Set to false for indefinite wait_timeout
 SPEC_TIMEOUT_SECONDS = 10
 
-LOG_LEVEL = false
+LOG_LEVEL = ENV.fetch("LOG_LEVEL", false)
 
 require_relative "config"
 
