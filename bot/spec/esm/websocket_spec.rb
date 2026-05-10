@@ -14,7 +14,7 @@ describe ESM::Websocket do
     esm_malden_wsc.disconnect!
   end
 
-  it "should raise invalid key" do
+  it "raises invalid key" do
     bad_ws = WebsocketClient.new(OpenStruct.new(server_key: "Nope!", server_id: "Nope!"))
     expect(bad_ws).not_to be_nil
     wait_for { bad_ws.connected? }.to be(false)
@@ -33,11 +33,11 @@ describe ESM::Websocket do
       second_connection.disconnect!
     end
 
-    it "should add" do
+    it "adds" do
       expect(ESM::Websocket.connections[second_server.server_id]).not_to be_nil
     end
 
-    it "should remove" do
+    it "removes" do
       other_connection = ESM::Websocket.connections[second_server.server_id]
 
       expect(other_connection).not_to be_nil
@@ -47,7 +47,7 @@ describe ESM::Websocket do
   end
 
   describe "#deliver!" do
-    it "should deliver" do
+    it "delivers" do
       connection = ESM::Websocket.connections[esm_malden.server_id]
 
       user = create(:user).discord_user
@@ -107,7 +107,7 @@ describe ESM::Websocket do
     end
 
     # Ignored commands do not remove the request.
-    it "should handle ignored requests" do
+    it "handles ignored requests" do
       message = {
         commandID: request.id,
         ignore: true
@@ -118,7 +118,7 @@ describe ESM::Websocket do
       expect(ws_connection.requests.size).to eq(1)
     end
 
-    it "should send an error message (error)" do
+    it "sends an error message (error)" do
       message = {
         commandID: request.id,
         error: Faker::Lorem.sentence
@@ -135,7 +135,7 @@ describe ESM::Websocket do
       expect(error_message.color).to eq("#c62551")
     end
 
-    it "should send an error message (parameters)" do
+    it "sends an error message (parameters)" do
       message = {
         commandID: request.id,
         parameters: [{

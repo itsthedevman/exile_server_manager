@@ -52,19 +52,19 @@ describe ESM::Websocket::ServerRequest do
   end
 
   describe "#process" do
-    it "should do nothing (server command request)" do
+    it "does nothing (server command request)" do
       message = OpenStruct.new(command: "TESTING")
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
     end
 
-    it "should remove the request" do
+    it "removes the request" do
       message = OpenStruct.new(commandID: request.id, parameters: [])
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
       expect(connection.requests.size).to eq(0)
     end
 
-    it "should send the error (server error)" do
+    it "sends the error (server error)" do
       message = OpenStruct.new(commandID: request.id, error: "This is an error")
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
@@ -74,7 +74,7 @@ describe ESM::Websocket::ServerRequest do
       expect(embed.description).to match(/this is an error/i)
     end
 
-    it "should send the error (server command error)" do
+    it "sends the error (server command error)" do
       message = {commandID: request.id, error: "", parameters: [{error: "This is an error"}]}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
@@ -84,7 +84,7 @@ describe ESM::Websocket::ServerRequest do
       expect(embed.description).to match(/this is an error/i)
     end
 
-    it "should send the error (command error)" do
+    it "sends the error (command error)" do
       # Set a flag so our command raises an error
       previous_command.instance_variable_set(:@raise_error, true)
 

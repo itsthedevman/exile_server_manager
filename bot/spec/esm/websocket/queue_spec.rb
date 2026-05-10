@@ -10,19 +10,19 @@ describe ESM::Websocket::Queue do
   end
 
   describe "#<<" do
-    it "should add a request" do
+    it "adds a request" do
       expect(queue.size).to eq(1)
     end
   end
 
   describe "#first" do
-    it "should get the first request" do
+    it "gets the first request" do
       expect(queue.first.to_s).to eq(request.to_s)
     end
   end
 
   describe "#remove" do
-    it "should remove" do
+    it "removes" do
       queue.remove(request.id)
       expect(queue.size).to eq(0)
     end

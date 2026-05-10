@@ -2,7 +2,7 @@
 
 describe Discordrb::Channel do
   describe "TYPE_NAMES" do
-    it "should return the correct names" do
+    it "returns the correct names" do
       expect(Discordrb::Channel::TYPE_NAMES[0]).to eq(:text)
       expect(Discordrb::Channel::TYPE_NAMES[1]).to eq(:dm)
       expect(Discordrb::Channel::TYPE_NAMES[2]).to eq(:voice)

@@ -2,7 +2,7 @@
 
 describe Array do
   describe "#format" do
-    it "should return a formatted string" do
+    it "returns a formatted string" do
       string =
         [1, true, ["hello"]].join_map do |item|
           expect(item).not_to be_nil
@@ -14,7 +14,7 @@ describe Array do
   end
 
   describe "#total_size" do
-    it "should add up all items (strings)" do
+    it "adds up all items (strings)" do
       expect(["foo", "bar", "test", "!@#${%^&*()}"].total_size).to eq(22)
     end
   end

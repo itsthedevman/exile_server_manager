@@ -31,7 +31,7 @@ describe ESM::Command::Community::Whois, category: "command" do
     end
 
     context "returns information about the user" do
-      it "should run (discord id)" do
+      it "runs (discord id)" do
         execute!(arguments: {target: user.discord_id})
 
         response = latest_message

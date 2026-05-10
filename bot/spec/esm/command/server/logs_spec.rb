@@ -74,7 +74,7 @@ describe ESM::Command::Server::Logs, category: "command" do
       end
 
       context "when the target is an un-registered steam uid" do
-        it "should work with a non-registered steam uid" do
+        it "works with a non-registered steam uid" do
           steam_uid = second_user.steam_uid
           second_user.update(steam_uid: "")
 

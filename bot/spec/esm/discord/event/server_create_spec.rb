@@ -5,15 +5,15 @@ describe ESM::Discord::Event::ServerCreate do
   let!(:event) { ESM::Discord::Event::ServerCreate.new(discord_server) }
   let(:community) { ESM::Community.find_by_guild_id(discord_server.id.to_s) }
 
-  it "should be valid" do
+  it "is valid" do
     expect(event).not_to be_nil
   end
 
-  it "should create a community" do
+  it "creates a community" do
     expect(community).not_to be_nil
   end
 
-  it "should send server owner welcome" do
+  it "sends server owner welcome" do
     expect { event.run! }.not_to raise_error
     ESM.discord_bot.test_outbox.await_size(1)
 
