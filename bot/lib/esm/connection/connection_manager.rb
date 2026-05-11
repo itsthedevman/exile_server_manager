@@ -20,6 +20,12 @@ module ESM
       end
 
       def stop
+        info!(
+          state: :stopping,
+          lobby_size: @lobby.size,
+          connection_size: @connections.size
+        )
+
         @lobby_task.shutdown
         @heartbeat.shutdown
 
@@ -32,7 +38,14 @@ module ESM
       end
 
       def on_connect(socket)
-        @lobby << Client.new(socket)
+        client = Client.new(socket)
+        @lobby << client
+
+        info!(
+          state: :lobby_admitted,
+          address: client.address,
+          lobby_size: @lobby.size
+        )
       end
 
       def on_initialize(client)
@@ -40,13 +53,32 @@ module ESM
 
         @lobby.delete(client)
         @connections[client.public_id] = client
+
+        info!(
+          state: :authenticated,
+          address: client.address,
+          public_id: client.public_id,
+          server_id: client.server_id,
+          lobby_size: @lobby.size,
+          connection_size: @connections.size
+        )
       end
 
       def on_disconnect(client)
         @ids_to_check.delete(client.public_id)
 
-        @lobby.delete(client)
-        @connections.delete(client.public_id)
+        in_lobby = @lobby.delete(client)
+        was_connected = !@connections.delete(client.public_id).nil?
+
+        info!(
+          state: :removed,
+          address: client.address,
+          public_id: client.public_id,
+          server_id: client.server_id,
+          from: (in_lobby ? :lobby : (was_connected ? :connections : :untracked)),
+          lobby_size: @lobby.size,
+          connection_size: @connections.size
+        )
       end
 
       private
@@ -61,6 +93,13 @@ module ESM
         # Hasn't timed out yet, add it back to the top of the array
         return @lobby << client unless timed_out
 
+        info!(
+          state: :lobby_timeout,
+          address: client.address,
+          age: Time.current - client.connected_at,
+          timeout: @lobby_timeout
+        )
+
         client.close
       end
 
@@ -74,6 +113,12 @@ module ESM
         return if client.nil?
         return @ids_to_check << id if client.recent_heartbeat?
 
+        trace!(
+          state: :heartbeat_dispatch,
+          public_id: id,
+          server_id: client.server_id
+        )
+
         @pool.post do
           response = client.write(type: :heartbeat).wait_for_response(@heartbeat_timeout)
 
@@ -83,6 +128,14 @@ module ESM
 
             return
           end
+
+          warn!(
+            state: :heartbeat_failed,
+            public_id: id,
+            server_id: client.server_id,
+            timeout: @heartbeat_timeout,
+            reason: response.reason
+          )
 
           client.close
         end

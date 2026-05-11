@@ -30,14 +30,16 @@ module ESM
         @task = Concurrent::TimerTask.execute(execution_interval:) { on_connect }
         @task.add_observer(ErrorHandler.new)
 
-        info!(status: :started)
+        info!(status: :started, port: ESM.config.ports.connection_server)
       end
 
       def stop
+        info!(status: :stopping)
         @connection_manager.stop
 
         @server.close
         @task.shutdown
+        info!(status: :stopped)
       end
 
       def client(id)
@@ -49,6 +51,11 @@ module ESM
       def on_connect
         socket = @server.accept
         return unless socket.is_a?(TCPSocket)
+
+        info!(
+          state: :accepted,
+          peer: socket.peeraddr(false)[2..3].join(":")
+        )
 
         @connection_manager.on_connect(socket)
       end

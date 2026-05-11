@@ -15,6 +15,14 @@ module ESM
           request = read
           return if request.nil?
 
+          trace!(
+            address:,
+            public_id:,
+            state: :request_received,
+            type: request.type,
+            request_id: request.id
+          )
+
           @thread_pool.post do
             ESM::Database.with_connection do
               process_message(request)
@@ -35,9 +43,14 @@ module ESM
             on_request(request.content)
           end
         rescue ESM::Exception::InvalidAccessKey
+          warn!(
+            address:,
+            state: :auth_rejected,
+            reason: :invalid_access_key
+          )
           close
         rescue ESM::Exception::ClosableError => e
-          warn!(error: e)
+          warn!(address:, public_id:, error: e)
           close
         rescue ESM::Exception::SendableError => e
           send_error(e.data)
@@ -86,6 +99,14 @@ module ESM
             .set_type(:init)
             .set_data(indices: nonce_indices, session_id:)
 
+          info!(
+            address:,
+            public_id:,
+            server_id:,
+            state: :handshake_dispatch,
+            timeout: @config.response_timeout
+          )
+
           # This doesn't use #send_request because it needs to hook into the promise to immediately
           # swap the nonce to the new one before the client has time to respond.
           # Ignorance is bliss but this shouldn't be a race condition due to network lag
@@ -94,7 +115,23 @@ module ESM
             .then { |_| @encryption = Encryption.new(secret_key, nonce_indices:, session_id:) }
             .wait_for_response(@config.response_timeout)
 
-          raise ESM::Exception::RejectedPromise, response.reason if response.rejected?
+          if response.rejected?
+            warn!(
+              address:,
+              public_id:,
+              server_id:,
+              state: :handshake_rejected,
+              reason: response.reason
+            )
+            raise ESM::Exception::RejectedPromise, response.reason
+          end
+
+          info!(
+            address:,
+            public_id:,
+            server_id:,
+            state: :handshake_complete
+          )
 
           # Ledger doesn't care what object it is, so long as it responds to #id
           @ledger.remove(message)
@@ -102,6 +139,13 @@ module ESM
         end
 
         def initialize!(model)
+          info!(
+            address:,
+            public_id:,
+            server_id:,
+            state: :initialize_dispatch
+          )
+
           message = send_request(type: :initialize)
           ESM::Event::ServerInitialization.new(self, model, message).run!
 

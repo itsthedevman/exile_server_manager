@@ -40,6 +40,14 @@ module ESM
       end
 
       def close(reason = "")
+        info!(
+          address:,
+          public_id:,
+          server_id:,
+          state: :closing,
+          reason: reason.presence
+        )
+
         @socket.shutdown
         @socket.close
 
