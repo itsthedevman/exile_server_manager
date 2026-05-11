@@ -35,3 +35,6 @@ class SignalHandler
     exit
   end
 end
+
+# Skip in test mode so RSpec can exit correctly
+SignalHandler.start unless ENV["ESM_ENV"] == "test"

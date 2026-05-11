@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-timer = Timer.start!
-
 require "active_record_query_trace"
 require "awesome_print"
 
@@ -20,5 +18,3 @@ Discordrb::LOGGER.debug = false
 
 # ActiveRecord logging
 ActiveRecord::Base.logger = ESM.logger
-
-info!("Completed in #{timer.stop!}s")
