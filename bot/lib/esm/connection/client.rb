@@ -58,6 +58,8 @@ module ESM
         ESM::Connection::Server.on_disconnect(self)
 
         @task.shutdown
+        @thread_pool&.shutdown
+        @thread_pool&.wait_for_termination(0.1)
       end
 
       def send_message(message, **)
