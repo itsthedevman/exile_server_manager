@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return unless ESM.env.development?
+
 require "active_record_query_trace"
 require "awesome_print"
 
