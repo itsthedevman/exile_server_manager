@@ -71,15 +71,15 @@ module ESM
     end
 
     def env
-      raise "ESM.env - not implemented"
+      raise "ESM.env - not implemented. Has ESM not been loaded?"
     end
 
     def config
-      raise "ESM.config - not implemented"
+      raise "ESM.config - not implemented. Has ESM not been loaded?"
     end
 
     def backtrace_cleaner
-      raise "ESM.backtrace_cleaner - not implemented"
+      raise "ESM.backtrace_cleaner - not implemented. Has ESM not been loaded?"
     end
 
     private
