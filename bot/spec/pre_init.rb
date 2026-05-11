@@ -55,7 +55,7 @@ Dir[ESM.root.join("spec", "support", "extensions", "**", "*.rb")]
 ESM::Command.load
 
 ESM.logger.level =
-  case LOG_LEVEL.to_sym
+  case LOG_LEVEL
   when :trace
     Logger::TRACE
   when :debug
