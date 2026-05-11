@@ -87,6 +87,11 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 
                     info!("[connect] Dialing the bot's number...");
 
+                    // Stale connection cleanup
+                    if let Some(stale) = lock!(ENDPOINT).take() {
+                        let _ = lock!(HANDLER).network().remove(stale.resource_id());
+                    }
+
                     match lock!(HANDLER)
                         .network()
                         .connect(Transport::Tcp, server_address)
@@ -121,8 +126,8 @@ async fn routing_thread(mut receiver: UnboundedReceiver<BotRequest>) {
 fn listener_thread(listener: NodeListener<()>) {
     let task = listener.for_each_async(|event| match event.network() {
         NetEvent::Accepted(_, _) => unreachable!(),
-        NetEvent::Connected(_, connected) => on_connect(connected),
-        NetEvent::Disconnected(_) => on_disconnect(),
+        NetEvent::Connected(endpoint, connected) => on_connect(endpoint, connected),
+        NetEvent::Disconnected(endpoint) => on_disconnect(endpoint),
 
         NetEvent::Message(_, incoming_data) => {
             let incoming_data = incoming_data.to_owned();
@@ -312,14 +317,28 @@ fn ready(handler: &NodeHandler<()>, endpoint: Option<Endpoint>) -> bool {
     }
 }
 
-fn on_connect(connected: bool) {
-    trace!("[on_connect] Are we connected? {connected}");
+fn on_connect(endpoint: Endpoint, connected: bool) {
+    trace!("[on_connect] endpoint={:?} connected={connected}", endpoint);
 
-    // Make sure we are connected first
     if !connected {
-        on_disconnect();
+        on_disconnect(endpoint);
         return;
     };
+
+    // Stale connection cleanup
+    {
+        let current = *lock!(ENDPOINT);
+        if matches!(current, Some(e) if e != endpoint) {
+            trace!(
+                "[on_connect] Ignoring stale endpoint {:?} (current is {:?})",
+                endpoint,
+                current
+            );
+
+            let _ = lock!(HANDLER).network().remove(endpoint.resource_id());
+            return;
+        }
+    }
 
     if !lock!(TOKEN_MANAGER).reload().valid() {
         error!("❌ Cannot start connection process - Invalid \"esm.key\" detected - Please re-download your server key from the admin dashboard (https://esmbot.com/dashboard).");
@@ -383,7 +402,25 @@ fn on_request(incoming_data: Vec<u8>) -> ESMResult {
     }
 }
 
-fn on_disconnect() {
+fn on_disconnect(endpoint: Endpoint) {
+    // Stale connection cleanup
+    {
+        let mut current = lock!(ENDPOINT);
+        match *current {
+            Some(e) if e != endpoint => {
+                trace!(
+                    "[on_disconnect] Ignoring stale endpoint {:?} (current is {:?})",
+                    endpoint,
+                    *current
+                );
+                return;
+            }
+            _ => {
+                *current = None;
+            }
+        }
+    }
+
     crate::READY.store(false, Ordering::SeqCst);
     CONNECTED.store(false, Ordering::SeqCst);
 
