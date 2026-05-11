@@ -1,12 +1,19 @@
 # frozen_string_literal: true
 
+#
+# Development-only setup: AR query backtraces, verbose ESM logging, and
+# awesome_print loaded for nicer console output. Top-level `return` exits
+# the require early in any non-development environment.
+#
+
 return unless ESM.env.development?
 
 require "active_record_query_trace"
 require "awesome_print"
 
-# Allows seeing the backtrace for queries
-# Only use lines that pertain to ESM
+# Shows the originating call site for every AR query, filtered to ESM
+# code so the output doesn't drown in gem internals. Gated behind `TRACE=true`
+# because the backtrace lookup is expensive enough to matter at dev volume.
 ActiveRecordQueryTrace.enabled = ENV["TRACE"] == "true"
 ActiveRecordQueryTrace.level = :custom
 ActiveRecordQueryTrace.backtrace_cleaner = lambda do |trace|
@@ -15,8 +22,7 @@ end
 
 ESM.logger.level = Logger::TRACE
 
-# Enable discordrb logging
+# discordrb's debug stream is extremely noisy and rarely useful even in dev.
 Discordrb::LOGGER.debug = false
 
-# ActiveRecord logging
 ActiveRecord::Base.logger = ESM.logger

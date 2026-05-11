@@ -1,5 +1,23 @@
 # frozen_string_literal: true
 
+#
+# Configures (but does not yet activate) the Zeitwerk autoloader. The
+# actual `loader.setup` + `loader.eager_load` happens later in {ESM.load!},
+# which {ESM.run!} triggers at boot. Tests skip autoload setup entirely.
+#
+# What's configured here:
+#
+#   * Inflector overrides for non-standard casing (ESM, XM8, API, JSON).
+#   * `collapse` so `lib/esm/model/server.rb` defines `ESM::Server` rather
+#     than `ESM::Model::Server`.
+#   * `push_dir` for jobs so they're loaded at the root namespace
+#     (`SomeJob` rather than `ESM::Jobs::SomeJob`).
+#   * `ignore` for everything loaded manually in `02_manual_loads.rb` or
+#     reopened in `pre_init/05_core_extensions.rb`, plus the `pre_init/`
+#     and `post_init/` directories themselves (they're scripts, not class
+#     definitions, and would confuse Zeitwerk's file = constant rule).
+#
+
 ESM.loader.tap do |loader|
   loader.inflector.inflect(
     "esm" => "ESM",
@@ -16,7 +34,9 @@ ESM.loader.tap do |loader|
   # ESM::Jobs::SomeJob -> SomeJob
   loader.push_dir(ESM.root.join("lib", "esm", "jobs"))
 
-  # I very must dislike this.
+  # Files and directories already loaded manually (or reopened, in the case
+  # of extensions). The autoloader would either double-load or raise without
+  # these exclusions.
   loader.ignore(ESM.root.join("lib", "esm", "command", "base.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "command", "base"))
   loader.ignore(ESM.root.join("lib", "esm", "database.rb"))
