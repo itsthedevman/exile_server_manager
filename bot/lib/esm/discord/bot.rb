@@ -148,8 +148,8 @@ module ESM
       end
 
       def esm_server_update(event)
-        # Raised when a Discord server is updated. 
-        ESM::Discord::Event::ServerUpdate.new(event).run!
+        # Raised when a Discord server is updated.
+        ESM::Discord::Event::ServerUpdate.new(event.server).run!
       end
 
       def esm_user_ban(event)
