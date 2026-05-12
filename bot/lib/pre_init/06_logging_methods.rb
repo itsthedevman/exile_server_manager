@@ -14,10 +14,9 @@
       end
 
       caller_data = caller_locations(1, 1).first
-      caller_class = caller_data.path.sub("\#{ESM.root}/lib/", "").sub(".rb", "").classify
-      caller_method = caller_data.label.gsub("block in ", "")
+      caller_label = caller_data.label.gsub("block in ", "")
 
-      ESM.logger.#{severity}("\#{caller_class}#\#{caller_method}:\#{caller_data.lineno}") do
+      ESM.logger.#{severity}("[line:\#{caller_data.lineno}]\#{caller_label}") do
         if content.is_a?(Hash)
           ESM::JSON.pretty_generate(content).presence || ""
         else
