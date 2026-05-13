@@ -13,7 +13,7 @@ describe ESM::Command::General::Register, category: "command" do
       it "gives the user information about registering" do
         execute!
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
 
         # Docstring adds a newline to the end of the string. Rspec will fail the test but won't say why
         expectation = <<~STRING.chomp
@@ -35,7 +35,7 @@ describe ESM::Command::General::Register, category: "command" do
       it "gives the user the registration link" do
         execute!
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed.description).to eq(
           "Hey #{user.mention}, it looks like you are already registered with me. You can view all of my commands using `/help commands`.\nLooking for the registration link? It's https://www.esmbot.com/register"
         )

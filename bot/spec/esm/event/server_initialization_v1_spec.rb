@@ -42,7 +42,7 @@ describe ESM::Event::ServerInitializationV1 do
       wsc.disconnect!
     end
 
-    it "should valid" do
+    it "is valid" do
       expect(event).not_to be_nil
     end
 
@@ -51,12 +51,12 @@ describe ESM::Event::ServerInitializationV1 do
         server.reload
       end
 
-      it "should have updated the server" do
+      it "updates the server" do
         expect(server.server_name).to eq(packet.server_name)
         expect(server.server_start_time).to eq(DateTime.parse(packet.server_start_time).utc)
       end
 
-      it "should have updated the server settings" do
+      it "updates the server settings" do
         settings = server.server_setting
 
         expect(settings.territory_price_per_object).to eq(packet.price_per_object)
@@ -65,7 +65,7 @@ describe ESM::Event::ServerInitializationV1 do
         expect(settings.server_restart_min).to eq(packet.server_restart.second)
       end
 
-      it "should have created territories" do
+      it "creates territories" do
         expect(ESM::Territory.where(server_id: server.id).size).to eq(10)
 
         packet_territories = packet.to_h.select { |key, _| key.to_s.starts_with?("territory_level_") }
@@ -88,7 +88,7 @@ describe ESM::Event::ServerInitializationV1 do
         reward.reload
       end
 
-      it "should be valid" do
+      it "is valid" do
         member = user.discord_user.on(community.discord_server)
         expect(event.packet.territory_admins).to eq("[\"#{user.steam_uid}\"]") if member && (member.owner? || community.territory_admin_ids.any? { |id| member.role?(id) })
 

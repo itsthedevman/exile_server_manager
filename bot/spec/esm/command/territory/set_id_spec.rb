@@ -21,9 +21,9 @@ describe ESM::Command::Territory::SetId, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/you can now use this id wherever/i)
           expect(embed.color).to eq(ESM::Color::Toast::GREEN)
         end
@@ -74,9 +74,9 @@ describe ESM::Command::Territory::SetId, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/some reason/i)
           expect(embed.color).to eq(ESM::Color::Toast::RED)
         end
@@ -97,9 +97,9 @@ describe ESM::Command::Territory::SetId, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/you are not allowed to do that/i)
           expect(embed.color).to eq(ESM::Color::Toast::RED)
         end
@@ -141,7 +141,7 @@ describe ESM::Command::Territory::SetId, category: "command" do
           territory.reload
 
           expect(territory.esm_custom_id).to eq(new_territory_id)
-          expect(ESM::Test.messages.retrieve("ID is now")).not_to be(nil)
+          expect(ESM.discord_bot.test_outbox.retrieve("ID is now")).not_to be(nil)
         end
       end
 

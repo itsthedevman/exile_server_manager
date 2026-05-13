@@ -7,7 +7,7 @@ describe ESM::Message::Player, v2: true do
     subject(:player) { described_class.from(user) }
 
     context "when the input is an instance of ESM::User" do
-      let(:user) { ESM::Test.user }
+      let(:user) { create(:user) }
 
       it "uses the data from the User object" do
         expect(player).to be_instance_of(described_class)
@@ -20,7 +20,7 @@ describe ESM::Message::Player, v2: true do
     end
 
     context "when the input is an instance of ESM::User::Ephemeral" do
-      let(:user) { ESM::User::Ephemeral.new(ESM::Test.steam_uid) }
+      let(:user) { ESM::User::Ephemeral.new(Faker::Steam.uid) }
 
       it "uses the steam_uid for most attributes" do
         expect(player).to be_instance_of(described_class)

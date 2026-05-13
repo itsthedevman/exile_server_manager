@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 describe ESM::Websocket::Request::Overseer do
-  let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server(for: community) }
-  let!(:user) { ESM::Test.user }
+  let!(:community) { create(:community) }
+  let!(:server) { create(:server, community_id: community.id) }
+  let!(:user) { create(:user) }
   let!(:connection) { WebsocketClient.new(server) }
 
   before do
@@ -28,13 +28,13 @@ describe ESM::Websocket::Request::Overseer do
       end
     end
 
-    it "should not time out" do
+    it "does not time out" do
       expect(server_connection.requests.size).to eq(iterations)
       sleep(1)
       expect(server_connection.requests.size).to eq(iterations)
     end
 
-    it "should remove the timed out request" do
+    it "removes the timed out request" do
       execute!
 
       server_connection.requests << ESM::Websocket::Request.new(user: user.discord_user, command: previous_command, channel: nil, parameters: nil, timeout: 0)
@@ -42,8 +42,8 @@ describe ESM::Websocket::Request::Overseer do
       expect(server_connection.requests.size).to eq(iterations + 1)
       sleep(1)
       expect(server_connection.requests.size).to eq(iterations)
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      expect(ESM::Test.messages.first.content.description).to match(/never replied to your command/i)
+      ESM.discord_bot.test_outbox.await_size(1)
+      expect(ESM.discord_bot.test_outbox.first.content.description).to match(/never replied to your command/i)
     end
   end
 end

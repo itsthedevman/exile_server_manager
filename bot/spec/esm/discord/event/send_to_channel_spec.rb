@@ -3,7 +3,7 @@
 describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
   include_context "connection"
 
-  let!(:channel) { ESM::Test.channel(in: community) }
+  let!(:channel) { community.discord_server.channels.first }
 
   before do
     server.update!(server_version: "2.0.0")
@@ -21,9 +21,9 @@ describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
         )
 
       described_class.new(server, inbound_message).run!
-      wait_for { ESM::Test.messages }.not_to be_blank
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_blank
 
-      message = ESM::Test.messages.first
+      message = ESM.discord_bot.test_outbox.first
       expect(message).not_to be_nil
       expect(message.content).to eq("*Sent from `#{server.server_id}`*\n#{inbound_message.data.content}")
     end
@@ -49,9 +49,9 @@ describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
         )
 
       described_class.new(server, inbound_message).run!
-      wait_for { ESM::Test.messages }.not_to be_blank
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_blank
 
-      message = ESM::Test.messages.first
+      message = ESM.discord_bot.test_outbox.first
       expect(message).not_to be_nil
 
       embed = message.content
@@ -83,9 +83,9 @@ describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
         )
 
       described_class.new(server, inbound_message).run!
-      wait_for { ESM::Test.messages }.not_to be_blank
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_blank
 
-      message = ESM::Test.messages.first
+      message = ESM.discord_bot.test_outbox.first
       expect(message).not_to be_nil
 
       expect(message.content).to match(%r{hi there!\nyour server `#{server.server_id}` has encountered an error that requires your attention. please open `esm.log` located in \[`@esm/logs/`\]\(or the pre-configured log file path\) and search for `[\w-]{36}` for the full error.}i)
@@ -109,9 +109,9 @@ describe ESM::Discord::Event::SendToChannel, :requires_connection, v2: true do
         )
 
       described_class.new(server, inbound_message).run!
-      wait_for { ESM::Test.messages }.not_to be_blank
+      wait_for { ESM.discord_bot.test_outbox }.not_to be_blank
 
-      message = ESM::Test.messages.first
+      message = ESM.discord_bot.test_outbox.first
       expect(message).not_to be_nil
 
       embed = message.content

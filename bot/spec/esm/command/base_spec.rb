@@ -177,7 +177,7 @@ describe ESM::Command::Base do
   end
 
   describe "#target_user" do
-    let!(:secondary_user) { ESM::Test.user }
+    let!(:secondary_user) { create(:user) }
 
     include_context "command" do
       let!(:command_class) { ESM::Command::Test::TargetCommand }
@@ -254,7 +254,7 @@ describe ESM::Command::Base do
   end
 
   describe "#target_uid" do
-    let!(:secondary_user) { ESM::Test.user }
+    let!(:secondary_user) { create(:user) }
 
     include_context "command" do
       let!(:command_class) { ESM::Command::Test::TargetCommand }
@@ -371,9 +371,9 @@ describe ESM::Command::Base do
 
       it "send error (StandardError)" do
         execute!(command_class: ESM::Command::Test::ErrorCommand, handle_error: true)
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        error = ESM::Test.messages.first.content
+        error = ESM.discord_bot.test_outbox.first.content
         expect(error.description).to match(
           /an error occurred while processing your request.[[:space:]]Will you please join my \[Discord\]\(https...esmbot.com.join\) and post the following error code in the `#get-help-here` channel so my developer can fix it for you\?[[:space:]]Thank you![[:space:]]```\w+```/i
         )
@@ -397,7 +397,7 @@ describe ESM::Command::Base do
 
     before do
       command.current_user = user
-      command.current_channel = ESM::Test.channel(in: community)
+      command.current_channel = community.discord_server.channels.first
     end
 
     it "raises the translation" do
@@ -551,7 +551,7 @@ describe ESM::Command::Base do
     end
 
     let(:query_hash) { command.current_cooldown_query.where_values_hash.symbolize_keys }
-    let!(:target_community) { ESM::Test.second_community }
+    let!(:target_community) { create(:community) }
 
     before do
       command.requirements.unset(:registration)
@@ -668,10 +668,24 @@ describe ESM::Command::Base do
   describe "Command Permissions" do
     include_context "command" do
       let!(:command_class) { ESM::Command::Test::CommunityCommand }
+      let(:discord_server) do
+        build(
+          :discord_server,
+          channels: %i[general logging commands],
+          roles: %i[allowlisted],
+          owner: user_is_owner ? discord_user : build(:discord_user)
+        )
+      end
     end
 
     let(:configuration) { ESM::CommandConfiguration.where(command_name: command.command_name).first }
     let(:allowlisted_role_ids) { community.role_ids }
+    let(:allowlisted_role) { discord_server.roles.find { |role| role.name == "allowlisted" } }
+    let(:role_user) do
+      role_discord_user = build(:discord_user)
+      build(:discord_member, server: discord_server, user: role_discord_user, roles: [allowlisted_role])
+      create(:user, discord_user: role_discord_user)
+    end
 
     describe "Text Channel" do
       describe "Allowed" do
@@ -687,7 +701,6 @@ describe ESM::Command::Base do
         end
 
         it "enabled: true, allowlist_enabled: true, allowlisted: true, allowed: true" do
-          role_user = ESM::Test.user(:with_role)
           configuration.update!(
             enabled: true,
             allowlist_enabled: true,
@@ -736,7 +749,7 @@ describe ESM::Command::Base do
           }.to raise_error(ESM::Exception::CheckFailureNoMessage)
 
           # It did not send a message
-          expect(ESM::Test.messages.size).to eq(0)
+          expect(ESM.discord_bot.test_outbox.size).to eq(0)
         end
 
         it "enabled: false, allowlist_enabled: false, allowlisted: false, allowed: true" do
@@ -805,7 +818,6 @@ describe ESM::Command::Base do
         end
 
         it "enabled: true, allowlist_enabled: true, allowlisted: false, allowed: true" do
-          role_user = ESM::Test.user(:with_role)
           configuration.update!(
             enabled: true,
             allowlist_enabled: true,
@@ -847,7 +859,6 @@ describe ESM::Command::Base do
         end
 
         it "enabled: true, allowlist_enabled: true, allowlisted: true, allowed: true" do
-          role_user = ESM::Test.user(:with_role)
           configuration.update!(
             enabled: true,
             allowlist_enabled: true,
@@ -870,7 +881,6 @@ describe ESM::Command::Base do
         end
 
         it "enabled: true, allowlist_enabled: true, allowlisted: true, allowed: false" do
-          role_user = ESM::Test.user(:with_role)
           configuration.update!(
             enabled: true,
             allowlist_enabled: true,
@@ -983,7 +993,6 @@ describe ESM::Command::Base do
         end
 
         it "enabled: true, allowlist_enabled: true, allowlisted: false, allowed: true" do
-          role_user = ESM::Test.user(:with_role)
           configuration.update!(
             enabled: true,
             allowlist_enabled: true,
@@ -1009,7 +1018,7 @@ describe ESM::Command::Base do
     end
 
     let!(:player_community) { community }
-    let(:server_community) { ESM::Test.second_community }
+    let(:server_community) { create(:community) }
 
     before do
       player_community.update!(player_mode_enabled: true)
@@ -1051,7 +1060,7 @@ describe ESM::Command::Base do
     it "does not allow running commands for other communities in another server community's text channels" do
       expect {
         execute!(
-          channel: ESM::Test.channel(in: server_community),
+          channel: server_community.discord_server.channels.first,
           arguments: {
             community_id: player_community.community_id
           }
@@ -1113,10 +1122,10 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(true)
 
-      wait_for { ESM::Test.messages.size }.to eq(2)
+      ESM.discord_bot.test_outbox.await_size(2)
 
-      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
-      expect(ESM::Test.messages.second.second).to eq("accepted")
+      expect(ESM.discord_bot.test_outbox.first.content).to be_a(ESM::Embed)
+      expect(ESM.discord_bot.test_outbox.second.content).to eq("accepted")
     end
 
     it "is declined" do
@@ -1125,10 +1134,10 @@ describe ESM::Command::Base do
       request = ESM::Request.first
       request.respond(false)
 
-      wait_for { ESM::Test.messages.size }.to eq(2)
+      ESM.discord_bot.test_outbox.await_size(2)
 
-      expect(ESM::Test.messages.first.second).to be_a(ESM::Embed)
-      expect(ESM::Test.messages.second.second).to eq("declined")
+      expect(ESM.discord_bot.test_outbox.first.content).to be_a(ESM::Embed)
+      expect(ESM.discord_bot.test_outbox.second.content).to eq("declined")
     end
   end
 end

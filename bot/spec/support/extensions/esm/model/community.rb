@@ -1,14 +1,10 @@
 # frozen_string_literal: true
 
+# Test-only attr_accessors used by the V1 (websocket) factory layer to attach
+# channel/role lists pulled from the underlying Discordrb::Server. Real fields
+# on the Community AR model are unaffected.
 module ESM
   class Community < ApplicationRecord
-    attr_accessor :guild_type, :role_ids, :channel_ids, :everyone_role_id
-
-    ESM_SPAM_CHANNEL = ENV["SPAM_CHANNEL"]
-
-    module Secondary
-      ID = ENV["SECONDARY_COMMUNITY_ID"]
-      SPAM_CHANNEL = ENV["SECONDARY_SPAM_CHANNEL"]
-    end
+    attr_accessor :role_ids, :channel_ids, :everyone_role_id
   end
 end

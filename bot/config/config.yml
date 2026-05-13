@@ -14,6 +14,12 @@ default:
   #   The alternative is to have the autoformatter constantly messing up the syntax
   dev_user_allowlist: <%= JSON.parse(ENV["DEV_ALLOWLIST"]).to_yaml[3..].gsub("-", "  -") %>
 
+  # The Discord guild ID of the developer's home community. When a real community
+  # matches this ID, the bot enables developer-only behavior (e.g. ESM welcome
+  # message on member join, cross-community command access for support).
+  # Leave blank in environments that don't need this.
+  developer_guild_id: <%= ENV["DEVELOPER_GUILD_ID"] %>
+
   # The base URL for requests
   request_url: "http://localhost:3000/requests"
 

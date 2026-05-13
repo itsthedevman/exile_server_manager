@@ -4,7 +4,7 @@ describe "Territory ID decoding", :requires_connection do
   include_context "connection"
 
   let!(:territory) do
-    owner_uid = ESM::Test.steam_uid
+    owner_uid = Faker::Steam.uid
     create(
       :exile_territory,
       owner_uid: owner_uid,

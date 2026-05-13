@@ -88,6 +88,7 @@ module ESM
         mention(&method(:esm_mention))
         ready(&method(:esm_ready))
         server_create(&method(:esm_server_create))
+        server_update(&method(:esm_server_update))
         user_ban(&method(:esm_user_ban))
         user_unban(&method(:esm_user_unban))
         member_join(&method(:esm_member_join))
@@ -144,6 +145,11 @@ module ESM
       def esm_server_create(event)
         # This event is raised when a server is created respective to the bot
         ESM::Discord::Event::ServerCreate.new(event.server).run!
+      end
+
+      def esm_server_update(event)
+        # Raised when a Discord server is updated.
+        ESM::Discord::Event::ServerUpdate.new(event.server).run!
       end
 
       def esm_user_ban(event)
@@ -284,13 +290,7 @@ module ESM
           end
 
         while match.nil? && counter < 99
-          response =
-            if ESM.env.test?
-              ESM::Test.wait_for_response(timeout: timeout)
-            else
-              # Add the await event
-              responding_user.await!(timeout: timeout)
-            end
+          response = responding_user.await!(timeout: timeout)
 
           # We timed out
           break if response.nil?
@@ -362,12 +362,7 @@ module ESM
 
         # Event will be nil if it times out
         timeout = expires_at - ::Time.zone.now
-        event =
-          if ESM.env.test?
-            ESM::Test.wait_for_response(timeout: timeout)
-          else
-            add_await!(Discordrb::Events::MessageEvent, {from: user_id, in: channel_id, timeout: timeout})
-          end
+        event = add_await!(Discordrb::Events::MessageEvent, {from: user_id, in: channel_id, timeout: timeout})
 
         @mutex.synchronize do
           @waiting_for[user_id]&.delete_if { |id| id == channel_id }

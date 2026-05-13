@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 describe ESM::Exile::Territory, v2: true do
-  let!(:community) { ESM::Test.community }
-  let!(:server) { ESM::Test.server(for: community, traits: [:v2, :with_territories]) }
+  let!(:community) { create(:community) }
+  let!(:server) { create(:server, :v2, :with_territories, community_id: community.id) }
   let!(:settings) { server.server_setting }
 
   let!(:territory_example) do
-    owner_uid = ESM::Test.steam_uid
-    moderator_uids = Array.new(2) { ESM::Test.steam_uid }
-    builder_uids = Array.new(2) { ESM::Test.steam_uid }
+    owner_uid = Faker::Steam.uid
+    moderator_uids = Array.new(2) { Faker::Steam.uid }
+    builder_uids = Array.new(2) { Faker::Steam.uid }
 
     create(
       :exile_territory,

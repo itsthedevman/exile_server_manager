@@ -3,7 +3,18 @@
 describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
   include_context "connection"
 
-  let(:user) { ESM::Test.user(:with_role) }
+  let(:discord_server) { build(:discord_server, channels: [:logging], roles: %i[territory_admin]) }
+  let(:territory_admin_role) { discord_server.roles.find { |r| r.name == "territory_admin" } }
+  let(:user) do
+    user_record = create(
+      :user,
+      :with_discord_member,
+      discord_server: discord_server,
+      discord_member_roles: [territory_admin_role]
+    )
+    user_record.role_id = territory_admin_role.id
+    user_record
+  end
   let(:setting) { server.server_setting }
   let(:reward) { server.server_reward }
 

@@ -21,8 +21,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
         def check!
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s money by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
         end
@@ -60,8 +60,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
         def check!
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s locker by #{response.modified_amount.to_readable} poptabs. They used to have #{response.previous_amount.to_readable} poptabs, they now have #{response.new_amount.to_readable}.")
         end
@@ -99,8 +99,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
         def check!
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).to eq("#{user.mention}, you've modified `#{second_user.steam_uid}`'s respect by #{response.modified_amount.to_readable} points. They used to have #{response.previous_amount.to_readable}, they now have #{response.new_amount.to_readable}.")
         end
@@ -138,8 +138,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
         def check!
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).not_to be_blank
         end
@@ -177,8 +177,8 @@ describe ESM::Command::Server::Player, category: "command" do
 
         def check!
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).not_to be_blank
         end
@@ -221,8 +221,8 @@ describe ESM::Command::Server::Player, category: "command" do
           )
 
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
-          embed = ESM::Test.messages.first.second
+          ESM.discord_bot.test_outbox.await_size(1)
+          embed = ESM.discord_bot.test_outbox.first.content
 
           expect(embed.description).not_to be_blank
         end
@@ -266,15 +266,15 @@ describe ESM::Command::Server::Player, category: "command" do
           it "modifies the player's poptabs" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(2)
+            ESM.discord_bot.test_outbox.await_size(2)
 
             # Admin log
             expect(
-              ESM::Test.messages.retrieve("money has been modified")
+              ESM.discord_bot.test_outbox.retrieve("money has been modified")
             ).not_to be(nil)
 
             # Player response
-            embed = ESM::Test.messages.retrieve("money by")&.content
+            embed = ESM.discord_bot.test_outbox.retrieve("money by")&.content
             expect(embed).not_to be(nil)
 
             expect(embed.description).to eq(
@@ -319,15 +319,15 @@ describe ESM::Command::Server::Player, category: "command" do
           it "modifies the player's locker" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(2)
+            ESM.discord_bot.test_outbox.await_size(2)
 
             # Admin log
             expect(
-              ESM::Test.messages.retrieve("locker has been modified")
+              ESM.discord_bot.test_outbox.retrieve("locker has been modified")
             ).not_to be(nil)
 
             # Player response
-            embed = ESM::Test.messages.retrieve("locker by")&.content
+            embed = ESM.discord_bot.test_outbox.retrieve("locker by")&.content
             expect(embed).not_to be(nil)
 
             expect(embed.description).to eq(
@@ -372,15 +372,15 @@ describe ESM::Command::Server::Player, category: "command" do
           it "modifies the player's respect" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(2)
+            ESM.discord_bot.test_outbox.await_size(2)
 
             # Admin log
             expect(
-              ESM::Test.messages.retrieve("respect has been modified")
+              ESM.discord_bot.test_outbox.retrieve("respect has been modified")
             ).not_to be(nil)
 
             # Player response
-            embed = ESM::Test.messages.retrieve("respect by")&.content
+            embed = ESM.discord_bot.test_outbox.retrieve("respect by")&.content
             expect(embed).not_to be(nil)
 
             expect(embed.description).to eq(
@@ -427,16 +427,16 @@ describe ESM::Command::Server::Player, category: "command" do
         it "heals the player" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("Target has been healed")
+            ESM.discord_bot.test_outbox.retrieve("Target has been healed")
           ).not_to be(nil)
 
           # Player response
           # Since this is randomized, it's hard to match to
-          embed = ESM::Test.messages
+          embed = ESM.discord_bot.test_outbox
             .reject { |m| m.content.to_s.match?("target has been healed") }
             .first
             &.content
@@ -461,16 +461,16 @@ describe ESM::Command::Server::Player, category: "command" do
         it "kills the player" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("Target has been killed")
+            ESM.discord_bot.test_outbox.retrieve("Target has been killed")
           ).not_to be(nil)
 
           # Player response
           # Since this is randomized, it's hard to match to
-          embed = ESM::Test.messages
+          embed = ESM.discord_bot.test_outbox
             .reject { |m| m.content.to_s.match?("target has been killed") }
             .first
             &.content
@@ -505,15 +505,15 @@ describe ESM::Command::Server::Player, category: "command" do
         it "accepts the steam uid" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("respect has been modified")
+            ESM.discord_bot.test_outbox.retrieve("respect has been modified")
           ).not_to be(nil)
 
           # Player response
-          embed = ESM::Test.messages.retrieve("respect by")&.content
+          embed = ESM.discord_bot.test_outbox.retrieve("respect by")&.content
           expect(embed).not_to be(nil)
         end
       end

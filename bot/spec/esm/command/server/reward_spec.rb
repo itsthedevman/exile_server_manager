@@ -15,9 +15,9 @@ describe ESM::Command::Server::Reward, category: "command" do
       context "when there are rewards" do
         it "gives them to the player and returns a message" do
           execute!(arguments: {server_id: server.server_id})
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
 
           # Checks for requestors message
           expect(embed).not_to be_nil
@@ -27,16 +27,16 @@ describe ESM::Command::Server::Reward, category: "command" do
           expect(request).not_to be_nil
 
           # So we can track the response
-          ESM::Test.messages.clear
+          ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
           request.respond(true)
 
           # Wait for the server to respond
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           reward = server.server_reward
 
           expect(embed.description).to include("#{reward.player_poptabs}x Poptabs (Player)") if reward.player_poptabs.positive?
@@ -59,7 +59,7 @@ describe ESM::Command::Server::Reward, category: "command" do
             :request,
             requestor: user,
             requestee: user,
-            requested_from_channel_id: ESM::Test.channel(in: community).id,
+            requested_from_channel_id: community.discord_server.channels.first.id,
             command_name: command.command_name,
             command_arguments: execution_args[:arguments]
           )
@@ -96,11 +96,11 @@ describe ESM::Command::Server::Reward, category: "command" do
       subject(:execute_command) do
         result = execute!(arguments: {server_id: server.server_id})
 
-        wait_for { ESM::Test.messages.size }.to eq(2)
+        ESM.discord_bot.test_outbox.await_size(2)
 
         accept_request
 
-        wait_for { ESM::Test.messages.size }.to eq(number_of_messages)
+        ESM.discord_bot.test_outbox.await_size(number_of_messages)
 
         result
       end
@@ -143,13 +143,13 @@ describe ESM::Command::Server::Reward, category: "command" do
           execute_command
 
           # Admin message
-          embed = ESM::Test.messages.retrieve("Player received the following")&.content
+          embed = ESM.discord_bot.test_outbox.retrieve("Player received the following")&.content
 
           expect(embed).not_to be(nil)
           expect(embed.description).to match(expected_reward_items)
 
           # Player message
-          embed = ESM::Test.messages.retrieve("here's what you just received")&.content
+          embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
 
           expect(embed).not_to be(nil)
           expect(embed.description).to match(expected_reward_items)

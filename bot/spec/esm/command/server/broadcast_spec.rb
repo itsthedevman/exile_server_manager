@@ -7,7 +7,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
   describe "#execute" do
     include_context "connection_v1"
 
-    let!(:second_server) { ESM::Test.server(for: community) }
+    let!(:second_server) { create(:server, community_id: community.id) }
     let!(:second_wsc) { WebsocketClient.new(second_server) }
     let(:response) { previous_command.response }
 
@@ -35,7 +35,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
         # 3: Confirmation
         # 4: Success message
         # 5: Message to first user
-        wait_for { ESM::Test.messages.size }.to eq(5)
+        ESM.discord_bot.test_outbox.await_size(5)
       end
     end
 
@@ -49,7 +49,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
         # 4: Success message
         # 5: Message to first user
         # 6: Message to second user
-        wait_for { ESM::Test.messages.size }.to eq(6)
+        ESM.discord_bot.test_outbox.await_size(6)
       end
     end
 
@@ -58,7 +58,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
         execute!(arguments: {message: "Hello world!"})
 
         # 1: Preview Message
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
       end
     end
 
@@ -73,7 +73,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
         # 2: Spacer
         # 3: Confirmation
         # 4: Cancel message
-        wait_for { ESM::Test.messages.size }.to eq(4)
+        ESM.discord_bot.test_outbox.await_size(4)
       end
     end
 
@@ -92,7 +92,7 @@ describe ESM::Command::Server::Broadcast, category: "command" do
         # 3: Confirmation
         # 4: Success message
         # 5: Message to first user
-        wait_for { ESM::Test.messages.size }.to eq(5)
+        ESM.discord_bot.test_outbox.await_size(5)
       end
     end
 

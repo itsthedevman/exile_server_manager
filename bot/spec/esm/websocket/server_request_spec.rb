@@ -10,7 +10,7 @@ describe ESM::Websocket::ServerRequest do
   end
 
   let!(:client) { WebsocketClient.new(server) }
-  let!(:channel) { ESM.discord_bot.channel(ESM::Community::ESM_SPAM_CHANNEL) }
+  let!(:channel) { community.discord_server.channels.first }
 
   # Wait before pulling this value
   let(:connection) { ESM::Websocket.connections[server.server_id] }
@@ -52,48 +52,48 @@ describe ESM::Websocket::ServerRequest do
   end
 
   describe "#process" do
-    it "should do nothing (server command request)" do
+    it "does nothing (server command request)" do
       message = OpenStruct.new(command: "TESTING")
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
     end
 
-    it "should remove the request" do
+    it "removes the request" do
       message = OpenStruct.new(commandID: request.id, parameters: [])
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
       expect(connection.requests.size).to eq(0)
     end
 
-    it "should send the error (server error)" do
+    it "sends the error (server error)" do
       message = OpenStruct.new(commandID: request.id, error: "This is an error")
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this is an error/i)
     end
 
-    it "should send the error (server command error)" do
+    it "sends the error (server command error)" do
       message = {commandID: request.id, error: "", parameters: [{error: "This is an error"}]}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this is an error/i)
     end
 
-    it "should send the error (command error)" do
+    it "sends the error (command error)" do
       # Set a flag so our command raises an error
       previous_command.instance_variable_set(:@raise_error, true)
 
       message = {commandID: request.id, parameters: []}.to_ostruct
 
       expect { ESM::Websocket::ServerRequest.new(connection: connection, message: message).process }.not_to raise_error
-      wait_for { ESM::Test.messages.size }.to eq(1)
+      ESM.discord_bot.test_outbox.await_size(1)
 
-      embed = ESM::Test.messages.first.second
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to match(/this failed a check/i)
     end
   end

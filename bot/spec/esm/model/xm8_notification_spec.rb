@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 describe ESM::Xm8Notification, v2: true do
-  let(:user) { ESM::Test.user }
-  let(:second_user) { ESM::Test.user }
-  let(:server) { ESM::Test.server(for: ESM::Test.community) }
+  let(:user) { create(:user) }
+  let(:second_user) { create(:user) }
+  let(:community) { create(:community) }
+  let(:server) { create(:server, community_id: community.id) }
 
   let(:recipient_notification_mapping) do
     {

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 describe ESM::User do
-  let!(:esm_user) { ESM::Test.user }
+  let!(:esm_user) { create(:user) }
   let!(:discord_user) { esm_user.discord_user }
-  let(:unregistered_user) { ESM::Test.user(:unregistered) }
+  let(:unregistered_user) { create(:user, :unregistered) }
 
   it "create a UserDefault" do
     expect(esm_user.id_defaults).not_to be(nil)
@@ -55,7 +55,7 @@ describe ESM::User do
   end
 
   describe "#developer?" do
-    let!(:developer_user) { ESM::Test.user(type: :developer) }
+    let!(:developer_user) { create(:developer) }
 
     it "is a developer" do
       expect(developer_user.developer?).to be(true)

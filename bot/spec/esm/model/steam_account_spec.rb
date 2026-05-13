@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe ESM::SteamAccount do
-  let!(:steam) { described_class.new(ESM::Test.steam_uid) }
+  let!(:steam) { described_class.new(Faker::Steam.uid) }
 
   it "is valid" do
     expect(steam).not_to be_nil

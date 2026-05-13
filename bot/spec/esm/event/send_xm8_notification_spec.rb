@@ -3,7 +3,9 @@
 describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   include_context "connection"
 
-  let!(:second_user) { ESM::Test.user }
+  # Multiple channels so the "separate channels" test can route to distinct ones.
+  let(:discord_server) { build(:discord_server, channels: %i[logging general]) }
+  let!(:second_user) { create(:user) }
   let!(:territory_owner) { user.steam_uid }
   let!(:territory_moderators) { [second_user.steam_uid] }
 
@@ -38,7 +40,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       trigger_notification
 
       # Check outbound messages
-      wait_for { ESM::Test.messages.size }.to eq(recipient_uids.size)
+      ESM.discord_bot.test_outbox.await_size(recipient_uids.size)
 
       # Check database update
       notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_SENT)
@@ -161,7 +163,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: "sent")
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed.title).to eq(embed_data[:title])
         expect(embed.description).to eq(embed_data[:description])
         embed.fields.zip(embed_data[:fields]).each do |embed_field, input_field|
@@ -178,8 +180,8 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       it "logs a message to the server and discord" do
         trigger_notification
 
-        wait_for { ESM::Test.messages.size }.to eq(1)
-        message = ESM::Test.messages.first.content
+        ESM.discord_bot.test_outbox.await_size(1)
+        message = ESM.discord_bot.test_outbox.first.content
         expect(message).to match("has encountered an error")
       end
     end
@@ -212,8 +214,8 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
     it "logs a message to the server and discord" do
       trigger_notification
 
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      message = ESM::Test.messages.first.content
+      ESM.discord_bot.test_outbox.await_size(1)
+      message = ESM.discord_bot.test_outbox.first.content
       expect(message).to match("has encountered an error")
     end
   end
@@ -232,7 +234,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       wait_for { notifications.size }.to eq(recipient_uids.size)
 
       # Nothing is sent
-      expect(ESM::Test.messages.size).to eq(0)
+      expect(ESM.discord_bot.test_outbox.size).to eq(0)
 
       notifications.each do |notification|
         expect(notification.state_details).to eq(ESM::Xm8Notification::DETAILS_NOT_REGISTERED)
@@ -254,7 +256,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       wait_for { notifications.size }.to eq(recipient_uids.size)
 
       # Nothing is sent
-      expect(ESM::Test.messages.size).to eq(0)
+      expect(ESM.discord_bot.test_outbox.size).to eq(0)
 
       notifications.each do |notification|
         expect(notification.state_details).to eq(ESM::Xm8Notification::DETAILS_DM)
@@ -277,7 +279,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_FAILED)
       wait_for { notifications.size }.to eq(recipient_uids.size)
 
-      expect(ESM::Test.messages.size).to eq(0)
+      expect(ESM.discord_bot.test_outbox.size).to eq(0)
 
       notifications.each do |notification|
         expect(notification.state_details).to eq(ESM::Xm8Notification::DETAILS_NO_DESTINATION)
@@ -286,7 +288,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
   end
 
   context "when the recipients have custom routes" do
-    let(:channel_id) { ESM::Test.channel(in: community).id }
+    let(:channel_id) { community.discord_server.channels.first.id }
     let(:destination_community) { community }
 
     before do
@@ -317,7 +319,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_FAILED)
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        expect(ESM::Test.messages.size).to eq(0)
+        expect(ESM.discord_bot.test_outbox.size).to eq(0)
       end
     end
 
@@ -348,7 +350,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_FAILED)
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        expect(ESM::Test.messages.size).to eq(0)
+        expect(ESM.discord_bot.test_outbox.size).to eq(0)
       end
     end
 
@@ -366,7 +368,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
             :user_notification_route,
             user: second_user,
             destination_community:,
-            channel_id: ESM::Test.channel(in: destination_community).id
+            channel_id: destination_community.discord_server.channels.last.id
           )
         ]
       end
@@ -377,9 +379,9 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_SENT)
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        expect(ESM::Test.messages.size).to eq(2)
+        expect(ESM.discord_bot.test_outbox.size).to eq(2)
 
-        channel_ids = ESM::Test.messages.destinations.map { |c| c.id.to_s }
+        channel_ids = ESM.discord_bot.test_outbox.destinations.map { |c| c.id.to_s }
         expect(channel_ids).to match(routes.map(&:channel_id))
       end
     end
@@ -403,7 +405,7 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
             user: second_user,
             destination_community:,
             channel_id:,
-            source_server_id: ESM::Test.server(for: community).id
+            source_server_id: create(:server, community_id: community.id).id
           )
         ]
       end
@@ -414,9 +416,9 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_SENT)
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        expect(ESM::Test.messages.size).to eq(1)
+        expect(ESM.discord_bot.test_outbox.size).to eq(1)
 
-        channel = ESM::Test.messages.first.destination
+        channel = ESM.discord_bot.test_outbox.first.destination
         expect(channel.id.to_s).to eq(routes.first.channel_id)
       end
     end
@@ -446,9 +448,9 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
         notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_SENT)
         wait_for { notifications.size }.to eq(recipient_uids.size)
 
-        expect(ESM::Test.messages.size).to eq(1)
+        expect(ESM.discord_bot.test_outbox.size).to eq(1)
 
-        channel = ESM::Test.messages.first.destination
+        channel = ESM.discord_bot.test_outbox.first.destination
         routes.each do |route|
           expect(route.channel_id).to eq(channel.id.to_s)
         end

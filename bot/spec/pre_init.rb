@@ -14,6 +14,7 @@ require "hashids"
 require "neatjson"
 require "pry"
 require "rspec/expectations"
+require "rspec/rebound"
 require "rspec/wait"
 require "timecop"
 

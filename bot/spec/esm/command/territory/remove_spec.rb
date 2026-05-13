@@ -22,9 +22,9 @@ describe ESM::Command::Territory::Remove, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /hey #{user.mention}, `#{second_user.steam_uid}` has been removed from territory `#{territory_id}` on `#{server.server_id}`/i
           )
@@ -64,9 +64,9 @@ describe ESM::Command::Territory::Remove, category: "command" do
           )
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /hey #{user.mention}, `#{steam_uid}` has been removed from territory `#{territory_id}` on `#{server.server_id}`/i
           )
@@ -107,16 +107,16 @@ describe ESM::Command::Territory::Remove, category: "command" do
         it "removes the target from the territory" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(2)
+          ESM.discord_bot.test_outbox.await_size(2)
 
           # Player response
           expect(
-            ESM::Test.messages.retrieve("`#{target_uid}` has been removed")
+            ESM.discord_bot.test_outbox.retrieve("`#{target_uid}` has been removed")
           ).not_to be(nil)
 
           # Admin log
           expect(
-            ESM::Test.messages.retrieve("Player removed Target from territory")
+            ESM.discord_bot.test_outbox.retrieve("Player removed Target from territory")
           ).not_to be(nil)
 
           territory.reload

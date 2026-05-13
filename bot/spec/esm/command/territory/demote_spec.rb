@@ -22,9 +22,9 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /hey #{user.mention}, `#{second_user.steam_uid}` has been demoted to builder in territory `#{territory_id}` on `#{server.server_id}`/i
           )
@@ -65,9 +65,9 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(
             /hey #{user.mention}, `#{steam_uid}` has been demoted to builder in territory `#{territory_id}` on `#{server.server_id}`/i
           )
@@ -85,7 +85,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
       include_context "connection"
 
       let!(:territory) do
-        owner_uid = ESM::Test.steam_uid
+        owner_uid = Faker::Steam.uid
         create(
           :exile_territory,
           owner_uid: owner_uid,
@@ -121,7 +121,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
           expect(territory.build_rights).to include(second_user.steam_uid)
 
           expect(
-            ESM::Test.messages.retrieve(
+            ESM.discord_bot.test_outbox.retrieve(
               /`#{second_user.mention}` has been demoted to builder in territory `#{territory.encoded_id}`/i
             )
           ).not_to be_nil

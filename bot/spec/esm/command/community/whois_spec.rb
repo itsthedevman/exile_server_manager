@@ -31,7 +31,7 @@ describe ESM::Command::Community::Whois, category: "command" do
     end
 
     context "returns information about the user" do
-      it "should run (discord id)" do
+      it "runs (discord id)" do
         execute!(arguments: {target: user.discord_id})
 
         response = latest_message
@@ -56,7 +56,7 @@ describe ESM::Command::Community::Whois, category: "command" do
 
     context "when the target is an unregistered steam uid" do
       it "returns information about the steam user" do
-        execute!(arguments: {target: ESM::Test.steam_uid})
+        execute!(arguments: {target: Faker::Steam.uid})
 
         response = latest_message
         expect(response).not_to be_nil

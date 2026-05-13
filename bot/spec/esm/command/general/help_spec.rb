@@ -9,7 +9,7 @@ describe ESM::Command::General::Help, category: "command" do
       it "sends the 'getting started' information" do
         execute!
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed.title).to match(/well, hello there .+/i)
 
         commands_by_type = ESM::Command.by_type
@@ -36,14 +36,14 @@ describe ESM::Command::General::Help, category: "command" do
       it "shows the commands" do
         command_execution
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
       end
 
       it "does not show development commands" do
         command_execution
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
 
         embed.fields.each do |field|
@@ -56,9 +56,9 @@ describe ESM::Command::General::Help, category: "command" do
       it "shows only admin commands" do
         execute!(arguments: {category: "admin commands"})
 
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
         expect(embed.title).to match(/admin commands/i)
         expect(embed.title).not_to match(/player commands/i)
@@ -69,9 +69,9 @@ describe ESM::Command::General::Help, category: "command" do
       it "shows only player commands" do
         execute!(arguments: {category: "player commands"})
 
-        wait_for { ESM::Test.messages.size }.to eq(1)
+        ESM.discord_bot.test_outbox.await_size(1)
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
         expect(embed.title).to match(/player commands/i)
         expect(embed.title).not_to match(/admin commands/i)
@@ -82,7 +82,7 @@ describe ESM::Command::General::Help, category: "command" do
       it "returns the command's information" do
         execute!(arguments: {category: "help"})
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
         expect(embed.title).to match(/help/i)
       end
@@ -92,7 +92,7 @@ describe ESM::Command::General::Help, category: "command" do
       it "returns the command's information" do
         execute!(arguments: {category: "/server my player"})
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
         expect(embed.title).to match(/my player/i)
       end
@@ -106,7 +106,7 @@ describe ESM::Command::General::Help, category: "command" do
       it "does not show admin commands" do
         execute!(arguments: {category: "commands"})
 
-        embed = ESM::Test.messages.first.content
+        embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be_nil
 
         embed.fields.each do |field|

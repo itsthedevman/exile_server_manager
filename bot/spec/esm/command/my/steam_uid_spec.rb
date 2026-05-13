@@ -8,7 +8,7 @@ describe ESM::Command::My::SteamUid, category: "command" do
     it "!command_name argument" do
       execute!
 
-      embed = ESM::Test.messages.first.content
+      embed = ESM.discord_bot.test_outbox.first.content
       expect(embed.description).to eq("Hey #{user.mention}, your Steam UID is: ```#{user.steam_uid}```")
     end
   end

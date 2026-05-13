@@ -70,7 +70,7 @@ describe String do
   end
 
   describe "#steam_uid?" do
-    let(:user) { ESM::Test.user }
+    let(:user) { create(:user) }
 
     it "returns true" do
       expect(user.steam_uid.steam_uid?).to be(true)

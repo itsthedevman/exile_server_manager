@@ -13,7 +13,7 @@ describe ESM::Command::My::Preferences, category: "command" do
       it "sets all permission for the server to allowed" do
         execute!(channel_type: :dm, arguments: {server_id: server.server_id, action: "allow"})
 
-        message = ESM::Test.messages.first.content
+        message = ESM.discord_bot.test_outbox.first.content
         expect(message).not_to be_nil
         expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -27,7 +27,7 @@ describe ESM::Command::My::Preferences, category: "command" do
       it "sets the permission type for the server to allowed" do
         execute!(channel_type: :dm, arguments: {server_id: server.server_id, action: "allow", type: type})
 
-        message = ESM::Test.messages.first.content
+        message = ESM.discord_bot.test_outbox.first.content
         expect(message).not_to be_nil
         expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -39,7 +39,7 @@ describe ESM::Command::My::Preferences, category: "command" do
       it "sets all permissions for the server to deny" do
         execute!(channel_type: :dm, arguments: {server_id: server.server_id, action: "deny"})
 
-        message = ESM::Test.messages.first.content
+        message = ESM.discord_bot.test_outbox.first.content
         expect(message).not_to be_nil
         expect(message.description).to match(/your preferences for `.+` have been updated/i)
 
@@ -53,7 +53,7 @@ describe ESM::Command::My::Preferences, category: "command" do
       it "sets the permission type for the server to denied" do
         execute!(channel_type: :dm, arguments: {server_id: server.server_id, action: "deny", type: type})
 
-        message = ESM::Test.messages.first.content
+        message = ESM.discord_bot.test_outbox.first.content
         expect(message).not_to be_nil
         expect(message.description).to match(/your preferences for `.+` have been updated/i)
 

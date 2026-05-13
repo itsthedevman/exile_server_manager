@@ -14,14 +14,14 @@ describe ESM::Websocket do
     esm_malden_wsc.disconnect!
   end
 
-  it "should raise invalid key" do
+  it "raises invalid key" do
     bad_ws = WebsocketClient.new(OpenStruct.new(server_key: "Nope!", server_id: "Nope!"))
     expect(bad_ws).not_to be_nil
     wait_for { bad_ws.connected? }.to be(false)
   end
 
   describe "Connections" do
-    let!(:second_community) { create(:secondary_community) }
+    let!(:second_community) { create(:community) }
     let!(:second_server) { create(:server, community_id: second_community.id) }
     let!(:second_connection) { WebsocketClient.new(second_server) }
 
@@ -33,11 +33,11 @@ describe ESM::Websocket do
       second_connection.disconnect!
     end
 
-    it "should add" do
+    it "adds" do
       expect(ESM::Websocket.connections[second_server.server_id]).not_to be_nil
     end
 
-    it "should remove" do
+    it "removes" do
       other_connection = ESM::Websocket.connections[second_server.server_id]
 
       expect(other_connection).not_to be_nil
@@ -47,10 +47,10 @@ describe ESM::Websocket do
   end
 
   describe "#deliver!" do
-    it "should deliver" do
+    it "delivers" do
       connection = ESM::Websocket.connections[esm_malden.server_id]
 
-      user = ESM::Test.user.discord_user
+      user = create(:user).discord_user
       command = ESM::Command::Test::BaseV1.new
 
       request = ESM::Websocket::Request.new(
@@ -63,7 +63,9 @@ describe ESM::Websocket do
 
       ESM::Websocket.deliver!(esm_malden.server_id, request)
 
-      expect(connection.requests.size).to eq(1)
+      # The synchronous fake processes the response immediately and clears the
+      # queue, so we verify via the most-recent-request handle instead.
+      expect(connection.last_request).to eq(request)
     end
   end
 
@@ -74,8 +76,7 @@ describe ESM::Websocket do
     end
 
     let!(:ws_connection) { ESM::Websocket.connections[esm_malden.server_id] }
-    let!(:channel) { ESM.discord_bot.channel(ESM::Community::ESM_SPAM_CHANNEL) }
-    let!(:discord_user) { user.discord_user }
+    let!(:channel) { esm_community.discord_server.channels.first }
 
     let(:request) do
       request = ESM::Websocket::Request.new(
@@ -106,7 +107,7 @@ describe ESM::Websocket do
     end
 
     # Ignored commands do not remove the request.
-    it "should handle ignored requests" do
+    it "handles ignored requests" do
       message = {
         commandID: request.id,
         ignore: true
@@ -117,7 +118,7 @@ describe ESM::Websocket do
       expect(ws_connection.requests.size).to eq(1)
     end
 
-    it "should send an error message (error)" do
+    it "sends an error message (error)" do
       message = {
         commandID: request.id,
         error: Faker::Lorem.sentence
@@ -126,15 +127,15 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      error_message = ESM::Test.messages.first.second
+      ESM.discord_bot.test_outbox.await_size(1)
+      error_message = ESM.discord_bot.test_outbox.first.content
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eq("#{discord_user.mention}, #{message.error}")
+      expect(error_message.description).to eq("#{user.discord_user.mention}, #{message.error}")
       expect(error_message.color).to eq("#c62551")
     end
 
-    it "should send an error message (parameters)" do
+    it "sends an error message (parameters)" do
       message = {
         commandID: request.id,
         parameters: [{
@@ -145,11 +146,11 @@ describe ESM::Websocket do
       ws_connection.send(:on_message, OpenStruct.new(data: message))
 
       message = message.to_ostruct
-      wait_for { ESM::Test.messages.size }.to eq(1)
-      error_message = ESM::Test.messages.first.second
+      ESM.discord_bot.test_outbox.await_size(1)
+      error_message = ESM.discord_bot.test_outbox.first.content
 
       expect(error_message).not_to be_nil
-      expect(error_message.description).to eq("#{discord_user.mention}, #{message.parameters.first.error}")
+      expect(error_message.description).to eq("#{user.discord_user.mention}, #{message.parameters.first.error}")
       expect(error_message.color).to eq("#c62551")
     end
   end

@@ -1,9 +1,28 @@
 # frozen_string_literal: true
 
 RSpec.shared_context("connection") do
-  let!(:community) { ESM::Test.community }
-  let!(:user) { ESM::Test.user }
-  let!(:server) { ESM::Test.server(for: community) }
+  # When nested inside "command", inherit its community/user so the
+  # channel/discord_server/community/member lineage stays consistent. Without
+  # this, `Community.from_discord` first_or_initializes a fresh community with
+  # the schema default `player_mode_enabled: true` and admin command checks
+  # all fail with "not available in player mode".
+  let!(:community) do
+    super()
+  rescue NoMethodError
+    if respond_to?(:discord_server, true)
+      create(:community, discord_server: discord_server)
+    else
+      create(:community)
+    end
+  end
+  
+  let!(:user) do
+    super()
+  rescue NoMethodError
+    create(:user)
+  end
+
+  let!(:server) { create(:server, community_id: community.id) }
   let!(:connection_server) { ESM::Connection::Server }
 
   # Define this in your context and include any steam uids you'd like to be
@@ -15,7 +34,7 @@ RSpec.shared_context("connection") do
 
   let(:territory_moderators) { [] }
   let(:territory_build_rights) { [] }
-  let(:territory_owner) { ESM::Test.steam_uid }
+  let(:territory_owner) { Faker::Steam.uid }
   let(:territory) do
     owner_uid = territory_owner
     create(
@@ -51,12 +70,23 @@ RSpec.shared_context("connection") do
     # server initialization
     ESM::Test.territory_admin_uids = territory_admin_uids
 
-    connection_server.resume
+    # The server.connected? check is flakey: Arma is genuinely connected but
+    # the @connections map occasionally hasn't seen the public_id yet. Pause +
+    # resume forces a fresh reconnect. Up to 3 attempts before we give up.
+    max_attempts = 3
+    attempts = 0
+    begin
+      attempts += 1
+      connection_server.resume
 
-    wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
+      wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
+      wait(timeout: 5).for { server.reload.connected? }.to be(true)
+    rescue RSpec::Expectations::ExpectationNotMetError
+      raise "esm_arma never connected after #{max_attempts} attempts. From the esm_arma repo, please run `bin/bot_testing`" if attempts >= max_attempts
 
-    wait_for { server.reload.connected? }.to be(true),
-      "esm_arma never connected. From the esm_arma repo, please run `bin/bot_testing`"
+      connection_server.pause
+      retry
+    end
 
     server.reset!
   rescue ActiveRecord::ConnectionNotEstablished

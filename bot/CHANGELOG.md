@@ -9,9 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Community ownership tracking: communities now record their Discord owner, with backfill via `rake community:associate_to_owner_user` and live sync when guild ownership changes
+- Configurable developer guild via `DEVELOPER_GUILD_ID` (replaces the hardcoded ID previously used to gate developer-only behavior like the ESM welcome message and cross-community support access)
+- Structured lifecycle logging across the V2 server connection (accept, handshake, request, close, etc.) for clearer operational visibility
+
 ### Changed
 
+- Reorganized bot boot into ordered `pre_init/` and `post_init/` scripts so library setup, DB connection, autoloader config, and signal handling each live in their own file
+- Rewrote the spec suite's Discord layer to use FactoryBot-based fakes and inbox/outbox queues instead of `ESM::Test` globals; production and test now share the same code path through `ESM::Discord::Bot`
+- Connection close now drains its worker thread pool so background work doesn't outlive the socket
+
 ### Removed
+
+- Removed Capistrano deploy config from the bot
 
 ## [2.4.0] - 12025-08-13
 

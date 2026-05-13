@@ -4,7 +4,7 @@ describe "ESMs_system_territory_get", :requires_connection, v2: true do
   include_context "connection"
 
   let!(:territory) do
-    owner_uid = ESM::Test.steam_uid
+    owner_uid = Faker::Steam.uid
     create(
       :exile_territory,
       owner_uid: owner_uid,

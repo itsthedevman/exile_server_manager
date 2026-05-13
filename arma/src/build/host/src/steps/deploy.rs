@@ -51,7 +51,7 @@ fn write_runtime_config(ctx: &BuildContext, staging: &Path) -> BuildResult {
     let config = RuntimeConfig {
         connection_uri: ctx.args.bot_host().to_string(),
         log_level: ctx.args.log_level().to_string(),
-        additional_logs: vec![],
+        additional_logs: vec!["test.log".to_string(), "/tmp/test.rpt".to_string()],
     };
 
     let yaml = serde_yaml::to_string(&config)?;

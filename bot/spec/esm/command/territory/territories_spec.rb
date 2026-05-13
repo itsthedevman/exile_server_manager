@@ -20,9 +20,9 @@ describe ESM::Command::Server::Territories, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(response.size)
+          ESM.discord_bot.test_outbox.await_size(response.size)
 
-          ESM::Test.messages.map(&:content).each_with_index do |embed, index|
+          ESM.discord_bot.test_outbox.map(&:content).each_with_index do |embed, index|
             territory = ESM::Exile::Territory.new(server: server, territory: response[index])
 
             expect(embed.title).to eq("Territory \"#{territory.name}\"")
@@ -107,9 +107,9 @@ describe ESM::Command::Server::Territories, category: "command" do
 
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to match(/unable to find any territories/i)
           expect(embed.color).to eq(ESM::Color::Toast::RED)
         end
@@ -155,7 +155,7 @@ describe ESM::Command::Server::Territories, category: "command" do
       context "when the player has territories" do
         let!(:territories) do
           territories = []
-          owner_uid = ESM::Test.steam_uid
+          owner_uid = Faker::Steam.uid
 
           territories << create(
             :exile_territory,
@@ -173,8 +173,8 @@ describe ESM::Command::Server::Territories, category: "command" do
             server_id: server.id
           )
 
-          owner_uid = ESM::Test.steam_uid
-          moderator = ESM::Test.steam_uid
+          owner_uid = Faker::Steam.uid
+          moderator = Faker::Steam.uid
           territories << create(
             :exile_territory,
             owner_uid: owner_uid,
@@ -189,9 +189,9 @@ describe ESM::Command::Server::Territories, category: "command" do
         it "sends an embed per territory" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(3)
+          ESM.discord_bot.test_outbox.await_size(3)
 
-          ESM::Test.messages.contents.each_with_index do |embed, index|
+          ESM.discord_bot.test_outbox.contents.each_with_index do |embed, index|
             exile_territory = territories[index]
 
             territory = ESM::Exile::Territory.new(

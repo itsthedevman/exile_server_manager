@@ -17,7 +17,7 @@ FactoryBot.define do
 
     trait :stolen do
       flag_stolen { true }
-      flag_stolen_by_uid { ESM::Test.steam_uid }
+      flag_stolen_by_uid { Faker::Steam.uid }
       flag_stolen_at { Time.current }
     end
 

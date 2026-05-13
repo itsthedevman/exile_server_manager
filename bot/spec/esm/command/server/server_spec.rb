@@ -16,7 +16,7 @@ describe ESM::Command::Server::Server, category: "command" do
     context "when the server is online" do
       it "returns the server's information" do
         execute!(arguments: {server_id: server.server_id})
-        response = ESM::Test.messages.first.second
+        response = ESM.discord_bot.test_outbox.first.content
 
         # Reload because the server updates when the WSC connects
         server.reload

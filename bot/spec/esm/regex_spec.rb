@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe ESM::Regex do
-  let(:user) { ESM::Test.user }
+  let(:user) { create(:user) }
 
   describe "COMMUNITY_ID" do
     it "parses" do

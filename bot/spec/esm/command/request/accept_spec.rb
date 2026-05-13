@@ -5,14 +5,14 @@ describe ESM::Command::Request::Accept, category: "command" do
   include_examples "validate_command"
 
   describe "#execute" do
-    let!(:user_2) { ESM::Test.user }
+    let!(:user_2) { create(:user) }
 
     let!(:request) do
       create(
         :request,
         requestor_user_id: user.id,
         requestee_user_id: user_2.id,
-        requested_from_channel_id: ESM::Test.channel(in: community).id,
+        requested_from_channel_id: community.discord_server.channels.first.id,
         command_name: "id"
       )
     end
@@ -21,7 +21,7 @@ describe ESM::Command::Request::Accept, category: "command" do
       it "accepts the request" do
         execute!(user: user_2, channel_type: :dm, arguments: {uuid: request.uuid_short})
 
-        expect(ESM::Test.messages).to be_empty
+        expect(ESM.discord_bot.test_outbox).to be_empty
         expect(ESM::Request.all.size).to eq(0)
       end
     end

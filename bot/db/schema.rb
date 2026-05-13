@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_08_26_033918) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_04_034841) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_08_26_033918) do
     t.boolean "log_reconnect_event", default: false
     t.boolean "log_xm8_event", default: true
     t.string "logging_channel_id"
+    t.bigint "owner_user_id"
     t.boolean "player_mode_enabled", default: true
     t.uuid "public_id", null: false
     t.json "territory_admin_ids", default: []
@@ -96,6 +97,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_08_26_033918) do
     t.boolean "welcome_message_enabled", default: true
     t.index ["community_id"], name: "index_communities_on_community_id", unique: true
     t.index ["guild_id"], name: "index_communities_on_guild_id", unique: true
+    t.index ["owner_user_id"], name: "index_communities_on_owner_user_id"
     t.index ["public_id"], name: "index_communities_on_public_id", unique: true
   end
 
@@ -426,6 +428,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_08_26_033918) do
   end
 
   add_foreign_key "command_configurations", "communities", on_delete: :cascade
+  add_foreign_key "communities", "users", column: "owner_user_id"
   add_foreign_key "community_defaults", "communities", on_delete: :cascade
   add_foreign_key "community_defaults", "servers", on_delete: :cascade
   add_foreign_key "cooldowns", "communities", on_delete: :cascade

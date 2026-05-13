@@ -1,14 +1,96 @@
 # frozen_string_literal: true
 
-# Welcome to Exile Server Manager!
-#   I hope you enjoy your stay.
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⣄⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⣄⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⣄⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⣄⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣄⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⣄⣾⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣿⣿⣿⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣿⣿⣿⣿⣿⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣄⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⡀⡀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⡀⡀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⡀⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⡀⡀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⡀⡀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⡀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+# ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
 #
-# Just fyi, this file is laid out in a particular order so
-#   I can access ESM.env and ESM.config when all other files load
+#                                          ##     #####
+#           ###########                   #####   #####
+#           ###########                    ###    #####
+#           ####                                  #####        ####
+#           ####          #####   #####   ####    #####    ###########
+#           ##########     ##### ####     ####    #####   #####    ####
+#           ##########      ########      ####    #####   ####     ####
+#           ####             ######       ####    #####   #############
+#           ####            ########      ####    #####   ####
+#           ####           ####  #####    ####    #####   #####      ##
+#           ###########   ####    #####   ####    #####     ###########
+#
+#     ##########
+#    ####     #
+#    ####           ##########    ######### ####      ####   ##########    #########
+#     #######      ####    ####   ######     ####    ####   ####    ####   ######
+#        ######    ############   ####        ####  ####    ############   ####
+#           ####   ###            ####         #### ###     ###            ####
+#   ##      ####   ####           ####          #######     ####           ####
+#   ###########     ###########   ####          ######       ###########   ####
+#
+#   ###       ####
+#   ####     #####
+#   #####   ######   #######    ## #####    #######    ##### ##    ######    ## ###
+#   ## ##   ## ###        ###   ###   ###        ###  ###   ###   ###   ###  ####
+#   ## ### ##  ###   ########   ##    ###   ########  ###    ##  ##########  ###
+#   ##  ## ##  ###  ###   ###   ##    ###  ###   ###  ###   ###   ##         ###
+#   ##   ###   ###  #########   ##    ###  #########   ########   ########   ###
+#                                                           ###
+#                                                     #########
+#
+
+#
+#  Welcome! I hope you enjoy your stay.
+#
+
+#
+# Bot entry point. Boot is split into four ordered sections:
+#
+#   1. Gem requires and path constants (top half of this file).
+#   2. `pre_init/`: library setup that runs *before* the bot's ESM module
+#      is reopened (Dotenv, I18n, ActiveSupport, core gem load, etc.).
+#   3. `module ESM` (middle of this file): the public API surface.
+#   4. `post_init/`: ESM-aware setup that runs *after* the module exists
+#      (DB connect, Zeitwerk config, signal handler class, dev tweaks).
+#
+# The actual bot runtime then lives in {ESM.run!}.
+#
 
 [
-  # This contains a check for the existence of the Rails class.
-  # One of the action/active gems defines Rails, so this needs to be loaded first
+  # `sucker_punch` performs a `defined?(Rails)` check at load time. The
+  # action/active gems below define `Rails`, so sucker_punch must load
+  # first or it picks up Rails-mode behavior we don't want.
   "sucker_punch",
   "uri",
 
@@ -47,122 +129,160 @@
   "zeitwerk"
 ].each { |gem| require gem }
 
-#############################
+#############################################
+# Path constants
+#############################################
 
-# Set up the shared Ruby classes
-ESM_CORE_PATH =
-  if (path = ENV["ESM_RUBY_CORE_PATH"]) && path.present?
-    Pathname.new(path).join("lib")
-  else
-    Pathname.new(File.expand_path("../../", __dir__)).join("core", "lib")
-  end
+ESM_BOT_PATH = Pathname.new(File.expand_path("..", __dir__)).freeze
+ESM_ROOT_PATH = ESM_BOT_PATH.parent.freeze
+ESM_CORE_PATH = ESM_ROOT_PATH.join("core").freeze
 
-# Require the core Ruby classes
-require ESM_CORE_PATH.join("esm.rb")
+#############################################
+# pre_init
+#############################################
 
-# Load Dotenv variables; overwriting any that already exist
-Dotenv.overload
-Dotenv.overload(".env.test") if ENV["ESM_ENV"] == "test"
-Dotenv.overload(".env.production") if ENV["ESM_ENV"] == "production"
+Dir[ESM_BOT_PATH.join("lib", "pre_init", "*.rb")].sort.each { |f| require f }
 
-# Default timezone to UTC
-Time.zone_default = Time.find_zone!("UTC")
-
-# Load extensions
-Dir["#{__dir__}/esm/extension/**/*.rb"].sort.each { |extension| require extension }
-Dir["#{__dir__}/esm/discord/extension/**/*.rb"].sort.each { |extension| require extension }
-
-#################################
-# Logging methods!
-#################################
-[:trace, :debug, :info, :warn, :error].each do |severity|
-  define_method(:"#{severity}!") do |content = {}|
-    __log(severity, caller_locations(1, 1).first, content)
-  end
-end
-
-# Used internally by logging methods. Do not call manually
-def __log(severity, caller_data, content)
-  if content.is_a?(Hash) && content[:error].is_a?(StandardError)
-    e = content[:error]
-
-    content[:error] = {
-      class: e.class,
-      message: e.message,
-      backtrace: ESM.backtrace_cleaner.clean(e.backtrace)
-    }
-  end
-
-  caller_class = caller_data
-    .path
-    .sub("#{__dir__}/", "")
-    .sub(".rb", "")
-    .classify
-
-  caller_method = caller_data.label.gsub("block in ", "")
-
-  ESM.logger.send(severity, "#{caller_class}##{caller_method}:#{caller_data.lineno}") do
-    if content.is_a?(Hash)
-      ESM::JSON.pretty_generate(content).presence || ""
-    else
-      content || ""
-    end
-  end
-end
-
-#################################
-
-require_relative "signal_handler"
-SignalHandler.start
-
-#################################
+#############################################
+# module ESM
+#
+# Reopens the module defined by the core gem (loaded in pre_init/02) and
+# layers on the bot-specific API: runtime config, connections, and the
+# {ESM.run!} entry point.
+#############################################
 
 module ESM
+  # Connection options passed to {Redis.new} from {.redis}. `reconnect_attempts`
+  # protects against transient redis hiccups during long-running operations.
   REDIS_OPTS = {
     host: ENV.fetch("REDIS_HOST", "localhost"),
     reconnect_attempts: 10
   }.freeze
 
   class << self
+    ##
+    # The Discord bot instance used to send and receive messages.
+    #
+    # @return [ESM::Discord::Bot] memoized
+    #
     def discord_bot
       @discord_bot ||= ESM::Discord::Bot.new
     end
 
+    ##
+    # Boots the bot, in order:
+    #
+    #   1. Eager-load every constant under `lib/esm/` via Zeitwerk.
+    #   2. Load per-bot overwrites for shared core models.
+    #   3. Seed development-only state (skipped outside development).
+    #   4. Install the signal handler so Ctrl-C exits cleanly (skipped in test).
+    #   5. Start the JSON API server.
+    #   6. Connect to Discord.
+    #
+    # Blocks until shutdown unless `async: true`.
+    #
+    # @param async [Boolean] when true, the Discord connection runs in a
+    #   background thread and this method returns immediately. Defaults to false.
+    #
+    # Any additional keyword arguments are forwarded to {Discordrb::Bot#run}.
+    #
+    # @return [void]
+    #
     def run!(async: false, **)
+      trace!("Trace logging enabled")
+      debug!("Debug logging enabled")
+
       info!("Starting Exile Server Manager...")
 
-      require_relative "post_init"
-      require_relative "post_init_dev" if ESM.env.development?
+      load! unless loader.setup? && loader.eager_loaded?
 
-      ESM::API.run
+      # Allow the bot to override core's shared models on a per-name basis.
+      # For every file in core/lib/esm/models, if a matching file exists in
+      # the bot's lib/esm/model, load the bot's version so it wins.
+      Dir[ESM_CORE_PATH.join("lib", "esm", "models", "*.rb")]
+        .map { |path| File.basename(path, "*.rb") }
+        .map { |filename| root.join("lib", "esm", "model", filename) }
+        .select(&:exist?)
+        .each { |path| load path }
+
+      if env.development?
+        # Seed the server token into redis so the dev TCP listener can
+        # validate the local Arma server without waiting for a real handshake.
+        server = Server.all.first
+        redis.set("server_key", server.token.to_json) if server
+      end
+
+      SignalHandler.start unless env.test?
+
+      API.run
 
       discord_bot.run(async:, **)
     end
 
-    # Load everything right meow
+    ##
+    # Sets up the Zeitwerk loader and eager-loads every constant under
+    # `lib/esm/`. Idempotent; safe to call more than once but normally
+    # invoked once from {.run!}.
+    #
+    # @return [void]
+    #
     def load!
       loader.setup
       loader.eager_load
     end
 
+    ##
+    # The bot's project root.
+    #
+    # @return [Pathname]
+    #
     def root
-      @root ||= Pathname.new(File.expand_path("."))
+      @root ||= ESM_BOT_PATH
     end
 
+    ##
+    # Thread-safe Redis client, pooled so concurrent callers don't serialize
+    # on a single connection.
+    #
+    # @return [ConnectionPool::Wrapper<Redis>]
+    #
     def redis
       @redis ||= ConnectionPool::Wrapper.new do
         Redis.new(**REDIS_OPTS)
       end
     end
 
+    ##
+    # ActiveSupport cache backed by Redis, namespaced to `esm_bot` so keys
+    # never collide with other apps sharing the same Redis instance.
+    #
+    # @return [ActiveSupport::Cache::RedisCacheStore]
+    #
     def cache
       @cache ||= ActiveSupport::Cache::RedisCacheStore.new(namespace: "esm_bot", redis: redis)
     end
 
+    ##
+    # Current runtime environment, wrapped in an Inquirer for predicate-style
+    # checks:
+    #
+    #   ESM.env.development?
+    #   ESM.env.production?
+    #
+    # Reads `ESM_ENV`; defaults to `:development` when unset.
+    #
+    # @return [Inquirer] one of :production, :staging, :test, :development
+    #
     def env
       @env ||= Inquirer.new(:production, :staging, :test, :development).set(ENV["ESM_ENV"].presence || :development)
     end
 
+    ##
+    # Parsed `config/config.yml` for the current {.env}, returned as a Struct
+    # so attributes are reachable via dot notation rather than hash lookup.
+    #
+    # @return [Struct] frozen struct of config values
+    #
     def config
       @config ||= begin
         config = YAML.safe_load(
@@ -174,6 +294,12 @@ module ESM
       end
     end
 
+    ##
+    # The Zeitwerk loader. Configured in `post_init/03_zeitwerk.rb`; set up
+    # and eager-loaded by {.load!}.
+    #
+    # @return [Zeitwerk::Loader]
+    #
     def loader
       @loader ||= begin
         Zeitwerk::Loader.attr_predicate(:setup, :eager_loaded)
@@ -181,6 +307,12 @@ module ESM
       end
     end
 
+    ##
+    # Backtrace cleaner that strips noise (gem paths, nix store paths) from
+    # exception traces so logs stay focused on ESM code.
+    #
+    # @return [ActiveSupport::BacktraceCleaner]
+    #
     def backtrace_cleaner
       @backtrace_cleaner ||= begin
         cleaner = ActiveSupport::BacktraceCleaner.new
@@ -197,10 +329,8 @@ module ESM
   end
 end
 
-# Required ahead of time, ignored in autoloader
-require_relative "esm/database"
-ESM::Database.connect!
+#############################################
+# post_init
+#############################################
 
-# Run pre_init (Throwback to Exile)
-require_relative "pre_init"
-require_relative "pre_init_dev" if ESM.env.development?
+Dir[ESM_BOT_PATH.join("lib", "post_init", "*.rb")].sort.each { |f| require f }

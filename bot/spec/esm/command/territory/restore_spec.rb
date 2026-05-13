@@ -21,9 +21,9 @@ describe ESM::Command::Territory::Restore, category: "command" do
           request = execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to eq("Hey #{user.mention}, `#{territory_id}` has been restored")
         end
       end
@@ -35,9 +35,9 @@ describe ESM::Command::Territory::Restore, category: "command" do
           request = execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.description).to eq("I'm sorry #{user.mention}, `#{territory_id}` no longer exists on `#{server.server_id}`.")
         end
       end

@@ -31,7 +31,7 @@ describe ESM::Command::Base::Helpers do
         ESM::Command::Test::ServerCommand.new(
           user: user.discord_user,
           arguments: {server_id: server.server_id},
-          channel: ESM::Test.channel(in: community)
+          channel: community.discord_server.channels.first
         )
       end
     end

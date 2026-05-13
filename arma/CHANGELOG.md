@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated dependencies across workspace (tokio 1.47, uuid 1.18, regex 1.11, and others)
+- Fixed stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
 
 ### Development Changes
 
@@ -30,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced log reader with dynamic log file discovery - automatically finds ExtDB logs and other log files
 - Database seed SQL file now written to build directory for debugging
 - Fixed Rust toolchain installation in Docker for cross-compilation targets
+- Build deploy now seeds the runtime `additional_logs` config with `test.log` and `/tmp/test.rpt` so `/server admin search_logs` works against the dev container out of the box
+- `arma/docker-compose.yml` declares `name: esm_arma` so the compose project namespaces predictably when run alongside other ESM stacks in the monorepo
 
 ## [2.0.1] - 12024-12-22
 

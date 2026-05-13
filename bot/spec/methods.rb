@@ -1,18 +1,35 @@
 # frozen_string_literal: true
 
+#
+# Build an ESM::Websocket::Request for V1 websocket specs.
+#
+# Each call stands up a fresh discord_user + discord_server pair so requests
+# don't share identities with anything else in the spec.
+#
+# @param params [Hash] arbitrary parameters forwarded to the Request
+#
+# @return [ESM::Websocket::Request]
+#
 def create_request(**params)
-  user = ESM::Test.user.discord_user
-  command = ESM::Command::Test::BaseV1.new
+  discord_server = FactoryBot.build(:discord_server, channels: [:general])
+  discord_user = FactoryBot.build(:discord_user)
+  FactoryBot.build(:discord_member, server: discord_server, user: discord_user)
 
   ESM::Websocket::Request.new(
-    command: command,
-    user: user,
-    channel: ESM.discord_bot.channel(ESM::Community::ESM_SPAM_CHANNEL),
+    command: ESM::Command::Test::BaseV1.new,
+    user: discord_user,
+    channel: discord_server.channels.first,
     parameters: params
   )
 end
 
-# Disables the allowlist on admin commands so the tests can use them
+#
+# Disable the allowlist on a command for the given community so specs can
+# exercise admin commands without configuring roles.
+#
+# @param community [ESM::Community]
+# @param command [String, Symbol] command name (e.g. "broadcast")
+#
 def grant_command_access!(community, command)
   community.command_configurations.where(command_name: command).update_all(
     allowlist_enabled: false,
@@ -21,22 +38,31 @@ def grant_command_access!(community, command)
 end
 
 #
-# Mimics sending a discord message for a test.
+# Poll `block` every 100ms until it returns true or `timeout` seconds elapse.
+# Replaces `ESM::Test.wait_until` for top-level use in specs.
 #
-# @param message [String, ESM::Embed] The message to "send"
+# @param timeout [Numeric] maximum seconds to wait before raising
 #
-def send_discord_message(message)
-  ESM::Test.response = message
+# @yield expected to return a truthy value once the condition is met
+#
+# @raise [RuntimeError] when the deadline passes without the block returning true. The message names
+#   the timeout so the failure is self-explanatory.
+#
+def wait_until(timeout: 30)
+  deadline = Time.now + timeout
+
+  loop do
+    sleep 0.1
+    return if yield == true
+    raise "wait_until: condition not met within #{timeout}s" if Time.now >= deadline
+  end
 end
 
-def messages
-  ESM::Test.messages.contents
-end
-
-def earliest_message
-  ESM::Test.messages.earliest
-end
-
+#
+# The most recently captured outbox message's content, or nil when the outbox
+# is empty. Non-blocking; pair with `ESM.discord_bot.test_outbox.await_size(N)`
+# when you need to wait for messages to arrive before reading.
+#
 def latest_message
-  ESM::Test.messages.latest
+  ESM.discord_bot.test_outbox.latest
 end

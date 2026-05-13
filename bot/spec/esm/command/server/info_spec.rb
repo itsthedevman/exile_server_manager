@@ -29,9 +29,9 @@ describe ESM::Command::Server::Info, category: "command" do
           request = execute!(arguments: {server_id: server.server_id, target: user.mention})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.title).to match(/stats on `#{server.server_id}`/i)
 
           field = embed.fields.first
@@ -53,9 +53,9 @@ describe ESM::Command::Server::Info, category: "command" do
           request = execute!(arguments: {server_id: server.server_id, target: user.steam_uid})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           expect(embed.title).to match(/stats on `#{server.server_id}`/i)
 
           field = embed.fields.first
@@ -77,9 +77,9 @@ describe ESM::Command::Server::Info, category: "command" do
           request = execute!(arguments: {server_id: server.server_id, territory_id: "12345"})
           expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
-          embed = ESM::Test.messages.first.content
+          embed = ESM.discord_bot.test_outbox.first.content
           territory = ESM::Exile::Territory.new(server: server, territory: response)
 
           expect(embed.title).to eq("Territory \"#{territory.name}\"")
@@ -165,7 +165,7 @@ describe ESM::Command::Server::Info, category: "command" do
           it "is expected to return information on the player" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
             embed = latest_message
             expect(embed.title).to match(/stats on `#{server.server_id}`/i)
@@ -192,7 +192,7 @@ describe ESM::Command::Server::Info, category: "command" do
           it "is expected to return information about the player" do
             execute_command
 
-            wait_for { ESM::Test.messages.size }.to eq(1)
+            ESM.discord_bot.test_outbox.await_size(1)
 
             embed = latest_message
             expect(embed.title).to match(/stats on `#{server.server_id}`/i)
@@ -222,7 +222,7 @@ describe ESM::Command::Server::Info, category: "command" do
         it "is expected to return information about the player" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
           embed = latest_message
           expect(embed.title).to match(/stats on `#{server.server_id}`/i)
@@ -244,7 +244,7 @@ describe ESM::Command::Server::Info, category: "command" do
         it "is expected to return information about the territory" do
           execute_command
 
-          wait_for { ESM::Test.messages.size }.to eq(1)
+          ESM.discord_bot.test_outbox.await_size(1)
 
           embed = latest_message
           exile_territory = ESM::Exile::Territory.new(server: server, territory: territory.to_h)
