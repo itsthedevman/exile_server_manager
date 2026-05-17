@@ -22,9 +22,8 @@ default: &default
 # The primary DB schema and migrations live in core/, shared with the
 # service-side standalone_migrations setup. Paths resolve relative to
 # `Rails.root/db/`, so `../../core/db/...` escapes website/ to reach
-# core/db. Production is intentionally unset: applying it there would
-# cascade into the cache/queue/cable secondary DBs via YAML anchor
-# inheritance.
+# core/db. In production these are set directly on `primary` (not via
+# this anchor) to avoid cascading into the cache/queue/cable secondaries.
 core_paths: &core_paths
   schema_dump: ../../core/db/schema.rb
   migrations_paths: ../../core/db/migrate
@@ -87,21 +86,24 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
-  primary: &primary_production
-    <<: *default
+  primary:
+    <<: [*default, *core_paths]
     database: esm_production
     host: <%= ENV["POSTGRES_HOST"] %>
     username: <%= ENV["POSTGRES_USERNAME"] %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
-  cache:
-    <<: *primary_production
+  cache: &secondary_production
+    <<: *default
+    host: <%= ENV["POSTGRES_HOST"] %>
+    username: <%= ENV["POSTGRES_USERNAME"] %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
     database: esm_production_cache
     migrations_paths: db/cache_migrate
   queue:
-    <<: *primary_production
+    <<: *secondary_production
     database: esm_production_queue
     migrations_paths: db/queue_migrate
   cable:
-    <<: *primary_production
+    <<: *secondary_production
     database: esm_production_cable
     migrations_paths: db/cable_migrate
