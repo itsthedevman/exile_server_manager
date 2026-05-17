@@ -6,7 +6,7 @@
     {
       "label": "Generate Active Record migration (bot)",
       "type": "shell",
-      "command": "cd ${workspaceFolder}/bot && direnv exec . bundle exec rake db:new_migration name=${input:migrationName}",
+      "command": "cd ${workspaceFolder}/service && direnv exec . bundle exec rake db:new_migration name=${input:migrationName}",
       "presentation": {
         "echo": false,
         "clear": true

@@ -77,12 +77,12 @@ class CommunitiesController < AuthenticatedController
     success = ESM.bot.delete_community(current_community.id, current_user.id)
 
     if !success
-      ESM.log!(error: {
+      ESM.logger.error!(
         message: "Failed to delete community",
         community: current_community,
         user: current_user,
         errors: current_community.errors
-      })
+      )
 
       not_found!
     end

@@ -98,6 +98,21 @@
           shellHook = ''
             export LANG=C.UTF-8
 
+            # Monorepo path constants. Single source of truth for Ruby, Rake,
+            # shell scripts, and Docker entrypoints. Walk up from $PWD until
+            # we find flake.nix so direnv can reload from any subdir without
+            # baking the wrong path into ESM_ROOT_PATH.
+            esm_root="$PWD"
+            while [ "$esm_root" != "/" ] && [ ! -f "$esm_root/flake.nix" ]; do
+              esm_root="$(dirname "$esm_root")"
+            done
+            export ESM_ROOT_PATH="$esm_root"
+            export ESM_CORE_PATH="$ESM_ROOT_PATH/core"
+            export ESM_SERVICE_PATH="$ESM_ROOT_PATH/service"
+            export ESM_WEBSITE_PATH="$ESM_ROOT_PATH/website"
+            export ESM_ARMA_PATH="$ESM_ROOT_PATH/arma"
+            unset esm_root
+
             # Ruby: user gem bindir on PATH so binstubs (ruby-lsp, solargraph, etc.)
             # installed via `bundle install` are discoverable by editors and shells.
             export PATH="$(ruby -e 'puts Gem.user_dir')/bin:$PATH"

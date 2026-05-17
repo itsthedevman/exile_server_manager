@@ -19,8 +19,18 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
+# The primary DB schema and migrations live in core/, shared with the
+# service-side standalone_migrations setup. Paths resolve relative to
+# `Rails.root/db/`, so `../../core/db/...` escapes website/ to reach
+# core/db. Production is intentionally unset: applying it there would
+# cascade into the cache/queue/cable secondary DBs via YAML anchor
+# inheritance.
+core_paths: &core_paths
+  schema_dump: ../../core/db/schema.rb
+  migrations_paths: ../../core/db/migrate
+
 development:
-  <<: *default
+  <<: [*default, *core_paths]
   database: esm_development
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
@@ -53,7 +63,7 @@ development:
   # re-generated from your development database when you run "rake".
   # Do not set this db to the same as development or production.
 test:
-  <<: *default
+  <<: [*default, *core_paths]
   database: esm_test
 
 # As with config/credentials.yml, you never want to store sensitive information,

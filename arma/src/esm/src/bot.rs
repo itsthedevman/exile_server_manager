@@ -273,11 +273,13 @@ fn send_request(request: Request) -> ESMResult {
     let length = (request.len() as u32).to_be_bytes();
     request.splice(0..0, length);
 
-    // Send
-    match lock!(HANDLER)
-        .network()
-        .send(lock!(ENDPOINT).unwrap(), &request)
-    {
+    let Some(endpoint) = *lock!(ENDPOINT) else {
+        return Err(
+            "❌ Cannot send - We are not connected to the bot at the moment".into(),
+        );
+    };
+
+    match lock!(HANDLER).network().send(endpoint, &request) {
         SendStatus::Sent => Ok(()),
         s => Err(format!(
             "❌ Cannot send - We are not connected to the bot at the moment: {s:?}"

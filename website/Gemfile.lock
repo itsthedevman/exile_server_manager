@@ -1,12 +1,3 @@
-PATH
-  remote: ../core
-  specs:
-    esm_ruby_core (2.0.0)
-      colorize
-      fast_jsonparser
-      http
-      ostruct
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -519,15 +510,16 @@ DEPENDENCIES
   benchmark-ips
   bootsnap
   brakeman
+  colorize
   config
   database_cleaner-active_record
   devise
   dotenv
   drb
   dry-validation
-  esm_ruby_core!
   everythingrb
   faker
+  fast_jsonparser
   htmlbeautifier
   http
   kramdown

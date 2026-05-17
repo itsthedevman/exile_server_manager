@@ -1,38 +1,88 @@
 # frozen_string_literal: true
 
-require "bundler/setup"
-require "active_support/all"
-require "action_view"
-require "ostruct"
-require "semantic"
-require "neatjson"
+#
+# Core has no Gemfile of its own; the .envrc points BUNDLE_GEMFILE at
+# service/Gemfile so `bundle exec rspec` here resolves against service's
+# installed gems. Loading is centralized via `Loader` so service, website,
+# and this spec suite can't drift on order.
+#
 
-# Load database connection and ApplicationRecord first
+require "bundler/setup"
+
+[
+  "active_support",
+  "active_support/all",
+  "action_view",
+  "ostruct",
+  "semantic",
+  "neatjson",
+  "fast_jsonparser",
+  "colorize",
+  "http",
+  "discordrb",
+  "i18n",
+  "everythingrb/prelude",
+  "everythingrb/all"
+].each { |gem| require gem }
+
+# Inflector acronyms must be registered before any model class names round-trip
+# through classify/constantize.
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.acronym("ESM")
+  inflect.acronym("ID")
+  inflect.acronym("UID")
+end
+
+# Establishes the AR connection and defines top-level ApplicationRecord (used by
+# the support harness; ESM::ApplicationRecord is what the gem's models inherit).
 require_relative "support/database"
 
-# Load the gem first
-require "esm"
+ESM_CORE_PATH = Pathname.new(File.expand_path("..", __dir__)).freeze unless defined?(ESM_CORE_PATH)
 
-# Load ESM stubs AFTER loading the gem to override the stub methods
+# Centralized loader (file/dir/load_commands).
+require ESM_CORE_PATH.join("lib", "loader.rb")
+
+# Module entry point. Defines `module ESM` with logging methods.
+Loader.file("core", "lib", "esm.rb")
+
+# Logger TRACE patch (on stdlib Logger) + ESM::Logger styled subclass.
+Loader.dir("core", "lib", "extensions")
+Loader.dir("core", "lib", "utilities")
+Loader.file("core", "lib", "esm", "logger.rb")
+
+# Stubs ESM.env / ESM.config / ESM.backtrace_cleaner for the test harness.
 require_relative "support/esm_stubs"
 
-# Load ESM utilities and models
-gem_lib_path = File.expand_path("../lib", __dir__)
-require File.join(gem_lib_path, "esm", "time")
-require File.join(gem_lib_path, "esm", "json")
-require File.join(gem_lib_path, "esm", "regex")
-require File.join(gem_lib_path, "esm", "color")
+# I18n must be populated before concrete commands are required. Argument
+# descriptions resolve via I18n at class-definition time and will raise
+# "description must be at least 1 character long" otherwise.
+I18n.load_path += Dir[ESM_CORE_PATH.join("config", "locales", "**", "*.yml")]
+I18n.reload!
 
-# Load all models from the gem
-Dir[File.join(gem_lib_path, "esm", "models", "*.rb")].sort.each { |f| require f }
+# Eager-load the rest of core/lib/esm/ in the canonical dependency order:
+# ApplicationRecord (model parent) first, then the bulk of esm/, then the
+# command framework via load_commands.
+Loader.file("core", "lib", "esm", "application_record.rb")
+Loader.dir("core", "lib", "esm",
+  except: [
+    "/command/",
+    "/application_record.rb",
+    "/application_command.rb",
+    "/logger.rb"
+  ])
+Loader.load_commands
 
-# Load test dependencies
+# Test dependencies
 require "faker"
 require "factory_bot"
 require "database_cleaner/active_record"
 
-# Load support files (excluding factories, which are loaded by FactoryBot)
-Dir[File.join(__dir__, "support", "*.rb")].each { |f| require f }
+# Load support files (excluding factories, which are loaded by FactoryBot).
+Dir[File.join(__dir__, "support", "**", "*.rb")].each do |f|
+  next if f.include?("/factories/")
+
+  require f
+end
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -50,7 +100,6 @@ RSpec.configure do |config|
   config.order = :random
   Kernel.srand config.seed
 
-  # DatabaseCleaner configuration
   config.before(:suite) do
     DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.clean_with(:truncation)

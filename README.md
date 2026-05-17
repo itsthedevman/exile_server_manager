@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="bot/esm.svg" alt="ESM Logo" width="100" height="100">
+  <img src="esm.svg" alt="ESM Logo" width="100" height="100">
 </p>
 <h1 align="center">Exile Server Manager (ESM)</h1>
 
@@ -18,7 +18,7 @@ This monorepo holds the four pieces that make up the ESM platform.
 
 | Subdirectory | Component | Stack |
 |---|---|---|
-| [`bot/`](bot/README.md) | Discord bot — handles commands, events, and notifications | Ruby |
+| [`service/`](service/README.md) | Discord bot — handles commands, events, and notifications | Ruby |
 | [`core/`](core/README.md) | Shared Ruby gem with models and business logic | Ruby |
 | [`website/`](website/README.md) | Web dashboard at [esmbot.com](https://esmbot.com) | Rails + Hotwire |
 | [`arma/`](arma/README.md) | Arma 3 server mod and native extension | Rust + SQF |
@@ -35,7 +35,7 @@ ESM is built for the Exile community, and most features started as community sug
 
 Each component has its own README with requirements, setup, and architecture details:
 
-- [`bot/README.md`](bot/README.md) — Discord bot
+- [`service/README.md`](service/README.md) — Discord bot
 - [`core/README.md`](core/README.md) — shared Ruby gem
 - [`website/README.md`](website/README.md) — Rails web dashboard
 - [`arma/README.md`](arma/README.md) — Arma 3 mod and Rust extension

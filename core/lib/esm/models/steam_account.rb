@@ -71,24 +71,24 @@ module ESM
         data = response_body.parse_json
 
         if !response.status.success? || data.nil?
-          ESM.log!(warn: {
+          ESM.logger.warn!(
             message: "Steam summary is nil",
             steam_uid: @steam_uid,
             response_body:,
             data:
-          })
+          )
 
           return EMPTY_STRUCT
         end
 
         data = data.dig(:response, :players)&.first
         if data.blank?
-          ESM.log!(warn: {
+          ESM.logger.warn!(
             message: "Steam :players response is blank",
             steam_uid: @steam_uid,
             response_body:,
             data:
-          })
+          )
 
           return EMPTY_STRUCT
         end
@@ -127,12 +127,12 @@ module ESM
         data = response_body.parse_json
 
         if !response.status.success? || data.nil?
-          ESM.log!(warn: {
+          ESM.logger.warn!(
             message: "Steam bans is nil",
             steam_uid: @steam_uid,
             response_body:,
             data:
-          })
+          )
 
           return EMPTY_STRUCT
         end

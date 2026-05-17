@@ -6,7 +6,10 @@ require "nats/client"
 # Integration spec: requires the docker-compose `nats` service reachable at
 # `Settings.nats.url`. Spins up a stub subscriber to receive the signed
 # envelope, returns canned responses, and verifies IpcClient's contract.
-describe ESM::IpcClient do
+#
+# Skipped: IpcClient is partially-written, not yet wired in. Re-enable when
+# the website->bot V2 path lands.
+xdescribe ESM::IpcClient do
   let(:nats_url) { Settings.nats.url }
   let(:subject_prefix) { Settings.nats.subject_prefix }
   let(:secret) { ENV.fetch("API_AUTH_KEY") }

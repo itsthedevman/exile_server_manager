@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+RSpec.describe Array do
+  describe "#format" do
+    it "returns a formatted string" do
+      string =
+        [1, true, ["hello"]].join_map do |item|
+          expect(item).not_to be_nil
+          item.to_s
+        end
+
+      expect(string).to eq("1true[\"hello\"]")
+    end
+  end
+
+  describe "#total_size" do
+    it "adds up all items (strings)" do
+      expect(["foo", "bar", "test", "!@#${%^&*()}"].total_size).to eq(22)
+    end
+  end
+end

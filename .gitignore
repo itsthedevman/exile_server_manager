@@ -1,30 +1,31 @@
 # Root-level ignores
+.bundle/
 .direnv/
 result
 result-*
 
-# bot/
-bot/.bundle/
-bot/log/
-bot/.yardoc
-bot/_yardoc/
-bot/coverage/
-bot/doc/
-bot/pkg/
-bot/spec/reports/
-bot/tmp/
-bot/*.log*
-bot/*.log.age
-bot/.rspec_status
-bot/.byebug_history
-bot/*.code-workspace
-bot/.DS_Store
-bot/.env
-bot/test_*.yml
-bot/target/
-bot/vendor/
-bot/Cargo.lock
-bot/spec/test_data.yml
+# service/
+service/.bundle/
+service/log/
+service/.yardoc
+service/_yardoc/
+service/coverage/
+service/doc/
+service/pkg/
+service/spec/reports/
+service/tmp/
+service/*.log*
+service/*.log.age
+service/.rspec_status
+service/.byebug_history
+service/*.code-workspace
+service/.DS_Store
+service/.env
+service/test_*.yml
+service/target/
+service/vendor/
+service/Cargo.lock
+service/spec/test_data.yml
 
 # core/
 core/.bundle/

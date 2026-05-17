@@ -1,22 +1,30 @@
 # frozen_string_literal: true
 
+#
+# Eager-loads core/lib into the Rails app. The website doesn't run Discord
+# commands, so the entire `core/lib/esm/command/` tree is skipped; pulling
+# it in would force discordrb just to satisfy class-level argument resolution.
+#
+# Uses `method: :load` (not :require) so Rails to_prepare reload semantics
+# work in development.
+#
+
+require Pathname.new(ENV.fetch("ESM_CORE_PATH")).join("lib", "loader.rb")
+
 Rails.application.config.to_prepare do
-  # Explicitly require core models
-  core_path =
-    if (path = ENV["ESM_RUBY_PATH"]) && path.present?
-      Pathname.new(path)
-    else
-      Pathname.new(File.expand_path("../../../", __dir__)).join("core")
-    end
+  Loader.dir("core", "lib", "extensions", method: :load)
+  Loader.dir("core", "lib", "utilities", method: :load)
+  Loader.file("core", "lib", "esm", "application_record.rb", method: :load)
+  Loader.dir("core", "lib", "esm",
+    method: :load,
+    except: [
+      "/command/",
+      "/application_record.rb",
+      "/application_command.rb"
+    ])
 
-  Dir[core_path.join("lib/**/*.rb")].sort.each do |file|
-    load file
-  end
-
-  # Now load website extensions
-  Dir[Rails.root.join("app/models/esm/**/*.rb")].sort.each do |file|
-    load file
-  end
-
-  load Rails.root.join("app/models/esm.rb")
+  # Website-side overrides that re-open core's AR classes to add
+  # Discord/Rails-aware methods.
+  Loader.dir("website", "app", "models", "esm", method: :load)
+  Loader.file("website", "app", "models", "esm.rb", method: :load)
 end

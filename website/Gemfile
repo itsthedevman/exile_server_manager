@@ -108,8 +108,11 @@ gem "ostruct"                   # OpenStruct for dynamic objects
 gem "config"                    # YAML based configuration
 gem "dry-validation"
 
+# Hoisted from core (formerly transitive via the esm_ruby_core path gem)
+gem "colorize"                  # Colorized terminal output, used by ESM core
+gem "fast_jsonparser"           # Fast JSON parsing, used by ESM core
+
 # My Libraries
-gem "esm_ruby_core", path: "../core"
 gem "everythingrb"              # Method extensions
 gem "sortsmith"                 # Sorting utilities
 # gem "spec_forge"                # API testing suite
