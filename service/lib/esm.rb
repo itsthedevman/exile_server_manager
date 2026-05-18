@@ -130,26 +130,21 @@
 ].each { |gem| require gem }
 
 #############################################
-# Path constants
-#
-# Sourced from the env vars exported by the monorepo flake.nix
-# shellHook so Ruby, Rake, shell scripts, and Docker entrypoints all
-# resolve the same paths from a single source.
-#############################################
-
-ESM_ROOT_PATH = Pathname.new(ENV.fetch("ESM_ROOT_PATH")).freeze
-ESM_SERVICE_PATH = Pathname.new(ENV.fetch("ESM_SERVICE_PATH")).freeze
-ESM_CORE_PATH = Pathname.new(ENV.fetch("ESM_CORE_PATH")).freeze
-
-#############################################
 # Loader
 #
-# Centralized eager-loading helper. Required here so every pre_init and
-# post_init script can use `Loader.file` / `Loader.dir` / `Loader.load_commands`
-# without each script having to require it itself.
+# A single loader to rule them all
 #############################################
 
-require ESM_CORE_PATH.join("lib", "loader.rb")
+require Pathname.new(ENV.fetch("ESM_CORE_PATH")).join("lib", "loader.rb")
+
+#############################################
+# Path constants
+#
+#############################################
+
+ESM_ROOT_PATH = Loader.root_path
+ESM_SERVICE_PATH = Loader.service_path
+ESM_CORE_PATH = Loader.core_path
 
 #############################################
 # pre_init

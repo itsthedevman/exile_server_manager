@@ -27,6 +27,22 @@ class Loader
 
   class << self
     ##
+    # Absolute, symlink-resolved path to a monorepo component. Sourced from
+    # the `ESM_*_PATH` env vars and realpath'd at first access so downstream callers,
+    # especially Zeitwerk, see consistent paths even when the env var
+    # points at symlinks.
+    #
+    # Memoized. Raises if the env var is unset or the directory doesn't exist.
+    #
+    # @return [Pathname] frozen
+    #
+    def root_path = path_for("root")
+    def core_path = path_for("core")
+    def service_path = path_for("service")
+    def website_path = path_for("website")
+    def arma_path = path_for("arma")
+
+    ##
     # Loads a single file. `method:` is :require (default) or :load.
     #
     # @example
@@ -98,12 +114,20 @@ class Loader
     private
 
     def resolve(component, segments)
-      env_var = COMPONENT_ENVS.fetch(component) do
-        raise ArgumentError,
-          "unknown component #{component.inspect}; expected one of #{COMPONENT_ENVS.keys.inspect}"
-      end
+      path_for(component).join(*segments.map(&:to_s))
+    end
 
-      Pathname.new(ENV.fetch(env_var)).join(*segments.map(&:to_s))
+    def path_for(component)
+      @paths ||= {}
+
+      @paths[component] ||= begin
+        env_var = COMPONENT_ENVS.fetch(component) do
+          raise ArgumentError,
+            "unknown component #{component.inspect}; expected one of #{COMPONENT_ENVS.keys.inspect}"
+        end
+
+        Pathname.new(ENV.fetch(env_var)).realpath.freeze
+      end
     end
   end
 end
