@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+# Sets up the shared Postgres database used by both service and website.
+# Runs from service/ because that's where the Rakefile and
+# standalone_migrations config that own core's shared schema live.
+readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${repo_root}/service"
+
+if [[ ! -f ".env" ]]; then
+  echo "Failed - Missing service/.env file. Did you forget to create/sym link it?"
+  exit 1
+fi
+
+bundle install
+bundle exec rake db:drop
+
+# schema.rb lives in core; drop the stale copy if it's still there.
+if [[ -f "../core/db/schema.rb" ]]; then
+  rm ../core/db/schema.rb
+fi
+
+bundle exec rake db:create
+bundle exec rake db:migrate
+bundle exec rake db:migrate RAILS_ENV=test
+bundle exec ruby ../core/db/seeds.rb
