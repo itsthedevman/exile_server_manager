@@ -17,12 +17,12 @@ commands, mods, rewards, and notifications, and to monitor their servers.
 ## Using ESM
 
 To install ESM on your server, follow the [Getting Started
-guide](https://esmbot.com/getting_started). This repo is the source code.
+guide](https://esmbot.com/docs/getting_started). This repo is the source code.
 
 ### Links
 
 - [Website](https://esmbot.com)
-- [Getting Started](https://esmbot.com/getting_started)
+- [Getting Started](https://esmbot.com/docs/getting_started)
 - [Discord](https://esmbot.com/join)
 - [Invite ESM to your server](https://esmbot.com/invite)
 
@@ -117,9 +117,9 @@ nix develop    # or just cd into a subdir; its .envrc delegates here
 - PostgreSQL 15+ running locally or reachable
 - Redis running locally or reachable
 - `asdf` with the `ruby` and `nodejs` plugins, or system Ruby 3.3 and Node 18+
-- Rust toolchain via `rustup`, plus the extra build targets:
+- Rust toolchain via `rustup`, plus the Windows cross-compile targets:
   ```bash
-  rustup target add i686-unknown-linux-gnu x86_64-pc-windows-gnu
+  rustup target add x86_64-pc-windows-gnu i686-pc-windows-gnu
   ```
 - SteamCMD (arma uses it to fetch the Arma 3 dedicated server)
 - `sqfvm` and `armake2` on your `PATH` (or build from source)
@@ -142,7 +142,7 @@ cp website/config/settings.yml         website/config/settings.local.yml
 ```
 
 | Where                               | Field                | Value                                                 |
-| -------------------------------------| ----------------------| -------------------------------------------------------|
+| ----------------------------------- | -------------------- | ----------------------------------------------------- |
 | `service/config/settings.local.yml` | `token`              | Discord Bot Token                                     |
 | `service/config/settings.local.yml` | `steam_api_key`      | Steam Web API key                                     |
 | `service/config/settings.local.yml` | `developer_guild_id` | Discord guild ID of your dev community                |
