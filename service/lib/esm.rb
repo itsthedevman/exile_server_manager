@@ -103,8 +103,8 @@
   "base64",
   "colorize",
   "concurrent",
+  "config",
   "discordrb",
-  "dotenv",
   "dotiw",
   "drb",
   "everythingrb/prelude",
@@ -287,20 +287,14 @@ module ESM
     end
 
     ##
-    # Parsed `config/config.yml` for the current {.env}, returned as a Struct
-    # so attributes are reachable via dot notation rather than hash lookup.
+    # The Settings tree, loaded in {pre_init/01_settings.rb}. Exposed under
+    # `ESM.config` for back-compat with existing call sites; new code should
+    # reference `Settings` directly.
     #
-    # @return [Struct] frozen struct of config values
+    # @return [Config::Options]
     #
     def config
-      @config ||= begin
-        config = YAML.safe_load(
-          ERB.new(File.read(File.expand_path("config/config.yml"))).result,
-          aliases: true
-        )[env.to_s]
-
-        config.to_struct
-      end
+      Settings
     end
 
     ##

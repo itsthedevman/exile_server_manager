@@ -20,7 +20,8 @@ service/.rspec_status
 service/.byebug_history
 service/*.code-workspace
 service/.DS_Store
-service/.env
+service/config/settings.local.yml
+service/config/settings/*.local.yml
 service/test_*.yml
 service/target/
 service/vendor/

@@ -1,0 +1,16 @@
+# Copy this file to settings.local.yml and fill in your values
+
+# Your Discord bot token.
+token: ""
+
+# Your Steam Web API key.
+steam_api_key: ""
+
+# Discord user IDs (as strings) allowed to run developer-only commands.
+dev_user_allowlist: []
+
+# Discord guild ID of the developer's home community. When a real community
+# matches this ID, the bot enables developer-only behavior (welcome message
+# on member join, cross-community command access for support). Leave blank
+# in environments that don't need this.
+developer_guild_id: ""

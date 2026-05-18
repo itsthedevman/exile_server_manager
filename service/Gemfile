@@ -125,7 +125,7 @@ gem "semantic"                            # Semantic versioning helper
 gem "dotiw"                               # Distance of time in words
 
 # Configuration & Environment
-gem "dotenv"                              # Environment variable management
+gem "config"                              # YAML-based configuration (shared with website)
 gem "openssl"                             # SSL/TLS support
 
 # CLI & Output

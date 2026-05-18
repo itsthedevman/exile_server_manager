@@ -1,0 +1,4 @@
+error_logging_channel_id: ""
+
+connection_client:
+  response_timeout: 2

@@ -1,0 +1,8 @@
+error_logging_channel_id: ""
+
+websocket_request_overseer:
+  check_every: 0.1
+
+cache:
+  server_ids: 0
+  community_ids: 0

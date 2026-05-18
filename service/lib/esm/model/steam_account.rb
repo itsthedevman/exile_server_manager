@@ -3,7 +3,7 @@
 module ESM
   class SteamAccount
     def token
-      ENV["STEAM_TOKEN"]
+      Settings.steam_api_key
     end
   end
 end
