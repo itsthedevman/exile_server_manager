@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Run every ESM monorepo test suite, continue on failure, summarize.
+
+set -euo pipefail
+
+readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+# Each suite runs via `direnv exec .` so its per-dir .envrc loads
+# (flake, BUNDLE_GEMFILE for core, PATH_add for website, etc).
+readonly suites=(
+  "arma    cargo test --workspace"
+  "core    bundle exec rspec"
+  "service bin/test"
+  "website bundle exec rspec"
+)
+
+if [[ -t 1 ]]; then
+  bold=$'\033[1m'; green=$'\033[32m'; red=$'\033[31m'; reset=$'\033[0m'
+else
+  bold=''; green=''; red=''; reset=''
+fi
+
+declare -a results=()
+overall=0
+
+for spec in "${suites[@]}"; do
+  read -r dir cmd <<<"$spec"
+  printf '\n%s==> %s%s\n' "$bold" "$dir" "$reset"
+
+  # Intentional word-split: cmd is a controlled, glob-free string.
+  # shellcheck disable=SC2206
+  cmd_parts=($cmd)
+
+  if (cd "$repo_root/$dir" && direnv exec . "${cmd_parts[@]}"); then
+    results+=("${green}PASS${reset}  $dir")
+  else
+    rc=$?
+    results+=("${red}FAIL${reset}  $dir (exit $rc)")
+    overall=1
+  fi
+done
+
+printf '\n%sSummary%s\n' "$bold" "$reset"
+for line in "${results[@]}"; do
+  printf '  %s\n' "$line"
+done
+
+exit "$overall"
