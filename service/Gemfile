@@ -135,6 +135,9 @@ gem "terminal-table"                      # ASCII tables for CLI
 # Debugging
 gem "pry"                               # Interactive debugging console
 
+# Config validation
+gem "dry-validation"
+
 ####################################################################################################
 ## Web Server & Core Infrastructure
 ####################################################################################################

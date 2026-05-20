@@ -1,39 +1,92 @@
+#
+# ESM bot service configuration. Load order (later overrides earlier):
+#   1. settings.yml                  (this file, committed defaults)
+#   2. settings.local.yml            (gitignored secrets, template: settings.example.yml)
+#   3. settings/#{ESM_ENV}.yml       (committed per-env overlays)
+#
+# Schema: lib/pre_init/01_settings.rb.
+#
+
+# Discord bot token. Required - define in settings.local.yml.
+token: ""
+
+# Steam Web API key. Required - define in settings.local.yml.
+steam_api_key: ""
+
+# Discord user IDs (as strings) allowed to run developer-only commands.
+dev_user_allowlist: []
+
+# Discord guild ID of the developer's home community. When a real community
+# matches this ID, the bot enables developer-only behavior (welcome message
+# on member join, cross-community command access for support). Leave blank
+# in environments that don't need this.
+developer_guild_id: ""
+
+# Discord channel ID for posting unhandled errors. Leave blank to disable.
+error_logging_channel_id: ""
+
+# Website URL used to build accept/decline links in /requests embeds.
 request_url: "http://localhost:3000/requests"
+
+# Mirror log output to stdout in addition to log files.
 print_to_stdout: true
 
 ports:
+  # WebSocket server (V1 Arma clients).
   websocket: 3001
+
+  # HTTP API consumed by the website.
   api: 3002
+
+  # TCP server for V2 Arma extension connections.
   connection_server: 3003
 
+# Poll interval (seconds) for sweeping outstanding /request records.
 request_overseer:
   check_every: 15
 
+# Poll interval (seconds) for outstanding requests on the WebSocket transport.
 websocket_request_overseer:
   check_every: 15
 
+# Poll interval (seconds) for pruning dead WebSocket connections.
 websocket_connection_overseer:
   check_every: 3
 
+# Poll interval (seconds) for draining the Discord message delivery queue.
 bot_delivery_overseer:
   check_every: 0.5
 
+# TCP server that accepts incoming Arma extension connections.
 connection_server:
+  # How often (seconds) to sweep the lobby and accept new clients.
   connection_check: 0.1
+
+  # How long (seconds) a client can sit in the connect lobby before being kicked.
   lobby_timeout: 1
+
+  # How long (seconds) to wait for a heartbeat response before kicking a client.
   heartbeat_timeout: 5
 
+# Per-server client that proxies bot/website requests to the Arma extension.
 connection_client:
+  # Polling interval (seconds) for pending requests on the queue.
   request_check: 0.0005
+
+  # Default timeout (seconds) for the extension to respond.
   response_timeout: 5
+
+  # concurrent-ruby thread pool sizing for in-flight requests.
   min_threads: 2
   max_threads: 20
   max_queue: 250
 
+# TTL (seconds) for ID lookup caches. Set to 0 to disable (used in test).
 cache:
   server_ids: 30
   community_ids: 30
 
+# Random tip rendered as the footer on each /command invocation.
 tips:
   - "Admins can use `/community admin find_player` to get comprehensive information about any player via their Steam UID, Discord ID, or @mention."
   - "Looking for a community or server ID? Use the ID lookup tool at https://esmbot.com/tools/id_lookup"
