@@ -1,6 +1,6 @@
-RSpec.configure do |config|
-  require_relative "pre_init"
+# frozen_string_literal: true
 
+RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.

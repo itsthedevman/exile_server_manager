@@ -5,7 +5,8 @@ SPEC_TIMEOUT_SECONDS = 10
 
 LOG_LEVEL = ENV.fetch("LOG_LEVEL", "error").downcase.to_sym
 
-require_relative "config"
+require_relative "pre_init"
+require_relative "spec_config"
 
 RSpec.configure do |config|
   config.before :suite do
