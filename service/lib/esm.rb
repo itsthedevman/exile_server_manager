@@ -197,7 +197,7 @@ module ESM
     #
     # @return [void]
     #
-    def run!(async: false, **)
+    def run!(async: false, skip_initialization: false)
       trace!("Trace logging enabled")
       debug!("Debug logging enabled")
 
@@ -221,11 +221,10 @@ module ESM
         redis.set("server_key", server.token.to_json) if server
       end
 
-      SignalHandler.start unless env.test?
+      SignalHandler.start unless skip_initialization || env.test?
+      Website::API.run unless skip_initialization
 
-      Website::API.run
-
-      discord_bot.run(async:, **)
+      discord_bot.run(async:, skip_initialization:)
     end
 
     ##
