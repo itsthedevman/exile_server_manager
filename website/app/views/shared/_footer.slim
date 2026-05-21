@@ -9,7 +9,8 @@ footer.border-top.border-secondary.py-5.mt-auto
           | Connect your Arma 3 server to Discord with real-time notifications,
           |< territory management, and admin tools.
         p.text-muted.small
-          |> Open source and built with
+          => link_to "Open source", "https://github.com/itsthedevman/exile_server_manager", class: "text-muted"
+          |> and built with
           i.bi.bi-heart-fill.text-exile-red
           |< for the Exile community.
         p.text-muted.small.mb-0
@@ -21,14 +22,6 @@ footer.border-top.border-secondary.py-5.mt-auto
           li.mb-2 = link_to "Download", latest_download_path, class: "text-muted text-decoration-none"
           li.mb-2 = link_to "RPT Parser", rpt_parser_tools_path, class: "text-muted text-decoration-none"
           li.mb-2 = link_to "Server Discovery", discover_path, class: "text-muted text-decoration-none"
-
-      .col-lg-2.col-md-6
-        h6.text-light.mb-3 Source Code
-        ul.list-unstyled.small
-          li.mb-2
-            = link_to "Arma Mod", "https://github.com/itsthedevman/esm_arma", class: "text-muted text-decoration-none"
-          li.mb-2 = link_to "Discord Bot", "https://github.com/itsthedevman/esm_bot", class: "text-muted text-decoration-none"
-          li.mb-2 = link_to "Website", "https://github.com/itsthedevman/esm_website", class: "text-muted text-decoration-none"
 
       .col-lg-2.col-md-6
         h6.text-light.mb-3 Community
