@@ -9,7 +9,7 @@ module ESM
       end
 
       def self.stop
-        @instance.stop_service
+        @instance&.stop_service
       end
 
       # Accepts a request and triggers any logic that is required by the command

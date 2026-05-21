@@ -38,7 +38,8 @@ module ESM
         @connection_manager.stop
 
         @server.close
-        @task.shutdown
+        @task&.shutdown
+
         info!(status: :stopped)
       end
 
