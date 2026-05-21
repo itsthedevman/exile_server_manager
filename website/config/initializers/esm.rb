@@ -12,6 +12,7 @@
 require Pathname.new(ENV.fetch("ESM_CORE_PATH")).join("lib", "loader.rb")
 
 Rails.application.config.to_prepare do
+  Loader.file("core", "lib", "esm.rb", method: :load)
   Loader.dir("core", "lib", "extensions", method: :load)
   Loader.dir("core", "lib", "utilities", method: :load)
   Loader.file("core", "lib", "esm", "application_record.rb", method: :load)
