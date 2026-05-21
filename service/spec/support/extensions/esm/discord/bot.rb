@@ -23,11 +23,11 @@ module ESM
       # expiration behavior should drive it manually.
       #
       # @param async [Boolean] kept for signature compatibility; ignored
-      # @param skip_initialization [Boolean] kept for signature compatibility; ignored
+      # @param bare [Boolean] kept for signature compatibility; ignored
       #
       # @return [true] when ready (or already ready)
       #
-      def run(async: false, skip_initialization: false)
+      def run(async: false, bare: false)
         return if @esm_status == :ready
 
         ESM::Command.setup_event_hooks!

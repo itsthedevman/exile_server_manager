@@ -30,7 +30,7 @@ namespace :community do
     ESM::Community.all.select(:id, :guild_id, :community_id).find_each do |community|
       owner_discord_id = community.discord_server.owner.id
       owner_user_id = ESM::User.by_discord_id(owner_discord_id).pick(:id)
-      
+
       if owner_user_id.nil?
         puts "[ERROR] Failed to find ESM::User with discord_id=#{owner_discord_id} for ESM::Community<#{community.id}>."
 

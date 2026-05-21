@@ -46,20 +46,23 @@ module ESM
         super(token: ESM.config.token, intents: INTENTS)
       end
 
-      def run(async: false, skip_initialization: false)
+      ##
+      # Loads ESM commands and connects to Discord.
+      #
+      # @param async [Boolean] when true, the Discord connection runs in a
+      #   background thread and this method returns immediately. Defaults to false.
+      # @param bare [Boolean] when true, loads commands and connects to Discord, but skips binding any events or
+      #   starting extra servers/services
+      #
+      # @return [void]
+      #
+      def run(async: false, bare: false)
         @timer.start!
 
         ESM::Command.load
 
-        # This is needed for console. Otherwise the console's connection would start receiving events
-        # such as server connections
-        if skip_initialization
-          warn!("skip_initialization is set! ESM will not connect to Discord, bind to any events, or start any services")
-          return
-        end
-
         # Binds the Discord Events
-        bind_events!
+        bind_events! unless bare
 
         # Start the bot
         super(async)

@@ -3,7 +3,7 @@
 require "bundler/setup"
 require_relative "../lib/esm"
 
-ESM.run!(async: true, skip_initialization: true)
+ESM.run!(async: true, bare: true)
 
 require "pry"
 Pry.start

@@ -179,25 +179,19 @@ module ESM
     end
 
     ##
-    # Boots the bot, in order:
-    #
-    #   1. Eager-load every constant under `lib/esm/` via Zeitwerk.
-    #   2. Load per-bot overwrites for shared core models.
-    #   3. Seed development-only state (skipped outside development).
-    #   4. Install the signal handler so Ctrl-C exits cleanly (skipped in test).
-    #   5. Start the JSON API server.
-    #   6. Connect to Discord.
+    # Boots the bot
     #
     # Blocks until shutdown unless `async: true`.
     #
     # @param async [Boolean] when true, the Discord connection runs in a
     #   background thread and this method returns immediately. Defaults to false.
-    #
-    # Any additional keyword arguments are forwarded to {Discordrb::Bot#run}.
+    # @param bare [Boolean] when true, ESM loads its code, connects to Discord, but does not start any extra services
+    #   such as the API, Discord events, Arma connections, and extra services. Used in parallel when ESM is running
+    #   in another process, such as bin/console and rake tasks
     #
     # @return [void]
     #
-    def run!(async: false, skip_initialization: false)
+    def run!(async: false, bare: false)
       trace!("Trace logging enabled")
       debug!("Debug logging enabled")
 
@@ -221,10 +215,10 @@ module ESM
         redis.set("server_key", server.token.to_json) if server
       end
 
-      SignalHandler.start unless skip_initialization || env.test?
-      Website::API.run unless skip_initialization
+      SignalHandler.start unless env.test?
+      Website::API.run unless bare
 
-      discord_bot.run(async:, skip_initialization:)
+      discord_bot.run(async:, bare:)
     end
 
     ##
