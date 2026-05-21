@@ -119,10 +119,10 @@ Rails.application.routes.draw do
     "downloads/latest",
     as: :latest_download,
     to: redirect(
-      # https://github.com/itsthedevman/esm_arma/releases/download/v2.0.1/@esm-201.zip
+      # https://github.com/itsthedevman/exile_server_manager/releases/download/arma/v2.0.1/@esm-201.zip
       [
-        "https://github.com/itsthedevman/esm_arma/releases/download",
-        "/v#{Settings.mod_version}",
+        "https://github.com/itsthedevman/exile_server_manager/releases/download",
+        "/arma/v#{Settings.mod_version}",
         "/@esm-#{Settings.mod_version.delete(".")}.zip"
       ].join
     )
