@@ -111,6 +111,7 @@ gem "dry-validation"
 # Hoisted from core (formerly transitive via the esm_ruby_core path gem)
 gem "colorize"                  # Colorized terminal output, used by ESM core
 gem "fast_jsonparser"           # Fast JSON parsing, used by ESM core
+gem "neatjson"                  # Pretty JSON formatting, used by ESM::JSON.pretty_generate
 
 # My Libraries
 gem "everythingrb"              # Method extensions

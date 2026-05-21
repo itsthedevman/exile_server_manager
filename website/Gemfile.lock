@@ -228,6 +228,7 @@ GEM
       json
       securerandom
       uri
+    neatjson (0.10.5)
     net-http (0.9.1)
       uri (>= 0.11.1)
     net-imap (0.6.4)
@@ -527,6 +528,7 @@ DEPENDENCIES
   kramdown
   kramdown-parser-gfm
   nats-pure
+  neatjson
   omniauth
   omniauth-discord
   omniauth-openid
