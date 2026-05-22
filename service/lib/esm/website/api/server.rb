@@ -40,6 +40,25 @@ module ESM
 
           def register_handlers(server)
             server.register(:ping, Handlers::Ping)
+
+            server.register(:requests_accept, Handlers::RequestsAccept)
+            server.register(:requests_decline, Handlers::RequestsDecline)
+
+            server.register(:servers_update, Handlers::ServersUpdate)
+            server.register(:servers_reconnect, Handlers::ServersReconnect)
+            server.register(:servers_connected, Handlers::ServersConnected)
+
+            server.register(:channel, Handlers::Channel)
+            server.register(:channel_send, Handlers::ChannelSend)
+
+            server.register(:community_channels, Handlers::CommunityChannels)
+            server.register(:community_modifiable_by, Handlers::CommunityModifiableBy)
+            server.register(:community_roles, Handlers::CommunityRoles)
+            server.register(:community_users, Handlers::CommunityUsers)
+            server.register(:community_delete, Handlers::CommunityDelete)
+
+            server.register(:user_communities, Handlers::UserCommunities)
+            server.register(:user_community_permissions, Handlers::UserCommunityPermissions)
           end
         end
 

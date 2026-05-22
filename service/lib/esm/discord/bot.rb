@@ -73,7 +73,6 @@ module ESM
 
         @esm_status = :stopping
 
-        ESM::Website::API.stop
         ESM::Website::API::Server.stop
         ESM::Arma::Server.stop
 
