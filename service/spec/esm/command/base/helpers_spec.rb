@@ -28,11 +28,13 @@ describe ESM::Command::Base::Helpers do
   describe "#embed_from_message!", requires_connection: true do
     include_context "command" do
       let!(:command) do
-        ESM::Command::Test::ServerCommand.new(
-          user: user.discord_user,
-          arguments: {server_id: server.server_id},
+        origin = ESM::Discord::Command::Origin.new(
+          user: user,
+          community: community,
           channel: community.discord_server.channels.first
         )
+
+        ESM::Command::Test::ServerCommand.new(arguments: {server_id: server.server_id}, origin: origin)
       end
     end
 

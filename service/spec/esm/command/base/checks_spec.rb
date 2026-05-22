@@ -6,8 +6,11 @@ describe ESM::Command::Base::Checks do
   end
 
   before do
-    command.current_user = user
-    command.current_channel = community.discord_server.channels.first
+    command.origin = ESM::Discord::Command::Origin.new(
+      user: user,
+      community: community,
+      channel: community.discord_server.channels.first
+    )
   end
 
   describe "#registered_target_user!" do

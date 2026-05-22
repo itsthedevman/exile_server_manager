@@ -5,13 +5,13 @@ module ESM
     def respond(accepted)
       @accepted = accepted
 
-      # Build the command
-      command = ESM::Command[command_name].new
+      origin = ESM::Discord::Command::Origin.new(
+        user: requestor,
+        channel: ESM.discord_bot.channel(requested_from_channel_id)
+      )
 
-      # Respond
+      command = ESM::Command[command_name].new(origin: origin)
       command.from_request(self)
-
-      # Remove the request
       destroy
     end
   end

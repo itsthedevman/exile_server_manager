@@ -20,11 +20,7 @@ module ESM
         end
 
         def check_for_owner!
-          server = target_community.discord_server
-          guild_member = current_user.on(server)
-
-          check_failed!(:no_permissions, user: current_user.mention) if guild_member.nil?
-          return if guild_member.owner?
+          return if target_community.owner_user_id == current_user.id
 
           check_failed!(:no_permissions, user: current_user.mention)
         end
@@ -33,7 +29,7 @@ module ESM
           if !command_enabled?
             # If the community doesn't want to send a message, don't send a message.
             # This only applies to text channels. The user needs to know why the bot is not replying to their message
-            if current_channel.text? && !notify_when_command_disabled?
+            if text_channel? && !notify_when_command_disabled?
               check_failed!(exception_class: ESM::Exception::CheckFailureNoMessage)
             else
               check_failed!(
@@ -180,7 +176,7 @@ module ESM
         # Order matters!
         def check_for_player_mode!
           # This only affects text channels
-          return unless current_channel.text?
+          return unless text_channel?
 
           # This only affects player_mode
           return unless current_community.player_mode_enabled?
@@ -204,7 +200,7 @@ module ESM
 
         def check_for_different_community!
           # Only affects text channels
-          return if !current_channel.text?
+          return unless text_channel?
 
           # Only affects if player mode is disabled
           return if current_community.player_mode_enabled?

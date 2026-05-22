@@ -45,7 +45,13 @@ module ESM
         def on_execution(command_class)
           respond(content: "Processing your request...")
 
-          @command = command_class.new(user:, server:, channel:, arguments: options)
+          origin = ESM::Discord::Command::Origin.new(
+            user: ESM::User.from_discord(user),
+            community: ESM::Community.from_discord(server),
+            channel: channel
+          )
+
+          @command = command_class.new(arguments: options, origin: origin)
 
           ESM::Database.with_connection do
             @command.from_discord!

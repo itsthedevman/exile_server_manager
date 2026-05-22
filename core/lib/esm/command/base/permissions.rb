@@ -71,7 +71,7 @@ module ESM
 
         # Is the command allowed in this text channel?
         def command_allowed_in_channel?
-          return true if current_channel.pm?
+          return true if current_channel.nil? || current_channel.pm?
           return true if current_community&.player_mode_enabled?
           return community_permissions.allowed_in_text_channels? if community_permissions?
 
