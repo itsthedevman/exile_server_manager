@@ -59,7 +59,7 @@ module ESM
       @url = url || Settings.nats.url
       @subject_prefix = subject_prefix || Settings.nats.subject_prefix
       @timeout = timeout || Settings.nats.request_timeout
-      @secret = secret || ENV.fetch(Settings.nats.shared_secret_env)
+      @secret = secret || Settings.nats.shared_secret
       @nats = nil
       @mutex = Mutex.new
     end

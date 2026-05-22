@@ -42,11 +42,21 @@ ports:
   connection_server: 3003
 
 # NATS request/reply transport for website ↔ bot RPC. Both sides must agree on
-# url, subject_prefix, and shared_secret. The seed below is a committed default
-# for dev; production overrides via its own settings overlay.
+# url, subject_prefix, and shared_secret.
 nats:
+  # Broker URL the bot connects to. Outbound only; no port is bound here.
   url: "nats://127.0.0.1:4222"
+
+  # Prefix every RPC subject is published under. Handlers register as
+  # "<subject_prefix><action>" (e.g. esm.bot.rpc.community_roles).
   subject_prefix: "esm.bot.rpc."
+
+  # HMAC-SHA256 key used to sign and verify the wire envelope on every RPC.
+  # The website signs; the bot verifies. The value below is a committed dev
+  # seed so contributors can run both sides locally without extra setup.
+  # IMPORTANT: production MUST override this in its settings overlay with a
+  # fresh random secret (e.g. `openssl rand -hex 32`). Keep it identical on
+  # both website and bot or every request rejects with signature_invalid.
   shared_secret: "0bbb8d3b285597fafaa4eced7cdeba4e5d1a1758de9cd9bec49f92281627714c"
 
 # Poll interval (seconds) for sweeping outstanding /request records.

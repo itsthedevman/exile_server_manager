@@ -28,6 +28,15 @@ RSpec.describe ESM::Website::API::Handlers::ChannelSend do
       end
     end
 
+    context "with a plain-text String message" do
+      it "delivers the string as-is" do
+        described_class.call(id: channel.id, message: "raw notification text")
+        ESM.discord_bot.test_outbox.await_size(1)
+
+        expect(ESM.discord_bot.test_outbox.first.content).to eq("raw notification text")
+      end
+    end
+
     context "when the channel cannot be found" do
       it "returns nil and delivers nothing" do
         expect(described_class.call(id: Spec::Snowflake.next, message: {description: "x"})).to be_nil

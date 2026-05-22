@@ -17,7 +17,7 @@ module ESM
             return if channel.nil?
             return if channel.text? && !ESM.discord_bot.channel_permission?(:send_messages, channel)
 
-            message = message.parse_json if message.is_a?(String)
+            message = message.parse_json || message if message.is_a?(String)
             message = ESM::Embed.from_hash(message) if message.is_a?(Hash)
 
             ESM.discord_bot.deliver(message, to: channel)
