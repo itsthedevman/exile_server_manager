@@ -217,6 +217,7 @@ module ESM
 
       SignalHandler.start unless env.test?
       Website::API.run unless bare
+      Website::API::Server.start unless bare || env.test?
 
       discord_bot.run(async:, bare:)
     end

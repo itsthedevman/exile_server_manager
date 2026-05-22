@@ -41,6 +41,14 @@ ports:
   # TCP server for V2 Arma extension connections.
   connection_server: 3003
 
+# NATS request/reply transport for website ↔ bot RPC. Both sides must agree on
+# url, subject_prefix, and shared_secret. The seed below is a committed default
+# for dev; production overrides via its own settings overlay.
+nats:
+  url: "nats://127.0.0.1:4222"
+  subject_prefix: "esm.bot.rpc."
+  shared_secret: "0bbb8d3b285597fafaa4eced7cdeba4e5d1a1758de9cd9bec49f92281627714c"
+
 # Poll interval (seconds) for sweeping outstanding /request records.
 request_overseer:
   check_every: 15
