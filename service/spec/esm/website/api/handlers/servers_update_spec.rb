@@ -18,7 +18,7 @@ RSpec.describe ESM::Website::API::Handlers::ServersUpdate do
       end
 
       it "closes the connection with the settings-update reason" do
-        expect(connection).to receive(:close).with(I18n.t("server_reconnect.reasons.settings_update"))
+        expect(connection).to receive(:close).with(I18n.t("server_disconnect.reasons.settings_update"))
         described_class.call(id: server.id)
       end
     end

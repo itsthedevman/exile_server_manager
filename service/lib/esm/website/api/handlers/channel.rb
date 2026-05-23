@@ -29,6 +29,12 @@ module ESM
             end
 
             channel.to_h
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot was kicked from the guild that owns this channel, or the
+            # channel/user disappeared between cache and lookup. Treat as
+            # "channel not accessible" so the caller sees the same nil it
+            # gets for any other missing channel.
+            nil
           end
         end
       end

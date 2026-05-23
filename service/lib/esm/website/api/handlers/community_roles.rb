@@ -15,7 +15,7 @@ module ESM
             community = ESM::Community.find_by(id: id)
             return if community.nil?
 
-            server_roles = community.discord_server.roles
+            server_roles = community.discord_server&.roles
             return if server_roles.blank?
 
             server_roles.sort_by(&:position).reverse.filter_map do |role|
@@ -28,6 +28,9 @@ module ESM
                 disabled: false
               }
             end
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot can't fetch the guild's roles. Caller sees empty list.
+            nil
           end
         end
       end

@@ -36,6 +36,10 @@ module ESM
                 id: community.id,
                 modifiable: community.modifiable_by?(discord_member)
               }
+            rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+              # Bot can't see this specific guild or the user's membership.
+              # Skip and keep the rest of the user's communities.
+              nil
             end
           end
         end

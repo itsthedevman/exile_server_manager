@@ -16,6 +16,15 @@ RSpec.describe ESM::Website::API::Handlers::CommunityModifiableBy do
       expect(described_class.call(id: community.id, user_id: other_user.id)).to be(false)
     end
 
+    context "when the user is not a member of the community's guild" do
+      let(:other_server) { build(:discord_server) }
+      let!(:other_community) { create(:community, discord_server: other_server) }
+
+      it "returns false instead of raising" do
+        expect(described_class.call(id: other_community.id, user_id: user.id)).to be(false)
+      end
+    end
+
     context "when the community is missing" do
       it "returns nil" do
         expect(described_class.call(id: -1, user_id: user.id)).to be_nil

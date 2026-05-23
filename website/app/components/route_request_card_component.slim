@@ -14,9 +14,14 @@
       / Channel and server info
       .mb-3
         .d-flex.align-items-center.gap-2
-          span.text-info.fw-semibold
-            i.bi.bi-hash
-            = channel.name
+          - if channel
+            span.text-info.fw-semibold
+              i.bi.bi-hash
+              = channel.name
+          - else
+            span.text-warning.fw-semibold[title="Channel may be deleted or inaccessible"]
+              i.bi.bi-exclamation-triangle.me-1
+              | Unknown channel
           span.text-muted.small
             i.bi.bi-arrow-left.mx-1
             |> from

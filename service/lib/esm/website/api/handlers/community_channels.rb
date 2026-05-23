@@ -17,6 +17,8 @@ module ESM
             return if community.nil?
 
             server = community.discord_server
+            return if server.nil?
+
             user = ESM::User.find_by(id: user_id)
 
             channels = server.channels.filter_map do |channel|
@@ -26,6 +28,9 @@ module ESM
               next unless bot_can_read && user_can_read
 
               channel.to_h
+            rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+              # Skip channels the bot can't introspect (lost access mid-list).
+              nil
             end
 
             channels.sort_by! { |c| c[:position] || 0 }
@@ -44,6 +49,9 @@ module ESM
             grouped_channels.unshift([{name: community.community_name}, not_categorized_channels])
 
             grouped_channels
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot can't read the guild's channel list at all. Caller sees nil.
+            nil
           end
         end
       end

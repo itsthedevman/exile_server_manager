@@ -23,6 +23,10 @@ module ESM
 
             discord_server.leave
             community.destroy
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot can't reach the guild to verify or leave. Refuse the destroy
+            # so we don't tear down DB state without confirming Discord side.
+            nil
           end
         end
       end

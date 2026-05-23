@@ -19,6 +19,10 @@ module ESM
             return if user.nil?
 
             community.modifiable_by?(user.discord_user.on(community.discord_server))
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot can't see the guild or the user's membership in it. Anyone
+            # the bot can't verify is treated as not allowed to modify.
+            false
           end
         end
       end

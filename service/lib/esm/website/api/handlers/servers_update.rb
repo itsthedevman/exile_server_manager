@@ -19,7 +19,7 @@ module ESM
               connection = server.connection
               return true if connection.nil?
 
-              connection.close(I18n.t("server_reconnect.reasons.settings_update"))
+              connection.close(I18n.t("server_disconnect.reasons.settings_update"))
             else
               connection = ESM::Websocket.connection(server.server_id)
               return true if connection.nil?

@@ -15,10 +15,13 @@ module ESM
             community = ESM::Community.find_by(id: id)
             return if community.nil?
 
-            users = community.discord_server.users
+            users = community.discord_server&.users
             return if users.blank?
 
             users.map(&:to_h)
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot can't fetch the guild's user list. Caller sees empty list.
+            nil
           end
         end
       end

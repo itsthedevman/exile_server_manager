@@ -21,6 +21,10 @@ module ESM
             message = ESM::Embed.from_hash(message) if message.is_a?(Hash)
 
             ESM.discord_bot.deliver(message, to: channel)
+          rescue Discordrb::Errors::CodeError, Discordrb::Errors::NoPermission
+            # Bot lost access to the channel/guild between cache and send.
+            # Silently no-op rather than 500ing the request.
+            nil
           end
         end
       end
