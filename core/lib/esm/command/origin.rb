@@ -11,27 +11,67 @@ module ESM
     # adapter that implements this interface.
     #
     class Origin
+      ##
+      # The user who invoked the command.
+      #
+      # @abstract
+      #
+      # @return [ESM::User]
+      #
+      # @raise [NotImplementedError] if the adapter does not implement this method
+      #
       def current_user
         raise NotImplementedError
       end
 
+      ##
+      # The community context in which the command was invoked, or nil when the invocation
+      # has no community scope (e.g. a direct-message origin).
+      #
+      # @abstract
+      #
+      # @return [ESM::Community, nil]
+      #
+      # @raise [NotImplementedError] if the adapter does not implement this method
+      #
       def current_community
         raise NotImplementedError
       end
 
+      ##
+      # The channel through which the command was received, or nil for origins that have
+      # no channel concept (e.g. website RPCs).
+      #
+      # @abstract
+      #
+      # @return [Object, nil] a medium-specific channel object, or nil
+      #
+      # @raise [NotImplementedError] if the adapter does not implement this method
+      #
       def current_channel
         raise NotImplementedError
       end
 
-      # Delivers a reply back to whoever invoked the command. Accepts a String or
-      # {ESM::Embed}; concrete adapters decide how to serialize and route it.
+      ##
+      # Delivers a reply back to the invoking user.
+      #
+      # @abstract Adapters serialize and route content for their medium.
+      #
+      # @param content [String, ESM::Embed] the reply body
+      #
+      # @raise [NotImplementedError] if the adapter does not implement this method
+      #
       def reply(content)
         raise NotImplementedError
       end
 
-      # Hash merged into {Helpers#raise_error!}'s warn payload so logs carry the
-      # origin's identifying context (channel id, request id, etc.) without leaking
-      # medium-specific types into core.
+      ##
+      # Identifying context merged into error-warning payloads so logs carry medium-specific
+      # metadata (channel id, request id, etc.) without exposing adapter types to core error
+      # handling. Adapters override this to inject their own fields.
+      #
+      # @return [Hash]
+      #
       def log_context
         {}
       end

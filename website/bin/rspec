@@ -4,4 +4,4 @@ set -euo pipefail
 
 readonly args=("$@")
 
-ESM_ENV=test bundle exec rspec "${args[@]}"
+ESM_ENV=test RAILS_ENV=test bundle exec rspec "${args[@]}"
