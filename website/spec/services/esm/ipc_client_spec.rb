@@ -6,7 +6,7 @@ require_relative "../../support/spec/nats_broker"
 
 # Boots an isolated nats-server, hand-rolls a subscriber that mimics what the
 # bot would do, and verifies IpcClient's full surface: signed envelopes,
-# Result on success, RemoteError on ok=false, Unreachable on transport failure.
+# the handler result on success, RemoteError on ok=false, Unreachable on transport failure.
 #
 RSpec.describe ESM::IpcClient do
   let(:secret) { SecureRandom.hex(32) }
@@ -42,8 +42,7 @@ RSpec.describe ESM::IpcClient do
 
       result = described_class.call(:ping, hello: "world")
 
-      expect(result).to be_ok
-      expect(result.value).to eq({pong: true})
+      expect(result).to eq({pong: true})
 
       expect(captured[:body]).to be_a(String)
       expect(captured[:signature]).to match(/\A[0-9a-f]{64}\z/)
