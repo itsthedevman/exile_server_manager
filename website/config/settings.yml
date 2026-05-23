@@ -1,16 +1,45 @@
+#
+# ESM website configuration. Load order (later overrides earlier):
+#   1. settings.yml                  (this file, committed defaults)
+#   2. settings.local.yml            (gitignored secrets, template: settings.example.yml)
+#   3. settings/#{Rails.env}.yml     (committed per-env overlays)
+#
+# Schema: config/initializers/config.rb.
+#
+
+# ESM Arma mod version the website advertises (download links, /about page).
 mod_version: "2.0.1"
 
+# Discord OAuth credentials for the "Sign in with Discord" flow. Required -
+# define real values in settings.local.yml (dev) or the production overlay.
 discord:
   id: ""
   token: ""
   secret: ""
   logging_webhook_url: ""
 
+# Steam OAuth credentials for the "Sign in with Steam" flow. Required -
+# define the real key in settings.local.yml or the production overlay.
 steam:
   token: ""
 
+# NATS request/reply transport for website ↔ bot RPC. Both sides must agree on
+# url, subject_prefix, and shared_secret.
 nats:
+  # Broker URL the website connects to.
   url: "nats://127.0.0.1:4222"
+
+  # Prefix every RPC subject is published under. Must match the bot's value
+  # so the bot's subscriptions see our requests.
   subject_prefix: "esm.bot.rpc."
+
+  # Per-request timeout (seconds). On expiry, IpcClient raises Unreachable.
   request_timeout: 10
-  shared_secret_env: "API_AUTH_KEY"
+
+  # HMAC-SHA256 key used to sign the wire envelope on every RPC. The website
+  # signs; the bot verifies with the same value. The value below is a committed
+  # dev seed so contributors can run both sides locally without extra setup.
+  # IMPORTANT: production MUST override this in its settings overlay with a
+  # fresh random secret (e.g. `openssl rand -hex 32`). Keep it identical on
+  # both website and bot or every request rejects with signature_invalid.
+  shared_secret: "0bbb8d3b285597fafaa4eced7cdeba4e5d1a1758de9cd9bec49f92281627714c"

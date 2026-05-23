@@ -20,7 +20,7 @@ ActiveRecordQueryTrace.backtrace_cleaner = lambda do |trace|
   trace.select { |line| line.match?("esm") }
 end
 
-ESM.logger.level = Logger::TRACE
+# ESM.logger.level = Logger::TRACE
 
 # discordrb's debug stream is extremely noisy and rarely useful even in dev.
 Discordrb::LOGGER.debug = false

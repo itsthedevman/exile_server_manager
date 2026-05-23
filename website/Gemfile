@@ -57,7 +57,6 @@ gem "solid_cable"               # Database-backed Action Cable
 gem "bootsnap", require: false  # Faster boot through caching
 
 # Communication
-gem "drb" # Distributed Ruby (DRb) for remote object communication (legacy, removed in Phase C)
 gem "nats-pure" # NATS request/reply transport (website ↔ bot)
 
 ####################################################################################################

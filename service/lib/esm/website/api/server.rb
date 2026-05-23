@@ -1,0 +1,191 @@
+# frozen_string_literal: true
+
+require "nats/client"
+
+module ESM
+  module Website
+    class API
+      ##
+      # NATS request/reply listener. Subscribes to `esm.bot.rpc.<action>` subjects and
+      # dispatches each incoming message to a registered handler. Every envelope is
+      # HMAC-SHA256 signed by the website and verified here before the handler runs.
+      #
+      # Adding a new RPC: one line in {.register_handlers} pointing at a handler class
+      # under {Handlers}.
+      #
+      class Server
+        # Reject envelopes whose `issued_at` is more than this many seconds
+        # off our wall-clock in either direction. Bounds the replay window
+        # for a captured signed envelope.
+        ENVELOPE_MAX_AGE_SECONDS = 5 * 60
+
+        class << self
+          ##
+          # Boots the singleton, registers handlers, opens subscriptions.
+          #
+          # @return [Server] the running instance
+          #
+          def start
+            stop # Ensure the any running instances are cleaned up
+
+            @instance = new
+
+            register_handlers(@instance)
+
+            @instance.start
+          end
+
+          ##
+          # Drains and closes the NATS connection.
+          #
+          def stop
+            @instance&.stop
+            @instance = nil
+          end
+
+          private
+
+          def register_handlers(server)
+            server.register(:ping, Handlers::Ping)
+
+            server.register(:requests_accept, Handlers::RequestsAccept)
+            server.register(:requests_decline, Handlers::RequestsDecline)
+
+            server.register(:servers_update, Handlers::ServersUpdate)
+            server.register(:servers_reconnect, Handlers::ServersReconnect)
+            server.register(:servers_connected, Handlers::ServersConnected)
+
+            server.register(:channel, Handlers::Channel)
+            server.register(:channel_send, Handlers::ChannelSend)
+
+            server.register(:community_channels, Handlers::CommunityChannels)
+            server.register(:community_modifiable_by, Handlers::CommunityModifiableBy)
+            server.register(:community_roles, Handlers::CommunityRoles)
+            server.register(:community_users, Handlers::CommunityUsers)
+            server.register(:community_delete, Handlers::CommunityDelete)
+
+            server.register(:user_communities, Handlers::UserCommunities)
+            server.register(:user_community_permissions, Handlers::UserCommunityPermissions)
+          end
+        end
+
+        def initialize
+          @url = Settings.nats.url
+          @subject_prefix = Settings.nats.subject_prefix
+          @secret = Settings.nats.shared_secret
+          @handlers = {}
+          @nats = nil
+        end
+
+        ##
+        # Registers a handler for an action. The handler must respond to
+        # `call(**payload)` and return a hash.
+        #
+        # @param action [Symbol, String] action name (becomes subject suffix)
+        # @param handler [#call] handler class or callable
+        #
+        # @return [Server] self, for chaining
+        #
+        def register(action, handler)
+          @handlers[action.to_sym] = handler
+          self
+        end
+
+        ##
+        # Connects to NATS and subscribes one subject per registered handler.
+        #
+        # @return [Server] self
+        #
+        def start
+          return self if @nats
+
+          @nats = NATS.connect(@url)
+
+          @handlers.each do |action, handler|
+            subject = "#{@subject_prefix}#{action}"
+            @nats.subscribe(subject) { |message| dispatch(action, handler, message) }
+          end
+
+          info!(event: "website_api:start", subjects: @handlers.keys)
+
+          self
+        rescue => e
+          error!(event: "website_api:start_failed", error: e.class.name, detail: e.message)
+        end
+
+        ##
+        # Drains pending messages and closes the connection. Tolerant of a
+        # broker that's already gone (drain raises ConnectionClosedError in
+        # that case) so process shutdown can continue with the rest of the
+        # tear-down chain.
+        #
+        def stop
+          return unless @nats
+
+          begin
+            @nats.drain
+          rescue => e
+            warn!(event: "website_api:stop_error", error: e.class.name, detail: e.message)
+          end
+
+          @nats = nil
+
+          info!(event: "website_api:stop")
+        end
+
+        private
+
+        def dispatch(action, handler, message)
+          envelope = message.data.parse_json
+          return reject(message, action, :signature_invalid, "envelope rejected") unless verify_signature(envelope)
+
+          body = envelope[:body].parse_json
+          return reject(message, action, :invalid_envelope, "envelope rejected") unless body.is_a?(Hash)
+          return reject(message, action, :invalid_envelope, "envelope rejected") if stale_envelope?(body)
+
+          payload = body[:payload] || {}
+          payload = {} unless payload.is_a?(Hash)
+
+          result = handler.call(**payload)
+          message.respond({ok: true, result:}.to_json)
+        rescue => e
+          # Full error stays in the bot's logs; the wire response carries a
+          # generic detail so we don't leak AR/discordrb internals back to the
+          # caller. (Per dispatch comment: no oracle for the caller.)
+          error!(event: "website_api:error", action:, error: e.class.name, detail: e.message)
+          respond_error(message, :unknown, "internal handler error")
+        end
+
+        # Treats a missing or non-integer issued_at as "too old to trust"
+        # so a malformed/replayed envelope can't sneak past timestamp checks.
+        def stale_envelope?(body)
+          issued_at = body[:issued_at]
+          return true unless issued_at.is_a?(Integer)
+
+          (Time.now.to_i - issued_at).abs > ENVELOPE_MAX_AGE_SECONDS
+        end
+
+        # Returns false on any structural issue rather than raising, so a malformed envelope
+        # is rejected with the same code as a tampered one — no oracle for the caller.
+        def verify_signature(envelope)
+          return false unless envelope.is_a?(Hash)
+          return false unless envelope[:body].is_a?(String) && envelope[:signature].is_a?(String)
+
+          expected = OpenSSL::HMAC.hexdigest("SHA256", @secret, envelope[:body])
+          OpenSSL.fixed_length_secure_compare(expected, envelope[:signature])
+        rescue ArgumentError
+          false
+        end
+
+        def reject(message, action, error, detail)
+          warn!(event: "website_api:reject", action: action, reason: error)
+          respond_error(message, error, detail)
+        end
+
+        def respond_error(message, error, detail)
+          message.respond({ok: false, error:, detail:}.to_json)
+        end
+      end
+    end
+  end
+end

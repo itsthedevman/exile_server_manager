@@ -61,9 +61,11 @@ module ESM
     end
 
     def modifiable_by?(guild_member)
+      # A user with no membership in this guild can't modify the community.
+      return false if guild_member.nil?
+
       return true if guild_member.permission?(:administrator) || guild_member.owner?
 
-      # Check for roles
       dashboard_access_role_ids.any? { |role_id| guild_member.role?(role_id) }
     end
   end

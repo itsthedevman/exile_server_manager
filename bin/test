@@ -9,10 +9,10 @@ cd "$repo_root"
 # Each suite runs via `direnv exec .` so its per-dir .envrc loads
 # (flake, BUNDLE_GEMFILE for core, PATH_add for website, etc).
 readonly suites=(
-  "arma    cargo test --workspace"
-  "core    bundle exec rspec"
+  "arma    bin/test"
+  "core    bin/test"
   "service bin/test"
-  "website bundle exec rspec"
+  "website bin/test"
 )
 
 if [[ -t 1 ]]; then

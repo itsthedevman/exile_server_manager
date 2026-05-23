@@ -46,6 +46,12 @@ Config.setup do |config|
     required(:developer_guild_id).value(:string)
     required(:error_logging_channel_id).value(:string)
 
+    required(:nats).hash do
+      required(:shared_secret).filled(:string)
+      required(:subject_prefix).filled(:string)
+      required(:url).filled(:string)
+    end
+
     required(:ports).hash do
       required(:api).filled(:integer)
       required(:connection_server).filled(:integer)

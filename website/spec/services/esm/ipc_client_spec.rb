@@ -2,24 +2,33 @@
 
 require "rails_helper"
 require "nats/client"
+require_relative "../../support/spec/nats_broker"
 
-# Integration spec: requires the docker-compose `nats` service reachable at
-# `Settings.nats.url`. Spins up a stub subscriber to receive the signed
-# envelope, returns canned responses, and verifies IpcClient's contract.
+# Boots an isolated nats-server, hand-rolls a subscriber that mimics what the
+# bot would do, and verifies IpcClient's full surface: signed envelopes,
+# the handler result on success, RemoteError on ok=false, Unreachable on transport failure.
 #
-# Skipped: IpcClient is partially-written, not yet wired in. Re-enable when
-# the website->bot V2 path lands.
-xdescribe ESM::IpcClient do
-  let(:nats_url) { Settings.nats.url }
+RSpec.describe ESM::IpcClient do
+  let(:secret) { SecureRandom.hex(32) }
   let(:subject_prefix) { Settings.nats.subject_prefix }
-  let(:secret) { ENV.fetch("API_AUTH_KEY") }
-  let(:stub_nats) { NATS.connect(nats_url) }
+  let(:broker) { Spec::NatsBroker.new.start }
+  let(:stub_nats) { NATS.connect(broker.url) }
 
-  before { described_class.reset! }
+  let!(:original_url) { Settings.nats.url }
+  let!(:original_secret) { Settings.nats.shared_secret }
+
+  before do
+    Settings.nats.url = broker.url
+    Settings.nats.shared_secret = secret
+    described_class.reset!
+  end
 
   after do
     described_class.reset!
     stub_nats.close
+    broker.stop
+    Settings.nats.url = original_url
+    Settings.nats.shared_secret = original_secret
   end
 
   describe ".call" do
@@ -33,8 +42,7 @@ xdescribe ESM::IpcClient do
 
       result = described_class.call(:ping, hello: "world")
 
-      expect(result).to be_ok
-      expect(result.value).to eq({pong: true})
+      expect(result).to eq({pong: true})
 
       expect(captured[:body]).to be_a(String)
       expect(captured[:signature]).to match(/\A[0-9a-f]{64}\z/)
@@ -64,6 +72,10 @@ xdescribe ESM::IpcClient do
       client = described_class.new(url: "nats://127.0.0.1:1")
 
       expect { client.call(:ping) }.to raise_error(ESM::IpcClient::Unreachable)
+    end
+
+    it "raises Unreachable when the broker is up but no subscriber answers" do
+      expect { described_class.call(:not_a_real_action) }.to raise_error(ESM::IpcClient::Unreachable)
     end
   end
 end

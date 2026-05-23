@@ -53,6 +53,8 @@ module ESM
           return false if community.nil?
 
           server = ESM.discord_bot.server(community.guild_id.to_i)
+          return false if server.nil?
+
           guild_member = current_user.on(server)
           return false if guild_member.nil?
 
@@ -71,7 +73,7 @@ module ESM
 
         # Is the command allowed in this text channel?
         def command_allowed_in_channel?
-          return true if current_channel.pm?
+          return true if current_channel.nil? || current_channel.pm?
           return true if current_community&.player_mode_enabled?
           return community_permissions.allowed_in_text_channels? if community_permissions?
 

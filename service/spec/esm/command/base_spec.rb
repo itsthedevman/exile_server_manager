@@ -396,8 +396,11 @@ describe ESM::Command::Base do
     end
 
     before do
-      command.current_user = user
-      command.current_channel = community.discord_server.channels.first
+      command.origin = ESM::Discord::Command::Origin.new(
+        user: user,
+        community: community,
+        channel: community.discord_server.channels.first
+      )
     end
 
     it "raises the translation" do
@@ -555,7 +558,7 @@ describe ESM::Command::Base do
 
     before do
       command.requirements.unset(:registration)
-      command.instance_variable_set(:@current_user, user)
+      command.origin = ESM::Discord::Command::Origin.new(user: user)
     end
 
     context "when registration is not required" do
@@ -584,7 +587,7 @@ describe ESM::Command::Base do
 
     context "when there is a target community" do
       before do
-        command.instance_variable_set(:@current_community, community)
+        command.origin = ESM::Discord::Command::Origin.new(user: user, community: community)
         command.instance_variable_set(:@target_community, target_community)
       end
 
@@ -599,7 +602,7 @@ describe ESM::Command::Base do
 
     context "when there is a current community, but no target community" do
       before do
-        command.instance_variable_set(:@current_community, community)
+        command.origin = ESM::Discord::Command::Origin.new(user: user, community: community)
       end
 
       it "uses the current community's ID" do

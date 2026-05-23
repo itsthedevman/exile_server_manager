@@ -313,11 +313,10 @@ module ESM
             end
 
           warn!(
-            exception_class: exception_class,
-            author: "#{current_user.distinct} (#{current_user.discord_id})",
-            channel: "#{Discordrb::Channel::TYPE_NAMES[current_channel.type]} (#{current_channel.id})",
+            exception_class:,
             reason: reason.is_a?(Embed) ? reason.description : reason,
-            command: to_h
+            command: to_h,
+            **(@origin&.log_context || {})
           )
 
           raise exception_class, reason
@@ -397,9 +396,9 @@ module ESM
           send_to_target_server!(message)
         end
 
-        # Convenience method for replying back to the event's channel
+        # Convenience method for replying back to whoever invoked the command.
         def reply(message)
-          ESM.discord_bot.deliver(message, to: current_channel, block: true)
+          @origin.reply(message)
         end
 
         def edit_message(message, content)

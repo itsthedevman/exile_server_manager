@@ -70,7 +70,7 @@ Config.setup do |config|
       required(:url).filled(:string)
       required(:subject_prefix).filled(:string)
       required(:request_timeout).filled(:integer)
-      required(:shared_secret_env).filled(:string)
+      required(:shared_secret).filled(:string)
     end
 
     if Rails.env.production?

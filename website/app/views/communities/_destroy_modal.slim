@@ -51,9 +51,10 @@
           data-bs-dismiss="modal"
         ] Cancel
       .col-6
-        = link_to community_path(current_community.public_id),
+        = button_to community_path(current_community.public_id),
             method: :delete,
             class: "btn btn-danger w-100",
+            form: {class: "d-inline w-100"},
             data: {turbo: false}
           i.bi.bi-trash.me-2
           | Delete #{current_community.community_id}
@@ -65,9 +66,10 @@
         data-bs-dismiss="modal"
       ] Cancel
 
-      = link_to community_path(current_community.public_id),
+      = button_to community_path(current_community.public_id),
           method: :delete,
           class: "btn btn-danger",
+          form: {class: "d-inline"},
           data: {turbo: false}
         i.bi.bi-trash.me-2
         | Delete #{current_community.community_id}

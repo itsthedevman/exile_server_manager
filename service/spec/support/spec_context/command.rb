@@ -22,11 +22,15 @@ RSpec.shared_context("command") do
     # When the user is the server owner, the discord_server factory has
     # already registered them as a member; using :with_discord_member would
     # double-register.
-    if user_is_owner
-      create(:user, *args, discord_user: discord_user)
-    else
-      create(:user, :with_discord_member, *args, discord_user: discord_user, discord_server: discord_server)
-    end
+    user =
+      if user_is_owner
+        create(:user, *args, discord_user: discord_user)
+      else
+        create(:user, :with_discord_member, *args, discord_user: discord_user, discord_server: discord_server)
+      end
+
+    community.update!(owner_user_id: user.id) if user_is_owner
+    user
   end
   let(:command_class) { described_class }
   let(:command) { @previous_command || command_class.new }
@@ -124,12 +128,13 @@ RSpec.shared_context("command") do
     end
 
     event = ESM::Discord::Event::ApplicationCommand.new(event)
-    @previous_command = command_class.new(
-      user: event.user,
-      server: event.server,
-      channel: event.channel,
-      arguments: event.options
+    origin = ESM::Discord::Command::Origin.new(
+      user: ESM::User.from_discord(event.user),
+      community: ESM::Community.from_discord(event.server),
+      channel: event.channel
     )
+
+    @previous_command = command_class.new(arguments: event.options, origin: origin)
 
     ESM::Database.with_connection do
       @previous_command.from_discord!

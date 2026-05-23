@@ -321,12 +321,12 @@ module ESM
 
         attr_reader :response # v1
         attr_reader :name, :category, :cooldown_time, :permissions, :timers, :event
-
-        attr_accessor :current_community, :current_user, :current_channel
+        attr_accessor :origin
 
         delegate :examples, to: "self.class"
+        delegate :current_user, :current_community, :current_channel, to: :@origin, allow_nil: true
 
-        def initialize(user: nil, server: nil, channel: nil, arguments: {})
+        def initialize(arguments: {}, origin: nil)
           command_class = self.class
 
           # These can be modified on the fly. Disconnect them from the class
@@ -336,10 +336,8 @@ module ESM
           @name = command_class.command_name
           @category = command_class.category
           @attributes = attributes.to_istruct
+          @origin = origin
 
-          @current_user = ESM::User.from_discord(user)
-          @current_community = ESM::Community.from_discord(server)
-          @current_channel = channel
           @arguments = ESM::Command::Arguments.new(
             self,
             templates: command_class.arguments,

@@ -49,8 +49,4 @@ end
 
 task :discord_bot do
   ESM.run!(async: true, bare: true)
-
-  until ESM.discord_bot.ready?
-    sleep 0.1
-  end
 end
