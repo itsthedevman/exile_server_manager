@@ -27,12 +27,24 @@ namespace :community do
 
   desc "Backfills owner_user_id on communities by looking up each guild's Discord owner"
   task associate_to_owner_user: :discord_bot do
-    ESM::Community.all.select(:id, :guild_id, :community_id).find_each do |community|
-      owner_discord_id = community.discord_server.owner.id
+    communities = ESM::Community.all.select(:id, :guild_id, :community_id)
+    total = communities.size
+
+    communities.find_each.with_index do |community, index|
+      puts "#{index + 1}/#{total}: Community:#{community.id}:#{community.community_id}"
+
+      discord_server = community.discord_server
+      if discord_server.nil?
+        puts "[ERROR] Failed to find Discord::Server with guild_id=#{community.guild_id}."
+
+        next
+      end
+
+      owner_discord_id = discord_server.owner.id
       owner_user_id = ESM::User.by_discord_id(owner_discord_id).pick(:id)
 
       if owner_user_id.nil?
-        puts "[ERROR] Failed to find ESM::User with discord_id=#{owner_discord_id} for ESM::Community<#{community.id}>."
+        puts "[ERROR] Failed to find ESM::User with discord_id=#{owner_discord_id}."
 
         next
       end
