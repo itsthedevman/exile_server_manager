@@ -68,7 +68,7 @@ module ESM
             return user_defaults.community.community_id if user_defaults.community_id
 
             # Community autofill
-            return current_community.community_id if current_channel.text?
+            return current_community.community_id if current_channel&.text?
 
             nil
           end
@@ -94,7 +94,7 @@ module ESM
               end
 
               # Community autofill
-              if current_channel.text? && current_community.servers.by_server_id_fuzzy(content).any?
+              if current_channel&.text? && current_community.servers.by_server_id_fuzzy(content).any?
                 return "#{current_community.community_id}_#{content}"
               end
 
@@ -102,7 +102,7 @@ module ESM
             end
 
             # content == nil, attempt to find and use a default
-            if current_channel.text?
+            if current_channel&.text?
               channel_default = current_community.id_defaults.for_channel(current_channel)
               return channel_default.server.server_id if channel_default&.server_id
 

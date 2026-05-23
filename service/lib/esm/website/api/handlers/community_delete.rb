@@ -19,6 +19,7 @@ module ESM
             return if user.nil?
 
             discord_server = community.discord_server
+            return if discord_server.nil?
             return if !community.modifiable_by?(user.discord_user.on(discord_server))
 
             discord_server.leave

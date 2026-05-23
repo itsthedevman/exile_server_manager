@@ -53,6 +53,8 @@ module ESM
           return false if community.nil?
 
           server = ESM.discord_bot.server(community.guild_id.to_i)
+          return false if server.nil?
+
           guild_member = current_user.on(server)
           return false if guild_member.nil?
 

@@ -14,6 +14,11 @@ module ESM
       # under {Handlers}.
       #
       class Server
+        # Reject envelopes whose `issued_at` is more than this many seconds
+        # off our wall-clock in either direction. Bounds the replay window
+        # for a captured signed envelope.
+        ENVELOPE_MAX_AGE_SECONDS = 5 * 60
+
         class << self
           ##
           # Boots the singleton, registers handlers, opens subscriptions.
@@ -21,6 +26,8 @@ module ESM
           # @return [Server] the running instance
           #
           def start
+            stop # Ensure the any running instances are cleaned up
+
             @instance = new
 
             register_handlers(@instance)
@@ -102,15 +109,25 @@ module ESM
           info!(event: "website_api:start", subjects: @handlers.keys)
 
           self
+        rescue => e
+          error!(event: "website_api:start_failed", error: e.class.name, detail: e.message)
         end
 
         ##
-        # Drains pending messages and closes the connection.
+        # Drains pending messages and closes the connection. Tolerant of a
+        # broker that's already gone (drain raises ConnectionClosedError in
+        # that case) so process shutdown can continue with the rest of the
+        # tear-down chain.
         #
         def stop
           return unless @nats
 
-          @nats.drain
+          begin
+            @nats.drain
+          rescue => e
+            warn!(event: "website_api:stop_error", error: e.class.name, detail: e.message)
+          end
+
           @nats = nil
 
           info!(event: "website_api:stop")
@@ -120,16 +137,32 @@ module ESM
 
         def dispatch(action, handler, message)
           envelope = message.data.parse_json
-          return reject(message, action, :signature_invalid, "HMAC verification failed") unless verify_signature(envelope)
+          return reject(message, action, :signature_invalid, "envelope rejected") unless verify_signature(envelope)
 
           body = envelope[:body].parse_json
+          return reject(message, action, :invalid_envelope, "envelope rejected") unless body.is_a?(Hash)
+          return reject(message, action, :invalid_envelope, "envelope rejected") if stale_envelope?(body)
+
           payload = body[:payload] || {}
+          payload = {} unless payload.is_a?(Hash)
 
           result = handler.call(**payload)
           message.respond({ok: true, result:}.to_json)
         rescue => e
+          # Full error stays in the bot's logs; the wire response carries a
+          # generic detail so we don't leak AR/discordrb internals back to the
+          # caller. (Per dispatch comment: no oracle for the caller.)
           error!(event: "website_api:error", action:, error: e.class.name, detail: e.message)
-          respond_error(message, :unknown, e.message)
+          respond_error(message, :unknown, "internal handler error")
+        end
+
+        # Treats a missing or non-integer issued_at as "too old to trust"
+        # so a malformed/replayed envelope can't sneak past timestamp checks.
+        def stale_envelope?(body)
+          issued_at = body[:issued_at]
+          return true unless issued_at.is_a?(Integer)
+
+          (Time.now.to_i - issued_at).abs > ENVELOPE_MAX_AGE_SECONDS
         end
 
         # Returns false on any structural issue rather than raising, so a malformed envelope

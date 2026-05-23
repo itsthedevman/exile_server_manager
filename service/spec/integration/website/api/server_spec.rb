@@ -45,6 +45,58 @@ RSpec.describe ESM::Website::API::Server, :integration do
     end
   end
 
+  describe "envelope shape" do
+    it "rejects a body that's valid JSON but not a Hash" do
+      body = "null"
+      envelope = {
+        body: body,
+        signature: OpenSSL::HMAC.hexdigest("SHA256", secret, body)
+      }
+
+      response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
+      parsed = JSON.parse(response.data, symbolize_names: true)
+
+      expect(parsed[:ok]).to be false
+      expect(parsed[:error]).to eq("invalid_envelope")
+    end
+
+    it "rejects an envelope whose issued_at is older than the staleness window" do
+      stale_body = {
+        action: "ping",
+        payload: {},
+        issued_at: Time.now.to_i - (10 * 60),
+        nonce: SecureRandom.uuid
+      }.to_json
+      envelope = {
+        body: stale_body,
+        signature: OpenSSL::HMAC.hexdigest("SHA256", secret, stale_body)
+      }
+
+      response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
+      parsed = JSON.parse(response.data, symbolize_names: true)
+
+      expect(parsed[:ok]).to be false
+      expect(parsed[:error]).to eq("invalid_envelope")
+    end
+  end
+
+  describe "internal error redaction" do
+    let(:handler) { class_double(ESM::Website::API::Handlers::Ping) }
+
+    before { allow(handler).to receive(:call).and_raise(StandardError, "secret internal detail with table=communities sql=...") }
+
+    it "returns a generic detail string for :unknown errors, not the exception message" do
+      envelope = build_envelope.call(action: "ping", payload: {})
+      response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
+      parsed = JSON.parse(response.data, symbolize_names: true)
+
+      expect(parsed[:ok]).to be false
+      expect(parsed[:error]).to eq("unknown")
+      expect(parsed[:detail]).not_to include("secret internal detail")
+      expect(parsed[:detail]).not_to include("communities")
+    end
+  end
+
   describe "HMAC verification" do
     let(:handler) { class_double(ESM::Website::API::Handlers::Ping, call: {echo: {}}) }
 

@@ -15,7 +15,10 @@ module ESM
             channel = ESM.discord_bot.channel(id) || ESM.discord_bot.user(id)
             channel = channel.pm if channel.is_a?(Discordrb::User)
             return if channel.nil?
-            return if channel.text? && !ESM.discord_bot.channel_permission?(:send_messages, channel)
+            # PM channels carry no per-channel permission model; for everything
+            # else (text, news/announcement, threads) require send_messages or
+            # we'd silently push to a channel the bot can't write to.
+            return if !channel.pm? && !ESM.discord_bot.channel_permission?(:send_messages, channel)
 
             message = message.parse_json || message if message.is_a?(String)
             message = ESM::Embed.from_hash(message) if message.is_a?(Hash)
