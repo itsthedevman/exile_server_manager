@@ -76,6 +76,7 @@ end
 
 community = communities.first
 player_mode_community = communities.second
+other_community = communities.third
 puts " done"
 
 print "Unlocking all commands..."
@@ -100,9 +101,16 @@ server_2 = ESM::Server.create!(
   community_id: community.id,
   server_id: "esm_test",
   server_name: "Exile Server Manager (Test)",
-  server_key: "ee3686ece9e84c9ba4ce86182dff487f87c0a2a5004145bfb3e256a3d96ab6f01d7c6ca0a48240c29f365e10eca3ee55edb332658a553461649c554e47ab20693a1079d1c6bf8718220d704366ab315b6b3a4cbbac6b82ac2c2f3c469f9a25e134baa0df9d",
+  server_key: "caTkTRCt25iwaG7RJxN99aDtbib4gAtsylETLDpubgCuA86TFVqIFeRWLkQIHA1hqNwRrBpEtAVdEK7RtgCdNnfxkT8Hbj3y0TqaRrfpRffJ6Znndae3qfYRXSDxHWteLQLDRH0rjiIJfWMAxeK4G9QUmWkxnxEvguKuwLHfQxpAS3gEmykw3MkAhbosSqU6HNMxqNQESgpx9ddS8CPrSC2FOcSMP8GkBQ3PrzlbSLNYYzqv",
   server_ip: "127.0.0.1",
   server_port: "2302"
+)
+
+ESM::Server.create!(
+  community_id: other_community.id,
+  server_id: "esm_other",
+  server_name: "Exile Server Manager (Other)",
+  server_key: "dM34fkvl7FIcL63HGquV8ANXYWyXZs1epBvNDm0E30SnkvibqpwvhgtVHKlI8XMr9uUhhNXsR2kkkqRj19q5QfcCWsJv5AiChU7KsFdaXb4ommnADOVIWXa8kBzckadUrpQ1Yjdf0VzlIpazF3823DQBEBhMdFj7Ym5y8vERioyUuMV8KJo6h0OmTsXDc20Ndhi6oDnMOxN4YHrIHepcpAQIFFBoP9l7Myi3vt03IW9WBwnG"
 )
 puts " done"
 
