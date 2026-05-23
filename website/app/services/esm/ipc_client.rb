@@ -79,7 +79,10 @@ module ESM
       else
         raise RemoteError.new(parsed[:error], parsed[:detail])
       end
-    rescue NATS::IO::Timeout, NATS::IO::NoServersError, Errno::ECONNREFUSED => e
+    rescue NATS::IO::Timeout,
+      NATS::IO::NoServersError,
+      NATS::IO::NoRespondersError,
+      Errno::ECONNREFUSED => e
       raise Unreachable, e.message
     end
 

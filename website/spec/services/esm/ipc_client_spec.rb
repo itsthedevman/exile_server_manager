@@ -74,5 +74,9 @@ RSpec.describe ESM::IpcClient do
 
       expect { client.call(:ping) }.to raise_error(ESM::IpcClient::Unreachable)
     end
+
+    it "raises Unreachable when the broker is up but no subscriber answers" do
+      expect { described_class.call(:not_a_real_action) }.to raise_error(ESM::IpcClient::Unreachable)
+    end
   end
 end

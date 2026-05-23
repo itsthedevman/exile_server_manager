@@ -60,6 +60,12 @@ communities = [
     community_name: "ESM Test Server 2",
     guild_id: "901967248653189180",
     player_mode_enabled: true
+  },
+  {
+    community_id: "esm3",
+    community_name: "ESM Test Server 3",
+    guild_id: "1203080566417784842",
+    player_mode_enabled: false
   }
 ].map do |community_data|
   print "  Creating community for #{community_data[:community_id]}..."
