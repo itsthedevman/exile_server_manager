@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly args=("$@")
+
+ESM_ENV=test bundle exec rspec "${args[@]}"
