@@ -60,8 +60,8 @@ module ESM
       end.call
     end
 
-    def details
-      CommandDetail.where(command_name: command_name).first
+    def command_class
+      ESM::Command[command_name]
     end
   end
 end

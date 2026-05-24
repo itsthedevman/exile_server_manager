@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_04_034841) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -57,22 +57,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_04_034841) do
     t.string "command_name", null: false
     t.integer "execution_count", default: 0, null: false
     t.index ["command_name"], name: "index_command_counts_on_command_name"
-  end
-
-  create_table "command_details", force: :cascade do |t|
-    t.json "command_arguments"
-    t.json "command_attributes"
-    t.string "command_category"
-    t.text "command_description"
-    t.json "command_examples"
-    t.string "command_limited_to"
-    t.string "command_name"
-    t.json "command_requirements"
-    t.string "command_type"
-    t.text "command_usage"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["command_name"], name: "index_command_details_on_command_name"
   end
 
   create_table "communities", force: :cascade do |t|

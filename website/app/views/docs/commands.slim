@@ -98,7 +98,7 @@
                   .d-flex.align-items-start.justify-content-between.mb-4
                     div.flex-fill
                       .d-flex.align-items-center.gap-3.mb-3
-                        - if command.type == "admin"
+                        - if command.type == :admin
                           i.bi.bi-shield-lock.text-warning.fs-4[
                             data-bs-toggle="tooltip"
                             title="Admin command - may be restricted to certain roles"

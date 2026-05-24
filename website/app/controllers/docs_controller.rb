@@ -2,7 +2,7 @@
 
 class DocsController < ApplicationController
   def commands
-    commands = ESM::CommandDetail.all.order(command_category: :asc).map { |c| Command.new(c) }
+    commands = Command.all.values.sort_by(&:category)
     command_count = commands.size
 
     commands_by_domain = commands
@@ -14,7 +14,7 @@ class DocsController < ApplicationController
   end
 
   def getting_started
-    command_count = ESM::CommandDetail.all.size
+    command_count = Command.all.size
 
     render locals: {command_count:}
   end

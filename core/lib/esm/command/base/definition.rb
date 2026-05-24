@@ -166,24 +166,35 @@ module ESM
             }
           end
 
+          #
+          # Serializes the command into the flat hash the website renders its
+          # documentation from. The website is the only consumer now that the
+          # command_details cache is gone.
+          #
+          # @return [Hash]
+          #
           def to_details
-            details = to_h.except(:skipped_actions, :namespace)
-
-            details[:usage] = usage(with_args: false)
-
-            details[:arguments] = details[:arguments].each_with_object({}) do |(name, argument), hash|
-              hash[argument.display_name] = argument
-            end
-
-            details[:description] = details[:description].then do |description|
-              if (description_extra = details.delete(:description_extra).presence)
-                description += "\n#{description_extra}"
+            documented_arguments =
+              arguments.values.index_by(&:display_name).transform_values do |argument|
+                {
+                  name: argument.name,
+                  display_name: argument.display_name,
+                  description: argument.description,
+                  description_extra: argument.description_extra,
+                  placeholder: argument.placeholder
+                }
               end
 
-              description
-            end
-
-            details.transform_keys { |k| "command_#{k}" }
+            {
+              name: command_name,
+              type: type,
+              category: category,
+              description: [description, description_extra].compact_blank.join("\n"),
+              usage: usage(with_args: false),
+              examples: examples_raw.map(&:deep_symbolize_keys),
+              arguments: documented_arguments,
+              attributes: attributes.transform_values(&:to_h)
+            }
           end
 
           #

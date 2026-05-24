@@ -59,8 +59,6 @@ module ESM
       def run(async: false, bare: false)
         @timer.start!
 
-        ESM::Command.load
-
         # Binds the Discord Events
         bind_events! unless bare
 

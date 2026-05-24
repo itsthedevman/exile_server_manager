@@ -217,6 +217,15 @@ module ESM
       SignalHandler.start unless env.test?
       Website::API::Server.start unless bare || env.test?
 
+      # Load commands
+      ESM::Command.load
+
+      if !bare
+        # Run some jobs for command
+        SyncCommandConfigurationsJob.perform_async(nil)
+        SyncCommandCountsJob.perform_async(nil)
+      end
+
       discord_bot.run(async:, bare:)
     end
 

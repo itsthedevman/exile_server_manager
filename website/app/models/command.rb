@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
+#
+# Read-only view of a command for the website, sourced from the live command
+# classes in core (admin + player commands only, matching what the dropped
+# `command_details` cache used to hold).
+#
 class Command
   def self.all
-    @all ||= ESM::CommandDetail.all
-      .map { |c| Command.new(c) }
+    @all ||= ESM::Command.all
+      .select { |command_class| ESM::Command::TYPES.include?(command_class.type) }
+      .map { |command_class| new(command_class) }
       .index_by(&:name)
       .symbolize_keys!
   end
@@ -13,45 +19,23 @@ class Command
 
   attr_predicate :admin
 
-  def initialize(command_details)
-    @details = command_details
+  def initialize(command_class)
+    # `to_details` already returns a flat, string-keyed documentation hash.
+    @details = command_class.to_details
 
     parse_command_usage
 
     @admin = scope == :admin
   end
 
-  def name
-    @details.command_name
-  end
-
-  def type
-    @details.command_type
-  end
-
-  def description
-    @details.command_description
-  end
-
-  def arguments
-    @details.command_arguments
-  end
-
-  def examples
-    @details.command_examples
-  end
-
-  def category
-    @details.command_category
-  end
-
-  def usage
-    @details.command_usage
-  end
-
-  def attributes
-    @details.command_attributes
-  end
+  def name = @details[:name]
+  def type = @details[:type]
+  def description = @details[:description]
+  def arguments = @details[:arguments]
+  def examples = @details[:examples]
+  def category = @details[:category]
+  def usage = @details[:usage]
+  def attributes = @details[:attributes]
 
   def operation
     operation = ""
@@ -60,13 +44,13 @@ class Command
   end
 
   def modifiable?
-    attributes.any? { |_key, attrs| attrs["modifiable"] }
+    attributes.any? { |_key, attrs| attrs[:modifiable] }
   end
 
   private
 
   def parse_command_usage
-    parts = @details.command_usage.split(" ")
+    parts = usage.split(" ")
 
     # Split the command usage into parts using: /[domain] ?[scope] [action]
     @domain = parts.first.delete_prefix("/").to_sym

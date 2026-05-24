@@ -28,7 +28,7 @@ class CommandsController < AuthenticatedController
     command.update!(command_params)
 
     render turbo_stream: create_success_toast(
-      "<code>#{command.details.command_usage}</code> has been updated"
+      "<code>#{command.command_class.usage(with_args: false)}</code> has been updated"
     )
   end
 

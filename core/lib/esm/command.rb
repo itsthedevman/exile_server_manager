@@ -62,7 +62,6 @@ module ESM
       @by_type = []
       @by_namespace = {}
 
-      commands_needing_cached = []
       ApplicationCommand.subclasses.each do |command_class|
         # Background commands do not have types
         next if command_class.type.nil?
@@ -72,22 +71,11 @@ module ESM
         # Build the command structure for both server and global commands
         # Commands must be registered with Discord together if they share the same namespace
         register_namespace(command_class)
-
-        # Only admin and player commands need to be cached
-        next unless TYPES.include?(command_class.type)
-
-        # To be written to the DB in bulk
-        commands_needing_cached << command_class.to_details
       end
 
       # Lock it!
       @all.freeze
       @by_type = @all.group_by(&:type).freeze
-
-      # Run some jobs for command
-      RebuildCommandCacheJob.perform_async(commands_needing_cached)
-      SyncCommandConfigurationsJob.perform_async(nil)
-      SyncCommandCountsJob.perform_async(nil)
     end
 
     #

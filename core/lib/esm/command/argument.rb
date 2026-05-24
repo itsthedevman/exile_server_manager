@@ -120,7 +120,7 @@ module ESM
         }
       }.freeze
 
-      attr_reader :name, :type, :discord_type,
+      attr_reader :name, :type,
         :display_name, :command_class, :command_name,
         :default_value, :modifier, :placeholder,
         :description, :description_extra, :optional_text,
@@ -221,7 +221,6 @@ module ESM
 
         @name = name
         @type = type ? type.to_sym : :string
-        @discord_type = Discordrb::Interactions::OptionBuilder::TYPES[@type]
         @display_name = (opts[:display_name] || name).to_sym
         @command_class = opts[:command_class]
         @command_name = command_class.command_name.to_sym

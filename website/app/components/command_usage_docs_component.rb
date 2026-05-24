@@ -13,9 +13,9 @@ class CommandUsageDocsComponent < ApplicationComponent
         semantic_class = argument_semantic_class(name, argument)
 
         format_argument(
-          argument["display_name"],
+          argument[:display_name],
           "arg #{semantic_class}",
-          placeholder: argument["placeholder"]
+          placeholder: argument[:placeholder]
         )
       end
 

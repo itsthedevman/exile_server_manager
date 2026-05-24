@@ -108,7 +108,7 @@ RSpec.shared_context("command") do
               value.to_s
             end
 
-          {name: argument.display_name.to_s, value: value, type: argument.discord_type}
+          {name: argument.display_name.to_s, value: value, type: Discordrb::Interactions::OptionBuilder::TYPES[argument.type]}
         end
 
       data[:data][:options] = [{type: 1, name: command.command_name, options: options}]

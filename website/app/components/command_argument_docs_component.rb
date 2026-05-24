@@ -18,11 +18,11 @@ class CommandArgumentDocsComponent < ApplicationComponent
         <<~HTML
           <div class="p-3 bg-dark border border-secondary rounded #{bottom_margin}">
             <div class="mb-2">
-              <span class="arg #{semantic_class} fs-6">#{argument["display_name"]}</span>
+              <span class="arg #{semantic_class} fs-6">#{argument[:display_name]}</span>
             </div>
             <div class="text-light">
-              #{Markdown.to_html(argument["description"])}
-              #{"<br>#{Markdown.to_html(argument["description_extra"])}" if argument["description_extra"].present?}
+              #{Markdown.to_html(argument[:description])}
+              #{"<br>#{Markdown.to_html(argument[:description_extra])}" if argument[:description_extra].present?}
             </div>
           </div>
         HTML
