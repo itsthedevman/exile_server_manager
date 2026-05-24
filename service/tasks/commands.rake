@@ -12,6 +12,30 @@ namespace :commands do
     puts JSON.pretty_generate(commands)
   end
 
+  desc "Delete a single Discord command by name (global + every community guild)"
+  task :delete, [:name] => :discord_bot do |_task, args|
+    name = args[:name].presence
+    abort "Usage: rake commands:delete[command_name]" if name.nil?
+
+    remove = lambda do |label, server_id|
+      print "  #{label}..."
+
+      matches = ESM.discord_bot.get_application_commands(server_id:).select { |command| command.name == name }
+
+      matches.each(&:delete)
+      puts " removed #{matches.size}"
+    rescue => e
+      puts " skipped (#{e.class}: #{e.message})"
+    end
+
+    puts "Deleting '#{name}'..."
+    remove.call("global", nil)
+
+    ESM::Community.all.each do |community|
+      remove.call(community.community_id, community.guild_id)
+    end
+  end
+
   desc "Delete and re-register all Discord commands"
   task seed: :discord_bot do
     print "Deleting all global commands..."

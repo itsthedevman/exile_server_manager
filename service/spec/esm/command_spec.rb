@@ -18,7 +18,6 @@ describe ESM::Command do
       territory_commands = base_class::Territory
       server_commands = base_class::Server
       request_commands = base_class::Request
-      pictures_commands = base_class::Pictures
       general_commands = base_class::General
       my_commands = base_class::My
       community_commands = base_class::Community
@@ -60,12 +59,6 @@ describe ESM::Command do
           request: {
             decline: request_commands::Decline,
             accept: request_commands::Accept
-          },
-          pictures: {
-            snek: pictures_commands::Snek,
-            meow: pictures_commands::Meow,
-            doggo: pictures_commands::Doggo,
-            birb: pictures_commands::Birb
           },
           my: {
             steam_uid: my_commands::SteamUid,
@@ -123,7 +116,7 @@ describe ESM::Command do
 
   describe ".get" do
     it "is aliased correctly" do
-      expect(commands.get("birb")).to be(ESM::Command::Pictures::Birb)
+      expect(commands.get("help")).to be(ESM::Command::General::Help)
     end
   end
 
