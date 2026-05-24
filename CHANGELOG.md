@@ -7,7 +7,7 @@ version contract and are anchored by date. Year format is Holocene.
 
 ---
 
-## @ESM v2.0.1 — 12024-12-22
+## @esm v2.0.1 — 12024-12-22
 
 ### Changed
 
@@ -15,7 +15,21 @@ version contract and are anchored by date. Year format is Holocene.
 
 ---
 
-## [Unreleased]
+## [@esm Unreleased]
+
+### Added
+
+### Changed
+
+- Updated dependencies across workspace (tokio 1.47, uuid 1.18, regex 1.11, and others)
+
+### Fixed
+
+- Stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
+
+---
+
+## 12026-05-24
 
 ### Added
 
@@ -33,7 +47,6 @@ version contract and are anchored by date. Year format is Holocene.
 - **(repo)** Folded the four ESM projects into a single monorepo so domain ownership is explicit and shared code stops needing gem release churn to ship a change. `bot/` is now `service/`; `core/` is no longer packaged as a gem and is loaded via `ESM_*_PATH` env vars.
 - **(repo)** Renamed namespaces to reflect domain ownership: `ESM::Connection::*` is now `ESM::Arma::*`; `ESM::API` is now `ESM::Website::API`.
 - **(core)** Consolidated extensions and utilities under `core/lib/`
-- **(arma)** Updated dependencies across workspace (tokio 1.47, uuid 1.18, regex 1.11, and others)
 - **(arma, dev)** **BREAKING**: default bot host changed to `host.docker.internal:3003` for better Docker compatibility
 - **(arma, dev)** Improved release script with better GitHub CLI authentication handling and error recovery
 - **(arma, dev)** Enhanced log reader with dynamic log file discovery; automatically finds ExtDB logs and other log files
@@ -43,15 +56,12 @@ version contract and are anchored by date. Year format is Holocene.
 
 ### Fixed
 
-- **(arma)** Stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
 - **(arma, dev)** Rust toolchain installation in Docker for cross-compilation targets
 - **(service)** Connection close now drains its worker thread pool so background work doesn't outlive the socket
 
 ### Removed
 
 - **(service)** Capistrano deploy config from the bot
-
----
 
 ## 12025-08-13 — (bot 2.4.0)
 
