@@ -10,7 +10,6 @@ import_and_export!(add_xm8_notifications);
 import_and_export!(check_if_territory_exists);
 import_and_export!(check_if_territory_owner);
 import_and_export!(command_all_territories);
-import_and_export!(command_me);
 import_and_export!(command_player_info);
 import_and_export!(command_player_territories);
 import_and_export!(command_reset_all);
@@ -32,7 +31,6 @@ load_sql! {
     check_if_territory_exists,
     check_if_territory_owner,
     command_all_territories,
-    command_me,
     command_player_info,
     command_player_territories, // Used by multiple commands
     command_reset_all,

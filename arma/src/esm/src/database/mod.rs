@@ -143,15 +143,6 @@ impl Database {
             .await
     }
 
-    pub async fn command_me(
-        &self,
-        arguments: HashMap<String, String>,
-    ) -> QueryResult {
-        let mut connection =
-            self.connection().await.map_err(QueryError::System)?;
-        queries::command_me(&self, &mut connection, &arguments).await
-    }
-
     pub async fn command_player_info(
         &self,
         arguments: HashMap<String, String>,

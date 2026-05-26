@@ -276,8 +276,9 @@ async fn database_query(message: Message) -> MessageResult {
                 "all_territories" => {
                     DATABASE.command_all_territories(arguments).await
                 }
-                "me" => DATABASE.command_me(arguments).await,
-                "player_info" => DATABASE.command_player_info(arguments).await,
+                "me" | "player_info" => {
+                    DATABASE.command_player_info(arguments).await
+                }
                 "player_territories" => {
                     DATABASE.command_player_territories(arguments).await
                 }
