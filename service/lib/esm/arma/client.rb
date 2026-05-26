@@ -106,7 +106,7 @@ module ESM
 
         # Send the data over the network
         promise = write(id:, type:, content:)
-        return promise.execute unless block
+        return promise unless block
 
         # Block and wait for a response or timeout
         response = promise.wait_for_response(timeout)
@@ -161,11 +161,13 @@ module ESM
         # Compress
         content = ActiveSupport::Gzip.compress(content)
 
-        # Encrypt
+        # Encrypt with the current key. The handshake relies on this happening
+        # before the caller swaps @encryption (see Lifecycle#authenticate!).
         content = @encryption.encrypt(content)
 
-        # Once the promise is executed, write the content to the client
-        promise.then { @socket.write(content) }
+        @socket.write(content)
+
+        promise
       end
 
       def update_last_heartbeat

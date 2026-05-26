@@ -7,9 +7,7 @@ describe "ESMs_system_message_respond_withError", :requires_connection, v2: true
     it "contains the errors" do
       original_message = ESM::Message.new
 
-      promise = server.connection
-        .write(type: :message, id: original_message.id, content: nil)
-        .reset_promise
+      promise = server.connection.register_response(original_message.id)
 
       execute_sqf!(
         <<~SQF

@@ -186,7 +186,11 @@ RSpec.shared_examples("arma_discord_logging_disabled") do
   it "is expected not to send a log message to the discord server" do
     execute_command
 
-    log_message = ESM.discord_bot.test_outbox.retrieve(message)
+    # Asserting absence: the admin log is a separate async push from the server,
+    # and when it IS sent it lands sub-second alongside the reply on a localhost
+    # connection. A 1s cap is well past that, so it still catches a regressed log
+    # while avoiding the full 10s mailbox timeout this would otherwise wait out.
+    log_message = ESM.discord_bot.test_outbox.retrieve(message, timeout: 1)
     expect(log_message).to be_nil
   end
 end

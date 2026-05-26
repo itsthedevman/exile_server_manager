@@ -6,12 +6,9 @@ describe "ESMs_system_message_respond_to", :requires_connection, v2: true do
   it "acknowledges the message" do
     original_message = ESM::Message.new
 
-    # Resetting the promise back to the start removes any "#then" method chains
-    # The reason why this is important is to ensure the spec can handle the incoming
-    # data.
-    promise = server.connection
-      .write(type: :message, id: original_message.id, content: nil)
-      .reset_promise
+    # Register a pending promise without sending anything; the response is triggered
+    # directly by the execute_sqf! call below.
+    promise = server.connection.register_response(original_message.id)
 
     execute_sqf!(
       <<~SQF

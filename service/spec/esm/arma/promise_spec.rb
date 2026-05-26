@@ -3,38 +3,61 @@
 describe ESM::Arma::Promise, v2: true do
   subject(:promise) { described_class.new }
 
-  context "when the inner value is set and the promise is told to wait for a response" do
-    let(:response) { ESM::Arma::Request.from_client(t: 0, c: "[1, 2, 3]".bytes) }
+  let(:request) { ESM::Arma::Request.from_client(t: 0, c: "[1, 2, 3]".bytes) }
 
-    it "returns the inner value" do
-      promise.then do |_|
-        sleep(0.1)
-        true
+  describe "#wait_for_response" do
+    context "when a response has been set" do
+      it "returns a fulfilled obligation carrying the response content" do
+        promise.set_response(request)
+
+        response = promise.wait_for_response
+        expect(response.fulfilled?).to be(true)
+        expect(response.value).to eq("[1, 2, 3]")
       end
+    end
 
-      promise.execute
-      promise.set_response(response)
+    context "when the response is a StandardError" do
+      it "returns a rejected obligation carrying the error" do
+        error = StandardError.new("Uh-oh")
+        promise.set_response(error)
 
-      received_response = promise.wait_for_response
-      expect(received_response).to be_kind_of(ESM::Arma::Response)
-      expect(received_response.fulfilled?).to be(true)
-      expect(received_response.value).to eq("[1, 2, 3]")
+        response = promise.wait_for_response
+        expect(response.rejected?).to be(true)
+        expect(response.reason).to eq(error)
+      end
+    end
+
+    context "when no response arrives before the timeout" do
+      it "rejects with a RequestTimeout" do
+        response = promise.wait_for_response(0.05)
+
+        expect(response.rejected?).to be(true)
+        expect(response.reason).to be_kind_of(ESM::Exception::RequestTimeout)
+      end
     end
   end
 
-  context "when a chain in the promise raises an exception" do
-    it "returns a rejected response with the exception" do
-      promise.then do |_|
-        raise StandardError, "Uh-oh"
-      end
+  describe "#on_response" do
+    it "invokes the callback with the resolved obligation when a response arrives" do
+      received = Concurrent::IVar.new
+      promise.on_response(1) { |response| received.set(response) }
 
-      promise.execute
+      promise.set_response(request)
 
-      response = promise.wait_for_response
-      expect(response).to be_kind_of(ESM::Arma::Response)
+      response = received.value(1)
+      expect(response).not_to be_nil
+      expect(response.fulfilled?).to be(true)
+      expect(response.value).to eq("[1, 2, 3]")
+    end
+
+    it "rejects with a RequestTimeout when no response arrives in time" do
+      received = Concurrent::IVar.new
+      promise.on_response(0.05) { |response| received.set(response) }
+
+      response = received.value(1)
+      expect(response).not_to be_nil
       expect(response.rejected?).to be(true)
-      expect(response.reason).to be_kind_of(StandardError)
-      expect(response.reason.message).to eq("Uh-oh")
+      expect(response.reason).to be_kind_of(ESM::Exception::RequestTimeout)
     end
   end
 end

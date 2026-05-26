@@ -107,13 +107,15 @@ module ESM
             timeout: @config.response_timeout
           )
 
-          # This doesn't use #send_request because it needs to hook into the promise to immediately
-          # swap the nonce to the new one before the client has time to respond.
-          # Ignorance is bliss but this shouldn't be a race condition due to network lag
-          # "It works on my computer"
-          response = write(id: message.id, type: :handshake, content: message.to_s)
-            .then { |_| @encryption = Encryption.new(secret_key, nonce_indices:, session_id:) }
-            .wait_for_response(@config.response_timeout)
+          # This doesn't use #send_request because the nonce must swap to the new one
+          # between sending the handshake and reading the client's response. #write
+          # encrypts and sends the handshake with the current key, then we swap so the
+          # read loop decrypts the response with the new one. The network round-trip
+          # dwarfs the gap, so this isn't a practical race.
+          promise = write(id: message.id, type: :handshake, content: message.to_s)
+          @encryption = Encryption.new(secret_key, nonce_indices:, session_id:)
+
+          response = promise.wait_for_response(@config.response_timeout)
 
           if response.rejected?
             warn!(
