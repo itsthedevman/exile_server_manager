@@ -77,6 +77,46 @@ module ESM
       result
     end
 
+    #
+    # Runs a named query against the linked server's Exile database and returns the rows.
+    #
+    # @param function_name [String, Symbol] the query registered on the extension
+    # @param player [ESM::User, nil] the player who initiated the request
+    # @param target [ESM::User, ESM::User::Ephemeral, nil] the user the query acts on, if any
+    # @param arguments [Hash] the query arguments
+    #
+    # @return [Array] the query results
+    #
+    def query_exile_database!(function_name, player: nil, target: nil, **arguments)
+      message = ESM::Message.new
+        .set_type(:query)
+        .set_data(query_function_name: function_name, **arguments)
+        .set_metadata(player:, target:)
+
+      send_message(message).data.results
+    end
+
+    alias_method :run_database_query!, :query_exile_database!
+
+    #
+    # Calls a missionNamespace function on the linked server.
+    #
+    # @param function_name [String] the missionNamespace variable holding the code
+    # @param player [ESM::User, nil] the player who initiated the request
+    # @param target [ESM::User, ESM::User::Ephemeral, nil] the user the call acts on, if any
+    # @param arguments [Hash] additional arguments
+    #
+    # @return [ESM::Message] the response
+    #
+    def call_sqf_function!(function_name, player: nil, target: nil, **arguments)
+      message = ESM::Message.new
+        .set_type(:call)
+        .set_data(function_name:, **arguments)
+        .set_metadata(player:, target:)
+
+      send_message(message)
+    end
+
     def status_embed(status, reason: "")
       ESM::Embed.build do |e|
         e.color = (status == :connected) ? :green : :red

@@ -344,10 +344,7 @@ module ESM
         def send_to_target_server!(message, block: true)
           raise ArgumentError, "Message must be a ESM::Message" unless message.is_a?(ESM::Message)
 
-          if target_server.nil?
-            raise ESM::Exception::CheckFailure,
-              "Command #{name} must define the `server_id` argument in order to use #send_to_target_server!"
-          end
+          raise_missing_target_server! if target_server.nil?
 
           message = message.set_metadata(
             player: current_user,
@@ -355,6 +352,15 @@ module ESM
           )
 
           target_server.send_message(message, block:)
+        end
+
+        #
+        # Raised when a command tries to reach a server without a valid target_server,
+        # which means the command is missing its `server_id` argument.
+        #
+        def raise_missing_target_server!
+          raise ESM::Exception::CheckFailure,
+            "Command #{name} must define the `server_id` argument in order to talk to its server"
         end
 
         #
@@ -368,12 +374,14 @@ module ESM
         # @raise (see #send_to_target_server!)
         #
         def query_exile_database!(name, **arguments)
-          message = ESM::Message.new
-            .set_type(:query)
-            .set_data(query_function_name: name, **arguments)
+          raise_missing_target_server! if target_server.nil?
 
-          response = send_to_target_server!(message)
-          response.data.results
+          target_server.query_exile_database!(
+            name,
+            player: current_user,
+            target: target_user,
+            **arguments
+          )
         end
 
         alias_method :run_database_query!, :query_exile_database!
@@ -389,11 +397,14 @@ module ESM
         # @raise (see #send_to_target_server!)
         #
         def call_sqf_function!(function_name, **arguments)
-          message = ESM::Message.new
-            .set_type(:call)
-            .set_data(function_name:, **arguments)
+          raise_missing_target_server! if target_server.nil?
 
-          send_to_target_server!(message)
+          target_server.call_sqf_function!(
+            function_name,
+            player: current_user,
+            target: target_user,
+            **arguments
+          )
         end
 
         # Convenience method for replying back to whoever invoked the command.
