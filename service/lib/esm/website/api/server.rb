@@ -55,6 +55,8 @@ module ESM
             server.register(:servers_reconnect, Handlers::ServersReconnect)
             server.register(:servers_connected, Handlers::ServersConnected)
 
+            server.register(:player_info, Handlers::PlayerInfo)
+
             server.register(:channel, Handlers::Channel)
             server.register(:channel_send, Handlers::ChannelSend)
 
@@ -147,13 +149,34 @@ module ESM
           payload = {} unless payload.is_a?(Hash)
 
           result = handler.call(**payload)
-          message.respond({ok: true, result:}.to_json)
+
+          # A handler may offload a slow operation (e.g. an Arma round-trip) to a
+          # Concurrent::Promise and return it. When it does, free this dispatch
+          # thread now and reply once the promise resolves, so one blocking handler
+          # can't stall the other RPCs sharing the NATS subscription.
+          if result.is_a?(Concurrent::Promise)
+            respond_when_resolved(message, action, result)
+          else
+            message.respond({ok: true, result:}.to_json)
+          end
         rescue => e
           # Full error stays in the bot's logs; the wire response carries a
           # generic detail so we don't leak AR/discordrb internals back to the
           # caller. (Per dispatch comment: no oracle for the caller.)
           error!(event: "website_api:error", action:, error: e.class.name, detail: e.message)
           respond_error(message, :unknown, "internal handler error")
+        end
+
+        # Replies once the handler's offloaded promise resolves, mirroring the
+        # synchronous path's success/error shapes. The full error stays in the
+        # bot's logs; the wire response stays generic.
+        def respond_when_resolved(message, action, promise)
+          promise
+            .then { |value| message.respond({ok: true, result: value}.to_json) }
+            .rescue do |reason|
+              error!(event: "website_api:error", action:, error: reason.class.name, detail: reason.message)
+              respond_error(message, :unknown, "internal handler error")
+            end
         end
 
         # Treats a missing or non-integer issued_at as "too old to trust"

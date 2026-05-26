@@ -45,6 +45,49 @@ RSpec.describe ESM::Website::API::Server, :integration do
     end
   end
 
+  describe "deferred handler" do
+    context "when the handler offloads to a promise that resolves" do
+      let(:handler) do
+        Class.new do
+          def self.call(**payload)
+            Concurrent::Promise.execute { {deferred: payload[:value]} }
+          end
+        end
+      end
+
+      it "replies with the resolved value once the promise settles" do
+        envelope = build_envelope.call(action: "ping", payload: {value: 42})
+
+        response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
+        parsed = JSON.parse(response.data, symbolize_names: true)
+
+        expect(parsed[:ok]).to be true
+        expect(parsed.dig(:result, :deferred)).to eq(42)
+      end
+    end
+
+    context "when the handler's promise rejects" do
+      let(:handler) do
+        Class.new do
+          def self.call(**)
+            Concurrent::Promise.execute { raise StandardError, "secret background detail" }
+          end
+        end
+      end
+
+      it "replies with a redacted error once the promise rejects" do
+        envelope = build_envelope.call(action: "ping", payload: {})
+
+        response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
+        parsed = JSON.parse(response.data, symbolize_names: true)
+
+        expect(parsed[:ok]).to be false
+        expect(parsed[:error]).to eq("unknown")
+        expect(parsed[:detail]).not_to include("secret background detail")
+      end
+    end
+  end
+
   describe "envelope shape" do
     it "rejects a body that's valid JSON but not a Hash" do
       body = "null"
