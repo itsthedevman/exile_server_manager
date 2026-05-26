@@ -157,6 +157,14 @@
               chmod +x arma/tools/wrappers/* 2>/dev/null || true
             fi
 
+            # Arma: ensure the MySQL container is up, starting it only if it isn't already running
+            if [ -f arma/docker-compose.yml ] && docker info >/dev/null 2>&1; then
+              if [ -z "$(docker ps -q --filter "name=^ESM_DB_MYSQL$" --filter "status=running" 2>/dev/null)" ]; then
+                echo "Starting MySQL container (ESM_DB_MYSQL)..."
+                docker-compose -f arma/docker-compose.yml up -d mysql_db >/dev/null 2>&1 || true
+              fi
+            fi
+
             # Bot: create esm PG superuser if postgres is running and user doesn't exist
             if pg_isready -q 2>/dev/null; then
               if ! psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${db_user}'" 2>/dev/null | grep -q 1; then
