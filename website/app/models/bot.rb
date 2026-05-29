@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# Thin facade over {ESM::IpcClient}. Every class method here maps to one NATS
+# Thin facade over {IpcClient}. Every class method here maps to one NATS
 # action handled by the bot service. Public signatures are preserved from the
 # DRb era so controllers don't change.
 #
@@ -31,7 +31,7 @@ class Bot
   # @return [Object, nil] handler result
   #
   def self.accept_request(id)
-    ESM::IpcClient.call(:requests_accept, id: id)
+    IpcClient.call(:requests_accept, id: id)
   end
 
   ##
@@ -41,7 +41,7 @@ class Bot
   # @return [Object, nil] handler result
   #
   def self.decline_request(id)
-    ESM::IpcClient.call(:requests_decline, id: id)
+    IpcClient.call(:requests_decline, id: id)
   end
 
   ##
@@ -54,7 +54,7 @@ class Bot
   # @return [Hash, nil] channel data hash or nil if not found/accessible
   #
   def self.channel(channel_id, **filters)
-    ESM::IpcClient.call(:channel, **filters.merge(id: channel_id))
+    IpcClient.call(:channel, **filters.merge(id: channel_id))
   end
 
   ##
@@ -66,7 +66,7 @@ class Bot
   # @return [Array<Array>]
   #
   def self.community_channels(community_id, user_id: nil)
-    ESM::IpcClient.call(:community_channels, id: community_id, user_id: user_id) || []
+    IpcClient.call(:community_channels, id: community_id, user_id: user_id) || []
   end
 
   ##
@@ -77,7 +77,7 @@ class Bot
   # @return [Boolean]
   #
   def self.community_modifiable_by?(community_id, user_id)
-    ESM::IpcClient.call(:community_modifiable_by, id: community_id, user_id: user_id) || false
+    IpcClient.call(:community_modifiable_by, id: community_id, user_id: user_id) || false
   end
 
   ##
@@ -87,7 +87,7 @@ class Bot
   # @return [Array<Hash>] each hash: `{id:, name:, color:, disabled:}`
   #
   def self.community_roles(community_id)
-    ESM::IpcClient.call(:community_roles, id: community_id) || []
+    IpcClient.call(:community_roles, id: community_id) || []
   end
 
   ##
@@ -97,7 +97,7 @@ class Bot
   # @return [Array<Hash>]
   #
   def self.community_users(community_id)
-    ESM::IpcClient.call(:community_users, id: community_id) || []
+    IpcClient.call(:community_users, id: community_id) || []
   end
 
   ##
@@ -109,7 +109,7 @@ class Bot
   # @return [Boolean]
   #
   def self.delete_community(community_id, user_id)
-    ESM::IpcClient.call(:community_delete, id: community_id, user_id: user_id) || false
+    IpcClient.call(:community_delete, id: community_id, user_id: user_id) || false
   end
 
   ##
@@ -121,7 +121,7 @@ class Bot
   # @return [Object, nil]
   #
   def self.reconnect_server(id, old_id)
-    ESM::IpcClient.call(:servers_reconnect, id: id, old_id: old_id)
+    IpcClient.call(:servers_reconnect, id: id, old_id: old_id)
   end
 
   ##
@@ -133,7 +133,7 @@ class Bot
   # @return [Object, nil]
   #
   def self.send_message(channel_id:, message:)
-    ESM::IpcClient.call(:channel_send, id: channel_id, message: message)
+    IpcClient.call(:channel_send, id: channel_id, message: message)
   end
 
   ##
@@ -144,7 +144,7 @@ class Bot
   # @return [Object, nil]
   #
   def self.update_server(id)
-    ESM::IpcClient.call(:servers_update, id: id)
+    IpcClient.call(:servers_update, id: id)
   end
 
   ##
@@ -155,7 +155,7 @@ class Bot
   # @return [Array<Hash>] each `{id:, modifiable:}`
   #
   def self.user_community_permissions(user_id, guild_ids)
-    ESM::IpcClient.call(:user_community_permissions, id: user_id, guild_ids: guild_ids) || []
+    IpcClient.call(:user_community_permissions, id: user_id, guild_ids: guild_ids) || []
   end
 
   ##
@@ -165,6 +165,6 @@ class Bot
   # @return [Boolean, nil]
   #
   def self.server_connected?(server_id)
-    ESM::IpcClient.call(:servers_connected, id: server_id)
+    IpcClient.call(:servers_connected, id: server_id)
   end
 end

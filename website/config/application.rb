@@ -29,6 +29,26 @@ module EsmWebsiteV2
     # Ignore omniauth directory since we manually require the vendored strategy
     config.autoload_lib(ignore: %w[assets tasks omniauth])
 
+    # The ESM namespace is owned by the explicit Loader chain in
+    # config/initializers/esm.rb, which loads core's canonical models and the
+    # website re-opens once at boot. Zeitwerk must not also manage these files:
+    # the website re-opens core classes (one constant, two defining files), which
+    # violates Zeitwerk's one-file-one-constant rule and makes hot reload wipe
+    # then half-rebuild the namespace (ESM::User loses its table, ESM::Command
+    # vanishes, etc). Ignoring keeps the constants alive across reloads.
+    #
+    # IpcClient (lib/ipc_client*) is a process-lifetime singleton: one cached
+    # NATS connection with a background reader thread. It must NOT be reloadable,
+    # or each hot reload orphans the connection (zombie reader thread, stale
+    # subscriptions) and the next request/reply times out. It's required once at
+    # boot in config/initializers/ipc_client.rb instead.
+    Rails.autoloaders.main.ignore(
+      Rails.root.join("app/models/esm.rb"),
+      Rails.root.join("app/models/esm"),
+      Rails.root.join("lib/ipc_client.rb"),
+      Rails.root.join("lib/ipc_client")
+    )
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
