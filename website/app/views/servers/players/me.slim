@@ -1,0 +1,151 @@
+- content_for :title, "My Player on #{server.server_name}"
+
+.container.window
+  / Page header
+  .d-flex.align-items-center.justify-content-between.mb-4.flex-wrap.gap-3
+    div
+      h1.mb-1 My Player
+      .d-flex.align-items-center.gap-2.flex-wrap.text-muted
+        - if server.connected?
+          .server-status.server-status--online
+        - elsif server.disconnected_at&.> 1.hour.ago
+          .server-status.server-status--warning
+        - else
+          .server-status.server-status--offline
+        .text-light.fw-medium = server.server_name
+        .mx-1 -
+        div
+          = server.community.community_name
+        - if server.connected?
+          .mx-1 -
+          div
+            i.bi.bi-clock-history.me-1
+            | Online for #{server.uptime}
+    button.btn.btn-outline-secondary.btn-sm[type="button"]
+      i.bi.bi-arrow-left-right.me-2
+      | Switch server
+
+  / Identity strip
+  .card.mb-4
+    .card-body
+      .d-flex.align-items-center.gap-3.flex-wrap
+        - if current_user.steam_data&.avatar
+          img.rounded-circle.border.border-2.border-success[
+            src=current_user.steam_data.avatar
+            alt=current_user.steam_data.username
+            width="64"
+            height="64"
+          ]
+        - else
+          img.rounded-circle.border.border-2.border-success[
+            src=image_url("default_steam_avatar.png")
+            alt="Default Steam Avatar"
+            width="64"
+            height="64"
+          ]
+        div
+          h2.mb-0 = player[:name]
+          small.text-muted.font-monospace = player[:uid]
+
+  .row.g-4.mb-4
+    / Character status
+    .col-12.col-xl-6
+      .card.h-100
+        .card-header
+          h5.mb-0
+            i.bi.bi-heart-pulse.text-danger.me-2
+            | Character Status
+
+        .card-body
+          - health_pct = ((1.0 - player[:damage]) * 100).round
+          .mb-3
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-heart-fill.text-danger.me-2
+                | Health
+              span.text-muted = "#{health_pct}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-danger[role="progressbar" style="width: #{health_pct}%"]
+
+          - hunger_pct = player[:hunger].round
+          .mb-3
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-egg-fried.text-warning.me-2
+                | Hunger
+              span.text-muted = "#{hunger_pct}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-warning[role="progressbar" style="width: #{hunger_pct}%"]
+
+          - thirst_pct = player[:thirst].round
+          .mb-4
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-droplet-fill.text-info.me-2
+                | Thirst
+              span.text-muted = "#{thirst_pct}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-info[role="progressbar" style="width: #{thirst_pct}%"]
+
+          hr.text-secondary
+
+          .d-flex.align-items-center.justify-content-between.mt-3
+            div
+              .text-muted.small.text-uppercase In Pocket
+              .fs-3.fw-bold.text-success
+                = number_to_currency(player[:money])
+            i.bi.bi-cash-stack.text-success.fs-1.opacity-50
+
+    / Account stats
+    .col-12.col-xl-6
+      .card.h-100
+        .card-header
+          h5.mb-0
+            i.bi.bi-bank.text-success.me-2
+            | Account
+
+        .card-body
+          .mb-4
+            .text-muted.small.text-uppercase Locker (Banked)
+            .fs-2.fw-bold.text-success
+              = number_to_currency(player[:locker])
+
+          hr.text-secondary
+
+          - kd_ratio = player[:deaths] > 0 ? (player[:kills].to_f / player[:deaths]).round(2) : player[:kills].to_f
+          .row.g-3.text-center.mt-3
+            .col-3
+              .text-muted.small.text-uppercase Score
+              .fs-4.fw-bold = number_with_delimiter(player[:score])
+            .col-3
+              .text-muted.small.text-uppercase Kills
+              .fs-4.fw-bold.text-success = number_with_delimiter(player[:kills])
+            .col-3
+              .text-muted.small.text-uppercase Deaths
+              .fs-4.fw-bold.text-danger = number_with_delimiter(player[:deaths])
+            .col-3
+              .text-muted.small.text-uppercase K/D
+              .fs-4.fw-bold = kd_ratio
+
+  / Territories
+  .d-flex.align-items-center.mb-3
+    h4.mb-0
+      i.bi.bi-flag-fill.text-warning.me-2
+      | Territories
+      span.badge.bg-secondary.ms-2 = player[:territories].size
+
+  - if player[:territories].any?
+    .row.g-3
+      - player[:territories].each do |territory|
+        .col-12.col-md-6.col-lg-4
+          = link_to "#", class: "card text-decoration-none text-reset h-100 territory-card"
+            .card-body.d-flex.align-items-center.justify-content-between
+              div
+                h6.mb-1 = territory[:name]
+                small.text-muted.font-monospace = territory[:id]
+              i.bi.bi-chevron-right.text-muted
+  - else
+    .card.border-secondary
+      .card-body.text-center.py-5
+        i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
+        p.text-muted.mb-0 No territories on this server yet

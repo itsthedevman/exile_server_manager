@@ -165,6 +165,20 @@ Rails.application.routes.draw do
     end
   end
 
+  # /servers/:server_id
+  resources :servers, only: [] do
+    # /servers/:server_id/players
+    resources :players,
+      controller: "servers/players",
+      only: [],
+      param: :user_id do
+      collection do
+        # /servers/:server_id/players/me
+        get :me
+      end
+    end
+  end
+
   # /tools
   resource :tools, only: [] do
     get :rpt_parser
