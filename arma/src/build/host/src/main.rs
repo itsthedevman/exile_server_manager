@@ -46,15 +46,18 @@ lazy_static! {
 fn main() {
     lazy_static::initialize(&CTRL_C_RECEIVED);
 
+    // Fires on SIGINT/SIGTERM/SIGHUP (the latter two via ctrlc's `termination`
+    // feature) so closing the terminal or `overmind stop` still reaps the
+    // server rather than orphaning arma3server in the container.
     ctrlc::set_handler(move || {
         if CTRL_C_RECEIVED.load(Ordering::SeqCst) {
-            // Second press: force exit immediately
+            // Second signal: force exit immediately
             exit(1);
         }
-        // First press: signal the loop to stop cleanly (kill_arma runs after)
+        // First signal: ask the loop to stop cleanly (kill_arma runs after)
         CTRL_C_RECEIVED.store(true, Ordering::SeqCst);
     })
-    .expect("Error setting Ctrl-C handler");
+    .expect("Error setting signal handler");
 
     let args = Args::parse();
 
