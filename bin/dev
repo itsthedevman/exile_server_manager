@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Run all three ESM dev processes (website, service, arma) in one terminal.
+#
+# Each process runs in its own tmux pane with a real pty, so interactive
+# debugging works where a plain Procfile runner mangles it. When the service
+# hits a `binding.pry`, attach to its pty from another terminal with:
+#
+#     overmind connect service
+#
+# Ctrl-C here tears the whole formation down. Other handy commands:
+#     overmind restart service   # bounce one process
+#     overmind connect website   # attach to any process's pty
+
+set -euo pipefail
+
+readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+exec overmind start -f Procfile.dev "$@"

@@ -4,7 +4,5 @@ set -euo pipefail
 
 readonly args=("$@")
 
-echo "<esm_bt> - Running tests..."
-cargo test --workspace
-
+# Tests live in bin/test, not the dev lifecycle: run them when you want them.
 exec "./bin/build" --target=linux --start-server "${args[@]}"
