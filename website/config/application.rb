@@ -36,17 +36,10 @@ module EsmWebsiteV2
     # violates Zeitwerk's one-file-one-constant rule and makes hot reload wipe
     # then half-rebuild the namespace (ESM::User loses its table, ESM::Command
     # vanishes, etc). Ignoring keeps the constants alive across reloads.
-    #
-    # IpcClient (lib/ipc_client*) is a process-lifetime singleton: one cached
-    # NATS connection with a background reader thread. It must NOT be reloadable,
-    # or each hot reload orphans the connection (zombie reader thread, stale
-    # subscriptions) and the next request/reply times out. It's required once at
-    # boot in config/initializers/ipc_client.rb instead.
     Rails.autoloaders.main.ignore(
       Rails.root.join("app/models/esm.rb"),
       Rails.root.join("app/models/esm"),
-      Rails.root.join("lib/ipc_client.rb"),
-      Rails.root.join("lib/ipc_client")
+      Rails.root.join("lib/esm")
     )
 
     # Configuration for the application, engines, and railties goes here.
