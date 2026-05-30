@@ -17,5 +17,9 @@ module ESM
     def backtrace_cleaner
       Rails.backtrace_cleaner
     end
+
+    def cache
+      Rails.cache
+    end
   end
 end

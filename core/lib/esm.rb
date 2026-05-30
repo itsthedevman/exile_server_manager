@@ -32,5 +32,9 @@ module ESM
     def backtrace_cleaner
       raise "ESM.backtrace_cleaner - not implemented. Has ESM not been loaded?"
     end
+
+    def cache
+      raise "ESM.cache - not implemented. Has ESM not been loaded?"
+    end
   end
 end
