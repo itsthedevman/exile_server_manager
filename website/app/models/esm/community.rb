@@ -44,7 +44,7 @@ module ESM
     end
 
     def modifiable_by?(user)
-      ESM.bot.community_modifiable_by?(id, user.id)
+      ESM::Service::API.call(:community_modifiable_by, id:, user_id: user.id) || false
     end
 
     #
@@ -55,15 +55,23 @@ module ESM
     #   [category_hash, Array<Channel>]... # Categories + channels
     # ]
     def channels
-      @channels ||= ESM.bot.community_channels(id)
+      @channels ||= ESM::Service::API.call(:community_channels, id:, user_id: nil) || []
     end
 
     def player_channels(user)
-      @player_channels ||= ESM.bot.community_channels(id, user_id: user.id)
+      @player_channels ||= ESM::Service::API.call(:community_channels, id:, user_id: user.id) || []
     end
 
     def roles
-      @roles ||= ESM.bot.community_roles(id).map(&:to_struct)
+      @roles ||= (ESM::Service::API.call(:community_roles, id:) || []).map(&:to_struct)
+    end
+
+    #
+    # Removes this community: the bot leaves the guild and the record is destroyed.
+    # Returns false when the user lacks modify rights.
+    #
+    def leave(by:)
+      ESM::Service::API.call(:community_delete, id:, user_id: by.id) || false
     end
 
     def territory_admins
@@ -81,7 +89,7 @@ module ESM
         server.update(server_id: server.server_id.gsub("#{community_id}_", "#{new_id}_"))
 
         # Force the server to reconnect
-        ESM.bot.reconnect_server(server.id, old_id)
+        server.reconnect(old_id)
       end
 
       update!(community_id: new_id)

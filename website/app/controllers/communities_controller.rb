@@ -74,7 +74,7 @@ class CommunitiesController < AuthenticatedController
   end
 
   def destroy
-    success = ESM.bot.delete_community(current_community.id, current_user.id)
+    success = current_community.leave(by: current_user)
 
     if !success
       ESM.logger.error!(

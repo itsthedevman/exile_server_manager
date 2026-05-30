@@ -54,7 +54,8 @@ module ESM
     end
 
     def community_permissions
-      @community_permissions ||= ESM.bot.user_community_permissions(id, discord_server_ids)
+      @community_permissions ||=
+        ESM::Service::API.call(:user_community_permissions, id:, guild_ids: discord_server_ids) || []
     end
 
     def modifiable_community_ids

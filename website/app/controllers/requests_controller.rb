@@ -5,7 +5,7 @@ class RequestsController < AuthenticatedController
     request = current_user.pending_requests.find_by(uuid: params[:id])
     return render :not_found if request.nil?
 
-    if ESM.bot.accept_request(request.id)
+    if request.accept
       render :success, locals: {verb: "accepted"}
     else
       render :failure, locals: {verb: "accept", request: request}
@@ -16,7 +16,7 @@ class RequestsController < AuthenticatedController
     request = current_user.pending_requests.find_by(uuid: params[:id])
     return render :not_found if request.nil?
 
-    if ESM.bot.decline_request(request.id)
+    if request.decline
       render :success, locals: {verb: "declined"}
     else
       render :failure, locals: {verb: "decline", request: request}
