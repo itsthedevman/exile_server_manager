@@ -10,7 +10,7 @@
 # Layout under core/lib:
 #
 #   extensions/   monkey-patches on Logger, Array, Integer, String
-#   utilities/    standalone helper classes (Inquirer, ImmutableStruct, Timer)
+#   utilities/    standalone helper classes (Inquirer, Timer)
 #
 
 Loader.dir("core", "lib", "extensions")
