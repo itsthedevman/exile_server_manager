@@ -13,7 +13,11 @@ SELECT
         (
             SELECT
                 JSON_ARRAYAGG(
-                    JSON_OBJECT('id', CONVERT(id, char), 'name', name)
+                    JSON_OBJECT(
+                        'id', CONVERT(id, char), 
+                        'name', name,
+                        'last_paid_at', last_paid_at
+                    )
                 )
             FROM
                 territory

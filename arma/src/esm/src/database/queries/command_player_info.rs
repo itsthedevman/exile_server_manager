@@ -4,6 +4,7 @@ use super::*;
 struct Territory {
     id: String,
     name: String,
+    last_paid_at: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
