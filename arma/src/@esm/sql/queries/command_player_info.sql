@@ -5,6 +5,9 @@ SELECT
     a.name,
     a.kills,
     a.deaths,
+    a.first_connect_at,
+    a.last_disconnect_at,
+    a.total_connections,
     p.money,
     p.damage,
     p.hunger,
@@ -14,9 +17,11 @@ SELECT
             SELECT
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
-                        'id', CONVERT(id, char), 
+                        'id', CONVERT(id, char),
                         'name', name,
-                        'last_paid_at', last_paid_at
+                        'last_paid_at', last_paid_at,
+                        'flag_texture', flag_texture,
+                        'flag_stolen', flag_stolen
                     )
                 )
             FROM

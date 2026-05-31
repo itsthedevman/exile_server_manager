@@ -5,9 +5,23 @@ struct Territory {
     id: String,
     name: String,
     last_paid_at: Option<String>,
+    flag_texture: String,
+    // MySQL renders the tinyint as a JSON number; coerce it to a real bool so the
+    // website never has to treat 0 as truthy.
+    #[serde(deserialize_with = "bool_from_int")]
+    flag_stolen: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+// territories arrive as a JSON aggregate, so flag_stolen comes in as 0/1 rather
+// than a column we could compare with `== 1` during row construction.
+fn bool_from_int<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(<i8 as serde::Deserialize>::deserialize(deserializer)? != 0)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct Account {
     uid: String,
     name: String,
@@ -15,6 +29,9 @@ struct Account {
     score: isize,
     kills: isize,
     deaths: isize,
+    first_connect_at: NaiveDateTime,
+    last_disconnect_at: Option<NaiveDateTime>,
+    total_connections: isize,
     money: Option<isize>,
     damage: Option<f64>,
     hunger: Option<f64>,
@@ -66,6 +83,9 @@ fn convert_result(mut row: Row, context: &Database) -> Result<String, String> {
         score: select_column(&mut row, "score")?,
         kills: select_column(&mut row, "kills")?,
         deaths: select_column(&mut row, "deaths")?,
+        first_connect_at: select_column(&mut row, "first_connect_at")?,
+        last_disconnect_at: select_column(&mut row, "last_disconnect_at")?,
+        total_connections: select_column(&mut row, "total_connections")?,
         money: select_column(&mut row, "money")?,
         damage: select_column(&mut row, "damage")?,
         hunger: select_column(&mut row, "hunger")?,

@@ -55,47 +55,40 @@
           .card-header
             h5.mb-0
               i.bi.bi-heart-pulse.text-danger.me-2
-              | Character Status
+              | Status
 
           .card-body
-            - health_pct = ((1.0 - player.damage) * 100).round
-            .mb-3
-              .d-flex.justify-content-between.mb-1
-                span
-                  i.bi.bi-heart-fill.text-danger.me-2
-                  | Health
-                span.text-muted = "#{health_pct}%"
-              .progress[style="height: 0.5rem;"]
-                .progress-bar.bg-danger[role="progressbar" style="width: #{health_pct}%"]
+            - if player_alive?(player)
+              .mb-3
+                .d-flex.justify-content-between.mb-1
+                  span
+                    i.bi.bi-heart-fill.text-danger.me-2
+                    | Health
+                  span.text-muted = "#{player_health_percentage(player)}%"
+                .progress[style="height: 0.5rem;"]
+                  .progress-bar.bg-danger[role="progressbar" style="width: #{player_health_percentage(player)}%"]
 
-            - hunger_pct = player.hunger.round
-            .mb-3
-              .d-flex.justify-content-between.mb-1
-                span
-                  i.bi.bi-egg-fried.text-warning.me-2
-                  | Hunger
-                span.text-muted = "#{hunger_pct}%"
-              .progress[style="height: 0.5rem;"]
-                .progress-bar.bg-warning[role="progressbar" style="width: #{hunger_pct}%"]
+              .mb-3
+                .d-flex.justify-content-between.mb-1
+                  span
+                    i.bi.bi-egg-fried.text-warning.me-2
+                    | Hunger
+                  span.text-muted = "#{player_hunger_percentage(player)}%"
+                .progress[style="height: 0.5rem;"]
+                  .progress-bar.bg-warning[role="progressbar" style="width: #{player_hunger_percentage(player)}%"]
 
-            - thirst_pct = player.thirst.round
-            .mb-4
-              .d-flex.justify-content-between.mb-1
-                span
-                  i.bi.bi-droplet-fill.text-info.me-2
-                  | Thirst
-                span.text-muted = "#{thirst_pct}%"
-              .progress[style="height: 0.5rem;"]
-                .progress-bar.bg-info[role="progressbar" style="width: #{thirst_pct}%"]
-
-            hr.text-secondary
-
-            .d-flex.align-items-center.justify-content-between.mt-3
               div
-                .text-muted.small.text-uppercase In Pocket
-                .fs-3.fw-bold.text-success
-                  = number_to_currency(player.money)
-              i.bi.bi-cash-stack.text-success.fs-1.opacity-50
+                .d-flex.justify-content-between.mb-1
+                  span
+                    i.bi.bi-droplet-fill.text-info.me-2
+                    | Thirst
+                  span.text-muted = "#{player_thirst_percentage(player)}%"
+                .progress[style="height: 0.5rem;"]
+                  .progress-bar.bg-info[role="progressbar" style="width: #{player_thirst_percentage(player)}%"]
+            - else
+              .text-center.text-muted.py-4
+                i.bi.bi-person-x.fs-3.d-block.mb-2
+                | No active character
 
       / Account stats
       .col-12.col-xl-6
@@ -103,20 +96,32 @@
           .card-header
             h5.mb-0
               i.bi.bi-bank.text-success.me-2
-              | Account
+              | Money
 
           .card-body
-            .mb-4
-              .text-muted.small.text-uppercase Locker (Banked)
+            .mb-3
+              .text-muted.small.text-uppercase Pocket
               .fs-2.fw-bold.text-success
-                = number_to_currency(player.locker)
+                - if player_alive?(player)
+                  = player.money
+                - else
+                  span.text-muted 0
+            div
+              .text-muted.small.text-uppercase Locker 
+              .fs-2.fw-bold.text-success
+                = player.locker
 
-            hr.text-secondary
+      .col-12.col-xl-6
+        .card.h-100
+          .card-header
+            h5.mb-0
+              i.bi.bi-star.text-warning.me-2
+              | Scoreboard
 
-            - kd_ratio = player.deaths > 0 ? (player.kills.to_f / player.deaths).round(2) : player.kills.to_f
-            .row.g-3.text-center.mt-3
+          .card-body
+            .row.g-3.text-center.mt-1
               .col-3
-                .text-muted.small.text-uppercase Score
+                .text-muted.small.text-uppercase Respect
                 .fs-4.fw-bold = number_with_delimiter(player.score)
               .col-3
                 .text-muted.small.text-uppercase Kills
@@ -126,7 +131,28 @@
                 .fs-4.fw-bold.text-danger = number_with_delimiter(player.deaths)
               .col-3
                 .text-muted.small.text-uppercase K/D
-                .fs-4.fw-bold = kd_ratio
+                .fs-4.fw-bold = player_kill_death_ratio(player)
+
+      .col-12.col-xl-6
+        .card.h-100
+          .card-header
+            h5.mb-0
+              i.bi.bi-file-person.text-info.me-2
+              | About
+
+          .card-body
+            .d-flex.justify-content-between.mb-2
+              span.text-muted.small.text-uppercase Member since
+              span.fw-medium = ESM::Time.parse(player.first_connect_at).strftime("%b %-d, %Y")
+            .d-flex.justify-content-between.mb-2
+              span.text-muted.small.text-uppercase Last seen
+              - if player.last_disconnect_at
+                span.fw-medium = "#{ESM::Time.distance_of_time_in_words(ESM::Time.parse(player.last_disconnect_at), precise: false)} ago"
+              - else
+                span.fw-medium.text-success Online now
+            .d-flex.justify-content-between
+              span.text-muted.small.text-uppercase Connections
+              span.fw-medium = number_with_delimiter(player.total_connections)
 
     / Territories
     .d-flex.align-items-center.mb-3
@@ -140,11 +166,30 @@
         - player.territories.each do |territory|
           .col-12.col-md-6.col-lg-4
             = link_to "#", class: "card text-decoration-none text-reset h-100 territory-card"
-              .card-body.d-flex.align-items-center.justify-content-between
-                div
-                  h6.mb-1 = territory.name
-                  small.text-muted.font-monospace = territory.id
-                i.bi.bi-chevron-right.text-muted
+              .card-body
+                .d-flex.align-items-center.gap-3
+                  img.rounded.border.border-secondary.flex-shrink-0[
+                    src=territory.flag_path
+                    alt="Territory flag"
+                    width="48"
+                    height="48"
+                    style="object-fit: cover;"
+                  ]
+                  .flex-grow-1.overflow-hidden
+                    .d-flex.align-items-center.gap-2
+                      h6.mb-0.text-truncate = territory.name
+                      - if territory.stolen?
+                        span.badge.bg-danger.flex-shrink-0
+                          i.bi.bi-exclamation-triangle-fill.me-1
+                          | Stolen
+                    small.text-muted.font-monospace = territory.id
+                  i.bi.bi-chevron-right.text-muted.flex-shrink-0
+
+                hr.my-3.text-secondary
+
+                .d-flex.align-items-center.gap-2
+                  i.bi.bi-circle-fill[style="font-size: 0.5rem; color: #{territory.status_color};"]
+                  small = territory_payment_status(territory)
     - else
       .card.border-secondary
         .card-body.text-center.py-5
