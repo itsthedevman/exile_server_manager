@@ -7,7 +7,11 @@ module ESM
       module Definition
         extend ActiveSupport::Concern
 
-        class Attribute < Struct.new(:modifiable, :default)
+        # Struct.new returns a fresh class on every load; pin it so a reload reopens Attribute
+        # against the same superclass instead of mismatching.
+        AttributeStruct = Struct.new(:modifiable, :default) unless defined?(AttributeStruct)
+
+        class Attribute < AttributeStruct
           attr_predicate :modifiable
 
           def initialize(modifiable: true, default: nil)

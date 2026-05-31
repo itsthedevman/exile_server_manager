@@ -5,7 +5,7 @@ require Pathname.new(ENV.fetch("ESM_CORE_PATH")).join("lib", "loader.rb")
 I18n.load_path += Dir[Loader.core_path.join("config", "locales", "**", "*.yml")]
 I18n.reload!
 
-Rails.application.config.to_prepare do
+Rails.application.config.after_initialize do
   Loader.file("core", "lib", "esm.rb", method: :load)
   Loader.dir("core", "lib", "extensions", method: :load)
   Loader.dir("core", "lib", "utilities", method: :load)
