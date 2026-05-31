@@ -25,3 +25,6 @@ indexmap = { version = "2.10.0", features = ["serde"] }
 lazy_static = "1"
 compiler = { path = "../compiler" }
 common = { path = "../common" }
+# HEMTT's PBO writer (Brett Mayson). Replaces shelling out to armake2 for
+# packing. Keep this rev in sync with hemtt-paa in src/tools/paa2png.
+hemtt-pbo = { git = "https://github.com/BrettMayson/HEMTT.git" }

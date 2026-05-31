@@ -1,3 +1,10 @@
+# Fetch git dependencies (HEMTT crates) with the git CLI. The dev env rewrites
+# https://github.com -> ssh://git@github.com via insteadOf, and cargo's built-in
+# libgit2 can't satisfy that SSH auth (no agent); the git CLI uses the real keys
+# and handles the rewrite cleanly.
+[net]
+git-fetch-with-cli = true
+
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
 ar = "x86_64-w64-mingw32-ar"

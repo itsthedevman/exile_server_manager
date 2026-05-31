@@ -1,0 +1,10 @@
+[package]
+name = "paa2png"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# HEMTT's PAA reader (Brett Mayson). Not on crates.io in its current form, so
+# pinned to a commit.
+hemtt-paa = { git = "https://github.com/BrettMayson/HEMTT.git" }
+image = "0.25"

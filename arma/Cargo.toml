@@ -2,6 +2,7 @@
 members = [
     "src/build/host",
     "src/build/receiver",
+    "src/tools/paa2png",
     "src/build/common",
     "src/build/compiler",
     "src/esm",
