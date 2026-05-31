@@ -2,7 +2,7 @@
 
 module ESM
   class Message
-    class Player < Data.define(:discord_id, :discord_name, :discord_mention, :steam_uid)
+    class Player < ::Data.define(:discord_id, :discord_name, :discord_mention, :steam_uid)
       def self.from(user)
         # Creates a hash with the keys being the keys of this class, and the value of nil
         # Allows for defaulting the values since Data requires a value of some sort
