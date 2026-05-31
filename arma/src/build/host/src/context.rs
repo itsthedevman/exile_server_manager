@@ -236,24 +236,6 @@ impl BuildContext {
             )
     }
 
-    pub fn rebuild_addon(&self, addon: &str) -> bool {
-        if self.args.only_build() == "extension" {
-            return false;
-        }
-
-        self.rebuild_mod
-            || self.args.only_build() == "mod"
-            || has_directory_changed(
-                &self.file_watcher,
-                &self
-                    .git_path
-                    .join("src")
-                    .join("@esm")
-                    .join("addons")
-                    .join(addon),
-            )
-    }
-
     pub fn extension_build_target(&self) -> &'static str {
         match (self.args.build_os(), self.args.build_arch()) {
             (BuildOS::Linux, BuildArch::X32) => "i686-unknown-linux-gnu",

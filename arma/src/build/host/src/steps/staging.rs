@@ -10,6 +10,13 @@ pub fn prepare_staging(ctx: &mut BuildContext) -> BuildResult {
     let staging = ctx.local_build_path.join("@esm");
 
     if ctx.rebuild_mod() {
+        // Intermediate compile dir for the addons; wiped alongside the staging
+        // addons so a deleted source file can't linger in a packed PBO.
+        let work = ctx.local_build_path.join("mod_work");
+        if work.exists() {
+            fs::remove_dir_all(&work)?;
+        }
+
         for dir in &["addons", "sql", "optionals"] {
             let p = staging.join(dir);
             if p.exists() {
