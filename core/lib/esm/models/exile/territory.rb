@@ -22,20 +22,7 @@ module ESM
       def initialize(server:, territory:)
         @server = server
         @server_settings = server.server_setting
-
-        @territory = if @server.v2?
-          transform_territory(territory)
-        else
-          territory
-        end
-
-        @current_level_territory = @server.territories.find_by(
-          territory_level: @territory.level
-        )
-
-        @next_level_territory = @server.territories.find_by(
-          territory_level: @territory.level + 1
-        )
+        @territory = normalize_territory(territory)
       end
 
       def id
@@ -43,7 +30,7 @@ module ESM
       end
 
       def name
-        @territory.territory_name
+        @territory.name
       end
 
       def owner
@@ -94,11 +81,19 @@ module ESM
       end
 
       def max_object_count
-        @current_level_territory.territory_object_count
+        current_level_territory.territory_object_count
       end
 
       def upgrade_level
-        @next_level_territory.territory_level
+        next_level_territory.territory_level
+      end
+
+      def current_level_territory
+        @current_level_territory ||= @server.territories.find_by(territory_level: @territory.level)
+      end
+
+      def next_level_territory
+        @next_level_territory ||= @server.territories.find_by(territory_level: @territory.level + 1)
       end
 
       def renew_price
@@ -115,11 +110,11 @@ module ESM
       end
 
       def upgradeable?
-        !@next_level_territory.nil?
+        !next_level_territory.nil?
       end
 
       def upgrade_price
-        price = @next_level_territory.territory_purchase_price
+        price = next_level_territory.territory_purchase_price
         return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_upgrade_tax.zero?
 
         # If the server has tax, add it to the price
@@ -129,11 +124,11 @@ module ESM
       end
 
       def upgrade_radius
-        @next_level_territory.territory_radius
+        next_level_territory.territory_radius
       end
 
       def upgrade_object_count
-        @next_level_territory.territory_object_count
+        next_level_territory.territory_object_count
       end
 
       def moderators
@@ -240,9 +235,19 @@ module ESM
 
       private
 
+      def normalize_territory(territory)
+        territory = territory.to_h unless territory.is_a?(Hash)
+        territory = transform_territory(territory) if @server.v2?
+
+        territory[:name] = territory[:territory_name] if territory.key?(:territory_name)
+        territory[:esm_custom_id] ||= nil
+
+        territory.to_istruct
+      end
+
       def transform_territory(territory)
-        moderator_uids = territory[:moderators].map { |a| a[:uid] }
-        builder_uids = territory[:build_rights].map { |a| a[:uid] }
+        moderator_uids = territory[:moderators]&.map { |a| a[:uid] } || []
+        builder_uids = territory[:build_rights]&.map { |a| a[:uid] } || []
 
         label_accounts = lambda do |account|
           account[:owner] = account[:uid] == territory[:owner_uid]
@@ -252,10 +257,10 @@ module ESM
 
         sort_accounts = ->(account) { account[:name].downcase }
 
-        territory[:moderators].each(&label_accounts).sort_by!(&sort_accounts)
-        territory[:build_rights].each(&label_accounts).sort_by!(&sort_accounts)
+        territory[:moderators]&.each(&label_accounts)&.sort_by!(&sort_accounts)
+        territory[:build_rights]&.each(&label_accounts)&.sort_by!(&sort_accounts)
 
-        territory.to_istruct
+        territory
       end
 
       def convert_flag_path(arma_path)

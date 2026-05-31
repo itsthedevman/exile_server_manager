@@ -44,8 +44,8 @@
             height="64"
           ]
         div
-          h2.mb-0 = player[:name]
-          small.text-muted.font-monospace = player[:uid]
+          h2.mb-0 = player.name
+          small.text-muted.font-monospace = player.uid
 
   .row.g-4.mb-4
     / Character status
@@ -57,7 +57,7 @@
             | Character Status
 
         .card-body
-          - health_pct = ((1.0 - player[:damage]) * 100).round
+          - health_pct = ((1.0 - player.damage) * 100).round
           .mb-3
             .d-flex.justify-content-between.mb-1
               span
@@ -67,7 +67,7 @@
             .progress[style="height: 0.5rem;"]
               .progress-bar.bg-danger[role="progressbar" style="width: #{health_pct}%"]
 
-          - hunger_pct = player[:hunger].round
+          - hunger_pct = player.hunger.round
           .mb-3
             .d-flex.justify-content-between.mb-1
               span
@@ -77,7 +77,7 @@
             .progress[style="height: 0.5rem;"]
               .progress-bar.bg-warning[role="progressbar" style="width: #{hunger_pct}%"]
 
-          - thirst_pct = player[:thirst].round
+          - thirst_pct = player.thirst.round
           .mb-4
             .d-flex.justify-content-between.mb-1
               span
@@ -93,7 +93,7 @@
             div
               .text-muted.small.text-uppercase In Pocket
               .fs-3.fw-bold.text-success
-                = number_to_currency(player[:money])
+                = number_to_currency(player.money)
             i.bi.bi-cash-stack.text-success.fs-1.opacity-50
 
     / Account stats
@@ -108,21 +108,21 @@
           .mb-4
             .text-muted.small.text-uppercase Locker (Banked)
             .fs-2.fw-bold.text-success
-              = number_to_currency(player[:locker])
+              = number_to_currency(player.locker)
 
           hr.text-secondary
 
-          - kd_ratio = player[:deaths] > 0 ? (player[:kills].to_f / player[:deaths]).round(2) : player[:kills].to_f
+          - kd_ratio = player.deaths > 0 ? (player.kills.to_f / player.deaths).round(2) : player.kills.to_f
           .row.g-3.text-center.mt-3
             .col-3
               .text-muted.small.text-uppercase Score
-              .fs-4.fw-bold = number_with_delimiter(player[:score])
+              .fs-4.fw-bold = number_with_delimiter(player.score)
             .col-3
               .text-muted.small.text-uppercase Kills
-              .fs-4.fw-bold.text-success = number_with_delimiter(player[:kills])
+              .fs-4.fw-bold.text-success = number_with_delimiter(player.kills)
             .col-3
               .text-muted.small.text-uppercase Deaths
-              .fs-4.fw-bold.text-danger = number_with_delimiter(player[:deaths])
+              .fs-4.fw-bold.text-danger = number_with_delimiter(player.deaths)
             .col-3
               .text-muted.small.text-uppercase K/D
               .fs-4.fw-bold = kd_ratio
@@ -132,17 +132,17 @@
     h4.mb-0
       i.bi.bi-flag-fill.text-warning.me-2
       | Territories
-      span.badge.bg-secondary.ms-2 = player[:territories].size
+      span.badge.bg-secondary.ms-2 = player.territories.size
 
-  - if player[:territories].any?
+  - if player.territories.any?
     .row.g-3
-      - player[:territories].each do |territory|
+      - player.territories.each do |territory|
         .col-12.col-md-6.col-lg-4
           = link_to "#", class: "card text-decoration-none text-reset h-100 territory-card"
             .card-body.d-flex.align-items-center.justify-content-between
               div
-                h6.mb-1 = territory[:name]
-                small.text-muted.font-monospace = territory[:id]
+                h6.mb-1 = territory.name
+                small.text-muted.font-monospace = territory.id
               i.bi.bi-chevron-right.text-muted
   - else
     .card.border-secondary

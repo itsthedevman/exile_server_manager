@@ -112,7 +112,7 @@ module ESM
 
           self
         rescue => e
-          error!(event: "website_api:start_failed", error: e.class.name, detail: e.message)
+          error!(event: "website_api:start_failed", error: e)
         end
 
         ##
@@ -127,7 +127,7 @@ module ESM
           begin
             @nats.drain
           rescue => e
-            warn!(event: "website_api:stop_error", error: e.class.name, detail: e.message)
+            warn!(event: "website_api:stop_error", error: e)
           end
 
           @nats = nil
@@ -163,7 +163,7 @@ module ESM
           # Full error stays in the bot's logs; the wire response carries a
           # generic detail so we don't leak AR/discordrb internals back to the
           # caller. (Per dispatch comment: no oracle for the caller.)
-          error!(event: "website_api:error", action:, error: e.class.name, detail: e.message)
+          error!(event: "website_api:error", action:, error: e)
           respond_error(message, :unknown, "internal handler error")
         end
 
@@ -174,7 +174,7 @@ module ESM
           promise
             .then { |value| message.respond({ok: true, result: value}.to_json) }
             .rescue do |reason|
-              error!(event: "website_api:error", action:, error: reason.class.name, detail: reason.message)
+              error!(event: "website_api:error", action:, error: reason)
               respond_error(message, :unknown, "internal handler error")
             end
         end

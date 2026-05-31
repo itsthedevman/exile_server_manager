@@ -16,9 +16,13 @@ module Servers
     end
 
     def current_player
-      ESM.cache.fetch("player_#{current_server.id}_#{current_user.steam_uid}", expires_in: 10.seconds) do
-        current_server.player_info(current_user.steam_uid)
-      end
+      data =
+        ESM.cache.fetch("player_#{current_server.id}_#{current_user.steam_uid}", expires_in: 10.seconds) do
+          current_server.player_info(current_user.steam_uid)
+        end
+
+      data[:territories].map! { |territory| ESM::Exile::Territory.new(server: current_server, territory:) }
+      data.to_istruct
     end
   end
 end
