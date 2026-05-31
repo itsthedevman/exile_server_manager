@@ -103,13 +103,13 @@
               .text-muted.small.text-uppercase Pocket
               .fs-2.fw-bold.text-success
                 - if player_alive?(player)
-                  = player.money
+                  = poptabs(player.money)
                 - else
                   span.text-muted 0
             div
-              .text-muted.small.text-uppercase Locker 
+              .text-muted.small.text-uppercase Locker
               .fs-2.fw-bold.text-success
-                = player.locker
+                = poptabs(player.locker)
 
       .col-12.col-xl-6
         .card.h-100
@@ -185,11 +185,7 @@
                     small.text-muted.font-monospace = territory.id
                   i.bi.bi-chevron-right.text-muted.flex-shrink-0
 
-                hr.my-3.text-secondary
-
-                .d-flex.align-items-center.gap-2
-                  i.bi.bi-circle-fill[style="font-size: 0.5rem; color: #{territory.status_color};"]
-                  small = territory_payment_status(territory)
+                = territory_payment_section(territory)
     - else
       .card.border-secondary
         .card-body.text-center.py-5

@@ -25,6 +25,8 @@ module Servers
       return if data.blank?
 
       data[:territories]&.map! { |territory| ESM::Exile::Territory.new(server: current_server, territory:) }
+        &.sort_by!(&:id)
+
       data.to_istruct
     end
   end
