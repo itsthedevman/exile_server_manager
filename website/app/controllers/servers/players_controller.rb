@@ -17,11 +17,14 @@ module Servers
 
     def current_player
       data =
-        ESM.cache.fetch("player_#{current_server.id}_#{current_user.steam_uid}", expires_in: 10.seconds) do
+        ESM.cache.fetch("player_#{current_server.id}_#{current_user.steam_uid}", expires_in: 5.seconds) do
           current_server.player_info(current_user.steam_uid)
         end
 
-      data[:territories].map! { |territory| ESM::Exile::Territory.new(server: current_server, territory:) }
+      # No character on this server yet (never spawned in, or server offline)
+      return if data.blank?
+
+      data[:territories]&.map! { |territory| ESM::Exile::Territory.new(server: current_server, territory:) }
       data.to_istruct
     end
   end
