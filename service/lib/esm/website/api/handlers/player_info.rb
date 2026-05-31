@@ -19,7 +19,7 @@ module ESM
           def self.call(server_id:, steam_uid:)
             info!(event: "player_info", server_id:, steam_uid:)
 
-            server = ESM::Server.find(server_id)
+            server = ESM::Server.find_by(id: server_id)
             raise ArgumentError, "Unknown server: #{server_id}" if server.nil?
 
             Concurrent::Promise.execute do
