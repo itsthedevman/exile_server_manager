@@ -18,6 +18,7 @@ SELECT
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'id', CONVERT(id, char),
+                        'esm_custom_id', esm_custom_id,
                         'name', name,
                         'last_paid_at', last_paid_at,
                         'flag_texture', flag_texture,

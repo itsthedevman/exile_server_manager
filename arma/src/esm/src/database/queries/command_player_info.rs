@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Deserialize, Serialize)]
 struct Territory {
     id: String,
+    esm_custom_id: Option<String>,
     name: String,
     last_paid_at: Option<String>,
     flag_texture: String,
