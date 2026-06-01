@@ -1,0 +1,88 @@
+name: esm
+
+# Shared backing services for the whole ESM stack. The bot, website, and the
+# test suites run natively (bin/dev) and reach these over localhost via the
+# published ports below. The dockerized arma_server (arma/docker-compose.yml)
+# joins the `esm` network and reaches mysql by its service name `mysql_db`.
+#
+# Bring this up before arma: `docker compose up -d` here creates the `esm`
+# network that arma's compose references as external.
+
+services:
+  postgres-db:
+    image: postgres:17
+    container_name: ESM_DB_POSTGRES
+    restart: always
+    environment:
+      POSTGRES_USER: esm
+      POSTGRES_PASSWORD: password12345
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    networks:
+      - esm
+
+  mysql_db:
+    image: mysql:8
+    container_name: ESM_DB_MYSQL
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    command: >
+      --mysql-native-password=ON
+      --authentication_policy=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./arma/.docker-volumes/mysql-data:/var/lib/mysql
+      - ./arma/exile.sql:/docker-entrypoint-initdb.d/exile.sql
+    networks:
+      - esm
+
+  mysql_db_v1:
+    image: mysql:5.7
+    container_name: ESM_DB_MYSQL_V1
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: password12345
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./arma/.docker-volumes/mysqlv1-data:/var/lib/mysql
+      - ./arma/exile.sql:/docker-entrypoint-initdb.d/exile.sql
+    networks:
+      - esm
+    profiles:
+      - v1
+
+  redis-db:
+    image: redis
+    container_name: ESM_DB_REDIS
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - esm
+
+  nats:
+    image: nats:2
+    container_name: ESM_NATS
+    restart: always
+    ports:
+      - "4222:4222"
+    networks:
+      - esm
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  esm:
+    name: esm
+    driver: bridge

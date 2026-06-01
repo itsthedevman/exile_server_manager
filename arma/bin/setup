@@ -2,10 +2,13 @@
 
 set -euo pipefail
 
-docker compose up -d
+# mysql now lives in the root compose (shared `esm` network). Bring it up there,
+# then load the Exile schema by container name so this works regardless of which
+# compose project owns the container.
+docker compose -f ../docker-compose.yml up -d mysql_db
 
-docker compose exec -T mysql_db mysql -uroot -ppassword12345 < exile.sql
-docker compose exec -T mysql_db mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/01.sql
-docker compose exec -T mysql_db mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/02.sql
+docker exec -i ESM_DB_MYSQL mysql -uroot -ppassword12345 < exile.sql
+docker exec -i ESM_DB_MYSQL mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/01.sql
+docker exec -i ESM_DB_MYSQL mysql -uroot -ppassword12345 -Dexile_esm < src/@esm/sql/02.sql
 
 bin/build --update

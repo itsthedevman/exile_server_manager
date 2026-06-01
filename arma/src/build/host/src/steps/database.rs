@@ -56,12 +56,13 @@ pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
     let container = "ESM_DB_MYSQL";
     let remote_sql = "/tmp/esm_seed.sql";
 
+    // mysql lives in the root compose now, so address the container by name
+    // rather than `docker compose cp <service>` (no such service in this project).
     let cp_output = Command::new("docker")
         .args([
-            "compose",
             "cp",
             &sql_path.to_string_lossy().to_string(),
-            &format!("mysql_db:{remote_sql}"),
+            &format!("{container}:{remote_sql}"),
         ])
         .output()
         .map_err(|e| BuildError::Docker(e.to_string()))?;

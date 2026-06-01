@@ -147,21 +147,20 @@
                 patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" arma/tools/wrappers/sqfvm || true
               fi
 
-              if [ -f arma/tools/armake2 ]; then
-                echo "patching arma/tools/armake2..."
-                cp -f arma/tools/armake2 arma/tools/wrappers/armake2
-                patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" arma/tools/wrappers/armake2 || true
-                patchelf --set-rpath "$OPENSSL_LIB" arma/tools/wrappers/armake2 || true
-              fi
-
               chmod +x arma/tools/wrappers/* 2>/dev/null || true
             fi
 
-            # Arma: ensure the MySQL container is up, starting it only if it isn't already running
-            if [ -f arma/docker-compose.yml ] && docker info >/dev/null 2>&1; then
-              if [ -z "$(docker ps -q --filter "name=^ESM_DB_MYSQL$" --filter "status=running" 2>/dev/null)" ]; then
-                echo "Starting MySQL container (ESM_DB_MYSQL)..."
-                docker-compose -f arma/docker-compose.yml up -d mysql_db >/dev/null 2>&1 || true
+            # Auto-start the backing services this machine doesn't already provide:
+            # nats and mysql. Postgres and redis are run systemwide (Nix services), so
+            # those compose services are skipped here to avoid a port clash; the root
+            # docker-compose.yml still defines all four for machines without natives.
+            # Starting these also creates the `esm` network arma's compose joins.
+            # Idempotent: compose only starts what isn't already running; ESM_NATS is
+            # the sentinel.
+            if [ -f docker-compose.yml ] && docker info >/dev/null 2>&1; then
+              if [ -z "$(docker ps -q --filter "name=^ESM_NATS$" --filter "status=running" 2>/dev/null)" ]; then
+                echo "Starting ESM backing services (nats, mysql)..."
+                docker-compose -f docker-compose.yml up -d nats mysql_db >/dev/null 2>&1 || true
               fi
             fi
 

@@ -27,7 +27,7 @@
 ;
 
 -- Dumping database structure for exile
-DROP DATABASE `exile_esm`;
+DROP DATABASE IF EXISTS `exile_esm`;
 
 CREATE DATABASE
     IF NOT EXISTS `exile_esm`
