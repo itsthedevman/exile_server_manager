@@ -21,12 +21,8 @@ mock_secondary_channels = %w[
 # BOT INITIALIZATION
 # =============================================================================
 
-puts "Waiting for ESM to start..."
-ESM.run!(async: true)
-
-until ESM.discord_bot.ready?
-  sleep 1
-end
+puts "Starting ESM..."
+ESM.run!(async: true, bare: true)
 puts " done"
 
 print "Checking commands for invalid configurations..."
