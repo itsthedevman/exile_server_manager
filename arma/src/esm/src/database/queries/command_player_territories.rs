@@ -167,6 +167,14 @@ pub async fn create_name_lookup(
         .into_iter()
         .collect::<Vec<String>>();
 
+    // A territory with no build_rights or moderators has nothing to resolve. Bail
+    // before building the lookup, otherwise replace_list emits `IN ()` and MySQL
+    // rejects it as a syntax error. Shouldn't happen in practice (Exile seeds the
+    // owner into both lists), but the invariant isn't enforced on our side.
+    if uids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
     let query = replace_list(&context.sql.account_name_lookup, ":uids", uids.len());
 
     // Execute the query
