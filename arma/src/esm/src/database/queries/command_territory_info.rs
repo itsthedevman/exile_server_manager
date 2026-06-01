@@ -13,10 +13,20 @@ pub async fn command_territory_info(
     let territory_id =
         queries::decode_territory_id(context, connection, territory_id).await?;
 
+    // Optional: when present the SQL scopes the lookup to a territory this uid has
+    // rights to; when absent (the admin `info` command) both bind to NULL and the
+    // query returns the territory unconditionally. See command_territory_info.sql.
+    let requesting_uid = arguments.get("requesting_uid");
+    let wildcard_uid = requesting_uid.map(|uid| format!("%{}%", uid));
+
     let result = connection
         .exec_map(
             &context.sql.command_territory_info,
-            params! { territory_id },
+            params! {
+                "territory_id" => territory_id,
+                "requesting_uid" => requesting_uid,
+                "wildcard_uid" => wildcard_uid,
+            },
             map_results,
         )
         .await;
