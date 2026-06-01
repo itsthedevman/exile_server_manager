@@ -133,6 +133,20 @@ code {
     -webkit-mask-size: contain;
 }
 
+// Inline poptab icon for prices: sized to the surrounding text rather than the
+// larger standalone money display.
+.poptab-icon-inline {
+    width: 1.1em;
+    height: 1.1em;
+    margin-left: 0.15rem;
+    vertical-align: -0.15em;
+}
+
+// Lift modals off the dark page so they read as floating panels.
+.modal-content {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
+}
+
 .sidebar {
     @extend .sticky-top;
     @extend .overflow-y-auto;
