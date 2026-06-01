@@ -4,8 +4,8 @@ module Servers
   class PlayersController < AuthenticatedController
     def me
       render locals: {
-        server: current_server,
-        player: current_player
+        current_server:,
+        current_player:
       }
     end
 

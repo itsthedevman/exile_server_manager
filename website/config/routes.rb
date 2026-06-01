@@ -165,18 +165,18 @@ Rails.application.routes.draw do
     end
   end
 
-  # /servers/:server_id
+  # /servers
   resources :servers, only: [] do
     # /servers/:server_id/players
-    resources :players,
-      controller: "servers/players",
-      only: [],
-      param: :user_id do
+    resources :players, controller: "servers/players", only: [], param: :user_id do
       collection do
         # /servers/:server_id/players/me
         get :me
       end
     end
+
+    # /servers/:server_id/territories
+    resources :territories, controller: "servers/territories", only: [:show], param: :territory_id
   end
 
   # /tools

@@ -73,8 +73,14 @@ module ESM
       ESM::Service::API.call(:servers_update, id:)
     end
 
+    # TODO: Docs
     def player_info(steam_uid)
       ESM::Service::API.call(:player_info, server_id: id, steam_uid:)
+    end
+
+    # TODO: Docs
+    def territory_info(encoded_territory_id, steam_uid:)
+      ESM::Service::API.call(:territory_info, server_id: id, encoded_territory_id:, steam_uid:)
     end
   end
 end
