@@ -3,8 +3,8 @@
 module TerritoriesHelper
   # A titled section panel inside the territory detail modal body. The header icon
   # carries an accent color so the panels aren't monochrome.
-  def territory_section(title, icon:, color: "text-info", &block)
-    tag.div(class: "bg-body-tertiary rounded-3 p-3 mb-3") do
+  def territory_section(title, icon:, color: "text-info", wrapper_class: "p-3 mb-3", &block)
+    tag.div(class: class_names("bg-body-tertiary rounded-3", wrapper_class)) do
       safe_join([
         tag.div(class: "text-uppercase small fw-bold mb-3 d-flex align-items-center gap-2") do
           safe_join([tag.i(class: "bi bi-#{icon} #{color}"), tag.span(title)])
@@ -46,11 +46,11 @@ module TerritoriesHelper
   # A labeled member list. Territory#owner is a single "Name (uid)" string while
   # #moderators / #builders are newline-joined lists; both split cleanly here.
   # Renders nothing when no one qualifies.
-  def territory_member_group(label, value, icon:, color: "text-info")
+  def territory_member_group(label, value, icon:, color: "text-info", wrapper_class: "mb-3")
     members = value.to_s.split("\n").map(&:strip).reject(&:blank?)
     return if members.empty?
 
-    tag.div(class: "mb-3") do
+    tag.div(class: wrapper_class) do
       safe_join([
         tag.div(class: "small fw-semibold mb-2 d-flex align-items-center gap-1") do
           safe_join([tag.i(class: "bi bi-#{icon} #{color}"), tag.span(label)])
