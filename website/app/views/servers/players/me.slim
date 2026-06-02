@@ -177,11 +177,11 @@
                   ]
                   .flex-grow-1.overflow-hidden
                     .d-flex.align-items-center.gap-2
-                      h6.mb-0.text-truncate = territory.name
                       - if territory.stolen?
                         span.badge.bg-danger.flex-shrink-0
                           i.bi.bi-exclamation-triangle-fill.me-1
                           | Stolen
+                      h6.mb-0.text-truncate = territory.name
                     small.text-muted.font-monospace = territory.id
                   i.bi.bi-chevron-right.text-muted.flex-shrink-0
 
