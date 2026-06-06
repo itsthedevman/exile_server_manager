@@ -333,38 +333,38 @@ describe ESM::Exile::Territory do
 
     subject(:normalized) { territory.send(:normalize_territory, input) }
 
-    it "exposes territory_name as #name" do
-      expect(normalized.name).to eq("My Lovely Base")
+    it "exposes territory_name as :name" do
+      expect(normalized[:name]).to eq("My Lovely Base")
     end
 
     it "defaults a missing esm_custom_id to nil" do
-      expect(normalized.esm_custom_id).to be_nil
+      expect(normalized[:esm_custom_id]).to be_nil
     end
 
     it "preserves an existing esm_custom_id" do
       input[:esm_custom_id] = "custom-123"
-      expect(normalized.esm_custom_id).to eq("custom-123")
+      expect(normalized[:esm_custom_id]).to eq("custom-123")
     end
 
     it "coerces a non-hash input via #to_h" do
       normalized = territory.send(:normalize_territory, territory_example)
-      expect(normalized.name).to eq(territory_example.territory_name)
+      expect(normalized[:name]).to eq(territory_example.territory_name)
     end
 
     describe "account labeling and sorting" do
       it "sorts moderators and build rights by name (case-insensitive)" do
-        expect(normalized.moderators.map(&:name)).to eq(["alice", "Charlie"])
-        expect(normalized.build_rights.map(&:name)).to eq(["alice", "Bob", "Charlie"])
+        expect(normalized[:moderators].map { |account| account[:name] }).to eq(["alice", "Charlie"])
+        expect(normalized[:build_rights].map { |account| account[:name] }).to eq(["alice", "Bob", "Charlie"])
       end
 
       it "flags the owner as owner, moderator, and builder" do
-        owner = normalized.build_rights.find { |account| account.uid == owner_uid }
-        expect([owner.owner, owner.moderator, owner.builder]).to eq([true, true, true])
+        owner = normalized[:build_rights].find { |account| account[:uid] == owner_uid }
+        expect([owner[:owner], owner[:moderator], owner[:builder]]).to eq([true, true, true])
       end
 
       it "flags a build-rights-only account as a builder alone" do
-        builder = normalized.build_rights.find { |account| account.uid == builder_uid }
-        expect([builder.owner, builder.moderator, builder.builder]).to eq([false, false, true])
+        builder = normalized[:build_rights].find { |account| account[:uid] == builder_uid }
+        expect([builder[:owner], builder[:moderator], builder[:builder]]).to eq([false, false, true])
       end
     end
 
@@ -374,7 +374,7 @@ describe ESM::Exile::Territory do
         input[:build_rights] = nil
 
         expect { normalized }.not_to raise_error
-        expect(normalized.name).to eq("My Lovely Base")
+        expect(normalized[:name]).to eq("My Lovely Base")
       end
     end
   end
