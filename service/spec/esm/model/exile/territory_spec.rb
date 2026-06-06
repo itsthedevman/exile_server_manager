@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Exile::Territory, v2: true do
+describe ESM::Exile::Territory do
   let!(:community) { create(:community) }
   let!(:server) { create(:server, :v2, :with_territories, community_id: community.id) }
   let!(:settings) { server.server_setting }
@@ -305,6 +305,77 @@ describe ESM::Exile::Territory, v2: true do
       last_paid_at = ::Time.current - (settings.territory_lifetime - 1).days
       territory_example.last_paid_at = last_paid_at.strftime(TerritoryGenerator::TIME_FORMAT)
       expect(territory.payment_reminder_message).to eq(":alarm_clock: **You should make a base payment ASAP to avoid losing your base!**\n#{time_left_message}")
+    end
+  end
+
+  describe "#normalize_territory" do
+    let(:owner_uid) { "owner_steam_uid" }
+    let(:moderator_uid) { "moderator_steam_uid" }
+    let(:builder_uid) { "builder_steam_uid" }
+
+    # Account names are intentionally out of order (and mixed case) so the sort
+    # is observable: alice, Bob, Charlie.
+    let(:input) do
+      {
+        owner_uid: owner_uid,
+        territory_name: "My Lovely Base",
+        moderators: [
+          {uid: owner_uid, name: "Charlie"},
+          {uid: moderator_uid, name: "alice"}
+        ],
+        build_rights: [
+          {uid: owner_uid, name: "Charlie"},
+          {uid: moderator_uid, name: "alice"},
+          {uid: builder_uid, name: "Bob"}
+        ]
+      }
+    end
+
+    subject(:normalized) { territory.send(:normalize_territory, input) }
+
+    it "exposes territory_name as :name" do
+      expect(normalized[:name]).to eq("My Lovely Base")
+    end
+
+    it "defaults a missing esm_custom_id to nil" do
+      expect(normalized[:esm_custom_id]).to be_nil
+    end
+
+    it "preserves an existing esm_custom_id" do
+      input[:esm_custom_id] = "custom-123"
+      expect(normalized[:esm_custom_id]).to eq("custom-123")
+    end
+
+    it "coerces a non-hash input via #to_h" do
+      normalized = territory.send(:normalize_territory, territory_example)
+      expect(normalized[:name]).to eq(territory_example.territory_name)
+    end
+
+    describe "account labeling and sorting" do
+      it "sorts moderators and build rights by name (case-insensitive)" do
+        expect(normalized[:moderators].map { |account| account[:name] }).to eq(["alice", "Charlie"])
+        expect(normalized[:build_rights].map { |account| account[:name] }).to eq(["alice", "Bob", "Charlie"])
+      end
+
+      it "flags the owner as owner, moderator, and builder" do
+        owner = normalized[:build_rights].find { |account| account[:uid] == owner_uid }
+        expect([owner[:owner], owner[:moderator], owner[:builder]]).to eq([true, true, true])
+      end
+
+      it "flags a build-rights-only account as a builder alone" do
+        builder = normalized[:build_rights].find { |account| account[:uid] == builder_uid }
+        expect([builder[:owner], builder[:moderator], builder[:builder]]).to eq([false, false, true])
+      end
+    end
+
+    context "when moderators and build rights are absent" do
+      it "normalizes without raising" do
+        input[:moderators] = nil
+        input[:build_rights] = nil
+
+        expect { normalized }.not_to raise_error
+        expect(normalized[:name]).to eq("My Lovely Base")
+      end
     end
   end
 

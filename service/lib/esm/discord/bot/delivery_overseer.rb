@@ -4,7 +4,7 @@ module ESM
   module Discord
     class Bot
       class DeliveryOverseer
-        class Envelope < ImmutableStruct.define(:id, :message, :delivery_channel, :embed_message, :replying_to, :wait)
+        class Envelope < Data.define(:id, :message, :delivery_channel, :embed_message, :replying_to, :wait)
           def initialize(**args)
             defaults = {id: nil, wait: false}
 
@@ -17,7 +17,7 @@ module ESM
           end
         end
 
-        class PendingDelivery < ImmutableStruct.define(:id)
+        class PendingDelivery < Data.define(:id)
           SLEEP = 0.2 # Seconds
           TIMEOUT = 2.minutes.to_i / SLEEP
 
@@ -37,7 +37,7 @@ module ESM
           end
         end
 
-        class Delivery < ImmutableStruct.define(:id, :message, :timeout)
+        class Delivery < Data.define(:id, :message, :timeout)
           def initialize(id:, message:, timeout: 2.minutes)
             super(id: id, message: message, timeout: timeout.from_now)
           end

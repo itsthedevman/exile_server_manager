@@ -1,0 +1,7 @@
+# All three ESM dev processes, run together under overmind (bin/dev).
+# overmind runs each command from a tmux temp dir, so cd via the ESM_*_PATH
+# vars exported by flake.nix rather than a relative path. `direnv exec .` loads
+# each component's .envrc so per-component env is present, matching bin/test.
+website: cd "$ESM_WEBSITE_PATH" && exec direnv exec . bin/dev
+service: cd "$ESM_SERVICE_PATH" && exec direnv exec . bin/dev
+arma:    cd "$ESM_ARMA_PATH"    && exec direnv exec . bin/dev

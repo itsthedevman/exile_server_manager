@@ -116,6 +116,37 @@ code {
     border: 1px solid rgba($esm-ui-danger, 0.3);
 }
 
+.poptab-icon {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+
+    // Paint the masked silhouette with the surrounding text color, so the icon is
+    // tintable by any text color class. mask-image is set inline per element.
+    background-color: currentColor;
+
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+}
+
+// Inline poptab icon for prices: sized to the surrounding text rather than the
+// larger standalone money display.
+.poptab-icon-inline {
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: 0.15rem;
+    vertical-align: -0.05em;
+}
+
+// Lift modals off the dark page so they read as floating panels.
+.modal-content {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.6);
+}
+
 .sidebar {
     @extend .sticky-top;
     @extend .overflow-y-auto;

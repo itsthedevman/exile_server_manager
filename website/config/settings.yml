@@ -33,8 +33,8 @@ nats:
   # so the bot's subscriptions see our requests.
   subject_prefix: "esm.bot.rpc."
 
-  # Per-request timeout (seconds). On expiry, IpcClient raises Unreachable.
-  request_timeout: 10
+  # Per-request timeout (seconds). On expiry, ESM::Service::API raises Unreachable.
+  request_timeout: 2
 
   # HMAC-SHA256 key used to sign the wire envelope on every RPC. The website
   # signs; the bot verifies with the same value. The value below is a committed

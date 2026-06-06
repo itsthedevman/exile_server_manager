@@ -46,28 +46,11 @@ module ESM
           private
 
           def register_handlers(server)
-            server.register(:ping, Handlers::Ping)
-
-            server.register(:requests_accept, Handlers::RequestsAccept)
-            server.register(:requests_decline, Handlers::RequestsDecline)
-
-            server.register(:servers_update, Handlers::ServersUpdate)
-            server.register(:servers_reconnect, Handlers::ServersReconnect)
-            server.register(:servers_connected, Handlers::ServersConnected)
-
-            server.register(:player_info, Handlers::PlayerInfo)
-
-            server.register(:channel, Handlers::Channel)
-            server.register(:channel_send, Handlers::ChannelSend)
-
-            server.register(:community_channels, Handlers::CommunityChannels)
-            server.register(:community_modifiable_by, Handlers::CommunityModifiableBy)
-            server.register(:community_roles, Handlers::CommunityRoles)
-            server.register(:community_users, Handlers::CommunityUsers)
-            server.register(:community_delete, Handlers::CommunityDelete)
-
-            server.register(:user_communities, Handlers::UserCommunities)
-            server.register(:user_community_permissions, Handlers::UserCommunityPermissions)
+            # Load handlers from api/handlers
+            Handlers.constants(false).sort.each do |constant_name|
+              # server.register(:ping, Handlers::Ping)
+              server.register(constant_name.to_s.underscore, "#{Handlers}::#{constant_name}".constantize)
+            end
           end
         end
 
@@ -112,7 +95,7 @@ module ESM
 
           self
         rescue => e
-          error!(event: "website_api:start_failed", error: e.class.name, detail: e.message)
+          error!(event: "website_api:start_failed", error: e)
         end
 
         ##
@@ -127,7 +110,7 @@ module ESM
           begin
             @nats.drain
           rescue => e
-            warn!(event: "website_api:stop_error", error: e.class.name, detail: e.message)
+            warn!(event: "website_api:stop_error", error: e)
           end
 
           @nats = nil
@@ -163,7 +146,7 @@ module ESM
           # Full error stays in the bot's logs; the wire response carries a
           # generic detail so we don't leak AR/discordrb internals back to the
           # caller. (Per dispatch comment: no oracle for the caller.)
-          error!(event: "website_api:error", action:, error: e.class.name, detail: e.message)
+          error!(event: "website_api:error", action:, error: e)
           respond_error(message, :unknown, "internal handler error")
         end
 
@@ -174,7 +157,7 @@ module ESM
           promise
             .then { |value| message.respond({ok: true, result: value}.to_json) }
             .rescue do |reason|
-              error!(event: "website_api:error", action:, error: reason.class.name, detail: reason.message)
+              error!(event: "website_api:error", action:, error: reason)
               respond_error(message, :unknown, "internal handler error")
             end
         end

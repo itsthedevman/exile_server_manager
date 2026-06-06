@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly root_dir="$(pwd)"
+readonly crate="src/tools/paa2png"
+
+cargo build -q --manifest-path="${crate}/Cargo.toml"
+
+exec "${root_dir}/target/debug/paa2png" "$@"

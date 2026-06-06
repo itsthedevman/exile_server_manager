@@ -16,10 +16,10 @@ module ESM
         #   when the player has no character on the server.
         #
         class PlayerInfo
-          def self.call(server_id:, steam_uid:, **)
+          def self.call(server_id:, steam_uid:)
             info!(event: "player_info", server_id:, steam_uid:)
 
-            server = ESM::Server.find_by_public_id(server_id)
+            server = ESM::Server.find_by(id: server_id)
             raise ArgumentError, "Unknown server: #{server_id}" if server.nil?
 
             Concurrent::Promise.execute do

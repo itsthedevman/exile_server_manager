@@ -26,3 +26,14 @@ FROM
     ) c ON c.territory_id = t.id
 WHERE
     t.id = :territory_id
+    AND t.deleted_at IS NULL
+    -- Optional access scope. The admin `info` command passes no requesting_uid, so
+    -- the `IS NULL` branch short-circuits to true and it sees every territory. The
+    -- website passes the authenticated player's uid, so an unauthorized id returns
+    -- zero rows (same membership predicate as command_player_territories).
+    AND (
+        :requesting_uid IS NULL
+        OR t.owner_uid = :requesting_uid
+        OR t.build_rights LIKE :wildcard_uid
+        OR t.moderators LIKE :wildcard_uid
+    )

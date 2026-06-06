@@ -1,7 +1,12 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    io::Cursor,
+    path::{Path, PathBuf},
+};
 
 use compiler::Compiler;
 use glob::glob;
+use hemtt_pbo::WritablePbo;
 
 use crate::{
     compile::bind_replacements,
@@ -16,6 +21,10 @@ use crate::{
 pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
     let source_path = ctx.git_path.join("src").join("@esm");
     let build_path = ctx.local_build_path.join("@esm");
+    // Addons are compiled here first, then packed into build_path as PBOs.
+    // Keeping the unpacked sources out of build_path means the deployed
+    // @esm/addons/ holds only .pbo files, never the raw source dirs.
+    let work_path = ctx.local_build_path.join("mod_work");
 
     let has_test = !ctx.args.release;
     let addon_count = ADDONS.len() + if has_test { 1 } else { 0 };
@@ -23,23 +32,23 @@ pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
     let mut sp = MultiSpinner::start("Building mod");
 
     // Sub-steps: compile, stringtable, sqf check, pack
-    compile_sqf(ctx, &source_path, &build_path)
+    compile_sqf(ctx, &source_path, &work_path, &build_path)
         .map_err(|e| { sp.sub_fail("Replacing macros", false); e })?;
     sp.sub_done("Replacing macros", false);
 
     string_table::convert_yaml_to_xml(
-        build_path.join("addons").join("exile_server_manager").join("stringtable.yml"),
+        work_path.join("addons").join("exile_server_manager").join("stringtable.yml"),
     )
     .map_err(|e| BuildError::General(e))?;
 
     // Write stringtable.xml was done by convert_yaml_to_xml internally
     sp.sub_done("Building stringtable.xml", false);
 
-    check_sqf(&build_path, ctx)
+    check_sqf(&[work_path.join("addons"), build_path.join("optionals")], ctx)
         .map_err(|e| { sp.sub_fail("Checking SQF", false); e })?;
     sp.sub_done("Checking SQF", false);
 
-    pack_addons(ctx, &build_path, has_test)
+    pack_addons(&work_path, &build_path, has_test)
         .map_err(|e| { sp.sub_fail("Packing addons", false); e })?;
     sp.sub_done(&format!("Packing {} addons", addon_count), false);
 
@@ -54,13 +63,16 @@ pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
 fn compile_sqf(
     ctx: &BuildContext,
     source_path: &Path,
-    dest_path: &Path,
+    work_path: &Path,
+    build_path: &Path,
 ) -> BuildResult {
     let target_str = ctx.args.build_os().to_string();
 
+    // Addons compile to the intermediate work dir (they get packed into PBOs
+    // afterwards). Optionals ship unpacked, so they go straight into build_path.
     for (src, dst) in [
-        (source_path.join("addons"), dest_path.join("addons")),
-        (source_path.join("optionals"), dest_path.join("optionals")),
+        (source_path.join("addons"), work_path.join("addons")),
+        (source_path.join("optionals"), build_path.join("optionals")),
     ] {
         let mut compiler = Compiler::new();
         compiler
@@ -75,36 +87,39 @@ fn compile_sqf(
     Ok(())
 }
 
-fn check_sqf(build_path: &Path, ctx: &BuildContext) -> BuildResult {
-    let pattern = format!("{}/**/*.sqf", build_path.display());
+fn check_sqf(roots: &[PathBuf], ctx: &BuildContext) -> BuildResult {
     let sqfvm = ctx.git_path.join("bin").join("sqfvm");
 
-    let paths: Vec<_> = glob(&pattern)
-        .map_err(|e| BuildError::General(e.to_string()))?
-        .flatten()
-        .collect();
+    for root in roots {
+        let pattern = format!("{}/**/*.sqf", root.display());
 
-    for sqf_path in paths {
-        let output = std::process::Command::new(&sqfvm)
-            .args([
-                "--automated",
-                "--parse-only",
-                "--no-spawn-player",
-                "--input-sqf",
-                &sqf_path.to_string_lossy(),
-            ])
-            .output()
-            .map_err(|e| BuildError::General(e.to_string()))?;
+        let paths: Vec<_> = glob(&pattern)
+            .map_err(|e| BuildError::General(e.to_string()))?
+            .flatten()
+            .collect();
 
-        let combined = String::from_utf8_lossy(&output.stdout).to_string()
-            + &String::from_utf8_lossy(&output.stderr);
+        for sqf_path in paths {
+            let output = std::process::Command::new(&sqfvm)
+                .args([
+                    "--automated",
+                    "--parse-only",
+                    "--no-spawn-player",
+                    "--input-sqf",
+                    &sqf_path.to_string_lossy(),
+                ])
+                .output()
+                .map_err(|e| BuildError::General(e.to_string()))?;
 
-        if combined.contains("Parse Error:") {
-            return Err(BuildError::General(format!(
-                "SQF parse error in {}\n{}",
-                sqf_path.display(),
-                combined.trim()
-            )));
+            let combined = String::from_utf8_lossy(&output.stdout).to_string()
+                + &String::from_utf8_lossy(&output.stderr);
+
+            if combined.contains("Parse Error:") {
+                return Err(BuildError::General(format!(
+                    "SQF parse error in {}\n{}",
+                    sqf_path.display(),
+                    combined.trim()
+                )));
+            }
         }
     }
 
@@ -112,56 +127,95 @@ fn check_sqf(build_path: &Path, ctx: &BuildContext) -> BuildResult {
 }
 
 fn pack_addons(
-    ctx: &BuildContext,
+    work_path: &Path,
     build_path: &Path,
     include_test: bool,
 ) -> BuildResult {
-    let armake2 = ctx.git_path.join("bin").join("armake2");
-    let addons_path = build_path.join("addons");
+    let src_addons = work_path.join("addons");
+    let dst_addons = build_path.join("addons");
+    fs::create_dir_all(&dst_addons)?;
 
     let mut addons: Vec<&str> = ADDONS.to_vec();
     if include_test {
         addons.push("esm_test");
     }
 
+    // build_mod recompiles every addon as a unit, so we pack every addon as a
+    // unit too. Keeping pack in lockstep with compile is what guarantees the
+    // deployed @esm always has a complete set of PBOs.
     for addon in &addons {
-        if !ctx.rebuild_addon(addon) {
-            continue;
-        }
+        let src = src_addons.join(addon);
+        let dst = dst_addons.join(format!("{addon}.pbo"));
 
-        let src = addons_path.join(addon);
-        let dst = addons_path.join(format!("{addon}.pbo"));
-
-        let output = std::process::Command::new(&armake2)
-            .args(["pack", "-v", &src.to_string_lossy(), &dst.to_string_lossy()])
-            .output()
-            .map_err(|e| BuildError::General(e.to_string()))?;
-
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // Print armake2 output lines with tree indentation
-        for line in stdout.lines().chain(stderr.lines()) {
-            if !line.trim().is_empty() {
-                print_subprocess_line(line);
-            }
-        }
-
-        if !output.status.success() || stdout.contains("ErrorId") || stderr.contains("missing file") {
-            return Err(BuildError::General(format!(
-                "Failed to pack {addon}: {}",
-                stderr.trim()
-            )));
-        }
-
-        if !dst.exists() {
-            return Err(BuildError::General(format!(
-                "armake2 produced no output for {addon}"
-            )));
-        }
+        let file_count = pack_pbo(&src, &dst)?;
+        print_subprocess_line(&format!("{addon}.pbo ({file_count} files)"));
     }
 
     Ok(())
+}
+
+/// Packs one addon directory into a PBO with HEMTT's `WritablePbo`.
+///
+/// Mirrors what `armake2 pack` did for these addons: every file under `src` is
+/// added (including the `$PBOPREFIX$.txt` marker itself), and the prefix that
+/// marker declares is written into the PBO header so Arma can resolve the
+/// addon's virtual path. Unlike armake2, `WritablePbo` does not read the prefix
+/// marker on its own, so we set it explicitly via `read_pbo_prefix`.
+fn pack_pbo(src: &Path, dst: &Path) -> Result<usize, BuildError> {
+    let mut pbo: WritablePbo<Cursor<Vec<u8>>> = WritablePbo::new();
+
+    // Collect files in a stable order so rebuilds produce identical PBOs.
+    let pattern = format!("{}/**/*", src.display());
+    let mut files: Vec<PathBuf> = glob(&pattern)
+        .map_err(|e| BuildError::General(e.to_string()))?
+        .flatten()
+        .filter(|p| p.is_file())
+        .collect();
+    files.sort();
+
+    for path in &files {
+        let rel = path
+            .strip_prefix(src)
+            .map_err(|e| BuildError::General(e.to_string()))?;
+        // add_file normalizes forward slashes to backslashes internally.
+        let name = rel.to_string_lossy().into_owned();
+        let bytes = fs::read(path)?;
+        pbo.add_file(name, Cursor::new(bytes))
+            .map_err(|e| BuildError::General(e.to_string()))?;
+    }
+
+    if let Some(prefix) = read_pbo_prefix(src) {
+        pbo.add_property("prefix", prefix);
+    }
+
+    let mut out = fs::File::create(dst)?;
+    pbo.write(&mut out, true)
+        .map_err(|e| BuildError::General(e.to_string()))?;
+
+    Ok(files.len())
+}
+
+/// Reads the addon prefix from the Mikero-style marker file, trying the
+/// historical names in turn. Returns the first non-empty line with an optional
+/// `prefix=` lead-in stripped.
+fn read_pbo_prefix(src: &Path) -> Option<String> {
+    for marker in ["$PBOPREFIX$.txt", "$PBOPREFIX$", "$PREFIX$"] {
+        let Ok(contents) = fs::read_to_string(src.join(marker)) else {
+            continue;
+        };
+
+        let line = contents.lines().next().unwrap_or("").trim();
+        let value = line
+            .strip_prefix("prefix=")
+            .or_else(|| line.strip_prefix("PREFIX="))
+            .unwrap_or(line);
+
+        if !value.is_empty() {
+            return Some(value.to_string());
+        }
+    }
+
+    None
 }
 
 fn copy_extras(

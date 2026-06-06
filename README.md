@@ -113,9 +113,10 @@ nix develop    # or just cd into a subdir; its .envrc delegates here
 
 #### Manual setup
 
-- Docker and Docker Compose (arma uses it for its local MySQL/Exile database)
-- PostgreSQL 15+ running locally or reachable
-- Redis running locally or reachable
+- Docker and Docker Compose (the root `docker-compose.yml` provides the shared
+  Postgres, MySQL/Exile, Redis, and NATS services on the `esm` network)
+- PostgreSQL 15+, Redis, and a NATS broker running locally or reachable (the
+  root compose covers all three if you'd rather not run them yourself)
 - `asdf` with the `ruby` and `nodejs` plugins, or system Ruby 3.3 and Node 18+
 - Rust toolchain via `rustup`, plus the Windows cross-compile targets:
   ```bash
@@ -183,8 +184,8 @@ encrypted TCP connection, and persists state to the shared Postgres database.
 **Start it:**
 
 ```bash
+docker compose up -d   # postgres, redis, nats (root compose; the Nix shell auto-starts these)
 cd service
-docker compose up -d postgres-db redis-db
 bin/dev
 ```
 
@@ -258,6 +259,7 @@ bin/dev    # runs cargo tests, then builds + starts the dedicated server
 
 | Task                  | Command (from repo root)                    |
 | --------------------- | ------------------------------------------- |
+| Start backing services| `docker compose up -d`                      |
 | First-time Ruby setup | `bin/setup`                                 |
 | First-time Arma setup | `arma/bin/setup`                            |
 | Run service tests     | `cd service && bundle exec rspec`           |

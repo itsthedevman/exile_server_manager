@@ -2,13 +2,13 @@
 
 require "rails_helper"
 require "nats/client"
-require_relative "../../support/spec/nats_broker"
+require_relative Rails.root.join("spec/support/spec/nats_broker")
 
 # Boots an isolated nats-server, hand-rolls a subscriber that mimics what the
-# bot would do, and verifies IpcClient's full surface: signed envelopes,
+# bot would do, and verifies ESM::Service::API's full surface: signed envelopes,
 # the handler result on success, RemoteError on ok=false, Unreachable on transport failure.
 #
-RSpec.describe ESM::IpcClient do
+RSpec.describe ESM::Service::API do
   let(:secret) { SecureRandom.hex(32) }
   let(:subject_prefix) { Settings.nats.subject_prefix }
   let(:broker) { Spec::NatsBroker.new.start }
@@ -62,7 +62,7 @@ RSpec.describe ESM::IpcClient do
       end
       stub_nats.flush
 
-      expect { described_class.call(:ping) }.to raise_error(ESM::IpcClient::RemoteError) do |err|
+      expect { described_class.call(:ping) }.to raise_error(ESM::Service::API::RemoteError) do |err|
         expect(err.error_type).to eq(:unknown_action)
         expect(err.message).to eq("nope")
       end
@@ -71,11 +71,11 @@ RSpec.describe ESM::IpcClient do
     it "raises Unreachable when the broker is unreachable" do
       client = described_class.new(url: "nats://127.0.0.1:1")
 
-      expect { client.call(:ping) }.to raise_error(ESM::IpcClient::Unreachable)
+      expect { client.call(:ping) }.to raise_error(ESM::Service::API::Unreachable)
     end
 
     it "raises Unreachable when the broker is up but no subscriber answers" do
-      expect { described_class.call(:not_a_real_action) }.to raise_error(ESM::IpcClient::Unreachable)
+      expect { described_class.call(:not_a_real_action) }.to raise_error(ESM::Service::API::Unreachable)
     end
   end
 end

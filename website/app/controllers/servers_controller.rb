@@ -78,7 +78,7 @@ class ServersController < AuthenticatedController
     end
 
     # Cause the server to reconnect
-    ESM.bot.update_server(server.id) if server.server_setting.server_needs_restarted?
+    server.reinitialize if server.server_setting.server_needs_restarted?
 
     render turbo_stream: [
       turbo_stream.replace(

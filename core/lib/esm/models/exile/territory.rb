@@ -22,53 +22,40 @@ module ESM
       def initialize(server:, territory:)
         @server = server
         @server_settings = server.server_setting
-
-        @territory = if @server.v2?
-          transform_territory(territory)
-        else
-          territory
-        end
-
-        @current_level_territory = @server.territories.find_by(
-          territory_level: @territory.level
-        )
-
-        @next_level_territory = @server.territories.find_by(
-          territory_level: @territory.level + 1
-        )
+        @territory = normalize_territory(territory)
       end
 
       def id
-        @territory.esm_custom_id.presence || @territory.id
+        @territory[:esm_custom_id].presence || @territory[:id]
       end
 
       def name
-        @territory.territory_name
+        @territory[:name]
       end
 
       def owner
-        "#{@territory.owner_name} (#{@territory.owner_uid})"
+        "#{@territory[:owner_name]} (#{@territory[:owner_uid]})"
       end
 
       def level
-        @territory.level
+        @territory[:level]
       end
 
       def object_count
-        @territory.object_count
+        @territory[:object_count]
       end
 
       def radius
         # Radius comes in as a decimal
-        @territory.radius.to_i
+        @territory[:radius].to_i
       end
 
       def flag_path
-        @flag_path ||= convert_flag_path(@territory.flag_texture)
+        @flag_path ||= convert_flag_path(@territory[:flag_texture])
       end
 
       def stolen?
-        @territory.flag_stolen
+        @territory[:flag_stolen]
       end
 
       def flag_status
@@ -76,9 +63,14 @@ module ESM
       end
 
       def status_color
-        if stolen? || days_left_until_payment_due <= 2
+        days = days_left_until_payment_due
+
+        return ESM::Color::Toast::RED if stolen?
+        return ESM::Color::Toast::GREEN if days.nil?
+
+        if days <= 2
           ESM::Color::Toast::RED
-        elsif days_left_until_payment_due <= 5
+        elsif days <= 5
           ESM::Color::Toast::YELLOW
         else
           ESM::Color::Toast::GREEN
@@ -86,24 +78,36 @@ module ESM
       end
 
       def last_paid_at
-        @last_paid_at ||= ESM::Time.parse(@territory.last_paid_at)
+        return if @territory[:last_paid_at].blank?
+
+        @last_paid_at ||= ESM::Time.parse(@territory[:last_paid_at])
       end
 
       def next_due_date
+        return if last_paid_at.nil?
+
         @next_due_date ||= last_paid_at + @server_settings.territory_lifetime.days
       end
 
       def max_object_count
-        @current_level_territory.territory_object_count
+        current_level_territory.territory_object_count
       end
 
       def upgrade_level
-        @next_level_territory.territory_level
+        next_level_territory.territory_level
+      end
+
+      def current_level_territory
+        @current_level_territory ||= @server.territories.find_by(territory_level: @territory[:level])
+      end
+
+      def next_level_territory
+        @next_level_territory ||= @server.territories.find_by(territory_level: @territory[:level] + 1)
       end
 
       def renew_price
-        price = @territory.level *
-          @territory.object_count *
+        price = @territory[:level] *
+          @territory[:object_count] *
           @server_settings.territory_price_per_object
 
         return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
@@ -115,11 +119,11 @@ module ESM
       end
 
       def upgradeable?
-        !@next_level_territory.nil?
+        !next_level_territory.nil?
       end
 
       def upgrade_price
-        price = @next_level_territory.territory_purchase_price
+        price = next_level_territory.territory_purchase_price
         return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_upgrade_tax.zero?
 
         # If the server has tax, add it to the price
@@ -129,43 +133,45 @@ module ESM
       end
 
       def upgrade_radius
-        @next_level_territory.territory_radius
+        next_level_territory.territory_radius
       end
 
       def upgrade_object_count
-        @next_level_territory.territory_object_count
+        next_level_territory.territory_object_count
       end
 
       def moderators
         if @server.v2?
-          @territory.moderators
-            .sort_by { |a| a.name.downcase }
+          @territory[:moderators]
+            .sort_by { |a| a[:name].downcase }
             .join_map("\n") do |account|
-              next if account.owner
+              next if account[:owner]
 
-              "#{account.name} (#{account.uid})"
+              "#{account[:name]} (#{account[:uid]})"
             end
         else
           # V1
-          @territory.moderators.map { |name, uid| "#{name} (#{uid})" }
+          @territory[:moderators].map { |name, uid| "#{name} (#{uid})" }
         end
       end
 
       def builders
         if @server.v2?
-          @territory.build_rights
+          @territory[:build_rights]
             .join_map("\n") do |account|
-              next if account.owner || account.moderator
+              next if account[:owner] || account[:moderator]
 
-              "#{account.name} (#{account.uid})"
+              "#{account[:name]} (#{account[:uid]})"
             end
         else
           # V1
-          @territory.build_rights.map { |name, uid| "#{name} (#{uid})" }
+          @territory[:build_rights].map { |name, uid| "#{name} (#{uid})" }
         end
       end
 
       def days_left_until_payment_due
+        return if next_due_date.nil?
+
         @days_left_until_payment_due ||= (next_due_date.to_date - ::Time.zone.today).to_i
       end
 
@@ -240,9 +246,19 @@ module ESM
 
       private
 
+      def normalize_territory(territory)
+        territory = territory.to_h unless territory.is_a?(Hash)
+        territory = transform_territory(territory) if @server.v2?
+
+        territory[:name] = territory[:territory_name] if territory.key?(:territory_name)
+        territory[:esm_custom_id] ||= nil
+
+        territory
+      end
+
       def transform_territory(territory)
-        moderator_uids = territory[:moderators].map { |a| a[:uid] }
-        builder_uids = territory[:build_rights].map { |a| a[:uid] }
+        moderator_uids = territory[:moderators]&.map { |a| a[:uid] } || []
+        builder_uids = territory[:build_rights]&.map { |a| a[:uid] } || []
 
         label_accounts = lambda do |account|
           account[:owner] = account[:uid] == territory[:owner_uid]
@@ -252,10 +268,10 @@ module ESM
 
         sort_accounts = ->(account) { account[:name].downcase }
 
-        territory[:moderators].each(&label_accounts).sort_by!(&sort_accounts)
-        territory[:build_rights].each(&label_accounts).sort_by!(&sort_accounts)
+        territory[:moderators]&.each(&label_accounts)&.sort_by!(&sort_accounts)
+        territory[:build_rights]&.each(&label_accounts)&.sort_by!(&sort_accounts)
 
-        territory.to_istruct
+        territory
       end
 
       def convert_flag_path(arma_path)

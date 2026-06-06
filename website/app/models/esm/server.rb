@@ -45,12 +45,42 @@ module ESM
 
     def connected?
       Rails.cache.fetch("server:#{id}:connected", expires_in: 10.seconds) do
-        ESM.bot.server_connected?(id)
+        ESM::Service::API.call(:servers_connected, id:)
+      rescue ESM::Service::API::Unreachable
+        # Bot/NATS not answering: degrade to "not connected" rather than 500ing
+        # the page. Cached for the same window so we don't hammer a dead bot.
+        false
       end
     end
 
     def ui_v2?
       @ui_v2 ||= Semantic::Version.new(ui_version || "2.0.0") >= Semantic::Version.new("2.0.0")
+    end
+
+    #
+    # Disconnects this server using its previous ID after a community renamed
+    # itself. The Arma DLL reconnects automatically against the new ID.
+    #
+    def reconnect(old_id)
+      ESM::Service::API.call(:servers_reconnect, id:, old_id:)
+    end
+
+    #
+    # Pushes a fresh init package to a connected server so settings changes take
+    # effect without a full disconnect.
+    #
+    def reinitialize
+      ESM::Service::API.call(:servers_update, id:)
+    end
+
+    # TODO: Docs
+    def player_info(steam_uid)
+      ESM::Service::API.call(:player_info, server_id: id, steam_uid:)
+    end
+
+    # TODO: Docs
+    def territory_info(encoded_territory_id, steam_uid:)
+      ESM::Service::API.call(:territory_info, server_id: id, encoded_territory_id:, steam_uid:)
     end
   end
 end

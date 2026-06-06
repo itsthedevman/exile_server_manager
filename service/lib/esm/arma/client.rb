@@ -7,7 +7,7 @@ module ESM
 
       HEARTBEAT_INTERVAL = 3 # seconds
 
-      Metadata = ImmutableStruct.define(:vg_enabled, :vg_max_sizes)
+      Metadata = Data.define(:vg_enabled, :vg_max_sizes)
 
       attr_reader :public_id, :server_id, :session_id, :connected_at
 
