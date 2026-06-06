@@ -107,13 +107,13 @@ describe ESM::Command::Territory::Pay, category: "command" do
         end
       end
 
-      context "when the player is online, is a builder, and upgrades the territory" do
+      context "when the player is online, is a builder, and pays the territory" do
         before { spawn_player_for(user) }
 
         include_examples "successful_territory_payment"
       end
 
-      context "when the player is offline, is a builder, and upgrades the territory" do
+      context "when the player is offline, is a builder, and pays the territory" do
         include_examples "successful_territory_payment"
       end
 

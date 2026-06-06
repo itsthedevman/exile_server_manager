@@ -49,9 +49,6 @@ private _territoryIDs = [
 ] call ESMs_util_array_map;
 
 // Reset the database
-["set_territory_payment_counter", _territoryIDs, 0] call ESMs_system_extension_call;
-
-// Reset the territory counters
-{ _x setVariable ["ESM_PaymentCounter", 0] } forEach _territories;
+["reset_territory_payment_counter", _territoryIDs] call ESMs_system_extension_call;
 
 nil

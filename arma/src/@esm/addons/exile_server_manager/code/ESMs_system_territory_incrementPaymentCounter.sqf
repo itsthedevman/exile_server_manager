@@ -27,15 +27,6 @@ Author:
 	To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
 ---------------------------------------------------------------------------- */
 
-private _paymentCounter = (_this getVariable ["ESM_PaymentCounter", 0]) + 1;
-
-[
-	"set_territory_payment_counter",
-	[_this getVariable ["ExileDatabaseID", -1]],
-	_paymentCounter
-]
-call ESMs_system_extension_call;
-
-_this setVariable ["ESM_PaymentCounter", _paymentCounter];
+["increment_territory_payment_counter", [_this getVariable ["ExileDatabaseID", -1]]] call ESMs_system_extension_call;
 
 nil

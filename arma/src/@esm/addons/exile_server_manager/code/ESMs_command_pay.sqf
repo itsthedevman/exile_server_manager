@@ -245,8 +245,7 @@ try
 				["fields", [
 					[localize!("Territory"), [
 						["id", _encodedTerritoryID],
-						["name", _territory getVariable ["ExileTerritoryName", "N/A"]],
-						["payment counter", _territory getVariable ["ESM_PaymentCounter", 0]]
+						["name", _territory getVariable ["ExileTerritoryName", "N/A"]]
 					]],
 					[localize!("Player"), _playerMetadata, true]
 				]]

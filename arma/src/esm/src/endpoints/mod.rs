@@ -9,7 +9,8 @@ import!(number_to_string);
 import!(pre_init);
 import!(send_message);
 import!(send_to_channel);
-import!(set_territory_payment_counter);
+import!(increment_territory_payment_counter);
+import!(reset_territory_payment_counter);
 import!(utc_timestamp);
 
 pub fn register() -> Extension {
@@ -30,8 +31,12 @@ pub fn register() -> Extension {
         .command("send_to_channel", send_to_channel)
         .command("utc_timestamp", utc_timestamp)
         .command(
-            "set_territory_payment_counter",
-            set_territory_payment_counter,
+            "increment_territory_payment_counter",
+            increment_territory_payment_counter,
+        )
+        .command(
+            "reset_territory_payment_counter",
+            reset_territory_payment_counter,
         )
         .finish()
 }

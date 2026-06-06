@@ -18,12 +18,10 @@ describe "ESMs_system_territory_resetPaymentCounter", :requires_connection, v2: 
 
           private _territory = #{territory.id} call ESMs_system_territory_get;
           if (isNull _territory) exitWith { false };
-
-          _territory getVariable ["ESM_PaymentCounter", -1]
         SQF
       )
 
-      expect(response).to eq(0)
+      expect(response).not_to eq(false)
 
       territory.reload
       expect(territory.esm_payment_counter).to eq(0)

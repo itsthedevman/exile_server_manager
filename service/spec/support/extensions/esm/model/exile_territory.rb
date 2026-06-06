@@ -234,7 +234,6 @@ module ESM
       radius: "ExileTerritorySize",
       level: "ExileTerritoryLevel",
       number_of_constructions: "ExileTerritoryNumberOfConstructions",
-      esm_payment_counter: "ESM_PaymentCounter",
       last_paid_at: "ExileTerritoryLastPayed"
     }.stringify_keys.freeze
 

@@ -20,6 +20,8 @@ import_and_export!(command_set_id);
 import_and_export!(command_territory_info);
 import_and_export!(decode_territory_id);
 import_and_export!(get_xm8_notifications);
+import_and_export!(get_territory_payment_counter);
+import_and_export!(increment_territory_payment_counter);
 import_and_export!(set_territory_payment_counter);
 import_and_export!(update_xm8_attempt_counter);
 import_and_export!(update_xm8_notification_state);
@@ -41,6 +43,8 @@ load_sql! {
     command_set_id,
     command_territory_info,
     decode_territory_id,
+    get_territory_payment_counter,
+    increment_territory_payment_counter,
     set_territory_payment_counter
 }
 
