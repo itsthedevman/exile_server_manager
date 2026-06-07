@@ -82,6 +82,26 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
     end
   end
 
+  it "sends exactly the expected keys" do
+    # build_setting_data is a strict allowlist now, so a missing or stray key is
+    # a real bug (the extension reads these by name). Fail loudly on any drift.
+    expect(event.data.keys).to match_array(
+      %i[
+        community_id function_name
+        gambling_locker_limit_enabled gambling_modifier gambling_payout_base
+        gambling_payout_randomizer_max gambling_payout_randomizer_mid
+        gambling_payout_randomizer_min gambling_win_percentage
+        logging_channel_id
+        logging_command_add logging_command_demote logging_command_gamble
+        logging_command_pay logging_command_player logging_command_promote
+        logging_command_remove logging_command_reward logging_command_sqf
+        logging_command_transfer logging_command_upgrade
+        max_payment_count server_id
+        taxes_territory_payment taxes_territory_upgrade territory_admin_uids
+      ]
+    )
+  end
+
   it "settings data is valid" do
     data = event.data.to_istruct
 
@@ -91,23 +111,27 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
       expect(data.territory_admin_uids).to eq([])
     end
 
+    expect(data.gambling_locker_limit_enabled).to eq(setting.gambling_locker_limit_enabled)
     expect(data.gambling_modifier).to eq(setting.gambling_modifier)
     expect(data.gambling_payout_base).to eq(setting.gambling_payout_base)
     expect(data.gambling_payout_randomizer_max).to eq(setting.gambling_payout_randomizer_max)
     expect(data.gambling_payout_randomizer_mid).to eq(setting.gambling_payout_randomizer_mid)
     expect(data.gambling_payout_randomizer_min).to eq(setting.gambling_payout_randomizer_min)
     expect(data.gambling_win_percentage).to eq(setting.gambling_win_percentage)
-    expect(data.logging_add_player_to_territory).to eq(setting.logging_add_player_to_territory)
-    expect(data.logging_demote_player).to eq(setting.logging_demote_player)
-    expect(data.logging_exec).to eq(setting.logging_exec)
-    expect(data.logging_gamble).to eq(setting.logging_gamble)
-    expect(data.logging_modify_player).to eq(setting.logging_modify_player)
-    expect(data.logging_pay_territory).to eq(setting.logging_pay_territory)
-    expect(data.logging_promote_player).to eq(setting.logging_promote_player)
-    expect(data.logging_remove_player_from_territory).to eq(setting.logging_remove_player_from_territory)
-    expect(data.logging_reward_player).to eq(setting.logging_reward_player)
-    expect(data.logging_transfer_poptabs).to eq(setting.logging_transfer_poptabs)
-    expect(data.logging_upgrade_territory).to eq(setting.logging_upgrade_territory)
+
+    # logging_command_* are the v2 renames of the v1 logging_* setting columns
+    expect(data.logging_command_add).to eq(setting.logging_add_player_to_territory)
+    expect(data.logging_command_demote).to eq(setting.logging_demote_player)
+    expect(data.logging_command_gamble).to eq(setting.logging_gamble)
+    expect(data.logging_command_pay).to eq(setting.logging_pay_territory)
+    expect(data.logging_command_player).to eq(setting.logging_modify_player)
+    expect(data.logging_command_promote).to eq(setting.logging_promote_player)
+    expect(data.logging_command_remove).to eq(setting.logging_remove_player_from_territory)
+    expect(data.logging_command_reward).to eq(setting.logging_reward_player)
+    expect(data.logging_command_sqf).to eq(setting.logging_exec)
+    expect(data.logging_command_transfer).to eq(setting.logging_transfer_poptabs)
+    expect(data.logging_command_upgrade).to eq(setting.logging_upgrade_territory)
+
     expect(data.max_payment_count).to eq(setting.max_payment_count)
     expect(data.taxes_territory_payment).to eq(setting.territory_payment_tax / 100)
     expect(data.taxes_territory_upgrade).to eq(setting.territory_upgrade_tax / 100)

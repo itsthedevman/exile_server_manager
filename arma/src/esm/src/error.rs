@@ -19,8 +19,8 @@ impl Error {
         }
     }
 
-    pub fn code<S: AsRef<str>>(message: S) -> Self {
-        Self::new(ErrorType::Code, message.as_ref().to_string())
+    pub fn code<S: AsRef<str>>(code: S) -> Self {
+        Self::new(ErrorType::Code, code.as_ref().to_string())
     }
 
     pub fn message<S: AsRef<str>>(message: S) -> Self {

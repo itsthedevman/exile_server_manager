@@ -15,7 +15,7 @@ RSpec.shared_context("connection") do
       create(:community)
     end
   end
-  
+
   let!(:user) do
     super()
   rescue NoMethodError
@@ -54,6 +54,12 @@ RSpec.shared_context("connection") do
     net_id = user.connect_to(server)
     _spawned_players << user
     net_id
+  end
+
+  def reinitialize_server!
+    server.connection.close
+
+    wait(timeout: 5).for { server.reload.connected? }.to be(true)
   end
 
   before do |example|

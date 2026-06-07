@@ -80,23 +80,18 @@ module ESM
       def build_setting_data
         settings = @model.server_setting
 
-        # Remove the database and v1 fields
-        data = settings.attributes.without(
-          *%w[
-            id server_id created_at updated_at deleted_at
-            server_restart_hour server_restart_min request_thread_type
-            request_thread_tick logging_path extdb_path
-          ]
-        ).symbolize_keys
-
-        @data = data.merge(
-          function_name: "ESMs_system_process_postInit",
+        # Todo after v1: Fix the logging naming scheme on the database side
+        @data = {
           community_id: @community.community_id,
+          function_name: "ESMs_system_process_postInit",
+          gambling_locker_limit_enabled: settings.gambling_locker_limit_enabled,
+          gambling_modifier: settings.gambling_modifier,
+          gambling_payout_base: settings.gambling_payout_base,
+          gambling_payout_randomizer_max: settings.gambling_payout_randomizer_max,
+          gambling_payout_randomizer_mid: settings.gambling_payout_randomizer_mid,
+          gambling_payout_randomizer_min: settings.gambling_payout_randomizer_min,
+          gambling_win_percentage: settings.gambling_win_percentage,
           logging_channel_id: @community.logging_channel_id,
-          server_id: @model.server_id,
-          territory_admin_uids: build_territory_admins,
-
-          # Todo after v1: Fix the naming scheme on the database side
           logging_command_add: settings.logging_add_player_to_territory,
           logging_command_demote: settings.logging_demote_player,
           logging_command_gamble: settings.logging_gamble,
@@ -108,9 +103,12 @@ module ESM
           logging_command_sqf: settings.logging_exec,
           logging_command_transfer: settings.logging_transfer_poptabs,
           logging_command_upgrade: settings.logging_upgrade_territory,
+          max_payment_count: settings.max_payment_count,
+          server_id: @model.server_id,
           taxes_territory_payment: settings.territory_payment_tax / 100,
-          taxes_territory_upgrade: settings.territory_upgrade_tax / 100
-        )
+          taxes_territory_upgrade: settings.territory_upgrade_tax / 100,
+          territory_admin_uids: build_territory_admins
+        }
       end
 
       def build_territory_admins

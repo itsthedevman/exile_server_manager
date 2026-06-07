@@ -4,7 +4,11 @@ use crate::*;
 use crate::log_search;
 use arma_rs::{Context, IntoArma};
 use database::QueryError;
-use std::{collections::HashSet, iter::FromIterator, sync::Mutex as SyncMutex};
+use std::{
+    collections::HashSet,
+    iter::FromIterator,
+    sync::{atomic::AtomicUsize, Mutex as SyncMutex},
+};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 lazy_static! {
@@ -13,6 +17,7 @@ lazy_static! {
         Arc::new(SyncMutex::new(HashSet::new()));
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> =
         Arc::new(SyncMutex::new(None));
+    pub static ref MAX_PAYMENT_COUNT: AtomicUsize = AtomicUsize::new(0);
 }
 
 pub fn is_territory_admin(steam_uid: &str) -> bool {
@@ -85,18 +90,18 @@ async fn execute(name: &str, message: Message) -> Option<Message> {
     }
 }
 
-fn send_to_arma(message: Message) -> ESMResult {
-    let Some(function_name) = message.data.get("function_name") else {
-        return Err("Missing function_name attribute on message".into());
-    };
-
-    let function_name = function_name.as_str().unwrap_or("");
+async fn send_to_arma(message: Message) -> ESMResult {
+    let function_name = message.data.require_str("function_name", "send_to_arma")?;
 
     if function_name.is_empty() {
-        return Err(format!(
-            "[send_to_arma] Dropping message with data type {:?} since it does not have a registered SQF function",
-            message.data
-        ).into());
+        return Err("[send_to_arma] Dropping message since it does not have a registered SQF function".into());
+    }
+
+    match function_name {
+        "ESMs_command_pay" => {
+            check_payment_counter(&message).await?;
+        }
+        _ => {}
     }
 
     info!("[send_to_arma] {} - calling {}", message.id, function_name);
@@ -120,28 +125,9 @@ fn send_to_arma(message: Message) -> ESMResult {
 }
 
 async fn post_initialization(mut message: Message) -> MessageResult {
-    info!("[post_init] Validating post initialization...");
+    info!("[post_init] Validating...");
 
     let data = &mut message.data;
-
-    // Yes, this isn't used until later. The goal is to not exit for errors after this point
-    let territory_admin_uids: Vec<String> = match data.get("territory_admin_uids") {
-        Some(uids) => match uids.as_array() {
-            Some(uids) => uids
-                .into_iter()
-                .filter_map(serde_json::Value::as_str)
-                .map(String::from)
-                .collect(),
-            None => {
-                return Err("Failed to convert territory_admin_uids to array"
-                    .to_string()
-                    .into())
-            }
-        },
-        None => {
-            return Err("Missing territory_admin_uids attribute".to_string().into())
-        }
-    };
 
     data.insert(
         "build_number".to_owned(),
@@ -158,12 +144,23 @@ async fn post_initialization(mut message: Message) -> MessageResult {
     info!("[post_init] Caching data...");
 
     // Store the territory admins
+    let territory_admin_uids: Vec<String> = data
+        .require_array("territory_admin_uids", "post_init")?
+        .iter()
+        .filter_map(serde_json::Value::as_str)
+        .map(String::from)
+        .collect();
+
     *lock!(TERRITORY_ADMINS) =
         HashSet::from_iter(territory_admin_uids.iter().cloned());
 
+    // Cache the max payment count
+    let payment_count = data.require_i64("max_payment_count", "post_init")?;
+    MAX_PAYMENT_COUNT.store(payment_count as usize, Ordering::SeqCst);
+
     info!("[post_init] Updating Arma global variables...");
 
-    send_to_arma(message)?;
+    send_to_arma(message).await?;
 
     info!("[post_init] ✅ Connection established");
 
@@ -179,7 +176,7 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     }
 
     // Now process the message
-    send_to_arma(message)?;
+    send_to_arma(message).await?;
 
     Ok(None)
 }
@@ -318,4 +315,25 @@ async fn database_query(message: Message) -> MessageResult {
             QueryError::Code(e) => Err(Error::code(e)),
         },
     }
+}
+
+async fn check_payment_counter(message: &Message) -> ESMResult {
+    let max_payment_count = MAX_PAYMENT_COUNT.load(Ordering::SeqCst);
+
+    if max_payment_count == 0 {
+        return Ok(());
+    }
+
+    let territory_id = message
+        .data
+        .require_usize("territory_database_id", "check_payment_counter")?;
+
+    let payment_counter =
+        DATABASE.get_territory_payment_counter(territory_id).await?;
+
+    if payment_counter < max_payment_count {
+        return Ok(());
+    }
+
+    Err(Error::code("max_payment_count"))
 }

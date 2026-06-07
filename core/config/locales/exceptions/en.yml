@@ -52,6 +52,7 @@ en:
       territory_id_does_not_exist: "Hey %{user}, I was unable to find an active territory with an ID of `%{data_territory_id}`. Please double check the provided ID, or consult your active territories by using the `/server my territories` command. Your territory may have been deleted due to failure to make protection payments."
       missing_nonce_indices: "Invalid handshake"
       missing_session_id: "Invalid request"
+      max_payment_count: "Hey %{user}, you've hit the remote payment limit for territory `%{data_territory_id}` on `%{server_id}`. Log into the server and pay in-game to reset it."
     embed:
       invalid_attributes: "Received unexpected keys. Please remove these: %{attributes}"
       missing_attributes: "Received no keys. Valid attributes: %{attributes}"

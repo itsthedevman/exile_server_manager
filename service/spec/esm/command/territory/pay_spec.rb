@@ -140,6 +140,64 @@ describe ESM::Command::Territory::Pay, category: "command" do
         end
       end
 
+      # max_payment_count caps remote (ESM) payments per territory. The counter
+      # climbs on each payment and is reset when the player logs into the server.
+      describe "the remote payment limit" do
+        context "when the limit is enabled and the territory is under it" do
+          before do
+            server.server_setting.update!(max_payment_count: 5)
+            reinitialize_server! # post-init re-sends the new cap to the extension
+          end
+
+          # Counter starts at 0 (< 5), so this pays and bumps it to 1.
+          include_examples "successful_territory_payment"
+        end
+
+        context "when the territory has reached the limit" do
+          let(:max_payment_count) { 3 }
+
+          before do
+            server.server_setting.update!(max_payment_count:)
+            territory.update!(esm_payment_counter: max_payment_count)
+            reinitialize_server! # post-init re-sends the new cap to the extension
+          end
+
+          it "rejects the payment and leaves the locker and counter untouched" do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.data.description).to match(/hit the remote payment limit/)
+            end
+
+            user.exile_account.reload
+            expect(user.exile_account.locker).to eq(locker_balance)
+
+            territory.reload
+            expect(territory.esm_payment_counter).to eq(max_payment_count)
+          end
+        end
+
+        context "when the limit is disabled (max_payment_count is 0)" do
+          before do
+            server.server_setting.update!(max_payment_count: 0)
+            territory.update!(esm_payment_counter: 10) # well past any cap
+            reinitialize_server! # post-init re-sends the new cap to the extension
+          end
+
+          it "pays regardless of the counter" do
+            execute_command
+
+            ESM.discord_bot.test_outbox.await_size(2)
+            expect(
+              ESM.discord_bot.test_outbox.retrieve(
+                "Successfully paid protection money for territory `#{territory.encoded_id}`"
+              )
+            ).not_to be(nil)
+
+            user.exile_account.reload
+            expect(user.exile_account.locker).to eq(locker_balance - territory_protection_price)
+          end
+        end
+      end
+
       context "when the player has not joined the server" do
         before { user.exile_account.destroy! }
 
