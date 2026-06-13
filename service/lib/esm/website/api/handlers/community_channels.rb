@@ -11,8 +11,6 @@ module ESM
         #
         class CommunityChannels
           def self.call(id:, user_id:, **)
-            info!(event: "community:channels", id: id, user_id: user_id)
-
             community = ESM::Community.find_by(id: id)
             return if community.nil?
 

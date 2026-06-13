@@ -7,8 +7,6 @@ module ESM
         # TODO: Docs
         class TerritoryInfo
           def self.call(server_id:, encoded_territory_id:, steam_uid:)
-            info!(event: "territory_info", server_id:, encoded_territory_id:, steam_uid:)
-
             server = ESM::Server.find_by(id: server_id)
             raise ArgumentError, "Unknown server: #{server_id}" if server.nil?
 

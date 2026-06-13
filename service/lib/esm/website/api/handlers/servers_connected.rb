@@ -9,9 +9,7 @@ module ESM
         #
         class ServersConnected
           def self.call(id:, **)
-            info!(event: "servers:connected", id: id)
-
-            server = ESM::Server.find_by(id: id)
+            server = ESM::Server.find_by(id:)
             return if server.nil?
 
             server.connected?

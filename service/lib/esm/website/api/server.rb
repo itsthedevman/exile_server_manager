@@ -131,6 +131,8 @@ module ESM
           payload = body[:payload] || {}
           payload = {} unless payload.is_a?(Hash)
 
+          info!(event: action, **payload)
+
           result = handler.call(**payload)
 
           # A handler may offload a slow operation (e.g. an Arma round-trip) to a

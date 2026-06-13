@@ -10,12 +10,10 @@ module ESM
         #
         class CommunityDelete
           def self.call(id:, user_id:, **)
-            info!(event: "community:delete", id: id, user_id: user_id)
-
-            community = ESM::Community.where(id: id).first
+            community = ESM::Community.find_by(id:)
             return if community.nil?
 
-            user = ESM::User.where(id: user_id).first
+            user = ESM::User.find_by(id: user_id)
             return if user.nil?
 
             discord_server = community.discord_server

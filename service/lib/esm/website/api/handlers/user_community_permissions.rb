@@ -10,8 +10,6 @@ module ESM
         #
         class UserCommunityPermissions
           def self.call(id:, guild_ids:, **)
-            info!(event: "user:community_permissions", id: id, guild_ids: guild_ids)
-
             user = ESM::User.find_by(id: id)
             return if user.nil?
 
@@ -23,6 +21,7 @@ module ESM
             return [] if communities.blank?
 
             discord_user = user.discord_user
+
             communities.filter_map do |community|
               server = community.discord_server
               next if server.nil?

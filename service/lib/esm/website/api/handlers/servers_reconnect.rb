@@ -10,9 +10,7 @@ module ESM
         #
         class ServersReconnect
           def self.call(id:, old_id:, **)
-            info!(event: "servers:reconnect", id: id, old_id: old_id)
-
-            server = ESM::Server.where(id: id).first
+            server = ESM::Server.find_by(id:)
             return if server.nil?
             return if old_id.blank?
 

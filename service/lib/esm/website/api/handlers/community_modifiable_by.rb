@@ -10,9 +10,7 @@ module ESM
         #
         class CommunityModifiableBy
           def self.call(id:, user_id:, **)
-            info!(event: "community:modifiable_by?", id: id, user_id: user_id)
-
-            community = ESM::Community.find_by(id: id)
+            community = ESM::Community.find_by(id:)
             return if community.nil? || community.discord_server.nil?
 
             user = ESM::User.find_by(id: user_id)

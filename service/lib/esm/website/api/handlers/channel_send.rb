@@ -10,8 +10,6 @@ module ESM
         #
         class ChannelSend
           def self.call(id:, message:, **)
-            info!(event: "channel:send", id: id, message: message)
-
             channel = ESM.discord_bot.channel(id) || ESM.discord_bot.user(id)
             channel = channel.pm if channel.is_a?(Discordrb::User)
             return if channel.nil?
