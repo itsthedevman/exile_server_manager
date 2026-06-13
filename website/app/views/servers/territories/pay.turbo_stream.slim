@@ -1,0 +1,11 @@
+/ Response to POST /pay. dom_id is the button region that was clicked.
+/ A settled command (peek hit, or a re-click that deduped to a finished row)
+/ resolves in place; otherwise the spinner + poller take over.
+- if command.settled?
+  = turbo_stream.replace dom_id do
+    = render "servers/territories/pay_result", command: command
+
+  = pay_outcome_toast(command)
+- else
+  = turbo_stream.replace dom_id do
+    = render "servers/territories/pay_processing", command: command

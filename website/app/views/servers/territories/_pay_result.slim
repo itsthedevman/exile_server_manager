@@ -1,0 +1,16 @@
+/ Terminal state for the action region. The toast carries the headline outcome;
+/ this is the quieter in-place trace, plus a fresh retry button on failure.
+/ locals: command
+div id=server_command_id(command)
+  - if command.completed?
+    .d-flex.align-items-center.justify-content-center.gap-1.text-success.small.fw-medium.py-1
+      i.bi.bi-check-circle-fill
+      | Paid
+  - else
+    .small.text-danger.mb-2
+      i.bi.bi-exclamation-circle-fill.me-1
+      = pay_failure_message(command)
+    = render "servers/territories/pay_button",
+      server_public_id: command.server.public_id,
+      territory_id: command.arguments[:territory_id],
+      surface: "retry"

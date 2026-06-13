@@ -9,6 +9,31 @@ module Servers
       }
     end
 
+    def pay
+      # The client mints idempotency_key per form render, so a double-click
+      # dedupes to the same row and the payment fires once.
+      command = ESM::ServerCommand.find_or_create_by(
+        user_id: current_user.id,
+        idempotency_key: params.require(:idempotency_key)
+      ) do |new_command|
+        new_command.server = current_server
+        new_command.command_name = "territory_pay"
+        new_command.arguments = {territory_id: params.require(:territory_territory_id)}
+      end
+
+      # A non-pending row means this one was already dispatched (a re-click on a
+      # stale button); skip re-firing and just render its current state.
+      if command.pending?
+        ESM::Service::API.call(:territory_pay, command_id: command.id)
+
+        # Give a quick payment a moment to land so it resolves in this response
+        # rather than flashing a spinner the client poller clears a beat later.
+        Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? }
+      end
+
+      render locals: {command:, dom_id: params.require(:dom_id)}
+    end
+
     private
 
     def current_server

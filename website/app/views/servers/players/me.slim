@@ -165,8 +165,8 @@
       .row.g-3
         - current_player.territories.each do |territory|
           .col-12.col-md-6.col-lg-4
-            = link_to server_territory_path(current_server.public_id, territory.id), class: "card text-decoration-none text-reset h-100 territory-card", data: {turbo_frame: "territory_detail_frame"}
-              .card-body
+            .card.h-100.territory-card
+              = link_to server_territory_path(current_server.public_id, territory.id), class: "card-body text-decoration-none text-reset d-block", data: {turbo_frame: "territory_detail_frame"}
                 .d-flex.align-items-center.gap-3
                   img.rounded.border.border-secondary.flex-shrink-0[
                     src=territory.flag_path
@@ -185,7 +185,11 @@
                     small.text-muted.font-monospace = territory.id
                   i.bi.bi-chevron-right.text-muted.flex-shrink-0
 
-                = territory_payment_section(territory)
+              - if territory_payment_due?(territory)
+                .card-footer.bg-transparent.border-top-0.pt-0
+                  = territory_payment_section(territory)
+                  .mt-2
+                    = render "servers/territories/pay_button", server_public_id: current_server.public_id, territory_id: territory.id, surface: "card"
     - else
       .card.border-secondary
         .card-body.text-center.py-5
@@ -200,5 +204,5 @@
     .card.border-secondary
       .card-body.text-center.py-5
         i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
-        h5.text-light.mb-2 No character on #{server.server_name}
+        h5.text-light.mb-2 No character on #{current_server.server_name}
         p.text-muted.mb-0 You haven't spawned in on this server yet. Hop in-game to create your character, then check back here.

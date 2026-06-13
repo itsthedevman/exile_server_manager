@@ -1,0 +1,8 @@
+/ Poll response. While the command is still pending this renders no streams, so
+/ the poller leaves the spinner up; once settled it replaces the action region
+/ and announces the outcome.
+- if command.settled?
+  = turbo_stream.replace server_command_id(command) do
+    = render "servers/territories/pay_result", command: command
+
+  = pay_outcome_toast(command)

@@ -43,6 +43,15 @@ module TerritoriesHelper
     time.strftime("%b %-d, %Y at %H:%M")
   end
 
+  # Date without the clock time. The payment due date drops the exact minute on
+  # purpose: an exact "due at 19:08" invites "I paid right then and it didn't go
+  # through, admin!" disputes the day alone doesn't.
+  def territory_date(time)
+    return "Unknown" if time.nil?
+
+    time.strftime("%b %-d, %Y")
+  end
+
   # A labeled member list. Territory#owner is a single "Name (uid)" string while
   # #moderators / #builders are newline-joined lists; both split cleanly here.
   # Renders nothing when no one qualifies.
@@ -60,6 +69,41 @@ module TerritoriesHelper
         end
       ])
     end
+  end
+
+  # DOM id for a pay action region. `surface` keeps the card and modal buttons
+  # for the same territory distinct so a turbo replace targets only one of them.
+  def pay_action_id(territory_id, surface)
+    "pay_#{surface}_#{territory_id}"
+  end
+
+  # DOM id the action region adopts once a command exists, so the poller and the
+  # terminal response both target the same element regardless of which surface
+  # the payment was started from.
+  def server_command_id(command)
+    "server_command_#{command.id}"
+  end
+
+  # The card only carries a Pay button when a payment is actually coming due;
+  # mirrors the visibility of #territory_payment_section.
+  def territory_payment_due?(territory)
+    territory_payment_status(territory).first.present?
+  end
+
+  # The toast that announces a settled payment's outcome.
+  def pay_outcome_toast(command)
+    return create_toast("Territory payment complete.", title: "Paid", color: "green") if command.completed?
+
+    create_toast(pay_failure_message(command), title: "Payment failed", color: "red")
+  end
+
+  # User-facing reason a payment didn't complete. A timeout is deliberately
+  # hedged: the in-game side effect may still have happened. The raw
+  # error_message stays in the logs rather than leaking onto the page.
+  def pay_failure_message(command)
+    return "The server didn't respond in time. Check in-game before paying again." if command.timed_out?
+
+    "Something went wrong processing the payment. Please try again."
   end
 
   # Splits a "Name (uid)" entry into a prominent name and a muted, monospace uid.
