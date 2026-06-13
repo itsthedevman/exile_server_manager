@@ -12,7 +12,7 @@ module ESM
 
     attribute :idempotency_key, :uuid
     attribute :command_name, :string
-    attribute :arguments, :json, default: {}
+    attribute :arguments, :hash, default: {}
     enum :status, {
       pending: "pending", dispatched: "dispatched", completed: "completed",
       failed: "failed", timed_out: "timed_out"
@@ -47,5 +47,14 @@ module ESM
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
+
+    #
+    # Whether the command has reached a terminal state and won't change again.
+    #
+    # @return [Boolean]
+    #
+    def settled?
+      completed? || failed? || timed_out?
+    end
   end
 end
