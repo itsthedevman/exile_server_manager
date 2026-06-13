@@ -30,6 +30,8 @@ service/spec/test_data.yml
 
 # core/
 core/.bundle/
+core/log/*
+!core/log/.keep
 core/.yardoc
 core/_yardoc/
 core/coverage/
