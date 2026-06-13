@@ -15,14 +15,14 @@ module ESM
         # @return [ESM::ServerCommand] the command being executed.
         #
         class TerritoryPay
-          def self.call(command_id:, encoded_territory_id:)
+          def self.call(command_id:)
             command = ESM::ServerCommand.includes(:user, :server).find_by(id: command_id)
             raise ArgumentError, "Unknown command: #{command_id}" if command.nil?
 
             command.execute do
               command.server.call_sqf_function!(
                 "ESMs_command_pay",
-                territory_id: encoded_territory_id,
+                territory_id: command.arguments[:territory_id],
                 player: command.user
               )
             end
