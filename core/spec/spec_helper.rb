@@ -25,14 +25,6 @@ require "bundler/setup"
   "everythingrb/all"
 ].each { |gem| require gem }
 
-# Inflector acronyms must be registered before any model class names round-trip
-# through classify/constantize.
-ActiveSupport::Inflector.inflections(:en) do |inflect|
-  inflect.acronym("ESM")
-  inflect.acronym("ID")
-  inflect.acronym("UID")
-end
-
 # Establishes the AR connection and defines top-level ApplicationRecord (used by
 # the support harness; ESM::ApplicationRecord is what the gem's models inherit).
 require_relative "support/database"
@@ -41,6 +33,8 @@ ESM_CORE_PATH = Pathname.new(File.expand_path("..", __dir__)).freeze unless defi
 
 # Centralized loader (file/dir/load_commands).
 require ESM_CORE_PATH.join("lib", "loader.rb")
+
+Loader.load_rails_extensions
 
 # Module entry point. Defines `module ESM` with logging methods.
 Loader.file("core", "lib", "esm.rb")
