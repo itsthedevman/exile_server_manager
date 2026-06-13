@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_24_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_12_032908) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -175,6 +175,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_24_000000) do
     t.index ["expires_at"], name: "index_requests_on_expires_at"
     t.index ["requestee_user_id", "uuid_short"], name: "index_requests_on_requestee_user_id_and_uuid_short", unique: true
     t.index ["uuid"], name: "index_requests_on_uuid"
+  end
+
+  create_table "server_commands", force: :cascade do |t|
+    t.jsonb "arguments", default: {}
+    t.string "command_name", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.uuid "idempotency_key", null: false
+    t.bigint "server_id"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["server_id"], name: "index_server_commands_on_server_id"
+    t.index ["user_id", "idempotency_key"], name: "index_server_commands_on_user_id_and_idempotency_key", unique: true
+    t.index ["user_id"], name: "index_server_commands_on_user_id"
   end
 
   create_table "server_mods", force: :cascade do |t|
@@ -422,6 +437,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_24_000000) do
   add_foreign_key "logs", "servers", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestee_user_id", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestor_user_id", on_delete: :cascade
+  add_foreign_key "server_commands", "servers", on_delete: :cascade
+  add_foreign_key "server_commands", "users", on_delete: :cascade
   add_foreign_key "server_mods", "servers", on_delete: :cascade
   add_foreign_key "server_rewards", "servers", on_delete: :cascade
   add_foreign_key "server_settings", "servers", on_delete: :cascade
