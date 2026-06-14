@@ -14,4 +14,5 @@ div id=server_command_id(command)
       server_public_id: command.server.public_id,
       territory_id: command.arguments[:territory_id],
       surface: "retry",
-      renew_price: nil
+      renew_price: nil,
+      replace_id: server_command_id(command)
