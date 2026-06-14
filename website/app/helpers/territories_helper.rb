@@ -98,12 +98,30 @@ module TerritoriesHelper
   end
 
   # User-facing reason a payment didn't complete. A timeout is deliberately
-  # hedged: the in-game side effect may still have happened. The raw
-  # error_message stays in the logs rather than leaking onto the page.
+  # hedged: the in-game side effect may still have happened. A recorded
+  # error_message is a business rejection from the extension (e.g. not enough
+  # poptabs); anything else fell to the generic catch, which logs instead of
+  # recording, so we show a generic line and keep internals off the page.
   def pay_failure_message(command)
     return "The server didn't respond in time. Check in-game before paying again." if command.timed_out?
+    return web_extension_message(command.error_message, command.user) if command.error_message.present?
 
     "Something went wrong processing the payment. Please try again."
+  end
+
+  # The extension authors player messages for Discord: a leading mention (or, for
+  # players with no linked Discord, their Steam UID) plus **bold**/`code` markup.
+  # Swap the player token for their name and drop the markup so it reads as plain
+  # web copy.
+  def web_extension_message(text, user)
+    name = user.username.presence || "you"
+    tokens = [user.discord_mention, user.steam_uid].compact_blank
+
+    cleaned = tokens.reduce(text) do |message, token|
+      message.gsub(token, name)
+    end
+
+    cleaned.gsub(/\*\*(.*?)\*\*/, '\1').delete("`").strip
   end
 
   # Splits a "Name (uid)" entry into a prominent name and a muted, monospace uid.

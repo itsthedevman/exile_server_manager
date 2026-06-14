@@ -34,11 +34,28 @@ RSpec.describe ESM::ServerCommand do
       expect(command.reload.status).to eq("timed_out")
     end
 
-    it "marks the row failed and records the error on any other error" do
+    it "marks the row failed and records the message on an ExtensionError" do
+      command.execute do
+        raise ESM::Exception::ExtensionError.new(["You do not have enough poptabs"])
+      end
+
+      expect(command.reload.status).to eq("failed")
+      expect(command.reload.error_message).to eq("You do not have enough poptabs")
+    end
+
+    it "joins multiple ExtensionError messages onto the row" do
+      command.execute do
+        raise ESM::Exception::ExtensionError.new(["First problem", "Second problem"])
+      end
+
+      expect(command.reload.error_message).to eq("First problem\nSecond problem")
+    end
+
+    it "marks the row failed but records nothing on an unexpected error" do
       command.execute { raise "boom" }
 
       expect(command.reload.status).to eq("failed")
-      expect(command.reload.error_message).to include("boom")
+      expect(command.reload.error_message).to be_nil
     end
 
     it "returns self so the handler can ack immediately" do

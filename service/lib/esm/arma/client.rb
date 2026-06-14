@@ -125,9 +125,7 @@ module ESM
             .set_metadata(server_id:)
             .add_errors(response_message.errors.map(&:to_h))
 
-          embed = ESM::Embed.build(:error, description: message.error_messages.join("\n"))
-
-          raise ESM::Exception::ExtensionError, embed
+          raise ESM::Exception::ExtensionError.new(message.error_messages)
         end
 
         response_message

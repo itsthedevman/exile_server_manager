@@ -77,31 +77,45 @@ module ESM
     class SendableError < ApplicationError
     end
 
+    # Raised when the Arma extension rejects a request. #data holds the player-facing error
+    # strings from the response; each surface renders them itself (Discord builds an error embed,
+    # the website records them on the command row).
     class ExtensionError < ApplicationError
     end
 
+    # Raised when inbound client data fails to decrypt or fails its key/IV/authenticity checks.
+    # Closes the connection.
     class DecryptionError < ClosableError
     end
 
+    # Raised when a client sends a request ESM can't route. The reason is sent back to the client.
     class InvalidRequest < SendableError
     end
 
+    # Raised when a request to the client goes unanswered within the response timeout.
     class RequestTimeout < ApplicationError
       def initialize = super("Request timed out")
     end
 
+    # Raised during identification when a client claims a public id that already has a live
+    # connection. Closes the duplicate.
     class ExistingConnection < ClosableError
       def initialize = super("Client already connected")
     end
 
+    # Raised during identification when no registered server matches the client's public id.
+    # Closes the connection without telling the client why.
     class InvalidAccessKey < ClosableError
       def initialize = super("Access denied")
     end
 
+    # Raised when a pending request promise is rejected (e.g. a handshake response that never
+    # validates). Closes the connection.
     class RejectedPromise < ClosableError
       def initialize(reason = "") = super
     end
 
+    # Raised when an inbound frame declares a length at or beyond the socket read ceiling.
     class MessageTooLarge < ApplicationError
       def initialize(size)
         super("Attempted to read #{size} bytes")
