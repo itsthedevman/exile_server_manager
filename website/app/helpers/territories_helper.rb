@@ -81,7 +81,7 @@ module TerritoriesHelper
   # terminal response both target the same element regardless of which surface
   # the payment was started from.
   def server_command_id(command)
-    "server_command_#{command.id}"
+    "server_command_#{command.idempotency_key}"
   end
 
   # The card only carries a Pay button when a payment is actually coming due;
