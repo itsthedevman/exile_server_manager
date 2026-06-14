@@ -1,0 +1,54 @@
+/ Territory detail modal body. Rendered into territory_detail_frame on the
+/ initial open (show.slim, which adds the modal:show trigger) and again on a
+/ successful action's refresh (trigger-less, so a closed modal stays closed).
+/ locals: current_server, current_territory
+- if current_territory
+  .modal-header.align-items-center.gap-3
+    img.rounded-3.border.border-secondary.flex-shrink-0[
+      src=current_territory.flag_path
+      alt="Territory flag"
+      width="64"
+      height="64"
+      style="object-fit: cover;"
+    ]
+    .flex-grow-1.overflow-hidden
+      h5.modal-title.mb-1.text-truncate = current_territory.name
+      .d-flex.align-items-center.gap-2
+        code.small.text-secondary-emphasis = current_territory.id
+        = territory_flag_badge(current_territory)
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  .modal-body
+    = territory_section "Overview", icon: "map-fill", color: "text-info" do
+      .row.g-3
+        = territory_stat("Level", current_territory.level)
+        = territory_stat("Radius", "#{current_territory.radius}m")
+        = territory_stat("Objects", current_territory.object_count)
+
+    = territory_section "Payment", icon: "cash-stack", color: "text-warning" do
+      .row.g-3
+        = territory_stat("Last paid", territory_datetime(current_territory.last_paid_at))
+        = territory_stat("Next due", territory_date(current_territory.next_due_date))
+        = territory_stat("Renewal", poptab_price(current_territory.renew_price), color: "text-success")
+      .mt-3
+        = render "servers/territories/pay_button", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal", renew_price: current_territory.renew_price
+
+    - if current_territory.upgradeable?
+      = territory_section "Next level", icon: "arrow-up-circle-fill", color: "text-success" do
+        .row.g-3
+          = territory_stat("Level", current_territory.upgrade_level)
+          = territory_stat("Radius", "#{current_territory.upgrade_radius}m")
+          = territory_stat("Max objects", current_territory.upgrade_object_count)
+          = territory_stat("Upgrade", poptab_price(current_territory.upgrade_price), color: "text-success")
+
+    = territory_section "Members", icon: "people-fill", color: "text-info", wrapper_class: "p-3" do
+      = territory_member_group("Owner", current_territory.owner, icon: "key-fill", color: "text-warning")
+      = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.size > 0 ? "mb-3" : "")
+      = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "")
+- else
+  .modal-header
+    h5.modal-title.mb-0 Territory unavailable
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+  .modal-body
+    p.text-secondary-emphasis.mb-0
+      | You don't have access to this territory, or it no longer exists.

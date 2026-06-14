@@ -1,0 +1,17 @@
+/ Settled-state streams, shared by the initial pay response and the poller so
+/ the two paths can't drift. Swaps the action region for the result and announces
+/ the outcome. On success it also refreshes the territory modal in place: a
+/ trigger-less frame render, so a payment made from a closed modal updates the
+/ content silently (the toast is all the player sees) rather than popping the
+/ modal open. A failure has no refreshed_territory, so its in-place error trace
+/ and retry button survive.
+/ locals: command, target, current_server, refreshed_territory
+= turbo_stream.replace target do
+  = render "servers/territories/pay_result", command:
+
+= pay_outcome_toast(command)
+
+- if refreshed_territory.present?
+  = turbo_stream.replace "territory_detail_frame" do
+    = turbo_frame "territory_detail" do
+      = render "servers/territories/detail", current_server:, current_territory: refreshed_territory
