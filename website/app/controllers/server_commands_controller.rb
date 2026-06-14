@@ -2,6 +2,7 @@
 
 class ServerCommandsController < AuthenticatedController
   include TerritoryLoading
+  include PlayerLoading
 
   # Polled by the pay Stimulus controller until the command settles. Scoped to
   # the current user so nobody can read another player's command by id.
@@ -12,7 +13,8 @@ class ServerCommandsController < AuthenticatedController
     render locals: {
       command:,
       current_server: command.server,
-      refreshed_territory: refreshed_territory(command)
+      refreshed_territory: refreshed_territory(command),
+      refreshed_player: refreshed_player(command)
     }
   end
 end

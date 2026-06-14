@@ -4,10 +4,12 @@
 / optional: replace_id, the region the response replaces. Defaults to this
 / button's own region; the retry button overrides it to the result container so
 / a fresh attempt clears the previous error rather than nesting under it.
+/ optional: tone, the button's color. Defaults to success; the pay panel passes
+/ its urgency tone so the button matches the panel it sits in.
 div id=pay_action_id(territory_id, surface)
   = button_to server_territory_pay_path(server_public_id, territory_id),
-    class: "btn btn-sm btn-success w-100",
+    class: "btn btn-sm btn-#{local_assigns.fetch(:tone, "success")} w-100",
     form: {data: {turbo_confirm: pay_confirm_message(renew_price)}},
     params: {idempotency_key: SecureRandom.uuid, dom_id: local_assigns.fetch(:replace_id) { pay_action_id(territory_id, surface) }} do
     i.bi.bi-cash-coin.me-1
-    | Pay now
+    = pay_button_label(renew_price)

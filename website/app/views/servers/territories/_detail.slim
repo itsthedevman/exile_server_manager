@@ -30,8 +30,9 @@
         = territory_stat("Last paid", territory_datetime(current_territory.last_paid_at))
         = territory_stat("Next due", territory_date(current_territory.next_due_date))
         = territory_stat("Renewal", poptab_price(current_territory.renew_price), color: "text-success")
-      .mt-3
-        = render "servers/territories/pay_button", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal", renew_price: current_territory.renew_price
+      - if current_territory.payment_due_soon?
+        .mt-3
+          = territory_pay_panel(current_territory, server_public_id: current_server.public_id, surface: "modal", renew_price: current_territory.renew_price)
 
     - if current_territory.upgradeable?
       = territory_section "Next level", icon: "arrow-up-circle-fill", color: "text-success" do

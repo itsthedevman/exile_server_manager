@@ -2,4 +2,4 @@
 / the poller leaves the spinner up; once settled it hands off to the shared
 / settled partial (result swap, toast, and a modal refresh on success).
 - if command.settled?
-  = render "servers/territories/pay_settled", command:, target: server_command_id(command), current_server:, refreshed_territory:
+  = render "servers/territories/pay_settled", command:, target: server_command_id(command), current_server:, refreshed_territory:, refreshed_player:

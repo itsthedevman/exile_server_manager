@@ -1,0 +1,28 @@
+/ A single territory card for the /me grid. Carries a pay panel only when a
+/ payment is due, which is why due cards live in their own row (so a panel's
+/ height never stretches an unrelated neighbor).
+/ locals: territory, current_server
+.col-12.col-md-6.col-lg-4
+  .card.h-100.territory-card
+    = link_to server_territory_path(current_server.public_id, territory.id), class: "card-body text-decoration-none text-reset d-block", data: {turbo_frame: "territory_detail_frame"}
+      .d-flex.align-items-center.gap-3
+        img.rounded.border.border-secondary.flex-shrink-0[
+          src=territory.flag_path
+          alt="Territory flag"
+          width="48"
+          height="48"
+          style="object-fit: cover;"
+        ]
+        .flex-grow-1.overflow-hidden
+          .d-flex.align-items-center.gap-2
+            - if territory.stolen?
+              span.badge.bg-danger.flex-shrink-0
+                i.bi.bi-exclamation-triangle-fill.me-1
+                | Stolen
+            h6.mb-0.text-truncate = territory.name
+          small.text-muted.font-monospace = territory.id
+        i.bi.bi-chevron-right.text-muted.flex-shrink-0
+
+    - if territory.payment_due_soon?
+      .card-footer.bg-transparent.border-top-0.pt-0
+        = territory_pay_panel(territory, server_public_id: current_server.public_id, surface: "card", renew_price: nil)

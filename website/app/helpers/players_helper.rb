@@ -26,42 +26,4 @@ module PlayersHelper
 
     (player.kills.to_f / player.deaths).round(2)
   end
-
-  def territory_payment_status(territory)
-    days = territory.days_left_until_payment_due
-
-    if days.nil?
-      ["Payment status unavailable", false]
-    elsif days.negative?
-      ["Payment overdue", true]
-    elsif days.zero?
-      ["Payment due today", true]
-    elsif days == 1
-      ["Payment due tomorrow", false]
-    elsif days < 3
-      ["Payment due in #{days} days", false]
-    else
-      ["", false]
-    end
-  end
-
-  def territory_payment_section(territory)
-    label, urgent = territory_payment_status(territory)
-    return if label.blank?
-
-    safe_join([
-      tag.hr(class: "my-3 text-secondary"),
-      tag.div(class: "d-flex align-items-center gap-2") do
-        safe_join([
-          tag.i(
-            class: class_names("bi bi-circle-fill", "text-danger": urgent, "text-warning": !urgent),
-            style: "font-size: 0.5rem;"
-          ),
-          tag.small do
-            tag.span(label, class: urgent ? "text-danger fw-medium" : "text-muted")
-          end
-        ])
-      end
-    ])
-  end
 end

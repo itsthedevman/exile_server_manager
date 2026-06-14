@@ -84,12 +84,6 @@ module TerritoriesHelper
     "server_command_#{command.idempotency_key}"
   end
 
-  # The card only carries a Pay button when a payment is actually coming due;
-  # mirrors the visibility of #territory_payment_section.
-  def territory_payment_due?(territory)
-    territory_payment_status(territory).first.present?
-  end
-
   # Confirmation copy for the Pay button. Names the price when the caller knows it
   # (renew_price already carries the "poptabs" label and any tax note); the retry
   # surface has no price to hand, so it falls back to a generic line.
@@ -97,6 +91,53 @@ module TerritoriesHelper
     return "Pay #{renew_price} from your locker now?" if renew_price.present?
 
     "Pay this territory's protection from your locker now?"
+  end
+
+  # Button face. Names the price when the caller has it (the modal), so the action
+  # states its cost up front; the card has no price to hand and stays generic.
+  def pay_button_label(renew_price = nil)
+    return "Pay #{renew_price}" if renew_price.present?
+
+    "Pay now"
+  end
+
+  # The payment-due panel: a tinted box whose urgency tone frames the Pay action
+  # with context so the button never reads as an orphaned control. Shared by the
+  # /me card footer and the modal Payment section.
+  def territory_pay_panel(territory, server_public_id:, surface:, renew_price:)
+    urgency = territory_payment_urgency(territory)
+    tone = urgency[:tone]
+
+    tag.div(class: "alert alert-#{tone} border-#{tone} bg-#{tone} bg-opacity-10 mb-0") do
+      safe_join([
+        tag.div(class: "d-flex align-items-center gap-2 fw-semibold mb-2 text-#{tone}") do
+          safe_join([tag.i(class: "bi bi-#{urgency[:icon]}"), tag.span(urgency[:label])])
+        end,
+        render("servers/territories/pay_button", server_public_id:, territory_id: territory.id, surface:, renew_price:, tone:)
+      ])
+    end
+  end
+
+  # Urgency mood for the payment panel: two tones keep the visual language simple.
+  # Red once it's down to the wire (overdue, today, tomorrow), amber while the due
+  # date is merely approaching.
+  def territory_payment_urgency(territory)
+    days = territory.days_left_until_payment_due
+
+    if days && days <= 1
+      {tone: "danger", icon: "exclamation-triangle-fill", label: payment_due_label(days)}
+    else
+      {tone: "warning", icon: "clock-fill", label: payment_due_label(days)}
+    end
+  end
+
+  def payment_due_label(days)
+    return "Payment due" if days.nil?
+    return "Payment overdue" if days.negative?
+    return "Payment due today" if days.zero?
+    return "Payment due tomorrow" if days == 1
+
+    "Payment due in #{days} days"
   end
 
   # The toast that announces a settled payment's outcome.

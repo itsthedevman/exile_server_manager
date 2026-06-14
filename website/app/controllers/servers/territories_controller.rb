@@ -3,6 +3,7 @@
 module Servers
   class TerritoriesController < AuthenticatedController
     include TerritoryLoading
+    include PlayerLoading
 
     def show
       render locals: {
@@ -37,7 +38,8 @@ module Servers
         command:,
         dom_id: params.require(:dom_id),
         current_server:,
-        refreshed_territory: refreshed_territory(command)
+        refreshed_territory: refreshed_territory(command),
+        refreshed_player: refreshed_player(command)
       }
     end
 

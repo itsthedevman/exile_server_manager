@@ -3,6 +3,9 @@
 module ESM
   module Exile
     class Territory
+      # Days-left window within which #payment_due_soon? flags a territory.
+      PAYMENT_DUE_SOON_DAYS = 3
+
       # So I don't build a bad URL
       VALID_FLAGS = %w[
         flag_blue_co flag_country_at_co flag_country_au_co flag_country_be_co flag_country_by_co flag_country_cn_co
@@ -173,6 +176,15 @@ module ESM
         return if next_due_date.nil?
 
         @days_left_until_payment_due ||= (next_due_date.to_date - ::Time.zone.today).to_i
+      end
+
+      # Whether a protection payment is close enough to surface a call to action.
+      # Drives the website's pay panels and its "payment due" grouping.
+      def payment_due_soon?
+        days = days_left_until_payment_due
+        return false if days.nil?
+
+        days <= PAYMENT_DUE_SOON_DAYS
       end
 
       def payment_reminder_message
