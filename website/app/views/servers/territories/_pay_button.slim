@@ -1,9 +1,10 @@
 / Pay action region. Starts as a button; a turbo response swaps it in place for
 / the in-flight spinner and, once the command settles, the result.
-/ locals: server_public_id, territory_id, surface
+/ locals: server_public_id, territory_id, surface, renew_price
 div id=pay_action_id(territory_id, surface)
   = button_to server_territory_pay_path(server_public_id, territory_id),
     class: "btn btn-sm btn-success w-100",
+    form: {data: {turbo_confirm: pay_confirm_message(renew_price)}},
     params: {idempotency_key: SecureRandom.uuid, dom_id: pay_action_id(territory_id, surface)} do
     i.bi.bi-cash-coin.me-1
     | Pay now

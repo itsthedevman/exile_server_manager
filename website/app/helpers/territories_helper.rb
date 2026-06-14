@@ -90,6 +90,15 @@ module TerritoriesHelper
     territory_payment_status(territory).first.present?
   end
 
+  # Confirmation copy for the Pay button. Names the price when the caller knows it
+  # (renew_price already carries the "poptabs" label and any tax note); the retry
+  # surface has no price to hand, so it falls back to a generic line.
+  def pay_confirm_message(renew_price = nil)
+    return "Pay #{renew_price} from your locker now?" if renew_price.present?
+
+    "Pay this territory's protection from your locker now?"
+  end
+
   # The toast that announces a settled payment's outcome.
   def pay_outcome_toast(command)
     return create_toast("Territory payment complete.", title: "Paid", color: "green") if command.completed?

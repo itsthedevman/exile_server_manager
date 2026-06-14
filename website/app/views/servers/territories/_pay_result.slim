@@ -13,4 +13,5 @@ div id=server_command_id(command)
     = render "servers/territories/pay_button",
       server_public_id: command.server.public_id,
       territory_id: command.arguments[:territory_id],
-      surface: "retry"
+      surface: "retry",
+      renew_price: nil
