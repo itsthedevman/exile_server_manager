@@ -231,9 +231,9 @@ module ESM
           wait: block
         )
 
-        # A "promise" is returned only if block is true.
-        # If block is false, this will be nil and immediately return
-        promise&.wait_for_delivery
+        # A promise is returned only when block is true; otherwise add returns nil and we fire-and-forget. Blocking
+        # callers wait for Discord to confirm the send and receive the resulting message (or nil on failure/timeout).
+        promise&.value(DeliveryOverseer::WAIT_TIMEOUT)
       rescue ESM::Exception::ChannelAccessDenied
         embed = ESM::Embed.build(
           :error,

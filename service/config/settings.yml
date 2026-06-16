@@ -71,9 +71,10 @@ websocket_request_overseer:
 websocket_connection_overseer:
   check_every: 3
 
-# Poll interval (seconds) for draining the Discord message delivery queue.
+# Seconds each delivery worker waits between sends. Paces outbound messages to stay under discordrb's preemptive rate
+# limiting during restart-time bursts.
 bot_delivery_overseer:
-  check_every: 0.5
+  check_every: 0.1
 
 # TCP server that accepts incoming Arma extension connections.
 connection_server:
