@@ -458,3 +458,60 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
     end
   end
 end
+
+# Connection-free coverage for the recipient-filtering path. The integration
+# examples above each carry a single notification, so they never exercise a
+# batched message. Production sends multiple notifications at once (e.g. one
+# per overdue territory), which means the recipient UIDs must be flattened
+# before the User lookup runs.
+describe ESM::Event::SendXm8Notification, v2: true do
+  let(:community) { create(:community) }
+  let(:server) { create(:server, community_id: community.id) }
+  let(:message) { ESM::Message.new }
+
+  subject(:event) { described_class.new(server, message) }
+
+  describe "#filter_unregistered_recipients" do
+    let!(:first_user) { create(:user) }
+    let!(:second_user) { create(:user) }
+    let!(:third_user) { create(:user) }
+
+    # A single user can own territories across several notifications, so a UID
+    # legitimately repeats across the batch.
+    let(:notifications) do
+      [
+        {
+          type: "protection-money-due",
+          content: {territory_id: "aaaaa", territory_name: "Alpha"},
+          created_at: "2026-06-14T05:03:43",
+          recipient_uids: [first_user.steam_uid, second_user.steam_uid],
+          uuids: [SecureRandom.uuid, SecureRandom.uuid]
+        },
+        {
+          type: "protection-money-due",
+          content: {territory_id: "bbbbb", territory_name: "Bravo"},
+          created_at: "2026-06-14T05:03:43",
+          recipient_uids: [second_user.steam_uid, third_user.steam_uid],
+          uuids: [SecureRandom.uuid, SecureRandom.uuid]
+        }
+      ]
+    end
+
+    subject(:filtered) { event.send(:filter_unregistered_recipients, notifications) }
+
+    it "is expected to map every registered recipient across a batched message" do
+      expect { filtered }.not_to raise_error
+
+      expect(filtered.size).to eq(2)
+
+      filtered.each do |notification|
+        expect(notification).not_to have_key(:recipient_uids)
+        expect(notification).not_to have_key(:uuids)
+        expect(notification[:server]).to eq(server)
+      end
+
+      expect(filtered.first[:recipient_notification_mapping].keys).to contain_exactly(first_user, second_user)
+      expect(filtered.second[:recipient_notification_mapping].keys).to contain_exactly(second_user, third_user)
+    end
+  end
+end

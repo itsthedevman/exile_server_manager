@@ -46,7 +46,7 @@ module ESM
       end
 
       def filter_unregistered_recipients(notifications)
-        recipient_steam_uids = notifications.map { |n| n[:recipient_uids] }
+        recipient_steam_uids = notifications.flat_map { |n| n[:recipient_uids] }.uniq
         uid_to_user_mapping = User.where(steam_uid: recipient_steam_uids)
           .to_h { |u| [u.steam_uid, u] }
 
