@@ -12,7 +12,7 @@ use fake::{
     Fake,
 };
 use lazy_static::lazy_static;
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
 use std::fmt::Display;
 
 use crate::{
@@ -40,6 +40,10 @@ lazy_static! {
         "\\\\A3\\\\Data_F\\\\Flags\\\\flag_uk_co.paa",
     ];
 }
+
+// How many fake players to seed alongside my_steam_uid. Replaces the old
+// hand-maintained steam_uids list in config.yml.
+const STEAM_UID_COUNT: usize = 100;
 
 pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
     let sql = generate_sql(&ctx.config);
@@ -128,7 +132,9 @@ fn parse_mysql_uri(uri: &str) -> Result<(String, String, String, String), BuildE
 // ─── SQL generation ──────────────────────────────────────────────────────────
 
 fn generate_sql(config: &Config) -> String {
-    let mut steam_uids = config.steam_uids.clone();
+    let rng = &mut rand::thread_rng();
+
+    let mut steam_uids = generate_steam_uids(STEAM_UID_COUNT, rng);
     steam_uids.push(config.my_steam_uid.clone());
 
     let accounts = generate_accounts(&steam_uids);
@@ -176,6 +182,20 @@ fn random_timestamp() -> String {
     let random: DateTime<Utc> =
         DateTimeBetween(current.with_timezone(&Utc), end.with_timezone(&Utc)).fake();
     random.with_timezone(&Local).format("'%Y-%m-%d %H:%M:%S'").to_string()
+}
+
+fn generate_steam_uids(count: usize, rng: &mut impl Rng) -> Vec<String> {
+    // Steam64 IDs are 17 digits and always start with the universe +
+    // account-type prefix 7656119 for individual accounts. Mirrors the
+    // service's Faker::Steam.uid so both seeders share the same shape.
+    (0..count)
+        .map(|_| {
+            let suffix: String =
+                (0..10).map(|_| rng.gen_range(0..10).to_string()).collect();
+
+            format!("7656119{suffix}")
+        })
+        .collect()
 }
 
 fn generate_accounts(steam_uids: &[String]) -> Vec<Account> {
