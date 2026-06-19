@@ -457,6 +457,40 @@ describe ESM::Event::SendXm8Notification, :requires_connection, v2: true do
       end
     end
   end
+
+  context "when a recipient is reached by direct message but the custom route fails" do
+    let(:channel_id) { community.discord_server.channels.first.id }
+    let!(:territory_moderators) { [] }
+    let!(:recipient_uids) { [user.steam_uid] }
+
+    let!(:routes) do
+      [
+        create(:user_notification_route, user:, destination_community: community, channel_id:)
+      ]
+    end
+
+    before do
+      # DM delivers; the custom-route channel rejects, mirroring a stale route.
+      allow(ESM.discord_bot).to receive(:deliver).and_wrap_original do |original, embed, **kwargs|
+        next nil if kwargs[:to].to_s == channel_id.to_s
+
+        original.call(embed, **kwargs)
+      end
+    end
+
+    it "marks the notification sent and records the partial failure in the details" do
+      trigger_notification
+
+      notifications = ESM::ExileXm8Notification.where(state: ESM::Xm8Notification::STATE_SENT)
+      wait_for { notifications.size }.to eq(recipient_uids.size)
+
+      notification = notifications.first
+      expect(notification.state_details).to eq(
+        "sent: #{ESM::Xm8Notification::DETAILS_DM}; failed: #{ESM::Xm8Notification::DETAILS_CUSTOM}"
+      )
+      expect(notification.acknowledged_at).not_to be(nil)
+    end
+  end
 end
 
 # Connection-free coverage for the recipient-filtering path. The integration
