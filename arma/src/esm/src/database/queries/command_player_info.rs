@@ -11,6 +11,8 @@ struct Territory {
     // website never has to treat 0 as truthy.
     #[serde(deserialize_with = "bool_from_int")]
     flag_stolen: bool,
+    level: isize,
+    object_count: isize,
 }
 
 // territories arrive as a JSON aggregate, so flag_stolen comes in as 0/1 rather

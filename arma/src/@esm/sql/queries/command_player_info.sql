@@ -17,16 +17,19 @@ SELECT
             SELECT
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
-                        'id', CONVERT(id, char),
-                        'esm_custom_id', esm_custom_id,
-                        'name', name,
-                        'last_paid_at', last_paid_at,
-                        'flag_texture', flag_texture,
-                        'flag_stolen', flag_stolen
+                        'id', CONVERT(t.id, char),
+                        'esm_custom_id', t.esm_custom_id,
+                        'name', t.name,
+                        'last_paid_at', t.last_paid_at,
+                        'flag_texture', t.flag_texture,
+                        'flag_stolen', t.flag_stolen,
+                        'level', t.level,
+                        'object_count', COUNT(c.id) as object_count
                     )
                 )
             FROM
-                territory
+                territory t
+            LEFT JOIN construction ON t.id = c.territory_id
             WHERE
                 deleted_at IS NULL
                 AND (
