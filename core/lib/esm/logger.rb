@@ -62,7 +62,7 @@ module ESM
     end
 
     def format_content(content)
-      if content.is_a?(Hash) && (error = content[:error]) && error.is_a?(StandardError)
+      if content.is_a?(Hash) && (error = content[:error]) && error.is_a?(::Exception)
         content[:error] = {
           class: error.class,
           message: error.message,
