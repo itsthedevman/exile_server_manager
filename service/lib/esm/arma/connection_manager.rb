@@ -12,11 +12,8 @@ module ESM
         @connections = Concurrent::Map.new
         @pool = Concurrent::CachedThreadPool.new
 
-        @lobby_task = Concurrent::TimerTask.execute(execution_interval:) { check_lobby }
-        @lobby_task.add_observer(ErrorHandler.new)
-
-        @heartbeat = Concurrent::TimerTask.execute(execution_interval:) { check_connections }
-        @heartbeat.add_observer(ErrorHandler.new)
+        @lobby_task = TimerTask.execute(execution_interval:) { check_lobby }
+        @heartbeat = TimerTask.execute(execution_interval:) { check_connections }
       end
 
       def stop
