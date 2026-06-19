@@ -3,23 +3,6 @@ set -euo pipefail
 IFS=$'\n\t'
 set -vx
 
-# Install dependencies
+# Install dependencies. The test suite shares the esm_test database, which the
+# service/website suites set up, so there is no database to provision here.
 bundle install
-
-# Database configuration
-export POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
-export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-export POSTGRES_USERNAME="${POSTGRES_USERNAME:-esm}"
-export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-password12345}"
-export POSTGRES_DATABASE="${POSTGRES_DATABASE:-esm_ruby_core_test}"
-SOURCE_DATABASE="${SOURCE_DATABASE:-esm_test}"
-
-# Drop and recreate database
-bundle exec rake db:drop db:create
-
-# Copy schema from source database (esm_test)
-# Note: Migrations require full ESM environment, so we copy schema instead
-pg_dump -s -U "$POSTGRES_USERNAME" -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" "$SOURCE_DATABASE" \
-  | psql -U "$POSTGRES_USERNAME" -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" "$POSTGRES_DATABASE"
-
-echo "Database setup complete. Schema copied from $SOURCE_DATABASE to $POSTGRES_DATABASE"
