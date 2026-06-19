@@ -3,132 +3,90 @@
 module ESM
   module Discord
     class Bot
+      #
+      # The single chokepoint for every outbound Discord message. Source threads (command replies, log events, XM8
+      # notifications, ...) enqueue here and a small pool of workers performs the actual sends, pausing +check_every+
+      # seconds between each.
+      #
+      # The pause is deliberate. discordrb already rate limits, but it does so reactively: once a bucket is exhausted
+      # it sleeps the sending thread (and a global limit sleeps every thread) until the window resets. When many
+      # servers restart on the same 3-hour cadence, reconnect together, and flush their queued XM8 notifications at
+      # once, sending flat-out drives the workers straight into those sleeps and the queue stalls - blocking everything
+      # else that needs to talk to Discord. Pacing keeps the send rate under discordrb's threshold so it rarely has to
+      # intervene, and routing every send through this queue keeps that blocking I/O off the source threads.
+      #
+      # Fire-and-forget callers enqueue and return immediately. Callers that need the sent message back pass
+      # +wait: true+ and block on the returned promise.
+      #
       class DeliveryOverseer
-        class Envelope < Data.define(:id, :message, :delivery_channel, :embed_message, :replying_to, :wait)
-          def initialize(**args)
-            defaults = {id: nil, wait: false}
+        #
+        # A queued send and the optional promise a worker fulfills with the delivered message once discordrb returns.
+        #
+        Envelope = Data.define(:message, :delivery_channel, :embed_message, :replying_to, :promise)
 
-            if args[:wait]
-              defaults[:id] = SecureRandom.uuid
-              defaults[:wait] = true
-            end
+        # Number of workers draining the queue. Several so a worker parked in one of discordrb's per-channel rate-limit
+        # sleeps doesn't stall delivery to every other channel.
+        WORKER_COUNT = 4
 
-            super(**defaults.merge(args))
-          end
-        end
+        # Longest a blocking caller will wait for Discord to confirm a send.
+        WAIT_TIMEOUT = 2.minutes.to_i
 
-        class PendingDelivery < Data.define(:id)
-          SLEEP = 0.2 # Seconds
-          TIMEOUT = 2.minutes.to_i / SLEEP
-
-          def wait_for_delivery
-            counter = 0
-
-            while counter < TIMEOUT
-              sleep(SLEEP)
-              return retrieve_message if ESM.redis.exists?(id)
-
-              counter += 1
-            end
-          end
-
-          def retrieve_message
-            ESM.discord_bot.delivery_overseer.get(id)
-          end
-        end
-
-        class Delivery < Data.define(:id, :message, :timeout)
-          def initialize(id:, message:, timeout: 2.minutes)
-            super(id: id, message: message, timeout: timeout.from_now)
-          end
-
-          def timed_out?
-            timeout < ::Time.current
-          end
-
-          def delivered
-            ESM.redis.set(id, "1", ex: timeout.to_i)
-          end
-        end
-
-        attr_reader :queue
-
-        def initialize
+        def initialize(check_every: ESM.config.bot_delivery_overseer.check_every)
           @queue = Queue.new
-          @deliveries = {}
-          @deliveries_mutex = Mutex.new
-          @check_every = ESM.config.bot_delivery_overseer.check_every.freeze
-
-          @deliveries_thread = oversee_deliveries!
-          @sender_thread_one = oversee!
-          @sender_thread_two = oversee!
+          @check_every = check_every
+          @workers = Array.new(WORKER_COUNT) { spawn_worker }
         end
 
+        #
+        # Enqueues a message for delivery.
+        #
+        # @param message [String, ESM::Embed] the message or embed to send
+        # @param delivery_channel [Discordrb::Channel] the resolved destination channel
+        # @param embed_message [String] optional text attached alongside an embed
+        # @param replying_to [Discordrb::Message, nil] a message to reference in the reply
+        # @param wait [Boolean] when true, returns a promise the caller can block on
+        #
+        # @return [Concurrent::IVar, nil] a promise resolving to the sent Discordrb::Message (or nil on failure) when
+        #   +wait+ is true; nil otherwise
+        #
         def add(message, delivery_channel, embed_message: "", replying_to: nil, wait: false)
-          envelope = Envelope.new(
-            message: message,
-            delivery_channel: delivery_channel,
-            embed_message: embed_message,
-            replying_to: replying_to,
-            wait: wait
+          promise = Concurrent::IVar.new if wait
+
+          @queue << Envelope.new(
+            message:,
+            delivery_channel:,
+            embed_message:,
+            replying_to:,
+            promise:
           )
 
-          @queue << envelope
-          return PendingDelivery.new(envelope.id) if wait
-
-          nil
-        end
-
-        def get(id)
-          @deliveries_mutex.synchronize do
-            delivery = @deliveries.delete(id)
-            delivery&.message
-          end
+          promise
         end
 
         private
 
-        def oversee!
+        def spawn_worker
           Thread.new do
-            sleep(rand(@check_every))
-
-            loop do
-              sleep(@check_every + rand(@check_every))
-
-              envelope = @queue.pop(timeout: 0)
-              next if envelope.nil?
-
-              message = ESM.discord_bot.__deliver(
-                envelope.message,
-                envelope.delivery_channel,
-                embed_message: envelope.embed_message,
-                replying_to: envelope.replying_to
-              )
-
-              next unless envelope.wait
-
-              @deliveries_mutex.synchronize do
-                delivery = Delivery.new(envelope.id, message)
-                @deliveries[envelope.id] = delivery
-                delivery.delivered
-              end
-            rescue => e
-              error!(e)
+            while (envelope = @queue.pop)
+              deliver(envelope)
+              sleep(@check_every)
             end
           end
         end
 
-        def oversee_deliveries!
-          Thread.new do
-            loop do
-              sleep(20.seconds)
+        def deliver(envelope)
+          message = ESM.discord_bot.__deliver(
+            envelope.message,
+            envelope.delivery_channel,
+            embed_message: envelope.embed_message,
+            replying_to: envelope.replying_to
+          )
 
-              # Clear any timed out messages
-              @deliveries_mutex.synchronize do
-                @deliveries.delete_if { |_id, delivery| delivery.timed_out? }
-              end
-            end
-          end
+          envelope.promise&.set(message)
+        rescue => e
+          error!(e)
+
+          envelope.promise&.set(nil)
         end
       end
     end
