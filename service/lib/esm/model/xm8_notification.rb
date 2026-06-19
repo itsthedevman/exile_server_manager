@@ -80,18 +80,16 @@ module ESM
     end
 
     def send_to_recipients
-      default_block = ->(h, k) { h[k] = [] }
-      states = {
-        success: Hash.new(&default_block),
-        failure: Hash.new(&default_block)
-      }
+      states = Hash.new { |hash, uuid| hash[uuid] = [] }
 
       user_ids = recipient_notification_mapping.keys.map(&:id)
 
       send_to_dm(states, user_ids)
       send_to_custom_routes(states, user_ids)
-
       process_undeliverable_notifications(states)
+
+      info!(states)
+
       update_notification_states(states)
 
       nil
@@ -135,7 +133,7 @@ module ESM
 
         message = ESM.discord_bot.deliver(to_embed, to: user.discord_user, block: true)
 
-        states[message ? :success : :failure][uuid] << DETAILS_DM
+        states[uuid] << {detail: DETAILS_DM, sent: !!message}
       end
     end
 
@@ -165,7 +163,7 @@ module ESM
 
         notification_uuids = users.map { |u| recipient_notification_mapping[u] }
         notification_uuids.each do |uuid|
-          states[message ? :success : :failure][uuid] << DETAILS_CUSTOM
+          states[uuid] << {detail: DETAILS_CUSTOM, sent: !!message}
         end
       end
     end
@@ -174,22 +172,14 @@ module ESM
     # and has no custom routes for the notification to be sent to.
     def process_undeliverable_notifications(states)
       recipient_notification_mapping.values.each do |uuid|
-        next if states[:success].key?(uuid) || states[:failure].key?(uuid)
+        next if states.key?(uuid)
 
-        states[:failure][uuid] << DETAILS_NO_DESTINATION
+        states[uuid] << {detail: DETAILS_NO_DESTINATION, sent: false}
       end
     end
 
     def update_notification_states(states)
-      state_update = {}
-
-      states[:success].each do |uuid, state|
-        state_update[uuid] = self.class.sent_state(state.to_sentence)
-      end
-
-      states[:failure].each do |uuid, state|
-        state_update[uuid] = self.class.failed_state(state.to_sentence)
-      end
+      state_update = states.transform_values { |outcomes| collapse_state(outcomes) }
 
       message = ESM::Message.new
         .set_type(:query)
@@ -199,6 +189,19 @@ module ESM
         )
 
       server.send_message(message, block: false)
+    end
+
+    # Reaching the recipient on any destination counts as sent; a stale custom
+    # route must not brand an otherwise-delivered notification failed.
+    def collapse_state(outcomes)
+      delivered, failed = outcomes
+        .partition { |outcome| outcome[:sent] }
+        .map { |group| group.map { |outcome| outcome[:detail] } }
+
+      return self.class.failed_state(failed.to_sentence) if delivered.empty?
+      return self.class.sent_state(delivered.to_sentence) if failed.empty?
+
+      self.class.sent_state("sent: #{delivered.to_sentence}; failed: #{failed.to_sentence}")
     end
   end
 end
