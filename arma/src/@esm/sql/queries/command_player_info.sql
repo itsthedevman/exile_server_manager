@@ -24,15 +24,20 @@ SELECT
                         'flag_texture', t.flag_texture,
                         'flag_stolen', t.flag_stolen,
                         'level', t.level,
-                        'object_count', (
-                            SELECT COUNT(*)
-                            FROM construction c
-                            WHERE c.territory_id = t.id
-                        )
+                        'object_count', COALESCE(c.object_count, 0)
                     )
                 )
             FROM
                 territory t
+                LEFT JOIN (
+                    SELECT
+                        territory_id,
+                        COUNT(*) as object_count
+                    FROM
+                        construction
+                    GROUP BY
+                        territory_id
+                ) c ON c.territory_id = t.id
             WHERE
                 t.deleted_at IS NULL
                 AND (
