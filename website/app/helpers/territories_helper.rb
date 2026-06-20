@@ -118,6 +118,15 @@ module TerritoriesHelper
     end
   end
 
+  # The retry button mirrors the panel's urgency tone so a failed payment never
+  # re-renders as a success-green control. Falls back to amber when the territory
+  # snapshot is unavailable (e.g. the lookup came back blank).
+  def retry_pay_button_tone(territory)
+    return "warning" if territory.nil?
+
+    territory_payment_urgency(territory)[:tone]
+  end
+
   # Urgency mood for the payment panel: two tones keep the visual language simple.
   # Red once it's down to the wire (overdue, today, tomorrow), amber while the due
   # date is merely approaching.

@@ -5,9 +5,9 @@
 / content silently (the toast is all the player sees) rather than popping the
 / modal open. A failure has no refreshed_territory, so its in-place error trace
 / and retry button survive.
-/ locals: command, target, current_server, refreshed_territory, refreshed_player
+/ locals: command, target, current_server, refreshed_territory, refreshed_player, retry_territory
 = turbo_stream.replace target do
-  = render "servers/territories/pay_result", command:
+  = render "servers/territories/pay_result", command:, retry_territory:
 
 = pay_outcome_toast(command)
 

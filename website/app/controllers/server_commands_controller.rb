@@ -14,7 +14,8 @@ class ServerCommandsController < AuthenticatedController
       command:,
       current_server: command.server,
       refreshed_territory: refreshed_territory(command),
-      refreshed_player: refreshed_player(command)
+      refreshed_player: refreshed_player(command),
+      retry_territory: retry_territory(command)
     }
   end
 end

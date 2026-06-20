@@ -33,4 +33,16 @@ module TerritoryLoading
 
     load_territory(command.server, command.arguments[:territory_id], current_user.steam_uid, force: true)
   end
+
+  # The territory snapshot used to rebuild the retry button after a failed
+  # payment, so it carries the same price and urgency tone as the original
+  # rather than re-rendering as a priceless, success-green control. Only a
+  # settled-but-unsuccessful command needs it; success and pending return nil so
+  # the common path never pays for the lookup.
+  def retry_territory(command)
+    return unless command.settled?
+    return if command.completed?
+
+    load_territory(command.server, command.arguments[:territory_id], current_user.steam_uid)
+  end
 end
