@@ -3,75 +3,106 @@
 module ESM
   module Exile
     class Player
+      # A V1 server sends territories as a string map keyed by name (a quirk of
+      # the old protocol). Normalize that into the array of {id, name} hashes the
+      # instance expects up front, so nothing downstream branches on shape.
+      def self.from_v1(server:, player:)
+        data = player.to_h
+
+        # V1 sends territories as a name => id map: a JSON string over the wire,
+        # or a hash/OpenStruct once the response is parsed. Coerce either form to
+        # a hash, then to the array of {id, name} the instance expects so
+        # #territories never branches on shape.
+        territories = data[:territories]
+        territories = territories.parse_json if territories.is_a?(String)
+        territories = territories.to_h if territories.respond_to?(:to_h)
+        data[:territories] = territories.map { |name, id| {id:, name:} } if territories.is_a?(Hash)
+
+        new(server:, player: data)
+      end
+
       def initialize(server:, player:)
         @server = server
-        @data = player
+        @data = player.to_h
         @alive = true
 
-        # If the player is dead, not all information is returned.
+        # Dead or absent players don't return every field.
         normalize
       end
 
       def name
-        @data.name
+        @data[:name]
+      end
+
+      def uid
+        @data[:uid]
       end
 
       def alive?
         @alive
       end
 
-      # Arma stores the health as 0 (full) to 1 (dead)
-      def damage
-        (100 - (@data.damage * 100)).round(2)
+      # Arma stores damage 0 (full health) to 1 (dead); surface it as a health %.
+      def health
+        return unless alive?
+
+        (100 - (@data[:damage] * 100)).round(2)
       end
 
       def hunger
-        @data.hunger.round(2)
+        @data[:hunger].round(2)
       end
 
       def thirst
-        @data.thirst.round(2)
+        @data[:thirst].round(2)
       end
 
       def money
-        @data.money
+        @data[:money]
       end
 
       def locker
-        @data.locker
+        @data[:locker]
       end
 
-      def respect
-        @data.score
+      # The database column is "score"; its player-facing name is "Respect".
+      def score
+        @data[:score]
       end
+
+      alias_method :respect, :score
 
       def kills
-        @data.kills
+        @data[:kills]
       end
 
       def deaths
-        @data.deaths
+        @data[:deaths]
       end
 
       def kd_ratio
         return 0 if deaths.zero?
 
-        # These are returns as integers, cast to float
+        # These are returned as integers, cast to float
         (kills.to_f / deaths).round(2)
       end
 
+      def first_connect_at
+        @data[:first_connect_at]
+      end
+
+      def last_disconnect_at
+        @data[:last_disconnect_at]
+      end
+
+      def total_connections
+        @data[:total_connections]
+      end
+
       def territories
-        @territories ||= begin
-          territories = @data.territories
-
-          # V1 - Wtf? Why did I send this as a hash?? And using the name as the key?? lol
-          if territories.is_a?(String)
-            territory = Data.define(:id, :name)
-            territories = territories.to_h.map { |name, id| territory.new(id, name) }
-          end
-
-          territories.sort_by { |t| t.name.downcase }
-        end
+        @territories ||= @data[:territories]
+          .map { |territory| ESM::Exile::Territory.new(server: @server, territory:) }
+          .sort_by { |territory| territory.name.to_s.downcase }
       end
 
       def to_embed
@@ -90,14 +121,14 @@ module ESM
       # Alive players return all of these fields.
       # Dead players return: locker, score, name, kills, deaths, territories
       def normalize
-        @alive = false if @data.damage.nil? || @data.damage == 1
-        @data.damage ||= 1
-        @data.hunger ||= 0
-        @data.thirst ||= 0
-        @data.kills ||= 0
-        @data.deaths ||= 0
-        @data.money ||= 0
-        @data.territories ||= []
+        @alive = false if @data[:damage].nil? || @data[:damage] == 1
+        @data[:damage] ||= 1
+        @data[:hunger] ||= 0
+        @data[:thirst] ||= 0
+        @data[:kills] ||= 0
+        @data[:deaths] ||= 0
+        @data[:money] ||= 0
+        @data[:territories] ||= []
       end
 
       def add_general_field(embed)
@@ -105,7 +136,7 @@ module ESM
           embed.add_field(
             name: "__#{I18n.t(:general)}__",
             value: [
-              "**#{I18n.t(:health)}:**\n#{damage}%\n",
+              "**#{I18n.t(:health)}:**\n#{health}%\n",
               "**#{I18n.t(:hunger)}:**\n#{hunger}%\n",
               "**#{I18n.t(:thirst)}:**\n#{thirst}%\n"
             ].join("\n"),

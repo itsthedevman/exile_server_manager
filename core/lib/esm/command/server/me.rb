@@ -40,15 +40,16 @@ module ESM
 
             reply(build_embed(player_data))
           end
+
+          def exile_player(player)
+            ESM::Exile::Player.from_v1(server: target_server, player:)
+          end
         end
 
         private
 
         def build_embed(player)
-          if player
-            player = ESM::Exile::Player.new(server: target_server, player:)
-            return player.to_embed
-          end
+          return exile_player(player).to_embed if player
 
           ESM::Embed.build(
             :error,
@@ -58,6 +59,10 @@ module ESM
               server_id: target_server.server_id
             )
           )
+        end
+
+        def exile_player(player)
+          ESM::Exile::Player.new(server: target_server, player:)
         end
       end
     end
