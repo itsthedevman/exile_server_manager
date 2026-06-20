@@ -25,4 +25,4 @@
 
     - if territory.payment_due_soon?
       .card-footer.bg-transparent.border-top-0.pt-0
-        = territory_pay_panel(territory, server_public_id: current_server.public_id, surface: "card", renew_price: nil)
+        = territory_pay_panel(territory, server_public_id: current_server.public_id, surface: "card", renew_price: territory.renew_price)
