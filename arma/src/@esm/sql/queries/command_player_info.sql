@@ -24,18 +24,21 @@ SELECT
                         'flag_texture', t.flag_texture,
                         'flag_stolen', t.flag_stolen,
                         'level', t.level,
-                        'object_count', COUNT(c.id) as object_count
+                        'object_count', (
+                            SELECT COUNT(*)
+                            FROM construction c
+                            WHERE c.territory_id = t.id
+                        )
                     )
                 )
             FROM
                 territory t
-            LEFT JOIN construction ON t.id = c.territory_id
             WHERE
-                deleted_at IS NULL
+                t.deleted_at IS NULL
                 AND (
-                    owner_uid = a.uid
-                    OR build_rights LIKE CONCAT('%', a.uid, '%')
-                    OR moderators LIKE CONCAT('%', a.uid, '%')
+                    t.owner_uid = a.uid
+                    OR t.build_rights LIKE CONCAT('%', a.uid, '%')
+                    OR t.moderators LIKE CONCAT('%', a.uid, '%')
                 )
         ),
         JSON_ARRAY()
