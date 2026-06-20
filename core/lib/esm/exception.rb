@@ -18,6 +18,12 @@ module ESM
         # I had to do it this way because StandardError converts the message to a string
         @data = data
       end
+
+      def to_embed
+        return @data if @data.is_a?(ESM::Embed) || @data.blank?
+
+        ESM::Embed.build(:error, description: @data.to_s)
+      end
     end
 
     # Internally used exception.
@@ -81,6 +87,9 @@ module ESM
     # strings from the response; each surface renders them itself (Discord builds an error embed,
     # the website records them on the command row).
     class ExtensionError < ApplicationError
+      def to_embed
+        ESM::Embed.build(:error, description: @data.join("\n"))
+      end
     end
 
     # Raised when inbound client data fails to decrypt or fails its key/IV/authenticity checks.

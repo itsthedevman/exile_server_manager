@@ -94,10 +94,8 @@ module ESM
                   server_id: @command.target_server.server_id
                 )
               )
-            when ESM::Exception::ExtensionError
-              ESM::Embed.build(:error, description: error.data.join("\n"))
             when ESM::Exception::ApplicationError
-              error.data
+              error.to_embed
             when StandardError
               uuid = SecureRandom.uuid.split("-")[0..1].join("")
 
