@@ -108,17 +108,21 @@ module ESM
         @next_level_territory ||= @server.territories.find_by(territory_level: @territory[:level] + 1)
       end
 
-      def renew_price
-        price = @territory[:level] *
+      def renew_cost
+        cost = @territory[:level] *
           @territory[:object_count] *
           @server_settings.territory_price_per_object
 
-        return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
+        return cost if @server_settings.territory_payment_tax.zero?
 
-        # If the server has tax, add it to the price
-        price += (price * (@server_settings.territory_payment_tax.to_f / 100)).round
+        # Add the server's payment tax on top of the base cost
+        cost + (cost * (@server_settings.territory_payment_tax.to_f / 100)).round
+      end
 
-        "#{price.to_delimitated_s} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
+      def renew_price
+        return "#{renew_cost.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
+
+        "#{renew_cost.to_delimitated_s} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
       end
 
       def upgradeable?

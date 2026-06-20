@@ -104,18 +104,51 @@ module TerritoriesHelper
   # The payment-due panel: a tinted box whose urgency tone frames the Pay action
   # with context so the button never reads as an orphaned control. Shared by the
   # /me card footer and the modal Payment section.
-  def territory_pay_panel(territory, server_public_id:, surface:, renew_price:)
+  def territory_pay_panel(territory, server_public_id:, surface:, renew_price:, locker: nil)
     urgency = territory_payment_urgency(territory)
     tone = urgency[:tone]
+    control = territory_pay_control(territory, server_public_id:, surface:, renew_price:, tone:, locker:)
+    header_class = class_names("d-flex align-items-center gap-2 fw-semibold text-#{tone}", "mb-2": control.present?)
 
     tag.div(class: "alert alert-#{tone} border-#{tone} bg-#{tone} bg-opacity-10 mb-0") do
       safe_join([
-        tag.div(class: "d-flex align-items-center gap-2 fw-semibold mb-2 text-#{tone}") do
+        tag.div(class: header_class) do
           safe_join([tag.i(class: "bi bi-#{urgency[:icon]}"), tag.span(urgency[:label])])
         end,
-        render("servers/territories/pay_button", server_public_id:, territory_id: territory.id, surface:, renew_price:, tone:)
+        control
       ])
     end
+  end
+
+  # The actionable control inside the pay panel: the live Pay button, or a
+  # disabled stand-in whose label states why payment is blocked. A stolen card
+  # carries no button at all (the Stolen section is the explanation); every other
+  # blocked case shows the disabled, reason-labeled button.
+  def territory_pay_control(territory, server_public_id:, surface:, renew_price:, tone:, locker:)
+    block = territory_pay_block(territory, locker:)
+
+    return "".html_safe if block && territory.stolen? && surface == "card"
+    return render("servers/territories/pay_blocked", label: block[:label], tone: block[:tone]) if block
+
+    render(
+      "servers/territories/pay_button",
+      server_public_id:,
+      territory_id: territory.id,
+      surface:,
+      renew_price:,
+      tone:
+    )
+  end
+
+  # The blocked Pay button's state ({label:, tone:}), or nil when payment can
+  # proceed. A stolen flag reads red; a locker short of the cost reads muted and
+  # is only checked where the locker is known, so the modal passes nil and skips
+  # the funds check.
+  def territory_pay_block(territory, locker:)
+    return {label: "Territory stolen!", tone: "danger"} if territory.stolen?
+    return if locker.nil? || locker >= territory.renew_cost
+
+    {label: safe_join(["Not enough ", poptab_icon(classes: %w[poptab-icon-inline]), " in locker"]), tone: "secondary"}
   end
 
   # The retry button mirrors the panel's urgency tone so a failed payment never

@@ -16,23 +16,18 @@ module PlayerLoading
     data =
       ESM.cache.fetch(key, expires_in: 5.seconds) do
         server.player_info(steam_uid)
+      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+        # The bot or the game server is unreachable. Degrade to "no data" (the
+        # page shows an offline empty state) rather than a 500, and cache the nil
+        # briefly so a down server isn't hammered on every refresh.
+        Rails.logger.warn("[load_player] player_info unavailable: #{e.message}")
+        nil
       end
 
     # No character on this server yet (never spawned in, or server offline)
     return if data.blank?
 
-    territories =
-      (data[:territories] || []).map { |territory| ESM::Exile::Territory.new(server:, territory:) }
-
-    # Split into two display groups so a card row never stretches to match a
-    # neighbor's pay panel: due-soon ordered by urgency (overdue leads), the rest
-    # alphabetically.
-    due, upcoming = territories.partition(&:payment_due_soon?)
-    data[:territories] = territories
-    data[:due_territories] = due.sort_by { |t| [t.days_left_until_payment_due, t.name.to_s.downcase] }
-    data[:upcoming_territories] = upcoming.sort_by { |t| t.name.to_s.downcase }
-
-    data.to_istruct
+    ESM::Exile::Player.new(server:, player: data)
   end
 
   # The fresh player snapshot to fold into a settled command's /me refresh. Pay

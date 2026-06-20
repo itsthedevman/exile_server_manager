@@ -35,7 +35,7 @@
           | Status
 
       .card-body
-        - if player_alive?(current_player)
+        - if current_player.alive?
           .mb-3
             .d-flex.justify-content-between.mb-1
               span
@@ -79,7 +79,7 @@
         .mb-3
           .text-muted.small.text-uppercase Pocket
           .fs-2.fw-bold.text-success
-            - if player_alive?(current_player)
+            - if current_player.alive?
               = poptabs(current_player.money)
             - else
               span.text-muted 0
@@ -108,7 +108,7 @@
             .fs-4.fw-bold.text-danger = number_with_delimiter(current_player.deaths)
           .col-3
             .text-muted.small.text-uppercase K/D
-            .fs-4.fw-bold = player_kill_death_ratio(current_player)
+            .fs-4.fw-bold = current_player.kd_ratio
 
   .col-12.col-xl-6
     .card.h-100
@@ -139,18 +139,24 @@
     span.badge.bg-secondary.ms-2 = current_player.territories.size
 
 - if current_player.territories.any?
-  - if current_player.due_territories.any?
+  - if player_stolen_territories(current_player).any?
+    .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Stolen
+    .row.g-3.mb-4
+      - player_stolen_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+
+  - if player_due_territories(current_player).any?
     .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Payment due
     .row.g-3.mb-4
-      - current_player.due_territories.each do |territory|
-        = render "servers/players/territory_card", territory:, current_server:
+      - player_due_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
 
-  - if current_player.upcoming_territories.any?
-    - if current_player.due_territories.any?
+  - if player_upcoming_territories(current_player).any?
+    - if player_stolen_territories(current_player).any? || player_due_territories(current_player).any?
       .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Up to date
     .row.g-3
-      - current_player.upcoming_territories.each do |territory|
-        = render "servers/players/territory_card", territory:, current_server:
+      - player_upcoming_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
 - else
   .card.border-secondary
     .card-body.text-center.py-5
