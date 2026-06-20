@@ -176,7 +176,7 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
 
         it "raise Upgrade_MaxLevel" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("already at the highest level")
+            expect(error.to_embed.description).to match("already at the highest level")
           end
         end
       end

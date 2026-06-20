@@ -11,12 +11,13 @@ RSpec.describe ESM::Website::API::Handlers::TerritoryPay do
       server:,
       idempotency_key: SecureRandom.uuid,
       command_name: "territory_pay",
+      arguments: {territory_id: "abc123"},
       status: :pending
     )
   end
 
   def call
-    described_class.call(command_id: command.id, encoded_territory_id: "abc123")
+    described_class.call(command_id: command.id)
   end
 
   describe ".call" do
@@ -55,7 +56,7 @@ RSpec.describe ESM::Website::API::Handlers::TerritoryPay do
     context "when the command id is unknown" do
       it "raises ArgumentError" do
         expect {
-          described_class.call(command_id: "does-not-exist", encoded_territory_id: "abc123")
+          described_class.call(command_id: "does-not-exist")
         }.to raise_error(ArgumentError, /Unknown command/)
       end
     end

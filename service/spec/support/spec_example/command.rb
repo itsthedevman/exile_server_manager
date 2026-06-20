@@ -41,7 +41,7 @@ RSpec.shared_examples("raises_exception") do |it_message = nil|
 
   it it_message || "is expected to raise an exception" do
     expect { execute_command }.to raise_error(exception_class) do |error|
-      expect(error.data.description).to match(matcher)
+      expect(error.to_embed.description).to match(matcher)
     end
   end
 end
@@ -79,7 +79,7 @@ end
 RSpec.shared_examples("arma_error_null_flag") do
   it "raises NullFlag and NullFlag_Admin" do
     expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match("I was unable to find a territory")
+      expect(error.to_embed.description).to match("I was unable to find a territory")
     end
 
     ESM.discord_bot.test_outbox.await_size(1)
@@ -94,7 +94,7 @@ end
 RSpec.shared_examples("arma_error_missing_territory_access") do
   it "raises MissingTerritoryAccess and MissingTerritoryAccess_Admin" do
     expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.data.description).to match("you do not have permission")
+      expect(error.to_embed.description).to match("you do not have permission")
     end
 
     ESM.discord_bot.test_outbox.await_size(1)

@@ -171,7 +171,7 @@ describe ESM::Command::Base do
 
     it "is invalid" do
       expect { execute!(arguments: {community_id: "es"}) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.data.description).to match(/hey .+, i was unable to find a community with an ID of `.+`./i)
+        expect(error.to_embed.description).to match(/hey .+, i was unable to find a community with an ID of `.+`./i)
       end
     end
   end

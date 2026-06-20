@@ -49,7 +49,7 @@ RSpec.describe ESM::Command::Base, "#from_website!" do
 
     it "still raises CheckFailure for registration" do
       expect { website_command.from_website! }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.data.description).to match(/link your steam account/i)
+        expect(error.to_embed.description).to match(/link your steam account/i)
       end
     end
   end

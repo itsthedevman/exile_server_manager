@@ -195,7 +195,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
         it "raises Demote_CannotDemoteOwner" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you have no power here")
+            expect(error.to_embed.description).to match("you have no power here")
           end
         end
       end
@@ -208,7 +208,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
         it "raises Demote_CannotDemoteBuilder" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you cannot demote someone who is already at the lowest rank")
+            expect(error.to_embed.description).to match("you cannot demote someone who is already at the lowest rank")
           end
         end
       end
@@ -220,7 +220,7 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
         it "raises Demote_CannotDemoteNothing" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you can't demote someone you have no power over")
+            expect(error.to_embed.description).to match("you can't demote someone you have no power over")
           end
         end
       end

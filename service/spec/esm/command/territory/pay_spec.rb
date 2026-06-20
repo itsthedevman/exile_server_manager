@@ -164,7 +164,7 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
           it "rejects the payment and leaves the locker and counter untouched" do
             expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-              expect(error.data.description).to match(/hit the remote payment limit/)
+              expect(error.to_embed.description).to match(/hit the remote payment limit/)
             end
 
             user.exile_account.reload
