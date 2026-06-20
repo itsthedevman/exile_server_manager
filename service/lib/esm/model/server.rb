@@ -26,6 +26,15 @@ module ESM
 
     delegate :send_message, :send_error, to: :connection, allow_nil: true
 
+    # send_message is allow_nil so logging tolerates a dead connection, but a
+    # query or call needs a real response. Guard here so a disconnected server
+    # fails with a clear error instead of a NoMethodError on a nil response.
+    def send_message!(message)
+      raise ESM::Exception::ServerNotConnected, server_id if connection.nil?
+
+      send_message(message)
+    end
+
     # Sends a message to the client with a unique ID then logs the ID to the community's logging channel
     def log_error(log_message)
       uuid = SecureRandom.uuid
@@ -64,7 +73,7 @@ module ESM
         )
         .set_metadata(player:, target:)
 
-      response = send_message(message).data.result
+      response = send_message!(message).data.result
 
       # Check if it's JSON like
       result = ESM::JSON.parse(response.to_s)
@@ -93,7 +102,7 @@ module ESM
         .set_data(query_function_name: function_name, **arguments)
         .set_metadata(player:, target:)
 
-      send_message(message).data.results
+      send_message!(message).data.results
     end
 
     alias_method :run_database_query!, :query_exile_database!
@@ -114,7 +123,7 @@ module ESM
         .set_data(function_name:, **arguments)
         .set_metadata(player:, target:)
 
-      send_message(message)
+      send_message!(message)
     end
 
     def status_embed(status, reason: "")

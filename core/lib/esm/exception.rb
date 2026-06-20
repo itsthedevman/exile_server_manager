@@ -92,6 +92,13 @@ module ESM
       end
     end
 
+    # Raised when a query or call targets a server that has no live connection,
+    # so the request can fail with a clear reason instead of a NoMethodError on a
+    # nil response.
+    class ServerNotConnected < Error
+      def initialize(server_id) = super("Server `#{server_id}` is not connected")
+    end
+
     # Raised when inbound client data fails to decrypt or fails its key/IV/authenticity checks.
     # Closes the connection.
     class DecryptionError < ClosableError
