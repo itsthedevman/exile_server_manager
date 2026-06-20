@@ -17,6 +17,11 @@ module TerritoryLoading
     territory_data =
       ESM.cache.fetch(key, expires_in: 5.seconds) do
         server.territory_info(territory_id, steam_uid:)
+      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+        # The bot or the game server is unreachable. Degrade to "no data" (the
+        # modal shows its unavailable state) rather than a 500.
+        Rails.logger.warn("[load_territory] territory_info unavailable: #{e.message}")
+        nil
       end
 
     return if territory_data.blank?

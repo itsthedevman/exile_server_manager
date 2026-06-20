@@ -16,7 +16,7 @@
         .mx-1 -
         div
           = current_server.community.community_name
-        - if current_server.connected?
+        - if current_server.connected? && current_server.server_start_time?
           .mx-1 -
           div
             i.bi.bi-clock-history.me-1
@@ -32,10 +32,18 @@
     / Territory detail modal — lazy-loaded into the frame when a card is clicked
     = render "shared/turbo_modal", id: "territory_detail", class: "modal-lg"
 
-  - else
+  - elsif current_server.connected?
     / No character on this server
     .card.border-secondary
       .card-body.text-center.py-5
         i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
         h5.text-light.mb-2 No character on #{current_server.server_name}
         p.text-muted.mb-0 You haven't spawned in on this server yet. Hop in-game to create your character, then check back here.
+
+  - else
+    / Server is offline, so we couldn't load the player's data
+    .card.border-secondary
+      .card-body.text-center.py-5
+        i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
+        h5.text-light.mb-2 #{current_server.server_name} is offline
+        p.text-muted.mb-0 We can't load your character while the server is offline. Check back once it's back up.
