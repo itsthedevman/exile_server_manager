@@ -26,8 +26,7 @@ module ESM
         set_metadata(vg_enabled: false, vg_max_sizes: 0)
 
         execution_interval = @config.request_check
-        @task = Concurrent::TimerTask.execute(execution_interval:) { on_message }
-        @task.add_observer(ErrorHandler.new)
+        @task = TimerTask.execute(execution_interval:) { on_message }
 
         @connected_at = Time.current
         @last_heartbeat = Time.current
@@ -125,9 +124,7 @@ module ESM
             .set_metadata(server_id:)
             .add_errors(response_message.errors.map(&:to_h))
 
-          embed = ESM::Embed.build(:error, description: message.error_messages.join("\n"))
-
-          raise ESM::Exception::ExtensionError, embed
+          raise ESM::Exception::ExtensionError.new(message.error_messages)
         end
 
         response_message

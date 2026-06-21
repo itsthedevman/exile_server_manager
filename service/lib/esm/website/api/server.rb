@@ -87,8 +87,9 @@ module ESM
           @nats = NATS.connect(@url)
 
           @handlers.each do |action, handler|
-            subject = "#{@subject_prefix}#{action}"
-            @nats.subscribe(subject) { |message| dispatch(action, handler, message) }
+            @nats.subscribe("#{@subject_prefix}#{action}") do |message|
+              ESM::Database.with_connection { dispatch(action, handler, message) }
+            end
           end
 
           info!(event: "website_api:start", subjects: @handlers.keys)
@@ -131,6 +132,8 @@ module ESM
           payload = body[:payload] || {}
           payload = {} unless payload.is_a?(Hash)
 
+          info!(event: action, **payload)
+
           result = handler.call(**payload)
 
           # A handler may offload a slow operation (e.g. an Arma round-trip) to a
@@ -139,6 +142,8 @@ module ESM
           # can't stall the other RPCs sharing the NATS subscription.
           if result.is_a?(Concurrent::Promise)
             respond_when_resolved(message, action, result)
+          elsif result.is_a?(ESM::ServerCommand)
+            message.respond({ok: true}.to_json)
           else
             message.respond({ok: true, result:}.to_json)
           end

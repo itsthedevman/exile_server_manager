@@ -2,14 +2,14 @@
 
 require "active_record"
 
-# Connect to the esm_ruby_core_test database
+# Share the esm_test database; its schema is loaded by the service/website suites.
 ActiveRecord::Base.establish_connection(
   adapter: "postgresql",
   encoding: "unicode",
   pool: 5,
   host: ENV.fetch("POSTGRES_HOST", "localhost"),
   port: ENV.fetch("POSTGRES_PORT", "5432"),
-  database: ENV.fetch("POSTGRES_DATABASE", "esm_ruby_core_test"),
+  database: ENV.fetch("POSTGRES_DATABASE", "esm_test"),
   username: ENV.fetch("POSTGRES_USERNAME", "esm"),
   password: ENV.fetch("POSTGRES_PASSWORD", "password12345")
 )

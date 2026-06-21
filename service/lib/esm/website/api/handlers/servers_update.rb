@@ -10,9 +10,7 @@ module ESM
         #
         class ServersUpdate
           def self.call(id:, **)
-            info!(event: "servers:update", id: id)
-
-            server = ESM::Server.where(id: id).first
+            server = ESM::Server.find_by(id:)
             return if server.nil?
 
             if server.v2?

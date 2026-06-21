@@ -4,7 +4,9 @@
     position: fixed !important;
     top: calc($nav-offset + 2em) !important;
     right: 1em;
-    z-index: 1050;
+    // Above the modal (1055) so payment toasts aren't trapped behind the
+    // territory detail dialog; matches Bootstrap's own $zindex-toast.
+    z-index: 1090;
 }
 
 $toast-bg: $esm-warm-gray-800;

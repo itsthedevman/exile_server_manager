@@ -8,7 +8,6 @@ use crate::error::BuildError;
 pub struct Config {
     pub server: ServerConfig,
     pub my_steam_uid: String,
-    pub steam_uids: Vec<String>,
     pub mysql_database_name: String,
 }
 

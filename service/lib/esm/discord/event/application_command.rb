@@ -95,7 +95,7 @@ module ESM
                 )
               )
             when ESM::Exception::ApplicationError
-              error.data
+              error.to_embed
             when StandardError
               uuid = SecureRandom.uuid.split("-")[0..1].join("")
 

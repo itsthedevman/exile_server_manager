@@ -18,6 +18,12 @@ module ESM
         # I had to do it this way because StandardError converts the message to a string
         @data = data
       end
+
+      def to_embed
+        return @data if @data.is_a?(ESM::Embed) || @data.blank?
+
+        ESM::Embed.build(:error, description: @data.to_s)
+      end
     end
 
     # Internally used exception.
@@ -77,31 +83,55 @@ module ESM
     class SendableError < ApplicationError
     end
 
+    # Raised when the Arma extension rejects a request. #data holds the player-facing error
+    # strings from the response; each surface renders them itself (Discord builds an error embed,
+    # the website records them on the command row).
     class ExtensionError < ApplicationError
+      def to_embed
+        ESM::Embed.build(:error, description: @data.join("\n"))
+      end
     end
 
+    # Raised when a query or call targets a server that has no live connection,
+    # so the request can fail with a clear reason instead of a NoMethodError on a
+    # nil response.
+    class ServerNotConnected < Error
+      def initialize(server_id) = super("Server `#{server_id}` is not connected")
+    end
+
+    # Raised when inbound client data fails to decrypt or fails its key/IV/authenticity checks.
+    # Closes the connection.
     class DecryptionError < ClosableError
     end
 
+    # Raised when a client sends a request ESM can't route. The reason is sent back to the client.
     class InvalidRequest < SendableError
     end
 
+    # Raised when a request to the client goes unanswered within the response timeout.
     class RequestTimeout < ApplicationError
       def initialize = super("Request timed out")
     end
 
+    # Raised during identification when a client claims a public id that already has a live
+    # connection. Closes the duplicate.
     class ExistingConnection < ClosableError
       def initialize = super("Client already connected")
     end
 
+    # Raised during identification when no registered server matches the client's public id.
+    # Closes the connection without telling the client why.
     class InvalidAccessKey < ClosableError
       def initialize = super("Access denied")
     end
 
+    # Raised when a pending request promise is rejected (e.g. a handshake response that never
+    # validates). Closes the connection.
     class RejectedPromise < ClosableError
       def initialize(reason = "") = super
     end
 
+    # Raised when an inbound frame declares a length at or beyond the socket read ceiling.
     class MessageTooLarge < ApplicationError
       def initialize(size)
         super("Attempted to read #{size} bytes")

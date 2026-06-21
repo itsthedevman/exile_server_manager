@@ -4,13 +4,6 @@
 my_steam_uid: YOUR_UID
 
 #
-# A list of valid Steam UIDs that matches the list used by the esm_bot's testing suite
-# Required
-steam_uids:
-- UID_1
-- UID_2
-
-#
 # Config for the Linux Arma 3 server
 server:
   # Steam username used to login to steamcmd

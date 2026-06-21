@@ -249,7 +249,7 @@ module ESM
 
         nil
       rescue => e
-        warn!(error: e)
+        warn!(to: to.to_s, message:, error: e)
 
         nil
       end

@@ -6,13 +6,11 @@ module ESM
       def self.watch
         execution_interval = ESM.config.request_overseer.check_every
 
-        @task = Concurrent::TimerTask.execute(execution_interval:) do
+        @task = TimerTask.execute(execution_interval:) do
           ESM::Database.with_connection do
             ESM::Request.expired.destroy_all
           end
         end
-
-        @task.add_observer(ErrorHandler.new)
       end
 
       def self.die

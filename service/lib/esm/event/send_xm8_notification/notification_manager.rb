@@ -9,8 +9,7 @@ module ESM
         def initialize(execution_interval: 1)
           @queue = Queue.new
 
-          @task = Concurrent::TimerTask.execute(execution_interval:) { process_next }
-          @task.add_observer(ErrorHandler.new)
+          @task = TimerTask.execute(execution_interval:) { process_next }
         end
 
         def add(notifications)

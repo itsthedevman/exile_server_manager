@@ -3,6 +3,9 @@
 module ESM
   module Exile
     class Territory
+      # Days-left window within which #payment_due_soon? flags a territory.
+      PAYMENT_DUE_SOON_DAYS = 3
+
       # So I don't build a bad URL
       VALID_FLAGS = %w[
         flag_blue_co flag_country_at_co flag_country_au_co flag_country_be_co flag_country_by_co flag_country_cn_co
@@ -105,17 +108,21 @@ module ESM
         @next_level_territory ||= @server.territories.find_by(territory_level: @territory[:level] + 1)
       end
 
-      def renew_price
-        price = @territory[:level] *
+      def renew_cost
+        cost = @territory[:level] *
           @territory[:object_count] *
           @server_settings.territory_price_per_object
 
-        return "#{price.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
+        return cost if @server_settings.territory_payment_tax.zero?
 
-        # If the server has tax, add it to the price
-        price += (price * (@server_settings.territory_payment_tax.to_f / 100)).round
+        # Add the server's payment tax on top of the base cost
+        cost + (cost * (@server_settings.territory_payment_tax.to_f / 100)).round
+      end
 
-        "#{price.to_delimitated_s} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
+      def renew_price
+        return "#{renew_cost.to_delimitated_s} poptabs" if @server_settings.territory_payment_tax.zero?
+
+        "#{renew_cost.to_delimitated_s} poptabs (#{@server_settings.territory_payment_tax}% tax added)"
       end
 
       def upgradeable?
@@ -173,6 +180,15 @@ module ESM
         return if next_due_date.nil?
 
         @days_left_until_payment_due ||= (next_due_date.to_date - ::Time.zone.today).to_i
+      end
+
+      # Whether a protection payment is close enough to surface a call to action.
+      # Drives the website's pay panels and its "payment due" grouping.
+      def payment_due_soon?
+        days = days_left_until_payment_due
+        return false if days.nil?
+
+        days <= PAYMENT_DUE_SOON_DAYS
       end
 
       def payment_reminder_message

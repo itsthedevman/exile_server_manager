@@ -156,8 +156,8 @@ RSpec.shared_context("command") do
     return if e.is_a?(ESM::Exception::CheckFailureNoMessage)
 
     message =
-      if e.respond_to?(:data)
-        e.data
+      if e.respond_to?(:to_embed)
+        e.to_embed
       else
         e.message
       end

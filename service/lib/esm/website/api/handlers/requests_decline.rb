@@ -9,9 +9,7 @@ module ESM
         #
         class RequestsDecline
           def self.call(id:, **)
-            info!(event: "requests:decline", id: id)
-
-            request = ESM::Request.where(id: id).first
+            request = ESM::Request.find_by(id:)
             return if request.nil?
 
             request.respond(false)

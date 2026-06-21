@@ -1,0 +1,164 @@
+/ The player's on-server snapshot: identity, poptab/stat cards, and territory
+/ cards. Rendered on the initial /me load and re-rendered into #player_overview
+/ after a successful action that moves the locker (pay, upgrade), so the page
+/ reflects the new totals and due state without a manual reload.
+/ locals: current_server, current_player
+/ Identity strip
+.card.mb-4
+  .card-body
+    .d-flex.align-items-center.gap-3.flex-wrap
+      - if current_user.steam_data&.avatar
+        img.rounded-circle.border.border-2.border-success[
+          src=current_user.steam_data.avatar
+          alt=current_user.steam_data.username
+          width="64"
+          height="64"
+        ]
+      - else
+        img.rounded-circle.border.border-2.border-success[
+          src=image_url("default_steam_avatar.png")
+          alt="Default Steam Avatar"
+          width="64"
+          height="64"
+        ]
+      div
+        h2.mb-0 = current_player.name
+        small.text-muted.font-monospace = current_player.uid
+
+.row.g-4.mb-4
+  / Character status
+  .col-12.col-xl-6
+    .card.h-100
+      .card-header
+        h5.mb-0
+          i.bi.bi-heart-pulse.text-danger.me-2
+          | Status
+
+      .card-body
+        - if current_player.alive?
+          .mb-3
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-heart-fill.text-danger.me-2
+                | Health
+              span.text-muted = "#{player_health_percentage(current_player)}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-danger[role="progressbar" style="width: #{player_health_percentage(current_player)}%"]
+
+          .mb-3
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-egg-fried.text-warning.me-2
+                | Hunger
+              span.text-muted = "#{player_hunger_percentage(current_player)}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-warning[role="progressbar" style="width: #{player_hunger_percentage(current_player)}%"]
+
+          div
+            .d-flex.justify-content-between.mb-1
+              span
+                i.bi.bi-droplet-fill.text-info.me-2
+                | Thirst
+              span.text-muted = "#{player_thirst_percentage(current_player)}%"
+            .progress[style="height: 0.5rem;"]
+              .progress-bar.bg-info[role="progressbar" style="width: #{player_thirst_percentage(current_player)}%"]
+        - else
+          .text-center.text-muted.py-4
+            i.bi.bi-person-x.fs-3.d-block.mb-2
+            | No active character
+
+  / Account stats
+  .col-12.col-xl-6
+    .card.h-100
+      .card-header
+        h5.mb-0
+          i.bi.bi-bank.text-success.me-2
+          | Money
+
+      .card-body
+        .mb-3
+          .text-muted.small.text-uppercase Pocket
+          .fs-2.fw-bold.text-success
+            - if current_player.alive?
+              = poptabs(current_player.money)
+            - else
+              span.text-muted 0
+        div
+          .text-muted.small.text-uppercase Locker
+          .fs-2.fw-bold.text-success
+            = poptabs(current_player.locker)
+
+  .col-12.col-xl-6
+    .card.h-100
+      .card-header
+        h5.mb-0
+          i.bi.bi-star.text-warning.me-2
+          | Scoreboard
+
+      .card-body
+        .row.g-3.text-center.mt-1
+          .col-3
+            .text-muted.small.text-uppercase Respect
+            .fs-4.fw-bold = number_with_delimiter(current_player.score)
+          .col-3
+            .text-muted.small.text-uppercase Kills
+            .fs-4.fw-bold.text-success = number_with_delimiter(current_player.kills)
+          .col-3
+            .text-muted.small.text-uppercase Deaths
+            .fs-4.fw-bold.text-danger = number_with_delimiter(current_player.deaths)
+          .col-3
+            .text-muted.small.text-uppercase K/D
+            .fs-4.fw-bold = current_player.kd_ratio
+
+  .col-12.col-xl-6
+    .card.h-100
+      .card-header
+        h5.mb-0
+          i.bi.bi-file-person.text-info.me-2
+          | About
+
+      .card-body
+        .d-flex.justify-content-between.mb-2
+          span.text-muted.small.text-uppercase Member since
+          span.fw-medium = ESM::Time.parse(current_player.first_connect_at).strftime("%b %-d, %Y")
+        .d-flex.justify-content-between.mb-2
+          span.text-muted.small.text-uppercase Last seen
+          - if current_player.last_disconnect_at
+            span.fw-medium = "#{ESM::Time.distance_of_time_in_words(ESM::Time.parse(current_player.last_disconnect_at), precise: false)} ago"
+          - else
+            span.fw-medium.text-success Online now
+        .d-flex.justify-content-between
+          span.text-muted.small.text-uppercase Connections
+          span.fw-medium = number_with_delimiter(current_player.total_connections)
+
+/ Territories
+.d-flex.align-items-center.mb-3
+  h4.mb-0
+    i.bi.bi-flag-fill.text-warning.me-2
+    | Territories
+    span.badge.bg-secondary.ms-2 = current_player.territories.size
+
+- if current_player.territories.any?
+  - if player_stolen_territories(current_player).any?
+    .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Stolen
+    .row.g-3.mb-4
+      - player_stolen_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+
+  - if player_due_territories(current_player).any?
+    .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Payment due
+    .row.g-3.mb-4
+      - player_due_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+
+  - if player_upcoming_territories(current_player).any?
+    - if player_stolen_territories(current_player).any? || player_due_territories(current_player).any?
+      .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Up to date
+    .row.g-3
+      - player_upcoming_territories(current_player).each do |territory|
+        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+- else
+  .card.border-secondary
+    .card-body.text-center.py-5
+      i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
+      p.text-muted.mb-0 No territories on this server yet

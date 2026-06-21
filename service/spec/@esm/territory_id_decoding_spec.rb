@@ -66,7 +66,7 @@ describe "Territory ID decoding", :requires_connection do
 
       expectation = expect { server.send_message(message) }
       expectation.to raise_error(ESM::Exception::ExtensionError) do |error|
-        expect(error.data.description).to match("I was unable to find an active territory")
+        expect(error.to_embed.description).to match("I was unable to find an active territory")
       end
     end
   end

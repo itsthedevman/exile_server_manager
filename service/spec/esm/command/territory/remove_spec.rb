@@ -233,7 +233,7 @@ describe ESM::Command::Territory::Remove, category: "command" do
 
         it "raise Remove_CannotRemoveOwner" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you have no power here")
+            expect(error.to_embed.description).to match("you have no power here")
           end
         end
       end
@@ -243,7 +243,7 @@ describe ESM::Command::Territory::Remove, category: "command" do
 
         it "raise Remove_CannotRemoveNothing" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("you can't remove someone you have no power over")
+            expect(error.to_embed.description).to match("you can't remove someone you have no power over")
           end
         end
       end

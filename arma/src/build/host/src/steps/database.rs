@@ -12,7 +12,7 @@ use fake::{
     Fake,
 };
 use lazy_static::lazy_static;
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
 use std::fmt::Display;
 
 use crate::{
@@ -40,6 +40,10 @@ lazy_static! {
         "\\\\A3\\\\Data_F\\\\Flags\\\\flag_uk_co.paa",
     ];
 }
+
+// How many fake players to seed alongside my_steam_uid. Replaces the old
+// hand-maintained steam_uids list in config.yml.
+const STEAM_UID_COUNT: usize = 100;
 
 pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
     let sql = generate_sql(&ctx.config);
@@ -128,12 +132,14 @@ fn parse_mysql_uri(uri: &str) -> Result<(String, String, String, String), BuildE
 // ─── SQL generation ──────────────────────────────────────────────────────────
 
 fn generate_sql(config: &Config) -> String {
-    let mut steam_uids = config.steam_uids.clone();
+    let rng = &mut rand::thread_rng();
+
+    let mut steam_uids = generate_steam_uids(STEAM_UID_COUNT, rng);
     steam_uids.push(config.my_steam_uid.clone());
 
     let accounts = generate_accounts(&steam_uids);
     let players = generate_players(&accounts);
-    let territories = generate_territories(&steam_uids);
+    let territories = generate_territories(&steam_uids, &config.my_steam_uid);
     let constructions = generate_constructions(&territories);
 
     format!(
@@ -178,6 +184,20 @@ fn random_timestamp() -> String {
     random.with_timezone(&Local).format("'%Y-%m-%d %H:%M:%S'").to_string()
 }
 
+fn generate_steam_uids(count: usize, rng: &mut impl Rng) -> Vec<String> {
+    // Steam64 IDs are 17 digits and always start with the universe +
+    // account-type prefix 7656119 for individual accounts. Mirrors the
+    // service's Faker::Steam.uid so both seeders share the same shape.
+    (0..count)
+        .map(|_| {
+            let suffix: String =
+                (0..10).map(|_| rng.gen_range(0..10).to_string()).collect();
+
+            format!("7656119{suffix}")
+        })
+        .collect()
+}
+
 fn generate_accounts(steam_uids: &[String]) -> Vec<Account> {
     steam_uids
         .iter()
@@ -214,53 +234,93 @@ fn generate_players(accounts: &[Account]) -> Vec<Player> {
         .collect()
 }
 
-fn generate_territories(steam_uids: &[String]) -> Vec<Territory> {
+fn generate_territories(steam_uids: &[String], my_steam_uid: &str) -> Vec<Territory> {
     let rng = &mut rand::thread_rng();
+
+    // Deterministic showcase, all owned by me, so /me always shows the full
+    // spread of payment/urgency states for UI testing. last_paid is a SQL
+    // expression: with the default 7-day territory_lifetime, paying "N days ago"
+    // leaves (7 - N) days until the next payment is due.
+    //
+    // (name, last_paid_at, flag_stolen)
+    let showcase: Vec<(&str, &str, bool)> = vec![
+        ("Paid Up Plains", "NOW()", false),                            // ~7 days out
+        ("Four Day Fields", "DATE_SUB(NOW(), INTERVAL 3 DAY)", false), // 4 days left
+        ("Two Day Township", "DATE_SUB(NOW(), INTERVAL 5 DAY)", false), // 2 days left
+        ("Tomorrow Territory", "DATE_SUB(NOW(), INTERVAL 6 DAY)", false), // due tomorrow
+        ("Due Today Domain", "DATE_SUB(NOW(), INTERVAL 7 DAY)", false), // due today
+        ("Overdue Oasis", "DATE_SUB(NOW(), INTERVAL 9 DAY)", false),   // 2 days overdue
+        ("Stolen Sanctuary", "DATE_SUB(NOW(), INTERVAL 5 DAY)", true), // stolen + 2 days
+    ];
+
+    let mut territories: Vec<Territory> = Vec::new();
+
+    for (name, last_paid, stolen) in showcase {
+        let id = territories.len() + 1;
+        territories.push(make_territory(
+            id, my_steam_uid, steam_uids, rng, name.to_string(), last_paid.to_string(), stolen,
+        ));
+    }
+
+    // One random territory per other player, so the world isn't only mine.
+    for owner in steam_uids.iter().filter(|uid| uid.as_str() != my_steam_uid) {
+        let id = territories.len() + 1;
+        let name = CompanyName().fake::<String>().replace('\'', "");
+        let stolen: bool = Boolean(50).fake();
+        territories.push(make_territory(
+            id, owner, steam_uids, rng, name, "NOW()".to_string(), stolen,
+        ));
+    }
+
+    territories
+}
+
+fn make_territory(
+    id: usize,
+    owner: &str,
+    steam_uids: &[String],
+    rng: &mut impl rand::Rng,
+    name: String,
+    last_paid_at: String,
+    stolen: bool,
+) -> Territory {
     let n = 5;
 
-    steam_uids
-        .iter()
-        .enumerate()
-        .map(|(i, owner)| {
-            let mut build_rights: Vec<String> =
-                steam_uids.choose_multiple(rng, n).cloned().collect();
-            build_rights.push(owner.clone());
-            build_rights.dedup();
+    let mut build_rights: Vec<String> = steam_uids.choose_multiple(rng, n).cloned().collect();
+    build_rights.push(owner.to_string());
+    build_rights.dedup();
 
-            let mut moderators: Vec<String> =
-                build_rights.choose_multiple(rng, n).cloned().collect();
-            moderators.push(owner.clone());
-            moderators.dedup();
+    let mut moderators: Vec<String> = build_rights.choose_multiple(rng, n).cloned().collect();
+    moderators.push(owner.to_string());
+    moderators.dedup();
 
-            let stolen: bool = Boolean(50).fake();
-            Territory {
-                id: i + 1,
-                esm_custom_id: if Boolean(50).fake() {
-                    format!("'{}'", Username().fake::<String>().replace('\'', ""))
-                } else {
-                    "NULL".into()
-                },
-                owner_uid: owner.clone(),
-                name: CompanyName().fake::<String>().replace('\'', ""),
-                position_x: (0.0..5000.0).fake(),
-                position_y: (0.0..5000.0).fake(),
-                position_z: (0.0..20.0).fake(),
-                radius: (0.0..100.0).fake(),
-                level: (0..7).fake(),
-                flag_texture: FLAG_TEXTURES.choose(rng).unwrap().to_string(),
-                flag_stolen: u8::from(stolen),
-                flag_stolen_by_uid: if stolen {
-                    format!("'{}'", steam_uids.choose(rng).unwrap())
-                } else {
-                    "NULL".into()
-                },
-                flag_stolen_at: if stolen { random_timestamp() } else { "NULL".into() },
-                xm8_protectionmoney_notified: 0,
-                build_rights: format!("{build_rights:?}"),
-                moderators: format!("{moderators:?}"),
-            }
-        })
-        .collect()
+    Territory {
+        id,
+        esm_custom_id: if Boolean(50).fake() {
+            format!("'{}'", Username().fake::<String>().replace('\'', ""))
+        } else {
+            "NULL".into()
+        },
+        owner_uid: owner.to_string(),
+        name,
+        position_x: (0.0..5000.0).fake(),
+        position_y: (0.0..5000.0).fake(),
+        position_z: (0.0..20.0).fake(),
+        radius: (0.0..100.0).fake(),
+        level: (1..7).fake(),
+        flag_texture: FLAG_TEXTURES.choose(rng).unwrap().to_string(),
+        flag_stolen: u8::from(stolen),
+        flag_stolen_by_uid: if stolen {
+            format!("'{}'", steam_uids.choose(rng).unwrap())
+        } else {
+            "NULL".into()
+        },
+        flag_stolen_at: if stolen { random_timestamp() } else { "NULL".into() },
+        last_paid_at,
+        xm8_protectionmoney_notified: 0,
+        build_rights: format!("{build_rights:?}"),
+        moderators: format!("{moderators:?}"),
+    }
 }
 
 fn generate_constructions(territories: &[Territory]) -> Vec<Construction> {
@@ -332,7 +392,7 @@ struct Territory {
     id: usize, esm_custom_id: String, owner_uid: String, name: String,
     position_x: f64, position_y: f64, position_z: f64, radius: f64,
     level: isize, flag_texture: String, flag_stolen: u8,
-    flag_stolen_by_uid: String, flag_stolen_at: String,
+    flag_stolen_by_uid: String, flag_stolen_at: String, last_paid_at: String,
     xm8_protectionmoney_notified: u8, build_rights: String, moderators: String,
 }
 
@@ -346,7 +406,7 @@ impl Display for Territory {
             pz = self.position_z, radius = self.radius, level = self.level,
             texture = self.flag_texture, stolen = self.flag_stolen,
             stolen_by = self.flag_stolen_by_uid, stolen_at = self.flag_stolen_at,
-            created = random_timestamp(), paid = "NOW()",
+            created = random_timestamp(), paid = self.last_paid_at,
             notified = self.xm8_protectionmoney_notified,
             rights = self.build_rights, mods = self.moderators,
             counter = 0, deleted = "NULL",

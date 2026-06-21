@@ -27,8 +27,7 @@ module ESM
       def start
         execution_interval = @config.connection_check
 
-        @task = Concurrent::TimerTask.execute(execution_interval:) { on_connect }
-        @task.add_observer(ErrorHandler.new)
+        @task = TimerTask.execute(execution_interval:) { on_connect }
 
         info!(status: :started, port: ESM.config.ports.connection_server)
       end

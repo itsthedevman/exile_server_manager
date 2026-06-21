@@ -78,9 +78,7 @@ module ESM
 
           check_for_player_info!(player)
 
-          # This takes an object
-          # Territory and Player need to be updated to match
-          player = ESM::Exile::Player.new(server: target_server, player: player.to_ostruct)
+          player = ESM::Exile::Player.new(server: target_server, player:)
           player.to_embed
         end
 
@@ -133,7 +131,7 @@ module ESM
               territory = ESM::Exile::Territory.new(server: target_server, territory: @response)
               reply(territory.to_embed)
             else
-              player = ESM::Exile::Player.new(server: target_server, player: @response)
+              player = ESM::Exile::Player.from_v1(server: target_server, player: @response)
               reply(player.to_embed)
             end
           end

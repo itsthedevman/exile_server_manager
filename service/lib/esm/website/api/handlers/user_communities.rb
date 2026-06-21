@@ -10,8 +10,6 @@ module ESM
         #
         class UserCommunities
           def self.call(id:, guild_ids:, check_for_perms: false, **)
-            info!(event: "user:communities", id: id, guild_ids: guild_ids, check_for_perms: check_for_perms)
-
             user = ESM::User.find_by(id: id)
             return if user.nil?
 
@@ -19,9 +17,11 @@ module ESM
               :id, :guild_id, :dashboard_access_role_ids,
               :community_name, :player_mode_enabled, :icon_url
             ).where(guild_id: guild_ids)
+
             return [] if communities.blank?
 
             discord_user = user.discord_user
+
             communities.filter_map do |community|
               server = community.discord_server
               next if server.nil?

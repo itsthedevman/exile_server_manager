@@ -10,8 +10,6 @@ module ESM
         #
         class Channel
           def self.call(id:, **filters)
-            info!(event: "channel", id: id, filters: filters)
-
             channel = ESM.discord_bot.channel(id)
             return if channel.nil?
             return unless ESM.discord_bot.channel_permission?(:send_messages, channel)

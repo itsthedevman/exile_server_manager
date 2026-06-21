@@ -111,6 +111,19 @@ class Loader
         except: ["/command/base.rb", "/command/base/", *Array(except)])
     end
 
+    # TODO: Docs
+    def load_rails_extensions(method: :require)
+      dir("core", "lib", "types", method:)
+
+      ActiveSupport::Inflector.inflections(:en) do |inflect|
+        inflect.acronym("ESM")
+        inflect.acronym("ID")
+        inflect.acronym("UID")
+      end
+
+      ActiveRecord::Type.register(:hash, HashType)
+    end
+
     private
 
     def resolve(component, segments)

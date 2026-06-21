@@ -192,14 +192,16 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
           new_locker_balance = locker_balance + won_amount
           if defined?(net_id)
-            locker = execute_sqf! <<~SQF
-              private _playerObject = objectFromNetID "#{net_id}";
-              if (isNull _playerObject) exitWith { nil };
+            # The in-game locker is set via a networked setVariable, which settles a
+            # frame or two after the command response returns. Poll until it lands.
+            wait_for {
+              execute_sqf! <<~SQF
+                private _playerObject = objectFromNetID "#{net_id}";
+                if (isNull _playerObject) exitWith { nil };
 
-              _playerObject getVariable ["ExileLocker", -1]
-            SQF
-
-            expect(locker).to eq(new_locker_balance)
+                _playerObject getVariable ["ExileLocker", -1]
+              SQF
+            }.to eq(new_locker_balance)
           end
 
           user.exile_account.reload
@@ -227,14 +229,16 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
           new_locker_balance = locker_balance - loss_amount
           if defined?(net_id)
-            locker = execute_sqf! <<~SQF
-              private _playerObject = objectFromNetID "#{net_id}";
-              if (isNull _playerObject) exitWith { nil };
+            # The in-game locker is set via a networked setVariable, which settles a
+            # frame or two after the command response returns. Poll until it lands.
+            wait_for {
+              execute_sqf! <<~SQF
+                private _playerObject = objectFromNetID "#{net_id}";
+                if (isNull _playerObject) exitWith { nil };
 
-              _playerObject getVariable ["ExileLocker", -1]
-            SQF
-
-            expect(locker).to eq(new_locker_balance)
+                _playerObject getVariable ["ExileLocker", -1]
+              SQF
+            }.to eq(new_locker_balance)
           end
 
           user.exile_account.reload

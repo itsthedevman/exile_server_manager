@@ -10,9 +10,7 @@ module ESM
         #
         class RequestsAccept
           def self.call(id:, **)
-            info!(event: "requests:accept", id: id)
-
-            request = ESM::Request.where(id: id).first
+            request = ESM::Request.find_by(id:)
             return if request.nil?
 
             request.respond(true)

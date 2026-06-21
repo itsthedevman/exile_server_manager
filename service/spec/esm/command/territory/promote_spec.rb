@@ -197,7 +197,7 @@ describe ESM::Command::Territory::Promote, category: "command" do
 
         it "raises Promote_MissingRights" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("#{second_user.mention} is not a member this territory")
+            expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
           end
         end
       end
@@ -209,7 +209,7 @@ describe ESM::Command::Territory::Promote, category: "command" do
 
         it "raises Promote_ExistingRights" do
           expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.data.description).to match("#{second_user.mention} is already a moderator")
+            expect(error.to_embed.description).to match("#{second_user.mention} is already a moderator")
           end
         end
       end

@@ -43,7 +43,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           }
 
           expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-            expect(error.data.description).to match(/hey #{user.mention}, #{steam_uid} has not registered with me yet/i)
+            expect(error.to_embed.description).to match(/hey #{user.mention}, #{steam_uid} has not registered with me yet/i)
           end
         end
       end
@@ -99,18 +99,14 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          expect(ESM.discord_bot.test_outbox.size).to eq(0)
-
-          # We don't create a request for this
+          # An admin adding themselves skips the request and goes straight to the
+          # server, so the synchronous V1 fake delivers the response during execute!.
           expect(ESM::Request.all.size).to eq(0)
 
-          # Reset so we can track the response
-          ESM.discord_bot.test_outbox.clear
-
-          # Wait for the server to respond
           ESM.discord_bot.test_outbox.await_size(1)
 
-          expect(ESM.discord_bot.test_outbox.size).to eq(1)
+          embed = ESM.discord_bot.test_outbox.first.content
+          expect(embed.description).to match(/you've been added to/i)
         end
       end
     end
@@ -280,7 +276,7 @@ describe ESM::Command::Territory::Add, category: "command" do
               }
             )
           }.to raise_error do |error|
-            expect(error.data.description).to match(/hey .+, .+ has not registered with me yet/i)
+            expect(error.to_embed.description).to match(/hey .+, .+ has not registered with me yet/i)
           end
         end
       end

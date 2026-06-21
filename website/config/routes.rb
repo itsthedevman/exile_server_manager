@@ -177,8 +177,14 @@ Rails.application.routes.draw do
       end
 
       # /servers/:server_id/territories
-      resources :territories, controller: "servers/territories", only: [:show], param: :territory_id
+      resources :territories, controller: "servers/territories", only: [:show], param: :territory_id do
+        # /servers/:server_id/territories/:territory_id/pay
+        post :pay
+      end
     end
+
+    # /server_commands
+    resources :server_commands, only: [:show]
   end
 
   # /tools

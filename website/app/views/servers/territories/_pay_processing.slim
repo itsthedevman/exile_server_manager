@@ -1,0 +1,8 @@
+/ In-flight state. The poll controller watches the command and renders the
+/ terminal result once it settles, then this element is replaced and the
+/ controller disconnects (clearing its timer).
+/ locals: command
+div id=server_command_id(command) data-controller="pay" data-pay-url-value=server_command_path(command)
+  button.btn.btn-sm.btn-warning.w-100[type="button" disabled]
+    span.spinner-border.spinner-border-sm.me-1[role="status" aria-hidden="true"]
+    | Paying…

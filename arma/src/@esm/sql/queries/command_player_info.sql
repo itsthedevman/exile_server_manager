@@ -17,22 +17,33 @@ SELECT
             SELECT
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
-                        'id', CONVERT(id, char),
-                        'esm_custom_id', esm_custom_id,
-                        'name', name,
-                        'last_paid_at', last_paid_at,
-                        'flag_texture', flag_texture,
-                        'flag_stolen', flag_stolen
+                        'id', CONVERT(t.id, char),
+                        'esm_custom_id', t.esm_custom_id,
+                        'name', t.name,
+                        'last_paid_at', t.last_paid_at,
+                        'flag_texture', t.flag_texture,
+                        'flag_stolen', t.flag_stolen,
+                        'level', t.level,
+                        'object_count', COALESCE(c.object_count, 0)
                     )
                 )
             FROM
-                territory
+                territory t
+                LEFT JOIN (
+                    SELECT
+                        territory_id,
+                        COUNT(*) as object_count
+                    FROM
+                        construction
+                    GROUP BY
+                        territory_id
+                ) c ON c.territory_id = t.id
             WHERE
-                deleted_at IS NULL
+                t.deleted_at IS NULL
                 AND (
-                    owner_uid = a.uid
-                    OR build_rights LIKE CONCAT('%', a.uid, '%')
-                    OR moderators LIKE CONCAT('%', a.uid, '%')
+                    t.owner_uid = a.uid
+                    OR t.build_rights LIKE CONCAT('%', a.uid, '%')
+                    OR t.moderators LIKE CONCAT('%', a.uid, '%')
                 )
         ),
         JSON_ARRAY()

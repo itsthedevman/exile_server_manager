@@ -6,6 +6,8 @@ I18n.load_path += Dir[Loader.core_path.join("config", "locales", "**", "*.yml")]
 I18n.reload!
 
 Rails.application.config.after_initialize do
+  Loader.load_rails_extensions(method: :load) # Must be before we load lib/esm/*
+
   Loader.file("core", "lib", "esm.rb", method: :load)
   Loader.dir("core", "lib", "extensions", method: :load)
   Loader.dir("core", "lib", "utilities", method: :load)

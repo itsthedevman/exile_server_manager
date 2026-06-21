@@ -10,9 +10,7 @@ module ESM
         #
         class CommunityUsers
           def self.call(id:, **)
-            info!(event: "community:users", id: id)
-
-            community = ESM::Community.find_by(id: id)
+            community = ESM::Community.find_by(id:)
             return if community.nil?
 
             users = community.discord_server&.users
