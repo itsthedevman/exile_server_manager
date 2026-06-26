@@ -14,6 +14,7 @@
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.acronym "ESM"
   inflect.acronym "XM8"
+  inflect.acronym "API"
   inflect.acronym "OAuth"
   inflect.acronym "UID"
   inflect.uncountable "legal"

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class ApiController < ApplicationController
+class APIController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   before_action :authenticate_api_token!
@@ -15,7 +15,7 @@ class ApiController < ApplicationController
       unauthorized!("Invalid or missing API token")
     end
 
-    @api_token = ESM::ApiToken.where(token: bearer_token, active: true).first
+    @api_token = ESM::APIToken.where(token: bearer_token, active: true).first
     unauthorized!("Invalid API token") if @api_token.nil?
   end
 

@@ -117,7 +117,6 @@ class Loader
 
       ActiveSupport::Inflector.inflections(:en) do |inflect|
         inflect.acronym("ESM")
-        inflect.acronym("ID")
         inflect.acronym("UID")
       end
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module Api
-  class UsersController < ApiController
+module API
+  class UsersController < APIController
     MAX_BATCH_SIZE = 100
 
     #

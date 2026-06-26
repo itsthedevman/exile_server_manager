@@ -1,4 +1,4 @@
-class NotificationsPublicID < ActiveRecord::Migration[7.2]
+class NotificationsPublicId < ActiveRecord::Migration[7.2]
   def up
     create_table :notifications_new do |t|
       t.uuid :public_id, null: false
