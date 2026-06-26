@@ -3,21 +3,15 @@
 </p>
 <h1 align="center">Exile Server Manager (ESM)</h1>
 
-> **Note**: This repo was renamed from `esm_bot` to `exile_server_manager` on
-> 12026-05-17. GitHub redirects old links, but please update bookmarks and
-> remotes when you get a chance.
+> **Note**: This repo was renamed from `esm_bot` to `exile_server_manager` on 12026-05-17. GitHub redirects old links, but please update bookmarks and remotes when you get a chance.
 
-ESM connects Discord communities to their Exile (Arma 3) servers. Players manage
-territories, check server status, and receive XM8 notifications even when
-they're not in-game. Server owners use Discord and a web dashboard to configure
-commands, mods, rewards, and notifications, and to monitor their servers.
+ESM connects Discord communities to their Exile (Arma 3) servers. Players manage territories, check server status, and receive XM8 notifications even when they're not in-game. Server owners use Discord and a web dashboard to configure commands, mods, rewards, and notifications, and to monitor their servers.
 
 ---
 
 ## Using ESM
 
-To install ESM on your server, follow the [Getting Started
-guide](https://esmbot.com/docs/getting_started). This repo is the source code.
+To install ESM on your server, follow the [Getting Started guide](https://esmbot.com/docs/getting_started). This repo is the source code.
 
 ### Links
 
@@ -28,9 +22,7 @@ guide](https://esmbot.com/docs/getting_started). This repo is the source code.
 
 ### Suggestions
 
-ESM is built for the Exile community, and most features started as community
-suggestions. Share yours in the `#suggestions` channel on
-[our Discord](https://esmbot.com/join).
+ESM is built for the Exile community, and most features started as community suggestions. Share yours in the `#suggestions` channel on [our Discord](https://esmbot.com/join).
 
 ---
 
@@ -47,20 +39,13 @@ suggestions. Share yours in the `#suggestions` channel on
 
 ### How they fit together
 
-The **service** is the Discord-facing process. It receives slash commands and
-events from Discord, talks to Arma 3 servers over an encrypted TCP connection,
-and persists state to PostgreSQL.
+The **service** is the Discord-facing process. It receives slash commands and events from Discord, talks to Arma 3 servers over an encrypted TCP connection, and persists state to PostgreSQL.
 
-The **arma** component lives on the Arma 3 server. The Rust extension handles
-the TCP connection back to the service and Exile database operations, while the
-SQF mod provides the in-game functions players trigger.
+The **arma** component lives on the Arma 3 server. The Rust extension handles the TCP connection back to the service and Exile database operations, while the SQF mod provides the in-game functions players trigger.
 
-The **website** is the configuration and management surface for server owners
-and players. It talks to the service over local HTTP, and uses Discord OAuth
-for user login.
+The **website** is the configuration and management surface for server owners and players. It talks to the service over local HTTP, and uses Discord OAuth for user login.
 
-The **core** library is shared Ruby code (models, business logic, helpers)
-loaded directly from `core/` by both the service and the website at boot.
+The **core** library is shared Ruby code (models, business logic, helpers) loaded directly from `core/` by both the service and the website at boot.
 
 ```
    Discord  ◄──────►  service  ◄──HTTP──►  website  ◄──HTTPS──  Browser
@@ -102,9 +87,7 @@ loaded directly from `core/` by both the service and the website at boot.
 
 #### Recommended: Nix
 
-The repo ships a unified Nix dev shell that provides Ruby, Rust, Node, database
-clients, and the Arma build helpers (`sqfvm`, `armake2`) for every
-subdirectory. From the repo root:
+The repo ships a unified Nix dev shell that provides Ruby, Rust, Node, database clients, and the Arma build helpers (`sqfvm`, `armake2`) for every subdirectory. From the repo root:
 
 ```bash
 direnv allow   # first time only
@@ -113,10 +96,8 @@ nix develop    # or just cd into a subdir; its .envrc delegates here
 
 #### Manual setup
 
-- Docker and Docker Compose (the root `docker-compose.yml` provides the shared
-  Postgres, MySQL/Exile, Redis, and NATS services on the `esm` network)
-- PostgreSQL 15+, Redis, and a NATS broker running locally or reachable (the
-  root compose covers all three if you'd rather not run them yourself)
+- Docker and Docker Compose (the root `docker-compose.yml` provides the shared Postgres, MySQL/Exile, Redis, and NATS services on the `esm` network)
+- PostgreSQL 15+, Redis, and a NATS broker running locally or reachable (the root compose covers all three if you'd rather not run them yourself)
 - `asdf` with the `ruby` and `nodejs` plugins, or system Ruby 3.3 and Node 18+
 - Rust toolchain via `rustup`, plus the Windows cross-compile targets:
   ```bash
@@ -168,18 +149,14 @@ arma/bin/setup   # Arma side: starts MySQL, imports Exile schema, builds extensi
 
 #### `service/` (Discord bot)
 
-Receives Discord slash commands and events, dispatches to Arma servers over an
-encrypted TCP connection, and persists state to the shared Postgres database.
+Receives Discord slash commands and events, dispatches to Arma servers over an encrypted TCP connection, and persists state to the shared Postgres database.
 
 **Core systems**
 
-- **Commands**: modular system with argument parsing, permission handling, and
-  validation
-- **Connection**: TCP-based encrypted transport to Arma 3 servers, with
-  promise-based request/response handling and automatic reconnection
+- **Commands**: modular system with argument parsing, permission handling, and validation
+- **Connection**: TCP-based encrypted transport to Arma 3 servers, with promise-based request/response handling and automatic reconnection
 - **Database**: PostgreSQL via Active Record (schema lives in `core/`)
-- **Events**: Discord events and Arma 3 events flow through a unified handler
-  pipeline
+- **Events**: Discord events and Arma 3 events flow through a unified handler pipeline
 
 **Start it:**
 
@@ -191,8 +168,7 @@ bin/dev
 
 #### `core/` (shared Ruby library)
 
-Shared models, business logic, helpers, locales, migrations, and seeds used by
-both the service and the website.
+Shared models, business logic, helpers, locales, migrations, and seeds used by both the service and the website.
 
 Changes here affect both apps, so run both RSpec suites before you commit.
 
@@ -202,10 +178,8 @@ The Rails 8 app at [esmbot.com](https://esmbot.com).
 
 **Features**
 
-- Server management: configure server settings, mods, rewards, and gambling
-  parameters
-- Command configuration: enable/disable commands, set cooldowns, manage
-  permissions
+- Server management: configure server settings, mods, rewards, and gambling parameters
+- Command configuration: enable/disable commands, set cooldowns, manage permissions
 - Notification system: custom Discord notifications with dynamic variables
 - XM8 routing: route in-game notifications to specific Discord channels
 - Account management: link Steam/Discord accounts, create aliases, set defaults
@@ -220,8 +194,7 @@ The Rails 8 app at [esmbot.com](https://esmbot.com).
 
 **Start it:**
 
-Authed views (profile, communities, etc.) call into the service, so start the
-bot too if you want to log in.
+Authed views (profile, communities, etc.) call into the service, so start the bot too if you want to log in.
 
 ```bash
 cd website
@@ -231,13 +204,9 @@ bin/dev          # rails server
 
 #### `arma/` (Rust extension + SQF mod)
 
-The Rust extension is loaded by the dedicated server and handles TCP
-communication with the service plus Exile database operations. The SQF mod
-provides the in-game functions and event hooks the extension dispatches to.
+The Rust extension is loaded by the dedicated server and handles TCP communication with the service plus Exile database operations. The SQF mod provides the in-game functions and event hooks the extension dispatches to.
 
-Builds run on Linux. Linux x64/x32 and Windows x64 are supported targets;
-Windows x32 still needs an actual Windows host (cross-compile from Linux is
-in flux).
+Builds run on Linux. Linux x64/x32 and Windows x64 are supported targets; Windows x32 still needs an actual Windows host (cross-compile from Linux is in flux).
 
 **Source layout:**
 
@@ -280,5 +249,4 @@ bin/dev    # runs cargo tests, then builds + starts the dedicated server
   <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
 </a>
 
-ESM is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike
-4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
+ESM is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
