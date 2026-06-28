@@ -16,6 +16,8 @@
       .d-flex.align-items-center.gap-2
         code.small.text-secondary-emphasis = current_territory.id
         = territory_flag_badge(current_territory)
+    .flex-shrink-0.align-self-end
+      = render "shared/data_freshness", at: Time.current
     button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
 
   .modal-body

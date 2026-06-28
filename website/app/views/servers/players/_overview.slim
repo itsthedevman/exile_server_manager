@@ -24,6 +24,8 @@
       div
         h2.mb-0 = current_player.name
         small.text-muted.font-monospace = current_player.uid
+      .ms-auto.align-self-start
+        = render "shared/data_freshness", at: Time.current
 
 .row.g-4.mb-4
   / Character status

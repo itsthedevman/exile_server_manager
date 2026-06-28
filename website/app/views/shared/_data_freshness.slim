@@ -1,0 +1,10 @@
+/ A live "Updated x ago" freshness cue for a server-fetched snapshot. The inner
+/ span starts as a server-rendered absolute time (the no-JS fallback); the
+/ relative-time controller swaps in the aging relative label and moves the exact
+/ time to a hover title.
+/ locals: at
+small.text-muted.d-inline-flex.align-items-center.gap-1
+  i.bi.bi-clock-history
+  span Updated
+  span[data-controller="relative-time" data-relative-time-datetime-value=at.iso8601]
+    = at.strftime("%b %-d, %Y %-I:%M %p")

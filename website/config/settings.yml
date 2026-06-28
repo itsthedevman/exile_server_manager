@@ -13,9 +13,13 @@ mod_version: "2.0.1"
 # Discord OAuth credentials for the "Sign in with Discord" flow. Required -
 # define real values in settings.local.yml (dev) or the production overlay.
 discord:
+  # OAuth Client ID
   id: ""
-  token: ""
+  # OAuth Client Secret
   secret: ""
+  # Bot Token
+  token: ""
+  # Channel webhook for logging
   logging_webhook_url: ""
 
 # Steam OAuth credentials for the "Sign in with Steam" flow. Required -
