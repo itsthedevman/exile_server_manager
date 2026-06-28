@@ -6,10 +6,12 @@ class CommunitiesController < AuthenticatedController
   def index
     server_communities = current_user.server_communities.load
     player_communities = current_user.player_communities.load
+    favorite_servers = current_user.favorite_servers.includes(:community)
 
     render locals: {
       server_communities:,
-      player_communities:
+      player_communities:,
+      favorite_servers:
     }
   end
 

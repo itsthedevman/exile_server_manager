@@ -8,6 +8,10 @@
   .row.g-5
     / Left Column - Communities
     .col-lg-8
+      - if Rails.env.development?
+        = render "communities/favorite_servers", favorite_servers:
+        hr.pb-4
+
       - if server_communities.size > 0 || player_communities.size > 0
         / Server Communities Section
         - if server_communities.size > 0
