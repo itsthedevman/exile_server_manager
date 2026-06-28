@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cd service && bundle exec rake db:new_migration name="$1"
