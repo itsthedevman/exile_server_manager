@@ -1,0 +1,10 @@
+/ Favorite toggle for a server. POST favorites it, DELETE removes it; the action
+/ responds with a turbo stream that swaps this span for its new state.
+/ locals: server, favorited
+span id="favorite_button_#{server.public_id}"
+  - if favorited
+    = button_to server_favorite_path(server.public_id), method: :delete, class: "btn btn-sm btn-warning", form_class: "d-inline", title: "Remove from favorites"
+      i.bi.bi-star-fill
+  - else
+    = button_to server_favorite_path(server.public_id), method: :post, class: "btn btn-sm btn-outline-secondary", form_class: "d-inline", title: "Add to favorites"
+      i.bi.bi-star

@@ -56,6 +56,8 @@
                   th.py-3.text-light.bg-transparent
                     i.bi.bi-globe.me-2
                     | Connection
+                  - if Rails.env.development?
+                    th.py-3.text-light.bg-transparent.text-end.pe-4 Actions
               tbody
                 - servers.each do |server|
                   tr.border-bottom.border-secondary
@@ -64,6 +66,15 @@
                     td.py-3.text-light = server.server_name
                     td.py-3
                       code.text-muted.fs-5 = "#{server.server_ip}:#{server.server_port}"
+                    - if Rails.env.development?
+                      td.py-3.text-end.pe-4
+                        - if user_signed_in?
+                          .d-inline-flex.gap-2
+                            = render "servers/favorites/button", server:, favorited: favorited_server_ids.include?(server.id)
+                            = link_to me_server_players_path(server.public_id), class: "btn btn-sm btn-outline-primary", title: "View your player"
+                              i.bi.bi-box-arrow-in-right
+                        - else
+                          = link_to "Log in", login_path, class: "btn btn-sm btn-outline-secondary"
 
     / Communities Results
     - if local_assigns[:communities]

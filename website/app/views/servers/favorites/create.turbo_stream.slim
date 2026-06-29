@@ -1,0 +1,5 @@
+/ Response to POST /servers/:server_id/favorite. Swap the toggle to its
+/ favorited state in place.
+/ locals: current_server
+= turbo_stream.replace "favorite_button_#{current_server.public_id}" do
+  = render "servers/favorites/button", server: current_server, favorited: true

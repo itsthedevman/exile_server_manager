@@ -25,7 +25,7 @@ class DiscoversController < ApplicationController
       .order(:community_id)
 
     servers = ESM::Server
-      .select(:server_id, :server_name, :server_ip, :server_port)
+      .select(:id, :public_id, :server_id, :server_name, :server_ip, :server_port)
       .joins(:community)
       .where(server_visibility: :public)
       .where(
@@ -42,6 +42,8 @@ class DiscoversController < ApplicationController
       .distinct
       .order(:server_id)
 
-    render locals: {communities:, servers:}
+    favorited_server_ids = (current_user&.favorite_servers&.pluck(:id) || []).to_set
+
+    render locals: {communities:, servers:, favorited_server_ids:}
   end
 end

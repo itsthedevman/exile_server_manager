@@ -181,6 +181,9 @@ Rails.application.routes.draw do
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
       end
+
+      # /servers/:server_id/favorite
+      resource :favorite, only: [:create, :destroy], controller: "servers/favorites"
     end
 
     # /server_commands
