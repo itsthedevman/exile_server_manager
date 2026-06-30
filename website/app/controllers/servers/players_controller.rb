@@ -11,6 +11,15 @@ module Servers
       }
     end
 
+    # Compact glance for the My Player card on the server hub. Loaded lazily into
+    # a turbo frame so the hub lands instantly and a slow Arma read never blocks it.
+    def summary
+      render locals: {
+        current_server:,
+        current_player:
+      }
+    end
+
     private
 
     def current_server

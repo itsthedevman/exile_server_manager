@@ -70,7 +70,7 @@ Rails.application.routes.draw do
     resources :notifications, param: :notification_id, except: [:show]
 
     # /communities/:community_id/servers
-    resources :servers, param: :server_id do
+    resources :servers, param: :server_id, controller: "communities/servers" do
       collection do
         get :available
       end
@@ -166,13 +166,16 @@ Rails.application.routes.draw do
   end
 
   if Rails.env.development?
-    # /servers
-    resources :servers, only: [] do
+    # /servers/:id (the server hub — role-adaptive dashboard)
+    resources :servers, only: [:show] do
       # /servers/:server_id/players
       resources :players, controller: "servers/players", only: [], param: :user_id do
         collection do
           # /servers/:server_id/players/me
           get :me
+
+          # /servers/:server_id/players/summary — lazy My Player card on the hub
+          get :summary
         end
       end
 

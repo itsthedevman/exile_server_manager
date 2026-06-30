@@ -1,7 +1,6 @@
-/ Player dashboard: servers the user pinned for one-click access to their player
-/ page. Cards are single-click nav, like the community cards below; the
-/ favorite/unfavorite toggle lives on the destination, not here. Links to /me
-/ for now — repoint to the server hub (servers#show) once it exists.
+/ Player dashboard: servers the user pinned for one-click access to their hub.
+/ Cards are single-click nav, like the community cards below; the
+/ favorite/unfavorite toggle lives on the destination (the hub sidebar), not here.
 / locals: favorite_servers
 .mb-5
   .d-flex.align-items-center.justify-content-between.mb-2
@@ -19,7 +18,7 @@
     .row.g-3
       - favorite_servers.each do |server|
         .col-12
-          = link_to me_server_players_path(server.public_id), class: "text-decoration-none d-block"
+          = link_to server_path(server.public_id), class: "text-decoration-none d-block"
             .card.bg-dark.border-secondary.community-nav-card
               .card-body.d-flex.align-items-center.py-3
                 / Server icon

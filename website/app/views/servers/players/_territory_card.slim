@@ -2,7 +2,7 @@
 / payment is due, which is why due cards live in their own row (so a panel's
 / height never stretches an unrelated neighbor).
 / locals: territory, current_server, locker
-.col-12.col-md-6.col-lg-4
+.col-12.col-xl-6
   .card.h-100.territory-card
     = link_to server_territory_path(current_server.public_id, territory.id), class: "card-body text-decoration-none text-reset d-block", data: {turbo_frame: "territory_detail_frame"}
       .d-flex.align-items-center.gap-3

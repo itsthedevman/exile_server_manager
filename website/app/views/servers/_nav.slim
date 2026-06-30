@@ -1,0 +1,69 @@
+/ Server sidebar: back-link, server header with favorite toggle, and the list of
+/ server surfaces. Admin "Manage Server" door shows only to community managers.
+/ locals: current_server
+#server-sidebar
+  / Back navigation & server header
+  .card.mb-4
+    .card-body
+      .d-flex.align-items-center.justify-content-between.mb-3
+        = link_to communities_path, class: "d-flex align-items-center text-decoration-none text-muted"
+          i.bi.bi-arrow-left.me-2
+          span Back to Communities
+        = render "servers/favorites/button", server: current_server, favorited: server_favorited?(current_server)
+
+      .d-flex.align-items-start.gap-3
+        .flex-shrink-0
+          - if current_server.connected?
+            .bg-success.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+              i.bi.bi-hdd-network.text-success.fs-4
+          - else
+            .bg-secondary.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+              i.bi.bi-hdd-network.text-secondary.fs-4
+
+        .flex-grow-1.min-w-0
+          h5.mb-1.fw-bold.text-truncate = current_server.server_name
+          .text-muted.font-monospace.small.text-truncate = current_server.server_id
+
+      .d-flex.align-items-center.gap-1.mt-3
+        - if current_server.connected?
+          .server-status.server-status--online
+          .text-muted
+            small 
+              | Online
+              - if current_server.server_start_time?
+                |< for #{current_server.uptime}
+        - else
+          .server-status.server-status--offline
+          small.text-muted Offline
+
+  / Server navigation
+  .card.mb-4
+    .list-group.list-group-flush
+      = link_to server_path(current_server.public_id),
+        class: class_names( \
+          "list-group-item list-group-item-action d-flex align-items-center py-3",
+          "bg-primary bg-opacity-25": controller_name == "servers" && action_name == "show" \
+        )
+
+        i.bi.bi-grid-1x2.me-3
+        span.fw-medium Dashboard
+
+      = link_to me_server_players_path(current_server.public_id),
+        class: class_names( \
+          "list-group-item list-group-item-action d-flex align-items-center py-3",
+          "bg-primary bg-opacity-25": controller_name == "players" && action_name == "me" \
+        )
+
+        i.bi.bi-person.me-3
+        span.fw-medium My Player
+
+  - if server_manageable?(current_server)
+    / Admin door — leaves the player surface for the community management UI
+    .card
+      .list-group.list-group-flush
+        = link_to edit_community_server_path(current_server.community, current_server.public_id),
+          class: "list-group-item list-group-item-action d-flex align-items-center py-3"
+
+          i.bi.bi-gear.me-3
+          span.fw-medium Manage Server
+          i.bi.bi-box-arrow-up-right.ms-auto.text-muted.small

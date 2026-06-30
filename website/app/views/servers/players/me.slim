@@ -1,30 +1,10 @@
 - content_for :title, "My Player on #{current_server.server_name}"
 
-.container.window
+= render "servers/container", current_server: do
   / Page header
-  .d-flex.align-items-center.justify-content-between.mb-4.flex-wrap.gap-3
-    div
-      h1.mb-1 My Player
-      .d-flex.align-items-center.gap-2.flex-wrap.text-muted
-        - if current_server.connected?
-          .server-status.server-status--online
-        - elsif current_server.disconnected_at&.> 1.hour.ago
-          .server-status.server-status--warning
-        - else
-          .server-status.server-status--offline
-        .text-light.fw-medium = current_server.server_name
-        .mx-1 -
-        div
-          = current_server.community.community_name
-        - if current_server.connected? && current_server.server_start_time?
-          .mx-1 -
-          div
-            i.bi.bi-clock-history.me-1
-            | Online for #{current_server.uptime}
-    button.btn.btn-outline-secondary.btn-sm[type="button"]
-      i.bi.bi-arrow-left-right.me-2
-      | Switch server
-
+  .mb-4
+    h1.mb-1 My Player
+    
   - if current_player
     #player_overview
       = render "servers/players/overview", current_server:, current_player:
