@@ -23,6 +23,12 @@ footer {
     margin-top: auto; // Sticky footer magic
 }
 
+// Bootstrap 5 ships no min-width utility, but flex children need min-width:0 for
+// text-truncate to actually clip. The class is used across the app's cards.
+.min-w-0 {
+    min-width: 0;
+}
+
 code {
     background: $esm-warm-gray-800;
     color: lighten($esm-warm-gray-100, 10%);

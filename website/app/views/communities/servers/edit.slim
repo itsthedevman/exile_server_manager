@@ -54,8 +54,8 @@
                 i.bi.bi-key.text-warning.me-2
                 | esm.key
 
-  = render "servers/version_picker", **local_assigns
-  = render "servers/destroy_modal", **local_assigns
+  = render "communities/servers/version_picker", **local_assigns
+  = render "communities/servers/destroy_modal", **local_assigns
 
   = content_tag :div, data: { controller: "server-edit",
     server_edit_server_id_check_path_value: \
@@ -68,17 +68,17 @@
       method: :patch,
       data: {server_edit_target: "form"} do |f|
 
-      = render "servers/server_info", f:, **local_assigns
-      = render "servers/server_mods", f:, **local_assigns
-      = render "servers/server_rewards", f:, **local_assigns
+      = render "communities/servers/server_info", f:, **local_assigns
+      = render "communities/servers/server_mods", f:, **local_assigns
+      = render "communities/servers/server_rewards", f:, **local_assigns
 
       = f.fields_for :server_settings, server.server_setting do |f|
-        = render "servers/server_settings", f:, **local_assigns
+        = render "communities/servers/server_settings", f:, **local_assigns
 
         - if server.ui_v2?
-          = render "servers/server_config", f:, **local_assigns
+          = render "communities/servers/server_config", f:, **local_assigns
         - else
-          = render "servers/server_config_v1", f:, **local_assigns
+          = render "communities/servers/server_config_v1", f:, **local_assigns
 
       / Final Action Footer - for power users who went through everything
       .d-flex.flex-column.flex-lg-row.justify-content-lg-between.align-items-lg-center.pt-4.mt-4.border-top.gap-3.gap-lg-0

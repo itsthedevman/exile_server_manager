@@ -17,8 +17,10 @@ module ApplicationHelper
     Digest::SHA256.hexdigest(data)[0..24]
   end
 
-  def poptabs(amount)
-    safe_join([number_with_delimiter(amount), poptab_icon(classes: %w[ms-2 mb-2 align-text-bottom])])
+  def poptabs(amount, inline: false)
+    icon_classes = inline ? %w[poptab-icon-inline] : %w[ms-2 mb-2 align-text-bottom]
+
+    safe_join([number_with_delimiter(amount), poptab_icon(classes: icon_classes)])
   end
 
   def poptab_icon(classes: [])

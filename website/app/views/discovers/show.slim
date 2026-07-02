@@ -1,9 +1,9 @@
 .container.window
   / Hero Section
   .text-center.mb-5
-    h1.mb-3.text-primary Discover Communities & Servers
+    h1.mb-3.text-primary Discover Servers & Communities
     p.lead.mb-4
-      | Looking for a community or server but don't know their ID? Search by Discord server name, Discord server ID, Arma 3 server name, or IP address.
+      | Looking for a server or community but don't know their ID? Search by Arma 3 server name, IP address, Discord server name, or Discord server ID.
 
   / Search Section
   .card.bg-dark.border-secondary.mb-5
@@ -28,9 +28,57 @@
 
   / Results Section
   - if local_assigns[:communities] || local_assigns[:servers]
+    / Servers Results
+    - if local_assigns[:servers]
+      .card.bg-dark.border-secondary.mb-4
+        .card-header.border-secondary.d-flex.align-items-center.justify-content-between
+          h4.mb-0.text-light
+            i.bi.bi-hdd-network.text-success.me-2
+            | Arma 3 Servers
+          span.badge.bg-success = servers.count
+
+        - if servers.empty?
+          .card-body.text-center.py-5
+            i.bi.bi-hdd-network.text-muted.display-4.mb-3
+            h5.text-muted.mb-3 No Servers Found
+            p.text-muted.mb-0 Try searching by IP address or different server name
+        - else
+          .table-responsive
+            table.table.table-hover.mb-0
+              thead
+                tr.border-bottom.border-secondary
+                  th.w-25.py-3.text-light.bg-transparent.ps-4
+                    i.bi.bi-server.me-2
+                    | Server ID
+                  th.py-3.text-light.bg-transparent
+                    i.bi.bi-tag.me-2
+                    | Name
+                  th.py-3.text-light.bg-transparent
+                    i.bi.bi-globe.me-2
+                    | Connection
+                  - if Rails.env.development?
+                    th.py-3.text-light.bg-transparent.text-end.pe-4 Actions
+              tbody
+                - servers.each do |server|
+                  tr.border-bottom.border-secondary
+                    td.py-3.ps-4
+                      code.text-warning.fw-bold.fs-5 = server.server_id
+                    td.py-3.text-light = server.server_name
+                    td.py-3
+                      code.text-muted.fs-5 = "#{server.server_ip}:#{server.server_port}"
+                    - if Rails.env.development?
+                      td.py-3.text-end.pe-4
+                        - if user_signed_in?
+                          .d-inline-flex.gap-2
+                            = render "servers/favorites/button", server:, favorited: favorited_server_ids.include?(server.id)
+                            = link_to me_server_players_path(server.public_id), class: "btn btn-sm btn-outline-primary", title: "View your player"
+                              i.bi.bi-box-arrow-in-right
+                        - else
+                          = link_to "Log in", login_path, class: "btn btn-sm btn-outline-secondary"
+
     / Communities Results
     - if local_assigns[:communities]
-      .card.bg-dark.border-secondary.mb-4
+      .card.bg-dark.border-secondary
         .card-header.border-secondary.d-flex.align-items-center.justify-content-between
           h4.mb-0.text-light
             i.bi.bi-discord.text-primary.me-2
@@ -60,43 +108,6 @@
                       code.text-info.fw-bold.fs-5 = community.community_id
                     td.py-3.text-light = community.community_name
 
-    / Servers Results
-    - if local_assigns[:servers]
-      .card.bg-dark.border-secondary.mb-4
-        .card-header.border-secondary.d-flex.align-items-center.justify-content-between
-          h4.mb-0.text-light
-            i.bi.bi-hdd-network.text-success.me-2
-            | Arma 3 Servers
-          span.badge.bg-success = servers.count
-
-        - if servers.empty?
-          .card-body.text-center.py-5
-            i.bi.bi-hdd-network.text-muted.display-4.mb-3
-            h5.text-muted.mb-3 No Servers Found
-            p.text-muted.mb-0 Try searching by IP address or different server name
-        - else
-          .table-responsive
-            table.table.table-hover.mb-0
-              thead
-                tr.border-bottom.border-secondary
-                  th.w-25.py-3.text-light.bg-transparent.ps-4
-                    i.bi.bi-server.me-2
-                    | Server ID
-                  th.py-3.text-light.bg-transparent
-                    i.bi.bi-tag.me-2
-                    | Name
-                  th.py-3.text-light.bg-transparent
-                    i.bi.bi-globe.me-2
-                    | Connection
-              tbody
-                - servers.each do |server|
-                  tr.border-bottom.border-secondary
-                    td.py-3.ps-4
-                      code.text-warning.fw-bold.fs-5 = server.server_id
-                    td.py-3.text-light = server.server_name
-                    td.py-3
-                      code.text-muted.fs-5 = "#{server.server_ip}:#{server.server_port}"
-
   / Help Section
   .card.bg-primary.bg-opacity-10.border-primary.mt-5
     .card-header.border-primary
@@ -105,22 +116,6 @@
         | Search Tips & Examples
     .card-body
       .row.g-4
-        .col-lg-6
-          h6.text-primary.mb-3
-            i.bi.bi-discord.me-2
-            | Discord Communities
-          .card.bg-secondary.bg-opacity-10.border-secondary
-            .card-body
-              h6.text-light.mb-2 Search by:
-              ul.small.text-muted.mb-3
-                li Discord server name: <strong>"Exile Servers"</strong>
-                li Discord server ID: <strong>"123456789012345678"</strong>
-
-              h6.text-light.mb-2 Results show:
-              ul.small.text-muted.mb-0
-                li Community ID for use in commands
-                li Full Discord server name
-
         .col-lg-6
           h6.text-success.mb-3
             i.bi.bi-hdd-network.me-2
@@ -136,6 +131,22 @@
               ul.small.text-muted.mb-0
                 li Server ID for use in commands
                 li Connection IP and display name
+
+        .col-lg-6
+          h6.text-primary.mb-3
+            i.bi.bi-discord.me-2
+            | Discord Communities
+          .card.bg-secondary.bg-opacity-10.border-secondary
+            .card-body
+              h6.text-light.mb-2 Search by:
+              ul.small.text-muted.mb-3
+                li Discord server name: <strong>"Exile Servers"</strong>
+                li Discord server ID: <strong>"123456789012345678"</strong>
+
+              h6.text-light.mb-2 Results show:
+              ul.small.text-muted.mb-0
+                li Community ID for use in commands
+                li Full Discord server name
 
       .alert.alert-info.border-info.bg-info.bg-opacity-10.mt-4.mb-0
         .d-flex.align-items-center

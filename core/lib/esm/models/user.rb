@@ -54,6 +54,9 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy
 
+    has_many :server_favorites, -> { order(:created_at) }, class_name: "UserServerFavorite", dependent: :destroy
+    has_many :favorite_servers, through: :server_favorites, source: :server
+
     has_many :user_steam_uid_history, dependent: :nullify
     has_one :user_steam_data, -> { order(:user_id) }, dependent: :destroy
 
@@ -76,7 +79,7 @@ module ESM
 
     scope(:by_discord_id, lambda do |id|
       id = id.to_s unless id.is_a?(String)
-      order(:discord_id).where(discord_id: id) 
+      order(:discord_id).where(discord_id: id)
     end)
 
     # =============================================================================

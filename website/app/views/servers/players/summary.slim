@@ -1,0 +1,4 @@
+/ Turbo frame target for the My Player card on the server hub.
+/ locals: current_server, current_player
+= turbo_frame_tag "player_summary"
+  = render "servers/players/summary", current_server:, current_player:

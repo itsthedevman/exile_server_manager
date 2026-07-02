@@ -98,17 +98,18 @@
           | Scoreboard
 
       .card-body
-        .row.g-3.text-center.mt-1
-          .col-3
-            .text-muted.small.text-uppercase Respect
-            .fs-4.fw-bold = number_with_delimiter(current_player.score)
-          .col-3
+        .text-center.mb-3
+          .text-muted.small.text-uppercase Respect
+          .fs-4.fw-bold = number_with_delimiter(current_player.score)
+
+        .row.g-3.text-center
+          .col-4
             .text-muted.small.text-uppercase Kills
             .fs-4.fw-bold.text-success = number_with_delimiter(current_player.kills)
-          .col-3
+          .col-4
             .text-muted.small.text-uppercase Deaths
             .fs-4.fw-bold.text-danger = number_with_delimiter(current_player.deaths)
-          .col-3
+          .col-4
             .text-muted.small.text-uppercase K/D
             .fs-4.fw-bold = current_player.kd_ratio
 
@@ -119,11 +120,11 @@
           i.bi.bi-file-person.text-info.me-2
           | About
 
-      .card-body
-        .d-flex.justify-content-between.mb-2
+      .card-body.d-flex.flex-column.justify-content-between
+        .d-flex.justify-content-between
           span.text-muted.small.text-uppercase Member since
           span.fw-medium = ESM::Time.parse(current_player.first_connect_at).strftime("%b %-d, %Y")
-        .d-flex.justify-content-between.mb-2
+        .d-flex.justify-content-between
           span.text-muted.small.text-uppercase Last seen
           - if current_player.last_disconnect_at
             span.fw-medium = "#{ESM::Time.distance_of_time_in_words(ESM::Time.parse(current_player.last_disconnect_at), precise: false)} ago"

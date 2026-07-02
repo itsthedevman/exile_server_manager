@@ -35,6 +35,10 @@ Rails.application.config.to_prepare do
 
   ESM::Command.load
 
+  # Website-native ESM::Service::API transport facade. Loaded here (not via the
+  # autoloader) so it shares core's reload-once lifetime; the re-opens below call it.
+  Loader.dir("website", "lib", "esm", method: :load)
+
   # Website-side overrides that re-open core's AR classes to add
   # Discord/Rails-aware methods.
   Loader.dir("website", "app", "models", "esm", method: :load)

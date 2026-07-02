@@ -1,6 +1,16 @@
 # frozen_string_literal: true
 
 module ServersHelper
+  # TODO: Docs
+  def server_manageable?(server)
+    server.community.modifiable_by?(current_user)
+  end
+
+  # TODO: Docs
+  def server_favorited?(server)
+    current_user.server_favorites.exists?(server_id: server.id)
+  end
+
   def render_setting(key, settings, &block)
     has_key = settings.has_key?(key)
     value = settings[key]

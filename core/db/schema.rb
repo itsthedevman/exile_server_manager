@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_12_032908) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_224524) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -387,6 +387,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_032908) do
     t.index ["public_id"], name: "index_user_notification_routes_on_public_id"
   end
 
+  create_table "user_server_favorites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "public_id", null: false
+    t.bigint "server_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["public_id"], name: "index_user_server_favorites_on_public_id", unique: true
+    t.index ["server_id"], name: "index_user_server_favorites_on_server_id"
+    t.index ["user_id", "server_id"], name: "index_user_server_favorites_on_user_id_and_server_id", unique: true
+  end
+
   create_table "user_steam_data", force: :cascade do |t|
     t.text "avatar"
     t.boolean "community_banned", default: false
@@ -456,6 +467,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_032908) do
   add_foreign_key "user_notification_preferences", "users", on_delete: :cascade
   add_foreign_key "user_notification_routes", "communities", column: "destination_community_id", on_delete: :cascade
   add_foreign_key "user_notification_routes", "users", on_delete: :cascade
+  add_foreign_key "user_server_favorites", "servers", on_delete: :cascade
+  add_foreign_key "user_server_favorites", "users", on_delete: :cascade
   add_foreign_key "user_steam_data", "users", on_delete: :cascade
   add_foreign_key "user_steam_uid_histories", "users", on_delete: :nullify
 end

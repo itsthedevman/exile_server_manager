@@ -1,0 +1,49 @@
+/ Player dashboard: servers the user pinned for one-click access to their hub.
+/ Cards are single-click nav, like the community cards below; the
+/ favorite/unfavorite toggle lives on the destination (the hub sidebar), not here.
+/ locals: favorite_servers
+.mb-5
+  .d-flex.align-items-center.justify-content-between.mb-2
+    h3.mb-0
+      i.bi.bi-star-fill.text-warning.me-2
+      | Favorite Servers
+    = link_to discover_path, class: "btn btn-sm btn-outline-primary"
+      i.bi.bi-plus-lg.me-1
+      | Add server
+
+  p.text-muted.small.mb-4
+    | Jump straight into the servers you play.
+
+  - if favorite_servers.any?
+    .row.g-3
+      - favorite_servers.each do |server|
+        .col-12
+          = link_to server_path(server.public_id), class: "text-decoration-none d-block"
+            .card.bg-dark.border-secondary.community-nav-card
+              .card-body.d-flex.align-items-center.py-3
+                / Server icon
+                .me-3.flex-shrink-0
+                  .bg-warning.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                    i.bi.bi-hdd-network.text-warning.fs-4
+
+                / Server info
+                .flex-grow-1.min-w-0
+                  h5.mb-1.text-light.text-truncate = server.server_name
+                  .text-muted.font-monospace.small.mb-2 = "#{server.server_id} · #{server.community.community_name}"
+                  .d-flex.align-items-center
+                    - if server.connected?
+                      .server-status.server-status--online.me-1
+                      small.text-muted Online
+                    - else
+                      .server-status.server-status--offline.me-1
+                      small.text-muted Offline
+
+                / Arrow indicator
+                .ms-3.flex-shrink-0
+                  i.bi.bi-chevron-right.text-muted
+
+  - else
+    .card.bg-dark.border-secondary
+      .card-body.text-center.py-4
+        i.bi.bi-star.text-muted.fs-3.d-block.mb-2
+        p.text-muted.mb-0 No favorite servers yet. Click "Add server" above to find one on Discover.

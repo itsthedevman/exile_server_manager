@@ -1,0 +1,9 @@
+/ Two-column shell for the server hub: persistent server sidebar + page body.
+/ Mirrors communities/_container so the server surface reads like the community one.
+/ locals: current_server
+.container.window
+  .row
+    .col-12.col-lg-3.order-lg-first.mb-4.mb-lg-0.pb-3.pb-lg-0.border-bottom.border-bottom-lg-0.border-secondary
+      = render "servers/nav", **local_assigns
+    .col-12.col-lg-9
+      = yield

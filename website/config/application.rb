@@ -29,6 +29,17 @@ module EsmWebsiteV2
     # Ignore omniauth directory since we manually require the vendored strategy
     config.autoload_lib(ignore: %w[assets tasks omniauth])
 
+    # The whole ESM namespace is loaded once by config/initializers/esm.rb: core
+    # (re-opened by app/models/esm/*) plus the website-native ESM::Service::API in
+    # lib/esm. Keep every ESM-defining path out of the reloadable autoloader. If
+    # Zeitwerk owns the ESM namespace, a dev reload unloads it (taking all of core
+    # with it), so the next request NameErrors until a full reboot. Ignored here +
+    # loaded manually there = ESM survives reloads while the rest of the app still
+    # hot-reloads.
+    %w[app/models/esm.rb app/models/esm lib/esm].each do |path|
+      Rails.autoloaders.main.ignore(File.expand_path("../#{path}", __dir__))
+    end
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
