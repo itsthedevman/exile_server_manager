@@ -20,13 +20,19 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 # The primary DB schema and migrations live in core/, shared with the
-# service-side standalone_migrations setup. Paths resolve relative to
-# `Rails.root/db/`, so `../../core/db/...` escapes website/ to reach
-# core/db. In production these are set directly on `primary` (not via
-# this anchor) to avoid cascading into the cache/queue/cable secondaries.
+# service-side standalone_migrations setup. These two keys resolve against
+# DIFFERENT bases, so they take different values (Rails, not us):
+#   * schema_dump is always File.join(Rails.root/db, value), and rejects
+#     absolute paths (they get concatenated onto db/). So it must be a relative
+#     climb out of website/db: `../../core/db/schema.rb`.
+#   * migrations_paths resolves against Rails.root, so ESM_CORE_PATH (exported
+#     by the deploy and dev's direnv) points straight at core/. The relative
+#     fallback keeps tooling working when the env is unset.
+# The production primary uses this same anchor; only the cache/queue/cable
+# secondaries keep their own website-local migrate dirs.
 core_paths: &core_paths
   schema_dump: ../../core/db/schema.rb
-  migrations_paths: ../../core/db/migrate
+  migrations_paths: <%= ENV.fetch("ESM_CORE_PATH", "../core") %>/db/migrate
 
 development:
   <<: [*default, *core_paths]
