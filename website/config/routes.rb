@@ -187,6 +187,9 @@ Rails.application.routes.draw do
 
       # /servers/:server_id/favorite
       resource :favorite, only: [:create, :destroy], controller: "servers/favorites"
+
+      # /servers/:server_id/gamble
+      resource :gamble, only: [:create], controller: "servers/gambling"
     end
 
     # /server_commands

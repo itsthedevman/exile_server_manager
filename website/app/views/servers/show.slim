@@ -8,7 +8,7 @@
 
   / Feature cards — each gates on its command being enabled for the community
   .row.g-4
-    / My Player — basic glance, click through to the full player page
+    / My Player
     .col-12.col-xl-6
       .card.h-100
         .card-header.d-flex.align-items-center.justify-content-between
@@ -23,3 +23,7 @@
           .card-body.text-center.text-muted.py-5
             .spinner-border.spinner-border-sm.me-2[role="status"]
             | Loading your player...
+
+    / Gamble
+    - if command_enabled?(current_server.community, "gamble")
+      = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)

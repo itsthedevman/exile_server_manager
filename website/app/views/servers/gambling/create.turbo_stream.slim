@@ -1,0 +1,12 @@
+= turbo_stream.replace "gamble_result" do
+  = render "servers/gambling/result", result:
+
+= turbo_stream.replace "gamble_stats" do
+  = render "servers/gambling/stats", gamble_stat:
+
+/ Keep the My Player card's locker in sync without re-querying Arma: the bet
+/ result already carries the authoritative post-bet balance. No-op if the card
+/ hasn't lazily loaded yet.
+- if result.error.blank?
+  = turbo_stream.update "player_locker" do
+    = poptabs(result.locker_after, inline: true)

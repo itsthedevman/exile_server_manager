@@ -11,6 +11,11 @@ module ServersHelper
     current_user.server_favorites.exists?(server_id: server.id)
   end
 
+  # TODO: Docs
+  def command_enabled?(community, command_name)
+    community.command_configurations.exists?(command_name:, enabled: true)
+  end
+
   def render_setting(key, settings, &block)
     has_key = settings.has_key?(key)
     value = settings[key]

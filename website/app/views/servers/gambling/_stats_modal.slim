@@ -1,0 +1,34 @@
+/ locals: current_server, gamble_stat
+#gamble-stats-modal.modal.fade tabindex="-1" aria-hidden="true"
+  .modal-dialog.modal-dialog-centered.modal-lg
+    .modal-content
+      .modal-header
+        h5.modal-title.mb-0
+          i.bi.bi-dice-5.text-warning.me-2
+          | Gamble stats
+        button.btn-close type="button" data-bs-dismiss="modal" aria-label="Close"
+
+      .modal-body
+        h6.text-uppercase.text-muted.small.mb-3
+          i.bi.bi-person-lines-fill.me-2
+          | Your stats
+        .row.g-3.mb-4
+          - gamble_personal_tiles(gamble_stat).each do |tile|
+            .col-6.col-md-3
+              .border.rounded.p-3.text-center.h-100.bg-body-tertiary
+                i class=["bi", tile.icon, tile.accent, "fs-5 d-block mb-1"]
+                .small.text-muted.text-uppercase = tile.label
+                .fw-bold = tile.value
+
+        h6.text-uppercase.text-muted.small.mb-3
+          i.bi.bi-trophy-fill.me-2
+          | Server leaderboard
+        .list-group.list-group-flush
+          - gamble_leaderboard(current_server).each do |row|
+            .list-group-item.d-flex.align-items-center.justify-content-between.gap-3.px-0.bg-transparent
+              span.d-flex.align-items-center.gap-2.text-muted.small
+                i class=["bi", row.icon]
+                = row.label
+              .text-end
+                .fw-bold.lh-1 = row.value
+                .small.text-muted.text-truncate = row.holder
