@@ -101,7 +101,8 @@ module ESM
             value =
               if value.is_a?(Hash)
                 value.join_map("\n") do |key, value|
-                  "**#{key.to_s.humanize(keep_id_suffix: true)}:** #{value}"
+                  key = key.to_s.humanize(keep_id_suffix: true).gsub(/\bid\b/i, "ID")
+                  "**#{key}:** #{value}"
                 end
               else
                 value.to_s
