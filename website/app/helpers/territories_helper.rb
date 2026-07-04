@@ -84,6 +84,12 @@ module TerritoriesHelper
     "server_command_#{command.idempotency_key}"
   end
 
+  # URL the pay poller watches until the dispatched command settles. The command
+  # carries its own server, so a caller holding only the command can still build it.
+  def pay_command_status_path(command)
+    command_status_server_territories_path(command.server.public_id, command)
+  end
+
   # Confirmation copy for the Pay button. Names the price when the caller knows it
   # (renew_price already carries the "poptabs" label and any tax note); the retry
   # surface has no price to hand, so it falls back to a generic line.

@@ -2,9 +2,9 @@ import ApplicationController from "./application_controller";
 
 // Polls a server command until it settles. The terminal response is a turbo
 // stream that replaces this element, which removes the controller from the DOM
-// and fires disconnect() — so the interval clears itself once we're done.
+// and fires disconnect(), so the interval clears itself once we're done.
 //
-// Connects to data-controller="pay"
+// Connects to data-controller="server-command"
 export default class extends ApplicationController {
   static values = {
     url: String,

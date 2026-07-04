@@ -44,6 +44,23 @@ module Servers
       }
     end
 
+    # Polled by the pay Stimulus controller after a dispatch, until the command
+    # settles. Scoped to the current user so nobody can watch another player's
+    # command by id. Renders no streams while the row is still pending, so the
+    # poller leaves its spinner up until the command reaches a terminal state.
+    def status
+      command = ESM::ServerCommand.find_by(id: params[:command_id], user_id: current_user.id)
+      return head :not_found if command.nil?
+
+      render locals: {
+        command:,
+        current_server: command.server,
+        refreshed_territory: refreshed_territory(command),
+        refreshed_player: refreshed_player(command),
+        retry_territory: retry_territory(command)
+      }
+    end
+
     private
 
     def current_server

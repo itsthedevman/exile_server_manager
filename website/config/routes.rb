@@ -183,6 +183,9 @@ Rails.application.routes.draw do
       resources :territories, controller: "servers/territories", only: [:show], param: :territory_id do
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
+
+        # /servers/:server_id/territories/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, on: :collection, as: :command_status
       end
 
       # /servers/:server_id/favorite
@@ -191,9 +194,6 @@ Rails.application.routes.draw do
       # /servers/:server_id/gamble
       resource :gamble, only: [:create], controller: "servers/gambling"
     end
-
-    # /server_commands
-    resources :server_commands, only: [:show]
   end
 
   # /tools
