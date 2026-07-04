@@ -18,6 +18,7 @@ module ESM
       failed: "failed", timed_out: "timed_out"
     }
     attribute :error_message, :string
+    attribute :result, :hash, default: {}
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 

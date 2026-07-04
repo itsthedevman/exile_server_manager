@@ -12,7 +12,8 @@ module ESM
     # poptabs), so its player-facing text is recorded for the website to show; an
     # unexpected error is logged and left without a user-facing message.
     #
-    # @yield runs the command's work; its return value is unused.
+    # @yield runs the command's work; its return value is stored as the row's
+    #   result payload when the work completes successfully.
     #
     # @return [self] returned before the work finishes, so the caller can ack.
     #
@@ -21,9 +22,9 @@ module ESM
         ESM::Database.with_connection do
           update!(status: :dispatched)
 
-          yield
+          result = yield
 
-          update!(status: :completed)
+          update!(status: :completed, result:)
         rescue ESM::Exception::RequestTimeout
           update!(status: :timed_out)
         rescue ESM::Exception::ExtensionError => e
