@@ -37,6 +37,8 @@ module ESM
     # CALLBACKS
     # =============================================================================
 
+    after_save :reconcile_cooldowns, if: :saved_change_to_cooldown?
+
     # =============================================================================
     # SCOPES
     # =============================================================================
@@ -62,6 +64,16 @@ module ESM
 
     def command_class
       ESM::Command[command_name]
+    end
+
+    private
+
+    def saved_change_to_cooldown?
+      saved_change_to_cooldown_quantity? || saved_change_to_cooldown_type?
+    end
+
+    def reconcile_cooldowns
+      ESM::Cooldown.reconcile_to(self)
     end
   end
 end

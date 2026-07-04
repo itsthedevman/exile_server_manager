@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_04_030325) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_04_173913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -108,8 +108,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_04_030325) do
     t.string "steam_uid"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
-    t.index ["command_name", "steam_uid", "community_id"], name: "index_cooldowns_on_command_name_and_steam_uid_and_community_id"
-    t.index ["command_name", "user_id", "community_id"], name: "index_cooldowns_on_command_name_and_user_id_and_community_id"
+    t.index ["command_name", "steam_uid", "community_id", "server_id"], name: "index_cooldowns_on_steam_uid_key", unique: true
+    t.index ["command_name", "user_id", "community_id", "server_id"], name: "index_cooldowns_on_user_id_key", unique: true
   end
 
   create_table "downloads", force: :cascade do |t|

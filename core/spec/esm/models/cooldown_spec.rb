@@ -131,11 +131,10 @@ RSpec.describe ESM::Cooldown do
     end
   end
 
-  describe "#adjust_for_community_changes" do
+  describe "#reconcile_to!" do
     let!(:community) { create(:community) }
     let!(:server) { create(:server, community: community) }
     let!(:user) { create(:user) }
-    let!(:configuration) { create(:command_configuration, community: community, command_name: "player_command", cooldown_type: "seconds", cooldown_quantity: 2) }
     let(:expires_at) { Time.now.utc + 1.day }
 
     let(:cooldown_defaults) do
@@ -148,70 +147,246 @@ RSpec.describe ESM::Cooldown do
       }
     end
 
-    it "does not crash when community_id is nil" do
-      expect {
-        create(:cooldown, cooldown_defaults.merge(community_id: nil, server_id: nil, cooldown_type: "seconds", cooldown_quantity: 2)).reload
-      }.not_to raise_error
+    def configuration_for(cooldown_type:, cooldown_quantity:)
+      build(
+        :command_configuration,
+        community: community,
+        command_name: "player_command",
+        cooldown_type: cooldown_type,
+        cooldown_quantity: cooldown_quantity
+      )
     end
 
-    it "does not change when configuration matches (seconds)" do
-      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2)).reload
+    it "does not change when the configuration matches (seconds)" do
+      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2))
+      cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 2))
       expect(cooldown.expires_at.to_s).to eq(expires_at.to_s)
     end
 
-    it "does not change when configuration matches (times)" do
-      configuration.update!(cooldown_type: "times", cooldown_quantity: 1)
-      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "times", cooldown_quantity: 1)).reload
+    it "does not change when the configuration matches (times)" do
+      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "times", cooldown_quantity: 1, cooldown_amount: 0))
+      cooldown.reconcile_to!(configuration_for(cooldown_type: "times", cooldown_quantity: 1))
       expect(cooldown.expires_at.to_s).to eq(expires_at.to_s)
       expect(cooldown.cooldown_amount).to eq(0)
     end
 
     it "resets when changing from seconds to times" do
-      configuration.update!(cooldown_type: "times", cooldown_quantity: 1)
-      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2)).reload
+      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2))
+      cooldown.reconcile_to!(configuration_for(cooldown_type: "times", cooldown_quantity: 1))
       expect(cooldown.expires_at.to_s).not_to eq(expires_at.to_s)
       expect(cooldown.cooldown_amount).to eq(0)
     end
 
     it "resets when changing from times to seconds" do
-      configuration.update!(cooldown_type: "seconds", cooldown_quantity: 2)
-      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "times", cooldown_quantity: 1)).reload
+      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "times", cooldown_quantity: 1))
+      cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 2))
       expect(cooldown.expires_at.to_s).not_to eq(expires_at.to_s)
       expect(cooldown.cooldown_amount).to eq(0)
     end
 
-    it "does not change when new value is greater than current" do
-      configuration.update!(cooldown_type: "seconds", cooldown_quantity: 5)
-      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2)).reload
+    it "does not extend when the new value is greater than current" do
+      cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 2))
+      cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 5))
       expect(cooldown.expires_at.to_s).to eq(expires_at.to_s)
     end
 
-    context "when new value is less than current" do
+    context "when the new value is less than current" do
       let(:expires_at) { Time.parse("2040-01-01 00:00:00 UTC") }
 
       it "compensates from 5 seconds to 2 seconds" do
-        configuration.update!(cooldown_type: "seconds", cooldown_quantity: 2)
-        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 5, expires_at: expires_at)).reload
+        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "seconds", cooldown_quantity: 5))
+        cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 2))
         expect(cooldown.expires_at.to_s).to eq("2039-12-31 23:59:57 UTC")
       end
 
       it "compensates from 1 minute to 30 seconds" do
-        configuration.update!(cooldown_type: "seconds", cooldown_quantity: 30)
-        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "minutes", cooldown_quantity: 1, expires_at: expires_at)).reload
+        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "minutes", cooldown_quantity: 1))
+        cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 30))
         expect(cooldown.expires_at.to_s).to eq("2039-12-31 23:59:30 UTC")
       end
 
       it "compensates from 1 hour to 15 seconds" do
-        configuration.update!(cooldown_type: "seconds", cooldown_quantity: 15)
-        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "hour", cooldown_quantity: 1, expires_at: expires_at)).reload
+        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "hours", cooldown_quantity: 1))
+        cooldown.reconcile_to!(configuration_for(cooldown_type: "seconds", cooldown_quantity: 15))
         expect(cooldown.expires_at.to_s).to eq("2039-12-31 23:00:15 UTC")
       end
 
       it "compensates from 1 day to 2 minutes" do
-        configuration.update!(cooldown_type: "minutes", cooldown_quantity: 2)
-        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "days", cooldown_quantity: 1, expires_at: expires_at)).reload
+        cooldown = create(:cooldown, cooldown_defaults.merge(cooldown_type: "days", cooldown_quantity: 1))
+        cooldown.reconcile_to!(configuration_for(cooldown_type: "minutes", cooldown_quantity: 2))
         expect(cooldown.expires_at.to_s).to eq("2039-12-31 00:02:00 UTC")
       end
+    end
+  end
+
+  describe ".reconcile_to (via a CommandConfiguration change)" do
+    let!(:community) { create(:community) }
+    let!(:server) { create(:server, community: community) }
+    let!(:user) { create(:user) }
+    let(:expires_at) { Time.parse("2040-01-01 00:00:00 UTC") }
+
+    let!(:configuration) do
+      create(
+        :command_configuration,
+        community: community,
+        command_name: "player_command",
+        cooldown_type: "seconds",
+        cooldown_quantity: 5
+      )
+    end
+
+    let!(:cooldown) do
+      create(
+        :cooldown,
+        user_id: user.id,
+        community_id: community.id,
+        server_id: server.id,
+        command_name: "player_command",
+        cooldown_type: "seconds",
+        cooldown_quantity: 5,
+        expires_at: expires_at
+      )
+    end
+
+    it "heals affected cooldowns when the cooldown length changes" do
+      configuration.update!(cooldown_quantity: 2)
+      expect(cooldown.reload.expires_at.to_s).to eq("2039-12-31 23:59:57 UTC")
+    end
+
+    it "leaves cooldowns untouched when a non-cooldown attribute changes" do
+      configuration.update!(enabled: false)
+      expect(cooldown.reload.expires_at.to_s).to eq(expires_at.to_s)
+    end
+
+    it "does not touch cooldowns for a different command" do
+      other = create(
+        :cooldown,
+        user_id: user.id,
+        community_id: community.id,
+        server_id: server.id,
+        command_name: "other_command",
+        cooldown_type: "seconds",
+        cooldown_quantity: 5,
+        expires_at: expires_at
+      )
+
+      configuration.update!(cooldown_quantity: 2)
+      expect(other.reload.expires_at.to_s).to eq(expires_at.to_s)
+    end
+  end
+
+  describe ".scope_for" do
+    let!(:community) { create(:community) }
+    let!(:server) { create(:server, community: community) }
+    let!(:user) { create(:user) }
+
+    it "keys on steam_uid for registration-gated commands" do
+      cooldown = create(:cooldown, command_name: "gamble", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+
+      scope = described_class.scope_for(command_name: "gamble", user: user, registered: true, community: community, server: server)
+      expect(scope).to contain_exactly(cooldown)
+    end
+
+    it "keys on user_id for open commands" do
+      cooldown = create(:cooldown, command_name: "help", user_id: user.id, community_id: community.id, server_id: server.id)
+
+      scope = described_class.scope_for(command_name: "help", user: user, registered: false, community: community, server: server)
+      expect(scope).to contain_exactly(cooldown)
+    end
+
+    it "does not match another player's cooldown" do
+      create(:cooldown, command_name: "gamble", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+      other_user = create(:user)
+
+      scope = described_class.scope_for(command_name: "gamble", user: other_user, registered: true, community: community, server: server)
+      expect(scope).to be_empty
+    end
+  end
+
+  describe ".claim!" do
+    let!(:community) { create(:community) }
+    let!(:server) { create(:server, community: community) }
+    let!(:user) { create(:user) }
+
+    def claim
+      described_class.claim!(command_name: "gamble", user: user, registered: false, community: community, server: server, duration: 2.seconds)
+    end
+
+    it "claims and creates the row on first use" do
+      expect { expect(claim).to be(true) }.to change(described_class, :count).by(1)
+    end
+
+    it "refuses a second claim inside the window" do
+      expect(claim).to be(true)
+      expect(claim).to be(false)
+    end
+
+    it "does not create a duplicate row when refused" do
+      claim
+      expect { claim }.not_to change(described_class, :count)
+    end
+
+    it "claims again once the window has expired" do
+      expect(claim).to be(true)
+
+      Timecop.freeze(3.seconds.from_now) do
+        expect(claim).to be(true)
+      end
+    end
+
+    it "reuses the single row across windows" do
+      claim
+      Timecop.freeze(3.seconds.from_now) { claim }
+      expect(described_class.count).to eq(1)
+    end
+
+    it "writes the duration onto the claimed row" do
+      claim
+      cooldown = described_class.last
+      expect(cooldown.cooldown_type).to eq("seconds")
+      expect(cooldown.cooldown_quantity).to eq(2)
+      expect(cooldown.active?).to be(true)
+    end
+
+    it "enforces one row per key at the database level" do
+      claim
+
+      expect {
+        described_class.create!(command_name: "gamble", user_id: user.id, community_id: community.id, server_id: server.id, expires_at: 1.hour.from_now)
+      }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    # Runs on committed data (truncation) so each thread's own connection can see the community/server/user the claim's
+    # foreign keys reference. Without the row-level lock behind claim!, a burst like this is exactly what lets an abuser
+    # slip multiple bets past a single cooldown window.
+    it "serializes truly concurrent claims down to a single winner", :multi_connection do
+      thread_count = 12
+
+      mutex = Mutex.new
+      all_ready = ConditionVariable.new
+      ready = 0
+
+      # Hold every thread until the last one arrives, so the claims genuinely race rather than trickle in one after
+      # another.
+      barrier = lambda do
+        mutex.synchronize do
+          ready += 1
+          all_ready.broadcast if ready == thread_count
+          all_ready.wait(mutex) until ready == thread_count
+        end
+      end
+
+      results = Array.new(thread_count) do
+        Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do
+            barrier.call
+            claim
+          end
+        end
+      end.map(&:value)
+
+      expect(results.count(true)).to eq(1)
+      expect(described_class.count).to eq(1)
     end
   end
 end

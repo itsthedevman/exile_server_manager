@@ -488,27 +488,13 @@ module ESM
         end
 
         def current_cooldown_query
-          query = ESM::Cooldown.where(command_name: command_name)
-
-          # If the command requires a steam_uid, use it to track the cooldown.
-          query =
-            if registration_required?
-              query.where(steam_uid: current_user.steam_uid)
-            else
-              query.where(user_id: current_user.id)
-            end
-
-          # Check for the target_community
-          query = query.where(community_id: target_community.id) if target_community
-
-          # If we don't have a target_community, use the current_community (if applicable)
-          query = query.where(community_id: current_community.id) if current_community && target_community.nil?
-
-          # Check for the individual server
-          query = query.where(server_id: target_server.id) if target_server
-
-          # Return the query
-          query
+          ESM::Cooldown.scope_for(
+            command_name:,
+            user: current_user,
+            registered: registration_required?,
+            community: target_community || current_community,
+            server: target_server
+          )
         end
 
         #

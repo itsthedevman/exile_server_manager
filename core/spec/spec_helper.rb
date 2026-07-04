@@ -100,6 +100,10 @@ RSpec.configure do |config|
   end
 
   config.around(:each) do |example|
+    # Most examples roll back on a single connection. Ones that spawn threads with their own connections
+    # (:multi_connection) need their setup actually committed to be visible across connections, so they clean by
+    # truncation instead.
+    DatabaseCleaner.strategy = example.metadata[:multi_connection] ? :truncation : :transaction
     DatabaseCleaner.cleaning do
       example.run
     end
