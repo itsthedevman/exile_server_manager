@@ -336,7 +336,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
               user.user_gamble_stats.first_or_initialize.update!(
                 server:,
                 current_streak: 1,
-                last_action: described_class::WON_ACTION
+                last_action: ESM::UserGambleStat::WON_ACTION
               )
             end
           end
@@ -352,7 +352,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
               user.user_gamble_stats.first_or_initialize.update!(
                 server:,
                 current_streak: 1,
-                last_action: described_class::LOSS_ACTION
+                last_action: ESM::UserGambleStat::LOSS_ACTION
               )
             end
           end

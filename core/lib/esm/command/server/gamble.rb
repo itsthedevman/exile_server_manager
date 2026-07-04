@@ -4,9 +4,6 @@ module ESM
   module Command
     module Server
       class Gamble < ApplicationCommand
-        WON_ACTION = "won"
-        LOSS_ACTION = "loss"
-
         #################################
         #
         # Arguments (required first, then order matters)
@@ -62,50 +59,10 @@ module ESM
           end
 
           def update_stats
-            # Ensure the streak is reset when switching between won/lost
-            current_streak =
-              if gamble_stat.last_action == @response.type
-                gamble_stat.current_streak + 1
-              else
-                1
-              end
-
-            case @response.type
-            when "won"
-              # Determine if we've broken our previous streak
-              longest_win_streak =
-                if current_streak > gamble_stat.longest_win_streak
-                  current_streak
-                else
-                  gamble_stat.longest_win_streak
-                end
-
-              # Update the stats
-              gamble_stat.update(
-                total_wins: gamble_stat.total_wins + 1,
-                total_poptabs_won: gamble_stat.total_poptabs_won + @response.amount.to_i,
-                current_streak: current_streak,
-                longest_win_streak: longest_win_streak,
-                last_action: @response.type
-              )
-            when "loss"
-              # Determine if we've broken our previous streak
-              longest_loss_streak =
-                if current_streak > gamble_stat.longest_loss_streak
-                  current_streak
-                else
-                  gamble_stat.longest_loss_streak
-                end
-
-              # Update the stats
-              gamble_stat.update(
-                total_losses: gamble_stat.total_losses + 1,
-                total_poptabs_loss: gamble_stat.total_poptabs_loss + @response.amount.to_i,
-                current_streak: current_streak,
-                longest_loss_streak: longest_loss_streak,
-                last_action: @response.type
-              )
-            end
+            gamble_stat.record!(
+              won: @response.type == UserGambleStat::WON_ACTION,
+              amount_changed: @response.amount.to_i
+            )
           end
 
           def send_results
@@ -145,52 +102,10 @@ module ESM
         end
 
         def update_stats(response)
-          won = response.win
-          amount_changed = response.amount.to_i
-
-          # Ensure the streak is reset when switching between won/loss
-          current_streak =
-            if gamble_stat.last_action == (won ? WON_ACTION : LOSS_ACTION)
-              gamble_stat.current_streak + 1
-            else
-              1
-            end
-
-          if won
-            # Determine if we've broken our previous streak
-            longest_win_streak =
-              if current_streak > gamble_stat.longest_win_streak
-                current_streak
-              else
-                gamble_stat.longest_win_streak
-              end
-
-            # Update the stats
-            gamble_stat.update(
-              total_wins: gamble_stat.total_wins + 1,
-              total_poptabs_won: gamble_stat.total_poptabs_won + amount_changed,
-              current_streak: current_streak,
-              longest_win_streak: longest_win_streak,
-              last_action: WON_ACTION
-            )
-          else
-            # Determine if we've broken our previous streak
-            longest_loss_streak =
-              if current_streak > gamble_stat.longest_loss_streak
-                current_streak
-              else
-                gamble_stat.longest_loss_streak
-              end
-
-            # Update the stats
-            gamble_stat.update(
-              total_losses: gamble_stat.total_losses + 1,
-              total_poptabs_loss: gamble_stat.total_poptabs_loss + amount_changed,
-              current_streak: current_streak,
-              longest_loss_streak: longest_loss_streak,
-              last_action: LOSS_ACTION
-            )
-          end
+          gamble_stat.record!(
+            won: response.win,
+            amount_changed: response.amount.to_i
+          )
         end
 
         def send_results(response)
