@@ -184,15 +184,22 @@ Rails.application.routes.draw do
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
 
-        # /servers/:server_id/territories/commands/:command_id/status
-        get "commands/:command_id/status", action: :status, on: :collection, as: :command_status
+        collection do
+          # /servers/:server_id/territories/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
       end
 
       # /servers/:server_id/favorite
       resource :favorite, only: [:create, :destroy], controller: "servers/favorites"
 
       # /servers/:server_id/gamble
-      resource :gamble, only: [:create], controller: "servers/gambling"
+      resource :gamble, only: [:create], controller: "servers/gambling" do
+        collection do
+          # /servers/:server_id/gamble/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
     end
   end
 

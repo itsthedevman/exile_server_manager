@@ -54,16 +54,16 @@ module ESM
     # =============================================================================
 
     # TODO: Docs
-    def record!(won:, amount_changed:)
+    def record!(win:, amount_changed:)
       # Ensure the streak is reset when switching between won/loss
       current_streak =
-        if last_action == (won ? WON_ACTION : LOSS_ACTION)
+        if last_action == (win ? WON_ACTION : LOSS_ACTION)
           self.current_streak + 1
         else
           1
         end
 
-      if won
+      if win
         # Determine if we've broken our previous streak
         longest_win_streak =
           if current_streak > self.longest_win_streak

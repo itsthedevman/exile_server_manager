@@ -60,7 +60,7 @@ module ESM
 
           def update_stats
             gamble_stat.record!(
-              won: @response.type == UserGambleStat::WON_ACTION,
+              win: @response.type == UserGambleStat::WON_ACTION,
               amount_changed: @response.amount.to_i
             )
           end
@@ -103,7 +103,7 @@ module ESM
 
         def update_stats(response)
           gamble_stat.record!(
-            won: response.win,
+            win: response.win,
             amount_changed: response.amount.to_i
           )
         end

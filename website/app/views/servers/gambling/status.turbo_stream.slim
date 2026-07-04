@@ -1,6 +1,3 @@
 / locals: command, result, gamble_stat
 - if command.settled?
   = render "servers/gambling/settled", result:, gamble_stat:
-- else
-  = turbo_stream.replace "gamble_result" do
-    = render "servers/gambling/processing", command:

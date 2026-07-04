@@ -1,8 +1,9 @@
 / locals: current_server
 - if current_server.connected?
-  = form_with url: server_gamble_path(current_server.public_id), method: :post, data: {controller: "gambling"} do |form|
+  = form_with url: server_gamble_path(current_server.public_id), method: :post, data: {controller: "gambling", action: "turbo:submit-end->gambling#rotateKey"} do |form|
+    = form.hidden_field :idempotency_key, value: SecureRandom.uuid, data: {gambling_target: "idempotencyKey"}
     .d-flex.flex-wrap.gap-2
-      = form.text_field :amount, class: "form-control flex-grow-1", style: "min-width: 8rem;", placeholder: "Amount to gamble", inputmode: "numeric", autocomplete: "off", aria: {label: "Amount to gamble"}, data: {gambling_target: "amount"}
+      = form.text_field :amount, class: "form-control flex-grow-1", style: "min-width: 8rem;", placeholder: "Amount to gamble", inputmode: "numeric", autocomplete: "off", required: true, aria: {label: "Amount to gamble"}, data: {gambling_target: "amount"}
       button.btn.btn-outline-secondary type="button" data-action="gambling#fill" data-gambling-value-param="half"
         | Half
       button.btn.btn-outline-secondary type="button" data-action="gambling#fill" data-gambling-value-param="all"

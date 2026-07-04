@@ -46,4 +46,19 @@ module ApplicationHelper
       link_to("-", "", class: "nav-link disabled d-none d-lg-block")
     ])
   end
+
+  # The extension authors player messages for Discord: a leading mention (or, for
+  # players with no linked Discord, their Steam UID) plus **bold**/`code` markup.
+  # Swap the player token for their name and drop the markup so it reads as plain
+  # web copy.
+  def web_extension_message(text, user)
+    name = user.username.presence || "you"
+    tokens = [user.discord_mention, user.steam_uid].compact_blank
+
+    cleaned = tokens.reduce(text) do |message, token|
+      message.gsub(token, name)
+    end
+
+    cleaned.gsub(/\*\*(.*?)\*\*/, '\1').delete("`").strip
+  end
 end
