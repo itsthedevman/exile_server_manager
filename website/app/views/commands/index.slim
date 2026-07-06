@@ -5,12 +5,26 @@
     h1.mb-2 Command Configuration
     p.lead.text-muted Configure which commands are available and how they behave
 
-  - commands_by_category.each do |category, commands|
-    .mb-5
-      h2.border-bottom.border-secondary.pb-2.mb-4
-        = "#{category.humanize} Commands"
+  div data-controller="commands-filter"
+    .mb-4
+      input.form-control[
+        type="text"
+        placeholder="Filter commands by name..."
+        autocomplete="off"
+        data-commands-filter-target="input"
+        data-action="input->commands-filter#filter"
+      ]
 
-      .row.g-4
-        - commands.each do |command|
-          .col-xl-6
-            = render "commands/command_card", command:, **local_assigns
+    - commands_by_category.each do |category, commands|
+      .mb-5 data-commands-filter-target="section"
+        h2.border-bottom.border-secondary.pb-2.mb-4
+          = "#{category.humanize} Commands"
+
+        .row.g-4
+          - commands.each do |command|
+            .col-xl-6 data-commands-filter-target="card" data-usage=command.usage
+              = render "commands/command_card", command:, **local_assigns
+
+    .text-center.text-muted.py-5.d-none data-commands-filter-target="empty"
+      i.bi.bi-search.me-2
+      | No commands match your filter.
