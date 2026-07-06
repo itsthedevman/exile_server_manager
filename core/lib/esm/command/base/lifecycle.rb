@@ -31,26 +31,11 @@ module ESM
           check_for_permissions!
         ].freeze
 
-        WEBSITE_ACCESS_CHECKS = %i[
-          check_for_dev_only!
-          check_for_registered!
-          check_for_player_mode!
-          check_for_permissions!
-        ].freeze
-
         #
         # Called internally by #execute, this method handles when a command has been executed on Discord.
         #
         def from_discord!
           run_lifecycle!(access_checks: DISCORD_ACCESS_CHECKS)
-        end
-
-        #
-        # Called when a command has been invoked through the website's RPC layer.
-        # Skips text/DM-channel checks since the website has no channel context.
-        #
-        def from_website!
-          run_lifecycle!(access_checks: WEBSITE_ACCESS_CHECKS)
         end
 
         # @param request [ESM::Request] The request to build this command with

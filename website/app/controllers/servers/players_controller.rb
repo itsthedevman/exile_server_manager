@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Servers
-  class PlayersController < AuthenticatedController
+  class PlayersController < RegisteredController
     include PlayerLoading
 
     def me

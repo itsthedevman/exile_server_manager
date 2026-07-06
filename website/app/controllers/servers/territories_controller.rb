@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Servers
-  class TerritoriesController < AuthenticatedController
+  class TerritoriesController < RegisteredController
     include TerritoryLoading
     include PlayerLoading
 
