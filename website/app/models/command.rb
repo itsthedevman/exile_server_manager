@@ -20,7 +20,6 @@ class Command
   attr_predicate :admin
 
   def initialize(command_class)
-    # `to_details` already returns a flat, string-keyed documentation hash.
     @details = command_class.to_details
 
     parse_command_usage

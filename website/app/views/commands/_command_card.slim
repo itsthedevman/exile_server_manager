@@ -18,7 +18,7 @@
     / Command configuration body
     .card-body.flex-fill
       / Cooldown section
-      - if command.attributes["cooldown_time"]["modifiable"]
+      - if command.attributes[:cooldown_time][:modifiable]
         .mb-3
           h6.mb-3
             i.bi.bi-clock.text-info.me-2
@@ -43,7 +43,7 @@
         | Options
 
       / Enabled toggle
-      - if command.attributes["enabled"]["modifiable"]
+      - if command.attributes[:enabled][:modifiable]
         .form-check.form-switch.mb-3
           = f.check_box :enabled,
             class: "form-check-input",
@@ -63,7 +63,7 @@
             ]
 
       / Notify when disabled
-      - if command.attributes["enabled"]["modifiable"]
+      - if command.attributes[:enabled][:modifiable]
         .form-check.form-switch.mb-3
           = f.check_box :notify_when_disabled,
             class: "form-check-input",
@@ -80,7 +80,7 @@
             ]
 
       / Text channels allowed
-      - if command.attributes["allowed_in_text_channels"]["modifiable"]
+      - if command.attributes[:allowed_in_text_channels][:modifiable]
         .form-check.form-switch.mb-3
           = f.check_box :allowed_in_text_channels,
             class: "form-check-input",
@@ -93,7 +93,7 @@
             | Allow in text channels
 
       / Allowlist section
-      - if command.attributes["allowlist_enabled"]["modifiable"]
+      - if command.attributes[:allowlist_enabled][:modifiable]
         = content_tag :div, data: { \
           command_configuration_target: "allowlistedRoleIds" \
         }
@@ -111,7 +111,7 @@
               class: "form-check-label" do
               | Use role allowlist
 
-          - if command.attributes["allowlisted_role_ids"]["modifiable"]
+          - if command.attributes[:allowlisted_role_ids][:modifiable]
             .mt-3
               label.form-label.mb-2
                 i.bi.bi-person-badge.text-info.me-2
