@@ -22,58 +22,18 @@ module ESM
           end
         end
 
-        DISCORD_ACCESS_CHECKS = %i[
-          check_for_dev_only!
-          check_for_registered!
-          check_for_text_only!
-          check_for_dm_only!
-          check_for_player_mode!
-          check_for_permissions!
-        ].freeze
-
         #
         # Called internally by #execute, this method handles when a command has been executed on Discord.
         #
         def from_discord!
-          run_lifecycle!(access_checks: DISCORD_ACCESS_CHECKS)
-        end
-
-        # @param request [ESM::Request] The request to build this command with
-        # @note Don't load `target_user` from the request. If the arguments contain a target, it will handle it
-        def from_request(request)
-          @request = request
-
-          arguments.merge!(request.command_arguments.symbolize_keys) if request.command_arguments.present?
-
-          timers.time!(:from_request) do
-            load_v1_code! if v1_code_needed? # V1
-
-            if @request.accepted
-              on_request_accepted
-            else
-              # Reset the cooldown since the request was declined.
-              current_cooldown.reset! if current_cooldown.present?
-
-              on_request_declined
-            end
-          end
-        end
-
-        def on_execute
-        end
-
-        def on_request_accepted
-        end
-
-        def on_request_declined
-        end
-
-        private
-
-        def run_lifecycle!(access_checks:)
           # Check for these BEFORE validating the arguments so even if an argument was invalid, it doesn't matter since these take priority
           timers.time!(:access_checks) do
-            access_checks.each { |check| public_send(check) }
+            check_for_dev_only!
+            check_for_registered!
+            check_for_text_only!
+            check_for_dm_only!
+            check_for_player_mode!
+            check_for_permissions!
           end
 
           # Now ensure the user hasn't smoked too much lead
@@ -105,6 +65,36 @@ module ESM
           end
 
           result
+        end
+
+        # @param request [ESM::Request] The request to build this command with
+        # @note Don't load `target_user` from the request. If the arguments contain a target, it will handle it
+        def from_request(request)
+          @request = request
+
+          arguments.merge!(request.command_arguments.symbolize_keys) if request.command_arguments.present?
+
+          timers.time!(:from_request) do
+            load_v1_code! if v1_code_needed? # V1
+
+            if @request.accepted
+              on_request_accepted
+            else
+              # Reset the cooldown since the request was declined.
+              current_cooldown.reset! if current_cooldown.present?
+
+              on_request_declined
+            end
+          end
+        end
+
+        def on_execute
+        end
+
+        def on_request_accepted
+        end
+
+        def on_request_declined
         end
       end
     end
