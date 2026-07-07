@@ -240,10 +240,7 @@ impl BuildContext {
         match (self.args.build_os(), self.args.build_arch()) {
             (BuildOS::Linux, BuildArch::X32) => "i686-unknown-linux-gnu",
             (BuildOS::Linux, BuildArch::X64) => "x86_64-unknown-linux-gnu",
-            (BuildOS::Windows, BuildArch::X32) => panic!(
-                "--x32 --target=windows is not supported from Linux: \
-                 build it on a Windows host instead."
-            ),
+            (BuildOS::Windows, BuildArch::X32) => "i686-pc-windows-gnu",
             (BuildOS::Windows, BuildArch::X64) => "x86_64-pc-windows-gnu",
         }
     }

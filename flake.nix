@@ -38,7 +38,22 @@
             "x86_64-unknown-linux-gnu"
             "i686-unknown-linux-gnu"
             "x86_64-pc-windows-gnu"
+            "i686-pc-windows-gnu"
           ];
+        };
+
+        # 32-bit Windows cross-compile toolchain.
+        #
+        # nixpkgs' stock i686 mingw gcc is built with SjLj exception handling, whose
+        # libgcc_eh only exports __Unwind_SjLj_* symbols. Rust's prebuilt
+        # i686-pc-windows-gnu std uses the DWARF-2 unwind ABI (_Unwind_RaiseException /
+        # _Unwind_Resume), so it cannot link against a SjLj libgcc. Rebuilding the cross
+        # gcc with --disable-sjlj-exceptions flips i686 to DWARF-2 and makes the ABIs match.
+        # (x86_64 Windows avoids all of this because it uses SEH, not SjLj/DWARF.)
+        mingw32GccDwarf = pkgs.pkgsCross.mingw32.buildPackages.gcc.override {
+          cc = pkgs.pkgsCross.mingw32.buildPackages.gcc.cc.overrideAttrs (o: {
+            configureFlags = (o.configureFlags or [ ]) ++ [ "--disable-sjlj-exceptions" ];
+          });
         };
 
         db_user = "esm";
@@ -85,9 +100,11 @@
             # Rust (arma)
             rustToolchain
 
-            # Windows cross-compilation
+            # Windows cross-compilation (x64: SEH; x32: DWARF gcc built above)
             pkgsCross.mingwW64.buildPackages.gcc
             pkgsCross.mingwW64.buildPackages.binutils
+            mingw32GccDwarf
+            pkgsCross.mingw32.buildPackages.binutils
 
             # Arma tools
             docker-compose
@@ -133,8 +150,12 @@
             export PGDATA=''${PGDATA:-$PWD/tmp/postgres}
             export POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C"
 
-            # Arma: Windows cross-compile rflags
+            # Arma: Windows cross-compile rflags. Rust's prebuilt windows-gnu std hard-links
+            # -l:libpthread.a (winpthreads), which isn't on the mingw wrapper's default search
+            # path, so feed it in here. The 32-bit target additionally needs the mcfgthread
+            # runtime (-lmcfgthread) because the cross gcc uses the mcf thread model.
             export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib"
+            export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingw32.windows.pthreads}/lib -L ${pkgs.pkgsCross.mingw32.windows.mcfgthreads}/lib -C link-arg=-lmcfgthread"
 
             # Arma: patch binary tools if they exist (only meaningful from monorepo root)
             OPENSSL_LIB="${pkgs.openssl.out}/lib"
