@@ -20,6 +20,12 @@ module ESM
             event = ESM::Discord::Event::ApplicationCommand.new(event)
             event.on_execution(self)
           end
+
+          # TODO: Docs
+          def website_event_hook(event)
+            event = ESM::Website::Event::ApplicationCommand.new(event)
+            event.on_execution(self)
+          end
         end
 
         #
@@ -86,7 +92,47 @@ module ESM
           end
         end
 
+        # TODO: Docs
+        def from_website!
+          # Check for these BEFORE validating the arguments so even if an argument was invalid it doesn't matter
+          # since these take priority
+          timers.time!(:access_checks) do
+            check_for_registered!
+            check_for_permissions!
+          end
+
+          # Now ensure the user hasn't smoked too much lead
+          timers.time!(:argument_validation) do
+            arguments.validate!
+          end
+
+          info!(to_h)
+
+          timers.time!(:before_execute) do
+            check_for_nil_target_community! unless skipped_actions.nil_target_community?
+            check_for_nil_target_server! unless skipped_actions.nil_target_server?
+            check_for_nil_target_user! unless skipped_actions.nil_target_user?
+            check_for_connected_server! unless skipped_actions.connected_server?
+            check_for_cooldown! unless skipped_actions.cooldown?
+          end
+
+          timers.time!(:on_execute) do
+            on_website_execute
+          end
+
+          timers.time!(:after_execute) do
+            # Update the cooldown after the command has ran just in case there are issues
+            create_or_update_cooldown unless skipped_actions.cooldown?
+          end
+
+          nil
+        end
+
+        # TODO: Rename to #on_discord_execute
         def on_execute
+        end
+
+        def on_website_execute
         end
 
         def on_request_accepted

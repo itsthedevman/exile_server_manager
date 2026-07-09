@@ -3,43 +3,32 @@
 module ESM
   module Website
     module Command
-      ##
-      # Website adapter for {ESM::Command::Origin}. Holds the user and community resolved
-      # from a website-initiated RPC and forwards replies through the caller-supplied sink
-      # so the lifecycle's reply path becomes the RPC's response body.
-      #
-      # {#current_channel} is always nil because the website has no channel context.
-      #
       class Origin < ESM::Command::Origin
-        attr_reader :current_user, :current_community, :current_channel
+        def initialize(server_command)
+          @server_command = server_command
+        end
 
-        def initialize(user:, reply_sink:, community: nil)
-          @current_user = user
-          @current_community = community
-          @current_channel = nil
-          @reply_sink = reply_sink
+        def current_user
+          @server_command.user
         end
 
         def reply(content)
-          @reply_sink.call(serialize(content))
+          raise ArgumentError, "You can only reply to this origin once" if @server_command.settled?
+
+          @server_command.update!(status: :completed, result: content)
         end
 
         def log_context
           {
-            author: "#{@current_user&.distinct} (steam #{@current_user&.steam_uid})",
-            channel: "website"
+            server_command: @server_command.attributes
           }
         end
 
-        private
+        # The website doesn't execute from within a community
+        def current_community = nil
 
-        def serialize(content)
-          case content
-          when ESM::Embed then content.to_h
-          when String then {description: content}
-          else content
-          end
-        end
+        # The website doesn't execute from within a channel
+        def current_channel = nil
       end
     end
   end

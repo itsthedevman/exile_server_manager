@@ -33,6 +33,11 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          response = call_sqf_function!("ESMs_command_pay", territory_id: arguments.territory_id)
+          reply(response)
+        end
+
         module V1
           def on_execute
             deliver!(function_name: "payTerritory", territory_id: arguments.territory_id, uid: current_user.steam_uid)

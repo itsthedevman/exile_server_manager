@@ -37,6 +37,13 @@ module ESM
           send_results(response.data.response)
         end
 
+        def on_website_execute
+          data = call_sqf_function!("ESMs_command_gamble", amount: arguments.amount).data
+
+          update_stats(data)
+          reply(win: data.win, amount: data.amount.to_i, locker_after: data.locker_after.to_i)
+        end
+
         module V1
           def on_execute
             return reply(send_stats) if arguments.amount.blank? || arguments.amount == "stats"

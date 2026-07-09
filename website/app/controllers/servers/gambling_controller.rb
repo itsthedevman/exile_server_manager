@@ -14,13 +14,18 @@ module Servers
       ) do |new_command|
         new_command.server = current_server
         new_command.command_name = "gamble"
-        new_command.arguments = {amount: params.require(:amount)}
+
+        new_command.arguments = {
+          server_id: current_server.server_id,
+          community_id: current_server.community.community_id,
+          amount: params.require(:amount)
+        }
       end
 
       # Only the request that created the row dispatches, so a same-key retry dedupes to it instead of firing a second
       # bet. Cooldown enforcement lives in the ServerGamble handler now - checked before the bet, applied only once one
       # completes - so a mid-flight failure or a bot restart never strands the player behind it.
-      ESM::Service::API.call(:server_gamble, command_id: command.id) if command.previously_new_record?
+      ESM::Service::API.call(:server_command, command_id: command.id) if command.previously_new_record?
 
       Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? } if command.pending?
 
@@ -37,7 +42,7 @@ module Servers
     private
 
     def current_server
-      @current_server ||= ESM::Server.find_by_public_id(params.require(:server_id))
+      @current_server ||= ESM::Server.includes(:community).find_by_public_id(params.require(:server_id))
     end
 
     def gamble_stat

@@ -28,6 +28,7 @@ module ESM
 
     belongs_to :user
     belongs_to :server
+    has_one :community, through: :server
 
     # =============================================================================
     # VALIDATIONS
@@ -56,6 +57,11 @@ module ESM
     #
     def settled?
       completed? || failed? || timed_out?
+    end
+
+    # TODO: Docs
+    def command_class
+      ESM::Command[command_name]
     end
   end
 end

@@ -20,14 +20,19 @@ module Servers
         idempotency_key: params.require(:idempotency_key)
       ) do |new_command|
         new_command.server = current_server
-        new_command.command_name = "territory_pay"
-        new_command.arguments = {territory_id: params.require(:territory_territory_id)}
+        new_command.command_name = "pay"
+
+        new_command.arguments = {
+          server_id: current_server.server_id,
+          community_id: current_server.community.community_id,
+          territory_id: params.require(:territory_territory_id)
+        }
       end
 
       # A non-pending row means this one was already dispatched (a re-click on a
       # stale button); skip re-firing and just render its current state.
       if command.pending?
-        ESM::Service::API.call(:territory_pay, command_id: command.id)
+        ESM::Service::API.call(:server_command, command_id: command.id)
 
         # Give a quick payment a moment to land so it resolves in this response
         # rather than flashing a spinner the client poller clears a beat later.
@@ -64,7 +69,7 @@ module Servers
     private
 
     def current_server
-      @current_server ||= ESM::Server.find_by_public_id(params[:server_id])
+      @current_server ||= ESM::Server.includes(:community).find_by_public_id(params[:server_id])
     end
 
     def current_territory
