@@ -52,11 +52,9 @@ module ESM
             check_for_different_community! unless skipped_actions.different_community?
           end
 
-          result = nil
           timers.time!(:on_execute) do
             load_v1_code! if v1_code_needed? # V1
-
-            result = on_execute
+            on_execute
           end
 
           timers.time!(:after_execute) do
@@ -64,7 +62,7 @@ module ESM
             create_or_update_cooldown unless skipped_actions.cooldown?
           end
 
-          result
+          nil
         end
 
         # @param request [ESM::Request] The request to build this command with

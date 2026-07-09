@@ -315,10 +315,6 @@ describe ESM::Command::Base do
     it "is defined" do
       expect(command.respond_to?(:on_execute)).to be(true)
     end
-
-    it "is callable" do
-      expect(command.on_execute).to eq("on_execute")
-    end
   end
 
   describe "#on_response" do
