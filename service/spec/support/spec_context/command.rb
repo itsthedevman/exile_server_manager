@@ -141,6 +141,49 @@ RSpec.shared_context("command") do
     end
   end
 
+  #
+  # Executes the command through the website workflow instead of Discord: mints a ServerCommand row
+  # the way the website controller does, drives it through #from_website! via the website event hook,
+  # and returns the settled row so specs can assert on its status/result/error_message.
+  #
+  # @param user [ESM::User] The user to run as. Defaults to the `user` let binding
+  # @param command_class [ESM::Command::Base] The command to run. Defaults to the `command_class` let binding
+  # @param server [ESM::Server] The target server the row belongs to. Defaults to the `server` let binding
+  # @param arguments [Hash] The command arguments, seeded onto the row as Strings the way form params arrive
+  #
+  # @return [ESM::ServerCommand] the row after it has settled
+  #
+  def execute_website!(**opts)
+    send_as = opts.delete(:user) || user
+    command_class = opts.delete(:command_class) || self.command_class
+    target_server = opts.delete(:server) || server
+    arguments = opts.delete(:arguments) || {}
+
+    # The website delivers every argument as a String (form params), so mirror that on the way in.
+    arguments =
+      arguments.transform_values do |value|
+        case value
+        when ESM::Server then value.server_id
+        when ESM::Community then value.community_id
+        when ESM::User then value.mention
+        else value.to_s
+        end
+      end
+
+    server_command = ESM::ServerCommand.create!(
+      user: send_as,
+      server: target_server,
+      idempotency_key: SecureRandom.uuid,
+      command_name: command_class.command_name,
+      arguments:,
+      status: :pending
+    )
+
+    command_class.website_event_hook(server_command)
+
+    server_command.reload
+  end
+
   def wait_for_completion!(event = :on_execute)
     wait_for { previous_command.timers.public_send(event.to_sym).finished? }.to be(true)
   end

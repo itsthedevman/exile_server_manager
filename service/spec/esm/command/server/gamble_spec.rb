@@ -502,4 +502,49 @@ describe ESM::Command::Server::Gamble, category: "command" do
       end
     end
   end
+
+  # The V2 #on_execute block already covers the gambling mechanics. This only proves the
+  # website-specific wiring: a resolved bet records its result on the row, and a rejection
+  # records the reason - instead of replying to Discord.
+  describe "#on_website_execute", requires_connection: true do
+    include_context "connection"
+
+    let(:amount) { 50 }
+    let(:locker_balance) { 5_000 }
+    let(:server_setting) { {} }
+
+    subject(:server_command) do
+      execute_website!(
+        arguments: {
+          server_id: server.server_id,
+          community_id: community.community_id,
+          amount:
+        }
+      )
+    end
+
+    before do
+      server.server_setting.update!(server_setting)
+      user.exile_account.update!(locker: locker_balance)
+    end
+
+    context "when the bet resolves" do
+      let!(:server_setting) { {gambling_win_percentage: 0} } # A deterministic loss
+
+      it "is expected to complete the row with the structured result" do
+        expect(server_command.status).to eq("completed")
+        expect(server_command.result).to include(:win, :amount, :locker_after)
+      end
+    end
+
+    context "when the extension rejects the bet" do
+      let(:amount) { 1_000 }
+      let(:locker_balance) { 0 }
+
+      it "is expected to fail the row with the extension's reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+      end
+    end
+  end
 end

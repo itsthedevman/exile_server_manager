@@ -19,6 +19,12 @@ module ESM
           )
 
           @command.from_website!
+
+          # A command settles the row itself only when it has a result to record (see the Origin's #reply).
+          # Commands whose work is the whole point return nothing, so mark the row complete here - mirroring
+          # Discord, where the event layer owns "done", not the command.
+          @event.completed! unless @event.settled?
+
           @command
         rescue => error
           on_error(error)

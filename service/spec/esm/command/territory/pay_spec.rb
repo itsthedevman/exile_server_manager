@@ -237,4 +237,47 @@ describe ESM::Command::Territory::Pay, category: "command" do
       end
     end
   end
+
+  # The V2 #on_execute block covers the payment mechanics. This only proves the website wiring: a
+  # successful payment settles the row complete with no payload, and a rejection records the reason.
+  describe "#on_website_execute", requires_connection: true do
+    include_context "connection" do
+      let!(:territory_build_rights) { [user.steam_uid] }
+    end
+
+    let(:locker_balance) { 1_000_000 }
+
+    subject(:server_command) do
+      execute_website!(
+        arguments: {
+          server_id: server.server_id,
+          community_id: community.community_id,
+          territory_id: territory.encoded_id
+        }
+      )
+    end
+
+    before do
+      user.exile_account.update!(locker: locker_balance)
+      territory.number_of_constructions = 15
+      territory.create_flag
+    end
+
+    context "when the payment succeeds" do
+      it "is expected to complete the row without a payload" do
+        expect(server_command.status).to eq("completed")
+        expect(server_command.result).to be_blank
+        expect(user.exile_account.reload.locker).to be < locker_balance
+      end
+    end
+
+    context "when the extension rejects the payment" do
+      let!(:locker_balance) { 0 }
+
+      it "is expected to fail the row with the extension's reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+      end
+    end
+  end
 end
