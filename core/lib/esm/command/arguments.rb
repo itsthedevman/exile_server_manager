@@ -104,8 +104,9 @@ module ESM
         templates.values.each do |argument|
           name = argument.name
 
-          # self[server_id] = value from discord
-          self[name] = values[argument.display_name]
+          # Discord sends the display name ("on"); the website and request paths seed the argument's own
+          # name ("server_id"). Accept either so every origin populates the same argument.
+          self[name] = values[argument.display_name] || values[name]
 
           # self.server_id
           define_method(name) { self[name] }
