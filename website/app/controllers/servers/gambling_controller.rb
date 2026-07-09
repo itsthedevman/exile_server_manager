@@ -17,18 +17,10 @@ module Servers
         new_command.arguments = {amount: params.require(:amount)}
       end
 
-      # Only the request that actually created the row dispatches, so a same-key retry dedupes to it instead of firing a
-      # second bet. The cooldown is claimed atomically here, before dispatch, so two rapid bets can't both get through:
-      # the loser's claim fails and its orphan row is dropped, freeing the held key to retry once the window passes.
-      if command.previously_new_record?
-        if !access.claim_cooldown!
-          command.destroy!
-          render_rejection(gamble_cooldown_message)
-          return
-        end
-
-        ESM::Service::API.call(:server_gamble, command_id: command.id)
-      end
+      # Only the request that created the row dispatches, so a same-key retry dedupes to it instead of firing a second
+      # bet. Cooldown enforcement lives in the ServerGamble handler now - checked before the bet, applied only once one
+      # completes - so a mid-flight failure or a bot restart never strands the player behind it.
+      ESM::Service::API.call(:server_gamble, command_id: command.id) if command.previously_new_record?
 
       Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? } if command.pending?
 
@@ -55,8 +47,8 @@ module Servers
       )
     end
 
-    # Renders a denial into the result slot as a 422 so Turbo shows the message without rotating the form's idempotency
-    # key - a rejected attempt keeps its key, so retrying can't slip past the dedupe or the cooldown claim.
+    # Renders a denial into the result slot as a 422 - Turbo shows the message without rotating the form's idempotency
+    # key, so a denied attempt reuses the same key and can't slip past the dedupe.
     def render_rejection(message)
       render(
         turbo_stream: turbo_stream.replace(
@@ -83,10 +75,6 @@ module Servers
       else
         "You can't gamble right now."
       end
-    end
-
-    def gamble_cooldown_message
-      "Slow down! Give your last bet a moment to settle before gambling again."
     end
 
     # The bet outcome the result partial renders: the win/loss payload on success,
