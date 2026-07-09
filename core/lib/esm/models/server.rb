@@ -157,6 +157,10 @@ module ESM
       user_gamble_stats.order(total_poptabs_loss: :desc).first
     end
 
+    def attributes_for_logging
+      attributes.except("id", "server_key")
+    end
+
     private
 
     def generate_public_id
