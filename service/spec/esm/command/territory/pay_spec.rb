@@ -278,5 +278,24 @@ describe ESM::Command::Territory::Pay, category: "command" do
         expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
       end
     end
+
+    # Unlike gamble, pay does not skip the connected-server check, and that check runs before the cooldown one, so
+    # this keeps the live connection to clear it. The cooldown check then short-circuits before any Arma pay round-trip.
+    context "when the player is on cooldown" do
+      before do
+        create(
+          :cooldown, :active,
+          command_name: "pay",
+          steam_uid: user.steam_uid,
+          community_id: community.id,
+          server_id: server.id
+        )
+      end
+
+      it "is expected to fail the row with the cooldown reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/on cooldown/i)
+      end
+    end
   end
 end

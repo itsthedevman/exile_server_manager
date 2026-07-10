@@ -71,7 +71,7 @@
                         - if user_signed_in?
                           .d-inline-flex.gap-2
                             = render "servers/favorites/button", server:, favorited: favorited_server_ids.include?(server.id)
-                            = link_to me_server_players_path(server.public_id), class: "btn btn-sm btn-outline-primary", title: "View your player"
+                            = link_to server_path(server.public_id), class: "btn btn-sm btn-outline-primary", title: "View server"
                               i.bi.bi-box-arrow-in-right
                         - else
                           = link_to "Log in", login_path, class: "btn btn-sm btn-outline-secondary"

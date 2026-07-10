@@ -2,7 +2,7 @@ class CooldownsUniqueKey < ActiveRecord::Migration[8.1]
   # A cooldown is logically unique per (command, player, community, server) - keyed by steam_uid for registration-gated
   # commands and user_id otherwise. The bot never had to enforce that in the database because Discord runs a user's
   # commands serially; website-initiated commands can arrive concurrently, so the uniqueness now has to hold in the
-  # schema for ESM::Cooldown.claim! to be a sound atomic reservation.
+  # schema itself rather than leaning on serialized execution.
   #
   # The pre-existing indexes were non-unique and omitted server_id (the query filtered it as a residual). These
   # replacements match the real lookup key exactly.

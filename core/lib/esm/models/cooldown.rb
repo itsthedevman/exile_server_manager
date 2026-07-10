@@ -71,37 +71,6 @@ module ESM
     end
 
     ##
-    # Atomically reserve a player's cooldown window before dispatching a command, for callers that can be hit
-    # concurrently. The reservation is a single row-locked UPDATE: the request that flips an expired (or absent) row's
-    # expiry into the future wins the window, and every request racing alongside it re-reads a live expiry and is
-    # refused. Only meaningful for time-based cooldowns; `times` cooldowns are counted at execution, not reserved ahead
-    # of it.
-    #
-    # @param duration [ActiveSupport::Duration] the cooldown length, e.g. 2.seconds
-    # @param (see .scope_for)
-    #
-    # @return [Boolean] true when this caller claimed the window, false when a live cooldown is already in force
-    #
-    def self.claim!(command_name:, user:, registered:, community:, server:, duration:)
-      scope = scope_for(command_name:, user:, registered:, community:, server:)
-      now = ::Time.current
-      attributes = expiry_attributes(now, duration)
-
-      # An existing, expired row: claim it in one row-locked UPDATE.
-      return true if scope.where(expires_at: ...now).update_all(attributes) == 1
-
-      # A live cooldown is already sitting there.
-      return false if scope.where(expires_at: now..).exists?
-
-      # No row yet - this player's first use of the command here. Create it claimed; the unique index turns a lost
-      # creation race into a plain refusal.
-      scope.create!(attributes)
-      true
-    rescue ActiveRecord::RecordNotUnique
-      false
-    end
-
-    ##
     # Bring every cooldown governed by a command configuration back in line with it. Called when a community edits the
     # command's cooldown, so that every reader still pulls a correct row without normalizing at the call site - the
     # correction now happens once, at the edit that made the rows stale, instead of on every read.
