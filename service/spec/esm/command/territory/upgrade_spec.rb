@@ -12,8 +12,7 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
 
       context "when the territory can be upgraded" do
         it "is upgraded to the next level" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, territory_id: territory_id})
-          expect(request).not_to be_nil
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, territory_id: territory_id})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

@@ -68,7 +68,7 @@ describe ESM::Command::Community::Mode, category: "command" do
           }
 
           expect { execute!(**execution_args) }.to raise_error do |error|
-            embed = error.data
+            embed = error.to_embed
             expect(embed.description).to match(/in order to enable player mode you must remove any servers you've registered via my/i)
           end
         end
@@ -86,7 +86,7 @@ describe ESM::Command::Community::Mode, category: "command" do
         }
 
         expect { execute!(**execution_args) }.to raise_error do |error|
-          embed = error.data
+          embed = error.to_embed
           expect(embed.description).to match(/only the owner of this community has access to this command/i)
         end
       end

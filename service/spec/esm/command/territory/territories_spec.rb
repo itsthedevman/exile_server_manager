@@ -16,9 +16,8 @@ describe ESM::Command::Server::Territories, category: "command" do
 
       context "when the player has territories" do
         it "returns their territories" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(response.size)
 
@@ -103,9 +102,8 @@ describe ESM::Command::Server::Territories, category: "command" do
         it "returns an error message" do
           wsc.flags.RETURN_NO_TERRITORIES = true
 
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

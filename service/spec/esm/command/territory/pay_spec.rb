@@ -10,12 +10,11 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
       context "when the execution is valid" do
         it "returns a success message" do
-          request = execute!(
+          execute!(
             channel_type: :dm,
             arguments: {server_id: server.server_id, territory_id: Faker::Crypto.md5[0, 5]}
           )
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

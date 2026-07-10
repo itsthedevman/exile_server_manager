@@ -10,9 +10,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is a number" do
         it "gambles with the amount of poptabs on the server" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "300"})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "300"})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -25,9 +24,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is 'half'" do
         it "gambles half of the user's poptabs on the server" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "half"})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "half"})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -40,8 +38,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is 'all'" do
         it "gambles all of the players money" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "all"})
-          expect(request).not_to be_nil
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "all"})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -56,8 +53,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it "returns an error from the server" do
           wsc.flags.NOT_ENOUGH_MONEY = true
 
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "100000000"})
-          expect(request).not_to be_nil
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "100000000"})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -544,6 +540,24 @@ describe ESM::Command::Server::Gamble, category: "command" do
       it "is expected to fail the row with the extension's reason" do
         expect(server_command.status).to eq("failed")
         expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+      end
+    end
+
+    # The cooldown check short-circuits before any Arma round-trip, so this needs no connection.
+    context "when the player is on cooldown", requires_connection: false do
+      before do
+        create(
+          :cooldown, :active,
+          command_name: "gamble",
+          steam_uid: user.steam_uid,
+          community_id: community.id,
+          server_id: server.id
+        )
+      end
+
+      it "is expected to fail the row with the cooldown reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/on cooldown/i)
       end
     end
   end
