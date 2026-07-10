@@ -14,15 +14,35 @@ module ESM
         # So if #message is called, it will return that.
         super(data.to_s)
 
-        # Store the embed in the message
-        # I had to do it this way because StandardError converts the message to a string
         @data = data
       end
 
-      def to_embed
-        return @data if @data.is_a?(ESM::Embed) || @data.blank?
+      ##
+      # The player-facing text for this error, medium-agnostic. Arrays (multi-line extension errors) join
+      # with newlines; a structured hash yields its description line. Presentation lives in #to_embed.
+      #
+      def to_content
+        case @data
+        when Array
+          @data.join("\n")
+        when Hash
+          @data.symbolize_keys[:description].to_s
+        else
+          @data.to_s
+        end
+      end
 
-        ESM::Embed.build(:error, description: @data.to_s)
+      def to_embed
+        return @data if @data.blank?
+
+        case @data
+        # Lenient #from_hash (not the strict #from_hash!) - the hash is our own #to_h, which carries
+        # keys the strict validator rejects.
+        when Hash
+          ESM::Embed.from_hash(@data)
+        else
+          ESM::Embed.build(:error, description: to_content)
+        end
       end
     end
 
@@ -84,12 +104,9 @@ module ESM
     end
 
     # Raised when the Arma extension rejects a request. #data holds the player-facing error
-    # strings from the response; each surface renders them itself (Discord builds an error embed,
-    # the website records them on the command row).
+    # strings from the response; each surface renders them itself (Discord builds an error embed
+    # via the base #to_embed, the website records #to_content on the command row).
     class ExtensionError < ApplicationError
-      def to_embed
-        ESM::Embed.build(:error, description: @data.join("\n"))
-      end
     end
 
     # Raised when a query or call targets a server that has no live connection,

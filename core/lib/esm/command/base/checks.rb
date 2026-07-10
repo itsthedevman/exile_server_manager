@@ -106,33 +106,28 @@ module ESM
           check_failed! do
             provided_server_id = arguments.server_id
 
-            ESM::Embed.build do |e|
-              e.description =
-                if provided_server_id.blank?
-                  I18n.t("command_errors.invalid_server_id_blank", user: current_user.mention)
-                else
-                  # Attempt to correct them
-                  corrections = ESM::Server.correct_id(provided_server_id)
+            if provided_server_id.blank?
+              I18n.t("command_errors.invalid_server_id_blank", user: current_user.mention)
+            else
+              # Attempt to correct them
+              corrections = ESM::Server.correct_id(provided_server_id)
 
-                  if corrections.blank?
-                    I18n.t(
-                      "command_errors.invalid_server_id",
-                      user: current_user.mention,
-                      provided_server_id: provided_server_id
-                    )
-                  else
-                    corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
+              if corrections.blank?
+                I18n.t(
+                  "command_errors.invalid_server_id",
+                  user: current_user.mention,
+                  provided_server_id: provided_server_id
+                )
+              else
+                corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
 
-                    I18n.t(
-                      "command_errors.invalid_server_id_with_correction",
-                      user: current_user.mention,
-                      provided_server_id: provided_server_id,
-                      correction: corrections
-                    )
-                  end
-                end
-
-              e.color = :red
+                I18n.t(
+                  "command_errors.invalid_server_id_with_correction",
+                  user: current_user.mention,
+                  provided_server_id: provided_server_id,
+                  correction: corrections
+                )
+              end
             end
           end
         end
@@ -147,26 +142,21 @@ module ESM
             # Attempt to correct them
             corrections = ESM::Community.correct(provided_community_id)
 
-            ESM::Embed.build do |e|
-              e.description =
-                if corrections.blank?
-                  I18n.t(
-                    "command_errors.invalid_community_id",
-                    user: current_user.mention,
-                    provided_community_id: provided_community_id
-                  )
-                else
-                  corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
+            if corrections.blank?
+              I18n.t(
+                "command_errors.invalid_community_id",
+                user: current_user.mention,
+                provided_community_id: provided_community_id
+              )
+            else
+              corrections = corrections.join_map(", ") { |correction| "`#{correction}`" }
 
-                  I18n.t(
-                    "command_errors.invalid_community_id_with_correction",
-                    user: current_user.mention,
-                    provided_community_id: provided_community_id,
-                    correction: corrections
-                  )
-                end
-
-              e.color = :red
+              I18n.t(
+                "command_errors.invalid_community_id_with_correction",
+                user: current_user.mention,
+                provided_community_id: provided_community_id,
+                correction: corrections
+              )
             end
           end
         end

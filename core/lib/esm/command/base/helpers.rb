@@ -299,7 +299,7 @@ module ESM
         #
         # @param error_name [String, Symbol, nil] The name of the error message located in the locales for "commands.<command_name>.errors". If nil, a block must be provided
         # @param args [Hash] The args to be passed into the translation if an error_name is provided
-        # @param block [Proc] If provided, the block must return the error message to be used. This can be a string or an ESM::Embed.
+        # @param block [Proc] If provided, the block must return the error message content (a String) to be used.
         #
         def raise_error!(error_name = nil, **args, &block)
           exception_class = args.delete(:exception_class) || ESM::Exception::CheckFailure
@@ -309,12 +309,12 @@ module ESM
             if block
               yield
             elsif error_name
-              ESM::Embed.build(:error, description: I18n.t("#{path_prefix}.#{error_name}", **args))
+              I18n.t("#{path_prefix}.#{error_name}", **args)
             end
 
           warn!(
             exception_class:,
-            reason: reason.is_a?(Embed) ? reason.description : reason,
+            reason: reason.is_a?(Hash) ? reason[:description] : reason,
             command: to_h,
             **(@origin&.log_context || {})
           )

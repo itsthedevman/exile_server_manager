@@ -60,7 +60,7 @@ module ESM
             )
           end
 
-        raise ESM::Exception::CheckFailure, embed
+        raise ESM::Exception::CheckFailure, embed.to_h
       end
 
       def inspect

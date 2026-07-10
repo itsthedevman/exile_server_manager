@@ -71,7 +71,7 @@ module ESM
             # DLL Reason. This is a weird one since I can't localize the message
             if @response.reason
               raise_error! do
-                ESM::Embed.build(:error, description: "I'm sorry #{current_user.mention}, #{@response.reason}")
+                "I'm sorry #{current_user.mention}, #{@response.reason}"
               end
             end
 

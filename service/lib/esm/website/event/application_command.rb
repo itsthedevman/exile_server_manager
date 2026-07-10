@@ -37,7 +37,7 @@ module ESM
           when ESM::Exception::RequestTimeout
             @event.update!(status: :timed_out)
           when ESM::Exception::ApplicationError
-            @event.update!(status: :failed, error_message: error.data.join("\n"))
+            @event.update!(status: :failed, error_message: error.to_content)
           when StandardError
             ESM.discord_bot.log_error(
               user: user.attributes_for_logging,
