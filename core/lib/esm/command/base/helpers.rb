@@ -305,21 +305,23 @@ module ESM
           exception_class = args.delete(:exception_class) || ESM::Exception::CheckFailure
           path_prefix = args.delete(:path_prefix) || "commands.#{name}.errors"
 
-          reason =
+          error =
             if block
-              yield
+              exception_class.new(yield)
             elsif error_name
-              I18n.t("#{path_prefix}.#{error_name}", **args)
+              exception_class.new(key: "#{path_prefix}.#{error_name}", **args)
+            else
+              exception_class.new(nil)
             end
 
           warn!(
             exception_class:,
-            reason: reason.is_a?(Hash) ? reason[:description] : reason,
+            reason: error.try(:key) || error.message,
             command: to_h,
             **(@origin&.log_context || {})
           )
 
-          raise exception_class, reason
+          raise error
         end
 
         def skip_action(*)
@@ -521,7 +523,7 @@ module ESM
           raise_error!(
             :error,
             path_prefix: "exceptions.extension",
-            user: current_user.mention,
+            user: current_user,
             server_id: target_server.server_id
           )
         end

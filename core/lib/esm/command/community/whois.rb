@@ -102,7 +102,7 @@ module ESM
           # Ensure the user in question is a member of the current Discord. This keeps players from inviting ESM and abusing the command to find admins of other servers.
           return if current_community.discord_server.member(target_user.discord_id.to_i).present?
 
-          raise_error!(:access_denied, user: current_user.mention)
+          raise_error!(:access_denied, user: current_user)
         end
       end
     end

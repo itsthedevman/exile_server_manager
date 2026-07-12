@@ -85,7 +85,7 @@ module ESM
         def check_for_no_target!
           return unless arguments.target.blank? && arguments.territory_id.blank?
 
-          raise_error!(:no_target, user: current_user.mention)
+          raise_error!(:no_target, user: current_user)
         end
 
         def check_for_player_info!(result)
@@ -93,7 +93,7 @@ module ESM
 
           raise_error!(
             :no_player_info,
-            user: current_user.mention,
+            user: current_user,
             target: arguments.target
           )
         end
@@ -103,7 +103,7 @@ module ESM
 
           raise_error!(
             :no_territory_info,
-            user: current_user.mention,
+            user: current_user,
             territory_id: arguments.territory_id
           )
         end
@@ -141,7 +141,7 @@ module ESM
           def check_for_response!
             return if @response.present?
 
-            raise_error!(:no_response, user: current_user.mention)
+            raise_error!(:no_response, user: current_user)
           end
         end
       end

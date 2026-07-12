@@ -60,7 +60,7 @@ module ESM
           return if arguments.command.blank?
           return if ESM::Command.include?(arguments.command)
 
-          raise_error!(:invalid_command, user: current_user.mention, command_name: arguments.command)
+          raise_error!(:invalid_command, user: current_user, command_name: arguments.command)
         end
 
         def confirmation_embed

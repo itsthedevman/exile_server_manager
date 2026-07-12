@@ -75,7 +75,7 @@ module ESM
               end
             end
 
-            raise_error!(:access_denied, user: current_user.mention)
+            raise_error!(:access_denied, user: current_user)
           end
         end
 
@@ -84,13 +84,13 @@ module ESM
         def check_for_minimum_characters!
           return if arguments.new_territory_id.blank?
 
-          raise_error!(:minimum_characters, user: current_user.mention) if arguments.new_territory_id.size < 3
+          raise_error!(:minimum_characters, user: current_user) if arguments.new_territory_id.size < 3
         end
 
         def check_for_maximum_characters!
           return if arguments.new_territory_id.blank?
 
-          raise_error!(:maximum_characters, user: current_user.mention) if arguments.new_territory_id.size > 20
+          raise_error!(:maximum_characters, user: current_user) if arguments.new_territory_id.size > 20
         end
 
         def success_message

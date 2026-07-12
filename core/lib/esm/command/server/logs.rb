@@ -98,7 +98,7 @@ module ESM
         private
 
         def check_for_no_logs!(logs)
-          raise_error!(:no_logs, user: current_user.mention) if logs.blank?
+          raise_error!(:no_logs, user: current_user) if logs.blank?
         end
 
         def create_log_entries(log, log_results)
@@ -163,7 +163,7 @@ module ESM
           private
 
           def check_for_no_logs!
-            raise_error!(:no_logs, user: current_user.mention) if @response.second.blank?
+            raise_error!(:no_logs, user: current_user) if @response.second.blank?
           end
 
           def parse_logs

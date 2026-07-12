@@ -65,15 +65,15 @@ en:
       Hey %{user}, this command can only be used in a **Direct Message** with me.
 
       Just right click my name, click **Message**, and send it there
-    command_not_enabled: "Hey %{user}, `%{command_name}` is not enabled for this community"
-    not_allowlisted: "Hey %{user}, you do not have permission to use `%{command_name}`"
+    command_not_enabled: "Hey %{user}, this command is not enabled for this community"
+    not_allowlisted: "Hey %{user}, you do not have permission to use this command"
     not_allowed_in_text_channels: |-
       Hey %{user}, `%{command_name}` is not allowed in this Discord's channels.
       Try sending me this command via a **Direct Message**. Just right click my name, click **Message**, and send it there
     on_cooldown_time_left: |-
-      Hey %{user}, you're on cooldown for `%{command_name}`.
+      Hey %{user}, you're on cooldown.
       You have **%{time_left}** left before you can use it again
-    on_cooldown_useage: "Hey %{user}, you've exceeded the amount of times you may use `%{command_name}`."
+    on_cooldown_useage: "Hey %{user}, you've exceeded the amount of times you may use this command."
     not_registered: |-
       Greetings %{user}!
 
@@ -83,6 +83,9 @@ en:
       **This Discord account is %{full_username}.**
 
       Once you're ready, please head over to https://www.esmbot.com/register to get started.
+    not_registered_web: |-
+      Hey %{user}, you'll need to link your Steam account before you can run commands.
+      Head to your account page to link it, then try again.
     server_not_connected: |-
       Hey %{user}, it looks like `%{server_id}` isn't connected right now.
       Please try again in a few minutes as the server may be restarting.

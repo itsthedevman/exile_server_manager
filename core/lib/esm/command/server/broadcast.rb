@@ -145,18 +145,18 @@ module ESM
         end
 
         def check_for_message_length!
-          raise_error!(:message_length, user: current_user.mention) if arguments.message.size > 2000
+          raise_error!(:message_length, user: current_user) if arguments.message.size > 2000
         end
 
         def raise_no_server_access!
-          raise_error!(:no_server_access, user: current_user.mention, community_id: current_community.community_id)
+          raise_error!(:no_server_access, user: current_user, community_id: current_community.community_id)
         end
 
         def raise_invalid_server_id!
           raise_error!(
             :invalid_server_id,
             path_prefix: "command_errors",
-            user: current_user.mention,
+            user: current_user,
             provided_server_id: arguments.broadcast_to
           )
         end

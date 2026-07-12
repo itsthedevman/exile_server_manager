@@ -73,7 +73,7 @@ module ESM
             reward.player_poptabs.positive? ||
             reward.respect.positive?
 
-          raise_error!(:no_reward_items, user: current_user.mention)
+          raise_error!(:no_reward_items, user: current_user)
         end
 
         module V1

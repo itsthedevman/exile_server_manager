@@ -66,8 +66,56 @@ module ESM
     # Raised if the provided argument value from the user is invalid
     class InvalidArgument < ApplicationError; end
 
-    # Generic exception for any checks
-    class CheckFailure < ApplicationError; end
+    # Generic exception for any checks. Carries either a locale `key` plus interpolation `details` - rendered
+    # per surface at delivery time so each medium names the user and formats the copy its own way - or a legacy
+    # positional `data` (a literal string, or the embed hash from argument validation) that the base
+    # ApplicationError rendering handles unchanged.
+    class CheckFailure < ApplicationError
+      attr_reader :key, :details
+
+      def initialize(data = nil, key: nil, **details)
+        @key = key
+        @details = details
+        super(data)
+      end
+
+      ##
+      # Renders this failure's copy from its locale key. Any ESM::User in the details is projected through
+      # `projector`, so each surface names the user its own way (mention on Discord, username on the website).
+      # `suffix` lets a surface prefer a variant key (e.g. "_web") and fall back to the base key when absent.
+      #
+      # @param suffix [String, nil] an optional key suffix to prefer when a surface-specific variant exists
+      # @param projector [Proc] projects an ESM::User into the surface's representation
+      #
+      # @return [String] the interpolated, surface-projected copy
+      #
+      def render(suffix: nil, &projector)
+        lookup = (suffix && I18n.exists?("#{key}#{suffix}")) ? "#{key}#{suffix}" : key
+        I18n.t(lookup, **details.transform_values { |value| user_like?(value) ? projector.call(value) : value })
+      end
+
+      # A bare #message (logs, `raise_error` matchers, backtraces) has no surface, so render the Discord copy -
+      # the default medium. Literal failures fall back to StandardError's stored message.
+      def message
+        return super if key.nil?
+
+        render(&:mention)
+      end
+
+      def to_embed
+        return super if key.nil?
+
+        ESM::Embed.build(:error, description: render(&:mention))
+      end
+
+      private
+
+      # Both a registered ESM::User and the User::Ephemeral stand-in for an unregistered target answer the
+      # projection methods (#mention, #username), so either should be projected rather than interpolated raw.
+      def user_like?(value)
+        value.is_a?(ESM::User) || value.is_a?(ESM::User::Ephemeral)
+      end
+    end
 
     # When the bot does not have access to send a message to a particular channel
     class ChannelAccessDenied < Error; end
