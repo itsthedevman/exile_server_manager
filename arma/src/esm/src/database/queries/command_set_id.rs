@@ -27,6 +27,17 @@ pub async fn command_set_id(
     let territory_id =
         queries::decode_territory_id(context, connection, territory_id).await?;
 
+    // A new ID that already resolves to a territory (custom or hashed) would trip
+    // the unique index; catch it here so the player gets a clear message instead
+    // of a raw MySQL error. Resolving to this same territory is a no-op rename.
+    if let Ok(existing_id) =
+        queries::decode_territory_id(context, connection, new_territory_id).await
+    {
+        if existing_id != territory_id {
+            return Err(QueryError::Code("territory_id_already_exists".into()));
+        }
+    }
+
     // Territory admins can bypass this check.
     // Otherwise, check to see if the steam_uid is the owner's
     if !arma::is_territory_admin(&steam_uid) {
