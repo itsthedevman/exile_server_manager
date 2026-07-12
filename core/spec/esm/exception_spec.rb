@@ -78,3 +78,69 @@ RSpec.describe ESM::Exception::ApplicationError do
     end
   end
 end
+
+RSpec.describe ESM::Exception::CheckFailure do
+  let(:user) { ESM::User.new(discord_id: "137", discord_username: "Bryan") }
+
+  describe "a keyed failure" do
+    subject(:error) do
+      described_class.new(key: "command_errors.on_cooldown_time_left", user: user, time_left: "8 seconds")
+    end
+
+    it "renders #message as the Discord copy, projecting the user to a mention" do
+      expect(error.message).to include("<@137>").and include("8 seconds")
+    end
+
+    it "builds #to_embed from the rendered copy" do
+      expect(error.to_embed).to be_a(ESM::Embed).and have_attributes(description: a_string_including("<@137>"))
+    end
+
+    it "projects the user through a caller-supplied projector in #render" do
+      rendered = error.render(&:username)
+
+      expect(rendered).to include("Bryan")
+      expect(rendered).not_to include("<@137>")
+    end
+  end
+
+  describe "a keyed failure with a _web variant" do
+    subject(:error) do
+      described_class.new(key: "command_errors.not_registered", user: user, full_username: "Bryan#0001")
+    end
+
+    it "prefers the suffixed key when it exists" do
+      expect(error.render(suffix: "_web", &:username)).to include("before you can run commands")
+    end
+
+    it "falls back to the base key when no suffix is requested" do
+      expect(error.render(&:username)).to include("with your Discord account")
+    end
+  end
+
+  describe "an Ephemeral (unregistered) target in the details" do
+    subject(:error) do
+      described_class.new(
+        key: "command_errors.target_not_registered",
+        user: user,
+        target_user: ESM::User::Ephemeral.new("76561199060562957")
+      )
+    end
+
+    it "projects the Ephemeral just like a registered user" do
+      expect(error.message).to include("76561199060562957")
+    end
+  end
+
+  describe "a literal (block-form) failure" do
+    subject(:error) { described_class.new("Something specific went wrong") }
+
+    it "returns the literal text for #message and #to_content" do
+      expect(error.message).to eq("Something specific went wrong")
+      expect(error.to_content).to eq("Something specific went wrong")
+    end
+
+    it "wraps the literal text in #to_embed" do
+      expect(error.to_embed).to have_attributes(description: "Something specific went wrong")
+    end
+  end
+end
