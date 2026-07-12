@@ -202,7 +202,7 @@ module TerritoriesHelper
   # recording, so we show a generic line and keep internals off the page.
   def pay_failure_message(command)
     return "The server didn't respond in time. Check in-game before paying again." if command.timed_out?
-    return web_extension_message(command.error_message, command.user) if command.error_message.present?
+    return command.error_message if command.error_message.present?
 
     "Something went wrong processing the payment. Please try again."
   end

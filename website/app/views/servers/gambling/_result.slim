@@ -3,7 +3,7 @@
   - if result.nil?
     .text-muted.small.text-center.py-2 Place a bet to see your result.
   - elsif result.error.present?
-    .alert.alert-warning.mb-0.py-2.small = web_extension_message(result.error, current_user)
+    .alert.alert-warning.mb-0.py-2.small = result.error
   - elsif result.win
     .text-center.py-2
       .fs-5.fw-bold.text-success = gamble_won_headline(result)
