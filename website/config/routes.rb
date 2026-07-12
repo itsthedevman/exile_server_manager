@@ -196,6 +196,9 @@ Rails.application.routes.draw do
         # /servers/:server_id/territories/:territory_id/demote_member
         post :demote_member
 
+        # /servers/:server_id/territories/:territory_id/set_id
+        post :set_id
+
         collection do
           # /servers/:server_id/territories/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status

@@ -60,6 +60,16 @@ module TerritoriesHelper
       failure_title: "Removal failed",
       timeout_failure: "The server didn't respond in time. Check in-game before removing again.",
       generic_failure: "Something went wrong removing the player. Please try again."
+    },
+    "set_id" => {
+      style: :inline,
+      progressive: "Saving…",
+      past_tense: "Renamed",
+      processing_tone: "info",
+      success_toast: "Territory ID updated.",
+      failure_title: "Rename failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before renaming again.",
+      generic_failure: "Something went wrong updating the territory ID. Please try again."
     }
   }.freeze
 
@@ -121,15 +131,10 @@ module TerritoriesHelper
     end
   end
 
-  # Stolen / Secure pill, matching the territory card.
-  def territory_flag_badge(territory)
-    if territory.stolen?
-      tag.span(class: "badge bg-danger") do
-        safe_join([tag.i(class: "bi bi-exclamation-triangle-fill me-1"), "Stolen"])
-      end
-    else
-      tag.span("Secure", class: "badge bg-success")
-    end
+  # Accent for the Overview status stat: green while the territory is secure, red
+  # once its flag has been stolen.
+  def territory_flag_status_color(territory)
+    territory.stolen? ? "text-danger" : "text-success"
   end
 
   # Web-friendly timestamp, or a fallback when the territory has never been paid.
@@ -403,6 +408,16 @@ module TerritoriesHelper
         icon: action[:icon],
         variant: action[:variant],
         label: action[:label],
+        replace_id: server_command_id(command)
+    when "set_id"
+      # Re-open the editor prefilled with what they typed so a failed rename can
+      # be fixed and resubmitted without retyping the id.
+      render "servers/territories/set_id",
+        server_public_id: command.server.public_id,
+        territory_id: command.arguments[:old_territory_id],
+        surface: "retry",
+        open: true,
+        value: command.arguments[:new_territory_id],
         replace_id: server_command_id(command)
     end
   end

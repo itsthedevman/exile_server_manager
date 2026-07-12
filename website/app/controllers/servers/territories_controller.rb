@@ -49,6 +49,13 @@ module Servers
       }
     end
 
+    def set_id
+      run_territory_command("set_id", arguments: {
+        old_territory_id: params.require(:territory_territory_id),
+        new_territory_id: params.require(:custom_id)
+      })
+    end
+
     private
 
     def current_server

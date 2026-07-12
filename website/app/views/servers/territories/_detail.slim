@@ -14,8 +14,7 @@
     .flex-grow-1.overflow-hidden
       h5.modal-title.mb-1.text-truncate = current_territory.name
       .d-flex.align-items-center.gap-2
-        code.small.text-secondary-emphasis = current_territory.id
-        = territory_flag_badge(current_territory)
+        = render "servers/territories/set_id", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal"
     .flex-shrink-0.align-self-end
       = render "shared/data_freshness", at: Time.current
     button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
@@ -23,6 +22,7 @@
   .modal-body
     = territory_section "Overview", icon: "map-fill", color: "text-info" do
       .row.g-3
+        = territory_stat("Status", current_territory.flag_status, color: territory_flag_status_color(current_territory))
         = territory_stat("Level", current_territory.level)
         = territory_stat("Radius", "#{current_territory.radius}m")
         = territory_stat("Objects", current_territory.object_count)

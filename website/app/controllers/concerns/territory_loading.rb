@@ -36,7 +36,11 @@ module TerritoryLoading
   def refreshed_territory(command)
     return unless command.completed?
 
-    load_territory(command.server, command.arguments[:territory_id], current_user.steam_uid, force: true)
+    # A successful set_id renames the territory, so it now answers only to the new id; reload by that.
+    # Every other command leaves the id untouched and falls back to it.
+    territory_id = command.arguments[:new_territory_id].presence || command.arguments[:territory_id]
+
+    load_territory(command.server, territory_id, current_user.steam_uid, force: true)
   end
 
   # The territory snapshot used to rebuild the retry button after a failed
