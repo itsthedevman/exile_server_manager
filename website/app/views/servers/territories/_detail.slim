@@ -15,22 +15,20 @@
       h5.modal-title.mb-1.text-truncate = current_territory.name
       .d-flex.align-items-center.gap-2
         = render "servers/territories/set_id", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal"
-    .flex-shrink-0.align-self-end
-      = render "shared/data_freshness", at: Time.current
     button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
 
   .modal-body
     = territory_section "Overview", icon: "map-fill", color: "text-info" do
       .row.g-3
-        = territory_stat("Status", current_territory.flag_status, color: territory_flag_status_color(current_territory))
-        = territory_stat("Level", current_territory.level)
+        = territory_stat("Status", current_territory.flag_status, color: territory_flag_status_color(current_territory), class: "col-12")
+        = territory_stat("Level", territory_level_display(current_territory))
         = territory_stat("Radius", "#{current_territory.radius}m")
         = territory_stat("Objects", current_territory.object_count)
 
     = territory_section "Payment", icon: "cash-stack", color: "text-warning" do
       .row.g-3
-        = territory_stat("Last paid", territory_datetime(current_territory.last_paid_at))
-        = territory_stat("Next due", territory_date(current_territory.next_due_date))
+        = territory_stat("Last paid", territory_datetime(current_territory.last_paid_at), class: "col-12 col-md-4")
+        = territory_stat("Next due", territory_date(current_territory.next_due_date), class: "col-12 col-md-4")
         = territory_stat("Renewal", poptab_price(current_territory.renew_price), color: "text-success")
       - if current_territory.payment_due_soon?
         .mt-3
@@ -42,7 +40,7 @@
           = territory_stat("Level", current_territory.upgrade_level)
           = territory_stat("Radius", "#{current_territory.upgrade_radius}m")
           = territory_stat("Max objects", current_territory.upgrade_object_count)
-          = territory_stat("Upgrade", poptab_price(current_territory.upgrade_price), color: "text-success")
+          = territory_stat("Upgrade", poptab_price(current_territory.upgrade_price), color: "text-success", class: "col-12")
         .mt-3
           = territory_upgrade_control(current_territory, server_public_id: current_server.public_id)
 
@@ -50,6 +48,9 @@
       = territory_member_group("Owner", [current_territory.owner], icon: "key-fill", color: "text-warning", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.any? ? "mb-3" : "", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "", territory_id: current_territory.id, server_public_id: current_server.public_id)
+  .modal-footer
+    .flex-shrink-0.align-self-end
+      = render "shared/data_freshness", at: Time.current
 - else
   .modal-header
     h5.modal-title.mb-0 Territory unavailable

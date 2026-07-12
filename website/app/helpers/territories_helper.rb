@@ -122,8 +122,8 @@ module TerritoriesHelper
 
   # A labeled stat cell for the modal grids. `value` may be HTML (e.g. a
   # poptab-iconified price); `color` accents the value (e.g. money green).
-  def territory_stat(label, value, color: nil)
-    tag.div(class: "col-6 col-md-4") do
+  def territory_stat(label, value, color: nil, **args)
+    tag.div(class: args[:class] || "col-6 col-md-4") do
       safe_join([
         tag.div(label, class: "text-secondary-emphasis small text-uppercase mb-1"),
         tag.div(value, class: class_names("fs-5 fw-semibold text-break", color))
@@ -135,6 +135,15 @@ module TerritoriesHelper
   # once its flag has been stolen.
   def territory_flag_status_color(territory)
     territory.stolen? ? "text-danger" : "text-success"
+  end
+
+  # The territory's level for the Overview stat, tagged with a muted "(max)" once
+  # it can't be upgraded further. The Next level section hides at the ceiling, so
+  # this is the only cue that a territory is maxed out.
+  def territory_level_display(territory)
+    return territory.level.to_s if territory.upgradeable?
+
+    safe_join([territory.level.to_s, tag.span("(max)", class: "text-secondary-emphasis small ms-1")])
   end
 
   # Web-friendly timestamp, or a fallback when the territory has never been paid.
