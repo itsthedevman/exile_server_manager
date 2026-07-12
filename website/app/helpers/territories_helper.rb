@@ -1,6 +1,33 @@
 # frozen_string_literal: true
 
 module TerritoriesHelper
+  # Per-command display copy for the shared territory-command action flow (the
+  # processing spinner, the settled result line, and the outcome toast). Adding a
+  # new territory write is one row here plus its trigger partial - the machinery
+  # in the _command_* partials is command-agnostic. The error_message branch of a
+  # failure is shared (it's the extension's own rejection text), so only the
+  # timeout hedge and the generic-catch line are per-command.
+  TERRITORY_COMMAND_COPY = {
+    "pay" => {
+      progressive: "Paying…",
+      past_tense: "Paid",
+      processing_tone: "warning",
+      success_toast: "Territory payment complete.",
+      failure_title: "Payment failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before paying again.",
+      generic_failure: "Something went wrong processing the payment. Please try again."
+    },
+    "upgrade" => {
+      progressive: "Upgrading…",
+      past_tense: "Upgraded",
+      processing_tone: "success",
+      success_toast: "Territory upgraded.",
+      failure_title: "Upgrade failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before upgrading again.",
+      generic_failure: "Something went wrong processing the upgrade. Please try again."
+    }
+  }.freeze
+
   # A titled section panel inside the territory detail modal body. The header icon
   # carries an accent color so the panels aren't monochrome.
   def territory_section(title, icon:, color: "text-info", wrapper_class: "p-3 mb-3", &block)
@@ -71,10 +98,11 @@ module TerritoriesHelper
     end
   end
 
-  # DOM id for a pay action region. `surface` keeps the card and modal buttons
-  # for the same territory distinct so a turbo replace targets only one of them.
-  def pay_action_id(territory_id, surface)
-    "pay_#{surface}_#{territory_id}"
+  # DOM id for a territory command's action region. The command name and surface
+  # together keep the card and modal buttons for the same territory distinct so a
+  # turbo replace targets only one of them.
+  def command_action_id(command_name, territory_id, surface)
+    "#{command_name}_#{surface}_#{territory_id}"
   end
 
   # DOM id the action region adopts once a command exists, so the poller and the
@@ -84,9 +112,9 @@ module TerritoriesHelper
     "server_command_#{command.idempotency_key}"
   end
 
-  # URL the pay poller watches until the dispatched command settles. The command
+  # URL the poller watches until the dispatched command settles. The command
   # carries its own server, so a caller holding only the command can still build it.
-  def pay_command_status_path(command)
+  def territory_command_status_path(command)
     command_status_server_territories_path(command.server.public_id, command)
   end
 
@@ -105,6 +133,24 @@ module TerritoriesHelper
     return "Pay #{renew_price}" if renew_price.present?
 
     "Pay now"
+  end
+
+  # Confirmation copy for the Upgrade button. Names the price when the caller has
+  # it (upgrade_price already carries the "poptabs" label and any tax note); the
+  # retry surface has no price to hand, so it falls back to a generic line.
+  def upgrade_confirm_message(upgrade_price = nil)
+    return "Upgrade this territory for #{upgrade_price} from your locker now?" if upgrade_price.present?
+
+    "Upgrade this territory from your locker now?"
+  end
+
+  # Button face. Names the target level when the caller has it (the modal's Next
+  # level section); the retry surface has no snapshot, so it stays generic. The
+  # price already sits in the section stats, so the button doesn't restate it.
+  def upgrade_button_label(upgrade_level = nil)
+    return "Upgrade to level #{upgrade_level}" if upgrade_level.present?
+
+    "Upgrade now"
   end
 
   # The payment-due panel: a tinted box whose urgency tone frames the Pay action
@@ -134,7 +180,7 @@ module TerritoriesHelper
     block = territory_pay_block(territory, locker:)
 
     return "".html_safe if block && territory.stolen? && surface == "card"
-    return render("servers/territories/pay_blocked", label: block[:label], tone: block[:tone]) if block
+    return render("servers/territories/command_blocked", label: block[:label], tone: block[:tone]) if block
 
     render(
       "servers/territories/pay_button",
@@ -143,6 +189,23 @@ module TerritoriesHelper
       surface:,
       renew_price:,
       tone:
+    )
+  end
+
+  # The actionable control inside the modal's Next level section: the live Upgrade
+  # button, or a disabled stand-in when the territory is stolen (mirrors the pay
+  # button, which can't renew a stolen base either). The extension enforces the
+  # rest server-side, so no other pre-check is gated here.
+  def territory_upgrade_control(territory, server_public_id:)
+    return render("servers/territories/command_blocked", label: "Territory stolen!", tone: "danger") if territory.stolen?
+
+    render(
+      "servers/territories/upgrade_button",
+      server_public_id:,
+      territory_id: territory.id,
+      surface: "modal",
+      upgrade_level: territory.upgrade_level,
+      upgrade_price: territory.upgrade_price
     )
   end
 
@@ -188,23 +251,68 @@ module TerritoriesHelper
     "Payment due in #{days} days"
   end
 
-  # The toast that announces a settled payment's outcome.
-  def pay_outcome_toast(command)
-    return create_toast("Territory payment complete.", title: "Paid", color: "green") if command.completed?
-
-    create_toast(pay_failure_message(command), title: "Payment failed", color: "red")
+  # Display copy for a territory command, keyed on its name. Central so the
+  # shared _command_* partials never branch on command_name themselves.
+  def territory_command_copy(command)
+    TERRITORY_COMMAND_COPY.fetch(command.command_name)
   end
 
-  # User-facing reason a payment didn't complete. A timeout is deliberately
+  # Label + tone for the in-flight spinner button (e.g. "Paying…" amber,
+  # "Upgrading…" green), matching the trigger it replaces.
+  def territory_command_processing_label(command)
+    territory_command_copy(command)[:progressive]
+  end
+
+  def territory_command_processing_tone(command)
+    territory_command_copy(command)[:processing_tone]
+  end
+
+  # The toast that announces a settled command's outcome.
+  def territory_command_outcome_toast(command)
+    copy = territory_command_copy(command)
+    return create_toast(copy[:success_toast], title: copy[:past_tense], color: "green") if command.completed?
+
+    create_toast(territory_command_failure_message(command), title: copy[:failure_title], color: "red")
+  end
+
+  # User-facing reason a command didn't complete. A timeout is deliberately
   # hedged: the in-game side effect may still have happened. A recorded
   # error_message is a business rejection from the extension (e.g. not enough
-  # poptabs); anything else fell to the generic catch, which logs instead of
-  # recording, so we show a generic line and keep internals off the page.
-  def pay_failure_message(command)
-    return "The server didn't respond in time. Check in-game before paying again." if command.timed_out?
+  # poptabs) and is shown verbatim; anything else fell to the generic catch,
+  # which logs instead of recording, so we show a generic line and keep internals
+  # off the page.
+  def territory_command_failure_message(command)
+    copy = territory_command_copy(command)
+    return copy[:timeout_failure] if command.timed_out?
     return command.error_message if command.error_message.present?
 
-    "Something went wrong processing the payment. Please try again."
+    copy[:generic_failure]
+  end
+
+  # Rebuilds the right trigger after a failed command so a retry re-runs the same
+  # action. Dispatches on command_name because each command's button carries its
+  # own copy and price; the retry_territory snapshot re-supplies that context so
+  # the button isn't priceless. replace_id points the retry at the result region
+  # so a fresh attempt clears the previous error rather than nesting under it.
+  def territory_command_retry_button(command, retry_territory)
+    case command.command_name
+    when "pay"
+      render "servers/territories/pay_button",
+        server_public_id: command.server.public_id,
+        territory_id: command.arguments[:territory_id],
+        surface: "retry",
+        renew_price: retry_territory&.renew_price,
+        tone: retry_pay_button_tone(retry_territory),
+        replace_id: server_command_id(command)
+    when "upgrade"
+      render "servers/territories/upgrade_button",
+        server_public_id: command.server.public_id,
+        territory_id: command.arguments[:territory_id],
+        surface: "retry",
+        upgrade_level: retry_territory&.upgrade_level,
+        upgrade_price: retry_territory&.upgrade_price,
+        replace_id: server_command_id(command)
+    end
   end
 
   # Splits a "Name (uid)" entry into a prominent name and a muted, monospace uid.

@@ -1,0 +1,9 @@
+/ locals: server_public_id, territory_id, surface, upgrade_level, upgrade_price
+/ optional: replace_id
+div id=command_action_id("upgrade", territory_id, surface)
+  = button_to server_territory_upgrade_path(server_public_id, territory_id),
+    class: "btn btn-sm btn-success w-100",
+    form: {data: {turbo_confirm: upgrade_confirm_message(upgrade_price)}},
+    params: {idempotency_key: SecureRandom.uuid, dom_id: local_assigns.fetch(:replace_id) { command_action_id("upgrade", territory_id, surface) }} do
+    i.bi.bi-arrow-up-circle-fill.me-1
+    = upgrade_button_label(upgrade_level)

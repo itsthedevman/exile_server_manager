@@ -1,0 +1,5 @@
+/ locals: command
+div id=server_command_id(command) data-controller="server-command" data-server-command-url-value=territory_command_status_path(command)
+  button.btn.btn-sm.w-100[class="btn-#{territory_command_processing_tone(command)}" type="button" disabled]
+    span.spinner-border.spinner-border-sm.me-1[role="status" aria-hidden="true"]
+    = territory_command_processing_label(command)

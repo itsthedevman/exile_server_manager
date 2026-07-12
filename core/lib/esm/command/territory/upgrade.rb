@@ -33,6 +33,12 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          # No payload to record - the Arma response is Discord embed data. The event layer marks the row
+          # complete once this returns.
+          call_sqf_function!("ESMs_command_upgrade", territory_id: arguments.territory_id)
+        end
+
         module V1
           def on_execute
             deliver!(

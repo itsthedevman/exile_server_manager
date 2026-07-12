@@ -1,8 +1,0 @@
-/ Disabled stand-in for the Pay button when a pre-check blocks renewal. The
-/ reason IS the label (stolen flag in red, or not enough poptabs in muted), so a
-/ blocked card adds no height and the message is visible on touch without a
-/ tooltip.
-/ locals: label, tone
-button.btn.btn-sm.w-100[class="btn-#{tone}" type="button" disabled]
-  i.bi.bi-lock-fill.me-1
-  = label

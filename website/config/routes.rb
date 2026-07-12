@@ -184,6 +184,9 @@ Rails.application.routes.draw do
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
 
+        # /servers/:server_id/territories/:territory_id/upgrade
+        post :upgrade
+
         collection do
           # /servers/:server_id/territories/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
