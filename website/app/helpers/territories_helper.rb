@@ -6,9 +6,13 @@ module TerritoriesHelper
   # new territory write is one row here plus its trigger partial - the machinery
   # in the _command_* partials is command-agnostic. The error_message branch of a
   # failure is shared (it's the extension's own rejection text), so only the
-  # timeout hedge and the generic-catch line are per-command.
+  # timeout hedge and the generic-catch line are per-command. `style` picks how
+  # the in-flight and settled states render: :block is a full-width button (the
+  # pay/upgrade sections), :inline is an icon-sized control (the member-list
+  # actions, many to a modal).
   TERRITORY_COMMAND_COPY = {
     "pay" => {
+      style: :block,
       progressive: "Paying…",
       past_tense: "Paid",
       processing_tone: "warning",
@@ -18,6 +22,7 @@ module TerritoriesHelper
       generic_failure: "Something went wrong processing the payment. Please try again."
     },
     "upgrade" => {
+      style: :block,
       progressive: "Upgrading…",
       past_tense: "Upgraded",
       processing_tone: "success",
@@ -25,7 +30,71 @@ module TerritoriesHelper
       failure_title: "Upgrade failed",
       timeout_failure: "The server didn't respond in time. Check in-game before upgrading again.",
       generic_failure: "Something went wrong processing the upgrade. Please try again."
+    },
+    "promote" => {
+      style: :inline,
+      progressive: "Promoting…",
+      past_tense: "Promoted",
+      processing_tone: "success",
+      success_toast: "Player promoted to moderator.",
+      failure_title: "Promotion failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before promoting again.",
+      generic_failure: "Something went wrong promoting the player. Please try again."
+    },
+    "demote" => {
+      style: :inline,
+      progressive: "Demoting…",
+      past_tense: "Demoted",
+      processing_tone: "secondary",
+      success_toast: "Player demoted to build rights.",
+      failure_title: "Demotion failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before demoting again.",
+      generic_failure: "Something went wrong demoting the player. Please try again."
+    },
+    "remove" => {
+      style: :inline,
+      progressive: "Removing…",
+      past_tense: "Removed",
+      processing_tone: "danger",
+      success_toast: "Player removed from the territory.",
+      failure_title: "Removal failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before removing again.",
+      generic_failure: "Something went wrong removing the player. Please try again."
     }
+  }.freeze
+
+  # The member-list action buttons, keyed by action. Static face (icon, color,
+  # tooltip); `confirm` is a proc so the destructive one can name the member it
+  # targets. command_name maps to the <command>_member route via
+  # #territory_member_command_path.
+  MEMBER_ACTIONS = {
+    promote: {
+      command_name: "promote",
+      icon: "arrow-up-circle",
+      variant: "outline-success",
+      label: "Promote to moderator"
+    },
+    demote: {
+      command_name: "demote",
+      icon: "arrow-down-circle",
+      variant: "outline-secondary",
+      label: "Demote to build rights"
+    },
+    remove: {
+      command_name: "remove",
+      icon: "x-circle",
+      variant: "outline-danger",
+      label: "Remove from territory",
+      confirm: ->(member) { "Remove #{member.name} from the territory?" }
+    }
+  }.freeze
+
+  # Which actions each role gets on the member list. Owner has none; a moderator
+  # can be demoted or removed; a builder can be promoted or removed. Display-gate
+  # only - arma enforces the actual rights and rejects an unauthorized call.
+  MEMBER_ROLE_ACTIONS = {
+    moderator: %i[demote remove],
+    builder: %i[promote remove]
   }.freeze
 
   # A titled section panel inside the territory detail modal body. The header icon
@@ -81,8 +150,10 @@ module TerritoriesHelper
 
   # A labeled group of territory members (an array of Territory::Member). Renders
   # nothing when the group is empty, so an owner-only territory shows just the
-  # owner.
-  def territory_member_group(label, members, icon:, color: "text-info", wrapper_class: "mb-3")
+  # owner. territory_id + server_public_id thread down so each row can post its
+  # promote/demote/remove action; the member list only lives in the modal, so
+  # surface defaults there.
+  def territory_member_group(label, members, icon:, territory_id:, server_public_id:, color: "text-info", wrapper_class: "mb-3", surface: "modal")
     return if members.blank?
 
     tag.div(class: wrapper_class) do
@@ -91,7 +162,7 @@ module TerritoriesHelper
           safe_join([tag.i(class: "bi bi-#{icon} #{color}"), tag.span(label)])
         end,
         tag.div(class: "d-flex flex-column gap-1") do
-          safe_join(members.map { |member| territory_member_row(member) })
+          safe_join(members.map { |member| territory_member_row(member, territory_id:, server_public_id:, surface:) })
         end
       ])
     end
@@ -99,9 +170,16 @@ module TerritoriesHelper
 
   # DOM id for a territory command's action region. The command name and surface
   # together keep the card and modal buttons for the same territory distinct so a
-  # turbo replace targets only one of them.
-  def command_action_id(command_name, territory_id, surface)
-    "#{command_name}_#{surface}_#{territory_id}"
+  # turbo replace targets only one of them. target_uid disambiguates the member
+  # actions, which put many regions of the same command in one modal.
+  def command_action_id(command_name, territory_id, surface, target_uid = nil)
+    [command_name, surface, territory_id, target_uid].compact.join("_")
+  end
+
+  # Whether a command renders its in-flight and settled states as an icon-sized
+  # control (the member-list actions) rather than a full-width button.
+  def territory_command_inline?(command)
+    territory_command_copy(command)[:style] == :inline
   end
 
   # DOM id the action region adopts once a command exists, so the poller and the
@@ -311,16 +389,72 @@ module TerritoriesHelper
         upgrade_level: retry_territory&.upgrade_level,
         upgrade_price: retry_territory&.upgrade_price,
         replace_id: server_command_id(command)
+    when "promote", "demote", "remove"
+      action = MEMBER_ACTIONS.fetch(command.command_name.to_sym)
+
+      # A retry skips the confirm - the member already agreed to it once, and the
+      # failed attempt didn't change anything. The name is gone by now anyway.
+      render "servers/territories/member_action_button",
+        server_public_id: command.server.public_id,
+        territory_id: command.arguments[:territory_id],
+        surface: "retry",
+        command_name: action[:command_name],
+        target_uid: command.arguments[:target],
+        icon: action[:icon],
+        variant: action[:variant],
+        label: action[:label],
+        replace_id: server_command_id(command)
     end
   end
 
-  # A member row: a prominent name and a muted, monospace steam uid.
-  def territory_member_row(member)
-    tag.div(class: "d-flex align-items-baseline gap-2 flex-wrap") do
+  # A member row: a prominent name and a muted, monospace steam uid, trailed by
+  # the role's action icons (none for the owner).
+  def territory_member_row(member, territory_id:, server_public_id:, surface:)
+    tag.div(class: "d-flex align-items-center justify-content-between gap-2") do
       safe_join([
-        tag.span(member.name, class: "text-body"),
-        tag.span(member.steam_uid, class: "small text-secondary-emphasis font-monospace")
+        tag.div(class: "d-flex align-items-baseline gap-2 flex-wrap") do
+          safe_join([
+            tag.span(member.name, class: "text-body"),
+            tag.span(member.steam_uid, class: "small text-secondary-emphasis font-monospace")
+          ])
+        end,
+        territory_member_action_cluster(member, territory_id:, server_public_id:, surface:)
       ])
     end
+  end
+
+  # The trailing action icons for a member row, or an empty string when the role
+  # has no actions (the owner).
+  def territory_member_action_cluster(member, territory_id:, server_public_id:, surface:)
+    actions = territory_member_actions(member)
+    return "".html_safe if actions.blank?
+
+    tag.div(class: "d-flex align-items-center gap-1 flex-shrink-0") do
+      safe_join(
+        actions.map do |action|
+          render "servers/territories/member_action_button",
+            server_public_id:,
+            territory_id:,
+            surface:,
+            command_name: action[:command_name],
+            target_uid: member.steam_uid,
+            icon: action[:icon],
+            variant: action[:variant],
+            label: action[:label],
+            confirm: action[:confirm]&.call(member)
+        end
+      )
+    end
+  end
+
+  # The action specs available for a member, resolved from its role.
+  def territory_member_actions(member)
+    MEMBER_ROLE_ACTIONS.fetch(member.role, []).map { |action| MEMBER_ACTIONS.fetch(action) }
+  end
+
+  # The POST path for a member action, built from the command name via the
+  # <command>_member route convention (promote -> promote_member, and so on).
+  def territory_member_command_path(command_name, server_public_id, territory_id)
+    public_send(:"server_territory_#{command_name}_member_path", server_public_id, territory_id)
   end
 end

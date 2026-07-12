@@ -20,6 +20,18 @@ module Servers
       run_territory_command("upgrade")
     end
 
+    def promote_member
+      run_territory_command("promote", arguments: {target: params.require(:target_uid)})
+    end
+
+    def remove_member
+      run_territory_command("remove", arguments: {target: params.require(:target_uid)})
+    end
+
+    def demote_member
+      run_territory_command("demote", arguments: {target: params.require(:target_uid)})
+    end
+
     # Polled by the pay Stimulus controller after a dispatch, until the command
     # settles. Scoped to the current user so nobody can watch another player's
     # command by id. Renders no streams while the row is still pending, so the
@@ -47,7 +59,7 @@ module Servers
       load_territory(current_server, params[:territory_id], current_user.steam_uid)
     end
 
-    def run_territory_command(command_name)
+    def run_territory_command(command_name, arguments: {})
       # The client mints idempotency_key per form render, so a double-click
       # dedupes to the same row and the payment fires once.
       command = ESM::ServerCommand.find_or_create_by(
@@ -61,7 +73,7 @@ module Servers
           server_id: current_server.server_id,
           community_id: current_server.community.community_id,
           territory_id: params.require(:territory_territory_id)
-        }
+        }.merge(arguments)
       end
 
       # A non-pending row means this one was already dispatched (a re-click on a
@@ -74,7 +86,7 @@ module Servers
         Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? }
       end
 
-      render locals: {
+      render partial: "command_response", locals: {
         command:,
         dom_id: params.require(:dom_id),
         current_server:,
