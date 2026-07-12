@@ -90,6 +90,12 @@ pub struct Args {
     /// Path to the esm.key file to use (useful with --release --start-server)
     #[arg(short, long, default_value_t = String::new())]
     key_file: String,
+
+    /// Seed the near-due showcase territories as un-notified so Exile fires
+    /// their protection-money XM8 notifications once on start (default: seeded
+    /// already-notified, so a routine dev start stays quiet)
+    #[arg(long)]
+    pub seed_xm8_notify: bool,
 }
 
 impl Args {
