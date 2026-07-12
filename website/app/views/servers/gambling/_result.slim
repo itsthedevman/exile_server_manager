@@ -1,0 +1,14 @@
+/ locals: result
+#gamble_result
+  - if result.nil?
+    .text-muted.small.text-center.py-2 Place a bet to see your result.
+  - elsif result.error.present?
+    .alert.alert-warning.mb-0.py-2.small = result.error
+  - elsif result.win
+    .text-center.py-2
+      .fs-5.fw-bold.text-success = gamble_won_headline(result)
+      .small.text-muted = gamble_result_subline(result)
+  - else
+    .text-center.py-2
+      .fs-5.fw-bold.text-danger = gamble_lost_headline(result)
+      .small.text-muted = gamble_result_subline(result)

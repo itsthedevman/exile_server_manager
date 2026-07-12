@@ -104,7 +104,7 @@ describe ESM::Command::Base do
       user.destroy!
 
       expect { execute! }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        embed = error.data
+        embed = error.to_embed
 
         expect(embed.description).to match("I'll need you to link your Steam account")
       end
@@ -315,10 +315,6 @@ describe ESM::Command::Base do
     it "is defined" do
       expect(command.respond_to?(:on_execute)).to be(true)
     end
-
-    it "is callable" do
-      expect(command.on_execute).to eq("on_execute")
-    end
   end
 
   describe "#on_response" do
@@ -361,7 +357,7 @@ describe ESM::Command::Base do
         execution_args = {command_class: ESM::Command::Test::DirectMessageCommand}
 
         expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-          embed = error.data
+          embed = error.to_embed
 
           expect(embed.description).to eq(
             "Hey #{user.mention}, this command can only be used in a **Direct Message** with me.\n\nJust right click my name, click **Message**, and send it there"
@@ -407,7 +403,7 @@ describe ESM::Command::Base do
       expect {
         command.raise_error!(:text_only, user: user.mention, path_prefix: "command_errors")
       }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        embed = error.data
+        embed = error.to_embed
 
         expect(embed.description).to match(/this command can only be used in a discord server's \*\*text channel\*\*/i)
       end
@@ -470,7 +466,7 @@ describe ESM::Command::Base do
 
       it "does not work in text channels" do
         expect { execute! }.to raise_error(ESM::Exception::CheckFailure) do |error|
-          embed = error.data
+          embed = error.to_embed
           expect(embed.description).to match(/this command can only be used in a \*\*direct message\*\* with me/i)
         end
       end
@@ -505,7 +501,7 @@ describe ESM::Command::Base do
 
       it "does not work in Direct Message channels" do
         expect { execute!(channel_type: :dm) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-          embed = error.data
+          embed = error.to_embed
           expect(embed.description).to match(
             /this command can only be used in a discord server's \*\*text channel\*\*\./i
           )

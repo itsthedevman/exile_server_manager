@@ -10,7 +10,7 @@ describe ESM::Command::Territory::SetId, category: "command" do
 
       context "when the old and new IDs are valid" do
         it "changes the ID and returns a success method" do
-          request = execute!(
+          execute!(
             channel_type: :dm,
             arguments: {
               server_id: server.server_id,
@@ -19,7 +19,6 @@ describe ESM::Command::Territory::SetId, category: "command" do
             }
           )
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -63,7 +62,7 @@ describe ESM::Command::Territory::SetId, category: "command" do
         it "returns an error from the server" do
           wsc.flags.FAIL_WITH_REASON = true
 
-          request = execute!(
+          execute!(
             channel_type: :dm,
             arguments: {
               server_id: server.server_id,
@@ -72,7 +71,6 @@ describe ESM::Command::Territory::SetId, category: "command" do
             }
           )
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -86,7 +84,7 @@ describe ESM::Command::Territory::SetId, category: "command" do
         it "returns an error from the server" do
           wsc.flags.FAIL_WITHOUT_REASON = true
 
-          request = execute!(
+          execute!(
             channel_type: :dm,
             arguments: {
               server_id: server.server_id,
@@ -95,7 +93,6 @@ describe ESM::Command::Territory::SetId, category: "command" do
             }
           )
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

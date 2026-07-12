@@ -65,7 +65,7 @@ describe ESM::Command::Server::Reward, category: "command" do
           )
 
           expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-            embed = error.data
+            embed = error.to_embed
             expect(embed.description).to match(/it appears you already have a request pending/i)
           end
         end
@@ -79,7 +79,7 @@ describe ESM::Command::Server::Reward, category: "command" do
 
           execution_args = {arguments: {server_id: server.server_id}}
           expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-            embed = error.data
+            embed = error.to_embed
             expect(embed.description).to match(/the selected reward package is not available at this tim/i)
           end
         end

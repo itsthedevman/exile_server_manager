@@ -10,9 +10,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is a number" do
         it "gambles with the amount of poptabs on the server" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "300"})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "300"})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -25,9 +24,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is 'half'" do
         it "gambles half of the user's poptabs on the server" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "half"})
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "half"})
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -40,8 +38,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
 
       context "when the amount is 'all'" do
         it "gambles all of the players money" do
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "all"})
-          expect(request).not_to be_nil
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "all"})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -56,8 +53,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
         it "returns an error from the server" do
           wsc.flags.NOT_ENOUGH_MONEY = true
 
-          request = execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "100000000"})
-          expect(request).not_to be_nil
+          execute!(channel_type: :dm, arguments: {server_id: server.server_id, amount: "100000000"})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -336,7 +332,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
               user.user_gamble_stats.first_or_initialize.update!(
                 server:,
                 current_streak: 1,
-                last_action: described_class::WON_ACTION
+                last_action: ESM::UserGambleStat::WON_ACTION
               )
             end
           end
@@ -352,7 +348,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
               user.user_gamble_stats.first_or_initialize.update!(
                 server:,
                 current_streak: 1,
-                last_action: described_class::LOSS_ACTION
+                last_action: ESM::UserGambleStat::LOSS_ACTION
               )
             end
           end
@@ -499,6 +495,69 @@ describe ESM::Command::Server::Gamble, category: "command" do
             expect(user.exile_account.reload.locker).to eq(max_deposit)
           end
         end
+      end
+    end
+  end
+
+  # The V2 #on_execute block already covers the gambling mechanics. This only proves the
+  # website-specific wiring: a resolved bet records its result on the row, and a rejection
+  # records the reason - instead of replying to Discord.
+  describe "#on_website_execute", requires_connection: true do
+    include_context "connection"
+
+    let(:amount) { 50 }
+    let(:locker_balance) { 5_000 }
+    let(:server_setting) { {} }
+
+    subject(:server_command) do
+      execute_website!(
+        arguments: {
+          server_id: server.server_id,
+          community_id: community.community_id,
+          amount:
+        }
+      )
+    end
+
+    before do
+      server.server_setting.update!(server_setting)
+      user.exile_account.update!(locker: locker_balance)
+    end
+
+    context "when the bet resolves" do
+      let!(:server_setting) { {gambling_win_percentage: 0} } # A deterministic loss
+
+      it "is expected to complete the row with the structured result" do
+        expect(server_command.status).to eq("completed")
+        expect(server_command.result).to include(:win, :amount, :locker_after)
+      end
+    end
+
+    context "when the extension rejects the bet" do
+      let(:amount) { 1_000 }
+      let(:locker_balance) { 0 }
+
+      it "is expected to fail the row with the extension's reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+      end
+    end
+
+    # The cooldown check short-circuits before any Arma round-trip, so this needs no connection.
+    context "when the player is on cooldown", requires_connection: false do
+      before do
+        create(
+          :cooldown, :active,
+          command_name: "gamble",
+          steam_uid: user.steam_uid,
+          community_id: community.id,
+          server_id: server.id
+        )
+      end
+
+      it "is expected to fail the row with the cooldown reason" do
+        expect(server_command.status).to eq("failed")
+        expect(server_command.error_message).to match(/on cooldown/i)
       end
     end
   end

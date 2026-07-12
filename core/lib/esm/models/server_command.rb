@@ -18,6 +18,7 @@ module ESM
       failed: "failed", timed_out: "timed_out"
     }
     attribute :error_message, :string
+    attribute :result, :hash, default: {}
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
 
@@ -27,6 +28,7 @@ module ESM
 
     belongs_to :user
     belongs_to :server
+    has_one :community, through: :server
 
     # =============================================================================
     # VALIDATIONS
@@ -55,6 +57,11 @@ module ESM
     #
     def settled?
       completed? || failed? || timed_out?
+    end
+
+    # TODO: Docs
+    def command_class
+      ESM::Command[command_name]
     end
   end
 end

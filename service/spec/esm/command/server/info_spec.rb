@@ -26,8 +26,7 @@ describe ESM::Command::Server::Info, category: "command" do
         it "returns information on the player" do
           wsc.flags.PLAYER_ALIVE = true
 
-          request = execute!(arguments: {server_id: server.server_id, target: user.mention})
-          expect(request).not_to be_nil
+          execute!(arguments: {server_id: server.server_id, target: user.mention})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -50,8 +49,7 @@ describe ESM::Command::Server::Info, category: "command" do
 
       context "when the steam uid target is a dead player" do
         it "returns information on the player" do
-          request = execute!(arguments: {server_id: server.server_id, target: user.steam_uid})
-          expect(request).not_to be_nil
+          execute!(arguments: {server_id: server.server_id, target: user.steam_uid})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -74,8 +72,7 @@ describe ESM::Command::Server::Info, category: "command" do
 
       context "when the target is a territory ID" do
         it "returns information on the territory" do
-          request = execute!(arguments: {server_id: server.server_id, territory_id: "12345"})
-          expect(request).not_to be_nil
+          execute!(arguments: {server_id: server.server_id, territory_id: "12345"})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

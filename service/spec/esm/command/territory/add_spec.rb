@@ -22,7 +22,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           }
 
           expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-            embed = error.data
+            embed = error.to_embed
             expect(embed.description).to match(/#{second_user.mention} has not registered with me yet. tell them to head over/i)
           end
         end

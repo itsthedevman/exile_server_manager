@@ -18,8 +18,7 @@ describe ESM::Command::Territory::Restore, category: "command" do
         it "restores the territory" do
           wsc.flags.SUCCESS = true
 
-          request = execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
-          expect(request).not_to be_nil
+          execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -32,8 +31,7 @@ describe ESM::Command::Territory::Restore, category: "command" do
         it "fails to restore the territory and returns a message" do
           wsc.flags.SUCCESS = false
 
-          request = execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
-          expect(request).not_to be_nil
+          execute!(arguments: {server_id: server.server_id, territory_id: territory_id})
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

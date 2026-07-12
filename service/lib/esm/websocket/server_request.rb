@@ -60,8 +60,8 @@ module ESM
         begin
           command.from_server(@message.parameters)
         rescue ESM::Exception::CheckFailure => e
-          # This catches any errors from the command.
-          command.reply(e.data)
+          # This catches any errors from the command. The error carries content now, so render it for Discord.
+          command.reply(e.to_embed)
         end
 
       # This catches the check_for_command_error

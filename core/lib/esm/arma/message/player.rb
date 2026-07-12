@@ -2,11 +2,7 @@
 
 module ESM
   class Message
-    # Data.define returns a fresh class on every load, so subclassing it inline trips a superclass mismatch when
-    # this file is reloaded. Pin it to a guarded constant so a reload reopens Player against the same superclass.
-    PlayerData = ::Data.define(:discord_id, :discord_name, :discord_mention, :steam_uid) unless defined?(PlayerData)
-
-    class Player < PlayerData
+    class Player < ::Data.define(:discord_id, :discord_name, :discord_mention, :steam_uid)
       def self.from(user)
         # Creates a hash with the keys being the keys of this class, and the value of nil
         # Allows for defaulting the values since Data requires a value of some sort

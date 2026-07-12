@@ -84,6 +84,12 @@ module TerritoriesHelper
     "server_command_#{command.idempotency_key}"
   end
 
+  # URL the pay poller watches until the dispatched command settles. The command
+  # carries its own server, so a caller holding only the command can still build it.
+  def pay_command_status_path(command)
+    command_status_server_territories_path(command.server.public_id, command)
+  end
+
   # Confirmation copy for the Pay button. Names the price when the caller knows it
   # (renew_price already carries the "poptabs" label and any tax note); the retry
   # surface has no price to hand, so it falls back to a generic line.
@@ -196,24 +202,9 @@ module TerritoriesHelper
   # recording, so we show a generic line and keep internals off the page.
   def pay_failure_message(command)
     return "The server didn't respond in time. Check in-game before paying again." if command.timed_out?
-    return web_extension_message(command.error_message, command.user) if command.error_message.present?
+    return command.error_message if command.error_message.present?
 
     "Something went wrong processing the payment. Please try again."
-  end
-
-  # The extension authors player messages for Discord: a leading mention (or, for
-  # players with no linked Discord, their Steam UID) plus **bold**/`code` markup.
-  # Swap the player token for their name and drop the markup so it reads as plain
-  # web copy.
-  def web_extension_message(text, user)
-    name = user.username.presence || "you"
-    tokens = [user.discord_mention, user.steam_uid].compact_blank
-
-    cleaned = tokens.reduce(text) do |message, token|
-      message.gsub(token, name)
-    end
-
-    cleaned.gsub(/\*\*(.*?)\*\*/, '\1').delete("`").strip
   end
 
   # Splits a "Name (uid)" entry into a prominent name and a muted, monospace uid.

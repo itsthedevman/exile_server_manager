@@ -6,7 +6,8 @@ require "active_record"
 ActiveRecord::Base.establish_connection(
   adapter: "postgresql",
   encoding: "unicode",
-  pool: 5,
+  # Roomy enough for the concurrency specs, which check out a connection per racing thread; ordinary examples use one.
+  pool: 25,
   host: ENV.fetch("POSTGRES_HOST", "localhost"),
   port: ENV.fetch("POSTGRES_PORT", "5432"),
   database: ENV.fetch("POSTGRES_DATABASE", "esm_test"),

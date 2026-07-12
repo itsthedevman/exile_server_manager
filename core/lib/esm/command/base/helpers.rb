@@ -265,10 +265,10 @@ module ESM
             arguments: arguments,
             current_community: current_community&.attributes,
             current_channel: current_channel&.attributes,
-            current_user: current_user&.attributes,
+            current_user: current_user&.attributes_for_logging,
             current_cooldown: current_cooldown&.attributes,
             target_community: target_community&.attributes,
-            target_server: target_server&.attributes&.except("server_key"),
+            target_server: target_server&.attributes_for_logging,
             target_user: target_user&.attributes,
             target_uid: target_uid,
             same_user: same_user?,
@@ -299,27 +299,29 @@ module ESM
         #
         # @param error_name [String, Symbol, nil] The name of the error message located in the locales for "commands.<command_name>.errors". If nil, a block must be provided
         # @param args [Hash] The args to be passed into the translation if an error_name is provided
-        # @param block [Proc] If provided, the block must return the error message to be used. This can be a string or an ESM::Embed.
+        # @param block [Proc] If provided, the block must return the error message content (a String) to be used.
         #
         def raise_error!(error_name = nil, **args, &block)
           exception_class = args.delete(:exception_class) || ESM::Exception::CheckFailure
           path_prefix = args.delete(:path_prefix) || "commands.#{name}.errors"
 
-          reason =
+          error =
             if block
-              yield
+              exception_class.new(yield)
             elsif error_name
-              ESM::Embed.build(:error, description: I18n.t("#{path_prefix}.#{error_name}", **args))
+              exception_class.new(key: "#{path_prefix}.#{error_name}", **args)
+            else
+              exception_class.new(nil)
             end
 
           warn!(
             exception_class:,
-            reason: reason.is_a?(Embed) ? reason.description : reason,
+            reason: error.try(:key) || error.message,
             command: to_h,
             **(@origin&.log_context || {})
           )
 
-          raise exception_class, reason
+          raise error
         end
 
         def skip_action(*)
@@ -488,27 +490,13 @@ module ESM
         end
 
         def current_cooldown_query
-          query = ESM::Cooldown.where(command_name: command_name)
-
-          # If the command requires a steam_uid, use it to track the cooldown.
-          query =
-            if registration_required?
-              query.where(steam_uid: current_user.steam_uid)
-            else
-              query.where(user_id: current_user.id)
-            end
-
-          # Check for the target_community
-          query = query.where(community_id: target_community.id) if target_community
-
-          # If we don't have a target_community, use the current_community (if applicable)
-          query = query.where(community_id: current_community.id) if current_community && target_community.nil?
-
-          # Check for the individual server
-          query = query.where(server_id: target_server.id) if target_server
-
-          # Return the query
-          query
+          ESM::Cooldown.scope_for(
+            command_name:,
+            user: current_user,
+            registered: registration_required?,
+            community: target_community || current_community,
+            server: target_server
+          )
         end
 
         #
@@ -535,7 +523,7 @@ module ESM
           raise_error!(
             :error,
             path_prefix: "exceptions.extension",
-            user: current_user.mention,
+            user: current_user,
             server_id: target_server.server_id
           )
         end

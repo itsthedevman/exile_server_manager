@@ -5,61 +5,42 @@ RSpec.describe ESM::ServerCommand do
   let!(:server) { create(:server, community:) }
   let!(:user) { create(:user) }
 
-  subject(:command) do
+  subject(:server_command) do
     described_class.create!(
       user:,
       server:,
       idempotency_key: SecureRandom.uuid,
-      command_name: "territory_pay",
+      command_name: "gamble",
       status: :pending
     )
   end
 
-  describe "#execute" do
-    # Run the promise body inline so the state transitions are observable
-    # synchronously; the real offload is exercised by the handler specs.
-    before do
-      allow(Concurrent::Promise).to receive(:execute) { |&block| block.call }
+  describe "#settled?" do
+    it "is false while the row is still in flight" do
+      expect(server_command.settled?).to be(false)
+
+      server_command.dispatched!
+      expect(server_command.settled?).to be(false)
     end
 
-    it "marks the row completed when the block succeeds" do
-      command.execute { :ok }
+    it "is true once the row reaches a terminal status" do
+      %i[completed! failed! timed_out!].each do |terminal|
+        server_command.public_send(terminal)
 
-      expect(command.reload.status).to eq("completed")
-    end
-
-    it "marks the row timed_out when the block raises RequestTimeout" do
-      command.execute { raise ESM::Exception::RequestTimeout }
-
-      expect(command.reload.status).to eq("timed_out")
-    end
-
-    it "marks the row failed and records the message on an ExtensionError" do
-      command.execute do
-        raise ESM::Exception::ExtensionError.new(["You do not have enough poptabs"])
+        expect(server_command.settled?).to be(true)
       end
-
-      expect(command.reload.status).to eq("failed")
-      expect(command.reload.error_message).to eq("You do not have enough poptabs")
     end
+  end
 
-    it "joins multiple ExtensionError messages onto the row" do
-      command.execute do
-        raise ESM::Exception::ExtensionError.new(["First problem", "Second problem"])
-      end
-
-      expect(command.reload.error_message).to eq("First problem\nSecond problem")
+  describe "#command_class" do
+    it "resolves the command class from the stored command_name" do
+      expect(server_command.command_class).to eq(ESM::Command::Server::Gamble)
     end
+  end
 
-    it "marks the row failed but records nothing on an unexpected error" do
-      command.execute { raise "boom" }
-
-      expect(command.reload.status).to eq("failed")
-      expect(command.reload.error_message).to be_nil
-    end
-
-    it "returns self so the handler can ack immediately" do
-      expect(command.execute { :ok }).to eq(command)
+  describe "#community" do
+    it "is reachable through the server" do
+      expect(server_command.community).to eq(community)
     end
   end
 end

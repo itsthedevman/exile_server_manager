@@ -1,25 +1,42 @@
 - content_for :title, current_server.server_name
 
 = render "servers/container", current_server: do
-  / Dashboard header
   .mb-4
-    h1.mb-1 Dashboard
-    p.text-muted.mb-0 Your hub for #{current_server.server_name}.
+    h1.mb-0 = current_server.server_name
 
-  / Feature cards — each gates on its command being enabled for the community
-  .row.g-4
-    / My Player — basic glance, click through to the full player page
-    .col-12.col-xl-6
-      .card.h-100
-        .card-header.d-flex.align-items-center.justify-content-between
-          h5.mb-0
-            i.bi.bi-person-badge.text-info.me-2
-            | My Player
-          = link_to me_server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary"
-            | View full
-            i.bi.bi-arrow-right.ms-1
+  - if current_user.registered?
+    / Feature cards — each gates on its command being enabled for the community
+    .row.g-4
+      / My Player
+      .col-12.col-xl-6
+        .card.h-100
+          .card-header.d-flex.align-items-center.justify-content-between
+            h5.mb-0
+              i.bi.bi-person-badge.text-info.me-2
+              | My Player
+            = link_to me_server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary"
+              | View full
+              i.bi.bi-arrow-right.ms-1
 
-        = turbo_frame_tag "player_summary", src: summary_server_players_path(current_server.public_id), loading: :lazy
-          .card-body.text-center.text-muted.py-5
-            .spinner-border.spinner-border-sm.me-2[role="status"]
-            | Loading your player...
+          = turbo_frame_tag "player_summary", src: summary_server_players_path(current_server.public_id), loading: :lazy
+            .card-body.text-center.text-muted.py-5
+              .spinner-border.spinner-border-sm.me-2[role="status"]
+              | Loading your player...
+
+      / Gamble
+      - if command_enabled?(current_server.community, "gamble")
+        = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
+  - else
+    .card
+      .card-body.text-center.py-5
+        i.bi.bi-steam.display-4.text-info.mb-3.d-block
+        h4.mb-2 Link your Steam account to get started
+        p.text-muted.mx-auto style="max-width: 34rem;"
+          | ESM needs your Discord and Steam accounts linked so it knows who you are in-game. It only takes a minute - once you're registered, come back here and jump in.
+        .d-flex.gap-2.justify-content-center.flex-wrap
+          = link_to register_path, class: "btn btn-primary"
+            i.bi.bi-box-arrow-in-right.me-1
+            | Link my account
+          = link_to "/docs/player_setup", class: "btn btn-outline-secondary"
+            i.bi.bi-book.me-1
+            | Need help?

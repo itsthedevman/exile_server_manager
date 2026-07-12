@@ -14,15 +14,35 @@ module ESM
         # So if #message is called, it will return that.
         super(data.to_s)
 
-        # Store the embed in the message
-        # I had to do it this way because StandardError converts the message to a string
         @data = data
       end
 
-      def to_embed
-        return @data if @data.is_a?(ESM::Embed) || @data.blank?
+      ##
+      # The player-facing text for this error, medium-agnostic. Arrays (multi-line extension errors) join
+      # with newlines; a structured hash yields its description line. Presentation lives in #to_embed.
+      #
+      def to_content
+        case @data
+        when Array
+          @data.join("\n")
+        when Hash
+          @data.symbolize_keys[:description].to_s
+        else
+          @data.to_s
+        end
+      end
 
-        ESM::Embed.build(:error, description: @data.to_s)
+      def to_embed
+        return @data if @data.blank?
+
+        case @data
+        # Lenient #from_hash (not the strict #from_hash!) - the hash is our own #to_h, which carries
+        # keys the strict validator rejects.
+        when Hash
+          ESM::Embed.from_hash(@data)
+        else
+          ESM::Embed.build(:error, description: to_content)
+        end
       end
     end
 
@@ -46,8 +66,56 @@ module ESM
     # Raised if the provided argument value from the user is invalid
     class InvalidArgument < ApplicationError; end
 
-    # Generic exception for any checks
-    class CheckFailure < ApplicationError; end
+    # Generic exception for any checks. Carries either a locale `key` plus interpolation `details` - rendered
+    # per surface at delivery time so each medium names the user and formats the copy its own way - or a legacy
+    # positional `data` (a literal string, or the embed hash from argument validation) that the base
+    # ApplicationError rendering handles unchanged.
+    class CheckFailure < ApplicationError
+      attr_reader :key, :details
+
+      def initialize(data = nil, key: nil, **details)
+        @key = key
+        @details = details
+        super(data)
+      end
+
+      ##
+      # Renders this failure's copy from its locale key. Any ESM::User in the details is projected through
+      # `projector`, so each surface names the user its own way (mention on Discord, username on the website).
+      # `suffix` lets a surface prefer a variant key (e.g. "_web") and fall back to the base key when absent.
+      #
+      # @param suffix [String, nil] an optional key suffix to prefer when a surface-specific variant exists
+      # @param projector [Proc] projects an ESM::User into the surface's representation
+      #
+      # @return [String] the interpolated, surface-projected copy
+      #
+      def render(suffix: nil, &projector)
+        lookup = (suffix && I18n.exists?("#{key}#{suffix}")) ? "#{key}#{suffix}" : key
+        I18n.t(lookup, **details.transform_values { |value| user_like?(value) ? projector.call(value) : value })
+      end
+
+      # A bare #message (logs, `raise_error` matchers, backtraces) has no surface, so render the Discord copy -
+      # the default medium. Literal failures fall back to StandardError's stored message.
+      def message
+        return super if key.nil?
+
+        render(&:mention)
+      end
+
+      def to_embed
+        return super if key.nil?
+
+        ESM::Embed.build(:error, description: render(&:mention))
+      end
+
+      private
+
+      # Both a registered ESM::User and the User::Ephemeral stand-in for an unregistered target answer the
+      # projection methods (#mention, #username), so either should be projected rather than interpolated raw.
+      def user_like?(value)
+        value.is_a?(ESM::User) || value.is_a?(ESM::User::Ephemeral)
+      end
+    end
 
     # When the bot does not have access to send a message to a particular channel
     class ChannelAccessDenied < Error; end
@@ -84,12 +152,9 @@ module ESM
     end
 
     # Raised when the Arma extension rejects a request. #data holds the player-facing error
-    # strings from the response; each surface renders them itself (Discord builds an error embed,
-    # the website records them on the command row).
+    # strings from the response; each surface renders them itself (Discord builds an error embed
+    # via the base #to_embed, the website records #to_content on the command row).
     class ExtensionError < ApplicationError
-      def to_embed
-        ESM::Embed.build(:error, description: @data.join("\n"))
-      end
     end
 
     # Raised when a query or call targets a server that has no live connection,

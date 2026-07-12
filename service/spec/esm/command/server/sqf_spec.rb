@@ -17,14 +17,13 @@ describe ESM::Command::Server::Sqf, category: "command" do
           it "executes the code on the server and returns the result" do
             wsc.flags.WITH_RETURN = true
 
-            request = execute!(
+            execute!(
               arguments: {
                 server_id: server.server_id,
                 execute: "_test = true;\n_test"
               }
             )
 
-            expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
             ESM.discord_bot.test_outbox.await_size(1)
 
@@ -35,14 +34,13 @@ describe ESM::Command::Server::Sqf, category: "command" do
 
         context "and when the code does not return anything" do
           it "executes the code on the server and returns nothing" do
-            request = execute!(
+            execute!(
               arguments: {
                 server_id: server.server_id,
                 code_to_execute: "if (false) then { \"true\" };"
               }
             )
 
-            expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
             ESM.discord_bot.test_outbox.await_size(1)
 
@@ -55,7 +53,7 @@ describe ESM::Command::Server::Sqf, category: "command" do
       context "when the target is provided" do
         context "and when the code does not return anything" do
           it "executes the code on the target and returns nothing" do
-            request = execute!(
+            execute!(
               arguments: {
                 server_id: server.server_id,
                 target: user.mention,
@@ -63,7 +61,6 @@ describe ESM::Command::Server::Sqf, category: "command" do
               }
             )
 
-            expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
             ESM.discord_bot.test_outbox.await_size(1)
 
@@ -78,7 +75,7 @@ describe ESM::Command::Server::Sqf, category: "command" do
           it "returns an error" do
             wsc.flags.ERROR = true
 
-            request = execute!(
+            execute!(
               arguments: {
                 server_id: server.server_id,
                 target: user.mention,
@@ -86,7 +83,6 @@ describe ESM::Command::Server::Sqf, category: "command" do
               }
             )
 
-            expect(request).not_to be_nil
             wait_for { connection.requests }.to be_blank
             ESM.discord_bot.test_outbox.await_size(1)
 
@@ -112,7 +108,7 @@ describe ESM::Command::Server::Sqf, category: "command" do
             second_user.update(steam_uid: "")
 
             expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-              expect(error.data).to have_attributes(description: a_string_matching(/has not registered with me yet/i))
+              expect(error.to_embed).to have_attributes(description: a_string_matching(/has not registered with me yet/i))
             end
           end
         end

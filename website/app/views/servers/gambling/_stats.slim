@@ -1,0 +1,16 @@
+/ locals: gamble_stat
+#gamble_stats.d-flex.flex-wrap.align-items-center.justify-content-center.gap-3.small
+  .d-flex.align-items-center.gap-1 class=gamble_streak_class(gamble_stat)
+    i.bi.bi-fire
+    span = gamble_streak_label(gamble_stat)
+
+  .vr.d-none.d-sm-block
+
+  span.text-muted = gamble_win_loss_record(gamble_stat)
+
+  .vr.d-none.d-sm-block
+
+  .d-flex.align-items-center.gap-1
+    span.text-muted Net
+    span class=gamble_net_class(gamble_stat)
+      = poptabs(gamble_net_poptabs(gamble_stat), inline: true)

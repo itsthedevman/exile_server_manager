@@ -46,7 +46,7 @@ lazy_static! {
 const STEAM_UID_COUNT: usize = 100;
 
 pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
-    let sql = generate_sql(&ctx.config);
+    let sql = generate_sql(&ctx.config, ctx.args.seed_xm8_notify);
 
     // Write SQL to a temp file on the host
     let sql_path = ctx.local_build_path.join("seed.sql");
@@ -131,7 +131,7 @@ fn parse_mysql_uri(uri: &str) -> Result<(String, String, String, String), BuildE
 
 // ─── SQL generation ──────────────────────────────────────────────────────────
 
-fn generate_sql(config: &Config) -> String {
+fn generate_sql(config: &Config, xm8_notify: bool) -> String {
     let rng = &mut rand::thread_rng();
 
     let mut steam_uids = generate_steam_uids(STEAM_UID_COUNT, rng);
@@ -139,7 +139,8 @@ fn generate_sql(config: &Config) -> String {
 
     let accounts = generate_accounts(&steam_uids);
     let players = generate_players(&accounts);
-    let territories = generate_territories(&steam_uids, &config.my_steam_uid);
+    let territories =
+        generate_territories(&steam_uids, &config.my_steam_uid, xm8_notify);
     let constructions = generate_constructions(&territories);
 
     format!(
@@ -234,8 +235,19 @@ fn generate_players(accounts: &[Account]) -> Vec<Player> {
         .collect()
 }
 
-fn generate_territories(steam_uids: &[String], my_steam_uid: &str) -> Vec<Territory> {
+fn generate_territories(
+    steam_uids: &[String],
+    my_steam_uid: &str,
+    xm8_notify: bool,
+) -> Vec<Territory> {
     let rng = &mut rand::thread_rng();
+
+    // Exile latches xm8_protectionmoney_notified per due cycle: a near/overdue
+    // territory with notified = 0 fires a protection-money XM8 notification on
+    // the next maintenance scan, then flips the flag. Seed the showcase as
+    // already-notified so a routine dev start stays quiet - /me reads the due
+    // dates, not this flag. --seed-xm8-notify arms them for one confirming round.
+    let notified: u8 = if xm8_notify { 0 } else { 1 };
 
     // Deterministic showcase, all owned by me, so /me always shows the full
     // spread of payment/urgency states for UI testing. last_paid is a SQL
@@ -244,12 +256,16 @@ fn generate_territories(steam_uids: &[String], my_steam_uid: &str) -> Vec<Territ
     //
     // (name, last_paid_at, flag_stolen)
     let showcase: Vec<(&str, &str, bool)> = vec![
-        ("Paid Up Plains", "NOW()", false),                            // ~7 days out
+        ("Paid Up Plains", "NOW()", false), // ~7 days out
         ("Four Day Fields", "DATE_SUB(NOW(), INTERVAL 3 DAY)", false), // 4 days left
         ("Two Day Township", "DATE_SUB(NOW(), INTERVAL 5 DAY)", false), // 2 days left
-        ("Tomorrow Territory", "DATE_SUB(NOW(), INTERVAL 6 DAY)", false), // due tomorrow
+        (
+            "Tomorrow Territory",
+            "DATE_SUB(NOW(), INTERVAL 6 DAY)",
+            false,
+        ), // due tomorrow
         ("Due Today Domain", "DATE_SUB(NOW(), INTERVAL 7 DAY)", false), // due today
-        ("Overdue Oasis", "DATE_SUB(NOW(), INTERVAL 9 DAY)", false),   // 2 days overdue
+        ("Overdue Oasis", "DATE_SUB(NOW(), INTERVAL 9 DAY)", false), // 2 days overdue
         ("Stolen Sanctuary", "DATE_SUB(NOW(), INTERVAL 5 DAY)", true), // stolen + 2 days
     ];
 
@@ -258,17 +274,33 @@ fn generate_territories(steam_uids: &[String], my_steam_uid: &str) -> Vec<Territ
     for (name, last_paid, stolen) in showcase {
         let id = territories.len() + 1;
         territories.push(make_territory(
-            id, my_steam_uid, steam_uids, rng, name.to_string(), last_paid.to_string(), stolen,
+            id,
+            my_steam_uid,
+            steam_uids,
+            rng,
+            name.to_string(),
+            last_paid.to_string(),
+            stolen,
+            notified,
         ));
     }
 
     // One random territory per other player, so the world isn't only mine.
+    // These are freshly paid (NOW()), so they never sit in the notify window
+    // regardless of the flag - seed them already-notified unconditionally.
     for owner in steam_uids.iter().filter(|uid| uid.as_str() != my_steam_uid) {
         let id = territories.len() + 1;
         let name = CompanyName().fake::<String>().replace('\'', "");
         let stolen: bool = Boolean(50).fake();
         territories.push(make_territory(
-            id, owner, steam_uids, rng, name, "NOW()".to_string(), stolen,
+            id,
+            owner,
+            steam_uids,
+            rng,
+            name,
+            "NOW()".to_string(),
+            stolen,
+            1,
         ));
     }
 
@@ -283,6 +315,7 @@ fn make_territory(
     name: String,
     last_paid_at: String,
     stolen: bool,
+    notified: u8,
 ) -> Territory {
     let n = 5;
 
@@ -317,7 +350,7 @@ fn make_territory(
         },
         flag_stolen_at: if stolen { random_timestamp() } else { "NULL".into() },
         last_paid_at,
-        xm8_protectionmoney_notified: 0,
+        xm8_protectionmoney_notified: notified,
         build_rights: format!("{build_rights:?}"),
         moderators: format!("{moderators:?}"),
     }

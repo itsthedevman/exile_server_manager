@@ -12,7 +12,7 @@ describe ESM::Command::Territory::Remove, category: "command" do
 
       context "when the target is a registered user" do
         it "removes them from the territory" do
-          request = execute!(
+          execute!(
             arguments: {
               server_id: server.server_id,
               territory_id: territory_id,
@@ -20,7 +20,6 @@ describe ESM::Command::Territory::Remove, category: "command" do
             }
           )
 
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 
@@ -44,7 +43,7 @@ describe ESM::Command::Territory::Remove, category: "command" do
           }
 
           expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-            embed = error.data
+            embed = error.to_embed
             expect(embed.description).to match(/has not registered with me yet/i)
           end
         end
@@ -55,14 +54,13 @@ describe ESM::Command::Territory::Remove, category: "command" do
           steam_uid = second_user.steam_uid
           second_user.update!(steam_uid: "")
 
-          request = execute!(
+          execute!(
             arguments: {
               server_id: server.server_id,
               territory_id: territory_id,
               target: steam_uid
             }
           )
-          expect(request).not_to be_nil
           wait_for { connection.requests }.to be_blank
           ESM.discord_bot.test_outbox.await_size(1)
 

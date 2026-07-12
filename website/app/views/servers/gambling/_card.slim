@@ -1,0 +1,19 @@
+/ locals: current_server, gamble_stat
+.col-12.col-xl-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-dice-5.text-warning.me-2
+        | Gamble
+      button.btn.btn-sm.btn-outline-secondary type="button" data-bs-toggle="modal" data-bs-target="#gamble-stats-modal"
+        | Full stats
+        i.bi.bi-bar-chart.ms-1
+
+    .card-body.d-flex.flex-column
+      = render "servers/gambling/form", current_server:
+      hr.my-3
+      = render "servers/gambling/result", result: nil
+      hr.my-3
+      = render "servers/gambling/stats", gamble_stat:
+
+  = render "servers/gambling/stats_modal", current_server:, gamble_stat:

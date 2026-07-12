@@ -56,7 +56,7 @@ module ESM
         private
 
         def check_for_active_servers!
-          raise_error!(:servers_exist, user: current_user.mention) if target_community.servers.any?
+          raise_error!(:servers_exist, user: current_user) if target_community.servers.any?
         end
       end
     end

@@ -11,8 +11,10 @@ describe ESM::Database do
     let!(:server) { create(:server, community_id: community.id) }
 
     before do
-      # Cooldown
-      create_list(:cooldown, 10, user_id: user.id, server_id: server.id, community_id: community.id)
+      # Cooldown - one per command_name so the unique (command_name, user_id, community_id, server_id) index is satisfied
+      10.times do |index|
+        create(:cooldown, command_name: "command_#{index}", user_id: user.id, server_id: server.id, community_id: community.id)
+      end
 
       # UserNotificationRoute
       10.times.each do |i|

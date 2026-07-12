@@ -67,6 +67,21 @@ module ESM
     end
 
     #
+    # A user's Discord membership in this community: the ids of the roles they hold and whether they hold Discord's
+    # administrator permission. This is the allowlist input the website can't read from the database - only the bot can
+    # see Discord role membership - so command permission checks source it here. An unseeable guild or membership
+    # degrades to an empty membership, which reads as "holds no allowlisted role".
+    #
+    # @param user [ESM::User]
+    #
+    # @return [Struct] responds to #role_ids ([String]) and #administrator (Boolean)
+    #
+    def membership_for(user)
+      payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id)
+      (payload || {role_ids: [], administrator: false}).to_struct
+    end
+
+    #
     # Removes this community: the bot leaves the guild and the record is destroyed.
     # Returns false when the user lacks modify rights.
     #

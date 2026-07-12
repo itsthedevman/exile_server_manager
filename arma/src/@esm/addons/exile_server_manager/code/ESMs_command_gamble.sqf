@@ -220,6 +220,7 @@ try
 			[
 				["win", _areYaWinningSon],
 				["amount", _amountChanged],
+				["locker_after", _lockerAfter],
 				[
 					"response",
 					[

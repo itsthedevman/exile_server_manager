@@ -20,37 +20,55 @@ module ESM
             event = ESM::Discord::Event::ApplicationCommand.new(event)
             event.on_execution(self)
           end
+
+          # TODO: Docs
+          def website_event_hook(event)
+            event = ESM::Website::Event::ApplicationCommand.new(event)
+            event.on_execution(self)
+          end
         end
-
-        DISCORD_ACCESS_CHECKS = %i[
-          check_for_dev_only!
-          check_for_registered!
-          check_for_text_only!
-          check_for_dm_only!
-          check_for_player_mode!
-          check_for_permissions!
-        ].freeze
-
-        WEBSITE_ACCESS_CHECKS = %i[
-          check_for_dev_only!
-          check_for_registered!
-          check_for_player_mode!
-          check_for_permissions!
-        ].freeze
 
         #
         # Called internally by #execute, this method handles when a command has been executed on Discord.
         #
         def from_discord!
-          run_lifecycle!(access_checks: DISCORD_ACCESS_CHECKS)
-        end
+          # Check for these BEFORE validating the arguments so even if an argument was invalid, it doesn't matter since these take priority
+          timers.time!(:access_checks) do
+            check_for_dev_only!
+            check_for_registered!
+            check_for_text_only!
+            check_for_dm_only!
+            check_for_player_mode!
+            check_for_permissions!
+          end
 
-        #
-        # Called when a command has been invoked through the website's RPC layer.
-        # Skips text/DM-channel checks since the website has no channel context.
-        #
-        def from_website!
-          run_lifecycle!(access_checks: WEBSITE_ACCESS_CHECKS)
+          # Now ensure the user hasn't smoked too much lead
+          timers.time!(:argument_validation) do
+            arguments.validate!
+          end
+
+          info!(to_h)
+
+          timers.time!(:before_execute) do
+            check_for_nil_target_community! unless skipped_actions.nil_target_community?
+            check_for_nil_target_server! unless skipped_actions.nil_target_server?
+            check_for_nil_target_user! unless skipped_actions.nil_target_user?
+            check_for_connected_server! unless skipped_actions.connected_server?
+            check_for_cooldown! unless skipped_actions.cooldown?
+            check_for_different_community! unless skipped_actions.different_community?
+          end
+
+          timers.time!(:on_execute) do
+            load_v1_code! if v1_code_needed? # V1
+            on_execute
+          end
+
+          timers.time!(:after_execute) do
+            # Update the cooldown after the command has ran just in case there are issues
+            create_or_update_cooldown unless skipped_actions.cooldown?
+          end
+
+          nil
         end
 
         # @param request [ESM::Request] The request to build this command with
@@ -74,21 +92,13 @@ module ESM
           end
         end
 
-        def on_execute
-        end
-
-        def on_request_accepted
-        end
-
-        def on_request_declined
-        end
-
-        private
-
-        def run_lifecycle!(access_checks:)
-          # Check for these BEFORE validating the arguments so even if an argument was invalid, it doesn't matter since these take priority
+        # TODO: Docs
+        def from_website!
+          # Check for these BEFORE validating the arguments so even if an argument was invalid it doesn't matter
+          # since these take priority
           timers.time!(:access_checks) do
-            access_checks.each { |check| public_send(check) }
+            check_for_registered!
+            check_for_permissions!
           end
 
           # Now ensure the user hasn't smoked too much lead
@@ -104,14 +114,10 @@ module ESM
             check_for_nil_target_user! unless skipped_actions.nil_target_user?
             check_for_connected_server! unless skipped_actions.connected_server?
             check_for_cooldown! unless skipped_actions.cooldown?
-            check_for_different_community! unless skipped_actions.different_community?
           end
 
-          result = nil
           timers.time!(:on_execute) do
-            load_v1_code! if v1_code_needed? # V1
-
-            result = on_execute
+            on_website_execute
           end
 
           timers.time!(:after_execute) do
@@ -119,7 +125,20 @@ module ESM
             create_or_update_cooldown unless skipped_actions.cooldown?
           end
 
-          result
+          nil
+        end
+
+        # TODO: Rename to #on_discord_execute
+        def on_execute
+        end
+
+        def on_website_execute
+        end
+
+        def on_request_accepted
+        end
+
+        def on_request_declined
         end
       end
     end

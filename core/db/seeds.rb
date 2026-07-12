@@ -203,6 +203,44 @@ ESM::UserAlias.create!(user_id: 1, community_id: community.id, value: "c")
 puts " done"
 
 # =============================================================================
+# GAMBLE STATS
+# =============================================================================
+
+print "Creating gamble stats..."
+# server_1 gets a full leaderboard spread: V2 owns the streaks and most-won,
+# V3 owns the losses, and the main user sits mid-pack. server_2 gets just the
+# main user, so switching servers shows a different (sparser) card.
+gamble_stats = [
+  {
+    user: users.first, server: server_1, current_streak: 4, last_action: "loss",
+    total_wins: 128, total_losses: 141, longest_win_streak: 9, longest_loss_streak: 7,
+    total_poptabs_won: 4_820_000, total_poptabs_loss: 5_130_000
+  },
+  {
+    user: users.second, server: server_1, current_streak: 11, last_action: "won",
+    total_wins: 340, total_losses: 210, longest_win_streak: 15, longest_loss_streak: 5,
+    total_poptabs_won: 12_500_000, total_poptabs_loss: 3_200_000
+  },
+  {
+    user: users.third, server: server_1, current_streak: 2, last_action: "loss",
+    total_wins: 88, total_losses: 260, longest_win_streak: 6, longest_loss_streak: 18,
+    total_poptabs_won: 2_100_000, total_poptabs_loss: 9_800_000
+  },
+  {
+    user: users.first, server: server_2, current_streak: 3, last_action: "won",
+    total_wins: 22, total_losses: 15, longest_win_streak: 5, longest_loss_streak: 3,
+    total_poptabs_won: 640_000, total_poptabs_loss: 410_000
+  }
+]
+
+gamble_stats.each do |stat_data|
+  gambler = stat_data.delete(:user)
+  gamble_server = stat_data.delete(:server)
+  ESM::UserGambleStat.create!(user_id: gambler.id, server_id: gamble_server.id, **stat_data)
+end
+puts " done"
+
+# =============================================================================
 # NOTIFICATION ROUTES
 # =============================================================================
 

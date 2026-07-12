@@ -57,7 +57,7 @@ describe ESM::Command::Base::Helpers do
         expect(server.connection).to receive(:send_error).and_call_original
 
         expect { embed_from_message }.to raise_error(ESM::Exception::CheckFailure) do |error|
-          embed = error.data
+          embed = error.to_embed
           expect(embed.description).to match("please reach out to the server owners")
         end
       end
@@ -70,7 +70,7 @@ describe ESM::Command::Base::Helpers do
         expect(server.connection).to receive(:send_error).and_call_original
 
         expect { embed_from_message }.to raise_error(ESM::Exception::CheckFailure) do |error|
-          embed = error.data
+          embed = error.to_embed
           expect(embed.description).to match("please reach out to the server owners")
         end
       end

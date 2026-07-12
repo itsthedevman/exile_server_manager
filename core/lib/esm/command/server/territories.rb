@@ -29,7 +29,7 @@ module ESM
           if territories.size == 0
             raise_error!(
               :no_territories,
-              user: current_user.mention,
+              user: current_user,
               server_id: target_server.server_id
             )
           end
@@ -65,7 +65,7 @@ module ESM
           private
 
           def check_for_no_territories!
-            raise_error!(:no_territories, user: current_user.mention, server_id: target_server.server_id) if @response.blank?
+            raise_error!(:no_territories, user: current_user, server_id: target_server.server_id) if @response.blank?
           end
 
           def territory_embed(territory)

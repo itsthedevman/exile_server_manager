@@ -33,7 +33,7 @@ module ESM
         private
 
         def check_for_request!(request)
-          raise_error!(:invalid_request_id, user: current_user.mention) if request.nil?
+          raise_error!(:invalid_request_id, user: current_user) if request.nil?
         end
       end
     end
