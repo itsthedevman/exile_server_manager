@@ -79,12 +79,11 @@ module TerritoriesHelper
     time.strftime("%b %-d, %Y")
   end
 
-  # A labeled member list. Territory#owner is a single "Name (uid)" string while
-  # #moderators / #builders are newline-joined lists; both split cleanly here.
-  # Renders nothing when no one qualifies.
-  def territory_member_group(label, value, icon:, color: "text-info", wrapper_class: "mb-3")
-    members = value.to_s.split("\n").map(&:strip).reject(&:blank?)
-    return if members.empty?
+  # A labeled group of territory members (an array of Territory::Member). Renders
+  # nothing when the group is empty, so an owner-only territory shows just the
+  # owner.
+  def territory_member_group(label, members, icon:, color: "text-info", wrapper_class: "mb-3")
+    return if members.blank?
 
     tag.div(class: wrapper_class) do
       safe_join([
@@ -315,17 +314,13 @@ module TerritoriesHelper
     end
   end
 
-  # Splits a "Name (uid)" entry into a prominent name and a muted, monospace uid.
+  # A member row: a prominent name and a muted, monospace steam uid.
   def territory_member_row(member)
-    match = member.match(/\A(?<name>.+?)\s*\((?<uid>\d+)\)\z/)
-    name = match ? match[:name] : member
-    uid = match && match[:uid]
-
     tag.div(class: "d-flex align-items-baseline gap-2 flex-wrap") do
       safe_join([
-        tag.span(name, class: "text-body"),
-        (tag.span(uid, class: "small text-secondary-emphasis font-monospace") if uid)
-      ].compact)
+        tag.span(member.name, class: "text-body"),
+        tag.span(member.steam_uid, class: "small text-secondary-emphasis font-monospace")
+      ])
     end
   end
 end

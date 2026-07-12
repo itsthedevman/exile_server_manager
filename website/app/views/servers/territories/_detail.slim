@@ -47,8 +47,8 @@
           = territory_upgrade_control(current_territory, server_public_id: current_server.public_id)
 
     = territory_section "Members", icon: "people-fill", color: "text-info", wrapper_class: "p-3" do
-      = territory_member_group("Owner", current_territory.owner, icon: "key-fill", color: "text-warning")
-      = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.size > 0 ? "mb-3" : "")
+      = territory_member_group("Owner", [current_territory.owner], icon: "key-fill", color: "text-warning")
+      = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.any? ? "mb-3" : "")
       = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "")
 - else
   .modal-header
