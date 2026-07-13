@@ -37,6 +37,14 @@ begin
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
+
+# eager_load is off in test, so core (ESM::User et al.) loads lazily via the
+# initializer's `to_prepare` hook - which fires after routes are drawn at boot,
+# leaving the ESM::User-dependent routes (Devise + the whole dashboard) undrawn
+# in this process. Force the load and redraw routes so request specs can reach them.
+Rails.application.reloader.prepare!
+Rails.application.reload_routes!
+
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
@@ -47,6 +55,12 @@ RSpec.configure do |config|
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
+
+  # `create`/`build` without the FactoryBot prefix.
+  config.include FactoryBot::Syntax::Methods
+
+  # `sign_in`/`sign_out` in request specs (Devise + Warden).
+  config.include Devise::Test::IntegrationHelpers, type: :request
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false

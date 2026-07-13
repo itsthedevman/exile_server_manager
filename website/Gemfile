@@ -33,6 +33,7 @@ end
 
 group :test do
   gem "database_cleaner-active_record"
+  gem "factory_bot_rails"
   gem "rspec-rails"
   gem "webmock"
 end
@@ -43,6 +44,7 @@ end
 
 # Database
 gem "pg"                        # PostgreSQL adapter
+gem "activerecord-import"       # Bulk insert; core models' seed callbacks (Community command configs, notifications) use it
 
 # Web Server
 gem "puma"                      # Multi-threaded web server
