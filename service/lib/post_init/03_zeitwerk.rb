@@ -39,7 +39,6 @@ ESM.loader.tap do |loader|
   # these exclusions. Anything in core/lib lives outside this Zeitwerk root
   # already, so it doesn't need ignoring here. The explicit list below is
   # only for files still inside service/lib.
-  loader.ignore(ESM.root.join("lib", "esm", "database.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "discord", "extension"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "community.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "notification.rb"))

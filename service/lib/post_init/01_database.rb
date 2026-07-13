@@ -8,6 +8,6 @@
 # definition time, so the connection has to exist by then.
 #
 
-require ESM.root.join("lib", "esm", "database.rb")
+require ESM_CORE_PATH.join("lib", "esm", "database.rb")
 
 ESM::Database.connect!

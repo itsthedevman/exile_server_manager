@@ -17,12 +17,6 @@ module ESM
       guild_id.present? && guild_id == ESM.config.developer_guild_id
     end
 
-    def self.community_ids
-      ESM.cache.fetch("community_ids", expires_in: ESM.config.cache.community_ids) do
-        ESM::Database.with_connection { pluck(:community_id) }
-      end
-    end
-
     def logging_channel
       ESM.discord_bot.channel(logging_channel_id)
     rescue
