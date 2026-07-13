@@ -165,7 +165,7 @@ Rails.application.routes.draw do
     end
   end
 
-  if Rails.env.development?
+  if Rails.env.local?
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
       # /servers/:server_id/players
