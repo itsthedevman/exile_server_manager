@@ -10,6 +10,7 @@ module ESM
     # DATA STRUCTURE
     # =============================================================================
 
+    attribute :public_id, :uuid
     attribute :idempotency_key, :uuid
     attribute :command_name, :string
     attribute :arguments, :hash, default: {}
@@ -38,6 +39,8 @@ module ESM
     # CALLBACKS
     # =============================================================================
 
+    before_create :generate_public_id
+
     # =============================================================================
     # SCOPES
     # =============================================================================
@@ -62,6 +65,14 @@ module ESM
     # TODO: Docs
     def command_class
       ESM::Command[command_name]
+    end
+
+    private
+
+    def generate_public_id
+      return if public_id.present?
+
+      self.public_id = SecureRandom.uuid
     end
   end
 end
