@@ -1,0 +1,10 @@
+/ locals: server_public_id, territory_id, surface, command_name, target_uid, icon, variant, label
+/ optional: confirm, replace_id
+div id=command_action_id(command_name, territory_id, surface, target_uid) class="d-inline-flex"
+  = button_to territory_member_command_path(command_name, server_public_id, territory_id),
+    class: "btn btn-sm btn-#{variant}",
+    title: label,
+    "aria-label": label,
+    form: {data: {turbo_confirm: local_assigns[:confirm]}},
+    params: {idempotency_key: SecureRandom.uuid, target_uid:, dom_id: local_assigns.fetch(:replace_id) { command_action_id(command_name, territory_id, surface, target_uid) }} do
+    i.bi class="bi-#{icon}"

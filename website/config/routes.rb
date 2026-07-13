@@ -165,7 +165,7 @@ Rails.application.routes.draw do
     end
   end
 
-  if Rails.env.development?
+  if Rails.env.local?
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
       # /servers/:server_id/players
@@ -183,6 +183,21 @@ Rails.application.routes.draw do
       resources :territories, controller: "servers/territories", only: [:show], param: :territory_id do
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
+
+        # /servers/:server_id/territories/:territory_id/upgrade
+        post :upgrade
+
+        # /servers/:server_id/territories/:territory_id/promote_member
+        post :promote_member
+
+        # /servers/:server_id/territories/:territory_id/remove_member
+        post :remove_member
+
+        # /servers/:server_id/territories/:territory_id/demote_member
+        post :demote_member
+
+        # /servers/:server_id/territories/:territory_id/set_id
+        post :set_id
 
         collection do
           # /servers/:server_id/territories/commands/:command_id/status

@@ -1,0 +1,14 @@
+/ locals: command, target, current_server, refreshed_territory, refreshed_player, retry_territory
+= turbo_stream.replace target do
+  = render "servers/territories/command_result", command:, retry_territory:
+
+= territory_command_outcome_toast(command)
+
+- if refreshed_territory.present?
+  = turbo_stream.replace "territory_detail_frame" do
+    = turbo_frame "territory_detail" do
+      = render "servers/territories/detail", current_server:, current_territory: refreshed_territory
+
+- if refreshed_player.present?
+  = turbo_stream.update "player_overview" do
+    = render "servers/players/overview", current_server:, current_player: refreshed_player

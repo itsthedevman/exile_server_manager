@@ -1,4 +1,4 @@
-.position-fixed[aria-live="polite" aria-atomic="true" style="z-index: 1050;"]
+#toast-region.position-fixed[aria-live="polite" aria-atomic="true"]
   #toast-container.toast-container
     - flash.each do |type, message|
       - next if type == "timedout"

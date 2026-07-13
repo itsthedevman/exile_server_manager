@@ -28,7 +28,7 @@ module ESM
         #################################
 
         def on_execute
-          # Check for registered target_user
+          # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
           response = call_sqf_function!(
@@ -38,6 +38,15 @@ module ESM
 
           embed = embed_from_message!(response)
           reply(embed)
+        end
+
+        def on_website_execute
+          # Check for registered target_user. A steam_uid is valid here so don't check ESM::User::Ephemeral
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+          # No payload to record - the Arma response is Discord embed data. The event layer marks the row
+          # complete once this returns.
+          call_sqf_function!("ESMs_command_promote", territory_id: arguments.territory_id)
         end
 
         module V1

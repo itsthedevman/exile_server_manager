@@ -1,12 +1,16 @@
 @use "./colors" as *;
 
+#toast-region {
+    // The fixed-position wrapper forms the stacking context that ranks the toasts globally, so the z-index has to
+    // live here - a value on the inner #toast-container can't climb out of this context. Sit above Bootstrap's modal
+    // (1055) so action toasts aren't trapped behind the territory detail dialog; matches Bootstrap's own $zindex-toast.
+    z-index: 1090;
+}
+
 #toast-container {
     position: fixed !important;
     top: calc($nav-offset + 2em) !important;
     right: 1em;
-    // Above the modal (1055) so payment toasts aren't trapped behind the
-    // territory detail dialog; matches Bootstrap's own $zindex-toast.
-    z-index: 1090;
 }
 
 $toast-bg: $esm-warm-gray-800;

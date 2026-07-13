@@ -1,9 +1,0 @@
-/ Response to POST /pay. dom_id is the button region that was clicked.
-/ A settled command (peek hit, or a re-click that deduped to a finished row)
-/ resolves through the shared settled partial; otherwise the spinner + poller
-/ take over.
-- if command.settled?
-  = render "servers/territories/pay_settled", command:, target: dom_id, current_server:, refreshed_territory:, refreshed_player:, retry_territory:
-- else
-  = turbo_stream.replace dom_id do
-    = render "servers/territories/pay_processing", command:

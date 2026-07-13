@@ -56,7 +56,7 @@
                   th.py-3.text-light.bg-transparent
                     i.bi.bi-globe.me-2
                     | Connection
-                  - if Rails.env.development?
+                  - if Rails.env.local?
                     th.py-3.text-light.bg-transparent.text-end.pe-4 Actions
               tbody
                 - servers.each do |server|
@@ -66,7 +66,7 @@
                     td.py-3.text-light = server.server_name
                     td.py-3
                       code.text-muted.fs-5 = "#{server.server_ip}:#{server.server_port}"
-                    - if Rails.env.development?
+                    - if Rails.env.local?
                       td.py-3.text-end.pe-4
                         - if user_signed_in?
                           .d-inline-flex.gap-2

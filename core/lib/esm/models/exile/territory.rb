@@ -22,6 +22,16 @@ module ESM
         flag_trouble2_co flag_uk_co flag_us_co flag_white_co
       ].freeze
 
+      # An addressable member of a territory: enough to render the person and to
+      # target them for a promote / demote / remove action on the website. role is
+      # one of :owner, :moderator, :builder. #to_s is the Discord embed's display
+      # form ("Name (uid)"), so to_embed and its specs share one source of truth.
+      Member = Data.define(:name, :steam_uid, :role) do
+        def to_s
+          "#{name} (#{steam_uid})"
+        end
+      end
+
       def initialize(server:, territory:)
         @server = server
         @server_settings = server.server_setting
@@ -34,10 +44,6 @@ module ESM
 
       def name
         @territory[:name]
-      end
-
-      def owner
-        "#{@territory[:owner_name]} (#{@territory[:owner_uid]})"
       end
 
       def level
@@ -147,32 +153,19 @@ module ESM
         next_level_territory.territory_object_count
       end
 
-      def moderators
-        if @server.v2?
-          @territory[:moderators]
-            .sort_by { |a| a[:name].downcase }
-            .join_map("\n") do |account|
-              next if account[:owner]
+      # The territory's members as addressable Member objects
+      # v2 servers only; a v1 territory renders its flatter shape directly in #to_embed and never reaches these
+      def owner
+        Member.new(name: @territory[:owner_name], steam_uid: @territory[:owner_uid], role: :owner)
+      end
 
-              "#{account[:name]} (#{account[:uid]})"
-            end
-        else
-          # V1
-          @territory[:moderators].map { |name, uid| "#{name} (#{uid})" }
-        end
+      def moderators
+        @moderators ||= build_members(@territory[:moderators], role: :moderator) { |account| !account[:owner] }
       end
 
       def builders
-        if @server.v2?
-          @territory[:build_rights]
-            .join_map("\n") do |account|
-              next if account[:owner] || account[:moderator]
-
-              "#{account[:name]} (#{account[:uid]})"
-            end
-        else
-          # V1
-          @territory[:build_rights].map { |name, uid| "#{name} (#{uid})" }
+        @builders ||= build_members(@territory[:build_rights], role: :builder) do |account|
+          !account[:owner] && !account[:moderator]
         end
       end
 
@@ -248,19 +241,47 @@ module ESM
           end
 
           e.add_field(value: I18n.t("commands.territories.territory_members"))
-          e.add_field(name: ":crown: #{I18n.t(:owner)}", value: owner)
 
-          if (value = moderators) && value.present?
-            e.add_field(name: ":shield: #{I18n.t(:moderators)}", value:)
-          end
+          if @server.v2?
+            e.add_field(name: ":crown: #{I18n.t(:owner)}", value: owner.to_s)
 
-          if (value = builders) && value.present?
-            e.add_field(name: ":construction_site: #{I18n.t(:build_rights)}", value:)
+            if moderators.present?
+              e.add_field(name: ":shield: #{I18n.t(:moderators)}", value: embed_member_list(moderators))
+            end
+
+            if builders.present?
+              e.add_field(name: ":construction_site: #{I18n.t(:build_rights)}", value: embed_member_list(builders))
+            end
+          else
+            # V1 stores members as bare [name, uid] pairs, rendered only here.
+            e.add_field(name: ":crown: #{I18n.t(:owner)}", value: "#{@territory[:owner_name]} (#{@territory[:owner_uid]})")
+
+            v1_moderators = @territory[:moderators].map { |name, uid| "#{name} (#{uid})" }
+            e.add_field(name: ":shield: #{I18n.t(:moderators)}", value: v1_moderators) if v1_moderators.present?
+
+            v1_builders = @territory[:build_rights].map { |name, uid| "#{name} (#{uid})" }
+            e.add_field(name: ":construction_site: #{I18n.t(:build_rights)}", value: v1_builders) if v1_builders.present?
           end
         end
       end
 
       private
+
+      def embed_member_list(members)
+        members.join("\n")
+      end
+
+      # Builds the Member list for a role from the raw v2 account hashes, keeping
+      # only the accounts the predicate accepts.
+      def build_members(accounts, role:, &includes_account)
+        return [] if accounts.blank?
+
+        accounts.filter_map do |account|
+          next unless includes_account.call(account)
+
+          Member.new(name: account[:name], steam_uid: account[:uid], role:)
+        end
+      end
 
       def normalize_territory(territory)
         territory = territory.to_h unless territory.is_a?(Hash)

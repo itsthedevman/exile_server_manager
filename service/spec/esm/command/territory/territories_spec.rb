@@ -62,7 +62,7 @@ describe ESM::Command::Server::Territories, category: "command" do
             end
 
             moderator_fields = ESM::Embed.new
-              .add_field(value: territory.moderators)
+              .add_field(value: response[index][:moderators].map { |name, uid| "#{name} (#{uid})" })
               .fields
               .map(&:value)
 
@@ -79,7 +79,7 @@ describe ESM::Command::Server::Territories, category: "command" do
             end
 
             builder_fields = ESM::Embed.new
-              .add_field(value: territory.builders)
+              .add_field(value: response[index][:build_rights].map { |name, uid| "#{name} (#{uid})" })
               .fields
               .map(&:value)
 
@@ -248,7 +248,7 @@ describe ESM::Command::Server::Territories, category: "command" do
 
             if territory.moderators.present?
               moderator_fields = ESM::Embed.new
-                .add_field(value: territory.moderators)
+                .add_field(value: territory.moderators.join("\n"))
                 .fields
                 .map(&:value)
 
@@ -267,7 +267,7 @@ describe ESM::Command::Server::Territories, category: "command" do
 
             if territory.builders.present?
               builder_fields = ESM::Embed.new
-                .add_field(value: territory.builders)
+                .add_field(value: territory.builders.join("\n"))
                 .fields
                 .map(&:value)
 

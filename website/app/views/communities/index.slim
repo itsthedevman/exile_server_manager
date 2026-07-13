@@ -8,7 +8,7 @@
   .row.g-5
     / Left Column - Communities
     .col-lg-8
-      - if Rails.env.development?
+      - if Rails.env.local?
         = render "communities/favorite_servers", favorite_servers:
         hr.pb-4
 

@@ -41,6 +41,19 @@ module ESM
           reply(success_message)
         end
 
+        def on_website_execute
+          # Require at least 3 characters and a max of 20
+          check_for_minimum_characters!
+          check_for_maximum_characters!
+
+          run_database_query!(
+            :set_id,
+            steam_uid: current_user.steam_uid,
+            territory_id: arguments.old_territory_id,
+            new_territory_id: arguments.new_territory_id
+          )
+        end
+
         module V1
           def on_execute
             # Require at least 3 characters and a max of 20

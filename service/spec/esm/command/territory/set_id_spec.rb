@@ -225,6 +225,23 @@ describe ESM::Command::Territory::SetId, category: "command" do
 
         include_examples "raises territory_id_does_not_exist"
       end
+
+      context "when the new ID is already taken by another territory" do
+        before do
+          user.exile_account # The UID must be in the account table (FK)
+          territory.change_owner(user.steam_uid)
+
+          # A second territory already claims the ID we're about to rename into
+          create(:exile_territory, server_id: server.id, owner_uid: Faker::Steam.uid, esm_custom_id: new_territory_id)
+        end
+
+        it "raises an exception" do
+          expect { execute_command }.to raise_error(
+            ESM::Exception::ExtensionError,
+            /already taken/i
+          )
+        end
+      end
     end
   end
 end

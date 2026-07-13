@@ -117,7 +117,7 @@ describe ESM::Command::Server::Info, category: "command" do
           end
 
           moderator_fields = ESM::Embed.new
-            .add_field(value: territory.moderators)
+            .add_field(value: response[:moderators].map { |name, uid| "#{name} (#{uid})" })
             .fields
             .map(&:value)
 
@@ -128,7 +128,7 @@ describe ESM::Command::Server::Info, category: "command" do
           end
 
           builder_fields = ESM::Embed.new
-            .add_field(value: territory.builders)
+            .add_field(value: response[:build_rights].map { |name, uid| "#{name} (#{uid})" })
             .fields
             .map(&:value)
 

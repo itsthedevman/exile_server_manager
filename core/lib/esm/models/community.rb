@@ -83,6 +83,21 @@ module ESM
       checker.correct(id)
     end
 
+    # Cached list of every community's short id, feeding the spell-checker in .correct and keeping
+    # .generate_community_id from colliding. The TTL comes from `cache.community_ids` for hosts that
+    # configure it (the bot); hosts that don't (the website) fall back to a default.
+    def self.community_ids
+      ESM.cache.fetch("community_ids", expires_in: community_ids_cache_expiry) do
+        ESM::Database.with_connection { pluck(:community_id) }
+      end
+    end
+
+    def self.community_ids_cache_expiry
+      return 30.seconds unless ESM.config.respond_to?(:cache) && ESM.config.cache.respond_to?(:community_ids)
+
+      ESM.config.cache.community_ids
+    end
+
     def self.find_by_community_id(id)
       by_community_id(id).first
     end
