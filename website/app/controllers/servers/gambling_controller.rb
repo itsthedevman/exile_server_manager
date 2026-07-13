@@ -61,7 +61,7 @@ module Servers
           partial: "servers/gambling/rejection",
           locals: {message:}
         ),
-        status: :unprocessable_entity
+        status: :unprocessable_content
       )
     end
 
