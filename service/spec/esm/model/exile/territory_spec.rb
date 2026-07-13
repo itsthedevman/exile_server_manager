@@ -46,8 +46,14 @@ describe ESM::Exile::Territory do
   end
 
   describe "#owner" do
-    it "is expected to return the value" do
-      expect(territory.owner).to eq("#{territory_example.owner_name} (#{territory_example.owner_uid})")
+    it "returns the owner as a Member" do
+      expect(territory.owner).to eq(
+        ESM::Exile::Territory::Member.new(
+          name: territory_example.owner_name,
+          steam_uid: territory_example.owner_uid,
+          role: :owner
+        )
+      )
     end
   end
 
@@ -199,9 +205,11 @@ describe ESM::Exile::Territory do
       end
     end
 
-    it "is expected to return the value" do
-      expect(territory.moderators).to eq(
-        moderators.join_map("\n") { |hash| "#{hash[:name]} (#{hash[:uid]})" }
+    it "returns the moderators as Members" do
+      expect(territory.moderators).to match_array(
+        moderators.map do |hash|
+          ESM::Exile::Territory::Member.new(name: hash[:name], steam_uid: hash[:uid], role: :moderator)
+        end
       )
     end
   end
@@ -220,9 +228,11 @@ describe ESM::Exile::Territory do
       end
     end
 
-    it "is expected to return the value" do
-      expect(territory.builders).to eq(
-        builders.join_map("\n") { |hash| "#{hash[:name]} (#{hash[:uid]})" }
+    it "returns the builders as Members" do
+      expect(territory.builders).to match_array(
+        builders.map do |hash|
+          ESM::Exile::Territory::Member.new(name: hash[:name], steam_uid: hash[:uid], role: :builder)
+        end
       )
     end
   end

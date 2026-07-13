@@ -24,8 +24,13 @@ module ESM
 
       # An addressable member of a territory: enough to render the person and to
       # target them for a promote / demote / remove action on the website. role is
-      # one of :owner, :moderator, :builder.
-      Member = Data.define(:name, :steam_uid, :role)
+      # one of :owner, :moderator, :builder. #to_s is the Discord embed's display
+      # form ("Name (uid)"), so to_embed and its specs share one source of truth.
+      Member = Data.define(:name, :steam_uid, :role) do
+        def to_s
+          "#{name} (#{steam_uid})"
+        end
+      end
 
       def initialize(server:, territory:)
         @server = server
@@ -238,7 +243,7 @@ module ESM
           e.add_field(value: I18n.t("commands.territories.territory_members"))
 
           if @server.v2?
-            e.add_field(name: ":crown: #{I18n.t(:owner)}", value: embed_member(owner))
+            e.add_field(name: ":crown: #{I18n.t(:owner)}", value: owner.to_s)
 
             if moderators.present?
               e.add_field(name: ":shield: #{I18n.t(:moderators)}", value: embed_member_list(moderators))
@@ -262,13 +267,8 @@ module ESM
 
       private
 
-      # Discord embed rendering of a v2 member: "Name (steam_uid)".
-      def embed_member(member)
-        "#{member.name} (#{member.steam_uid})"
-      end
-
       def embed_member_list(members)
-        members.join_map("\n") { |member| embed_member(member) }
+        members.join("\n")
       end
 
       # Builds the Member list for a role from the raw v2 account hashes, keeping
