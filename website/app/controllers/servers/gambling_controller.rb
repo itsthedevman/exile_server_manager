@@ -33,7 +33,7 @@ module Servers
     end
 
     def status
-      command = ESM::ServerCommand.find_by(id: params.require(:command_id), user_id: current_user.id)
+      command = ESM::ServerCommand.find_by(public_id: params.require(:command_id), user_id: current_user.id)
       return head :not_found if command.nil?
 
       render locals: {command:, result: result_for(command), gamble_stat:}
