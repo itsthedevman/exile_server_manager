@@ -27,7 +27,7 @@ module ESM
         def on_execute
           request = current_user.pending_requests.where(uuid_short: arguments.uuid).first
           check_for_request!(request)
-          request.respond(true)
+          request.accept!
         end
 
         private

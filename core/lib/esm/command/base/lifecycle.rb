@@ -81,7 +81,7 @@ module ESM
           timers.time!(:from_request) do
             load_v1_code! if v1_code_needed? # V1
 
-            if @request.accepted
+            if @request.accepted?
               on_request_accepted
             else
               # Reset the cooldown since the request was declined.

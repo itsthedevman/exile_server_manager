@@ -2,9 +2,9 @@
 
 module ESM
   class Request < ApplicationRecord
-    def respond(accepted)
-      @accepted = accepted
+    private
 
+    def on_accept
       origin = ESM::Discord::Command::Origin.new(
         user: requestor,
         channel: ESM.discord_bot.channel(requested_from_channel_id)
@@ -12,7 +12,8 @@ module ESM
 
       command = ESM::Command[command_name].new(origin: origin)
       command.from_request(self)
-      destroy
     end
+
+    alias_method :on_reject, :on_accept
   end
 end

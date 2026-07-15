@@ -17,11 +17,10 @@ module ESM
     attribute :requested_from_channel_id, :string
     attribute :command_name, :string
     attribute :command_arguments, :json, default: nil
+    enum :status, {pending: "pending", accepted: "accepted", rejected: "rejected"}
     attribute :expires_at, :datetime
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
-
-    attr_reader :accepted
 
     # =============================================================================
     # ASSOCIATIONS
@@ -49,6 +48,8 @@ module ESM
     # =============================================================================
 
     scope :expired, -> { where("expires_at <= ?", Time.now) }
+    scope :accepted, -> { where(status: :accepted) }
+    scope :rejected, -> { where(status: :rejected) }
 
     # =============================================================================
     # CLASS METHODS
@@ -57,6 +58,16 @@ module ESM
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
+
+    def accept!
+      update!(status: :accepted)
+      on_accept
+    end
+
+    def reject!
+      update!(status: :rejected)
+      on_reject
+    end
 
     private
 
@@ -67,6 +78,14 @@ module ESM
 
     def set_expiration_date
       self.expires_at = ::Time.current + 1.day
+    end
+
+    def on_accept
+      raise NotImplementedError
+    end
+
+    def on_reject
+      raise NotImplementedError
     end
   end
 end

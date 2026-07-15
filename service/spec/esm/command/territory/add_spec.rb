@@ -79,7 +79,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           # Wait for the server to respond
           ESM.discord_bot.test_outbox.await_size(2)

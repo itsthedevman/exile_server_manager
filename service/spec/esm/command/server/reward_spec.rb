@@ -30,7 +30,7 @@ describe ESM::Command::Server::Reward, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           # Wait for the server to respond
           wait_for { connection.requests }.to be_blank

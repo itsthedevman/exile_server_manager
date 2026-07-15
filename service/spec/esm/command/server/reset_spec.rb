@@ -39,7 +39,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           wait_for { connection.requests }.to be_blank
 
@@ -73,7 +73,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           wait_for { connection.requests }.to be_blank
 
@@ -105,7 +105,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           wait_for { connection.requests }.to be_blank
 
@@ -139,7 +139,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           wait_for { connection.requests }.to be_blank
 
@@ -170,7 +170,7 @@ describe ESM::Command::Server::Reset, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           wait_for { connection.requests }.to be_blank
 

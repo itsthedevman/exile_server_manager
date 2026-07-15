@@ -27,7 +27,7 @@ module ESM
         def on_execute
           request = current_user.pending_requests.where(uuid_short: arguments.uuid).first
           check_for_request!(request)
-          request.respond(false)
+          request.reject!
 
           reply(ESM::Embed.build(:success, description: I18n.t("commands.decline.success_message")))
         end

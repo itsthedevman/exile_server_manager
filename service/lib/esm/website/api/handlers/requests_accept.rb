@@ -13,7 +13,7 @@ module ESM
             request = ESM::Request.find_by(id:)
             return if request.nil?
 
-            request.respond(true)
+            request.accept!
           end
         end
       end
