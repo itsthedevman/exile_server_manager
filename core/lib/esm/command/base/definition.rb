@@ -331,8 +331,7 @@ module ESM
         ############################################################
 
         attr_reader :response # v1
-        attr_reader :name, :category, :cooldown_time, :permissions, :timers, :event
-        attr_accessor :origin
+        attr_reader :name, :category, :cooldown_time, :permissions, :timers, :event, :origin
 
         delegate :examples, to: "self.class"
         delegate :current_user, :current_community, :current_channel, to: :@origin, allow_nil: true
