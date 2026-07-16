@@ -1,0 +1,15 @@
+/ locals: request
+.card id=dom_id(request)
+  .card-body.d-flex.align-items-center.justify-content-between.gap-3.flex-wrap
+    .d-flex.align-items-center.gap-3
+      img.rounded-circle.flex-shrink-0 src=request_requestor_avatar(request) alt="" width="40" height="40"
+      div
+        .fw-semibold = request_title(request)
+        .small.text-secondary-emphasis = request_detail(request)
+    .d-flex.gap-2.flex-shrink-0
+      = button_to accept_users_request_path(request.uuid), class: "btn btn-sm btn-success" do
+        i.bi.bi-check-lg.me-1
+        | Accept
+      = button_to decline_users_request_path(request.uuid), class: "btn btn-sm btn-outline-secondary" do
+        i.bi.bi-x-lg.me-1
+        | Decline

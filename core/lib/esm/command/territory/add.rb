@@ -28,52 +28,41 @@ module ESM
         #################################
 
         def on_execute
-          # Either a memer or admin trying to add themselves. Either way, the arma server handles this.
-          return on_request_accepted if same_user?
+          # A self-add or a territory admin: arma handles the add directly, no consent request needed.
+          return on_request_accepted if instant_add?
 
-          # Checks for a registered target user.
-          # This also keeps people from adding via steam_uid only
-          check_for_registered_target_user!
-          check_for_pending_request!
+          request_add!
 
-          add_request(
-            to: target_user,
-            description: I18n.t(
-              "commands.add.request_description",
-              current_user: current_user.distinct,
-              target_user: target_user.mention,
-              territory_id: arguments.territory_id,
-              server_id: target_server.server_id
-            )
-          )
-
-          # We don't need to notify the user if they triggered this from the website
-          return if origin.from_website?
-
-          embed = ESM::Embed.build(:success, description: I18n.t("commands.request.sent"))
-          reply(embed)
+          reply(ESM::Embed.build(:success, description: I18n.t("commands.request.sent")))
         end
 
-        # Website functionality is practically identical
-        alias_method :on_website_execute, :on_execute
+        def on_website_execute
+          # Self-adds and territory admins skip the consent request and arma processes the add straight away.
+          # The row records which path ran so the page reads "Added" rather than "Request sent".
+          if instant_add?
+            embeds = add_to_territory!
+
+            notify_requestee(embeds)
+            reply(outcome: :added)
+
+            return
+          end
+
+          request_add!
+
+          reply(outcome: :requested)
+        end
 
         def on_request_accepted
-          response = call_sqf_function!(
-            "ESMs_command_add",
-            territory_id: arguments.territory_id
-          )
-
-          # Parse both first in case there are errors
-          requestee_embed = embed_from_hash!(response.data.requestee)
-          requestor_embed = embed_from_hash!(response.data.requestor)
+          embeds = add_to_territory!
 
           # Send to the requestee first since they can be the requestor
-          ESM.discord_bot.deliver(requestee_embed, to: target_user)
+          notify_requestee(embeds)
 
           # And if they are the same person, don't send them the second message
           return if same_user?
 
-          reply(requestor_embed)
+          reply(embeds[:requestor])
         end
 
         module V1
@@ -117,6 +106,46 @@ module ESM
 
             reply(embed)
           end
+        end
+
+        private
+
+        # Whether the add bypasses the consent request. Arma still enforces the actual territory rights.
+        def instant_add?
+          same_user? || target_community.territory_admin_users.include?(current_user)
+        end
+
+        # Creates the pending request the target must accept, notifying them via the request message.
+        def request_add!
+          # Checks for a registered target user. This also keeps people from adding via steam_uid only.
+          check_for_registered_target_user!
+          check_for_pending_request!
+
+          add_request(
+            to: target_user,
+            description: I18n.t(
+              "commands.add.request_description",
+              current_user: current_user.distinct,
+              target_user: target_user.mention,
+              territory_id: arguments.territory_id,
+              server_id: target_server.server_id
+            )
+          )
+        end
+
+        # Runs the arma add and returns the requestee/requestor embeds parsed from the response.
+        def add_to_territory!
+          response = call_sqf_function!("ESMs_command_add", territory_id: arguments.territory_id)
+
+          {
+            requestee: embed_from_hash!(response.data.requestee),
+            requestor: embed_from_hash!(response.data.requestor)
+          }
+        end
+
+        # The target's "you've been added" notification, delivered over Discord (they can be the requestor).
+        def notify_requestee(embeds)
+          ESM.discord_bot.deliver(embeds[:requestee], to: target_user)
         end
       end
     end

@@ -118,4 +118,43 @@ RSpec.describe TerritoriesHelper, type: :helper do
       expect(helper.territory_command_failure_message(command)).to match(/updating the territory ID/)
     end
   end
+
+  describe "#territory_addable_by?" do
+    let(:owner) { ESM::Exile::Territory::Member.new(name: "Owner", steam_uid: "76561198000000001", role: :owner) }
+    let(:moderator) { ESM::Exile::Territory::Member.new(name: "Mod", steam_uid: "76561198000000002", role: :moderator) }
+    let(:territory) { instance_double(ESM::Exile::Territory, owner:, moderators: [moderator]) }
+
+    it "lets the owner add" do
+      expect(helper.territory_addable_by?(territory, owner.steam_uid)).to be(true)
+    end
+
+    it "lets a moderator add" do
+      expect(helper.territory_addable_by?(territory, moderator.steam_uid)).to be(true)
+    end
+
+    it "does not let a builder or non-member add" do
+      expect(helper.territory_addable_by?(territory, "76561198000000009")).to be(false)
+    end
+
+    it "is false when the viewer has no steam uid" do
+      expect(helper.territory_addable_by?(territory, nil)).to be(false)
+    end
+  end
+
+  describe "#territory_command_copy for add's two outcomes" do
+    it "reads as a sent request by default" do
+      command = instance_double(ESM::ServerCommand, command_name: "add", result: {outcome: "requested"})
+      expect(helper.territory_command_copy(command)[:past_tense]).to eq("Request sent")
+    end
+
+    it "reads as an immediate add when the row recorded the added outcome" do
+      command = instance_double(ESM::ServerCommand, command_name: "add", result: {outcome: "added"})
+      expect(helper.territory_command_copy(command)[:past_tense]).to eq("Added")
+    end
+
+    it "leaves another command's copy untouched even if the row carries an outcome" do
+      command = instance_double(ESM::ServerCommand, command_name: "pay", result: {outcome: "added"})
+      expect(helper.territory_command_copy(command)[:past_tense]).to eq("Paid")
+    end
+  end
 end

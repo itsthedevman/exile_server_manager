@@ -60,11 +60,15 @@ module ESM
     # =============================================================================
 
     def accept!
+      return unless pending?
+
       update!(status: :accepted)
       on_accept
     end
 
     def reject!
+      return unless pending?
+
       update!(status: :rejected)
       on_reject
     end

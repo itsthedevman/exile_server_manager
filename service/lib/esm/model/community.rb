@@ -17,18 +17,21 @@ module ESM
       guild_id.present? && guild_id == ESM.config.developer_guild_id
     end
 
+    # TODO: Docs
     def logging_channel
       ESM.discord_bot.channel(logging_channel_id)
     rescue
       nil
     end
 
+    # TODO: Docs
     def discord_server
       ESM.discord_bot.server(guild_id)
     rescue
       nil
     end
 
+    # TODO: Docs
     def log_event(event, message)
       return if logging_channel_id.blank?
 
@@ -54,13 +57,40 @@ module ESM
       ESM.discord_bot.deliver(message, to: channel)
     end
 
+    # TODO: Docs
     def modifiable_by?(guild_member)
       # A user with no membership in this guild can't modify the community.
       return false if guild_member.nil?
-
       return true if guild_member.permission?(:administrator) || guild_member.owner?
 
       dashboard_access_role_ids.any? { |role_id| guild_member.role?(role_id) }
+    end
+
+    # TODO: Docs
+    # This is forced refreshed on a server boot. Since majority of communities only have one server, forcing a miss
+    # isn't a big deal. Most servers also follow a 3 hour restart window, so the 5 hour expiration is more of a
+    # safety thing.
+    def territory_admin_users(force: false)
+      server = discord_server
+      return ESM::User.none if server.nil?
+
+      user_ids =
+        ESM.cache.fetch("community:#{id}:territory_admin_users", expires_in: 5.hours, force:) do
+          # Get all roles with administrator or that are set as territory admins
+          roles = server.roles.select do |role|
+            role.permissions.administrator || territory_admin_ids.include?(role.id.to_s)
+          end
+
+          # Get all of the user's discord IDs who have these roles
+          discord_ids = roles.flat_map do |role|
+            role.users.map { |user| user.id.to_s }
+          end
+
+          # Pluck all the steam UIDs we have, including the guild owners
+          ESM::User.where(discord_id: discord_ids + [server.owner.id.to_s]).where.not(steam_uid: nil).pluck(:id)
+        end
+
+      ESM::User.where(id: user_ids)
     end
   end
 end

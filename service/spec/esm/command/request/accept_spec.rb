@@ -22,7 +22,7 @@ describe ESM::Command::Request::Accept, category: "command" do
         execute!(user: user_2, channel_type: :dm, arguments: {uuid: request.uuid_short})
 
         expect(ESM.discord_bot.test_outbox).to be_empty
-        expect(ESM::Request.all.size).to eq(0)
+        expect(request.reload).to be_accepted
       end
     end
 

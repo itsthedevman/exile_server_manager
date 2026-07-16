@@ -33,6 +33,9 @@ nav.navbar.fixed-top.navbar-expand-lg.bg-body-tertiary
             = link_to "My Account", edit_users_path,
               class: "nav-link d-flex align-items-center gap-2"
 
+            = link_to "My Requests", users_requests_path,
+              class: "nav-link d-flex align-items-center gap-2"
+
             = button_to "Logout", logout_path,
                 class: "btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 py-3 mt-4",
                 method: :delete,
@@ -60,6 +63,8 @@ nav.navbar.fixed-top.navbar-expand-lg.bg-body-tertiary
             ul.dropdown-menu
               li
                 = link_to "My Account", edit_users_path, class: "dropdown-item"
+              li
+                = link_to "My Requests", users_requests_path, class: "dropdown-item"
               li
                 = button_to "Logout",
                   logout_path,

@@ -24,6 +24,15 @@
       i.bi.bi-person.me-3
       span.fw-medium Profile & Settings
 
+    = link_to users_requests_path,
+      class: class_names( \
+        "list-group-item list-group-item-action d-flex align-items-center py-3",
+        "bg-primary bg-opacity-25": \
+          controller_name == "requests" \
+      )
+      i.bi.bi-bell.me-3
+      span.fw-medium Requests
+
     = link_to users_notification_routes_path,
       class: class_names( \
         "list-group-item list-group-item-action d-flex align-items-center py-3",

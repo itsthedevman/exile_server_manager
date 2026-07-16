@@ -507,6 +507,47 @@ describe ESM::Command::Territory::Add, category: "command" do
         # ...but the "request sent" confirmation is suppressed on the website path.
         expect(ESM.discord_bot.test_outbox.size).to eq(1)
       end
+
+      it "records the requested outcome on the row" do
+        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("requested")
+      end
+    end
+
+    context "when a territory admin adds a player" do
+      before do
+        allow_any_instance_of(ESM::Community)
+          .to receive(:territory_admin_users).and_return(ESM::User.where(id: user.id))
+      end
+
+      it "adds the player immediately, records the added outcome, and skips the request" do
+        expect { server_command }.not_to change(ESM::Request, :count)
+
+        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("added")
+        expect(territory.reload.build_rights).to include(second_user.steam_uid)
+      end
+    end
+
+    context "when the web request is accepted" do
+      it "delivers the outcome to the requestor's DM instead of crashing on the null channel" do
+        server_command
+        request = ESM::Request.last
+
+        ESM.discord_bot.test_outbox.clear
+
+        # Pre-fix, on_accept built a Discord origin with the request's null channel, so the
+        # requestor reply had nowhere to land and blew up. It now resolves to the requestor's DM.
+        expect { request.accept! }.not_to raise_error
+
+        # The target is welcomed to the territory...
+        expect(
+          ESM.discord_bot.test_outbox.retrieve(/Welcome to #{territory.name}!/i)
+        ).not_to be_nil
+
+        # ...and the requestor's confirmation lands rather than raising on a null channel.
+        expect(
+          ESM.discord_bot.test_outbox.retrieve(/#{second_user.mention} has been added to territory `#{territory.encoded_id}`/)
+        ).not_to be_nil
+      end
     end
   end
 end

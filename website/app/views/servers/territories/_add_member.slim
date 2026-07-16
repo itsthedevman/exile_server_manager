@@ -1,0 +1,13 @@
+/ locals: server_public_id, territory_id
+.mt-3.pt-3.border-top
+  .small.fw-semibold.mb-2.d-flex.align-items-center.gap-1
+    i.bi.bi-person-plus-fill.text-info
+    span Add a player
+  = form_with url: server_territory_add_member_path(server_public_id, territory_id), method: :post, class: "d-flex align-items-start gap-2" do |form|
+    .flex-grow-1
+      = form.text_field :target_uid, placeholder: "Steam UID", inputmode: "numeric", pattern: "\\d{17}", maxlength: 17, required: true, autocomplete: "off", spellcheck: "false", title: "The player's 17-digit Steam UID", class: "form-control form-control-sm font-monospace"
+    = form.hidden_field :idempotency_key, value: SecureRandom.uuid
+    = form.hidden_field :dom_id, value: command_action_id("add", territory_id, "modal")
+    button.btn.btn-sm.btn-info.flex-shrink-0[type="submit"]
+      | Send request
+  div id=command_action_id("add", territory_id, "modal") class="mt-2"

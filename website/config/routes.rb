@@ -35,6 +35,17 @@ Rails.application.routes.draw do
         delete :destroy_many
       end
     end
+
+    # /account/requests
+    resources :requests, controller: "users/requests", only: %i[index] do
+      member do
+        # /account/requests/:id/accept
+        post :accept
+
+        # /account/requests/:id/decline
+        post :decline
+      end
+    end
   end
 
   # /api
@@ -186,6 +197,9 @@ Rails.application.routes.draw do
 
         # /servers/:server_id/territories/:territory_id/upgrade
         post :upgrade
+
+        # /servers/:server_id/territories/:territory_id/add_member
+        post :add_member
 
         # /servers/:server_id/territories/:territory_id/promote_member
         post :promote_member

@@ -31,6 +31,18 @@ module TerritoriesHelper
       timeout_failure: "The server didn't respond in time. Check in-game before upgrading again.",
       generic_failure: "Something went wrong processing the upgrade. Please try again."
     },
+    "add" => {
+      style: :block,
+      progressive: "Sending…",
+      past_tense: "Request sent",
+      processing_tone: "info",
+      success_toast: "Add request sent. They'll be added once they accept it.",
+      failure_title: "Request failed",
+      timeout_failure: "The server didn't respond in time. Check in-game before requesting again.",
+      generic_failure: "Something went wrong sending the request. Please try again.",
+      # A territory admin or self-add is processed by arma immediately, so the outcome reads as done, not pending.
+      added: {past_tense: "Added", success_toast: "Player added to the territory."}
+    },
     "promote" => {
       style: :inline,
       progressive: "Promoting…",
@@ -167,6 +179,15 @@ module TerritoriesHelper
   # owner. territory_id + server_public_id thread down so each row can post its
   # promote/demote/remove action; the member list only lives in the modal, so
   # surface defaults there.
+  # Whether the viewer sees the add-member form. Only the owner and moderators can add (arma enforces the
+  # same "moderator" access in ESMs_command_add); builders and non-members don't. A visibility guard only -
+  # arma remains the authority, so a bypassed request still gets rejected.
+  def territory_addable_by?(territory, steam_uid)
+    return false if steam_uid.blank?
+
+    [territory.owner, *territory.moderators].compact.any? { |member| member.steam_uid == steam_uid }
+  end
+
   def territory_member_group(label, members, icon:, territory_id:, server_public_id:, color: "text-info", wrapper_class: "mb-3", surface: "modal")
     return if members.blank?
 
@@ -345,7 +366,16 @@ module TerritoriesHelper
   # Display copy for a territory command, keyed on its name. Central so the
   # shared _command_* partials never branch on command_name themselves.
   def territory_command_copy(command)
-    TERRITORY_COMMAND_COPY.fetch(command.command_name)
+    copy = TERRITORY_COMMAND_COPY.fetch(command.command_name)
+    return copy unless copy[:added] && command_added?(command)
+
+    copy.merge(copy[:added])
+  end
+
+  # add reports its outcome on the row - a request was sent, or (territory admin / self-add) the player was
+  # added straight away. The "added" copy applies only to the latter.
+  def command_added?(command)
+    command.result.to_h.with_indifferent_access[:outcome].to_s == "added"
   end
 
   # Label + tone for the in-flight spinner button (e.g. "Paying…" amber,

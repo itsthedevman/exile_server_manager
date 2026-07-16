@@ -5,12 +5,15 @@ module ESM
     private
 
     def on_accept
-      origin = ESM::Discord::Command::Origin.new(
-        user: requestor,
-        channel: ESM.discord_bot.channel(requested_from_channel_id)
-      )
+      channel = if requested_from_channel_id
+        ESM.discord_bot.channel(requested_from_channel_id)
+      else
+        requestor.discord_user.pm
+      end
 
-      command = ESM::Command[command_name].new(origin: origin)
+      origin = Discord::Command::Origin.new(user: requestor, channel:)
+
+      command = ESM::Command[command_name].new(origin:)
       command.from_request(self)
     end
 
