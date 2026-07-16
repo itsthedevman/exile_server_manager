@@ -455,4 +455,58 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
     end
   end
+
+  describe "#on_website_execute", requires_connection: true do
+    include_context "command"
+    include_context "connection"
+
+    let!(:territory) do
+      owner_uid = Faker::Steam.uid
+      create(
+        :exile_territory,
+        owner_uid: owner_uid,
+        moderators: [owner_uid, user.steam_uid],
+        build_rights: [owner_uid, user.steam_uid],
+        server_id: server.id
+      )
+    end
+
+    subject(:server_command) do
+      execute_website!(
+        arguments: {
+          server_id: server.server_id,
+          territory_id: territory.encoded_id,
+          target: second_user.steam_uid
+        }
+      )
+    end
+
+    before do
+      user.exile_account
+      second_user.exile_account
+
+      territory.create_flag
+    end
+
+    context "when a moderator adds another player" do
+      it "creates a request for the target with a null (web) origin" do
+        expect { server_command }.to change(ESM::Request, :count).by(1)
+
+        request = ESM::Request.last
+        expect(request.requestor).to eq(user)
+        expect(request.requestee).to eq(second_user)
+        expect(request.requested_from_channel_id).to be_nil
+      end
+
+      it "notifies only the target on Discord, leaving the requestor's confirmation to the website" do
+        server_command
+
+        # The target receives the request through the Discord notify layer...
+        ESM.discord_bot.test_outbox.await_size(1)
+
+        # ...but the "request sent" confirmation is suppressed on the website path.
+        expect(ESM.discord_bot.test_outbox.size).to eq(1)
+      end
+    end
+  end
 end

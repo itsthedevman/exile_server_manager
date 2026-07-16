@@ -46,24 +46,24 @@ RSpec.describe ESM::Request do
   end
 
   describe "#accept!" do
-    it "marks the request accepted" do
+    it "persists the accepted status" do
       request.accept!
-      expect(request.accepted?).to be(true)
+      expect(request.reload.accepted?).to be(true)
     end
 
-    it "responds to the request and removes it" do
-      expect { request.accept! }.to change(ESM::Request, :count).by(-1)
+    it "keeps the request around after responding" do
+      expect { request.accept! }.not_to change(ESM::Request, :count)
     end
   end
 
   describe "#reject!" do
-    it "marks the request rejected" do
+    it "persists the rejected status" do
       request.reject!
-      expect(request.rejected?).to be(true)
+      expect(request.reload.rejected?).to be(true)
     end
 
-    it "responds to the request and removes it" do
-      expect { request.reject! }.to change(ESM::Request, :count).by(-1)
+    it "keeps the request around after responding" do
+      expect { request.reject! }.not_to change(ESM::Request, :count)
     end
   end
 end

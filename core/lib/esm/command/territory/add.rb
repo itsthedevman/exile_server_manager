@@ -47,9 +47,15 @@ module ESM
             )
           )
 
+          # We don't need to notify the user if they triggered this from the website
+          return if origin.from_website?
+
           embed = ESM::Embed.build(:success, description: I18n.t("commands.request.sent"))
           reply(embed)
         end
+
+        # Website functionality is practically identical
+        alias_method :on_website_execute, :on_execute
 
         def on_request_accepted
           response = call_sqf_function!(
