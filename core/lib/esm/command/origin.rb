@@ -75,6 +75,16 @@ module ESM
       def log_context
         {}
       end
+
+      # TODO: Docs
+      def from_website?
+        @source == :website
+      end
+
+      # TODO: Docs
+      def from_discord?
+        @source == :discord
+      end
     end
   end
 end
