@@ -53,7 +53,15 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
-    # TODO: Docs
+    #
+    # Records the outcome of a single gamble, updating the win/loss totals, poptab tallies, and the
+    # current/longest streaks. Switching between a win and a loss resets the current streak to 1.
+    #
+    # @param win [Boolean] whether this gamble was won
+    # @param amount_changed [Integer] the poptabs won (on a win) or lost (on a loss)
+    #
+    # @return [Boolean] true once the stats are persisted
+    #
     def record!(win:, amount_changed:)
       # Ensure the streak is reset when switching between won/loss
       current_streak =

@@ -62,7 +62,11 @@ module ESM
       completed? || failed? || timed_out?
     end
 
-    # TODO: Docs
+    #
+    # The command class this row will execute, resolved from `command_name`.
+    #
+    # @return [Class<ESM::Command::Base>]
+    #
     def command_class
       ESM::Command[command_name]
     end

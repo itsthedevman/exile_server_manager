@@ -111,7 +111,12 @@ class Loader
         except: ["/command/base.rb", "/command/base/", *Array(except)])
     end
 
-    # TODO: Docs
+    #
+    # Loads core's Rails/ActiveRecord extensions: the custom type classes under `core/lib/types`,
+    # the ESM and UID inflection acronyms, and the `:hash` ActiveRecord attribute type.
+    #
+    # @param method [Symbol] the loader method to require the type files with (:require or :load)
+    #
     def load_rails_extensions(method: :require)
       dir("core", "lib", "types", method:)
 

@@ -1,17 +1,36 @@
 # frozen_string_literal: true
 
 module ServersHelper
-  # TODO: Docs
+  ##
+  # Whether the current user may manage the given server, i.e. modify its owning community.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [Boolean]
+  #
   def server_manageable?(server)
     server.community.modifiable_by?(current_user)
   end
 
-  # TODO: Docs
+  ##
+  # Whether the current user has favorited the given server.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [Boolean]
+  #
   def server_favorited?(server)
     current_user.server_favorites.exists?(server_id: server.id)
   end
 
-  # TODO: Docs
+  ##
+  # Whether the named command is enabled in the given community's configuration.
+  #
+  # @param community [ESM::Community]
+  # @param command_name [String]
+  #
+  # @return [Boolean]
+  #
   def command_enabled?(community, command_name)
     community.command_configurations.exists?(command_name:, enabled: true)
   end

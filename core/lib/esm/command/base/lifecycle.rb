@@ -21,7 +21,12 @@ module ESM
             event.on_execution(self)
           end
 
-          # TODO: Docs
+          #
+          # The website counterpart to #event_hook. Wraps a web-initiated invocation and drives it
+          # through the same command execution lifecycle.
+          #
+          # @!visibility private
+          #
           def website_event_hook(event)
             event = ESM::Website::Event::ApplicationCommand.new(event)
             event.on_execution(self)
@@ -92,7 +97,12 @@ module ESM
           end
         end
 
-        # TODO: Docs
+        #
+        # Called internally by #execute, this method handles when a command has been executed from the website.
+        # Mirrors #from_discord! but runs only the access checks that apply off-Discord (registration and
+        # permissions - no text/DM/player-mode gates) before validating arguments and dispatching to
+        # #on_website_execute.
+        #
         def from_website!
           # Check for these BEFORE validating the arguments so even if an argument was invalid it doesn't matter
           # since these take priority
