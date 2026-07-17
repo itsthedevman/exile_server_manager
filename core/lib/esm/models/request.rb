@@ -48,8 +48,6 @@ module ESM
     # =============================================================================
 
     scope :expired, -> { where("expires_at <= ?", Time.now) }
-    scope :accepted, -> { where(status: :accepted) }
-    scope :rejected, -> { where(status: :rejected) }
 
     # =============================================================================
     # CLASS METHODS
