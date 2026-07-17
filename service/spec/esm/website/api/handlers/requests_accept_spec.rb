@@ -13,8 +13,8 @@ RSpec.describe ESM::Website::API::Handlers::RequestsAccept do
         )
       end
 
-      it "responds with accepted=true" do
-        expect_any_instance_of(ESM::Request).to receive(:respond).with(true)
+      it "accepts the request" do
+        expect_any_instance_of(ESM::Request).to receive(:accept!)
         described_class.call(id: request.id)
       end
     end

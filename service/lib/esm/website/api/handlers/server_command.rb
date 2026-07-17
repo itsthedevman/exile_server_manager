@@ -4,7 +4,11 @@ module ESM
   module Website
     class API
       module Handlers
-        # TODO: Docs
+        ##
+        # Website API handler that dispatches a persisted {ESM::ServerCommand} into the command
+        # lifecycle. Looks the row up by id and runs its command on a background promise so the web
+        # request doesn't block on the round-trip out to Arma.
+        #
         class ServerCommand
           def self.call(command_id:)
             command = ESM::ServerCommand.includes(:user).find_by(id: command_id)

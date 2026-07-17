@@ -15,6 +15,7 @@ module ESM
           @current_user = user
           @current_community = community
           @current_channel = channel
+          @source = :discord
         end
 
         def reply(content)

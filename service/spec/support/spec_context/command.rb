@@ -194,7 +194,7 @@ RSpec.shared_context("command") do
   end
 
   def accept_request
-    previous_command.request.respond(true)
+    previous_command.request.accept!
   rescue => e
     return if e.is_a?(ESM::Exception::CheckFailureNoMessage)
 

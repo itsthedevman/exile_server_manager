@@ -13,8 +13,8 @@ RSpec.describe ESM::Website::API::Handlers::RequestsDecline do
         )
       end
 
-      it "responds with accepted=false" do
-        expect_any_instance_of(ESM::Request).to receive(:respond).with(false)
+      it "declines the request" do
+        expect_any_instance_of(ESM::Request).to receive(:reject!)
         described_class.call(id: request.id)
       end
     end

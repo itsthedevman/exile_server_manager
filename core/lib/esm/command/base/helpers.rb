@@ -451,7 +451,7 @@ module ESM
             ESM::Request.create!(
               requestor_user_id: current_user.id,
               requestee_user_id: to.id,
-              requested_from_channel_id: current_channel.id.to_s,
+              requested_from_channel_id: current_channel&.id&.to_s,
               command_name: command_name,
               command_arguments: arguments.to_h
             )
@@ -476,9 +476,23 @@ module ESM
             ESM::Embed.build do |e|
               e.set_author(name: current_user.distinct, icon_url: current_user.avatar_url)
               e.description = description
-              e.add_field(name: I18n.t("commands.request.accept_name"), value: I18n.t("commands.request.accept_value", url: accept_request_url(request.uuid)), inline: true)
-              e.add_field(name: I18n.t("commands.request.decline_name"), value: I18n.t("commands.request.decline_value", url: decline_request_url(request.uuid)), inline: true)
-              e.add_field(name: I18n.t("commands.request.command_usage_name"), value: I18n.t("commands.request.command_usage_value", uuid: request.uuid_short))
+
+              e.add_field(
+                name: I18n.t("commands.request.accept_name"),
+                value: I18n.t("commands.request.accept_value", url: accept_request_url(request.uuid)),
+                inline: true
+              )
+
+              e.add_field(
+                name: I18n.t("commands.request.decline_name"),
+                value: I18n.t("commands.request.decline_value", url: decline_request_url(request.uuid)),
+                inline: true
+              )
+
+              e.add_field(
+                name: I18n.t("commands.request.command_usage_name"),
+                value: I18n.t("commands.request.command_usage_value", uuid: request.uuid_short)
+              )
             end
 
           ESM.discord_bot.deliver(embed, to: target)

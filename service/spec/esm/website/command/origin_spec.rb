@@ -62,4 +62,16 @@ describe ESM::Website::Command::Origin do
       end
     end
   end
+
+  describe "#from_website?" do
+    it "is true for a website origin" do
+      expect(origin.from_website?).to be(true)
+    end
+  end
+
+  describe "#from_discord?" do
+    it "is false for a website origin" do
+      expect(origin.from_discord?).to be(false)
+    end
+  end
 end

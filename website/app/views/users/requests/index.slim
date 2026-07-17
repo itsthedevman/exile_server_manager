@@ -1,0 +1,11 @@
+= render "users/container", **local_assigns do
+  .text-center.mb-4
+    h1.mb-2 My Requests
+    p.lead.text-muted Requests from other players that need your response
+
+  #requests-container.d-flex.flex-column.gap-3
+    - if requests.any?
+      - requests.each do |request|
+        = render "request", request:
+    - else
+      = render "no_requests"

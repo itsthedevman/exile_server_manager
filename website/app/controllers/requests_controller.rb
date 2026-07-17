@@ -5,21 +5,15 @@ class RequestsController < AuthenticatedController
     request = current_user.pending_requests.find_by(uuid: params[:id])
     return render :not_found if request.nil?
 
-    if request.accept
-      render :success, locals: {verb: "accepted"}
-    else
-      render :failure, locals: {verb: "accept", request: request}
-    end
+    request.accept
+    render :success, locals: {verb: "accepted"}
   end
 
   def decline
     request = current_user.pending_requests.find_by(uuid: params[:id])
     return render :not_found if request.nil?
 
-    if request.decline
-      render :success, locals: {verb: "declined"}
-    else
-      render :failure, locals: {verb: "decline", request: request}
-    end
+    request.decline
+    render :success, locals: {verb: "declined"}
   end
 end

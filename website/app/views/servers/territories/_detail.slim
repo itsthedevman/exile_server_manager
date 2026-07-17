@@ -48,6 +48,8 @@
       = territory_member_group("Owner", [current_territory.owner], icon: "key-fill", color: "text-warning", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.any? ? "mb-3" : "", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "", territory_id: current_territory.id, server_public_id: current_server.public_id)
+      - if territory_addable_by?(current_territory, current_user.steam_uid)
+        = render "servers/territories/add_member", server_public_id: current_server.public_id, territory_id: current_territory.id
   .modal-footer
     .flex-shrink-0.align-self-end
       = render "shared/data_freshness", at: Time.current

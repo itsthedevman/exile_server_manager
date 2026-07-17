@@ -1119,7 +1119,7 @@ describe ESM::Command::Base do
       execute!(arguments: {target: second_user.discord_id})
 
       request = ESM::Request.first
-      request.respond(true)
+      request.accept!
 
       ESM.discord_bot.test_outbox.await_size(2)
 
@@ -1131,7 +1131,7 @@ describe ESM::Command::Base do
       execute!(arguments: {target: second_user.discord_id})
 
       request = ESM::Request.first
-      request.respond(false)
+      request.reject!
 
       ESM.discord_bot.test_outbox.await_size(2)
 

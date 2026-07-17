@@ -32,5 +32,24 @@ describe ESM::Command::My::Requests, category: "command" do
         )
       end
     end
+
+    context "when a request has already been responded to" do
+      let!(:responded_request) do
+        create(:request, requestor_user_id: second_user.id, requestee_user_id: user.id, command_name: "stuck")
+          .tap { |request| request.update!(status: :accepted) }
+      end
+
+      it "lists only the pending requests, not the responded one" do
+        execute!(channel_type: :dm)
+
+        embed = ESM.discord_bot.test_outbox.first.content
+
+        # The still-pending requests are present...
+        expect(embed.description).to include(reward_request.uuid_short, add_request.uuid_short)
+
+        # ...but the accepted one no longer appears, now that responded rows persist
+        expect(embed.description).not_to include(responded_request.uuid_short)
+      end
+    end
   end
 end

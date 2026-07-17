@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_025015) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -166,14 +166,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_120000) do
     t.string "command_name", null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "expires_at", precision: nil
-    t.string "requested_from_channel_id", null: false
+    t.string "requested_from_channel_id"
     t.integer "requestee_user_id"
     t.integer "requestor_user_id"
+    t.string "status", default: "pending", null: false
     t.datetime "updated_at", precision: nil, null: false
     t.uuid "uuid"
     t.string "uuid_short"
     t.index ["expires_at"], name: "index_requests_on_expires_at"
     t.index ["requestee_user_id", "uuid_short"], name: "index_requests_on_requestee_user_id_and_uuid_short", unique: true
+    t.index ["status"], name: "index_requests_on_status"
     t.index ["uuid"], name: "index_requests_on_uuid"
   end
 

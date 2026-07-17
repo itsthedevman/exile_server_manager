@@ -3,7 +3,7 @@
 module ESM
   module Command
     class Base
-      attr_writer :limit_to, :requires, :event
+      attr_writer :limit_to, :requires, :event, :origin
 
       def self.argument(name, type = nil, **opts)
         # This removes the need to provide a description for test commands

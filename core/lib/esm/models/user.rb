@@ -45,6 +45,7 @@ module ESM
       dependent: :destroy
 
     has_many :pending_requests,
+      -> { pending },
       foreign_key: :requestee_user_id,
       class_name: "Request",
       dependent: :destroy

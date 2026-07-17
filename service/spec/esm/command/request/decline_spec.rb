@@ -23,7 +23,7 @@ describe ESM::Command::Request::Decline, category: "command" do
 
         embed = ESM.discord_bot.test_outbox.first.content
         expect(embed).not_to be(nil)
-        expect(ESM::Request.all.size).to eq(0)
+        expect(request.reload).to be_rejected
       end
     end
 

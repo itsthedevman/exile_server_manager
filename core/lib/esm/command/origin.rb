@@ -75,6 +75,24 @@ module ESM
       def log_context
         {}
       end
+
+      ##
+      # Whether the command was invoked from the website.
+      #
+      # @return [Boolean] true when this origin's source is the website
+      #
+      def from_website?
+        @source == :website
+      end
+
+      ##
+      # Whether the command was invoked from Discord.
+      #
+      # @return [Boolean] true when this origin's source is Discord
+      #
+      def from_discord?
+        @source == :discord
+      end
     end
   end
 end

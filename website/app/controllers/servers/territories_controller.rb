@@ -20,6 +20,10 @@ module Servers
       run_territory_command("upgrade")
     end
 
+    def add_member
+      run_territory_command("add", arguments: {target: params.require(:target_uid)})
+    end
+
     def promote_member
       run_territory_command("promote", arguments: {target: params.require(:target_uid)})
     end

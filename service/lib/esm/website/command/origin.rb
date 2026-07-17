@@ -6,6 +6,7 @@ module ESM
       class Origin < ESM::Command::Origin
         def initialize(server_command)
           @server_command = server_command
+          @source = :website
         end
 
         def current_user

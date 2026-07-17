@@ -79,7 +79,7 @@ describe ESM::Command::Territory::Add, category: "command" do
           ESM.discord_bot.test_outbox.clear
 
           # Respond to the request
-          request.respond(true)
+          request.accept!
 
           # Wait for the server to respond
           ESM.discord_bot.test_outbox.await_size(2)
@@ -452,6 +452,101 @@ describe ESM::Command::Territory::Add, category: "command" do
             ESM.discord_bot.test_outbox.retrieve("needs to join")
           ).not_to be_nil
         end
+      end
+    end
+  end
+
+  describe "#on_website_execute", requires_connection: true do
+    include_context "command"
+    include_context "connection"
+
+    let!(:territory) do
+      owner_uid = Faker::Steam.uid
+      create(
+        :exile_territory,
+        owner_uid: owner_uid,
+        moderators: [owner_uid, user.steam_uid],
+        build_rights: [owner_uid, user.steam_uid],
+        server_id: server.id
+      )
+    end
+
+    subject(:server_command) do
+      execute_website!(
+        arguments: {
+          server_id: server.server_id,
+          territory_id: territory.encoded_id,
+          target: second_user.steam_uid
+        }
+      )
+    end
+
+    before do
+      user.exile_account
+      second_user.exile_account
+
+      territory.create_flag
+    end
+
+    context "when a moderator adds another player" do
+      it "creates a request for the target with a null (web) origin" do
+        expect { server_command }.to change(ESM::Request, :count).by(1)
+
+        request = ESM::Request.last
+        expect(request.requestor).to eq(user)
+        expect(request.requestee).to eq(second_user)
+        expect(request.requested_from_channel_id).to be_nil
+      end
+
+      it "notifies only the target on Discord, leaving the requestor's confirmation to the website" do
+        server_command
+
+        # The target receives the request through the Discord notify layer...
+        ESM.discord_bot.test_outbox.await_size(1)
+
+        # ...but the "request sent" confirmation is suppressed on the website path.
+        expect(ESM.discord_bot.test_outbox.size).to eq(1)
+      end
+
+      it "records the requested outcome on the row" do
+        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("requested")
+      end
+    end
+
+    context "when a territory admin adds a player" do
+      before do
+        allow_any_instance_of(ESM::Community)
+          .to receive(:territory_admin_users).and_return(ESM::User.where(id: user.id))
+      end
+
+      it "adds the player immediately, records the added outcome, and skips the request" do
+        expect { server_command }.not_to change(ESM::Request, :count)
+
+        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("added")
+        expect(territory.reload.build_rights).to include(second_user.steam_uid)
+      end
+    end
+
+    context "when the web request is accepted" do
+      it "delivers the outcome to the requestor's DM instead of crashing on the null channel" do
+        server_command
+        request = ESM::Request.last
+
+        ESM.discord_bot.test_outbox.clear
+
+        # Pre-fix, on_accept built a Discord origin with the request's null channel, so the
+        # requestor reply had nowhere to land and blew up. It now resolves to the requestor's DM.
+        expect { request.accept! }.not_to raise_error
+
+        # The target is welcomed to the territory...
+        expect(
+          ESM.discord_bot.test_outbox.retrieve(/Welcome to #{territory.name}!/i)
+        ).not_to be_nil
+
+        # ...and the requestor's confirmation lands rather than raising on a null channel.
+        expect(
+          ESM.discord_bot.test_outbox.retrieve(/#{second_user.mention} has been added to territory `#{territory.encoded_id}`/)
+        ).not_to be_nil
       end
     end
   end
