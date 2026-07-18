@@ -92,6 +92,9 @@ try
 	//////////////////////
 	// Validation
 	//////////////////////
+
+	private _type = typeName(_result);
+
 	// Result _must_ be a string
 	if (!nil?(_result) && { !type?(_result, STRING) }) then
 	{
@@ -105,7 +108,10 @@ try
 		// Response
 		[
 			_id,
-			[["result", returns_nil!(_result)]]
+			[
+				["result", returns_nil!(_result)],
+				["type", _type]
+			]
 		],
 
 		// Log the following?

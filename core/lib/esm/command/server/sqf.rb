@@ -38,26 +38,13 @@ module ESM
         ################################
 
         def on_execute
-          check_for_owned_server!
-          check_for_registered_target_user! if target_user.is_a?(ESM::User)
+          run_checks!
 
-          execute_on =
-            case arguments.target
-            when "all", "everyone"
-              "all"
-            when ->(_type) { target_user }
-              "player"
-            else
-              "server"
-            end
-
-          response = call_sqf_function!(
-            "ESMs_command_sqf",
-            execute_on: execute_on,
-            code: arguments.code_to_execute
-          )
+          execute_on = execution_target
+          response = call_sqf_function!("ESMs_command_sqf", execute_on:, code: arguments.code_to_execute)
 
           data = response.data
+
           translation_name = "responses.#{execute_on}"
           translation_name += "_with_result" if !data.result.nil?
 
@@ -67,12 +54,22 @@ module ESM
               translation_name,
               user: current_user.mention,
               target_uid: target_uid,
-              result: data.result,
+              result: cast_result(data.result, data.type),
               server_id: target_server.server_id
             )
           )
 
           reply(embed)
+        end
+
+        def on_website_execute
+          run_checks!
+
+          execute_on = execution_target
+          response = call_sqf_function!("ESMs_command_sqf", execute_on:, code: arguments.code_to_execute)
+
+          data = response.data
+          reply(result: cast_result(data.result, data.type))
         end
 
         module V1
@@ -161,6 +158,41 @@ module ESM
             else
               @response.message
             end
+          end
+        end
+
+        private
+
+        def run_checks!
+          check_for_owned_server!
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
+        end
+
+        def execution_target
+          case arguments.target
+          when "all", "everyone"
+            "all"
+          when ->(_type) { target_user }
+            "player"
+          else
+            "server"
+          end
+        end
+
+        def cast_result(result, type)
+          case type.upcase
+          when "BOOL", "SCALAR"
+            # Arma stores all numbers (floats, integers) as SCALAR (Like Numeric).
+            # Since it's like JSON's Number, we can use the parser to handle them for us.
+            # Boolean is also handled, so why not
+            result.parse_json
+          # Opted to not convert hashmaps to hash because arma is arma and we want to keep the data structures the same
+          # when "HASHMAP"
+          #   ESM::Arma::HashMap.from(result).to_h
+          else
+            # HASHMAP, ARRAY, STRING, NaN, CODE, SCRIPT, OBJECT, GROUP, CONTROL, TEAM_MEMBER, DISPLAY, TASK, LOCATION,
+            # SIDE, TEXT, CONFIG, NAMESPACE, DIARY_RECORD, NIL
+            result # Don't convert, already a string
           end
         end
       end

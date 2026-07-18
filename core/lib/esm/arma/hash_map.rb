@@ -3,6 +3,7 @@
 module ESM
   module Arma
     class HashMap < ActiveSupport::HashWithIndifferentAccess
+      # TODO: Docs (redo)
       # @param input [String, Array, Hash, OpenStruct] The data to be converted. If a String, data must be array pairs
       def self.from(input)
         hash_map = new
@@ -13,6 +14,7 @@ module ESM
         nil
       end
 
+      # TODO: Docs
       def initialize(data = {})
         super
         return if data.blank?
@@ -20,6 +22,7 @@ module ESM
         from(data)
       end
 
+      # TODO: Docs
       def from(input)
         hash = normalize(input)
         merge!(hash)
@@ -27,6 +30,7 @@ module ESM
         self
       end
 
+      # TODO: Docs
       def to_a
         convert_value =
           lambda do |value|
@@ -47,6 +51,7 @@ module ESM
         map { |key, value| [key, convert_value.call(value)] }
       end
 
+      # TODO: Docs
       def to_json(*)
         ::JSON.generate(to_a, *)
       end

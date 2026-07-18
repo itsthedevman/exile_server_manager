@@ -232,6 +232,14 @@ Rails.application.routes.draw do
           get "commands/:command_id/status", action: :status, as: :command_status
         end
       end
+
+      # /servers/:server_id/sqf — admin tool: run arbitrary SQF against the server or a player
+      resource :sqf, only: [:create], controller: "servers/sqf" do
+        collection do
+          # /servers/:server_id/sqf/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
     end
   end
 
