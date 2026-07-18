@@ -24,8 +24,8 @@
       div
         h2.mb-0 = current_player.name
         small.text-muted.font-monospace = current_player.uid
-      .ms-auto.align-self-start
-        = render "shared/data_freshness", at: Time.current
+      .ms-auto
+        = render "servers/players/actions", current_server:
 
 .row.g-4.mb-4
   / Character status
@@ -135,33 +135,34 @@
           span.fw-medium = number_with_delimiter(current_player.total_connections)
 
 / Territories
-.d-flex.align-items-center.mb-3
-  h4.mb-0
-    i.bi.bi-flag-fill.text-warning.me-2
-    | Territories
-    span.badge.bg-secondary.ms-2 = current_player.territories.size
+- if command_accessible?("territories")
+  .d-flex.align-items-center.mb-3
+    h4.mb-0
+      i.bi.bi-flag-fill.text-warning.me-2
+      | Territories
+      span.badge.bg-secondary.ms-2 = current_player.territories.size
 
-- if current_player.territories.any?
-  - if player_stolen_territories(current_player).any?
-    .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Stolen
-    .row.g-3.mb-4
-      - player_stolen_territories(current_player).each do |territory|
-        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+  - if current_player.territories.any?
+    - if player_stolen_territories(current_player).any?
+      .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Stolen
+      .row.g-3.mb-4
+        - player_stolen_territories(current_player).each do |territory|
+          = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
 
-  - if player_due_territories(current_player).any?
-    .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Payment due
-    .row.g-3.mb-4
-      - player_due_territories(current_player).each do |territory|
-        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+    - if player_due_territories(current_player).any?
+      .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Payment due
+      .row.g-3.mb-4
+        - player_due_territories(current_player).each do |territory|
+          = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
 
-  - if player_upcoming_territories(current_player).any?
-    - if player_stolen_territories(current_player).any? || player_due_territories(current_player).any?
-      .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Up to date
-    .row.g-3
-      - player_upcoming_territories(current_player).each do |territory|
-        = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
-- else
-  .card.border-secondary
-    .card-body.text-center.py-5
-      i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
-      p.text-muted.mb-0 No territories on this server yet
+    - if player_upcoming_territories(current_player).any?
+      - if player_stolen_territories(current_player).any? || player_due_territories(current_player).any?
+        .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Up to date
+      .row.g-3
+        - player_upcoming_territories(current_player).each do |territory|
+          = render "servers/players/territory_card", territory:, current_server:, locker: current_player.locker
+  - else
+    .card.border-secondary
+      .card-body.text-center.py-5
+        i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
+        p.text-muted.mb-0 No territories on this server yet

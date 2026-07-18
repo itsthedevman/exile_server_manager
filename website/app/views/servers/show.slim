@@ -5,27 +5,24 @@
     h1.mb-0 = current_server.server_name
 
   - if current_user.registered?
-    / Feature cards — each gates on its command being enabled for the community
-    .row.g-4
-      / My Player
-      .col-12.col-xl-6
-        .card.h-100
-          .card-header.d-flex.align-items-center.justify-content-between
-            h5.mb-0
-              i.bi.bi-person-badge.text-info.me-2
-              | My Player
-            = link_to me_server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary"
-              | View full
-              i.bi.bi-arrow-right.ms-1
+    - if cards_available
+      / Feature cards — each gates on its command being enabled for the community
+      .row.g-4
+        / Me
+        - if command_accessible?("me")
+          = render "servers/players/me_card", current_server:
 
-          = turbo_frame_tag "player_summary", src: summary_server_players_path(current_server.public_id), loading: :lazy
-            .card-body.text-center.text-muted.py-5
-              .spinner-border.spinner-border-sm.me-2[role="status"]
-              | Loading your player...
+        / Gamble
+        - if command_accessible?("gamble")
+          = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
+    - else
+      .card
+        .card-body.text-center.py-5
+          i.bi.bi-toggles.display-4.text-secondary.mb-3.d-block
+          h4.mb-2 Nothing enabled here yet
+          p.text-muted.mx-auto style="max-width: 34rem;"
+            | The community running #{current_server.server_name} hasn't enabled any ESM features for this server yet. If you think something should be available, let the server's admins know.
 
-      / Gamble
-      - if command_enabled?(current_server.community, "gamble")
-        = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
   - else
     .card
       .card-body.text-center.py-5

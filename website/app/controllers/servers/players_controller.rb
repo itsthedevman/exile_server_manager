@@ -3,8 +3,11 @@
 module Servers
   class PlayersController < RegisteredController
     include PlayerLoading
+    include Commands
 
     def me
+      return unless check_for_command_access("me")
+
       render locals: {
         current_server:,
         current_player:
@@ -20,10 +23,21 @@ module Servers
       }
     end
 
+    # Self-service "I'm stuck" character reset. The name-bar button guards it with a confirm (the web stand-in for the
+    # Discord self-confirmation request), so the web path skips the request and runs straight through.
+    def reset_me
+      return unless check_for_command_access("stuck")
+
+      target = params.require(:dom_id)
+      command = call_service_command("stuck")
+
+      render turbo_stream: turbo_stream.replace(target, partial: "reset_result", locals: {target:, command:})
+    end
+
     private
 
     def current_server
-      @current_server ||= ESM::Server.find_by_public_id(params[:server_id])
+      @current_server ||= ESM::Server.includes(community: :command_configurations).find_by_public_id(params[:server_id])
     end
 
     def current_player

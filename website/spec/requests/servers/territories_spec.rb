@@ -17,6 +17,10 @@ RSpec.describe "Servers::Territories", type: :request do
   before do
     sign_in user
 
+    # Authorized by default; the rejection example overrides. The real verdict resolves registration + the community's
+    # enable/allowlist config + server connectivity - stubbed here so these specs exercise the dispatch path, not access.
+    allow_access(denied: false)
+
     # Boundary stubs. The real call is a blocking NATS request/reply whose bot-side
     # handler marks the row non-pending; mirror that so idempotency behaves as it
     # does in production. Poll is skipped so specs don't wait on a settle.
@@ -24,6 +28,17 @@ RSpec.describe "Servers::Territories", type: :request do
       ESM::ServerCommand.find(command_id).dispatched!
     end
     allow(Poll).to receive(:until)
+  end
+
+  def allow_access(denied:, reason: nil)
+    verdict =
+      if denied
+        ESM::Command::Permission::Result.new(reason:, detail: nil)
+      else
+        ESM::Command::Permission::ALLOWED
+      end
+
+    allow(ESM::CommandAccess).to receive(:new).and_return(instance_double(ESM::CommandAccess, verdict:))
   end
 
   def post_action(segment, **params)
@@ -71,11 +86,32 @@ RSpec.describe "Servers::Territories", type: :request do
       expect(ESM::Service::API).to have_received(:call).once
     end
 
+    it "does not re-dispatch when a same-key retry finds the command still pending" do
+      # The default stub flips the row out of pending as it dispatches, which hides the race. Leave it pending so the
+      # retry sees an in-flight command - only the request that created the row may fire the work.
+      allow(ESM::Service::API).to receive(:call)
+      key = SecureRandom.uuid
+
+      post_action("pay", idempotency_key: key)
+      post_action("pay", idempotency_key: key)
+
+      expect(ESM::Service::API).to have_received(:call).once
+    end
+
     it "requires a signed-in user" do
       sign_out user
       post_action("pay")
 
       expect(response).to redirect_to("/login")
+    end
+
+    it "rejects a denied command with a 422 and never dispatches one" do
+      allow_access(denied: true, reason: :disabled)
+
+      expect { post_action("pay") }.not_to change(ESM::ServerCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(ESM::Service::API).not_to have_received(:call)
     end
   end
 

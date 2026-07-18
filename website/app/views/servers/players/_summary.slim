@@ -47,9 +47,11 @@
       div
         .text-muted.small.text-uppercase K/D
         .fw-bold = current_player.kd_ratio
-      div
-        .text-muted.small.text-uppercase Territories
-        .fw-bold = current_player.territories.size
+        
+      - if command_accessible?("territories")
+        div
+          .text-muted.small.text-uppercase Territories
+          .fw-bold = current_player.territories.size
 
 - elsif current_server.connected?
   .card-body.text-center.text-muted.py-5

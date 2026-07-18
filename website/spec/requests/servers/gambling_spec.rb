@@ -16,8 +16,14 @@ RSpec.describe "Servers::Gambling", type: :request do
   end
 
   def allow_access(denied:, reason: nil)
-    verdict = double("verdict", denied?: denied, reason:)
-    allow(ESM::CommandAccess).to receive(:new).and_return(double("access", verdict:))
+    verdict =
+      if denied
+        ESM::Command::Permission::Result.new(reason:, detail: nil)
+      else
+        ESM::Command::Permission::ALLOWED
+      end
+
+    allow(ESM::CommandAccess).to receive(:new).and_return(instance_double(ESM::CommandAccess, verdict:))
   end
 
   def post_gamble(amount: "100", idempotency_key: SecureRandom.uuid)

@@ -23,18 +23,6 @@ module ServersHelper
     current_user.server_favorites.exists?(server_id: server.id)
   end
 
-  ##
-  # Whether the named command is enabled in the given community's configuration.
-  #
-  # @param community [ESM::Community]
-  # @param command_name [String]
-  #
-  # @return [Boolean]
-  #
-  def command_enabled?(community, command_name)
-    community.command_configurations.exists?(command_name:, enabled: true)
-  end
-
   def render_setting(key, settings, &block)
     has_key = settings.has_key?(key)
     value = settings[key]

@@ -2,8 +2,10 @@
 
 = render "servers/container", current_server: do
   / Page header
-  .mb-4
+  .d-flex.mb-4.align-items-center
     h1.mb-1 My Player
+    .ms-auto
+      = render "shared/data_freshness", at: Time.current
     
   - if current_player
     #player_overview

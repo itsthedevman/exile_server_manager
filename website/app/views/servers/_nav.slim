@@ -49,14 +49,15 @@
         span.fw-medium Dashboard
 
       - if current_user.registered?
-        = link_to me_server_players_path(current_server.public_id),
-          class: class_names( \
-            "list-group-item list-group-item-action d-flex align-items-center py-3",
-            "bg-primary bg-opacity-25": controller_name == "players" && action_name == "me" \
-          )
+        - if command_accessible?("me")
+          = link_to me_server_players_path(current_server.public_id),
+            class: class_names( \
+              "list-group-item list-group-item-action d-flex align-items-center py-3",
+              "bg-primary bg-opacity-25": controller_name == "players" && action_name == "me" \
+            )
 
-          i.bi.bi-person.me-3
-          span.fw-medium My Player
+            i.bi.bi-person.me-3
+            span.fw-medium My Player
 
   - if server_manageable?(current_server)
     / Admin door — leaves the player surface for the community management UI

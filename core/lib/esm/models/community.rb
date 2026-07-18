@@ -124,6 +124,10 @@ module ESM
     # INSTANCE METHODS
     # =============================================================================
 
+    def command_configurations_lookup
+      @command_configurations_lookup ||= command_configurations.index_by(&:command_name)
+    end
+
     private
 
     def generate_community_id

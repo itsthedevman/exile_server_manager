@@ -1,0 +1,15 @@
+/ locals: current_server
+.col-12.col-xl-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-person-badge.text-info.me-2
+        | My Player
+      = link_to me_server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary"
+        | View full
+        i.bi.bi-arrow-right.ms-1
+
+    = turbo_frame_tag "player_summary", src: summary_server_players_path(current_server.public_id), loading: :lazy
+      .card-body.text-center.text-muted.py-5
+        .spinner-border.spinner-border-sm.me-2[role="status"]
+        | Loading your player...

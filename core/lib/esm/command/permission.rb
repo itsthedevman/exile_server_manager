@@ -28,6 +28,7 @@ module ESM
         @user = user
         @community = community
         @cooldown = cooldown
+        @configuration = community ? community.command_configurations_lookup[command.command_name] : nil
       end
 
       ##
@@ -116,14 +117,7 @@ module ESM
 
       private
 
-      attr_reader :command, :user, :community, :cooldown
-
-      # The community's override row for this command, or nil when the community runs the command on its defaults.
-      def configuration
-        return @configuration if defined?(@configuration)
-
-        @configuration = community&.command_configurations&.find_by(command_name: command.command_name)
-      end
+      attr_reader :command, :user, :community, :cooldown, :configuration
 
       def attribute_default(name, fallback)
         attribute = command.attributes[name]

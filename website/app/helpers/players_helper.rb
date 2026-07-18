@@ -41,4 +41,20 @@ module PlayersHelper
       .reject(&:payment_due_soon?)
       .sort_by { |territory| territory.name.to_s.downcase }
   end
+
+  # Bootstrap alert variant for the stuck/reset outcome: info while the command is still in flight, danger on failure,
+  # success once the character has been reset.
+  def stuck_result_variant(command)
+    return "alert-info" unless command.settled?
+
+    command.failed? ? "alert-danger" : "alert-success"
+  end
+
+  # Player-facing copy for the stuck/reset outcome, mirroring #stuck_result_variant's three states.
+  def stuck_result_message(command)
+    return "Resetting your character..." unless command.settled?
+    return command.error_message if command.failed?
+
+    "Your character has been reset - hop back in."
+  end
 end

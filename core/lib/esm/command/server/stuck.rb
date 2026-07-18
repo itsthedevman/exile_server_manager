@@ -53,6 +53,10 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          query_exile_database!("reset_player", uid: current_user.steam_uid)
+        end
+
         module V1
           def on_response
             embed =

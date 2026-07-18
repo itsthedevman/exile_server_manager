@@ -2,32 +2,12 @@
 
 module Servers
   class GamblingController < RegisteredController
+    include Commands
+
     def create
-      access = ESM::CommandAccess.new(command_name: "gamble", user: current_user, server: current_server)
+      return unless check_for_command_access("gamble")
 
-      verdict = access.verdict
-      return render_rejection(gamble_denial_message(verdict.reason)) if verdict.denied?
-
-      command = ESM::ServerCommand.find_or_create_by(
-        user_id: current_user.id,
-        idempotency_key: params.require(:idempotency_key)
-      ) do |new_command|
-        new_command.server = current_server
-        new_command.command_name = "gamble"
-
-        new_command.arguments = {
-          server_id: current_server.server_id,
-          community_id: current_server.community.community_id,
-          amount: params.require(:amount)
-        }
-      end
-
-      # Only the request that created the row dispatches, so a same-key retry dedupes to it instead of firing a second
-      # bet. Cooldown enforcement lives in the ServerGamble handler now - checked before the bet, applied only once one
-      # completes - so a mid-flight failure or a bot restart never strands the player behind it.
-      ESM::Service::API.call(:server_command, command_id: command.id) if command.previously_new_record?
-
-      Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? } if command.pending?
+      command = call_service_command("gamble", arguments: {amount: params.require(:amount)})
 
       render locals: {command:, result: result_for(command), gamble_stat:}
     end
@@ -42,7 +22,8 @@ module Servers
     private
 
     def current_server
-      @current_server ||= ESM::Server.includes(:community).find_by_public_id(params.require(:server_id))
+      @current_server ||= ESM::Server.includes(community: :command_configurations)
+        .find_by_public_id(params.require(:server_id))
     end
 
     def gamble_stat
@@ -52,22 +33,26 @@ module Servers
       )
     end
 
-    # Renders a denial into the result slot as a 422 - Turbo shows the message without rotating the form's idempotency
-    # key, so a denied attempt reuses the same key and can't slip past the dedupe.
-    def render_rejection(message)
-      render(
-        turbo_stream: turbo_stream.replace(
-          "gamble_result",
-          partial: "servers/gambling/rejection",
-          locals: {message:}
-        ),
-        status: :unprocessable_content
-      )
+    # Overrides ServiceCommands#render_command_denied
+    def render_command_denied(message)
+      respond_to do |format|
+        format.html { not_found! }
+
+        format.turbo_stream do
+          render(
+            turbo_stream: turbo_stream.replace(
+              "gamble_result",
+              partial: "servers/gambling/rejection",
+              locals: {message:}
+            ),
+            status: :unprocessable_content
+          )
+        end
+      end
     end
 
-    # Web-facing copy for a permission denial. Short by design - the server hub shows it inline on the card, not as a
-    # Discord embed. :unregistered is a backstop; the hub already redirects unregistered players to register.
-    def gamble_denial_message(reason)
+    # Overrides ServiceCommands#command_denied_message
+    def command_denied_message(reason)
       case reason
       when :unregistered
         "Link your Steam account on your account page before you can gamble."

@@ -187,6 +187,9 @@ Rails.application.routes.draw do
 
           # /servers/:server_id/players/summary — lazy My Player card on the hub
           get :summary
+
+          # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
+          post :reset_me
         end
       end
 

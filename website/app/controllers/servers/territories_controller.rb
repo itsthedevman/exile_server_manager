@@ -4,6 +4,7 @@ module Servers
   class TerritoriesController < RegisteredController
     include TerritoryLoading
     include PlayerLoading
+    include Commands
 
     def show
       render locals: {
@@ -63,7 +64,7 @@ module Servers
     private
 
     def current_server
-      @current_server ||= ESM::Server.includes(:community).find_by_public_id(params[:server_id])
+      @current_server ||= ESM::Server.includes(community: :command_configurations).find_by_public_id(params[:server_id])
     end
 
     def current_territory
@@ -71,31 +72,12 @@ module Servers
     end
 
     def run_territory_command(command_name, arguments: {})
-      # The client mints idempotency_key per form render, so a double-click
-      # dedupes to the same row and the payment fires once.
-      command = ESM::ServerCommand.find_or_create_by(
-        user_id: current_user.id,
-        idempotency_key: params.require(:idempotency_key)
-      ) do |new_command|
-        new_command.server = current_server
-        new_command.command_name = command_name
+      return unless check_for_command_access(command_name)
 
-        new_command.arguments = {
-          server_id: current_server.server_id,
-          community_id: current_server.community.community_id,
-          territory_id: params.require(:territory_territory_id)
-        }.merge(arguments)
-      end
-
-      # A non-pending row means this one was already dispatched (a re-click on a
-      # stale button); skip re-firing and just render its current state.
-      if command.pending?
-        ESM::Service::API.call(:server_command, command_id: command.id)
-
-        # Give a quick payment a moment to land so it resolves in this response
-        # rather than flashing a spinner the client poller clears a beat later.
-        Poll.until(timeout: 1.second, every: 0.1.seconds) { command.reload.settled? }
-      end
+      command = call_service_command(
+        command_name,
+        arguments: arguments.merge(territory_id: params.require(:territory_territory_id))
+      )
 
       render partial: "command_response", locals: {
         command:,
