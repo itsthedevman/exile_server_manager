@@ -5,7 +5,7 @@
   - elsif result.error.present?
     .alert.alert-danger.mb-0.py-2.small
       i.bi.bi-exclamation-triangle.me-1
-      = result.error
+      span.sqf-error-text = result.error
   - elsif result.output.present?
     .small.text-muted.mb-1 Returned
     .sqf-output-view data-controller="sqf-output" data-sqf-output-code-value=result.output.inspect

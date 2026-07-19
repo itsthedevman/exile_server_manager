@@ -9,5 +9,8 @@
 
     .card-body.d-flex.flex-column data-controller="sqf"
       = render "servers/sqf/form", current_server:
-      hr.my-3
-      = render "servers/sqf/result", result: nil
+
+      / Only the server-process target returns a value; All/Specific-player runs get hidden here (see sqf#modeChanged).
+      .sqf-result-section data-sqf-target="resultSection"
+        hr.my-3
+        = render "servers/sqf/result", result: nil

@@ -19,3 +19,10 @@
 .sqf-editor:focus-within {
     border-color: rgba($esm-warm-gray-100, 0.45);
 }
+
+// Errors surfaced here (argument validation, extension failures) arrive as plain text with a blank line between
+// each point. Preserve those breaks so a multi-argument error doesn't collapse into one run-on line. Scoped to
+// the text span so the source newline between the icon and the message doesn't become a break of its own.
+.sqf-error-text {
+    white-space: pre-line;
+}

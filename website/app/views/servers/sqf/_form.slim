@@ -1,19 +1,24 @@
 / locals: current_server
 - if current_server.connected?
-  = form_with url: server_sqf_path(current_server.public_id), method: :post, data: {action: "formdata->sqf#fillFormData turbo:submit-end->sqf#rotateKey"} do |form|
+  = form_with url: server_sqf_path(current_server.public_id), method: :post, data: {action: "formdata->sqf#fillFormData turbo:submit-end->sqf#submitEnded"} do |form|
     = form.hidden_field :idempotency_key, value: SecureRandom.uuid, data: {sqf_target: "idempotencyKey"}
 
     .sqf-editor data-sqf-target="editor"
 
-    .d-flex.flex-wrap.gap-2.align-items-center.mt-3
-      label.form-label.mb-0.small.text-muted for="sqf-run-on" Run on
+    / Top-aligned, not center: the uid field's inline validation message grows this row taller, and center
+    / alignment would re-center every sibling (select, Run, Clear) each time it appears - a visible jump.
+    .d-flex.flex-wrap.gap-2.align-items-start.mt-3
+      label.form-label.mb-0.small.text-muted.pt-2 for="sqf-run-on" Run on
       select#sqf-run-on.form-select.w-auto data-sqf-target="mode" data-action="sqf#modeChanged"
         option value="server" Server process
         option value="all" All players
         option value="player" Specific player
       .flex-grow-1 data-sqf-target="playerField" hidden=true
-        input.form-control type="text" placeholder="Player's Steam UID" inputmode="numeric" autocomplete="off" data-sqf-target="playerUid"
-      = form.submit "Run", name: nil, class: "btn btn-danger"
+        input.form-control type="text" placeholder="Player's Steam UID" inputmode="numeric" autocomplete="off" data-sqf-target="playerUid" data-action="input->sqf#playerUidChanged"
+        .invalid-feedback That doesn't look like a Steam UID.
+      / ms-auto keeps Run/Clear pinned to the end of the row even when the player field is hidden and there's no
+      / flex-grow element between them and the select to push them over.
+      = form.submit "Run", name: nil, class: "btn btn-danger ms-auto", disabled: true, data: {sqf_target: "submit"}
       button.btn.btn-outline-secondary type="button" data-action="sqf#clear"
         | Clear
 - else
