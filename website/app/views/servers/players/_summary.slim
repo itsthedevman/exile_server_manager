@@ -19,6 +19,7 @@
         ]
       .min-w-0
         .fw-bold.text-truncate = current_player.name
+        .text-muted.small.font-monospace.text-truncate = current_player.uid
         - if current_player.alive?
           small.text-success
             i.bi.bi-heart-pulse.me-1
