@@ -180,6 +180,8 @@ module ESM
         end
 
         def cast_result(result, type)
+          return result if type.nil?
+
           case type.upcase
           when "BOOL", "SCALAR"
             # Arma stores all numbers (floats, integers) as SCALAR (Like Numeric).

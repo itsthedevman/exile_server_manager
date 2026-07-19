@@ -52,6 +52,7 @@ private _loggingEnabled = ESM_Logging_CommandSqf;
 
 private _code = compile(get!(_data, "code"));
 private _result = nil;
+private _type = nil;
 
 try
 {
@@ -93,7 +94,11 @@ try
 	// Validation
 	//////////////////////
 
-	private _type = typeName(_result);
+	// Capture the type before converting to string
+	if !nil?(_result) then 
+	{ 
+		_type = typeName(_result); 
+	};
 
 	// Result _must_ be a string
 	if (!nil?(_result) && { !type?(_result, STRING) }) then
@@ -110,7 +115,7 @@ try
 			_id,
 			[
 				["result", returns_nil!(_result)],
-				["type", _type]
+				["type", returns_nil!(_type)]
 			]
 		],
 

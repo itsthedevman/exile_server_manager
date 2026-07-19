@@ -82,6 +82,25 @@ RSpec.describe "Servers::Sqf", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "renders the returned value when the run succeeds" do
+      command = create(:server_command, user:, server:, command_name: "sqf")
+      command.update!(result: {type: "bool", result: true}, status: :completed)
+
+      get_status(command.public_id)
+
+      expect(response.body).to include("Returned")
+      expect(response.body).to include("sqf-output")
+    end
+
+    it "renders an execution error when the extension nulls both the type and the result" do
+      command = create(:server_command, user:, server:, command_name: "sqf")
+      command.update!(result: {type: nil, result: nil}, status: :completed)
+
+      get_status(command.public_id)
+
+      expect(response.body).to include("It may be invalid")
+    end
+
     it "404s a command that belongs to another user" do
       other = create(:server_command, server:, user: create(:user), command_name: "sqf")
       get_status(other.public_id)
