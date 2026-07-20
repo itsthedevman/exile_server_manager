@@ -39,12 +39,18 @@ module Servers
     end
 
     # The SQF return value the result partial renders: the executed payload on success, the player-facing error on
-    # failure, or nil until the command settles.
+    # failure, or nil until the command settles. `returned_nothing` separates "ran and gave back a value" from "ran
+    # and gave back nothing at all" - the extension nulls the type alongside the result in that case, and the two
+    # are worth saying differently since a null return is the same shape whether the code was fine or nonsense.
     def result_for(command)
       return unless command.settled?
       return {error: command.error_message}.to_istruct if command.error_message.present?
 
-      Data.define(:error, :output).new(error: nil, output: command.result[:result])
+      Data.define(:error, :output, :returned_nothing).new(
+        error: nil,
+        output: command.result[:result],
+        returned_nothing: command.result[:type].nil?
+      )
     end
 
     # Overrides Commands#render_command_denied so a denial lands in this tool's own result frame.

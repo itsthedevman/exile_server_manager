@@ -9,6 +9,10 @@
   - elsif result.output.present?
     .small.text-muted.mb-1 Returned
     .sqf-output-view data-controller="sqf-output" data-sqf-output-code-value=result.output.inspect
+  - elsif result.returned_nothing
+    .alert.alert-warning.mb-0.py-2.small
+      i.bi.bi-question-circle.me-1
+      | Ran, but nothing came back. It may be invalid, or the code may simply not return a value.
   - else
     .alert.alert-success.mb-0.py-2.small
       i.bi.bi-check-circle.me-1
