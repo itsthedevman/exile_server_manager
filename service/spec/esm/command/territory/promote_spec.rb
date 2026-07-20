@@ -162,6 +162,15 @@ describe ESM::Command::Territory::Promote, category: "command" do
         include_examples "successful_promotion"
       end
 
+      # The target's membership is read through checkAccess, which reports true for any territory admin regardless
+      # of the rights actually on the flag. That makes an admin target look like an existing moderator, so a real
+      # builder who happens to be an admin can never be promoted.
+      context "when the target is a builder who is also a territory admin" do
+        let!(:territory_admin_uids) { [second_user.steam_uid] }
+
+        include_examples "successful_promotion"
+      end
+
       context "when the territory flag is null" do
         before { territory.delete_flag }
 
@@ -189,6 +198,22 @@ describe ESM::Command::Territory::Promote, category: "command" do
       end
 
       context "when the target is not a member" do
+        before do
+          territory.revoke_membership(second_user.steam_uid)
+        end
+
+        it "raises Promote_MissingRights" do
+          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+            expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
+          end
+        end
+      end
+
+      # Same checkAccess blind spot from the other side: a non-member admin passes the "must have builder rights"
+      # check it should have failed, then trips the moderator check, so the player is told the wrong reason.
+      context "when the target is not a member but is a territory admin" do
+        let!(:territory_admin_uids) { [second_user.steam_uid] }
+
         before do
           territory.revoke_membership(second_user.steam_uid)
         end

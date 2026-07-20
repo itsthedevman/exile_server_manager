@@ -213,7 +213,9 @@ describe ESM::Command::Territory::Add, category: "command" do
         let!(:territory_admin_uids) { [user.steam_uid] }
 
         before do
-          territory.revoke_membership(user.steam_uid)
+          allow_any_instance_of(ESM::Community)
+            .to receive(:territory_admin_users)
+            .and_return(ESM::User.where(id: user.id))
         end
 
         it "allows them to add any player" do
@@ -225,16 +227,7 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          ESM.discord_bot.test_outbox.await_size(2)
-
-          accept_request
-
-          # 1: Request
-          # 2: Request notice
-          # 3: Target's add notification
-          # 4: Requestor's confirmation
-          # 5: Discord log
-          ESM.discord_bot.test_outbox.await_size(5)
+          ESM.discord_bot.test_outbox.await_size(1)  # We bypass request checks
 
           expect(
             ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
@@ -242,6 +235,8 @@ describe ESM::Command::Territory::Add, category: "command" do
         end
 
         it "allows the user to add themselves" do
+          territory.revoke_membership(user.steam_uid)
+
           execute!(
             handle_error: true,
             arguments: {
@@ -251,10 +246,7 @@ describe ESM::Command::Territory::Add, category: "command" do
             }
           )
 
-          # No request message is sent for oneself
-          # 1: Success message
-          # 2: Discord log
-          ESM.discord_bot.test_outbox.await_size(2)
+          ESM.discord_bot.test_outbox.await_size(1) # We bypass request checks
 
           expect(
             ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
@@ -389,6 +381,38 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 2: Request notice
           # 3: Player only Discord message
           ESM.discord_bot.test_outbox.await_size(3)
+
+          expect(
+            ESM.discord_bot.test_outbox.retrieve(
+              "#{user.mention}, #{second_user.mention} already has build rights"
+            )
+          ).not_to be_nil
+        end
+      end
+
+      context "when the user is a territory admin and the target is already a member of the territory" do
+        let!(:territory_admin_uids) { [user.steam_uid] }
+
+        before do
+          allow_any_instance_of(ESM::Community)
+            .to receive(:territory_admin_users)
+            .and_return(ESM::User.where(id: user.id))
+
+          territory.build_rights << second_user.steam_uid
+          territory.save!
+        end
+
+        it "returns the translated Add_ExistingRights error" do
+          execute!(
+            handle_error: true,
+            arguments: {
+              server_id: server.server_id,
+              territory_id: territory.encoded_id,
+              target: second_user.steam_uid
+            }
+          )
+
+          ESM.discord_bot.test_outbox.await_size(1) # We bypass request checks
 
           expect(
             ESM.discord_bot.test_outbox.retrieve(

@@ -129,8 +129,8 @@ try
 	};
 
 	// Target player must not be a member of this territory
-	// checkAccess will return true if the player is an admin, we have to skip
-	if (!_playerIsAdmin && { [_territory, _targetUID] call ESMs_system_territory_checkAccess }) then
+	private _accessLevel = [_territory, _targetUID] call ExileClient_util_territory_getAccessLevel;
+	if ((_accessLevel select 0) isNotEqualTo const!(TERRITORY_ACCESS_NONE)) then
 	{
 		throw [["player", localize!("Add_ExistingRights", _playerMention, _targetMention)]];
 	};

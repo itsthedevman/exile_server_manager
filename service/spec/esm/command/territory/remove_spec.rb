@@ -155,12 +155,26 @@ describe ESM::Command::Territory::Remove, category: "command" do
         include_examples "succeeds"
       end
 
-      context "when the player is a territory admin and they remove themselves" do
+      context "when the player is a territory admin, a member, and they remove themselves" do
         let!(:territory_admin_uids) { [user.steam_uid] }
         let!(:target) { user.mention }
         let!(:target_uid) { user.steam_uid }
 
+        before do
+          territory.add_builder!(user.steam_uid)
+        end
+
         include_examples "succeeds"
+      end
+
+      # Being a territory admin is not membership. Read through checkAccess it looks like it is, so the removal
+      # reports success while changing nothing, telling the player they left a territory they were never in.
+      context "when the player is a territory admin, not a member, and they remove themselves" do
+        let!(:territory_admin_uids) { [user.steam_uid] }
+        let!(:target) { user.mention }
+        let!(:target_uid) { user.steam_uid }
+
+        include_examples "arma_error_missing_territory_access"
       end
 
       context "when the player is a moderator and they remove another territory member by UID" do

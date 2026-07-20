@@ -109,14 +109,16 @@ try
 		];
 	};
 
+	private _accessLevel = [_territory, _targetUID] call ExileClient_util_territory_getAccessLevel;
+
 	// Target player must have builder rights
-	if !([_territory, _targetUID] call ESMs_system_territory_checkAccess) then
+	if ((_accessLevel select 0) isEqualTo const!(TERRITORY_ACCESS_NONE)) then
 	{
 		throw [["player", localize!("Promote_MissingRights", _playerMention, _targetMention)]];
 	};
 
 	// However, target player cannot already be a moderator
-	if ([_territory, _targetUID, "moderator"] call ESMs_system_territory_checkAccess) then
+	if ((_accessLevel select 0) >= const!(TERRITORY_ACCESS_MODERATOR)) then
 	{
 		throw [["player", localize!("Promote_ExistingRights", _playerMention, _targetMention)]];
 	};

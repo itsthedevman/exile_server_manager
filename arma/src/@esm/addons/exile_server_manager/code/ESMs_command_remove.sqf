@@ -102,13 +102,22 @@ try
 
 	private _selfRemoval = _playerUID isEqualTo _targetUID;
 
-	// If the player is removing themselves, we only need to check builder permission
-	// which also doubles as a player membership check.
-	// Otherwise, the player must be a moderator
-	private _basePermissionLevel = ["moderator", "builder"] select _selfRemoval;
+	// Removing themselves only requires membership, but it has to be membership on the flag: checkAccess reports
+	// true for any territory admin, which would let an admin "leave" a territory they were never part of and be
+	// told they were removed. Removing someone else still goes through checkAccess, where that same admin
+	// short-circuit is the intended way an admin acts on a territory they do not belong to.
+	private _hasBasePermission = if (_selfRemoval) then
+	{
+		private _accessLevel = [_territory, _playerUID] call ExileClient_util_territory_getAccessLevel;
+		(_accessLevel select 0) isNotEqualTo const!(TERRITORY_ACCESS_NONE)
+	}
+	else
+	{
+		[_territory, _playerUID, "moderator"] call ESMs_system_territory_checkAccess
+	};
 
 	// Player must have base permission in order to remove the target player or themselves
-	if !([_territory, _playerUID, _basePermissionLevel] call ESMs_system_territory_checkAccess) then
+	if !(_hasBasePermission) then
 	{
 		throw [
 			["admin", [
