@@ -7,6 +7,8 @@ en:
           Community IDs are composed of a few characters that are configured by the server owner
           You may find this by by using the `/community id` on the Discord server for that community
           You may omit this argument if you have a default community set
+        description_web: "The community to run this on."
+        description_extra_web: "Provide the community's ID, a short set of characters chosen by its owner, for example esm."
         optional_text: |-
           This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
       target:
@@ -24,6 +26,8 @@ en:
           Server IDs are composed of a community ID and a custom name, separated by an underscore
           For example: `esm_malden`, `esm_tanoa`, and `esm_some_awesome_server`
           You may omit this argument if you have a default server set
+        description_web: "The server to run this on."
+        description_extra_web: "Provide the full server ID, which joins the community ID and the server's name, for example esm_malden."
         optional_text: |-
           This argument may be excluded if a server is set as a default for you, or the Discord community if you are using this command in a text channel
       territory_id:
@@ -31,6 +35,8 @@ en:
         description_extra: |-
           Territory IDs are often 3-6 characters long, or a custom one set using the `/territory set_id` command.
           Want to see all of your territories? Try using the `/server my territories` command
+        description_web: "The territory to run this on."
+        description_extra_web: "Provide the territory's ID, usually 3 to 6 characters, or the custom ID set for it."
       command:
         description: A slash command (e.g. `/server reward` with or without the `/`)
   "yes": "Yes"
