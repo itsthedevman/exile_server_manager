@@ -149,7 +149,7 @@ describe ESM::Command::Base do
     end
 
     it "is invalid" do
-      expect { execute!(arguments: {server_id: "esm_ This Server Cannot Exist"}) }.to raise_error(ESM::Exception::CheckFailure)
+      expect { execute!(arguments: {server_id: "esm_ This Server Cannot Exist"}) }.to raise_error(ESM::Exception::InvalidArguments)
     end
   end
 
@@ -189,7 +189,7 @@ describe ESM::Command::Base do
 
     context "when the target is not steam uid, discord id, or discord mention" do
       it "is invalid" do
-        expect { execute!(arguments: {target: "000000000000000000"}) }.to raise_error(ESM::Exception::CheckFailure)
+        expect { execute!(arguments: {target: "000000000000000000"}) }.to raise_error(ESM::Exception::InvalidArguments)
       end
     end
 
@@ -283,7 +283,7 @@ describe ESM::Command::Base do
     end
 
     it "from gibberish" do
-      expect { execute!(arguments: {target: "000000000000000000"}) }.to raise_error(ESM::Exception::CheckFailure)
+      expect { execute!(arguments: {target: "000000000000000000"}) }.to raise_error(ESM::Exception::InvalidArguments)
       expect(previous_command.target_uid).to eq(nil)
     end
   end

@@ -25,11 +25,11 @@ describe ESM::Command::Arguments do
     let(:command_class) { ESM::Command::Test::ArgumentRequired }
 
     specify do
-      expect { execute! }.to raise_error(ESM::Exception::CheckFailure) do |error|
+      expect { execute! }.to raise_error(ESM::Exception::InvalidArguments) do |error|
         embed = error.to_embed
 
         expect(embed.title).to eq("**Invalid argument**")
-        expect(embed.description).to eq("```/argument_required input:<input>```\n**Please read the following and correct any errors before trying again.**\n\n**Missing argument**\n**`input:`**\nDefaulted testing description\n\nFor more information, use the following command:\n```/help with:argument_required```\n")
+        expect(embed.description).to eq("```/argument_required input:<input>```\n**Please read the following and correct any errors before trying again.**\n\n**Invalid argument**\n**`input:`**\nDefaulted testing description\n\nFor more information, use the following command:\n```/help with:argument_required```\n")
 
         argument_field = embed.fields.first
         expect(argument_field.name).to eq("**__Examples__**")

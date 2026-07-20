@@ -188,7 +188,7 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
       it "raises an exception" do
         execution_args = {arguments: {target: second_user.mention, command: "NOOP"}}
 
-        expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+        expect { execute!(**execution_args) }.to raise_error(ESM::Exception::InvalidArguments)
       end
     end
 

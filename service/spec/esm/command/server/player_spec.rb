@@ -50,7 +50,7 @@ describe ESM::Command::Server::Player, category: "command" do
               }
             }
 
-            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::InvalidArguments)
           end
         end
       end
@@ -89,7 +89,7 @@ describe ESM::Command::Server::Player, category: "command" do
               }
             }
 
-            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::InvalidArguments)
           end
         end
       end
@@ -128,7 +128,7 @@ describe ESM::Command::Server::Player, category: "command" do
               }
             }
 
-            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure)
+            expect { execute!(**execution_args) }.to raise_error(ESM::Exception::InvalidArguments)
           end
         end
       end
@@ -306,8 +306,8 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:amount) { nil }
           let!(:final_amount) { nil }
 
-          include_examples "raises_check_failure" do
-            let!(:matcher) { "Missing argument" }
+          include_examples "raises_invalid_arguments" do
+            let!(:matcher) { "Invalid argument" }
           end
         end
       end
@@ -359,8 +359,8 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:amount) { nil }
           let!(:final_amount) { nil }
 
-          include_examples "raises_check_failure" do
-            let!(:matcher) { "Missing argument" }
+          include_examples "raises_invalid_arguments" do
+            let!(:matcher) { "Invalid argument" }
           end
         end
       end
@@ -412,8 +412,8 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:amount) { nil }
           let!(:final_amount) { nil }
 
-          include_examples "raises_check_failure" do
-            let!(:matcher) { "Missing argument" }
+          include_examples "raises_invalid_arguments" do
+            let!(:matcher) { "Invalid argument" }
           end
         end
       end
