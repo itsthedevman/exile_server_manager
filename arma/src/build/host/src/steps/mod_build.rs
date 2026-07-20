@@ -14,8 +14,7 @@ use crate::{
     display::print_subprocess_line,
     error::{BuildError, BuildResult},
     spinner::MultiSpinner,
-    string_table,
-    ADDONS,
+    string_table, ADDONS,
 };
 
 pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
@@ -32,28 +31,49 @@ pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
     let mut sp = MultiSpinner::start("Building mod");
 
     // Sub-steps: compile, stringtable, sqf check, pack
-    compile_sqf(ctx, &source_path, &work_path, &build_path)
-        .map_err(|e| { sp.sub_fail("Replacing macros", false); e })?;
+    compile_sqf(ctx, &source_path, &work_path, &build_path).map_err(|e| {
+        sp.sub_fail("Replacing macros", false);
+        e
+    })?;
     sp.sub_done("Replacing macros", false);
 
     string_table::convert_yaml_to_xml(
-        work_path.join("addons").join("exile_server_manager").join("stringtable.yml"),
+        work_path
+            .join("addons")
+            .join("exile_server_manager")
+            .join("stringtable.yml"),
     )
     .map_err(|e| BuildError::General(e))?;
 
     // Write stringtable.xml was done by convert_yaml_to_xml internally
     sp.sub_done("Building stringtable.xml", false);
 
-    check_sqf(&[work_path.join("addons"), build_path.join("optionals")], ctx)
-        .map_err(|e| { sp.sub_fail("Checking SQF", false); e })?;
+    check_sqf(
+        &[work_path.join("addons"), build_path.join("optionals")],
+        ctx,
+    )
+    .map_err(|e| {
+        sp.sub_fail("Checking SQF", false);
+        e
+    })?;
     sp.sub_done("Checking SQF", false);
 
-    pack_addons(&work_path, &build_path, has_test)
-        .map_err(|e| { sp.sub_fail("Packing addons", false); e })?;
+    pack_addons(&work_path, &build_path, has_test).map_err(|e| {
+        sp.sub_fail("Packing addons", false);
+        e
+    })?;
     sp.sub_done(&format!("Packing {} addons", addon_count), false);
 
-    copy_extras(ctx, &source_path, &build_path)
-        .map_err(|e| { sp.sub_fail("Copying extras", true); e })?;
+    publish_compiled_sqf(ctx, &work_path).map_err(|e| {
+        sp.sub_fail("Copying compiled SQF", false);
+        e
+    })?;
+    sp.sub_done("Copying compiled SQF", false);
+
+    copy_extras(ctx, &source_path, &build_path).map_err(|e| {
+        sp.sub_fail("Copying extras", true);
+        e
+    })?;
     sp.sub_done("Copying extras", true);
 
     sp.done();
@@ -150,6 +170,20 @@ fn pack_addons(
         let file_count = pack_pbo(&src, &dst)?;
         print_subprocess_line(&format!("{addon}.pbo ({file_count} files)"));
     }
+
+    Ok(())
+}
+
+/// Moves the macro-expanded addon sources out of the throwaway `mod_work` dir into `target/sqf/` so the
+/// compiled SQF survives the build and can be read back to confirm it is valid. Packing already pulled
+/// everything it needs from `work_path`, so a move (rather than a copy) leaves nothing behind in the
+/// intermediate dir. `prepare_staging` wiped any prior `target/sqf` on this rebuild, so the destination does
+/// not exist yet and the rename lands the addon tree whole.
+fn publish_compiled_sqf(ctx: &BuildContext, work_path: &Path) -> BuildResult {
+    let src_addons = work_path.join("addons");
+    let sqf_path = ctx.local_build_path.join("sqf");
+
+    fs::rename(&src_addons, &sqf_path)?;
 
     Ok(())
 }

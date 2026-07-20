@@ -1,29 +1,36 @@
 # SQF compiler macros
+
 The build tool for ESM supports macros that are expanded during compilation. These macro definitions are located in `src/build/host/src/compiler.rs`.
 
 ## Limitations
+
 The supporting compiler system works on Regex and only support single line usage. I would love to fix this but other priorities come first.
 
 ## Arguments
+
 Some macros support providing "arguments" between the brackets. These normally are passed down to the resulting SQF code. Arma code, including other macros, are supported.
 
 ## Macros
 
 ### `const!(constant_name)`
+
 Replaced with the corresponding value defined in constants.jsonc
 
 Example:
+
 ```sqf
-const!("EXAMPLE_STRING")
+const!(EXAMPLE_STRING)
 
 // Becomes:
 "Hello world!" // As defined in constants.jsonc
 ```
 
 ### `current_year!()`
+
 Replaced with the current year at compile time. Used for copyright notices
 
 Example:
+
 ```sqf
 current_year!()
 
@@ -32,9 +39,11 @@ current_year!()
 ```
 
 ### `define_fn!(function_name)`
+
 Replaced with the function definition array required by Exile's `fn_preInit.sqf`. This macro handles file path separator differences between Windows and Linux
 
 Example:
+
 ```sqf
 define_fn!("ESMs_util_test_myAwesomeFunction")
 
@@ -46,9 +55,11 @@ define_fn!("ESMs_util_test_myAwesomeFunction")
 ```
 
 ### `dig!(hash, keys...)`
+
 A shorthand for calling ESMs_util_hashmap_dig. This function will recursively dig into the provided SQF HashMap to find the key. See ESMs_util_hashmap_dig for more information.
 
 Example:
+
 ```sqf
 dig!(_myHash, "foo", "bar")
 
@@ -57,9 +68,11 @@ dig!(_myHash, "foo", "bar")
 ```
 
 ### `empty?(object)`
+
 Shorthand to check to see if the provided object is empty by doing a count comparison
 
 Example:
+
 ```sqf
 empty?(_myObject)
 
@@ -68,9 +81,11 @@ count(_myObject) isEqualTo 0
 ```
 
 ### `!empty?(object)`
+
 Shorthand for the negated version of empty above; not empty.
 
 Example:
+
 ```sqf
 !empty?(_myObject)
 
@@ -79,9 +94,11 @@ count(_myObject) isNotEqualTo 0
 ```
 
 ### `file_name!()`
+
 Replaced with the name of the current file without the extension
 
 Example:
+
 ```sqf
 file_name!()
 
@@ -90,9 +107,11 @@ file_name!()
 ```
 
 ### `get!(hashmap, value, ?default)`
+
 Shorthand for getting a value from a HashMap. The default is optional and will use `nil` if not provided
 
 Example:
+
 ```sqf
 get!(_myHashMap, "foo")
 
@@ -107,6 +126,7 @@ _myHashMap getOrDefault ["foo", 0]
 ```
 
 Example:
+
 ```sqf
 key?(_myHashMap, "foo")
 
@@ -115,9 +135,11 @@ key?(_myHashMap, "foo")
 ```
 
 ### `localize!(key_without_prefix, replacements...)`
+
 Shorthand for the `localize` command. Supports string interpolation
 
 Example:
+
 ```sqf
 // Requires a stringtable entry of "STR_ESM_SomeLocaleKey"
 localize!("SomeLocaleKey")
@@ -134,9 +156,11 @@ format[localize "$STR_ESM_KeyWithInterpolation", _someValueToInclude]
 ```
 
 ### Logging macros: `<log_level>!(message, replacements...)`
+
 A macro that supports logging based on the current logging level. Supports string interpolation and non-string objects
 
 Example:
+
 ```sqf
 trace!("This logs on trace")
 debug!("This logs on debug")
@@ -166,9 +190,11 @@ info!("Wow! %1, so cool.", _playerName)
 ```
 
 ### `nil?(variable)`
+
 Shorthand to check to see if the provided variable is nil
 
 Example:
+
 ```sqf
 nil?(_myVariable)
 
@@ -177,9 +203,11 @@ isNil "_myVariable"
 ```
 
 ### `!nil?(variable)`
+
 Shorthand for the negated version of nil above; not nil.
 
 Example:
+
 ```sqf
 !nil?(_myVariable)
 
@@ -188,10 +216,12 @@ Example:
 ```
 
 ### `null?(object)`
+
 Shorthand to check to see if the provided object is null
 This is different than nil? above because Arma considers the null variants (objNull, locationNull, scriptNull, etc.) as not nil. Why you ask? Short answer: _because Arma_
 
 Example:
+
 ```sqf
 null?(_playerObject)
 
@@ -200,9 +230,11 @@ isNull _playerObject
 ```
 
 ### `os_path!(path_fragments...)`
+
 Replaced with a file path used to define the "file" attribute for CfgFunctions. This macro handles file path separator differences between Windows and Linux
 
 Example:
+
 ```sqf
 os_path!("my_mod", "code_directory")
 
@@ -214,11 +246,13 @@ os_path!("my_mod", "code_directory")
 ```
 
 ### `returns_nil!(object)`
+
 Shorthand to check to see if the provided object is nil and if it is, return `nil` explicitly.
 In my testing, Arma will error if a variable containing `nil` if referenced, even for a return.
 This is likely a bug and BIS _may_ fix it at some point making this not needed.
 
 Example:
+
 ```sqf
 returns_nil!(_myObject)
 
@@ -227,10 +261,12 @@ if (isNil "_myObject") then { nil } else { _myObject }
 ```
 
 ### `rv_type!(TYPE)`
+
 Shorthand for returning an object with the expected type. This is mostly used for the `params` command.
 Valid types: ARRAY, BOOL, HASH, STRING, NIL
 
 Example:
+
 ```sqf
 rv_type!(ARRAY)
 rv_type!(BOOL)
@@ -247,10 +283,12 @@ nil
 ```
 
 ### `type?(object, TYPE)`
+
 A shorthand for checking if an object is a particular type.
 Valid types: ARRAY, BOOL, HASH, STRING, NIL
 
 Example:
+
 ```sqf
 type?(_myObject, STRING)
 
@@ -265,10 +303,12 @@ _myObject isEqualType []
 ```
 
 ### `!type?(object, TYPE)`
+
 A shorthand for a negated version of `type?` above.
 Valid types: ARRAY, BOOL, HASH, STRING, NIL
 
 Example:
+
 ```sqf
 !type?(_myObject, STRING)
 

@@ -1,0 +1,28 @@
+@use "colors" as *;
+
+// The CodeMirror mount for the SQF admin console. CodeMirror paints its own one-dark theme and owns its height (set in
+// the controller); this just frames it. The border lives on the wrapper with overflow clipped to the radius, so it wraps
+// all four sides cleanly - a border on the inner .cm-editor gets painted over by its own background at the top edge.
+.sqf-editor,
+.sqf-output-view {
+    border: 1px solid rgba($esm-warm-gray-100, 0.3);
+    border-radius: 0.375rem;
+    overflow: hidden;
+
+    .cm-scroller {
+        font-family: var(--bs-font-monospace);
+        font-size: 0.9rem;
+    }
+}
+
+// The editor's focus ring is CodeMirror's own; keep the frame steady rather than adding a Bootstrap-style outline.
+.sqf-editor:focus-within {
+    border-color: rgba($esm-warm-gray-100, 0.45);
+}
+
+// Errors surfaced here (argument validation, extension failures) arrive as plain text with a blank line between
+// each point. Preserve those breaks so a multi-argument error doesn't collapse into one run-on line. Scoped to
+// the text span so the source newline between the icon and the message doesn't become a break of its own.
+.sqf-error-text {
+    white-space: pre-line;
+}

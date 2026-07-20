@@ -11,6 +11,7 @@ $nav-offset: calc(map-get($spacers, 5) + map-get($spacers, 4));
 @import "dashboard";
 @import "notifications";
 @import "toast";
+@import "sqf";
 
 body {
     min-height: 100vh;

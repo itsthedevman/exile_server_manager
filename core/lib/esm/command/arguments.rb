@@ -16,7 +16,8 @@ module ESM
       end
 
       def validate!
-        # This collects all of the invalid arguments together and sends one message instead of breaking at the first invalid argument
+        # This collects all of the invalid arguments together and sends one message instead of breaking
+        # at the first invalid argument
         invalid_arguments =
           templates.filter_map do |(name, template)|
             # Apply pre-defined transformations and then validate the content
@@ -24,43 +25,14 @@ module ESM
 
             nil
           rescue ESM::Exception::InvalidArgument => e
+            # Capture what the user actually sent before unsetting it, so the error can echo their input back.
+            invalid_value = self[name]
             self[name] = nil
-            e.data
+
+            {argument: e.data, value: invalid_value}
           end
 
-        # All the arguments are valid
-        return if invalid_arguments.empty?
-
-        embed =
-          ESM::Embed.build do |e|
-            help_documentation = invalid_arguments.join_map("\n\n", &:help_documentation)
-
-            help_usage = ESM::Command.get(:help).usage(
-              with_args: true,
-              arguments: {with: command_instance.usage(with_slash: false, with_args: false)}
-            )
-
-            argument_word = "argument".pluralize(invalid_arguments.size)
-
-            e.title = "**Invalid #{argument_word}**"
-            e.description = <<~STRING
-              ```#{command_instance.usage(with_args: true, use_placeholders: true, arguments: self)}```
-              **Please read the following and correct any errors before trying again.**
-
-              **Missing #{argument_word}**
-              #{help_documentation}
-
-              For more information, use the following command:
-              ```#{help_usage}```
-            STRING
-
-            e.add_field(
-              name: I18n.t("commands.help.command.examples"),
-              value: command_instance.examples
-            )
-          end
-
-        raise ESM::Exception::CheckFailure, embed.to_h
+        raise Exception::InvalidArguments.new(invalid_arguments, command_instance) if invalid_arguments.size > 0
       end
 
       def inspect

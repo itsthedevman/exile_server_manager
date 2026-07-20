@@ -124,6 +124,7 @@ module ESM
         :display_name, :command_class, :command_name,
         :default_value, :modifier, :placeholder,
         :description, :description_extra, :optional_text,
+        :description_web, :description_extra_web,
         :options, :checked_against, :checked_against_if
 
       #
@@ -254,6 +255,11 @@ module ESM
         @description_extra = load_locale_or_provided(opts[:description_extra], "description_extra").presence
         @optional_text = load_optional_text(opts[:optional_text])
 
+        # Website-facing copy. Falls back to the Discord/base copy when an argument has no "_web" variant, which is
+        # the common case - only arguments whose help leans on Discord specifics (mentions, IDs) need one.
+        @description_web = load_web_variant(opts[:description], "description").presence || @description
+        @description_extra_web = load_web_variant(opts[:description_extra], "description_extra").presence || @description_extra
+
         check_for_valid_configuration!
       end
 
@@ -375,6 +381,18 @@ module ESM
         else
           localized
         end
+      end
+
+      # Loads the "_web" variant of a description field so a website-facing error reads cleanly instead of echoing
+      # Discord chrome. Returns "" when no variant exists, so the caller falls back to the base copy. A provided path
+      # gets "_web" appended; otherwise it derives the per-command key the same way #load_locale_or_provided does.
+      def load_web_variant(path, suffix)
+        web_path = path.present? ? "#{path}_web" : "commands.#{command_name}.arguments.#{name}.#{suffix}_web"
+
+        localized = I18n.translate(web_path, default: "")
+        return "" if localized.blank? || localized.starts_with?("translation missing")
+
+        localized
       end
 
       def load_optional_text(text_or_path)

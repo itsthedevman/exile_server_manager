@@ -5,16 +5,26 @@
     h1.mb-0 = current_server.server_name
 
   - if current_user.registered?
-    - if cards_available
-      / Feature cards — each gates on its command being enabled for the community
-      .row.g-4
-        / Me
-        - if command_accessible?("me")
-          = render "servers/players/me_card", current_server:
+    - if cards_available || admin_cards_available
+      - if cards_available
+        / Feature cards — each gates on its command being enabled for the community
+        .row.g-4
+          / Me
+          - if command_accessible?("me")
+            = render "servers/players/me_card", current_server:
 
-        / Gamble
-        - if command_accessible?("gamble")
-          = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
+          / Gamble
+          - if command_accessible?("gamble")
+            = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
+
+      - if admin_cards_available
+        / Admin tools — each gates on its command being enabled and the user's allowlist
+        .mt-4
+          h2.h5.text-uppercase.text-secondary.mb-3 Admin tools
+          .row.g-4
+            / SQF Console
+            - if command_accessible?("sqf")
+              = render "servers/sqf/card", current_server:
     - else
       .card
         .card-body.text-center.py-5

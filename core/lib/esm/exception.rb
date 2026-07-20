@@ -66,6 +66,77 @@ module ESM
     # Raised if the provided argument value from the user is invalid
     class InvalidArgument < ApplicationError; end
 
+    # Raised by Arguments#validate! when one or more arguments fail their checks. Carries the whole invalid set at
+    # once - `data` is an array of `{argument:, value:}` (the failing Argument plus what the user actually sent) -
+    # so a single error can list every problem. Each surface renders it its own way: Discord builds the rich embed
+    # via #to_embed, the website records the plain #to_content on the command row.
+    class InvalidArguments < ApplicationError
+      def initialize(data, command_instance)
+        @command_instance = command_instance
+
+        super(data)
+      end
+
+      # The surface-neutral counterpart to #to_embed: which arguments need fixing and what each one expects, as
+      # plain text a website alert can show verbatim. It leans on the "_web" argument copy so nothing here carries
+      # Discord chrome (mentions, slash usage, `/help`), and leads each line with the value the user actually sent.
+      def to_content
+        argument_word = "argument".pluralize(@data.size)
+
+        documentation =
+          @data.join_map("\n\n") do |invalid|
+            argument = invalid[:argument]
+            value = invalid[:value]
+
+            # Prefer the actionable "here's what to provide" copy; fall back to the plain description when an
+            # argument has no extra guidance. One guidance line only - no need to also restate what the arg is.
+            hint = argument.description_extra_web.presence || argument.description_web
+
+            copy = [
+              ("#{value.inspect} isn't valid." if value.present?),
+              hint
+            ]
+
+            "#{argument}: #{copy.compact_blank.join(" ")}"
+          end
+
+        "Please correct the following #{argument_word} and try again:\n\n#{documentation}"
+      end
+
+      def to_embed
+        ESM::Embed.build do |e|
+          help_documentation = @data.join_map("\n\n") { |invalid| invalid[:argument].help_documentation }
+
+          help_usage = ESM::Command.get(:help).usage(
+            with_args: true,
+            arguments: {with: @command_instance.usage(with_slash: false, with_args: false)}
+          )
+
+          argument_word = "argument".pluralize(@data.size)
+
+          # Echo each invalid value back in the usage line so the example shows what they sent, not a placeholder.
+          invalid_values = @data.to_h { |invalid| [invalid[:argument].name, invalid[:value]] }
+
+          e.title = "**Invalid #{argument_word}**"
+          e.description = <<~STRING
+            ```#{@command_instance.usage(with_args: true, use_placeholders: true, arguments: invalid_values)}```
+            **Please read the following and correct any errors before trying again.**
+
+            **Invalid #{argument_word}**
+            #{help_documentation}
+
+            For more information, use the following command:
+            ```#{help_usage}```
+          STRING
+
+          e.add_field(
+            name: I18n.t("commands.help.command.examples"),
+            value: @command_instance.examples
+          )
+        end
+      end
+    end
+
     # Generic exception for any checks. Carries either a locale `key` plus interpolation `details` - rendered
     # per surface at delivery time so each medium names the user and formats the copy its own way - or a legacy
     # positional `data` (a literal string, or the embed hash from argument validation) that the base

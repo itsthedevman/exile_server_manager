@@ -11,11 +11,13 @@ en:
           This argument may be excluded if a community is set as a default for you, or the Discord community if you are using this command in a text channel
       target:
         description: "The user that you want to run this command on"
+        description_web: "The player to run this on."
         description_extra: |-
           This argument accepts any of the following:
           A Discord mention, e.g. `@discord_mention`
           A Discord ID, e.g. `123456789012345678`
           or a Steam 64 ID (Steam UID), e.g. `76561234567890123`
+        description_extra_web: "Provide the player's Steam UID, for example 76561234567890123."
       server_id:
         description: "The ID, or alias, for the server that you want to run this command on"
         description_extra: |-

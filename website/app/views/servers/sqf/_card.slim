@@ -1,0 +1,16 @@
+/ locals: current_server
+.col-12
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-terminal.text-danger.me-2
+        | SQF Console
+      span.badge.text-bg-danger.text-uppercase Admin
+
+    .card-body.d-flex.flex-column data-controller="sqf"
+      = render "servers/sqf/form", current_server:
+
+      / Only the server-process target returns a value; All/Specific-player runs get hidden here (see sqf#modeChanged).
+      .sqf-result-section data-sqf-target="resultSection"
+        hr.my-3
+        = render "servers/sqf/result", result: nil

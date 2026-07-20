@@ -17,6 +17,13 @@ pub fn prepare_staging(ctx: &mut BuildContext) -> BuildResult {
             fs::remove_dir_all(&work)?;
         }
 
+        // The macro-expanded addon sources that build_mod publishes for inspection. Wiped here so every mod
+        // rebuild republishes a clean tree and a since-deleted source file can't linger in target/sqf either.
+        let compiled_sqf = ctx.local_build_path.join("sqf");
+        if compiled_sqf.exists() {
+            fs::remove_dir_all(&compiled_sqf)?;
+        }
+
         for dir in &["addons", "sql", "optionals"] {
             let p = staging.join(dir);
             if p.exists() {

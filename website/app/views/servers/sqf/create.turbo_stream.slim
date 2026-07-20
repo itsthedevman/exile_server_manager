@@ -1,0 +1,6 @@
+/ locals: command, result
+- if command.settled?
+  = render "servers/sqf/settled", result:
+- else
+  = turbo_stream.replace "sqf_result" do
+    = render "servers/sqf/processing", command:

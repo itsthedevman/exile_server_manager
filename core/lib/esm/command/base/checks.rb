@@ -4,14 +4,17 @@ module ESM
   module Command
     class Base
       module Checks
+        # TODO: Docs
         def check_failed!(error_name = nil, **args, &)
           raise_error!(error_name, **args.merge(path_prefix: "command_errors"), &)
         end
 
+        # TODO: Docs
         def check_for_text_only!
           check_failed!(:text_only, user: current_user) if text_only? && !text_channel?
         end
 
+        # TODO: Docs
         def check_for_dm_only!
           # DM commands are allowed in player mode
           return if current_community&.player_mode_enabled?
@@ -19,6 +22,7 @@ module ESM
           check_failed!(:dm_only, user: current_user) if dm_only? && !dm_channel?
         end
 
+        # TODO: Docs
         def check_for_owner!
           # Both sides must be a concrete id. `nil == nil` is true in Ruby and
           # would grant owner to anyone if owner_user_id is unset (unbackfilled
@@ -30,6 +34,7 @@ module ESM
           check_failed!(:no_permissions, user: current_user)
         end
 
+        # TODO: Docs
         def check_for_permissions!
           if !command_enabled?
             # If the community doesn't want to send a message, don't send a message.
@@ -54,12 +59,14 @@ module ESM
           end
         end
 
+        # TODO: Docs
         def check_for_registered!
           return if !registration_required? || current_user.registered?
 
           check_failed!(:not_registered, user: current_user, full_username: current_user.distinct)
         end
 
+        # TODO: Docs
         def check_for_cooldown!
           return unless on_cooldown?
 
@@ -76,11 +83,13 @@ module ESM
           )
         end
 
+        # TODO: Docs
         def check_for_dev_only!
           # Empty on purpose
           raise ESM::Exception::CheckFailure, "" if dev_only? && !current_user.developer?
         end
 
+        # TODO: Docs
         def check_for_connected_server!
           return unless argument?(:server_id)
 
@@ -90,6 +99,7 @@ module ESM
           check_failed!(:server_not_connected, user: current_user, server_id: arguments.server_id)
         end
 
+        # TODO: Docs
         def check_for_nil_target_server!
           return unless argument?(:server_id)
           return if !target_server.nil?
@@ -110,6 +120,7 @@ module ESM
           end
         end
 
+        # TODO: Docs
         def check_for_nil_target_community!
           return unless argument?(:community_id)
           return if !target_community.nil?
@@ -128,6 +139,7 @@ module ESM
           end
         end
 
+        # TODO: Docs
         def check_for_nil_target_user!
           return unless argument?(:target)
           return if !target_user.nil?
@@ -135,6 +147,7 @@ module ESM
           check_failed!(:target_user_nil, user: current_user)
         end
 
+        # TODO: Docs
         # Order matters!
         def check_for_player_mode!
           # This only affects text channels
@@ -160,6 +173,7 @@ module ESM
           )
         end
 
+        # TODO: Docs
         def check_for_different_community!
           # Only affects text channels
           return unless text_channel?
@@ -179,6 +193,7 @@ module ESM
           check_failed!(:different_community_in_text, user: current_user)
         end
 
+        # TODO: Docs (redo)
         # Used by calling in a command that uses the request system.
         # This will raise ESM::Exception::CheckFailure if there is a pending request for the target_user
         def check_for_pending_request!
@@ -191,7 +206,7 @@ module ESM
           end
         end
 
-        # Raises CheckFailure if the target_server does not belong to the current_community
+        # TODO: Docs
         def check_for_owned_server!
           return if target_server.nil?
           return if target_server.community_id == current_community.id
@@ -199,6 +214,7 @@ module ESM
           check_failed!(:owned_server, user: current_user, community_id: current_community.community_id)
         end
 
+        # TODO: Docs (redo)
         # Checks if the target_user is registered
         # This will always raise if the target_user is an instance of User::Ephemeral. (They aren't registered)
         #

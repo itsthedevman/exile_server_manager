@@ -13,6 +13,10 @@ module ESM
           @server_command.user
         end
 
+        def current_community
+          @server_command.community
+        end
+
         def reply(content)
           raise ArgumentError, "You can only reply to this origin once" if @server_command.settled?
 
@@ -42,9 +46,6 @@ module ESM
             server_command: @server_command.attributes
           }
         end
-
-        # The website doesn't execute from within a community
-        def current_community = nil
 
         # The website doesn't execute from within a channel
         def current_channel = nil

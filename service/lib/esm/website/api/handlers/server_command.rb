@@ -11,7 +11,7 @@ module ESM
         #
         class ServerCommand
           def self.call(command_id:)
-            command = ESM::ServerCommand.includes(:user).find_by(id: command_id)
+            command = ESM::ServerCommand.includes(:user, :server, :community).find_by(id: command_id)
             raise ArgumentError, "Unknown command: #{command_id}" if command.nil?
 
             Concurrent::Promise.execute do

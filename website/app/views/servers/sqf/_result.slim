@@ -1,0 +1,15 @@
+/ locals: result
+#sqf_result data-sqf-target="result"
+  - if result.nil?
+    .text-muted.small.text-center.py-2 Run some SQF to see the output.
+  - elsif result.error.present?
+    .alert.alert-danger.mb-0.py-2.small
+      i.bi.bi-exclamation-triangle.me-1
+      span.sqf-error-text = result.error
+  - elsif result.output.present?
+    .small.text-muted.mb-1 Returned
+    .sqf-output-view data-controller="sqf-output" data-sqf-output-code-value=result.output.inspect
+  - else
+    .alert.alert-success.mb-0.py-2.small
+      i.bi.bi-check-circle.me-1
+      | Executed.
