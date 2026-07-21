@@ -264,12 +264,18 @@ module ESM
 
     ##
     # ActiveSupport cache backed by Redis, namespaced to `esm_bot` so keys
-    # never collide with other apps sharing the same Redis instance.
+    # never collide with other apps sharing the same Redis instance. Tests get
+    # their own namespace because they key entries on database primary keys that
+    # are recycled from one run to the next, so a shared keyspace lets a stale
+    # entry answer for an unrelated record.
     #
     # @return [ActiveSupport::Cache::RedisCacheStore]
     #
     def cache
-      @cache ||= ActiveSupport::Cache::RedisCacheStore.new(namespace: "esm_bot", redis: redis)
+      @cache ||= ActiveSupport::Cache::RedisCacheStore.new(
+        namespace: env.test? ? "esm_bot_test" : "esm_bot",
+        redis: redis
+      )
     end
 
     ##

@@ -16,6 +16,10 @@ RSpec.configure do |config|
     DatabaseCleaner.strategy = :deletion
     DatabaseCleaner[:active_record, db: ESM::ExileAccount].strategy = :deletion
     DatabaseCleaner.clean
+
+    # Cache entries outlive the rows they describe: keys are built from database ids, deletion leaves the sequences
+    # alone, and a reloaded schema restarts them, so yesterday's entry can answer for today's unrelated record.
+    ESM.cache.clear
   end
 
   config.around do |example|
