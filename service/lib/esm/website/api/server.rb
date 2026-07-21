@@ -142,7 +142,7 @@ module ESM
           # can't stall the other RPCs sharing the NATS subscription.
           if result.is_a?(Concurrent::Promise)
             respond_when_resolved(message, action, result)
-          elsif result.is_a?(ESM::ServerCommand)
+          elsif result.is_a?(ESM::ServiceCommand)
             message.respond({ok: true}.to_json)
           else
             message.respond({ok: true, result:}.to_json)

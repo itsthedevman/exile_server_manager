@@ -44,12 +44,12 @@ RSpec.describe TerritoriesHelper, type: :helper do
 
   describe "#territory_command_inline?" do
     it "is false for a full-width (block) command" do
-      command = instance_double(ESM::ServerCommand, command_name: "pay")
+      command = instance_double(ESM::ServiceCommand, command_name: "pay")
       expect(helper.territory_command_inline?(command)).to be(false)
     end
 
     it "is true for an icon-sized (inline) command" do
-      command = instance_double(ESM::ServerCommand, command_name: "remove")
+      command = instance_double(ESM::ServiceCommand, command_name: "remove")
       expect(helper.territory_command_inline?(command)).to be(true)
     end
   end
@@ -98,13 +98,13 @@ RSpec.describe TerritoriesHelper, type: :helper do
 
   describe "#territory_command_failure_message" do
     it "hedges on a timeout, since the in-game side effect may still have landed" do
-      command = instance_double(ESM::ServerCommand, command_name: "pay", timed_out?: true, error_message: nil)
+      command = instance_double(ESM::ServiceCommand, command_name: "pay", timed_out?: true, error_message: nil)
       expect(helper.territory_command_failure_message(command)).to match(/didn't respond in time/)
     end
 
     it "shows the extension's own rejection verbatim" do
       command = instance_double(
-        ESM::ServerCommand,
+        ESM::ServiceCommand,
         command_name: "remove",
         timed_out?: false,
         error_message: "You are not a moderator."
@@ -114,7 +114,7 @@ RSpec.describe TerritoriesHelper, type: :helper do
     end
 
     it "falls back to the command's generic line when nothing else fits" do
-      command = instance_double(ESM::ServerCommand, command_name: "set_id", timed_out?: false, error_message: nil)
+      command = instance_double(ESM::ServiceCommand, command_name: "set_id", timed_out?: false, error_message: nil)
       expect(helper.territory_command_failure_message(command)).to match(/updating the territory ID/)
     end
   end
@@ -143,17 +143,17 @@ RSpec.describe TerritoriesHelper, type: :helper do
 
   describe "#territory_command_copy for add's two outcomes" do
     it "reads as a sent request by default" do
-      command = instance_double(ESM::ServerCommand, command_name: "add", result: {outcome: "requested"})
+      command = instance_double(ESM::ServiceCommand, command_name: "add", result: {outcome: "requested"})
       expect(helper.territory_command_copy(command)[:past_tense]).to eq("Request sent")
     end
 
     it "reads as an immediate add when the row recorded the added outcome" do
-      command = instance_double(ESM::ServerCommand, command_name: "add", result: {outcome: "added"})
+      command = instance_double(ESM::ServiceCommand, command_name: "add", result: {outcome: "added"})
       expect(helper.territory_command_copy(command)[:past_tense]).to eq("Added")
     end
 
     it "leaves another command's copy untouched even if the row carries an outcome" do
-      command = instance_double(ESM::ServerCommand, command_name: "pay", result: {outcome: "added"})
+      command = instance_double(ESM::ServiceCommand, command_name: "pay", result: {outcome: "added"})
       expect(helper.territory_command_copy(command)[:past_tense]).to eq("Paid")
     end
   end

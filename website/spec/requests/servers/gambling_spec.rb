@@ -36,23 +36,23 @@ RSpec.describe "Servers::Gambling", type: :request do
     it "dispatches a gamble command carrying the bet amount" do
       allow_access(denied: false)
 
-      expect { post_gamble(amount: "250") }.to change(ESM::ServerCommand, :count).by(1)
+      expect { post_gamble(amount: "250") }.to change(ESM::ServiceCommand, :count).by(1)
 
-      command = ESM::ServerCommand.last
+      command = ESM::ServiceCommand.last
       expect(command.command_name).to eq("gamble")
       expect(command.arguments).to include(
         server_id: server.server_id,
         community_id: community.community_id,
         amount: "250"
       )
-      expect(ESM::Service::API).to have_received(:call).with(:server_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 
     it "rejects a denied bet with a 422 and never creates a command" do
       allow_access(denied: true, reason: :disabled)
 
-      expect { post_gamble }.not_to change(ESM::ServerCommand, :count)
+      expect { post_gamble }.not_to change(ESM::ServiceCommand, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
@@ -65,14 +65,14 @@ RSpec.describe "Servers::Gambling", type: :request do
     end
 
     it "serves the caller's own command by its public id" do
-      command = create(:server_command, user:, server:, command_name: "gamble")
+      command = create(:service_command, user:, server:, command_name: "gamble")
       get_status(command.public_id)
 
       expect(response).to have_http_status(:ok)
     end
 
     it "404s a command that belongs to another user" do
-      other = create(:server_command, server:, user: create(:user), command_name: "gamble")
+      other = create(:service_command, server:, user: create(:user), command_name: "gamble")
       get_status(other.public_id)
 
       expect(response).to have_http_status(:not_found)

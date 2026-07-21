@@ -4,23 +4,23 @@ module ESM
   module Website
     module Command
       class Origin < ESM::Command::Origin
-        def initialize(server_command)
-          @server_command = server_command
+        def initialize(service_command)
+          @service_command = service_command
           @source = :website
         end
 
         def current_user
-          @server_command.user
+          @service_command.user
         end
 
         def current_community
-          @server_command.community
+          @service_command.community
         end
 
         def reply(content)
-          raise ArgumentError, "You can only reply to this origin once" if @server_command.settled?
+          raise ArgumentError, "You can only reply to this origin once" if @service_command.settled?
 
-          @server_command.update!(status: :completed, result: content)
+          @service_command.update!(status: :completed, result: content)
         end
 
         #
@@ -29,7 +29,7 @@ module ESM
         # anything else falls back to its literal content. Markup is stripped since the page renders plain text.
         #
         def reply_error(error)
-          raise ArgumentError, "You can only reply to this origin once" if @server_command.settled?
+          raise ArgumentError, "You can only reply to this origin once" if @service_command.settled?
 
           body =
             if error.is_a?(ESM::Exception::CheckFailure) && error.key
@@ -38,12 +38,12 @@ module ESM
               project_player(error.to_content)
             end
 
-          @server_command.update!(status: :failed, error_message: strip_markup(body))
+          @service_command.update!(status: :failed, error_message: strip_markup(body))
         end
 
         def log_context
           {
-            server_command: @server_command.attributes
+            service_command: @service_command.attributes
           }
         end
 

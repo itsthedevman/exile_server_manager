@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_025015) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_20_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -179,24 +179,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_025015) do
     t.index ["uuid"], name: "index_requests_on_uuid"
   end
 
-  create_table "server_commands", force: :cascade do |t|
-    t.jsonb "arguments", default: {}
-    t.string "command_name", null: false
-    t.datetime "created_at", null: false
-    t.text "error_message"
-    t.uuid "idempotency_key", null: false
-    t.uuid "public_id", null: false
-    t.jsonb "result"
-    t.bigint "server_id"
-    t.string "status", default: "pending", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id"
-    t.index ["public_id"], name: "index_server_commands_on_public_id", unique: true
-    t.index ["server_id"], name: "index_server_commands_on_server_id"
-    t.index ["user_id", "idempotency_key"], name: "index_server_commands_on_user_id_and_idempotency_key", unique: true
-    t.index ["user_id"], name: "index_server_commands_on_user_id"
-  end
-
   create_table "server_mods", force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.datetime "deleted_at", precision: nil
@@ -288,6 +270,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_025015) do
     t.index ["public_id"], name: "index_servers_on_public_id", unique: true
     t.index ["server_id"], name: "index_servers_on_server_id", unique: true
     t.index ["server_key"], name: "index_servers_on_server_key", unique: true
+  end
+
+  create_table "service_commands", force: :cascade do |t|
+    t.jsonb "arguments", default: {}
+    t.string "command_name", null: false
+    t.bigint "community_id"
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.uuid "idempotency_key", null: false
+    t.uuid "public_id", null: false
+    t.jsonb "result"
+    t.bigint "server_id"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["community_id"], name: "index_service_commands_on_community_id"
+    t.index ["public_id"], name: "index_service_commands_on_public_id", unique: true
+    t.index ["server_id"], name: "index_service_commands_on_server_id"
+    t.index ["user_id", "idempotency_key"], name: "index_service_commands_on_user_id_and_idempotency_key", unique: true
+    t.index ["user_id"], name: "index_service_commands_on_user_id"
   end
 
   create_table "territories", force: :cascade do |t|
@@ -453,12 +455,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_025015) do
   add_foreign_key "logs", "servers", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestee_user_id", on_delete: :cascade
   add_foreign_key "requests", "users", column: "requestor_user_id", on_delete: :cascade
-  add_foreign_key "server_commands", "servers", on_delete: :cascade
-  add_foreign_key "server_commands", "users", on_delete: :cascade
   add_foreign_key "server_mods", "servers", on_delete: :cascade
   add_foreign_key "server_rewards", "servers", on_delete: :cascade
   add_foreign_key "server_settings", "servers", on_delete: :cascade
   add_foreign_key "servers", "communities", on_delete: :cascade
+  add_foreign_key "service_commands", "communities", on_delete: :cascade
+  add_foreign_key "service_commands", "servers", on_delete: :cascade
+  add_foreign_key "service_commands", "users", on_delete: :cascade
   add_foreign_key "territories", "servers", on_delete: :cascade
   add_foreign_key "user_aliases", "communities", on_delete: :cascade
   add_foreign_key "user_aliases", "servers", on_delete: :cascade

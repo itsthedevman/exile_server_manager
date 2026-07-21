@@ -62,7 +62,7 @@ RSpec.describe "Servers::Players", type: :request do
 
     before do
       allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
-        ESM::ServerCommand.find(command_id).completed!
+        ESM::ServiceCommand.find(command_id).completed!
       end
       allow(Poll).to receive(:until)
     end
@@ -70,18 +70,18 @@ RSpec.describe "Servers::Players", type: :request do
     it "dispatches a stuck command for the current player" do
       allow_access(denied: false)
 
-      expect { post_reset }.to change(ESM::ServerCommand, :count).by(1)
+      expect { post_reset }.to change(ESM::ServiceCommand, :count).by(1)
 
-      command = ESM::ServerCommand.last
+      command = ESM::ServiceCommand.last
       expect(command.command_name).to eq("stuck")
-      expect(ESM::Service::API).to have_received(:call).with(:server_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 
     it "rejects a denied reset with a 422 and never dispatches one" do
       allow_access(denied: true, reason: :server_offline)
 
-      expect { post_reset }.not_to change(ESM::ServerCommand, :count)
+      expect { post_reset }.not_to change(ESM::ServiceCommand, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)

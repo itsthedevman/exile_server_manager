@@ -38,9 +38,9 @@ RSpec.describe "Servers::Sqf", type: :request do
     it "dispatches an sqf command carrying the code and target" do
       allow_access(denied: false)
 
-      expect { post_sqf(code: "hint 'hi';", target: "76561198000000042") }.to change(ESM::ServerCommand, :count).by(1)
+      expect { post_sqf(code: "hint 'hi';", target: "76561198000000042") }.to change(ESM::ServiceCommand, :count).by(1)
 
-      command = ESM::ServerCommand.last
+      command = ESM::ServiceCommand.last
       expect(command.command_name).to eq("sqf")
       expect(command.arguments).to include(
         server_id: server.server_id,
@@ -48,7 +48,7 @@ RSpec.describe "Servers::Sqf", type: :request do
         code_to_execute: "hint 'hi';",
         target: "76561198000000042"
       )
-      expect(ESM::Service::API).to have_received(:call).with(:server_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 
@@ -57,13 +57,13 @@ RSpec.describe "Servers::Sqf", type: :request do
 
       post_sqf(target: "")
 
-      expect(ESM::ServerCommand.last.arguments).to include(target: "server")
+      expect(ESM::ServiceCommand.last.arguments).to include(target: "server")
     end
 
     it "rejects a denied run with a 422 and never creates a command" do
       allow_access(denied: true, reason: :not_allowlisted)
 
-      expect { post_sqf }.not_to change(ESM::ServerCommand, :count)
+      expect { post_sqf }.not_to change(ESM::ServiceCommand, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
@@ -76,14 +76,14 @@ RSpec.describe "Servers::Sqf", type: :request do
     end
 
     it "serves the caller's own command by its public id" do
-      command = create(:server_command, user:, server:, command_name: "sqf")
+      command = create(:service_command, user:, server:, command_name: "sqf")
       get_status(command.public_id)
 
       expect(response).to have_http_status(:ok)
     end
 
     it "renders the returned value when the run succeeds" do
-      command = create(:server_command, user:, server:, command_name: "sqf")
+      command = create(:service_command, user:, server:, command_name: "sqf")
       command.update!(result: {type: "bool", result: true}, status: :completed)
 
       get_status(command.public_id)
@@ -93,7 +93,7 @@ RSpec.describe "Servers::Sqf", type: :request do
     end
 
     it "renders an execution error when the extension nulls both the type and the result" do
-      command = create(:server_command, user:, server:, command_name: "sqf")
+      command = create(:service_command, user:, server:, command_name: "sqf")
       command.update!(result: {type: nil, result: nil}, status: :completed)
 
       get_status(command.public_id)
@@ -102,7 +102,7 @@ RSpec.describe "Servers::Sqf", type: :request do
     end
 
     it "404s a command that belongs to another user" do
-      other = create(:server_command, server:, user: create(:user), command_name: "sqf")
+      other = create(:service_command, server:, user: create(:user), command_name: "sqf")
       get_status(other.public_id)
 
       expect(response).to have_http_status(:not_found)

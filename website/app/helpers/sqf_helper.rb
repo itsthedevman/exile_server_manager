@@ -5,7 +5,7 @@ module SqfHelper
   # URL the result poller watches until a dispatched SQF command settles. The command carries its own server, so a
   # caller holding only the command can still build it.
   #
-  # @param command [ESM::ServerCommand] the dispatched SQF command
+  # @param command [ESM::ServiceCommand] the dispatched SQF command
   #
   # @return [String] the command's status endpoint path
   #

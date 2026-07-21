@@ -53,20 +53,20 @@ module Commands
   end
 
   ##
-  # Creates (or reuses) the ServerCommand for command_name and, when it is freshly pending, dispatches it to the service
+  # Creates (or reuses) the ServiceCommand for command_name and, when it is freshly pending, dispatches it to the service
   # API and briefly polls for it to settle before returning.
   #
   # @param command_name [String, Symbol] The name of the command
   # @param arguments [Hash] Extra command arguments merged into the server/community context
   #
-  # @return [ESM::ServerCommand] The command, settled if it resolved within the poll window, else still pending
+  # @return [ESM::ServiceCommand] The command, settled if it resolved within the poll window, else still pending
   #
   def call_service_command(command_name, arguments: {})
     command = create_command_for(command_name, arguments:)
 
     # Only the request that created the row dispatches, so a same-key retry (double-click, Turbo replay) dedupes to the
     # existing command instead of firing the work a second time.
-    ESM::Service::API.call(:server_command, command_id: command.id) if command.previously_new_record?
+    ESM::Service::API.call(:service_command, command_id: command.id) if command.previously_new_record?
 
     # Give a quick command a moment to land so it resolves in this response rather than flashing a spinner the client
     # poller clears a beat later. An already-settled row skips the wait; a retry rides the in-flight command's result.
@@ -76,23 +76,24 @@ module Commands
   end
 
   ##
-  # Finds or creates the current user's ServerCommand for this request, keyed on the request's idempotency key so a
+  # Finds or creates the current user's ServiceCommand for this request, keyed on the request's idempotency key so a
   # retried request returns the same command rather than a duplicate. A newly built record is seeded with the current
   # server, command name, and the server/community context merged with arguments.
   #
   # @param command_name [String, Symbol] The name of the command
   # @param arguments [Hash] Extra command arguments merged into the base server/community context
   #
-  # @return [ESM::ServerCommand] The found or newly created command
+  # @return [ESM::ServiceCommand] The found or newly created command
   #
   # @raise [ActionController::ParameterMissing] When the request omits :idempotency_key
   #
   def create_command_for(command_name, arguments: {})
-    ESM::ServerCommand.find_or_create_by(
+    ESM::ServiceCommand.find_or_create_by(
       user_id: current_user.id,
       idempotency_key: params.require(:idempotency_key)
     ) do |new_command|
       new_command.server = current_server
+      new_command.community = current_server.community
       new_command.command_name = command_name
 
       new_command.arguments = {

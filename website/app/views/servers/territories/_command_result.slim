@@ -1,13 +1,13 @@
 / locals: command, retry_territory
 - if territory_command_inline?(command)
-  span id=server_command_id(command) class="d-inline-flex"
+  span id=service_command_id(command) class="d-inline-flex"
     - if command.completed?
       span.text-success.px-1
         i.bi.bi-check-circle-fill
     - else
       = territory_command_retry_button(command, retry_territory)
 - else
-  div id=server_command_id(command)
+  div id=service_command_id(command)
     - if command.completed?
       .d-flex.align-items-center.justify-content-center.gap-1.text-success.small.fw-medium.py-1
         i.bi.bi-check-circle-fill

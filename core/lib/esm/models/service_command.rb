@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ESM
-  class ServerCommand < ApplicationRecord
+  class ServiceCommand < ApplicationRecord
     # =============================================================================
     # INITIALIZE
     # =============================================================================
@@ -28,8 +28,11 @@ module ESM
     # =============================================================================
 
     belongs_to :user
-    belongs_to :server
-    has_one :community, through: :server
+
+    # Not every command targets a server - community-scoped ones have nothing to point at. Community is held directly
+    # rather than reached through the server so those rows still know where they came from.
+    belongs_to :server, optional: true
+    belongs_to :community, optional: true
 
     # =============================================================================
     # VALIDATIONS

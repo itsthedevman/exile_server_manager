@@ -495,7 +495,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       )
     end
 
-    subject(:server_command) do
+    subject(:service_command) do
       execute_website!(
         arguments: {
           server_id: server.server_id,
@@ -514,7 +514,7 @@ describe ESM::Command::Territory::Add, category: "command" do
 
     context "when a moderator adds another player" do
       it "creates a request for the target with a null (web) origin" do
-        expect { server_command }.to change(ESM::Request, :count).by(1)
+        expect { service_command }.to change(ESM::Request, :count).by(1)
 
         request = ESM::Request.last
         expect(request.requestor).to eq(user)
@@ -523,7 +523,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       it "notifies only the target on Discord, leaving the requestor's confirmation to the website" do
-        server_command
+        service_command
 
         # The target receives the request through the Discord notify layer...
         ESM.discord_bot.test_outbox.await_size(1)
@@ -533,7 +533,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       it "records the requested outcome on the row" do
-        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("requested")
+        expect(service_command.result.with_indifferent_access[:outcome].to_s).to eq("requested")
       end
     end
 
@@ -544,16 +544,16 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       it "adds the player immediately, records the added outcome, and skips the request" do
-        expect { server_command }.not_to change(ESM::Request, :count)
+        expect { service_command }.not_to change(ESM::Request, :count)
 
-        expect(server_command.result.with_indifferent_access[:outcome].to_s).to eq("added")
+        expect(service_command.result.with_indifferent_access[:outcome].to_s).to eq("added")
         expect(territory.reload.build_rights).to include(second_user.steam_uid)
       end
     end
 
     context "when the web request is accepted" do
       it "delivers the outcome to the requestor's DM instead of crashing on the null channel" do
-        server_command
+        service_command
         request = ESM::Request.last
 
         ESM.discord_bot.test_outbox.clear

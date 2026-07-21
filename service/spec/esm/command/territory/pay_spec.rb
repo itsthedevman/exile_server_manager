@@ -246,7 +246,7 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
     let(:locker_balance) { 1_000_000 }
 
-    subject(:server_command) do
+    subject(:service_command) do
       execute_website!(
         arguments: {
           server_id: server.server_id,
@@ -264,8 +264,8 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
     context "when the payment succeeds" do
       it "is expected to complete the row without a payload" do
-        expect(server_command.status).to eq("completed")
-        expect(server_command.result).to be_blank
+        expect(service_command.status).to eq("completed")
+        expect(service_command.result).to be_blank
         expect(user.exile_account.reload.locker).to be < locker_balance
       end
     end
@@ -274,8 +274,8 @@ describe ESM::Command::Territory::Pay, category: "command" do
       let!(:locker_balance) { 0 }
 
       it "is expected to fail the row with the extension's reason" do
-        expect(server_command.status).to eq("failed")
-        expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to match(/you do not have enough poptabs in your locker/)
       end
     end
 
@@ -293,8 +293,8 @@ describe ESM::Command::Territory::Pay, category: "command" do
       end
 
       it "is expected to fail the row with the cooldown reason" do
-        expect(server_command.status).to eq("failed")
-        expect(server_command.error_message).to match(/on cooldown/i)
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to match(/on cooldown/i)
       end
     end
   end

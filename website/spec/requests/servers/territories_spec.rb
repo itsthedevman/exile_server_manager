@@ -25,7 +25,7 @@ RSpec.describe "Servers::Territories", type: :request do
     # handler marks the row non-pending; mirror that so idempotency behaves as it
     # does in production. Poll is skipped so specs don't wait on a settle.
     allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
-      ESM::ServerCommand.find(command_id).dispatched!
+      ESM::ServiceCommand.find(command_id).dispatched!
     end
     allow(Poll).to receive(:until)
   end
@@ -58,9 +58,9 @@ RSpec.describe "Servers::Territories", type: :request do
       "set_id" => [{custom_id: "newbase"}, "set_id", {old_territory_id: "oldbase", new_territory_id: "newbase"}]
     }.each do |segment, (params, command_name, action_args)|
       it "POST /#{segment} builds and dispatches a #{command_name} command" do
-        expect { post_action(segment, **params) }.to change(ESM::ServerCommand, :count).by(1)
+        expect { post_action(segment, **params) }.to change(ESM::ServiceCommand, :count).by(1)
 
-        command = ESM::ServerCommand.last
+        command = ESM::ServiceCommand.last
         expect(command.command_name).to eq(command_name)
         expect(command.arguments).to include(
           server_id: server.server_id,
@@ -68,7 +68,7 @@ RSpec.describe "Servers::Territories", type: :request do
           territory_id:,
           **action_args
         )
-        expect(ESM::Service::API).to have_received(:call).with(:server_command, command_id: command.id)
+        expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
         expect(response).to have_http_status(:ok)
       end
     end
@@ -81,7 +81,7 @@ RSpec.describe "Servers::Territories", type: :request do
       expect do
         post_action("pay", idempotency_key: key)
         post_action("pay", idempotency_key: key)
-      end.to change(ESM::ServerCommand, :count).by(1)
+      end.to change(ESM::ServiceCommand, :count).by(1)
 
       expect(ESM::Service::API).to have_received(:call).once
     end
@@ -108,7 +108,7 @@ RSpec.describe "Servers::Territories", type: :request do
     it "rejects a denied command with a 422 and never dispatches one" do
       allow_access(denied: true, reason: :disabled)
 
-      expect { post_action("pay") }.not_to change(ESM::ServerCommand, :count)
+      expect { post_action("pay") }.not_to change(ESM::ServiceCommand, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
@@ -121,14 +121,14 @@ RSpec.describe "Servers::Territories", type: :request do
     end
 
     it "serves the caller's own command by its public id" do
-      command = create(:server_command, user:, server:)
+      command = create(:service_command, user:, server:)
       get_status(command.public_id)
 
       expect(response).to have_http_status(:ok)
     end
 
     it "404s a command that belongs to another user" do
-      other = create(:server_command, server:, user: create(:user))
+      other = create(:service_command, server:, user: create(:user))
       get_status(other.public_id)
 
       expect(response).to have_http_status(:not_found)

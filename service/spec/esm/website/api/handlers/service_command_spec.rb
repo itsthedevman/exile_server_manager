@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
-RSpec.describe ESM::Website::API::Handlers::ServerCommand do
+RSpec.describe ESM::Website::API::Handlers::ServiceCommand do
   let!(:community) { create(:community) }
   let!(:server) { create(:server, community:) }
   let!(:user) { create(:user) }
 
-  let!(:server_command) do
-    ESM::ServerCommand.create!(
+  let!(:service_command) do
+    ESM::ServiceCommand.create!(
       user:,
       server:,
+      community:,
       idempotency_key: SecureRandom.uuid,
       command_name: "gamble",
       arguments: {server_id: server.server_id},
@@ -25,10 +26,10 @@ RSpec.describe ESM::Website::API::Handlers::ServerCommand do
 
     it "dispatches the row through its command's website event hook" do
       expect(ESM::Command::Server::Gamble).to receive(:website_event_hook).with(
-        an_instance_of(ESM::ServerCommand)
+        an_instance_of(ESM::ServiceCommand)
       )
 
-      described_class.call(command_id: server_command.id)
+      described_class.call(command_id: service_command.id)
     end
 
     context "when the command id is unknown" do

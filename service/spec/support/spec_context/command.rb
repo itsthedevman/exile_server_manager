@@ -142,7 +142,7 @@ RSpec.shared_context("command") do
   end
 
   #
-  # Executes the command through the website workflow instead of Discord: mints a ServerCommand row
+  # Executes the command through the website workflow instead of Discord: mints a ServiceCommand row
   # the way the website controller does, drives it through #from_website! via the website event hook,
   # and returns the settled row so specs can assert on its status/result/error_message.
   #
@@ -151,7 +151,7 @@ RSpec.shared_context("command") do
   # @param server [ESM::Server] The target server the row belongs to. Defaults to the `server` let binding
   # @param arguments [Hash] The command arguments, seeded onto the row as Strings the way form params arrive
   #
-  # @return [ESM::ServerCommand] the row after it has settled
+  # @return [ESM::ServiceCommand] the row after it has settled
   #
   def execute_website!(**opts)
     send_as = opts.delete(:user) || user
@@ -170,18 +170,19 @@ RSpec.shared_context("command") do
         end
       end
 
-    server_command = ESM::ServerCommand.create!(
+    service_command = ESM::ServiceCommand.create!(
       user: send_as,
       server: target_server,
+      community: target_server.community,
       idempotency_key: SecureRandom.uuid,
       command_name: command_class.command_name,
       arguments:,
       status: :pending
     )
 
-    command_class.website_event_hook(server_command)
+    command_class.website_event_hook(service_command)
 
-    server_command.reload
+    service_command.reload
   end
 
   def wait_for_completion!(event = :on_execute)

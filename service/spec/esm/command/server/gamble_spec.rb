@@ -509,7 +509,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
     let(:locker_balance) { 5_000 }
     let(:server_setting) { {} }
 
-    subject(:server_command) do
+    subject(:service_command) do
       execute_website!(
         arguments: {
           server_id: server.server_id,
@@ -528,8 +528,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
       let!(:server_setting) { {gambling_win_percentage: 0} } # A deterministic loss
 
       it "is expected to complete the row with the structured result" do
-        expect(server_command.status).to eq("completed")
-        expect(server_command.result).to include(:win, :amount, :locker_after)
+        expect(service_command.status).to eq("completed")
+        expect(service_command.result).to include(:win, :amount, :locker_after)
       end
     end
 
@@ -538,8 +538,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
       let(:locker_balance) { 0 }
 
       it "is expected to fail the row with the extension's reason" do
-        expect(server_command.status).to eq("failed")
-        expect(server_command.error_message).to match(/you do not have enough poptabs in your locker/)
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to match(/you do not have enough poptabs in your locker/)
       end
     end
 
@@ -556,8 +556,8 @@ describe ESM::Command::Server::Gamble, category: "command" do
       end
 
       it "is expected to fail the row with the cooldown reason" do
-        expect(server_command.status).to eq("failed")
-        expect(server_command.error_message).to match(/on cooldown/i)
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to match(/on cooldown/i)
       end
     end
   end

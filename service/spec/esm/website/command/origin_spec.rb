@@ -5,10 +5,11 @@ describe ESM::Website::Command::Origin do
   let!(:server) { create(:server, community_id: community.id) }
   let!(:user) { create(:user) }
 
-  let(:server_command) do
-    ESM::ServerCommand.create!(
+  let(:service_command) do
+    ESM::ServiceCommand.create!(
       user: user,
       server: server,
+      community: community,
       idempotency_key: SecureRandom.uuid,
       command_name: "gamble",
       arguments: {},
@@ -16,7 +17,7 @@ describe ESM::Website::Command::Origin do
     )
   end
 
-  subject(:origin) { described_class.new(server_command) }
+  subject(:origin) { described_class.new(service_command) }
 
   describe "#reply_error" do
     context "with a keyed CheckFailure" do
@@ -26,12 +27,12 @@ describe ESM::Website::Command::Origin do
 
       it "fails the row, names the player by username, and strips markup" do
         origin.reply_error(error)
-        server_command.reload
+        service_command.reload
 
-        expect(server_command.status).to eq("failed")
-        expect(server_command.error_message).to include(user.username, "8 seconds")
-        expect(server_command.error_message).not_to include("<@")
-        expect(server_command.error_message).not_to include("**")
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to include(user.username, "8 seconds")
+        expect(service_command.error_message).not_to include("<@")
+        expect(service_command.error_message).not_to include("**")
       end
     end
 
@@ -43,7 +44,7 @@ describe ESM::Website::Command::Origin do
       it "renders the web variant rather than the Discord copy" do
         origin.reply_error(error)
 
-        expect(server_command.reload.error_message).to include("before you can run commands")
+        expect(service_command.reload.error_message).to include("before you can run commands")
       end
     end
 
@@ -54,7 +55,7 @@ describe ESM::Website::Command::Origin do
 
       it "swaps the token for the username and strips markup" do
         origin.reply_error(error)
-        message = server_command.reload.error_message
+        message = service_command.reload.error_message
 
         expect(message).to include(user.username, "you do not have enough poptabs in your locker")
         expect(message).not_to include(user.mention)

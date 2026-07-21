@@ -220,8 +220,8 @@ module TerritoriesHelper
   # DOM id the action region adopts once a command exists, so the poller and the
   # terminal response both target the same element regardless of which surface
   # the payment was started from.
-  def server_command_id(command)
-    "server_command_#{command.idempotency_key}"
+  def service_command_id(command)
+    "service_command_#{command.idempotency_key}"
   end
 
   # URL the poller watches until the dispatched command settles. The command
@@ -424,7 +424,7 @@ module TerritoriesHelper
         surface: "retry",
         renew_price: retry_territory&.renew_price,
         tone: retry_pay_button_tone(retry_territory),
-        replace_id: server_command_id(command)
+        replace_id: service_command_id(command)
     when "upgrade"
       render "servers/territories/upgrade_button",
         server_public_id: command.server.public_id,
@@ -432,7 +432,7 @@ module TerritoriesHelper
         surface: "retry",
         upgrade_level: retry_territory&.upgrade_level,
         upgrade_price: retry_territory&.upgrade_price,
-        replace_id: server_command_id(command)
+        replace_id: service_command_id(command)
     when "promote", "demote", "remove"
       action = MEMBER_ACTIONS.fetch(command.command_name.to_sym)
 
@@ -447,7 +447,7 @@ module TerritoriesHelper
         icon: action[:icon],
         variant: action[:variant],
         label: action[:label],
-        replace_id: server_command_id(command)
+        replace_id: service_command_id(command)
     when "set_id"
       # Re-open the editor prefilled with what they typed so a failed rename can
       # be fixed and resubmitted without retyping the id.
@@ -457,7 +457,7 @@ module TerritoriesHelper
         surface: "retry",
         open: true,
         value: command.arguments[:new_territory_id],
-        replace_id: server_command_id(command)
+        replace_id: service_command_id(command)
     end
   end
 

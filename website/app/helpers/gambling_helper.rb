@@ -17,7 +17,7 @@ module GamblingHelper
   # URL the result poller watches until a dispatched bet settles. The command
   # carries its own server, so a caller holding only the command can still build it.
   #
-  # @param command [ESM::ServerCommand] the dispatched gamble command
+  # @param command [ESM::ServiceCommand] the dispatched gamble command
   #
   # @return [String] the command's status endpoint path
   #
