@@ -12,8 +12,10 @@ module PlayerLoading
 
   private
 
-  def load_player(server, steam_uid, force: false)
-    key = "player_#{server.id}_#{steam_uid}"
+  def load_player(force: false)
+    # The command reads as the current user against the current server, so the key is built from the same pair.
+    # Keying it any other way would file one player's payload under another's.
+    key = "player_#{current_server.id}_#{current_user.steam_uid}"
     ESM.cache.delete(key) if force
 
     data =
@@ -23,14 +25,14 @@ module PlayerLoading
         # The bot or the game server is unreachable. Degrade to "no data" (the
         # page shows an offline empty state) rather than a 500, and cache the nil
         # briefly so a down server isn't hammered on every refresh.
-        Rails.logger.warn("[load_player] player_info unavailable: #{e.message}")
+        Rails.logger.warn("[load_player] player unavailable: #{e.message}")
         nil
       end
 
     # No character on this server yet (never spawned in, or server offline)
     return if data.blank?
 
-    ESM::Exile::Player.new(server:, player: data)
+    ESM::Exile::Player.new(server: current_server, player: data)
   end
 
   # The fresh player snapshot to fold into a settled command's /me refresh. Pay
@@ -40,6 +42,6 @@ module PlayerLoading
   def refreshed_player(command)
     return unless command.completed?
 
-    load_player(command.server, current_user.steam_uid, force: true)
+    load_player(force: true)
   end
 end

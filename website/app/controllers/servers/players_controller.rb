@@ -41,7 +41,7 @@ module Servers
     end
 
     def current_player
-      load_player(current_server, current_user.steam_uid)
+      load_player
     end
   end
 end

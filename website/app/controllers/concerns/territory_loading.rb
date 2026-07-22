@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-# Loads a player-scoped territory snapshot, cached briefly so the repeated reads
-# around one interaction (open the modal, poll, refresh) don't each hit the
-# extension. The cache key includes the steam_uid because the payload is scoped
-# to that player's rights; a shared key could serve an owner's view to someone
-# with no access to the territory.
+# Loads a player-scoped territory snapshot, cached briefly so the repeated reads around one interaction (open the
+# modal, poll, refresh) don't each hit the extension. The key includes the current player because the payload is
+# scoped to that player's rights; a shared key could serve an owner's view to someone with no access to it.
 #
 # Requires the Commands concern
 #
@@ -13,8 +11,8 @@ module TerritoryLoading
 
   private
 
-  def load_territory(server, territory_id, steam_uid, force: false)
-    key = "territory_#{server.id}_#{territory_id}_#{steam_uid}"
+  def load_territory(territory_id, force: false)
+    key = "territory_#{current_server.id}_#{territory_id}_#{current_user.steam_uid}"
     ESM.cache.delete(key) if force
 
     territory_data =
@@ -23,13 +21,13 @@ module TerritoryLoading
       rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
         # The bot or the game server is unreachable. Degrade to "no data" (the
         # modal shows its unavailable state) rather than a 500.
-        Rails.logger.warn("[load_territory] territory_info unavailable: #{e.message}")
+        Rails.logger.warn("[load_territory] territory unavailable: #{e.message}")
         nil
       end
 
     return if territory_data.blank?
 
-    ESM::Exile::Territory.new(server:, territory: territory_data)
+    ESM::Exile::Territory.new(server: current_server, territory: territory_data)
   end
 
   # The fresh territory to fold into a settled command's modal refresh. Only a
@@ -43,7 +41,7 @@ module TerritoryLoading
     # Every other command leaves the id untouched and falls back to it.
     territory_id = command.arguments[:new_territory_id].presence || command.arguments[:territory_id]
 
-    load_territory(command.server, territory_id, current_user.steam_uid, force: true)
+    load_territory(territory_id, force: true)
   end
 
   # The territory snapshot used to rebuild the retry button after a failed
@@ -55,6 +53,6 @@ module TerritoryLoading
     return unless command.settled?
     return if command.completed?
 
-    load_territory(command.server, command.arguments[:territory_id], current_user.steam_uid)
+    load_territory(command.arguments[:territory_id])
   end
 end

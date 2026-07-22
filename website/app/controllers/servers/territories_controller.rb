@@ -68,7 +68,7 @@ module Servers
     end
 
     def current_territory
-      load_territory(current_server, params[:territory_id], current_user.steam_uid)
+      load_territory(params[:territory_id])
     end
 
     def run_territory_command(command_name, arguments: {})
