@@ -13,7 +13,8 @@ module ESM
         # resolves (see Server#respond_when_resolved), keeping the NATS dispatch thread free.
         #
         # @param command_name [String] The command to run, resolved through ESM::Command[]
-        # @param origin [Hash] Who is asking: :user_id and :community_id, both ESM database ids
+        # @param user_id [Integer] The ESM database id of the player running the command
+        # @param community_id [Integer] The ESM database id of the community the command was run from
         # @param arguments [Hash] The command's arguments, including the :server_id it targets
         #
         # @return [Concurrent::Promise] resolving to whatever the command replied with, or nil when it never replied
@@ -21,15 +22,15 @@ module ESM
         # @raise [ArgumentError] When the command, user, or community can't be resolved
         #
         class SyncCommand
-          def self.call(command_name:, origin:, arguments: {})
+          def self.call(command_name:, user_id:, community_id:, arguments: {})
             command_class = ESM::Command[command_name]
             raise ArgumentError, "Unknown command: #{command_name}" if command_class.nil?
 
-            user = ESM::User.find_by(id: origin[:user_id])
-            raise ArgumentError, "Unknown player: #{origin[:user_id]}" if user.nil?
+            user = ESM::User.find_by(id: user_id)
+            raise ArgumentError, "Unknown player: #{user_id}" if user.nil?
 
-            community = ESM::Community.find_by(id: origin[:community_id])
-            raise ArgumentError, "Unknown community: #{origin[:community_id]}" if community.nil?
+            community = ESM::Community.find_by(id: community_id)
+            raise ArgumentError, "Unknown community: #{community_id}" if community.nil?
 
             event = Datum.new(user:, community:, arguments:)
 

@@ -52,13 +52,26 @@ module Commands
     false
   end
 
+  # TODO: Docs
+  ##
+  # Runs command_name against the current server and blocks on its reply. Unlike {#call_async_command} nothing is
+  # persisted: the page is holding this request open waiting for the value.
+  #
+  # @param command_name [String, Symbol] The name of the command
+  # @param arguments [Hash] Extra command arguments merged into the server context
+  #
+  # @return [Object, nil] Whatever the command replied with, or nil when it had nothing to say
+  #
   def call_sync_command(command_name, arguments: {})
     raise ArgumentError, "Unknown command: #{command_name}" if ESM::Command[command_name].nil?
 
-    arguments = arguments.merge(server_id: current_server.server_id)
-    origin = {user_id: current_user.id, community_id: current_server.community.id}
-
-    ESM::Service::API.call(:sync_command, command_name:, origin:, arguments:)
+    ESM::Service::API.call(
+      :sync_command,
+      command_name:,
+      user_id: current_user.id,
+      community_id: current_server.community.id,
+      arguments: arguments.merge(server_id: current_server.server_id)
+    )
   end
 
   ##

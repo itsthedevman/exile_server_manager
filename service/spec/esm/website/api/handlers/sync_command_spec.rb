@@ -7,10 +7,14 @@ RSpec.describe ESM::Website::API::Handlers::SyncCommand do
     # The handler runs the named command as this user, so the command reads its own steam_uid off them rather than
     # trusting a uid the caller named.
     let(:steam_uid) { user.steam_uid }
-    let(:origin) { {user_id: user.id, community_id: community.id} }
 
     def call(command_name, **arguments)
-      described_class.call(command_name:, origin:, arguments: {server_id: server.server_id, **arguments})
+      described_class.call(
+        command_name:,
+        user_id: user.id,
+        community_id: community.id,
+        arguments: {server_id: server.server_id, **arguments}
+      )
     end
 
     context "when running me" do
@@ -40,7 +44,7 @@ RSpec.describe ESM::Website::API::Handlers::SyncCommand do
         promise = call("me")
         expect(promise).to be_a(Concurrent::Promise)
 
-        # The handler returns the calling user's row, proving the origin was resolved into a user and the seeded
+        # The handler returns the calling user's row, proving the user_id was resolved into a player and the seeded
         # data round-tripped through Arma.
         data = promise.value!(10).to_istruct
         expect(data.uid).to eq(steam_uid)
@@ -99,31 +103,34 @@ RSpec.describe ESM::Website::API::Handlers::SyncCommand do
         expect {
           described_class.call(
             command_name: "not_a_command",
-            origin: {user_id: user.id, community_id: community.id},
+            user_id: user.id,
+            community_id: community.id,
             arguments: {server_id: server.server_id}
           )
         }.to raise_error(ArgumentError, /Unknown command/)
       end
     end
 
-    context "when the origin names nobody registered with ESM" do
+    context "when the user_id belongs to nobody registered with ESM" do
       it "raises ArgumentError without offloading" do
         expect {
           described_class.call(
             command_name: "me",
-            origin: {user_id: -1, community_id: community.id},
+            user_id: -1,
+            community_id: community.id,
             arguments: {server_id: server.server_id}
           )
         }.to raise_error(ArgumentError, /Unknown player/)
       end
     end
 
-    context "when the origin names a community that does not exist" do
+    context "when the community_id belongs to no community" do
       it "raises ArgumentError without offloading" do
         expect {
           described_class.call(
             command_name: "me",
-            origin: {user_id: user.id, community_id: -1},
+            user_id: user.id,
+            community_id: -1,
             arguments: {server_id: server.server_id}
           )
         }.to raise_error(ArgumentError, /Unknown community/)
