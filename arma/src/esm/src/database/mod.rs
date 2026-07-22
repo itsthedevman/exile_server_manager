@@ -155,6 +155,14 @@ impl Database {
         queries::command_player_territories(&self, &mut connection, &arguments).await
     }
 
+    pub async fn command_players_list(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::command_players_list(&self, &mut connection, &arguments).await
+    }
+
     pub async fn command_reset_all(
         &self,
         arguments: HashMap<String, String>,
