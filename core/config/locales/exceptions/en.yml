@@ -111,3 +111,6 @@ en:
       Hey %{user}, I'm awaiting your response to my question in regarding the `%{command_name}` command.
       If you are no longer in need of my previous services, please reply with `cancel`. After which, you may execute your command again.
     no_permissions: "I'm sorry %{user}, only the owner of this community has access to this command"
+    server_version_not_supported: |-
+      Hey %{user}, `%{server_id}` does not support this command. 
+      Please reach out to the server owners and politely ask them to update ESM to the latest version.
