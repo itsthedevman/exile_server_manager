@@ -27,8 +27,8 @@ module ESM
           #
           # @!visibility private
           #
-          def website_event_hook(event)
-            event = ESM::Website::Event::ApplicationCommand.new(event)
+          def website_async_hook(event)
+            event = ESM::Website::Event::AsyncCommand.new(event)
             event.on_execution(self)
           end
         end

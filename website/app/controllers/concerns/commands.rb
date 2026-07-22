@@ -61,12 +61,12 @@ module Commands
   #
   # @return [ESM::ServiceCommand] The command, settled if it resolved within the poll window, else still pending
   #
-  def call_service_command(command_name, arguments: {})
-    command = create_command_for(command_name, arguments:)
+  def call_async_command(command_name, arguments: {})
+    command = create_async_command_for(command_name, arguments:)
 
     # Only the request that created the row dispatches, so a same-key retry (double-click, Turbo replay) dedupes to the
     # existing command instead of firing the work a second time.
-    ESM::Service::API.call(:service_command, command_id: command.id) if command.previously_new_record?
+    ESM::Service::API.call(:async_command, command_id: command.id) if command.previously_new_record?
 
     # Give a quick command a moment to land so it resolves in this response rather than flashing a spinner the client
     # poller clears a beat later. An already-settled row skips the wait; a retry rides the in-flight command's result.
@@ -87,7 +87,7 @@ module Commands
   #
   # @raise [ActionController::ParameterMissing] When the request omits :idempotency_key
   #
-  def create_command_for(command_name, arguments: {})
+  def create_async_command_for(command_name, arguments: {})
     ESM::ServiceCommand.find_or_create_by(
       user_id: current_user.id,
       idempotency_key: params.require(:idempotency_key)

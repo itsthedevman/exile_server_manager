@@ -142,8 +142,8 @@ RSpec.shared_context("command") do
   end
 
   #
-  # Executes the command through the website workflow instead of Discord: mints a ServiceCommand row
-  # the way the website controller does, drives it through #from_website! via the website event hook,
+  # Executes the command through the website's async workflow instead of Discord: mints a ServiceCommand
+  # row the way the website controller does, drives it through #from_website! via the website async hook,
   # and returns the settled row so specs can assert on its status/result/error_message.
   #
   # @param user [ESM::User] The user to run as. Defaults to the `user` let binding
@@ -180,7 +180,7 @@ RSpec.shared_context("command") do
       status: :pending
     )
 
-    command_class.website_event_hook(service_command)
+    command_class.website_async_hook(service_command)
 
     service_command.reload
   end

@@ -74,7 +74,7 @@ RSpec.describe "Servers::Players", type: :request do
 
       command = ESM::ServiceCommand.last
       expect(command.command_name).to eq("stuck")
-      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 

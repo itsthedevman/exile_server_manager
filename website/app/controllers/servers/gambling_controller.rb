@@ -7,7 +7,7 @@ module Servers
     def create
       return unless check_for_command_access("gamble")
 
-      command = call_service_command("gamble", arguments: {amount: params.require(:amount)})
+      command = call_async_command("gamble", arguments: {amount: params.require(:amount)})
 
       render locals: {command:, result: result_for(command), gamble_stat:}
     end

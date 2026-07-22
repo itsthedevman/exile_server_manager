@@ -45,7 +45,7 @@ RSpec.describe "Servers::Gambling", type: :request do
         community_id: community.community_id,
         amount: "250"
       )
-      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 

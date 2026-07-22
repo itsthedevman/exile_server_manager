@@ -68,7 +68,7 @@ RSpec.describe "Servers::Territories", type: :request do
           territory_id:,
           **action_args
         )
-        expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
+        expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
         expect(response).to have_http_status(:ok)
       end
     end

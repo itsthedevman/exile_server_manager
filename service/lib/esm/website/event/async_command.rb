@@ -3,7 +3,7 @@
 module ESM
   module Website
     module Event
-      class ApplicationCommand
+      class AsyncCommand
         delegate :user, to: :@event
 
         def initialize(event)
@@ -15,7 +15,7 @@ module ESM
 
           @command = command_class.new(
             arguments: @event.arguments,
-            origin: ESM::Website::Command::Origin.new(@event)
+            origin: ESM::Website::Command::AsyncOrigin.new(@event)
           )
 
           @command.from_website!

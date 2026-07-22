@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe ESM::Website::Command::Origin do
+describe ESM::Website::Command::AsyncOrigin do
   let!(:community) { create(:community) }
   let!(:server) { create(:server, community_id: community.id) }
   let!(:user) { create(:user) }

@@ -74,7 +74,7 @@ module Servers
     def run_territory_command(command_name, arguments: {})
       return unless check_for_command_access(command_name)
 
-      command = call_service_command(
+      command = call_async_command(
         command_name,
         arguments: arguments.merge(territory_id: params.require(:territory_territory_id))
       )

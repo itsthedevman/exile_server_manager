@@ -29,7 +29,7 @@ module Servers
       return unless check_for_command_access("stuck")
 
       target = params.require(:dom_id)
-      command = call_service_command("stuck")
+      command = call_async_command("stuck")
 
       render turbo_stream: turbo_stream.replace(target, partial: "reset_result", locals: {target:, command:})
     end
