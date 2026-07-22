@@ -27,7 +27,7 @@ module ESM
 
           @command.from_website!
 
-          origin.results
+          origin.result
         rescue => error
           on_error(error)
         end

@@ -9,20 +9,20 @@ module ESM
       # handed straight back to the caller.
       #
       class SyncOrigin < ESM::Command::Origin
-        attr_reader :current_user, :current_community, :results
+        attr_reader :current_user, :current_community, :result
 
         def initialize(event)
           @current_user = event.user
           @current_community = event.community
           @source = :website
-          @results = nil
+          @result = nil
         end
 
         # The website doesn't execute from within a channel
         def current_channel = nil
 
         def reply(content)
-          @results = content
+          @result = content
         end
 
         def reply_error(error)
