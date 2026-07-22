@@ -12,7 +12,7 @@ RSpec.describe "Servers::Players", type: :request do
 
     # The player snapshot and the online check are NATS reads against the game
     # server; stub both so the pages render their offline state without the bot.
-    allow_any_instance_of(ESM::Server).to receive(:player_info).and_return(nil)
+    allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return(nil)
     allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
   end
 

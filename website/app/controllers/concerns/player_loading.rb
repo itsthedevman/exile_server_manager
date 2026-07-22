@@ -4,6 +4,9 @@
 # territories), cached briefly so the reads around one interaction don't each
 # hit the extension. Mirrors TerritoryLoading; kept separate because a player
 # and a territory are distinct lookups against the game server.
+#
+# Requires the Commands concern
+#
 module PlayerLoading
   extend ActiveSupport::Concern
 
@@ -15,7 +18,7 @@ module PlayerLoading
 
     data =
       ESM.cache.fetch(key, expires_in: 5.seconds) do
-        server.player_info(steam_uid)
+        call_sync_command("me")
       rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
         # The bot or the game server is unreachable. Degrade to "no data" (the
         # page shows an offline empty state) rather than a 500, and cache the nil

@@ -27,6 +27,10 @@ module ESM
           reply(build_embed(player_data))
         end
 
+        def on_website_execute
+          reply(query_exile_database!("me", uid: current_user.steam_uid).first)
+        end
+
         module V1
           def on_execute
             deliver!(query: "player_info", uid: current_user.steam_uid)

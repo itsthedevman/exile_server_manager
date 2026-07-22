@@ -52,6 +52,15 @@ module Commands
     false
   end
 
+  def call_sync_command(command_name, arguments: {})
+    raise ArgumentError, "Unknown command: #{command_name}" if ESM::Command[command_name].nil?
+
+    arguments = arguments.merge(server_id: current_server.server_id)
+    origin = {user_id: current_user.id, community_id: current_server.community.id}
+
+    ESM::Service::API.call(:sync_command, command_name:, origin:, arguments:)
+  end
+
   ##
   # Creates (or reuses) the ServiceCommand for command_name and, when it is freshly pending, dispatches it to the service
   # API and briefly polls for it to settle before returning.

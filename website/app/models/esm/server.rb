@@ -72,22 +72,5 @@ module ESM
     def reinitialize
       ESM::Service::API.call(:servers_update, id:)
     end
-
-    #
-    # Fetches the player's Exile account and character on this server. The
-    # steam_uid scopes the lookup and comes from the session, never user input.
-    #
-    def player_info(steam_uid)
-      ESM::Service::API.call(:player_info, server_id: id, steam_uid:)
-    end
-
-    #
-    # Fetches a single territory on this server, scoped to what the player may see
-    # by ownership, build rights, or moderator status. The steam_uid comes from the
-    # session, never user input.
-    #
-    def territory_info(encoded_territory_id, steam_uid:)
-      ESM::Service::API.call(:territory_info, server_id: id, encoded_territory_id:, steam_uid:)
-    end
   end
 end

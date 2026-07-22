@@ -5,6 +5,9 @@
 # extension. The cache key includes the steam_uid because the payload is scoped
 # to that player's rights; a shared key could serve an owner's view to someone
 # with no access to the territory.
+#
+# Requires the Commands concern
+#
 module TerritoryLoading
   extend ActiveSupport::Concern
 
@@ -16,7 +19,7 @@ module TerritoryLoading
 
     territory_data =
       ESM.cache.fetch(key, expires_in: 5.seconds) do
-        server.territory_info(territory_id, steam_uid:)
+        call_sync_command("territory", arguments: {territory_id:})
       rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
         # The bot or the game server is unreachable. Degrade to "no data" (the
         # modal shows its unavailable state) rather than a 500.
