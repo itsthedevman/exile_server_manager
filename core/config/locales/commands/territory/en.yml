@@ -1,0 +1,14 @@
+---
+en:
+  commands:
+    territory:
+      description: Shows everything you can see about one of your territories
+      examples:
+        - description: Show your territory `jquee` on `esm_malden`
+          arguments:
+            "on": esm_malden
+            territory: jquee
+      errors:
+        not_a_member: |-
+          Hey %{user}, you're not a part of the territory `%{territory_id}` on `%{server_id}`, so there's nothing I can show you.
+          Ask whoever owns it to add you, then try again.

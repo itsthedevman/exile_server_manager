@@ -41,6 +41,7 @@ describe ESM::Command do
             uptime: server_commands::Uptime,
             my: {
               territories: server_commands::Territories,
+              territory: server_commands::Territory,
               player: server_commands::Me
             },
             stuck: server_commands::Stuck,
