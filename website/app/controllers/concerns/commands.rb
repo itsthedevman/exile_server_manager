@@ -52,7 +52,6 @@ module Commands
     false
   end
 
-  # TODO: Docs
   ##
   # Runs command_name against the current server and blocks on its reply. Unlike {#call_async_command} nothing is
   # persisted: the page is holding this request open waiting for the value.
