@@ -11,7 +11,12 @@ module ESM
     # adapter that implements this interface.
     #
     class Origin
-      # TODO: Docs
+      ##
+      # The medium the command was invoked through, set by the adapter that wraps it. Lets core branch on where a
+      # command came from without having to know which adapter class it is holding.
+      #
+      # @return [Symbol] :discord or :website
+      #
       attr_reader :source
 
       ##
