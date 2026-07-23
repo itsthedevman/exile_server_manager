@@ -25,9 +25,10 @@ pub async fn command_players_list(
     connection: &mut Conn,
     arguments: &HashMap<String, String>,
 ) -> QueryResult {
-    let connected_since = arguments.get("connected_since").ok_or(QueryError::User(
-        "Missing key `connected_since` in provided query arguments".into(),
-    ))?;
+    let connected_since =
+        arguments.get("connected_since").ok_or(QueryError::User(
+            "Missing key `connected_since` in provided query arguments".into(),
+        ))?;
 
     let row_limit = match arguments.get("limit") {
         Some(limit) => limit.parse::<u32>().map_err(|e| {
