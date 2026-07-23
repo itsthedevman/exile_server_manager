@@ -55,4 +55,42 @@ describe ESM::Command::Arguments do
       expect(previous_command.arguments.input).to eq("default success!")
     end
   end
+
+  describe "origin filtering" do
+    let(:command_class) { ESM::Command::Test::ArgumentOrigins }
+    let(:values) { {shared: "yes", website_only: "yes"} }
+
+    let(:discord_origin) { ESM::Discord::Command::Origin.new(user:, community:) }
+    let(:website_origin) { ESM::Website::Command::SyncOrigin.new(Datum.new(user:, community:, arguments: {})) }
+
+    # Filtering happens on the way in rather than at validation, so an argument the origin may not supply never
+    # exists on the instance. A caller that sends one anyway has it dropped instead of smuggled through.
+    context "when the command came from Discord" do
+      subject(:command) { command_class.new(origin: discord_origin, arguments: values) }
+
+      it "drops the arguments Discord may not supply" do
+        expect(command.arguments.keys).to contain_exactly(:shared)
+        expect(command.arguments.shared).to eq("yes")
+        expect(command.arguments.website_only).to be_nil
+      end
+    end
+
+    context "when the command came from the website" do
+      subject(:command) { command_class.new(origin: website_origin, arguments: values) }
+
+      it "keeps every argument" do
+        expect(command.arguments.keys).to contain_exactly(:shared, :website_only)
+        expect(command.arguments.website_only).to eq("yes")
+      end
+    end
+
+    # Help documentation and the command registry build commands without one, and they need to see the full set.
+    context "when the command has no origin" do
+      subject(:command) { command_class.new(arguments: values) }
+
+      it "keeps every argument" do
+        expect(command.arguments.keys).to contain_exactly(:shared, :website_only)
+      end
+    end
+  end
 end

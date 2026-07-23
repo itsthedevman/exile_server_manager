@@ -29,7 +29,8 @@ module ESM
             command_statement << namespace[:command_name]
 
             if with_args && self.arguments.size > 0
-              self.arguments.each do |(name, template)|
+              discord_arguments = self.arguments.select { |_, argument| argument.available_to?(:discord) }
+              discord_arguments.each do |(name, template)|
                 # Better support for falsey values
                 value =
                   if arguments.key?(name)

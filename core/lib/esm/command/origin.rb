@@ -11,6 +11,9 @@ module ESM
     # adapter that implements this interface.
     #
     class Origin
+      # TODO: Docs
+      attr_reader :source
+
       ##
       # The user who invoked the command.
       #

@@ -174,8 +174,10 @@ module ESM
           # @return [Hash]
           #
           def to_details
+            arguments = self.arguments.values.select { |argument| argument.available_to?(:discord) }
+
             documented_arguments =
-              arguments.values.index_by(&:display_name).transform_values do |argument|
+              arguments.index_by(&:display_name).transform_values do |argument|
                 {
                   name: argument.name,
                   display_name: argument.display_name,
@@ -289,8 +291,10 @@ module ESM
 
           # @!visibility private
           def register_arguments(builder)
+            arguments = self.arguments.values.select { |argument| argument.available_to?(:discord) }
+
             # Required arguments must be first (Discord requirement)
-            sorted_arguments = arguments.values.sort_by { |argument| argument.required_by_discord? ? 0 : 1 }
+            sorted_arguments = arguments.sort_by { |argument| argument.required_by_discord? ? 0 : 1 }
 
             sorted_arguments.each do |argument|
               if !builder.respond_to?(argument.type)
