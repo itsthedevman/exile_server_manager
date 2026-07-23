@@ -324,6 +324,15 @@ module ESM
           raise error
         end
 
+        def raise_server_version_not_supported!
+          raise_error!(
+            :server_version_not_supported,
+            path_prefix: "command_errors",
+            user: current_user,
+            server_id: target_server.server_id
+          )
+        end
+
         def skip_action(*)
           skipped_actions.set(*, unset: false)
         end

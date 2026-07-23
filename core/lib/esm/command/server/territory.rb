@@ -52,12 +52,7 @@ module ESM
 
         module V1
           def on_execute
-            raise_error!(
-              :server_version_not_supported,
-              path_prefix: "command_errors",
-              user: current_user,
-              server_id: target_server.server_id
-            )
+            raise_server_version_not_supported!
           end
         end
 
