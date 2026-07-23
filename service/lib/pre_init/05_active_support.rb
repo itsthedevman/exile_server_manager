@@ -14,6 +14,8 @@
 
 ActiveSupport::Cache.format_version = 7.1
 
+ActiveSupport::JSON::Encoding.escape_html_entities_in_json = false
+
 Time.zone_default = Time.find_zone!("UTC")
 
 Loader.load_rails_extensions
