@@ -50,6 +50,7 @@ describe ESM::Command do
               reset_player: server_commands::Reset,
               modify_player: server_commands::Player,
               search_logs: server_commands::Logs,
+              list_players: server_commands::Players,
               find: server_commands::Info,
               broadcast: server_commands::Broadcast
             },
