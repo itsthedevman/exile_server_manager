@@ -35,4 +35,13 @@ describe ESM::Command::Base::Definition do
       end
     end
   end
+
+  describe ".unreleased" do
+    subject(:command_class) { ESM::Command::Test::UnreleasedCommand }
+
+    it "is expected to be marked as unreleased" do
+      expect(command_class.released).to be(false)
+      expect(command_class.released?).to be(false)
+    end
+  end
 end

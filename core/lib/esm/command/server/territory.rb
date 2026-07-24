@@ -4,6 +4,9 @@ module ESM
   module Command
     module Server
       class Territory < ApplicationCommand
+        # Unreleased until the new server dashboard is available
+        unreleased!
+
         #################################
         #
         # Arguments (required first, then order matters)

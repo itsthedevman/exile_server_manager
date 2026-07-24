@@ -135,4 +135,43 @@ describe ESM::Command do
       end
     end
   end
+
+  describe ".all" do
+    # The registry is a frozen global that every command lookup reads from. Reloading it under a stubbed environment
+    # would otherwise hand the rest of the suite a filtered copy.
+    after do
+      commands.clear
+      commands.load
+    end
+
+    context "when a command is marked unreleased and the env is NOT production" do
+      let(:command_class) { ESM::Command::Test::UnreleasedCommand }
+
+      before do
+        commands.clear
+        commands.load
+      end
+
+      it "will be loaded and cached" do
+        expect(commands.all).to include(command_class)
+        expect(commands[command_class.command_name]).to eq(command_class)
+      end
+    end
+
+    context "when a command is marked unreleased and the env IS production" do
+      let(:command_class) { ESM::Command::Test::UnreleasedCommand }
+
+      before do
+        allow(ESM.env).to receive(:production?).and_return(true)
+
+        commands.clear
+        commands.load
+      end
+
+      it "will not be loaded" do
+        expect(commands.all).not_to include(command_class)
+        expect(commands[command_class.command_name]).to be_nil
+      end
+    end
+  end
 end
