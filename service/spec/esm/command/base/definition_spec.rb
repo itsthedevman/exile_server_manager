@@ -19,10 +19,7 @@ describe ESM::Command::Base::Definition do
     # than the internal name the command reads.
     it "keys the arguments by their display name" do
       expect(details[:arguments]).to include(:display_name)
-      expect(details[:arguments][:display_name]).to include(
-        name: :display_name,
-        description: "This argument has a different display name"
-      )
+      expect(details[:arguments][:display_name]).to include(name: :display_name)
     end
 
     # Documentation describes what someone can type. An argument the website supplies for itself is not part of

@@ -268,8 +268,8 @@ module ESM
             command_namespace(category.to_sym) # Sets the default namespace to be: /<category> <command_name>
 
             self.description = I18n.t("commands.#{command_name}.description", default: "")
-            self.description_extra = I18n.t("commands.#{command_name}.description_extra", default: nil)
-            self.examples_raw = I18n.t("commands.#{command_name}.examples", default: [])
+            self.description_extra = I18n.t("commands.#{command_name}.description_extra", default: "")
+            self.examples_raw = I18n.t("commands.#{command_name}.examples", default: ->(_) { [] })
 
             self.limited_to = nil
             self.type = :player
