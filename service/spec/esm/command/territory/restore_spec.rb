@@ -99,7 +99,14 @@ describe ESM::Command::Territory::Restore, category: "command" do
 
           previous_last_paid_at = territory.last_paid_at
 
-          expect { execute_command }.not_to raise_error
+          execute_command
+
+          ESM.discord_bot.test_outbox.await_size(1)
+
+          # Player response
+          expect(
+            ESM.discord_bot.test_outbox.retrieve(" `#{territory.encoded_id}` has been restored")
+          ).not_to be(nil)
 
           territory.reload
           expect(territory.deleted_at).to be(nil)

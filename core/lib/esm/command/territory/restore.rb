@@ -31,6 +31,17 @@ module ESM
         def on_execute
           check_for_owned_server!
           run_database_query!("restore", territory_id: arguments.territory_id)
+
+          embed = ESM::Embed.build(
+            :success,
+            description: I18n.t(
+              "commands.restore.success_message",
+              user: current_user.mention,
+              territory_id: arguments.territory_id
+            )
+          )
+
+          reply(embed)
         end
 
         module V1
