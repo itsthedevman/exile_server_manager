@@ -24,9 +24,7 @@ module PlayerLoading
   private
 
   def load_player(force: false)
-    # The command reads as the current user against the current server, so the key is built from the same pair.
-    # Keying it any other way would file one player's payload under another's.
-    key = "player_#{current_server.id}_#{current_user.steam_uid}"
+    key = current_player_cache_key
     ESM.cache.delete(key) if force
 
     data =
@@ -80,5 +78,11 @@ module PlayerLoading
     return if snapshot.blank?
 
     ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
+  end
+
+  def current_player_cache_key
+    # The command reads as the current user against the current server, so the key is built from the same pair.
+    # Keying it any other way would file one player's payload under another's.
+    "player_#{current_server.id}_#{current_user.steam_uid}"
   end
 end

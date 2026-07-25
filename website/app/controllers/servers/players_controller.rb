@@ -102,6 +102,7 @@ module Servers
       target = params.require(:dom_id)
       command = call_async_command("stuck")
 
+      ESM.cache.delete(current_player_cache_key) # Drop the cache, the player no longer exists in the database
       render turbo_stream: turbo_stream.replace(target, partial: "reset_result", locals: {target:, command:})
     end
 
