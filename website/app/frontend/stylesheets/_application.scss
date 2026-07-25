@@ -30,6 +30,18 @@ footer {
     min-width: 0;
 }
 
+// Sortable table headers: click to sort the rows the page already holds. The caret sits muted until the column is
+// active or hovered, so the whole header row doesn't read as a wall of arrows.
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    &:hover .sort-indicator {
+        color: $esm-warm-gray-100 !important;
+    }
+}
+
 code {
     background: $esm-warm-gray-800;
     color: lighten($esm-warm-gray-100, 10%);

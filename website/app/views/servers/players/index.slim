@@ -4,7 +4,8 @@
 = render "servers/container", current_server: do
   .d-flex.mb-4.align-items-center
     div
-      h1.mb-0 Players
+      h1.mb-1 Players
+      p.text-muted.mb-0 Everyone who's connected recently. Search, sort, or filter to online-only to track down a specific player.
 
   = turbo_frame_tag "players_list",
     src: list_server_players_path(current_server.public_id, window: lookback),
