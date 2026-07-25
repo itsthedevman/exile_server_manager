@@ -44,7 +44,7 @@ module Servers
     # are worth saying differently since a null return is the same shape whether the code was fine or nonsense.
     def result_for(command)
       return unless command.settled?
-      return {error: command.error_message}.to_istruct if command.error_message.present?
+      return {error: command.error_message}.to_datum if command.error_message.present?
 
       Data.define(:error, :output, :returned_nothing).new(
         error: nil,

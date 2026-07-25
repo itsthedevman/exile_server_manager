@@ -72,12 +72,12 @@ module Servers
     # Streak comes from the freshly recorded stat, not the SQF payload.
     def result_for(command)
       return unless command.settled?
-      return {error: command.error_message}.to_istruct if command.error_message.present?
+      return {error: command.error_message}.to_datum if command.error_message.present?
 
       command.result
         .slice(:win, :amount, :locker_after)
         .merge(error: nil, streak: gamble_stat.current_streak)
-        .to_istruct
+        .to_datum
     end
   end
 end

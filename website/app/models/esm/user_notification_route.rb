@@ -73,7 +73,7 @@ module ESM
         channel_id,
         user_id:,
         community_id: destination_community_id
-      )&.to_istruct
+      )&.to_datum
     end
 
     def channel_name

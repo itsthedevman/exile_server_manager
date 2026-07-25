@@ -108,7 +108,7 @@ module ESM
           primary_clan_id: data[:primaryclanid],
           time_created: data[:timecreated],
           persona_state_flags: data[:personastateflags]
-        }.to_istruct
+        }.to_datum
       end.call
     end
 
@@ -146,7 +146,7 @@ module ESM
           days_since_last_ban: data[:DaysSinceLastBan],
           number_of_game_bans: data[:NumberOfGameBans],
           economy_ban: data[:EconomyBan]
-        }.to_istruct
+        }.to_datum
       end.call
     end
   end

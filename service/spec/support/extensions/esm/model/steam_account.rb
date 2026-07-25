@@ -18,7 +18,7 @@ module ESM
         primary_clan_id: -1,
         time_created: -1,
         persona_state_flags: 3
-      }.to_istruct
+      }.to_datum
     end
   end
 end

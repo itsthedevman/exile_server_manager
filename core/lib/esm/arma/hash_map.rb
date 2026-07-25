@@ -58,7 +58,7 @@ module ESM
 
       alias_method :to_s, :to_json
 
-      delegate :to_ostruct, :to_istruct, to: :to_h
+      delegate :to_ostruct, :to_datum, to: :to_h
       delegate_missing_to :to_h
 
       private

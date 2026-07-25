@@ -25,7 +25,7 @@ module Spec
         user_id: from && resolve_id(from),
         channel_id: channel && resolve_id(channel),
         content: content
-      }.to_istruct)
+      }.to_datum)
     end
 
     #
@@ -91,7 +91,7 @@ module Spec
         message: {content: reply.content},
         user: {id: reply.user_id},
         channel: {id: reply.channel_id}
-      }.to_istruct
+      }.to_datum
     end
   end
 end

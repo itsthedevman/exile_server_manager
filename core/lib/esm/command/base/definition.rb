@@ -345,7 +345,7 @@ module ESM
 
           @name = command_class.command_name
           @category = command_class.category
-          @attributes = attributes.to_istruct
+          @attributes = attributes.to_datum
           @origin = origin
 
           @arguments = ESM::Command::Arguments.new(

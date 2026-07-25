@@ -42,7 +42,7 @@ RSpec.describe ESM::Website::API::Handlers::TerritoryInfo do
 
         # Round-trips through Arma: proves the uid was accepted by the access scope
         # and the encoded id decoded/re-encoded symmetrically.
-        data = promise.value!(10).to_istruct
+        data = promise.value!(10).to_datum
         expect(data.id).to eq(territory.encoded_id)
         expect(data.territory_name).to eq(territory.name)
       end
@@ -86,7 +86,7 @@ RSpec.describe ESM::Website::API::Handlers::TerritoryInfo do
       let(:build_rights) { [] }
 
       it "resolves to the territory instead of erroring" do
-        data = call.value!(10).to_istruct
+        data = call.value!(10).to_datum
         expect(data.id).to eq(territory.encoded_id)
         expect(data.build_rights).to be_empty
         expect(data.moderators).to be_empty

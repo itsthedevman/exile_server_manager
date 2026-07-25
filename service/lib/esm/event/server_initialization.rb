@@ -56,7 +56,7 @@ module ESM
         territory_data = territory_data.parse_json if territory_data.is_a?(String)
 
         territories = territory_data.map do |data|
-          data = ESM::Arma::HashMap.from(data).to_istruct
+          data = ESM::Arma::HashMap.from(data).to_datum
 
           {
             server_id: @model.id,

@@ -178,7 +178,7 @@ module GamblingHelper
       {label: "Longest win streak", value: stat.longest_win_streak, icon: "bi-arrow-up-circle", accent: "text-success"},
       {label: "Longest loss streak", value: stat.longest_loss_streak, icon: "bi-arrow-down-circle", accent: "text-danger"},
       {label: "Win rate", value: gamble_win_rate(stat), icon: "bi-percent", accent: "text-info"}
-    ].map(&:to_istruct)
+    ].map(&:to_datum)
   end
 
   ##
@@ -220,6 +220,6 @@ module GamblingHelper
       icon:,
       holder: stat&.user&.username || "—",
       value: as_poptabs ? poptabs(value, inline: true) : value
-    }.to_istruct
+    }.to_datum
   end
 end

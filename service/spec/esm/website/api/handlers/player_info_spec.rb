@@ -35,7 +35,7 @@ RSpec.describe ESM::Website::API::Handlers::PlayerInfo do
 
         # The handler returns the requested uid's row, proving the steam_uid was
         # forwarded to the query and the seeded data round-tripped through Arma.
-        data = promise.value!(10).to_istruct
+        data = promise.value!(10).to_datum
         expect(data.uid).to eq(steam_uid)
         expect(data.name).to eq(account.name)
         expect(data.locker).to eq(25_000)
