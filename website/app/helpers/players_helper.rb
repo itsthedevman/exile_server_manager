@@ -98,6 +98,37 @@ module PlayersHelper
     @avatar_accounts[player.uid] = ESM::User.find_by(steam_uid: player.uid)
   end
 
+  ##
+  # The at-a-glance status dressing for a player: the avatar ring color, plus a pill - color, icon, and word - that sits
+  # beside the name so the state reads without leaning on color alone. Exile draws no dead-versus-never-spawned
+  # distinction (it just drops the character row), so this is binary: a living character reads alive, anything else
+  # reads as having no character. Memoized per uid because the avatar and pill partials each read fields off the one
+  # result.
+  #
+  # @param player [ESM::Exile::Player]
+  #
+  # @return [Datum] responds to #ring_class, #pill_class, #icon_class, and #label
+  #
+  def player_status(player)
+    @player_statuses ||= {}
+    @player_statuses[player.uid] ||=
+      if player.alive?
+        Datum.new(
+          ring_class: "border-success",
+          pill_class: "text-success-emphasis bg-success-subtle border-success-subtle",
+          icon_class: "bi-heart-fill",
+          label: "Alive"
+        )
+      else
+        Datum.new(
+          ring_class: "border-danger",
+          pill_class: "text-danger-emphasis bg-danger-subtle border-danger-subtle",
+          icon_class: "bi-person-x",
+          label: "No character"
+        )
+      end
+  end
+
   # Bootstrap alert variant for the stuck/reset outcome: info while the command is still in flight, danger on failure,
   # success once the character has been reset.
   def stuck_result_variant(command)
