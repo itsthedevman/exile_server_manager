@@ -1,0 +1,16 @@
+/ locals: current_server, lookback
+- content_for :title, "Players on #{current_server.server_name}"
+
+= render "servers/container", current_server: do
+  .d-flex.mb-4.align-items-center
+    div
+      h1.mb-0 Players
+
+  = turbo_frame_tag "players_list",
+    src: list_server_players_path(current_server.public_id, window: lookback),
+    loading: :lazy
+
+    .card
+      .card-body.text-center.text-muted.py-5
+        .spinner-border.spinner-border-sm.me-2[role="status"]
+        | Loading players...

@@ -180,13 +180,16 @@ Rails.application.routes.draw do
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
       # /servers/:server_id/players
-      resources :players, controller: "servers/players", only: [], param: :user_id do
+      resources :players, controller: "servers/players", only: [:index], param: :user_id do
         collection do
           # /servers/:server_id/players/me
           get :me
 
           # /servers/:server_id/players/summary — lazy My Player card on the hub
           get :summary
+
+          # /servers/:server_id/players/list — lazy listing frame on the admin players page
+          get :list
 
           # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
           post :reset_me

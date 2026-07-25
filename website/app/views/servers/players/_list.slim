@@ -1,0 +1,100 @@
+/ locals: current_server, lookback, lookback_options, players, fetched_at, row_limit
+.card
+  .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    .btn-group.btn-group-sm[role="group" aria-label="Look-back window"]
+      - lookback_options.each do |key, window|
+        = link_to window[:label],
+          list_server_players_path(current_server.public_id, window: key),
+          class: class_names("btn", key == lookback ? "btn-primary" : "btn-outline-secondary")
+
+    .d-flex.align-items-center.gap-3
+      - if fetched_at
+        = render "shared/data_freshness", at: fetched_at
+
+  - if players.nil?
+    .card-body.text-center.py-5
+      i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Can't reach #{current_server.server_name}
+      p.text-muted.mb-0 The server is offline or unreachable, so we couldn't load its players. Try again once it's back up.
+
+  - elsif players.empty?
+    .card-body.text-center.py-5
+      i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Nobody in the last #{lookback_options[lookback][:label]}
+      p.text-muted.mb-0 No one has connected to #{current_server.server_name} in this window. Try a wider one.
+
+  - else
+    div data-controller="players-table"
+      .card-body.border-bottom
+        .row.g-2.align-items-center
+          .col-12.col-md-5
+            .input-group.input-group-sm
+              span.input-group-text
+                i.bi.bi-search
+              input.form-control[type="search" placeholder="Search by name or Steam UID" aria-label="Search players" data-players-table-target="search" data-action="input->players-table#filter"]
+
+          .col-auto
+            .form-check.form-switch.mb-0
+              input.form-check-input#players_online_only[type="checkbox" data-players-table-target="onlineOnly" data-action="change->players-table#filter"]
+              label.form-check-label.small[for="players_online_only"] Online only
+
+          .col-auto.ms-md-auto
+            small.text-muted data-players-table-target="count"
+
+      .table-responsive
+        table.table.table-hover.align-middle.mb-0
+          thead
+            tr
+              th Player
+              th Status
+              th.text-end K/D
+              th.text-end Score
+              th.text-end Poptabs
+              th.text-end Connections
+          tbody
+            - players.each do |player|
+              tr data-players-table-target="row" data-online=player[:online].to_s data-search=player_search_terms(player)
+                td
+                  .fw-medium.text-truncate = player[:name]
+                  small.text-muted.font-monospace = player[:uid]
+                td
+                  - if player[:online]
+                    span.badge.text-bg-success.me-1 Online
+                  - else
+                    span.badge.text-bg-secondary.me-1 Offline
+                  - if (last_seen = player_last_seen_at(player))
+                    small.text-muted data-controller="relative-time" data-relative-time-datetime-value=last_seen.iso8601
+                      = last_seen.strftime("%b %-d, %Y %-I:%M %p")
+                td.text-end
+                  = player_kill_death_ratio(player)
+                  small.text-muted.ms-1 = "#{player[:kills]}/#{player[:deaths]}"
+                td.text-end = number_with_delimiter(player[:score])
+                td.text-end
+                  - if player[:money]
+                    = poptabs(player[:money], inline: true)
+                  - else
+                    span.text-muted title="No character on the server right now" —
+                  .small.text-muted
+                    = poptabs(player[:locker], inline: true)
+                    | locker
+                td.text-end = number_with_delimiter(player[:total_connections])
+
+      .card-body.text-center.py-5[hidden data-players-table-target="empty"]
+        i.bi.bi-search.text-muted.fs-1.d-block.mb-3
+        h5.text-light.mb-2 No matches
+        p.text-muted.mb-0 Nobody in this window matches what you're looking for.
+
+      .card-footer.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+        - if players.size >= row_limit
+          small.text-warning
+            i.bi.bi-exclamation-triangle.me-1
+            | Showing the #{number_with_delimiter(row_limit)} most recent. Narrow the window to see fewer, older players.
+        - else
+          span
+
+        div.d-flex.align-items-center.gap-2[hidden data-players-table-target="pagination"]
+          button.btn.btn-sm.btn-outline-secondary[type="button" data-players-table-target="previous" data-action="players-table#previous"]
+            i.bi.bi-chevron-left
+          small.text-muted data-players-table-target="pageInfo"
+          button.btn.btn-sm.btn-outline-secondary[type="button" data-players-table-target="next" data-action="players-table#next"]
+            i.bi.bi-chevron-right

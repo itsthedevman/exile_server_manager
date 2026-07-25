@@ -1,0 +1,4 @@
+/ locals: current_server, lookback, lookback_options, players, fetched_at, row_limit
+= turbo_frame_tag "players_list"
+  = render "servers/players/list",
+    current_server:, lookback:, lookback_options:, players:, fetched_at:, row_limit:
