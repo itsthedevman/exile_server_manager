@@ -184,6 +184,7 @@ module TerritoriesHelper
   # arma remains the authority, so a bypassed request still gets rejected.
   def territory_addable_by?(territory, steam_uid)
     return false if steam_uid.blank?
+    return true if territory_admin?
 
     [territory.owner, *territory.moderators].compact.any? { |member| member.steam_uid == steam_uid }
   end
@@ -503,7 +504,12 @@ module TerritoriesHelper
 
   # The action specs available for a member, resolved from its role.
   def territory_member_actions(member)
-    MEMBER_ROLE_ACTIONS.fetch(member.role, []).map { |action| MEMBER_ACTIONS.fetch(action) }
+    MEMBER_ROLE_ACTIONS.fetch(member.role, []).filter_map do |action|
+      next unless command_accessible?(action)
+      next unless viewing_self? || territory_admin?
+
+      MEMBER_ACTIONS.fetch(action)
+    end
   end
 
   # The POST path for a member action, built from the command name via the

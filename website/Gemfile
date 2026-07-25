@@ -54,6 +54,7 @@ gem "thruster", require: false  # HTTP/2, caching, compression layer for Puma
 gem "solid_cache"               # Database-backed Rails.cache
 gem "solid_queue"               # Database-backed Active Job
 gem "solid_cable"               # Database-backed Action Cable
+gem "redis"                     # Shared ESM.cache, same Redis + namespace as the bot (cross-process reads)
 
 # Performance
 gem "bootsnap", require: false  # Faster boot through caching

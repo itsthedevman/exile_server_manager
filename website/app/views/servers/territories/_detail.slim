@@ -13,7 +13,7 @@
     ]
     .flex-grow-1.overflow-hidden
       h5.modal-title.mb-1.text-truncate = current_territory.name
-      - if command_accessible?("set_id")
+      - if command_accessible?("set_id") && (viewing_self? || territory_admin?)
         .d-flex.align-items-center.gap-2
           = render "servers/territories/set_id", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal"
     button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
@@ -31,7 +31,7 @@
         = territory_stat("Last paid", territory_datetime(current_territory.last_paid_at), class: "col-12 col-md-4")
         = territory_stat("Next due", territory_date(current_territory.next_due_date), class: "col-12 col-md-4")
         = territory_stat("Renewal", poptab_price(current_territory.renew_price), color: "text-success")
-      - if command_accessible?("pay") && current_territory.payment_due_soon?
+      - if command_accessible?("pay") && current_territory.payment_due_soon? && (viewing_self? || territory_admin?)
         .mt-3
           = territory_pay_panel(current_territory, server_public_id: current_server.public_id, surface: "modal", renew_price: current_territory.renew_price)
 
@@ -43,14 +43,14 @@
           = territory_stat("Max objects", current_territory.upgrade_object_count)
           = territory_stat("Upgrade", poptab_price(current_territory.upgrade_price), color: "text-success", class: "col-12")
         .mt-3
-          - if command_accessible?("upgrade")
+          - if command_accessible?("upgrade") && (viewing_self? || territory_admin?)
             = territory_upgrade_control(current_territory, server_public_id: current_server.public_id)
 
     = territory_section "Members", icon: "people-fill", color: "text-info", wrapper_class: "p-3" do
       = territory_member_group("Owner", [current_territory.owner], icon: "key-fill", color: "text-warning", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.any? ? "mb-3" : "", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "", territory_id: current_territory.id, server_public_id: current_server.public_id)
-      - if territory_addable_by?(current_territory, current_user.steam_uid)
+      - if command_accessible?("add") && (viewing_self? || territory_admin?) && territory_addable_by?(current_territory, current_user.steam_uid)
         = render "servers/territories/add_member", server_public_id: current_server.public_id, territory_id: current_territory.id
   .modal-footer
     .flex-shrink-0.align-self-end

@@ -115,7 +115,7 @@ module ESM
       return ESM::User.none if server.nil?
 
       user_ids =
-        ESM.cache.fetch("community:#{id}:territory_admin_users", expires_in: 5.hours, force:) do
+        ESM.cache.fetch(territory_admin_users_cache_key, expires_in: 5.hours, force:) do
           # Get all roles with administrator or that are set as territory admins
           roles = server.roles.select do |role|
             role.permissions.administrator || territory_admin_ids.include?(role.id.to_s)

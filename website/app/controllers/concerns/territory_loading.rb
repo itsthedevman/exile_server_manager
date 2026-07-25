@@ -12,6 +12,14 @@
 module TerritoryLoading
   extend ActiveSupport::Concern
 
+  included do
+    def territory_admin?
+      current_server.community.territory_admin?(current_user)
+    end
+
+    helper_method :territory_admin?
+  end
+
   private
 
   def load_territory(territory_id, force: false)

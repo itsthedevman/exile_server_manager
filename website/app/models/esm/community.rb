@@ -97,6 +97,34 @@ module ESM
       validate_and_decorate_roles(dashboard_access_role_ids)
     end
 
+    ##
+    # This community's territory-admin users: members holding a Discord administrator role or one of the community's
+    # configured territory-admin roles, plus the guild owner. Only the bot can resolve Discord role membership, so it
+    # computes the set and writes the resolved ids to the store this app shares with it; this reads them back, warming a
+    # cold key through the bot on first read (a server up long enough for the entry to lapse without a reboot to refresh
+    # it). Memoized per instance.
+    #
+    # @return [ActiveRecord::Relation<ESM::User>] the territory-admin users; empty when the community has none or the
+    #   bot can't be reached
+    #
+    def territory_admin_users
+      @territory_admin_users ||=
+        ESM::User.where(id: ESM.cache.read(territory_admin_users_cache_key) || warm_territory_admin_ids).load
+    end
+
+    #
+    # Whether the user holds territory-admin rights in this community. A territory admin gets write access to every
+    # territory's web actions (arma still enforces the actual in-game rights), a broader grant than access to a single
+    # command like info.
+    #
+    # @param user [ESM::User]
+    #
+    # @return [Boolean]
+    #
+    def territory_admin?(user)
+      territory_admin_users.include?(user)
+    end
+
     def update_community_id!(new_id)
       # Adjust the server IDs
       ESM::Server.where(community_id: id).each do |server|
@@ -111,6 +139,16 @@ module ESM
     end
 
     private
+
+    # Asks the bot to compute the territory-admin users (which repopulates the shared cache for later reads) and hands
+    # back their ids. A down or unreachable bot fails closed - an empty list reads as "not a territory admin" - so a
+    # transient outage denies the elevated action rather than 500ing the page.
+    def warm_territory_admin_ids
+      ESM::Service::API.call(:territory_admins, community_id: id) || []
+    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+      Rails.logger.warn("[territory_admin_uids] warm failed: #{e.message}")
+      []
+    end
 
     def validate_and_decorate_roles(role_ids)
       return [] if role_ids.blank?

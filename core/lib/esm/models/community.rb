@@ -128,6 +128,13 @@ module ESM
       @command_configurations_lookup ||= command_configurations.index_by(&:command_name)
     end
 
+    # The shared-cache key under which this community's resolved territory-admin user ids live. Only the bot can resolve
+    # Discord role membership, so it computes and writes this key; the website reads it. Defined here so both sides key
+    # it identically and never drift apart.
+    def territory_admin_users_cache_key
+      "community:#{id}:territory_admin_users"
+    end
+
     private
 
     def generate_community_id

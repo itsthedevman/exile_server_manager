@@ -10,6 +10,17 @@
 module PlayerLoading
   extend ActiveSupport::Concern
 
+  included do
+    # Whether a settled command's overview belongs to the viewer. False on the admin player show page, where the session
+    # marks a viewed player, so the refresh renders that player (their linked avatar, no self-service actions) rather
+    # than the viewer. Read alongside refreshed_player so the reloaded player and the chrome around it always agree.
+    def viewing_self?
+      session[:viewing_player_uid].blank?
+    end
+
+    helper_method :viewing_self?
+  end
+
   private
 
   def load_player(force: false)
@@ -69,12 +80,5 @@ module PlayerLoading
     return if snapshot.blank?
 
     ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
-  end
-
-  # Whether a settled command's overview belongs to the viewer. False on the admin player show page, where the session
-  # marks a viewed player, so the refresh renders that player (their linked avatar, no self-service actions) rather than
-  # the viewer. Read alongside refreshed_player so the reloaded player and the chrome around it always agree.
-  def viewing_self?
-    session[:viewing_player_uid].blank?
   end
 end
