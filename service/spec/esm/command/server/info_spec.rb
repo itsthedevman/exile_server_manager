@@ -143,6 +143,66 @@ describe ESM::Command::Server::Info, category: "command" do
   end
 
   describe "V2", v2: true do
+    # The website runs the same query but wants the raw player or territory data to render its own page.
+    describe "#on_website_execute", :requires_connection do
+      include_context "connection"
+
+      let(:territory_id) { nil }
+      let(:target) { user.steam_uid }
+
+      subject(:result) do
+        execute_sync!(arguments: {server_id: server.server_id, target:, territory_id:})
+      end
+
+      context "when the target is an alive player" do
+        before { spawn_player_for(user) }
+
+        it "returns the player's data" do
+          player = ESM::Exile::Player.new(server: server, player: result)
+
+          expect(result).to be_present
+          expect(player).to be_alive
+        end
+      end
+
+      context "when the target is a dead player" do
+        before { user.exile_player.destroy! }
+
+        it "returns the player's data, marked not alive" do
+          player = ESM::Exile::Player.new(server: server, player: result)
+
+          expect(player).not_to be_alive
+        end
+      end
+
+      # No account for the uid, so the query finds nothing and the command raises rather than handing back a
+      # half-empty page.
+      context "when the target has not joined the server" do
+        it "raises a check failure" do
+          expect { result }.to raise_error(ESM::Exception::CheckFailure)
+        end
+      end
+
+      context "when the target is a territory" do
+        let(:target) { nil }
+        let(:territory_id) { territory.encoded_id }
+
+        it "returns the territory's data" do
+          exile_territory = ESM::Exile::Territory.new(server: server, territory: result)
+
+          expect(exile_territory.name).to eq(territory.name)
+        end
+      end
+
+      context "when neither a target nor a territory is given" do
+        let(:target) { nil }
+
+        it "raises a check failure" do
+          expect { result }.to raise_error(ESM::Exception::CheckFailure)
+        end
+      end
+    end
+
     describe "#on_execute", requires_connection: true do
       include_context "connection"
 

@@ -19,6 +19,48 @@ describe ESM::Command::Server::Territory, category: "command" do
       expect(command.type).to eq(:player)
     end
 
+    # The website runs the same query but hands back the raw territory for its page. Unlike Discord, a player with no
+    # rights to the territory gets nil rather than an error - the page renders its own unavailable state.
+    describe "#on_website_execute", :requires_connection do
+      include_context "connection"
+
+      subject(:result) do
+        execute_sync!(arguments: {server_id: server.server_id, territory_id: territory.encoded_id})
+      end
+
+      shared_examples("returns_the_territory") do
+        it "is expected to return the territory" do
+          exile_territory = ESM::Exile::Territory.new(server: server, territory: result)
+
+          expect(exile_territory.name).to eq(territory.name)
+        end
+      end
+
+      context "when the player owns the territory" do
+        let(:territory_owner) { user.steam_uid }
+
+        include_examples "returns_the_territory"
+      end
+
+      context "when the player is a moderator of the territory" do
+        let(:territory_moderators) { [user.steam_uid] }
+
+        include_examples "returns_the_territory"
+      end
+
+      context "when the player only has build rights on the territory" do
+        let(:territory_build_rights) { [user.steam_uid] }
+
+        include_examples "returns_the_territory"
+      end
+
+      context "when the player has no rights to the territory" do
+        it "is expected to return nil" do
+          expect(result).to be_nil
+        end
+      end
+    end
+
     describe "#on_execute", :requires_connection do
       include_context "connection"
 
