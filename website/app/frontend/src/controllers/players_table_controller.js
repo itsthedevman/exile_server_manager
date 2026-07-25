@@ -22,14 +22,38 @@ export default class extends ApplicationController {
 
   static values = {
     perPage: { type: Number, default: 50 },
+    storageKey: { type: String, default: "" },
   };
 
   connect() {
+    this.restoreState();
+    this.render();
+  }
+
+  // Back-navigation reconnects the controller against Turbo's restored DOM, which would otherwise snap the reader back
+  // to page one of the unsorted list. Rehydrating from sessionStorage lands them on the same sort, filter, and page
+  // they left. An absent key (the only caller that sets one is the admin listing) makes this a no-op.
+  restoreState() {
     this.page = 1;
     this.sortKey = null;
     this.sortDirection = 1;
     this.sortNumeric = false;
-    this.render();
+
+    const saved = this.readState();
+    if (saved === null) return;
+
+    this.sortKey = saved.sortKey ?? null;
+    this.sortDirection = saved.sortDirection ?? 1;
+    this.sortNumeric = saved.sortNumeric ?? false;
+    this.page = saved.page ?? 1;
+
+    if (this.hasSearchTarget && typeof saved.search === "string") {
+      this.searchTarget.value = saved.search;
+    }
+
+    if (this.hasOnlineOnlyTarget && typeof saved.onlineOnly === "boolean") {
+      this.onlineOnlyTarget.checked = saved.onlineOnly;
+    }
   }
 
   // Any change to what's being matched sends the reader back to the first page, since the page they were on may no
@@ -102,6 +126,10 @@ export default class extends ApplicationController {
     this.pageInfoTarget.textContent = `Page ${this.page} of ${pageCount}`;
     this.previousTarget.disabled = this.page === 1;
     this.nextTarget.disabled = this.page === pageCount;
+
+    // Every control funnels through render, so persisting here captures the whole view state on any change with one
+    // call site rather than sprinkling saves through each handler.
+    this.saveState();
   }
 
   matchingRows() {
@@ -159,6 +187,37 @@ export default class extends ApplicationController {
   // data-sort-key="score" addresses the row's data-sort-score, which reaches the element as dataset.sortScore.
   sortAttribute() {
     return `sort${this.sortKey.charAt(0).toUpperCase()}${this.sortKey.slice(1)}`;
+  }
+
+  readState() {
+    if (this.storageKeyValue === "") return null;
+
+    try {
+      const raw = window.sessionStorage.getItem(this.storageKeyValue);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  saveState() {
+    if (this.storageKeyValue === "") return;
+
+    const state = {
+      sortKey: this.sortKey,
+      sortDirection: this.sortDirection,
+      sortNumeric: this.sortNumeric,
+      page: this.page,
+      search: this.hasSearchTarget ? this.searchTarget.value : "",
+      onlineOnly: this.hasOnlineOnlyTarget && this.onlineOnlyTarget.checked,
+    };
+
+    try {
+      window.sessionStorage.setItem(this.storageKeyValue, JSON.stringify(state));
+    } catch {
+      // sessionStorage can be full or blocked (private mode); persistence is a nicety, so a failure just means the
+      // next back-navigation falls back to the default view.
+    }
   }
 
   pageCount() {
