@@ -109,6 +109,12 @@ Rails.application.routes.draw do
     end
   end
 
+  if Rails.env.local?
+    # /dev/login/:discord_id
+    # Signs in as an existing user so local browsing and browser-driven tests skip Discord OAuth.
+    get "dev/login/:discord_id", to: "dev/sessions#create", as: :dev_login
+  end
+
   # /discover
   resource :discover, only: [:show]
 
