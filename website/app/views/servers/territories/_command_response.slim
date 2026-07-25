@@ -1,6 +1,6 @@
-/ locals: command, dom_id, current_server, refreshed_territory, refreshed_player, retry_territory
+/ locals: command, dom_id, current_server, refreshed_territory, refreshed_player, viewing_self, retry_territory
 - if command.settled?
-  = render "servers/territories/command_settled", command:, target: dom_id, current_server:, refreshed_territory:, refreshed_player:, retry_territory:
+  = render "servers/territories/command_settled", command:, target: dom_id, current_server:, refreshed_territory:, refreshed_player:, viewing_self:, retry_territory:
 - else
   = turbo_stream.replace dom_id do
     = render "servers/territories/command_processing", command:

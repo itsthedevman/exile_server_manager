@@ -74,6 +74,30 @@ module PlayersHelper
     row.values_at(:name, :uid).join(" ").downcase
   end
 
+  # The avatar for a player overview: the current user's on the self view, the viewed player's on the admin view. Falls
+  # back to the default when there's no linked Steam avatar, which an unregistered UID always lacks.
+  def player_avatar_url(player, viewing_self:)
+    avatar_account(player, viewing_self:)&.steam_data&.avatar || image_url("default_steam_avatar.png")
+  end
+
+  def player_avatar_alt(player, viewing_self:)
+    avatar_account(player, viewing_self:)&.steam_data&.username || "Default Steam Avatar"
+  end
+
+  # Whose account backs the overview avatar. The self view is the current user; the admin view is the viewed player's
+  # linked account, which is nil when they never registered here (an admin can look up any UID off an RPT log or ban
+  # list), leaving the avatar helpers to fall back to the default. Memoized per uid because both avatar helpers ask, and
+  # the key? guard caches a miss so an unregistered UID isn't looked up twice.
+  def avatar_account(player, viewing_self:)
+    return current_user if viewing_self
+    return if player.uid.blank?
+
+    @avatar_accounts ||= {}
+    return @avatar_accounts[player.uid] if @avatar_accounts.key?(player.uid)
+
+    @avatar_accounts[player.uid] = ESM::User.find_by(steam_uid: player.uid)
+  end
+
   # Bootstrap alert variant for the stuck/reset outcome: info while the command is still in flight, danger on failure,
   # success once the character has been reset.
   def stuck_result_variant(command)

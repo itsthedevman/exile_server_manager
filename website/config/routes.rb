@@ -180,7 +180,7 @@ Rails.application.routes.draw do
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
       # /servers/:server_id/players
-      resources :players, controller: "servers/players", only: [:index], param: :user_id do
+      resources :players, controller: "servers/players", only: [:index, :show], param: :uid do
         collection do
           # /servers/:server_id/players/me
           get :me

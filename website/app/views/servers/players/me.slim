@@ -9,7 +9,7 @@
     
   - if current_player
     #player_overview
-      = render "servers/players/overview", current_server:, current_player:
+      = render "servers/players/overview", current_server:, current_player:, viewing_self: true
 
     / Territory detail modal — lazy-loaded into the frame when a card is clicked
     = render "shared/turbo_modal", id: "territory_detail", class: "modal-lg"

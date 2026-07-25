@@ -24,7 +24,7 @@
       p.text-muted.mb-0 No one has connected to #{current_server.server_name} in this window. Try a wider one.
 
   - else
-    div data-controller="players-table"
+    div data-controller="players-table" data-players-table-storage-key-value="players-table:#{current_server.public_id}:#{lookback}"
       .card-body.border-bottom
         .row.g-2.align-items-center
           .col-12.col-md-5
@@ -63,6 +63,8 @@
               th.sortable-header.text-end role="button" data-sort-key="connections" data-sort-numeric="true" data-players-table-target="sortHeader" data-action="click->players-table#sort"
                 | Connections
                 i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.text-end
+                span.visually-hidden Actions
           tbody
             - players.each do |player|
               tr data-players-table-target="row" data-online=player[:online].to_s data-search=player_search_terms(player) data-sort-name=player[:name].to_s.downcase data-sort-status=(player[:online] ? 1 : 0) data-sort-poptabs=(player[:money] || -1) data-sort-score=player[:score].to_i data-sort-kd=player_kill_death_ratio(player) data-sort-connections=player[:total_connections].to_i
@@ -95,6 +97,11 @@
                   = player_kill_death_ratio(player)
                   .small.text-muted.ms-1 = "#{player[:kills]}/#{player[:deaths]}"
                 td.text-end = number_with_delimiter(player[:total_connections])
+                td.text-end
+                  / Breaks out of the players_list frame this row lives in - otherwise Turbo tries to load the show
+                  / page into the frame and discards it for lacking a matching turbo-frame.
+                  = link_to server_player_path(current_server.public_id, player[:uid]), class: "btn btn-sm btn-outline-primary", title: "View player", data: {turbo_frame: "_top"}
+                    i.bi.bi-box-arrow-in-right
 
       .card-body.text-center.py-5[hidden data-players-table-target="empty"]
         i.bi.bi-search.text-muted.fs-1.d-block.mb-3

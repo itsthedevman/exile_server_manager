@@ -47,65 +47,32 @@ module ESM
           #   that it will do some filter...
           embed =
             if arguments.territory_id.present?
-              query_for_territory_info!
+              query_for_territory_info!.tap do |territory|
+                territory = ESM::Exile::Territory.new(server: target_server, territory:)
+                territory.to_embed
+              end
             else
-              query_for_player_info!
+              query_for_player_info!.tap do |player|
+                player = ESM::Exile::Player.new(server: target_server, player:)
+                player.to_embed
+              end
             end
 
           reply(embed)
         end
 
-        private
+        def on_website_execute
+          # Ensure we were given a target or territory ID
+          check_for_no_target!
 
-        def query_for_territory_info!
-          territory = query_exile_database!(
-            "territory_info",
-            territory_id: arguments.territory_id
-          ).first
+          results =
+            if arguments.territory_id.present?
+              query_for_territory_info!
+            else
+              query_for_player_info!
+            end
 
-          check_for_territory_info!(territory)
-
-          # This takes a hash
-          territory = ESM::Exile::Territory.new(server: target_server, territory:)
-          territory.to_embed
-        end
-
-        def query_for_player_info!
-          player = query_exile_database!(
-            "player_info",
-            uid: target_user.steam_uid
-          ).first
-
-          check_for_player_info!(player)
-
-          player = ESM::Exile::Player.new(server: target_server, player:)
-          player.to_embed
-        end
-
-        def check_for_no_target!
-          return unless arguments.target.blank? && arguments.territory_id.blank?
-
-          raise_error!(:no_target, user: current_user)
-        end
-
-        def check_for_player_info!(result)
-          return if result.present?
-
-          raise_error!(
-            :no_player_info,
-            user: current_user,
-            target: arguments.target
-          )
-        end
-
-        def check_for_territory_info!(result)
-          return if result.present?
-
-          raise_error!(
-            :no_territory_info,
-            user: current_user,
-            territory_id: arguments.territory_id
-          )
+          reply(results)
         end
 
         module V1
@@ -143,6 +110,56 @@ module ESM
 
             raise_error!(:no_response, user: current_user)
           end
+        end
+
+        private
+
+        def query_for_territory_info!
+          territory = query_exile_database!(
+            "territory_info",
+            territory_id: arguments.territory_id
+          ).first
+
+          check_for_territory_info!(territory)
+
+          territory
+        end
+
+        def query_for_player_info!
+          player = query_exile_database!(
+            "player_info",
+            uid: target_user.steam_uid
+          ).first
+
+          check_for_player_info!(player)
+
+          player
+        end
+
+        def check_for_no_target!
+          return unless arguments.target.blank? && arguments.territory_id.blank?
+
+          raise_error!(:no_target, user: current_user)
+        end
+
+        def check_for_player_info!(result)
+          return if result.present?
+
+          raise_error!(
+            :no_player_info,
+            user: current_user,
+            target: arguments.target
+          )
+        end
+
+        def check_for_territory_info!(result)
+          return if result.present?
+
+          raise_error!(
+            :no_territory_info,
+            user: current_user,
+            territory_id: arguments.territory_id
+          )
         end
       end
     end

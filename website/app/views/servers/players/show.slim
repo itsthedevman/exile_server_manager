@@ -1,0 +1,37 @@
+/ locals: current_server, target_uid, target_player, fetched_at
+- content_for :title, "#{target_player&.name || "Player"} on #{current_server.server_name}"
+
+= render "servers/container", current_server: do
+  / Page header
+  .d-flex.mb-4.align-items-center.gap-3
+    = link_to server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary", title: "Back to players"
+      i.bi.bi-arrow-left
+    div
+      h1.mb-1 Player details
+      p.text-muted.mb-0.font-monospace = target_uid
+    - if fetched_at
+      .ms-auto
+        = render "shared/data_freshness", at: fetched_at
+
+  - if target_player
+    #player_overview
+      = render "servers/players/overview", current_server:, current_player: target_player, viewing_self: false
+
+    / Territory detail modal — lazy-loaded into the frame when a card is clicked
+    = render "shared/turbo_modal", id: "territory_detail", class: "modal-lg"
+
+  - elsif current_server.connected?
+    / Server is up, but no character answered for this UID (never spawned here, or a bad UID)
+    .card.border-secondary
+      .card-body.text-center.py-5
+        i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
+        h5.text-light.mb-2 No character found
+        p.text-muted.mb-0 No player with that Steam UID has a character on #{current_server.server_name}.
+
+  - else
+    / Server is offline, so we couldn't load the player's data
+    .card.border-secondary
+      .card-body.text-center.py-5
+        i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
+        h5.text-light.mb-2 #{current_server.server_name} is offline
+        p.text-muted.mb-0 We can't load this player while the server is offline. Check back once it's back up.

@@ -35,13 +35,46 @@ module PlayerLoading
     ESM::Exile::Player.new(server: current_server, player: data)
   end
 
-  # The fresh player snapshot to fold into a settled command's /me refresh. Pay
-  # and upgrade both draw from the locker, so a completed command leaves the
-  # page's poptab totals (and the territory cards' due state) stale. Forces a
-  # fresh fetch; a failure returns nil so the page is left untouched.
+  # One target player's on-server snapshot, read as the current user through the info command (the admin path) rather
+  # than me. It carries the read time alongside the payload so the show page's freshness stamp reports the read rather
+  # than the render. Cached briefly and keyed on server and target, so several admins opening the same player share one
+  # read and a settle refresh reuses the entry the show page warmed. The nil caches too, so a down server or an unknown
+  # uid isn't retried on every reload.
+  def target_player_snapshot(uid, force: false)
+    key = "player_info_#{current_server.id}_#{uid}"
+    ESM.cache.delete(key) if force
+
+    ESM.cache.fetch(key, expires_in: 5.seconds) do
+      data = call_sync_command("info", arguments: {target: uid})
+
+      data.blank? ? nil : {fetched_at: Time.current, data:}
+    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+      Rails.logger.warn("[target_player_snapshot] player info unavailable: #{e.message}")
+      nil
+    end
+  end
+
+  # The fresh player to fold into a settled command's overview refresh. Pay and upgrade both draw from the locker, and a
+  # rename changes a territory's id, so a completed command leaves the overview's poptab totals and its territory cards'
+  # ids stale. Which player it reloads follows the session: the admin show page marks the viewed player, so the refresh
+  # reads that player through info rather than the viewer's own me snapshot; /me clears the marker and reloads the
+  # viewer. A failure returns nil so the overview is left untouched.
   def refreshed_player(command)
     return unless command.completed?
 
-    load_player(force: true)
+    viewed_uid = session[:viewing_player_uid]
+    return load_player(force: true) if viewed_uid.blank?
+
+    snapshot = target_player_snapshot(viewed_uid, force: true)
+    return if snapshot.blank?
+
+    ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
+  end
+
+  # Whether a settled command's overview belongs to the viewer. False on the admin player show page, where the session
+  # marks a viewed player, so the refresh renders that player (their linked avatar, no self-service actions) rather than
+  # the viewer. Read alongside refreshed_player so the reloaded player and the chrome around it always agree.
+  def viewing_self?
+    session[:viewing_player_uid].blank?
   end
 end

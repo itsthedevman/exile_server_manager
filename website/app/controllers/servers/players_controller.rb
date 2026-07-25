@@ -46,8 +46,38 @@ module Servers
       }
     end
 
+    # One player's full on-server snapshot - the admin counterpart to /me, reached from the listing's row button or a
+    # direct UID. It runs as the admin against a target UID, so a player who's dropped off the listing's recency window
+    # is still reachable by UID alone.
+    def show
+      return unless check_for_command_access("info")
+
+      # Marks that the on-screen overview belongs to the viewed player.
+      # A territory action taken from here then refreshes that player's overview through info rather than the viewer's
+      # own me snapshot. See PlayerLoading#refreshed_player.
+      session[:viewing_player_uid] = target_uid
+
+      snapshot = target_player_snapshot(target_uid)
+
+      target_player =
+        if snapshot
+          ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
+        end
+
+      render locals: {
+        current_server:,
+        target_uid:,
+        target_player:,
+        fetched_at: snapshot&.dig(:fetched_at)
+      }
+    end
+
     def me
       return unless check_for_command_access("me")
+
+      # The overview here is the viewer's own; clearing the marker means a territory action refreshes it from me rather
+      # than a stale viewed player.
+      session.delete(:viewing_player_uid)
 
       render locals: {
         current_server:,
@@ -83,6 +113,12 @@ module Servers
 
     def current_player
       load_player
+    end
+
+    # The Steam UID whose character the show page describes. It's an Arma-side lookup key handed to the info command as
+    # its target, not the acting caller - the caller stays current_user.
+    def target_uid
+      params[:uid]
     end
 
     # Anything unrecognized falls back to the default, so a hand-edited query string can't hand the command a window

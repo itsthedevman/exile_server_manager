@@ -1,31 +1,19 @@
-/ The player's on-server snapshot: identity, poptab/stat cards, and territory
-/ cards. Rendered on the initial /me load and re-rendered into #player_overview
-/ after a successful action that moves the locker (pay, upgrade), so the page
-/ reflects the new totals and due state without a manual reload.
-/ locals: current_server, current_player
-/ Identity strip
+/ locals: current_server, current_player, viewing_self
 .card.mb-4
   .card-body
     .d-flex.align-items-center.gap-3.flex-wrap
-      - if current_user.steam_data&.avatar
-        img.rounded-circle.border.border-2.border-success[
-          src=current_user.steam_data.avatar
-          alt=current_user.steam_data.username
-          width="64"
-          height="64"
-        ]
-      - else
-        img.rounded-circle.border.border-2.border-success[
-          src=image_url("default_steam_avatar.png")
-          alt="Default Steam Avatar"
-          width="64"
-          height="64"
-        ]
+      img.rounded-circle.border.border-2.border-success[
+        src=player_avatar_url(current_player, viewing_self:)
+        alt=player_avatar_alt(current_player, viewing_self:)
+        width="64"
+        height="64"
+      ]
       div
         h2.mb-0 = current_player.name
         small.text-muted.font-monospace = current_player.uid
-      .ms-auto
-        = render "servers/players/actions", current_server:
+      - if viewing_self
+        .ms-auto
+          = render "servers/players/actions", current_server:
 
 .row.g-4.mb-4
   / Character status

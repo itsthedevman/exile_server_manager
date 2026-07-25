@@ -50,6 +50,7 @@ module Servers
         current_server: command.server,
         refreshed_territory: refreshed_territory(command),
         refreshed_player: refreshed_player(command),
+        viewing_self: viewing_self?,
         retry_territory: retry_territory(command)
       }
     end
@@ -85,6 +86,7 @@ module Servers
         current_server:,
         refreshed_territory: refreshed_territory(command),
         refreshed_player: refreshed_player(command),
+        viewing_self: viewing_self?,
         retry_territory: retry_territory(command)
       }
     end

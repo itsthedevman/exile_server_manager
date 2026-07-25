@@ -1,4 +1,4 @@
-/ locals: command, target, current_server, refreshed_territory, refreshed_player, retry_territory
+/ locals: command, target, current_server, refreshed_territory, refreshed_player, viewing_self, retry_territory
 = turbo_stream.replace target do
   = render "servers/territories/command_result", command:, retry_territory:
 
@@ -11,4 +11,4 @@
 
 - if refreshed_player.present?
   = turbo_stream.update "player_overview" do
-    = render "servers/players/overview", current_server:, current_player: refreshed_player
+    = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:
