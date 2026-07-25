@@ -1,15 +1,19 @@
 / locals: server_public_id, territory_id, surface
 / optional: replace_id, open, value
-div id=command_action_id("set_id", territory_id, surface) data-controller="inline-edit" data-inline-edit-open-value=(local_assigns[:open] ? "true" : "false") data-inline-edit-current-value=territory_id
-  span.d-inline-flex.align-items-center.gap-2 data-inline-edit-target="display"
+- if command_accessible?("set_id") && (viewing_self? || territory_admin?)
+  div id=command_action_id("set_id", territory_id, surface) data-controller="inline-edit" data-inline-edit-open-value=(local_assigns[:open] ? "true" : "false") data-inline-edit-current-value=territory_id
+    span.d-inline-flex.align-items-center.gap-2 data-inline-edit-target="display"
+      code.small.text-secondary-emphasis = territory_id
+      button.btn.btn-sm.btn-link.p-0.lh-1.text-secondary type="button" title="Rename territory" aria-label="Rename territory" data-action="inline-edit#edit"
+        i.bi.bi-pencil-square
+    = form_with url: server_territory_set_id_path(server_public_id, territory_id), method: :post, class: "d-none d-inline-flex align-items-center gap-1", data: {inline_edit_target: "form", action: "submit->inline-edit#submit"} do |form|
+      = form.text_field :custom_id, value: local_assigns.fetch(:value) { territory_id }, minlength: 3, maxlength: 20, pattern: "\\w+", required: true, autocomplete: "off", spellcheck: "false", title: "3 to 20 characters, using only letters, numbers, and underscores", class: "form-control form-control-sm font-monospace", style: "width: 14ch;", data: {inline_edit_target: "input", action: "keydown.esc->inline-edit#cancel"}
+      = form.hidden_field :idempotency_key, value: SecureRandom.uuid
+      = form.hidden_field :dom_id, value: local_assigns.fetch(:replace_id) { command_action_id("set_id", territory_id, surface) }
+      button.btn.btn-sm.btn-success type="submit" title="Save" aria-label="Save"
+        i.bi.bi-check-lg
+      button.btn.btn-sm.btn-outline-secondary type="button" title="Cancel" aria-label="Cancel" data-action="inline-edit#cancel"
+        i.bi.bi-x-lg
+- else 
+  span.d-inline-flex.align-items-center.gap-2
     code.small.text-secondary-emphasis = territory_id
-    button.btn.btn-sm.btn-link.p-0.lh-1.text-secondary type="button" title="Rename territory" aria-label="Rename territory" data-action="inline-edit#edit"
-      i.bi.bi-pencil-square
-  = form_with url: server_territory_set_id_path(server_public_id, territory_id), method: :post, class: "d-none d-inline-flex align-items-center gap-1", data: {inline_edit_target: "form", action: "submit->inline-edit#submit"} do |form|
-    = form.text_field :custom_id, value: local_assigns.fetch(:value) { territory_id }, minlength: 3, maxlength: 20, pattern: "\\w+", required: true, autocomplete: "off", spellcheck: "false", title: "3 to 20 characters, using only letters, numbers, and underscores", class: "form-control form-control-sm font-monospace", style: "width: 14ch;", data: {inline_edit_target: "input", action: "keydown.esc->inline-edit#cancel"}
-    = form.hidden_field :idempotency_key, value: SecureRandom.uuid
-    = form.hidden_field :dom_id, value: local_assigns.fetch(:replace_id) { command_action_id("set_id", territory_id, surface) }
-    button.btn.btn-sm.btn-success type="submit" title="Save" aria-label="Save"
-      i.bi.bi-check-lg
-    button.btn.btn-sm.btn-outline-secondary type="button" title="Cancel" aria-label="Cancel" data-action="inline-edit#cancel"
-      i.bi.bi-x-lg

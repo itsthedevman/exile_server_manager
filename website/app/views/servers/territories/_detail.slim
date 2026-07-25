@@ -13,9 +13,8 @@
     ]
     .flex-grow-1.overflow-hidden
       h5.modal-title.mb-1.text-truncate = current_territory.name
-      - if command_accessible?("set_id") && (viewing_self? || territory_admin?)
-        .d-flex.align-items-center.gap-2
-          = render "servers/territories/set_id", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal"
+      .d-flex.align-items-center.gap-2
+        = render "servers/territories/set_id", server_public_id: current_server.public_id, territory_id: current_territory.id, surface: "modal"
     button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
 
   .modal-body
