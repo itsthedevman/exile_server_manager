@@ -54,6 +54,14 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          if target_user
+            query_exile_database!("reset_player", uid: target_user.steam_uid)
+          else
+            query_exile_database!("reset_all")
+          end
+        end
+
         def on_request_accepted
           if target_user
             query_exile_database!("reset_player", uid: target_user.steam_uid)

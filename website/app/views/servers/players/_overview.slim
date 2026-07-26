@@ -1,4 +1,4 @@
-/ locals: current_server, current_player, viewing_self
+/ locals: current_server, current_player, viewing_self, fetched_at
 .card.mb-4
   .card-body
     .d-flex.align-items-center.gap-3.flex-wrap
@@ -8,9 +8,8 @@
           h2.mb-0 = current_player.name
           = render "servers/players/status_pill", player: current_player
         small.text-muted.font-monospace = current_player.uid
-      - if viewing_self
-        .ms-auto
-          = render "servers/players/actions", current_server:
+      .ms-auto
+        = render "shared/data_freshness", at: fetched_at
 
 .row.g-4.mb-4
   / Character status

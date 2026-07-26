@@ -50,7 +50,7 @@ module PlayerLoading
   # read and a settle refresh reuses the entry the show page warmed. The nil caches too, so a down server or an unknown
   # uid isn't retried on every reload.
   def target_player_snapshot(uid, force: false)
-    key = "player_info_#{current_server.id}_#{uid}"
+    key = target_player_cache_key(uid)
     ESM.cache.delete(key) if force
 
     ESM.cache.fetch(key, expires_in: 5.seconds) do
@@ -84,5 +84,11 @@ module PlayerLoading
     # The command reads as the current user against the current server, so the key is built from the same pair.
     # Keying it any other way would file one player's payload under another's.
     "player_#{current_server.id}_#{current_user.steam_uid}"
+  end
+
+  # Keyed on server and target uid, matching the admin info read. Shared so target_player_snapshot and a reset that
+  # drops the read after wiping the character key it identically.
+  def target_player_cache_key(uid)
+    "player_info_#{current_server.id}_#{uid}"
   end
 end

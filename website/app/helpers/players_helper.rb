@@ -129,19 +129,41 @@ module PlayersHelper
       end
   end
 
-  # Bootstrap alert variant for the stuck/reset outcome: info while the command is still in flight, danger on failure,
-  # success once the character has been reset.
-  def stuck_result_variant(command)
-    return "alert-info" unless command.settled?
-
-    command.failed? ? "alert-danger" : "alert-success"
+  # Whether a reset command is the player's own self-service stuck reset (command "stuck") rather than an admin resetting
+  # another player (command "reset"). Drives the first-person-versus-about-the-character copy and the overview it flips.
+  def player_self_reset?(command)
+    command.command_name == "stuck"
   end
 
-  # Player-facing copy for the stuck/reset outcome, mirroring #stuck_result_variant's three states.
-  def stuck_result_message(command)
-    return "Resetting your character..." unless command.settled?
-    return command.error_message if command.failed?
+  # URL the service-command poller watches until a dispatched reset settles. Passes the command's public_id explicitly
+  # (its to_param is the numeric id, but the status action looks it up by public_id, scoped to the current user).
+  def player_command_status_path(command)
+    command_status_server_players_path(command.server.public_id, command.public_id)
+  end
 
-    "Your character has been reset - hop back in."
+  # The spinner label shown while a reset is still in flight.
+  def reset_processing_label(command)
+    player_self_reset?(command) ? "Resetting your character..." : "Resetting the character..."
+  end
+
+  # The toast that announces a settled reset's outcome - success in green, failure in red.
+  def reset_command_outcome_toast(command)
+    return create_success_toast(reset_success_message(command), title: "Character reset", color: "green") if command.completed?
+
+    create_error_toast(reset_command_failure_message(command), title: "Reset failed", color: "red")
+  end
+
+  # Success copy for a settled reset. Self-service speaks in the first person; an admin reset speaks about the character.
+  def reset_success_message(command)
+    player_self_reset?(command) ? "Your character has been reset - hop back in." : "The character has been reset."
+  end
+
+  # User-facing reason a reset didn't complete. A timeout is hedged because the delete may still have landed; a recorded
+  # error_message is a rejection from the extension and is shown verbatim; anything else falls to a generic line.
+  def reset_command_failure_message(command)
+    return "The reset timed out - it may still have gone through. Refresh in a moment." if command.timed_out?
+    return command.error_message if command.error_message.present?
+
+    "The reset couldn't be completed. Try again in a moment."
   end
 end

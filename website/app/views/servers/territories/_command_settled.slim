@@ -11,4 +11,4 @@
 
 - if refreshed_player.present?
   = turbo_stream.update "player_overview" do
-    = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:
+    = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:, fetched_at: Time.current

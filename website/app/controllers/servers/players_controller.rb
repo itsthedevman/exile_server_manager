@@ -99,14 +99,54 @@ module Servers
     def reset_me
       return unless check_for_command_access("stuck")
 
-      target = params.require(:dom_id)
       command = call_async_command("stuck")
 
       ESM.cache.delete(current_player_cache_key) # Drop the cache, the player no longer exists in the database
-      render turbo_stream: turbo_stream.replace(target, partial: "reset_result", locals: {target:, command:})
+      render_reset_response(command)
+    end
+
+    # Admin character reset for the viewed player. Like reset_me, the confirm dialog is the web stand-in for the Discord
+    # self-confirmation, so the web path runs straight through. Keyed off the path uid rather than a loaded character, so
+    # it reaches the bugged/unspawnable player reset exists to fix even when info returned nothing to show.
+    def reset
+      return unless check_for_command_access("reset")
+
+      command = call_async_command("reset", arguments: {target: target_uid})
+
+      ESM.cache.delete(target_player_cache_key(target_uid)) # Drop the cache, the character no longer exists
+      render_reset_response(command)
+    end
+
+    # Polled by the service-command Stimulus controller after a reset dispatch, until the command settles. Scoped to the
+    # current user so nobody can watch another player's command by id. Renders no streams while the row is still pending,
+    # so the poller leaves its spinner up until the command reaches a terminal state.
+    def status
+      command = ESM::ServiceCommand.find_by(public_id: params[:command_id], user_id: current_user.id)
+      return head :not_found if command.nil?
+
+      render locals: {
+        command:,
+        current_server: command.server,
+        refreshed_player: refreshed_player(command),
+        viewing_self: viewing_self?
+      }
     end
 
     private
+
+    # Renders the shared reset command_response: a settled command fires its outcome toast and, on success, re-renders the
+    # overview from the refreshed post-reset player - all we still hold (locker, scoreboard, territories) with the
+    # character read as gone - falling back to the no-character empty state only when nothing remains to show. A
+    # still-pending command drops a spinner that polls #status until it settles.
+    def render_reset_response(command)
+      render partial: "command_response", locals: {
+        command:,
+        dom_id: params.require(:dom_id),
+        current_server:,
+        refreshed_player: refreshed_player(command),
+        viewing_self: viewing_self?
+      }
+    end
 
     def current_server
       @current_server ||= ESM::Server.includes(community: :command_configurations).find_by_public_id(params[:server_id])
