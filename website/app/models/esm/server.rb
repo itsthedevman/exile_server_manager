@@ -45,7 +45,7 @@ module ESM
 
     def connected?
       Rails.cache.fetch("server:#{id}:connected", expires_in: 10.seconds) do
-        ESM::Service::API.call(:servers_connected, id:)
+        ESM::Service::API.call(:servers_connected, id:, idempotent: true)
       rescue ESM::Service::API::Unreachable
         # Bot/NATS not answering: degrade to "not connected" rather than 500ing
         # the page. Cached for the same window so we don't hammer a dead bot.

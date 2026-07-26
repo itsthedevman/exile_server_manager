@@ -64,12 +64,14 @@ module Commands
   def call_sync_command(command_name, arguments: {})
     raise ArgumentError, "Unknown command: #{command_name}" if ESM::Command[command_name].nil?
 
+    # A sync command is a read the page is blocking on, so a timeout is safe to retry - it can't double-run anything.
     ESM::Service::API.call(
       :sync_command,
       command_name:,
       user_id: current_user.id,
       community_id: current_server.community.id,
-      arguments: arguments.merge(server_id: current_server.server_id)
+      arguments: arguments.merge(server_id: current_server.server_id),
+      idempotent: true
     )
   end
 

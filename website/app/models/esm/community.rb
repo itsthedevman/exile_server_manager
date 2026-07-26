@@ -44,7 +44,7 @@ module ESM
     end
 
     def modifiable_by?(user)
-      ESM::Service::API.call(:community_modifiable_by, id:, user_id: user.id) || false
+      ESM::Service::API.call(:community_modifiable_by, id:, user_id: user.id, idempotent: true) || false
     end
 
     #
@@ -55,15 +55,15 @@ module ESM
     #   [category_hash, Array<Channel>]... # Categories + channels
     # ]
     def channels
-      @channels ||= ESM::Service::API.call(:community_channels, id:, user_id: nil) || []
+      @channels ||= ESM::Service::API.call(:community_channels, id:, user_id: nil, idempotent: true) || []
     end
 
     def player_channels(user)
-      @player_channels ||= ESM::Service::API.call(:community_channels, id:, user_id: user.id) || []
+      @player_channels ||= ESM::Service::API.call(:community_channels, id:, user_id: user.id, idempotent: true) || []
     end
 
     def roles
-      @roles ||= (ESM::Service::API.call(:community_roles, id:) || []).map(&:to_struct)
+      @roles ||= (ESM::Service::API.call(:community_roles, id:, idempotent: true) || []).map(&:to_struct)
     end
 
     #
@@ -82,7 +82,7 @@ module ESM
     def membership_for(user)
       @memberships ||= {}
       @memberships[user.id] ||= begin
-        payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id)
+        payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id, idempotent: true)
         (payload || {role_ids: [], administrator: false}).to_struct
       end
     end
@@ -150,7 +150,7 @@ module ESM
     # back their ids. A down or unreachable bot fails closed - an empty list reads as "not a territory admin" - so a
     # transient outage denies the elevated action rather than 500ing the page.
     def warm_territory_admin_ids
-      ESM::Service::API.call(:territory_admins, community_id: id) || []
+      ESM::Service::API.call(:territory_admins, community_id: id, idempotent: true) || []
     rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
       Rails.logger.warn("[territory_admin_uids] warm failed: #{e.message}")
       []
