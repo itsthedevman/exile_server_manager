@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "nats/client"
+require "active_support/log_subscriber"
 
 module ESM
   module Service
@@ -22,6 +23,11 @@ module ESM
     #   # => { echo: { hello: "world" }, server_time: ... }
     #
     class API
+      # ANSI bold-on and reset, composed from ActiveSupport's mode table rather than hardcoded so the coloring tracks
+      # whatever codes its SQL logger uses.
+      BOLD = "\e[#{ActiveSupport::LogSubscriber::MODES.fetch(:bold)}m".freeze
+      RESET = "\e[#{ActiveSupport::LogSubscriber::MODES.fetch(:clear)}m".freeze
+
       class << self
         ##
         # Sends a signed request through the shared per-process client.
@@ -101,8 +107,14 @@ module ESM
       #
       def call(action, **payload)
         envelope = build_envelope(action: action, payload: payload)
+        started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
         response = endpoint.request("#{@subject_prefix}#{action}", envelope.to_json, timeout: @timeout)
+
+        # The reply landed, so the bot answered this round trip - log it before parsing, so a bot-level ok:false still
+        # counts as one call made.
+        log_call(action, started_at)
+
         parsed = response.data.parse_json
 
         raise RemoteError.new(:invalid_response, "Response envelope could not be parsed") unless parsed.is_a?(Hash)
@@ -115,6 +127,7 @@ module ESM
         NATS::IO::ConnectionClosedError,
         NATS::IO::ConnectionDrainingError,
         Errno::ECONNREFUSED => e
+        log_call(action, started_at, error: e.message)
         raise Unreachable, e.message
       end
 
@@ -130,6 +143,26 @@ module ESM
       end
 
       private
+
+      # One colored line per bot round trip, shaped like ActiveRecord's SQL logging so the count and timing of
+      # website → bot calls reads at a glance alongside the query log. A completed call logs magenta; a transport failure
+      # logs red with the reason.
+      def log_call(action, started_at, error: nil)
+        duration = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round(1)
+
+        detail = error ? "#{action} (#{error})" : action
+        color = error ? ActiveSupport::LogSubscriber::RED : ActiveSupport::LogSubscriber::MAGENTA
+
+        Rails.logger.debug(colorize("  ESM::Service::API (#{duration}ms)  #{detail}", color))
+      end
+
+      # Wraps a log line in bold color when colorized logging is on and leaves it plain otherwise, following the same
+      # switch ActiveRecord's SQL log obeys so these lines color exactly when those do.
+      def colorize(message, color)
+        return message unless ActiveSupport::LogSubscriber.colorize_logging
+
+        "#{BOLD}#{color}#{message}#{RESET}"
+      end
 
       def endpoint
         return @endpoint if @endpoint
