@@ -72,13 +72,19 @@ module ESM
     # see Discord role membership - so command permission checks source it here. An unseeable guild or membership
     # degrades to an empty membership, which reads as "holds no allowlisted role".
     #
+    # Memoized per user, because a single page resolves several command permissions and each verdict reads this same
+    # membership - without the memo one render fans out into one identical bot call per command checked.
+    #
     # @param user [ESM::User]
     #
     # @return [Struct] responds to #role_ids ([String]) and #administrator (Boolean)
     #
     def membership_for(user)
-      payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id)
-      (payload || {role_ids: [], administrator: false}).to_struct
+      @memberships ||= {}
+      @memberships[user.id] ||= begin
+        payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id)
+        (payload || {role_ids: [], administrator: false}).to_struct
+      end
     end
 
     #
