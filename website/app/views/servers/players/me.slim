@@ -8,7 +8,7 @@
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
         = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your character on #{current_server.server_name}?\nThis wipes your current character - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
           i.bi.bi-arrow-counterclockwise.me-1
-          | I'm stuck - reset character
+          | I'm stuck - reset me!
         #player_action_result
     
   - if current_player

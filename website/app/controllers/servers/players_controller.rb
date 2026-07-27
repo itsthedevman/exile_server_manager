@@ -117,6 +117,18 @@ module Servers
       render_reset_response(command)
     end
 
+    # Admin "reset all characters" - wipes every character on the server. The index toolbar guards it behind a typed
+    # confirmation (the web stand-in for the Discord self-confirmation), so the web path runs straight through with no
+    # target, which the reset command resolves to reset_all. The recently-connected listing is account data reset doesn't
+    # touch, so there's nothing to bust; the short-lived per-player info caches lapse on their own.
+    def reset_all
+      return unless check_for_command_access("reset")
+
+      command = call_async_command("reset")
+
+      render_reset_response(command)
+    end
+
     # Polled by the service-command Stimulus controller after a reset dispatch, until the command settles. Scoped to the
     # current user so nobody can watch another player's command by id. Renders no streams while the row is still pending,
     # so the poller leaves its spinner up until the command reaches a terminal state.

@@ -200,6 +200,9 @@ Rails.application.routes.draw do
           # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
           post :reset_me
 
+          # /servers/:server_id/players/reset_all — admin reset of every character on the server (typed-confirm guarded)
+          post :reset_all
+
           # /servers/:server_id/players/commands/:command_id/status — poller target for an async reset
           get "commands/:command_id/status", action: :status, as: :command_status
         end

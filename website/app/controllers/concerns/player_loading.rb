@@ -71,6 +71,9 @@ module PlayerLoading
   def refreshed_player(command)
     return unless command.completed?
 
+    # A reset-all wipes every character, so there's no single overview to reload - skip the read entirely.
+    return if command.command_name == "reset" && command.arguments[:target].blank?
+
     viewed_uid = session[:viewing_player_uid]
     return load_player(force: true) if viewed_uid.blank?
 

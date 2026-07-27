@@ -129,10 +129,14 @@ module PlayersHelper
       end
   end
 
-  # Whether a reset command is the player's own self-service stuck reset (command "stuck") rather than an admin resetting
-  # another player (command "reset"). Drives the first-person-versus-about-the-character copy and the overview it flips.
-  def player_self_reset?(command)
-    command.command_name == "stuck"
+  # Which flavor of reset a command is, driving the copy and whether a single overview gets refreshed on settle: the
+  # player's own self-service stuck reset, an admin reset of one player, or an admin reset of every character (the reset
+  # command with no target).
+  def reset_kind(command)
+    return :self if command.command_name == "stuck"
+    return :all if command.arguments[:target].blank?
+
+    :player
   end
 
   # URL the service-command poller watches until a dispatched reset settles. Passes the command's public_id explicitly
@@ -143,7 +147,11 @@ module PlayersHelper
 
   # The spinner label shown while a reset is still in flight.
   def reset_processing_label(command)
-    player_self_reset?(command) ? "Resetting your character..." : "Resetting the character..."
+    case reset_kind(command)
+    when :self then "Resetting your character..."
+    when :all then "Resetting stuck players..."
+    else "Resetting the character..."
+    end
   end
 
   # The toast that announces a settled reset's outcome - success in green, failure in red.
@@ -153,9 +161,13 @@ module PlayersHelper
     create_error_toast(reset_command_failure_message(command), title: "Reset failed", color: "red")
   end
 
-  # Success copy for a settled reset. Self-service speaks in the first person; an admin reset speaks about the character.
+  # Success copy for a settled reset. Self-service speaks in the first person; an admin reset speaks about the character(s).
   def reset_success_message(command)
-    player_self_reset?(command) ? "Your character has been reset - hop back in." : "The character has been reset."
+    case reset_kind(command)
+    when :self then "Your character has been reset - hop back in."
+    when :all then "Stuck players on #{command.server.server_name} have been reset."
+    else "The character has been reset."
+    end
   end
 
   # User-facing reason a reset didn't complete. A timeout is hedged because the delete may still have landed; a recorded
