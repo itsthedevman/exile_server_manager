@@ -24,6 +24,9 @@ module Servers
     # burst is the only load the cache has to absorb.
     CACHE_TTL = 5.seconds
 
+    PLAYER_ACTIONS = %w[money locker respect heal kill].freeze
+    BALANCE_ACTIONS = %w[money locker respect].freeze
+
     def index
       return unless check_for_command_access("players")
 
@@ -129,6 +132,27 @@ module Servers
       render_reset_response(command)
     end
 
+    # Admin player actions on the viewed player: heal, kill, or adjust pocket/locker poptabs or respect. The player
+    # command's SQF handles online and offline players alike, so nothing gates here beyond command access. A balance
+    # action carries a magnitude and a give/remove direction, folded into the signed amount the command expects.
+    def modify
+      return unless check_for_command_access("player")
+
+      command = call_async_command(
+        "player",
+        arguments: {target: target_uid, action: player_action, amount: player_amount}
+      )
+
+      ESM.cache.delete(target_player_cache_key(target_uid)) # Balances / character state just changed
+      render partial: "player_action_response", locals: {
+        command:,
+        current_server:,
+        target_uid:,
+        refreshed_player: refreshed_player(command),
+        viewing_self: viewing_self?
+      }
+    end
+
     # Polled by the service-command Stimulus controller after a reset dispatch, until the command settles. Scoped to the
     # current user so nobody can watch another player's command by id. Renders no streams while the row is still pending,
     # so the poller leaves its spinner up until the command reaches a terminal state.
@@ -158,6 +182,26 @@ module Servers
         refreshed_player: refreshed_player(command),
         viewing_self: viewing_self?
       }
+    end
+
+    # The player action to run, constrained to the command's five so a hand-edited form can't smuggle another through.
+    # Named player_action, not action: `action` is Rails' reserved routing key (it holds the controller action), so a
+    # form field of that name never survives into params.
+    def player_action
+      action = params.require(:player_action)
+      return action if PLAYER_ACTIONS.include?(action)
+
+      raise ActionController::BadRequest, "Unknown player action: #{action}"
+    end
+
+    # The signed amount for a balance action - a positive magnitude gives, a negative one removes - or nil for heal and
+    # kill, which take no amount. The web splits give/remove into two buttons; the sign is the only difference the command
+    # sees, which is a Discord-ism the dashboard shouldn't make an admin type.
+    def player_amount
+      return unless BALANCE_ACTIONS.include?(params[:player_action])
+
+      magnitude = params[:amount].to_i.abs
+      (params[:direction] == "remove") ? -magnitude : magnitude
     end
 
     def current_server

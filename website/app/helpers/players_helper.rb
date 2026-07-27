@@ -1,6 +1,21 @@
 # frozen_string_literal: true
 
 module PlayersHelper
+  # The balance actions on the admin player card: each takes a magnitude and a give/remove direction, folded into the
+  # signed amount the player command expects. Kept here so the card iterates config rather than hard-coding three rows.
+  PLAYER_BALANCE_ACTIONS = [
+    {action: "money", label: "Pocket", icon: "cash-stack"},
+    {action: "locker", label: "Locker", icon: "safe2"},
+    {action: "respect", label: "Respect", icon: "star-fill"}
+  ].freeze
+
+  # The character actions: single-button, no amount. Kill confirms because it's destructive to the in-game character.
+  PLAYER_CHARACTER_ACTIONS = [
+    {action: "heal", label: "Heal", icon: "heart-pulse-fill", variant: "outline-success"},
+    {action: "kill", label: "Kill", icon: "x-octagon-fill", variant: "outline-danger",
+     confirm: "Kill this player's character? They'll die in-game."}
+  ].freeze
+
   # Survival stats round to whole percents for the progress bars. They read nil
   # for a dead or absent character, but the view gates them behind #alive? so the
   # bars only render when there's a living character to describe.
@@ -177,5 +192,71 @@ module PlayersHelper
     return command.error_message if command.error_message.present?
 
     "The reset couldn't be completed. Try again in a moment."
+  end
+
+  def player_balance_actions
+    PLAYER_BALANCE_ACTIONS
+  end
+
+  def player_character_actions
+    PLAYER_CHARACTER_ACTIONS
+  end
+
+  # Whether an action takes a give/remove amount (money/locker/respect) rather than being a one-shot (heal/kill). Drives
+  # which control the shared player-action partial renders.
+  def player_balance_action?(action)
+    PLAYER_BALANCE_ACTIONS.any? { |spec| spec[:action] == action }
+  end
+
+  # The display config for an action, from whichever group owns it - so a turbo response can re-render the region for the
+  # action a command carries.
+  def player_action_spec(action)
+    (PLAYER_BALANCE_ACTIONS + PLAYER_CHARACTER_ACTIONS).find { |spec| spec[:action] == action }
+  end
+
+  # DOM id for one player action's region, so a turbo response replaces just that action's control after it fires.
+  def player_action_region_id(action)
+    "player_action_#{action}"
+  end
+
+  # The toast announcing a settled player action: a balance change reports its before -> after, heal/kill a plain done.
+  def player_action_outcome_toast(command)
+    return create_success_toast(player_action_success_message(command), title: "Action complete", color: "green") if command.completed?
+    return create_info_toast("The action is still processing - refresh in a moment to confirm.", title: "Working", color: "blue") unless command.settled?
+
+    create_error_toast(player_action_failure_message(command), title: "Action failed", color: "red")
+  end
+
+  def player_action_success_message(command)
+    case command.arguments[:action]
+    when "heal" then "Player healed."
+    when "kill" then "Player killed."
+    else player_balance_change_message(command)
+    end
+  end
+
+  # "Locker: 10,000 → 15,000" when the command reported both ends, else a plain confirmation.
+  def player_balance_change_message(command)
+    result = command.result.to_h.with_indifferent_access
+    previous = result[:previous_amount]
+    current = result[:new_amount]
+    noun = player_action_noun(command.arguments[:action])
+
+    return "#{noun} updated." if previous.nil? || current.nil?
+
+    "#{noun}: #{number_with_delimiter(previous)} → #{number_with_delimiter(current)}"
+  end
+
+  def player_action_noun(action)
+    {"money" => "Pocket", "locker" => "Locker", "respect" => "Respect"}.fetch(action, "Balance")
+  end
+
+  # User-facing reason a player action didn't complete. Timeout is hedged (the in-game side may still have happened); a
+  # recorded error_message is the extension's own rejection, shown verbatim; anything else falls to a generic line.
+  def player_action_failure_message(command)
+    return "The server didn't respond in time. Check in-game before trying again." if command.timed_out?
+    return command.error_message if command.error_message.present?
+
+    "Something went wrong running that action. Please try again."
   end
 end

@@ -54,11 +54,7 @@ module ESM
         def on_execute
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
 
-          result = call_sqf_function!(
-            "ESMs_command_player",
-            action: arguments.action,
-            amount: arguments.amount
-          ).data
+          result = call_sqf_function!("ESMs_command_player", action: arguments.action, amount: arguments.amount).data
 
           embed = ESM::Notification.build_random(
             community_id: target_community.id,
@@ -78,6 +74,18 @@ module ESM
           )
 
           reply(embed)
+        end
+
+        def on_website_execute
+          check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+          result = call_sqf_function!(
+            "ESMs_command_player",
+            action: arguments.action,
+            amount: arguments.amount.to_s
+          ).data
+
+          reply(result)
         end
 
         module V1

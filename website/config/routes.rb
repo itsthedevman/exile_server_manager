@@ -210,6 +210,9 @@ Rails.application.routes.draw do
         member do
           # /servers/:server_id/players/:uid/reset — admin character reset for the viewed player
           post :reset
+
+          # /servers/:server_id/players/:uid/modify — admin player action (heal/kill/money/locker/respect)
+          post :modify
         end
       end
 

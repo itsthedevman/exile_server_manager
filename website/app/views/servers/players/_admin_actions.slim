@@ -1,0 +1,19 @@
+/ locals: current_server, target_uid
+.card.border-warning-subtle.mb-4
+  .card-header.d-flex.align-items-center.gap-2
+    i.bi.bi-shield-lock.text-warning
+    h5.mb-0 Admin actions
+  .card-body
+    / Both columns stretch to the same height (the grid equalizes them); each distributes its rows with
+    / justify-content-between so the shorter column's rows spread to fill rather than leaving slack at the bottom.
+    .row.g-4
+      .col-12.col-lg-7.d-flex.flex-column
+        .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Balances
+        .d-flex.flex-column.justify-content-between.gap-2.flex-grow-1
+          - player_balance_actions.each do |spec|
+            = render "servers/players/player_action", current_server:, target_uid:, spec:
+      .col-12.col-lg-5.d-flex.flex-column
+        .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Character
+        .d-flex.flex-column.justify-content-between.gap-2.flex-grow-1
+          - player_character_actions.each do |spec|
+            = render "servers/players/player_action", current_server:, target_uid:, spec:
