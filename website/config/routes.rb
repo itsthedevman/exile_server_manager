@@ -214,7 +214,10 @@ Rails.application.routes.draw do
       end
 
       # /servers/:server_id/territories
-      resources :territories, controller: "servers/territories", only: [:show], param: :territory_id do
+      resources :territories, controller: "servers/territories", only: [:index, :show], param: :territory_id do
+        # /servers/:server_id/territories/:territory_id/restore — admin restore of a territory marked for deletion
+        post :restore
+
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
 
@@ -237,6 +240,9 @@ Rails.application.routes.draw do
         post :set_id
 
         collection do
+          # /servers/:server_id/territories/list — lazy listing frame on the admin territories page
+          get :list
+
           # /servers/:server_id/territories/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
         end

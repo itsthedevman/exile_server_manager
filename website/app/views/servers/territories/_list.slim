@@ -1,0 +1,105 @@
+/ locals: current_server, territories, fetched_at
+.card
+  .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    h5.mb-0
+      i.bi.bi-flag-fill.text-warning.me-2
+      | Territories
+    - if fetched_at
+      = render "shared/data_freshness", at: fetched_at
+
+  - if territories.nil?
+    .card-body.text-center.py-5
+      i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Can't reach #{current_server.server_name}
+      p.text-muted.mb-0 The server is offline or unreachable, so we couldn't load its territories. Try again once it's back up.
+
+  - elsif territories.empty?
+    .card-body.text-center.py-5
+      i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 No territories yet
+      p.text-muted.mb-0 Nobody has placed a territory flag on #{current_server.server_name}.
+
+  - else
+    div data-controller="territories-table" data-territories-table-storage-key-value="territories-table:#{current_server.public_id}"
+      .card-body.border-bottom
+        .row.g-2.align-items-center
+          .col-12.col-md-6
+            .input-group.input-group-sm
+              span.input-group-text
+                i.bi.bi-search
+              input.form-control[type="search" placeholder="Search by territory, ID, or owner" aria-label="Search territories" data-territories-table-target="search" data-action="input->territories-table#filter"]
+
+          .col-auto.ms-md-auto
+            small.text-muted data-territories-table-target="count"
+
+      .table-responsive
+        table.table.table-hover.align-middle.mb-0
+          thead
+            tr
+              th.sortable-header role="button" data-sort-key="name" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Territory
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.sortable-header role="button" data-sort-key="owner" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Owner
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.sortable-header.text-end role="button" data-sort-key="level" data-sort-numeric="true" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Level
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.sortable-header.text-end role="button" data-sort-key="objects" data-sort-numeric="true" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Objects
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.sortable-header role="button" data-sort-key="payment" data-sort-numeric="true" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Payment
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.sortable-header role="button" data-sort-key="status" data-sort-numeric="true" data-territories-table-target="sortHeader" data-action="click->territories-table#sort"
+                | Status
+                i.bi.bi-chevron-expand.small.text-muted.ms-1.sort-indicator
+              th.text-end
+                span.visually-hidden Actions
+          tbody
+            - territories.each do |territory|
+              tr data-territories-table-target="row" data-search=territory_search_terms(territory) data-sort-name=territory.name.to_s.downcase data-sort-owner=territory.owner.name.to_s.downcase data-sort-level=territory.level.to_i data-sort-objects=territory.object_count.to_i data-sort-payment=(territory.days_left_until_payment_due || 999999) data-sort-status=(territory.marked_for_deletion? ? 2 : (territory.stolen? ? 1 : 0)) class=("opacity-75" if territory.marked_for_deletion?)
+                td
+                  .fw-medium.text-truncate = territory.name
+                  small.text-muted.font-monospace = territory.id
+                td
+                  - if territory.owner.steam_uid.present?
+                    = link_to territory.owner.name, server_player_path(current_server.public_id, territory.owner.steam_uid), class: "text-decoration-none", title: "View owner", data: {turbo_frame: "_top"}
+                    .small.text-muted.font-monospace = territory.owner.steam_uid
+                  - else
+                    span.text-muted Unknown
+                td.text-end = territory.level
+                td.text-end = number_with_delimiter(territory.object_count)
+                td
+                  span class=territory_list_payment(territory).css_class = territory_list_payment(territory).label
+                td
+                  - if territory.marked_for_deletion?
+                    span.badge.text-bg-warning
+                      i.bi.bi-trash3.me-1
+                      | Marked for deletion
+                  - elsif territory.stolen?
+                    span.badge.text-bg-danger
+                      i.bi.bi-exclamation-triangle-fill.me-1
+                      | Stolen
+                  - else
+                    span.text-muted.small Secure
+                td.text-end
+                  - if territory.marked_for_deletion?
+                    = button_to server_territory_restore_path(current_server.public_id, territory.id), params: {idempotency_key: SecureRandom.uuid}, class: "btn btn-sm btn-outline-warning", form: {data: {turbo_confirm: "Restore territory #{territory.id}? It will be spared on the next restart."}}, title: "Restore territory" do
+                      i.bi.bi-arrow-counterclockwise
+                  - else
+                    = link_to server_territory_path(current_server.public_id, territory.id), class: "btn btn-sm btn-outline-primary", title: "View territory", data: {turbo_frame: "territory_detail_frame"}
+                      i.bi.bi-box-arrow-in-right
+
+      .card-body.text-center.py-5[hidden data-territories-table-target="empty"]
+        i.bi.bi-search.text-muted.fs-1.d-block.mb-3
+        h5.text-light.mb-2 No matches
+        p.text-muted.mb-0 No territories match what you're looking for.
+
+      .card-footer.d-flex.align-items-center.justify-content-end[hidden data-territories-table-target="pagination"]
+        .d-flex.align-items-center.gap-2
+          button.btn.btn-sm.btn-outline-secondary[type="button" data-territories-table-target="previous" data-action="territories-table#previous"]
+            i.bi.bi-chevron-left
+          small.text-muted data-territories-table-target="pageInfo"
+          button.btn.btn-sm.btn-outline-secondary[type="button" data-territories-table-target="next" data-action="territories-table#next"]
+            i.bi.bi-chevron-right

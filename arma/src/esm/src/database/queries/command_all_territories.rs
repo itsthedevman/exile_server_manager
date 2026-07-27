@@ -12,13 +12,29 @@ pub async fn command_all_territories(
         territory_name: String,
         owner_uid: String,
         owner_name: String,
+        level: isize,
+        object_count: isize,
+        last_paid_at: NaiveDateTime,
+        flag_stolen: bool,
+        deleted_at: Option<NaiveDateTime>,
     }
 
     let result = connection
         .exec_map(
             &context.sql.command_all_territories,
             Params::Empty,
-            |(id, esm_custom_id, territory_name, owner_uid, owner_name)| {
+            |(
+                id,
+                esm_custom_id,
+                territory_name,
+                owner_uid,
+                owner_name,
+                level,
+                object_count,
+                last_paid_at,
+                flag_stolen,
+                deleted_at,
+            )| {
                 let id: String = id;
                 TerritoryResult {
                     id: context.encode_territory_id(&id),
@@ -26,6 +42,11 @@ pub async fn command_all_territories(
                     territory_name,
                     owner_uid,
                     owner_name,
+                    level,
+                    object_count,
+                    last_paid_at,
+                    flag_stolen,
+                    deleted_at,
                 }
             },
         )

@@ -364,6 +364,43 @@ module TerritoriesHelper
     "Payment due in #{days} days"
   end
 
+  # The compact payment cell for the admin territories list: a days-left label colored on the same thresholds the /me pay
+  # panels use (red within 2 days, amber within 5, green beyond). A territory with no payment on record reads muted, with
+  # no due date to color.
+  def territory_list_payment(territory)
+    days = territory.days_left_until_payment_due
+
+    return Datum.new(label: "No payment", css_class: "text-muted") if days.nil?
+    return Datum.new(label: "Overdue", css_class: "text-danger") if days.negative?
+    return Datum.new(label: "Due today", css_class: "text-danger") if days.zero?
+
+    css_class =
+      if days <= 2
+        "text-danger"
+      elsif days <= 5
+        "text-warning"
+      else
+        "text-success"
+      end
+
+    Datum.new(label: "#{pluralize(days, "day")} left", css_class:)
+  end
+
+  # What the admin territories list's search box matches against: the name, the id an admin arrives holding, and the
+  # owner's name and uid, since "find so-and-so's base" is as common as finding it by its own name.
+  def territory_search_terms(territory)
+    [territory.name, territory.id, territory.owner.name, territory.owner.steam_uid].join(" ").downcase
+  end
+
+  # User-facing reason a restore didn't complete. A timeout is hedged (the in-game side may still have landed); a recorded
+  # error_message is the extension's own rejection and is shown verbatim; anything else falls to a generic line.
+  def territory_restore_failure_message(command)
+    return "The server didn't respond in time. Check in-game before restoring again." if command.timed_out?
+    return command.error_message if command.error_message.present?
+
+    "Something went wrong restoring the territory. Please try again."
+  end
+
   # Display copy for a territory command, keyed on its name. Central so the
   # shared _command_* partials never branch on command_name themselves.
   def territory_command_copy(command)

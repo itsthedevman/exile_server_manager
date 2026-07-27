@@ -70,6 +70,17 @@
             span.fw-medium Players
             span.badge.text-bg-danger.text-uppercase.ms-auto Admin
 
+        - if command_accessible?("server_territories")
+          = link_to server_territories_path(current_server.public_id),
+            class: class_names( \
+              "list-group-item list-group-item-action d-flex align-items-center py-3",
+              "bg-primary bg-opacity-25": controller_name == "territories" && action_name == "index" \
+            )
+
+            i.bi.bi-flag.me-3
+            span.fw-medium Territories
+            span.badge.text-bg-danger.text-uppercase.ms-auto Admin
+
   - if server_manageable?(current_server)
     / Admin door — leaves the player surface for the community management UI
     .card
