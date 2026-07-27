@@ -57,29 +57,8 @@ module ESM
         #################################
 
         def on_execute
-          # If the target was given, check to make sure they're registered and then set the steam_uid
-          search =
-            if target_user
-              check_for_registered_target_user! if target_user.is_a?(ESM::User)
-
-              target_user.steam_uid
-            else
-              # Escape any regex in the "search query"
-              Regexp.quote(arguments.target)
-            end
-
-          message = ESM::Message.new.set_type(:search).set_data(search:)
-          log_results = send_to_target_server!(message).data.results
-
-          check_for_no_logs!(log_results)
-
-          log = ESM::Log.create!(
-            server_id: target_server.id,
-            search_text: arguments.target,
-            requestors_user_id: current_user.id
-          )
-
-          create_log_entries(log, log_results)
+          results = perform_search!
+          log = store_log_entries(results)
 
           embed =
             ESM::Embed.build do |e|
@@ -95,29 +74,12 @@ module ESM
           reply(embed)
         end
 
-        private
+        def on_website_execute
+          results = perform_search!
+          log = store_log_entries(results)
 
-        def check_for_no_logs!(logs)
-          raise_error!(:no_logs, user: current_user) if logs.blank?
+          reply(log_id: log.id)
         end
-
-        def create_log_entries(log, log_results)
-          log_results = log_results.group_by { |r| r[:file_name] }
-
-          # Remove file_name and sort
-          log_results.transform_values! do |entries|
-            entries.each { |e| e.delete(:file_name) }
-              .sort_by { |e| e[:line_number] }
-          end
-
-          log_results.each do |file_name, entries|
-            next if entries.blank?
-
-            ESM::LogEntry.create!(log:, file_name:, entries:)
-          end
-        end
-
-        ###########################################################################################
 
         module V1
           def on_execute
@@ -216,6 +178,56 @@ module ESM
             end
 
             Date.parse(date)
+          end
+        end
+
+        private
+
+        def search_query
+          # If the target was given, check to make sure they're registered and then set the steam_uid
+          if target_user
+            check_for_registered_target_user! if target_user.is_a?(ESM::User)
+
+            target_user.steam_uid
+          else
+            # Escape any regex in the "search query"
+            Regexp.quote(arguments.target)
+          end
+        end
+
+        def perform_search!
+          message = ESM::Message.new.set_type(:search).set_data(search: search_query)
+          results = send_to_target_server!(message).data.results
+
+          raise_error!(:no_logs, user: current_user) if results.blank?
+
+          results
+        end
+
+        def store_log_entries(results)
+          log = ESM::Log.create!(
+            server_id: target_server.id,
+            search_text: arguments.target,
+            requestors_user_id: current_user.id
+          )
+
+          create_log_entries(log, results)
+
+          log
+        end
+
+        def create_log_entries(log, log_results)
+          log_results = log_results.group_by { |r| r[:file_name] }
+
+          # Remove file_name and sort
+          log_results.transform_values! do |entries|
+            entries.each { |e| e.delete(:file_name) }.sort_by { |e| e[:line_number] }
+          end
+
+          log_results.each do |file_name, entries|
+            next if entries.blank?
+
+            ESM::LogEntry.create!(log:, file_name:, entries:)
           end
         end
       end

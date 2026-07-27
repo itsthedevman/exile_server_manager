@@ -44,6 +44,12 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          check_for_owned_server!
+
+          run_database_query!("restore", territory_id: arguments.territory_id)
+        end
+
         module V1
           def on_execute
             check_for_owned_server!
