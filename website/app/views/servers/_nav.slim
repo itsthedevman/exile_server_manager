@@ -1,5 +1,3 @@
-/ Server sidebar: back-link, server header with favorite toggle, and the list of
-/ server surfaces. Admin "Manage Server" door shows only to community managers.
 / locals: current_server
 #server-sidebar
   / Back navigation & server header
@@ -36,7 +34,7 @@
           .server-status.server-status--offline
           small.text-muted Offline
 
-  / Server navigation
+  / Player surfaces — available to any registered player
   .card.mb-4
     .list-group.list-group-flush
       = link_to server_path(current_server.public_id),
@@ -48,17 +46,25 @@
         i.bi.bi-grid-1x2.me-3
         span.fw-medium Dashboard
 
-      - if current_user.registered?
-        - if command_accessible?("me")
-          = link_to me_server_players_path(current_server.public_id),
-            class: class_names( \
-              "list-group-item list-group-item-action d-flex align-items-center py-3",
-              "bg-primary bg-opacity-25": controller_name == "players" && action_name == "me" \
-            )
+      - if current_user.registered? && command_accessible?("me")
+        = link_to me_server_players_path(current_server.public_id),
+          class: class_names( \
+            "list-group-item list-group-item-action d-flex align-items-center py-3",
+            "bg-primary bg-opacity-25": controller_name == "players" && action_name == "me" \
+          )
 
-            i.bi.bi-person.me-3
-            span.fw-medium My Player
+          i.bi.bi-person.me-3
+          span.fw-medium My Player
 
+  / Admin surfaces — one Admin header instead of a per-row badge. Shows only when at least one admin surface is reachable.
+  - if current_user.registered? && (command_accessible?("players") || command_accessible?("server_territories"))
+    .card.mb-4
+      .card-header.py-3
+        h5.mb-0.fw-bold.text-uppercase.small
+          i.bi.bi-shield-lock.me-2
+          | Admin
+
+      .list-group.list-group-flush
         - if command_accessible?("players")
           = link_to server_players_path(current_server.public_id),
             class: class_names( \
@@ -68,7 +74,6 @@
 
             i.bi.bi-people.me-3
             span.fw-medium Players
-            span.badge.text-bg-danger.text-uppercase.ms-auto Admin
 
         - if command_accessible?("server_territories")
           = link_to server_territories_path(current_server.public_id),
@@ -79,7 +84,6 @@
 
             i.bi.bi-flag.me-3
             span.fw-medium Territories
-            span.badge.text-bg-danger.text-uppercase.ms-auto Admin
 
   - if server_manageable?(current_server)
     / Admin door — leaves the player surface for the community management UI
