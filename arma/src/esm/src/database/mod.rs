@@ -301,7 +301,10 @@ fn connection_string(
     extdb_version: u8,
 ) -> Result<String, String> {
     if !crate::CONFIG.database_uri.is_empty() {
-        return Ok(crate::CONFIG.database_uri.clone());
+        let database_uri = crate::CONFIG.database_uri.clone();
+        reject_tls_parameters(&database_uri)?;
+
+        return Ok(database_uri);
     }
 
     // Get the path and load the ini file
@@ -369,6 +372,34 @@ fn connection_string(
     Ok(format!(
         "mysql://{}:{}@{}:{}/{}",
         username, password, ip, port, database_name
+    ))
+}
+
+/// URI query parameters that make the MySQL driver negotiate TLS.
+///
+/// The driver is built without a TLS backend, and its no-TLS stub panics rather than returning an
+/// error, so these have to be caught before the connection is opened.
+const TLS_URI_PARAMETERS: [&str; 3] =
+    ["require_ssl", "verify_ca", "verify_identity"];
+
+fn reject_tls_parameters(database_uri: &str) -> Result<(), String> {
+    let Some((_, query)) = database_uri.split_once('?') else {
+        return Ok(());
+    };
+
+    let requested: Vec<&str> = query
+        .split('&')
+        .filter_map(|parameter| parameter.split('=').next())
+        .filter(|key| TLS_URI_PARAMETERS.contains(key))
+        .collect();
+
+    if requested.is_empty() {
+        return Ok(());
+    }
+
+    Err(format!(
+        "Your \"database_uri\" in @ESM/config.yml asks for an encrypted database connection ({}), but this build of ESM does not support TLS to MySQL. Remove those parameters from the URI, or point ESM at a database that does not require TLS.",
+        requested.join(", ")
     ))
 }
 
