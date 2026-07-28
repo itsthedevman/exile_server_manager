@@ -7,25 +7,40 @@ version contract and are anchored by date. Year format is Holocene.
 
 ---
 
+## [@esm Unreleased]
+
+### Changed
+
+- `command_me` query consolidated into `player_info` (internal; supports the upcoming website player view)
+- Admin SQF execution now returns the result's type alongside the value, for type-aware rendering on the website
+
+---
+
+## @esm v2.0.2 — 12026-07-28
+
+### Removed
+
+- External OpenSSL requirement: the extension no longer links `libssl`/`libcrypto` on any target, so Windows no longer needs `libcrypto-3-x64.dll`/`libssl-3-x64.dll` (or the 32-bit `-3` variants) or the VC++ runtime, and Linux no longer needs `libssl.so.3`/`libcrypto.so.3`
+- **BREAKING (rare):** TLS connections to MySQL. Built without a TLS backend, so a `database_uri` requesting encryption (`require_ssl`, `verify_ca`, `verify_identity`) is now rejected with a clear message instead of connecting. Local and LAN MySQL (nearly all setups) are unaffected
+
+### Changed
+
+- Message encryption moved from OpenSSL bindings to the pure-Rust `aes-gcm` crate (same AES-256-GCM and wire format, so no bot/extension protocol change)
+- Updated workspace dependencies (tokio 1.47, uuid 1.18, regex 1.11, and others)
+
+### Fixed
+
+- Stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
+- Territory access checks treated territory admins as members in `/territory add`, `promote`, and `remove`
+- Remote territory payment limit under-enforced because the payment counter reset to 0 on every server restart (it lived on the in-game territory object, never read back from the database); the counter is now stored in MySQL as the source of truth, with atomic increment and reset
+
+---
+
 ## @esm v2.0.1 — 12024-12-22
 
 ### Changed
 
 - Fixed client reconnection interval calculation
-
----
-
-## [@esm Unreleased]
-
-### Added
-
-### Changed
-
-- Updated dependencies across workspace (tokio 1.47, uuid 1.18, regex 1.11, and others)
-
-### Fixed
-
-- Stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
 
 ---
 
