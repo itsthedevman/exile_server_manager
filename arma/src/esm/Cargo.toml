@@ -1,6 +1,6 @@
 [package]
 name = "esm"
-version = "2.0.1"
+version = "2.0.2"
 authors = ["Bryan <WolfkillArcadia@gmail.com>"]
 edition = "2018"
 
