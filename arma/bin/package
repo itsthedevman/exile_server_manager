@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+# Builds every @esm artifact and zips them for distribution. Does not tag or publish anything -
+# run bin/release afterwards to put the zip on GitHub.
+#
+# --skip-updater leaves the auto-updater out of the package: no esm_updater.pbo, no updater
+# extensions, no CLI, and no @esm-install.zip. Use it when the updater isn't ready to ship.
+
+set -ueo pipefail
+trap "exit" INT
+
+##################################
+# Variables
+readonly root_dir="$(pwd)"
+readonly build_dir=$root_dir/target/@esm
+readonly release_dir=$root_dir/target/build_release
+
+readonly crate_version=$(
+    cargo pkgid file://$(pwd)/src/esm |
+        cut -d# -f2 |
+        cut -d@ -f2
+)
+readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
+
+skip_updater=false
+
+for arg in "$@"; do
+    case $arg in
+    --skip-updater)
+        skip_updater=true
+        ;;
+    esac
+done
+
+if [[ "$skip_updater" == true ]]; then
+    readonly total_steps=8
+else
+    readonly total_steps=10
+fi
+
+step=0
+
+##################################
+# Functions
+function echo_with_prefix() {
+    echo "<esm_bt> - : $1"
+}
+
+function echo_step() {
+    ((step++)) || true
+    echo_with_prefix "----------------------------------------"
+    echo_with_prefix "Step $step/$total_steps: $1"
+    echo_with_prefix "----------------------------------------"
+}
+
+function run_command() {
+    if ! "$@"; then
+        echo_with_prefix "Fatal - Command failed: $*"
+        return 1
+    fi
+}
+
+##################################
+# Run tests
+echo_step "Running tests"
+run_command cargo test --workspace --quiet
+
+##################################
+# Preparation
+echo_step "Preparing to build"
+run_command rm -rf $build_dir
+run_command rm -rf $release_dir
+run_command mkdir -p $release_dir
+
+##################################
+# Build @esm
+# esm_test is a test harness and never ships.
+echo_step "Building @esm"
+run_command ./bin/build --only=mod --release --target=linux
+run_command find $build_dir/addons -mindepth 1 -type d -exec rm -rf {} +
+run_command rm -f $build_dir/addons/esm_test.pbo
+
+if [[ "$skip_updater" == true ]]; then
+    run_command rm -f $build_dir/addons/esm_updater.pbo
+fi
+
+run_command cp -rf $build_dir $release_dir
+
+##################################
+# Extension - Windows (x32)
+echo_step "Building esm.dll"
+run_command ./bin/build --only=extension --release --target=windows --x32
+run_command cp $build_dir/esm.dll $release_dir/@esm
+
+if [[ "$skip_updater" == false ]]; then
+    run_command cp $build_dir/esm_updater.dll $release_dir/@esm
+fi
+
+##################################
+# Extension - Windows (x64)
+echo_step "Building esm_x64.dll"
+run_command ./bin/build --only=extension --release --target=windows
+run_command cp $build_dir/esm_x64.dll $release_dir/@esm
+
+if [[ "$skip_updater" == false ]]; then
+    run_command cp $build_dir/esm_updater_x64.dll $release_dir/@esm
+fi
+
+##################################
+# Extension - Linux (x32)
+echo_step "Building esm.so"
+run_command ./bin/build --only=extension --release --target=linux --x32
+run_command cp $build_dir/esm.so $release_dir/@esm
+
+if [[ "$skip_updater" == false ]]; then
+    run_command cp $build_dir/esm_updater.so $release_dir/@esm
+fi
+
+##################################
+# Extension - Linux (x64)
+echo_step "Building esm_x64.so"
+run_command ./bin/build --only=extension --release --target=linux
+run_command cp $build_dir/esm_x64.so $release_dir/@esm
+
+if [[ "$skip_updater" == false ]]; then
+    run_command cp $build_dir/esm_updater_x64.so $release_dir/@esm
+fi
+
+##################################
+# CLI
+if [[ "$skip_updater" == false ]]; then
+    echo_step "Building esm_updater CLI (Linux)"
+    run_command cargo build --release -p esm_updater_cli \
+        --target x86_64-unknown-linux-gnu
+    run_command mkdir -p $release_dir/@esm/bin
+    run_command cp \
+        target/x86_64-unknown-linux-gnu/release/esm_updater \
+        $release_dir/@esm/bin/esm_updater
+
+    echo_with_prefix "Windows CLI is still a manual step"
+    echo_with_prefix "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
+fi
+
+##################################
+# Zipping
+echo_step "Zipping $zip_filename"
+cd $release_dir && zip -r $zip_filename ./@esm
+
+##################################
+# Install bundle - updater artifacts only, for a first-time install
+if [[ "$skip_updater" == false ]]; then
+    echo_step "Zipping @esm-install.zip"
+    cd $release_dir && zip @esm-install.zip \
+        @esm/esm_updater.dll \
+        @esm/esm_updater_x64.dll \
+        @esm/esm_updater.so \
+        @esm/esm_updater_x64.so \
+        @esm/bin/esm_updater
+fi
+
+##################################
+# Woohoo!
+echo_with_prefix "Package built: $release_dir/$zip_filename"
+
+if [[ "$skip_updater" == true ]]; then
+    echo_with_prefix "Auto-updater was excluded from this package"
+fi
+
+echo_with_prefix "Run bin/release to tag and publish it"

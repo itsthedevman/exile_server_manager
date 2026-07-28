@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 
+# Tags the current commit and publishes the packaged zip as a GitHub release.
+# Run bin/package first - this script never builds anything.
+
 set -ueo pipefail
 trap "exit" INT
 
 ##################################
 # Variables
-readonly args=("$@")
-
 readonly root_dir="$(pwd)"
-readonly build_dir=$root_dir/target/@esm
 readonly release_dir=$root_dir/target/build_release
-
-# Annoying workaround for windows
-readonly public_dir="$(dirname "$(dirname "$root_dir")")/Public/exile_server_manager/@esm"
 
 readonly crate_version=$(
     cargo pkgid file://$(pwd)/src/esm |
@@ -20,22 +17,16 @@ readonly crate_version=$(
         cut -d@ -f2
 )
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
-readonly total_steps=11
 
-step=0
-tag_created=false
-skip_release=false
+# Tags are component-scoped because the extension shares a repo with the bot and website.
+readonly tag="arma/v$crate_version"
+
 dry_run=false
-skip_build=false
 
 for arg in "$@"; do
     case $arg in
-    --use-existing)
-        skip_build=true
-        ;;
     --dry-run)
         dry_run=true
-        skip_release=true
         ;;
     esac
 done
@@ -44,20 +35,6 @@ done
 # Functions
 function echo_with_prefix() {
     echo "<esm_bt> - : $1"
-}
-
-function echo_step() {
-    ((step++)) || true
-    echo_with_prefix "----------------------------------------"
-    echo_with_prefix "Step $step/$total_steps: $1"
-    echo_with_prefix "----------------------------------------"
-}
-
-function run_command() {
-    if ! "$@"; then
-        echo_with_prefix "Fatal - Command failed: $*"
-        return 1
-    fi
 }
 
 function confirm() {
@@ -73,142 +50,53 @@ function confirm() {
 }
 
 ##################################
-# Check for the git tag
-if [[ "$dry_run" == true ]]; then
-    echo_with_prefix "Dry run — skipping tag creation and GitHub release"
-else
-    echo_with_prefix "Checking for git tag"
-
-    if git show-ref --tags "v$crate_version" --quiet; then
-        if ! confirm "Tag v$crate_version already exists - continue?"; then
-            exit 1
-        fi
-    elif confirm "Tag v$crate_version does not exist - create tag?"; then
-        git tag -a "v$crate_version"
-        tag_created=true
-    else
-        echo_with_prefix "Tag skipped - Github release will not be created"
-        skip_release=true
-    fi
+# The zip has to exist before any of this is worth doing
+if [[ ! -f "$release_dir/$zip_filename" ]]; then
+    echo_with_prefix "Fatal - $zip_filename not found in $release_dir"
+    echo_with_prefix "Run bin/package first"
+    exit 1
 fi
 
-# Where the build steps start
-if [[ "$skip_build" == true ]]; then
-    if [[ ! -f "$release_dir/$zip_filename" ]]; then
-        echo_with_prefix "Error: Build artifact '$zip_filename' not found in $release_dir"
-        exit 1
-    fi
+echo_with_prefix "Releasing $zip_filename as $tag"
 
-    echo_with_prefix "Using existing build artifact: $zip_filename"
-else
-    ##################################
-    # Run tests
-    echo_step "Running tests"
-    run_command cargo test --workspace --quiet
-
-    ##################################
-    # Preparation
-    echo_step "Preparing to build"
-    run_command rm -rf $build_dir
-    run_command rm -rf $public_dir
-    run_command rm -rf $release_dir
-    run_command mkdir -p $release_dir
-
-    ##################################
-    # Build @esm
-    echo_step "Building @esm"
-    run_command ./bin/build --only=mod --release --target=linux
-    run_command find $build_dir/addons -mindepth 1 -type d -exec rm -rf {} +
-    run_command rm -f $build_dir/addons/esm_test.pbo
-    run_command cp -rf $build_dir $release_dir
-
-    ##################################
-    # Extension - Windows (x32)
-    echo_step "Building esm.dll"
-    run_command ./bin/build --only=extension --release --target=windows --x32
-    run_command cp $public_dir/esm.dll $release_dir/@esm
-    run_command cp $public_dir/esm_updater.dll $release_dir/@esm
-
-    ##################################
-    # Extension - Windows (x64)
-    echo_step "Building esm_x64.dll"
-    run_command ./bin/build --only=extension --release --target=windows
-    run_command cp $public_dir/esm_x64.dll $release_dir/@esm
-    run_command cp $public_dir/esm_updater_x64.dll $release_dir/@esm
-
-    ##################################
-    # Extension - Linux (x32)
-    echo_step "Building esm.so"
-    run_command ./bin/build --only=extension --release --target=linux --x32
-    run_command cp $build_dir/esm.so $release_dir/@esm
-    run_command cp $build_dir/esm_updater.so $release_dir/@esm
-
-    ##################################
-    # Extension - Linux (x64)
-    echo_step "Building esm_x64.so"
-    run_command ./bin/build --only=extension --release --target=linux
-    run_command cp $build_dir/esm_x64.so $release_dir/@esm
-    run_command cp $build_dir/esm_updater_x64.so $release_dir/@esm
-
-    ##################################
-    # CLI - Linux
-    echo_step "Building esm_updater CLI (Linux)"
-    run_command cargo build --release -p esm_updater_cli \
-        --target x86_64-unknown-linux-gnu
-    run_command mkdir -p $release_dir/@esm/bin
-    run_command cp \
-        target/x86_64-unknown-linux-gnu/release/esm_updater \
-        $release_dir/@esm/bin/esm_updater
-
-    ##################################
-    # CLI - Windows
-    # Built via the Windows remote host (same path as the DLL builds above).
-    # The Windows build step copies the binary to $public_dir/bin/.
-    # TODO: add --only=cli support to bin/build and route through the remote.
-    echo_step "Building esm_updater CLI (Windows) — skipped (manual step)"
-    echo_with_prefix "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
-
-    ##################################
-    # Zipping
-    echo_step "Zipping $zip_filename"
-    cd $release_dir && zip -r $zip_filename ./@esm
-
-    ##################################
-    # @esm.zip install bundle (updater artifacts only, for first-time install)
-    echo_step "Zipping @esm-install.zip"
-    cd $release_dir && zip @esm-install.zip \
-        @esm/esm_updater.dll \
-        @esm/esm_updater_x64.dll \
-        @esm/esm_updater.so \
-        @esm/esm_updater_x64.so \
-        @esm/bin/esm_updater
+if [[ "$dry_run" == true ]]; then
+    echo_with_prefix "Dry run - no tag will be created and no release will be published"
+    exit 0
 fi
 
 ##################################
-# Create a release
-if [[ "$tag_created" == true ]]; then
-    git push --tags
+# Tag
+if git show-ref --tags "$tag" --quiet; then
+    echo_with_prefix "Tag $tag already exists"
+elif confirm "Create tag $tag?"; then
+    git tag -a "$tag"
+    git push origin "$tag"
+else
+    echo_with_prefix "Fatal - a tag is required to create a release"
+    exit 1
 fi
 
-function create_gh_release() {
-    if ! gh auth status &>/dev/null; then
-        echo_with_prefix "GitHub CLI not authenticated. Attempting to authenticate..."
-        gh auth login || return 1
-    fi
+##################################
+# Release
+if ! gh auth status &>/dev/null; then
+    echo_with_prefix "GitHub CLI is not authenticated - run 'gh auth login' and try again"
+    exit 1
+fi
 
-    gh release create v$crate_version \
+assets=("$release_dir/$zip_filename")
+
+# bin/package only produces the install bundle when the updater is included
+if [[ -f "$release_dir/@esm-install.zip" ]]; then
+    assets+=("$release_dir/@esm-install.zip")
+fi
+
+if confirm "Create a draft GitHub release for $tag?"; then
+    gh release create "$tag" \
         --generate-notes \
         --draft \
-        "$release_dir/$zip_filename" \
-        "$release_dir/@esm-install.zip"
-}
-
-if [[ "$skip_release" == false ]] && confirm "Create a GitHub release for v$crate_version?"; then
-    if ! create_gh_release; then
-        echo_with_prefix "Authentication failed. You can run 'gh auth login' to authenticate manually, then rerun this script with --use-existing to use the existing release build."
-    fi
+        "${assets[@]}"
 fi
 
 ##################################
 # Woohoo!
-echo_with_prefix "Release build completed"
+echo_with_prefix "Release completed"
