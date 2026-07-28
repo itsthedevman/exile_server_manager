@@ -21,6 +21,10 @@ readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
 # Tags are component-scoped because the extension shares a repo with the bot and website.
 readonly tag="arma/v$crate_version"
 
+# origin is the self-hosted Forgejo, so gh can't infer the GitHub repo from the remotes and has to be
+# told which repo to publish the release to.
+readonly github_repo="itsthedevman/exile_server_manager"
+
 dry_run=false
 
 for arg in "$@"; do
@@ -92,6 +96,7 @@ fi
 
 if confirm "Create a draft GitHub release for $tag?"; then
     gh release create "$tag" \
+        --repo "$github_repo" \
         --generate-notes \
         --draft \
         "${assets[@]}"
