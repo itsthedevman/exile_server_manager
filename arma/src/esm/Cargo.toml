@@ -1,7 +1,7 @@
 [package]
 name = "esm"
-version = "2.0.2"
-authors = ["Bryan <WolfkillArcadia@gmail.com>"]
+version = "2.0.2" # Make sure to update `mod_version` in website/config/settings.yml
+authors = ["Bryan <bryan@itsthedevman.com>"]
 edition = "2018"
 
 [lib]
