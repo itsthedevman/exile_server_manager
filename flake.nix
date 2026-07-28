@@ -155,7 +155,18 @@
             # path, so feed it in here. The 32-bit target additionally needs the mcfgthread
             # runtime (-lmcfgthread) because the cross gcc uses the mcf thread model.
             export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib"
-            export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingw32.windows.pthreads}/lib -L ${pkgs.pkgsCross.mingw32.windows.mcfgthreads}/lib -C link-arg=-lmcfgthread"
+            # mcfgthread is linked by exact filename because plain -lmcfgthread resolves to
+            # libmcfgthread.dll.a first, and a server owner would then need libmcfgthread-2.dll
+            # sitting next to esm.dll. The static archive calls into kernel32 and ntdll directly
+            # (RaiseFailFastException, NtRaiseHardError), which the import libs have to supply.
+            export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingw32.windows.pthreads}/lib -L ${pkgs.pkgsCross.mingw32.windows.mcfgthreads}/lib -C link-arg=-l:libmcfgthread.a -C link-arg=-lkernel32 -C link-arg=-lntdll"
+
+            # Arma: the 32-bit Linux extension compiles C sources (zstd-sys, libz) and so needs a
+            # toolchain targeting i686. The wrapper is referenced by absolute path rather than added
+            # to PATH, where its gcc would shadow the native one every other build here depends on.
+            export CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER="${pkgs.pkgsi686Linux.stdenv.cc}/bin/gcc"
+            export CC_i686_unknown_linux_gnu="${pkgs.pkgsi686Linux.stdenv.cc}/bin/gcc"
+            export AR_i686_unknown_linux_gnu="${pkgs.pkgsi686Linux.stdenv.cc}/bin/ar"
 
             # Arma: patch binary tools if they exist (only meaningful from monorepo root)
             OPENSSL_LIB="${pkgs.openssl.out}/lib"
