@@ -16,7 +16,7 @@ readonly build_dir=$root_dir/target/@esm
 readonly release_dir=$root_dir/target/build_release
 
 readonly crate_version=$(
-    cargo pkgid file://$(pwd)/src/esm |
+    cargo pkgid -p esm |
         cut -d# -f2 |
         cut -d@ -f2
 )
@@ -42,20 +42,17 @@ step=0
 
 ##################################
 # Functions
-function echo_with_prefix() {
-    echo "<esm_bt> - : $1"
-}
 
 function echo_step() {
     ((step++)) || true
-    echo_with_prefix "----------------------------------------"
-    echo_with_prefix "Step $step/$total_steps: $1"
-    echo_with_prefix "----------------------------------------"
+    echo "----------------------------------------"
+    echo "Step $step/$total_steps: $1"
+    echo "----------------------------------------"
 }
 
 function run_command() {
     if ! "$@"; then
-        echo_with_prefix "Fatal - Command failed: $*"
+        echo "Fatal - Command failed: $*"
         return 1
     fi
 }
@@ -137,8 +134,8 @@ if [[ "$skip_updater" == false ]]; then
         target/x86_64-unknown-linux-gnu/release/esm_updater \
         $release_dir/@esm/bin/esm_updater
 
-    echo_with_prefix "Windows CLI is still a manual step"
-    echo_with_prefix "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
+    echo "Windows CLI is still a manual step"
+    echo "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
 fi
 
 ##################################
@@ -160,10 +157,10 @@ fi
 
 ##################################
 # Woohoo!
-echo_with_prefix "Package built: $release_dir/$zip_filename"
+echo "Package built: $release_dir/$zip_filename"
 
 if [[ "$skip_updater" == true ]]; then
-    echo_with_prefix "Auto-updater was excluded from this package"
+    echo "Auto-updater was excluded from this package"
 fi
 
-echo_with_prefix "Run bin/release to tag and publish it"
+echo "Run bin/release to tag and publish it"

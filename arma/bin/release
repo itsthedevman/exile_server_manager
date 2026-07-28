@@ -12,7 +12,7 @@ readonly root_dir="$(pwd)"
 readonly release_dir=$root_dir/target/build_release
 
 readonly crate_version=$(
-    cargo pkgid file://$(pwd)/src/esm |
+    cargo pkgid -p esm |
         cut -d# -f2 |
         cut -d@ -f2
 )
