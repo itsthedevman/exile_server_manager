@@ -373,7 +373,18 @@ module ESM
         }
       end
 
-      # TODO: Docs
+      ##
+      # Whether this argument is offered to any of the given origins. An argument declares the surfaces it belongs
+      # to with the :origins option, keeping a Discord-only or website-only argument out of the other surface's
+      # usage text, help documentation, and validation.
+      #
+      # @param origins [Array<Symbol>] One or more origins to check, such as :discord or :website
+      #
+      # @return [Boolean] true if the argument is available to at least one of the given origins
+      #
+      # @example Matching any origin, not all of them
+      #   argument.available_to?(:discord, :website) # => true when the argument reaches either surface
+      #
       def available_to?(*origins)
         @origins.intersect?(origins)
       end
