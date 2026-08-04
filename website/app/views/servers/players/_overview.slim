@@ -118,7 +118,7 @@
           span.text-muted.small.text-uppercase Connections
           span.fw-medium = number_with_delimiter(current_player.total_connections)
 
-/ Admin actions - shown wherever the admin holds player access, on their own /me as well as another player's page.
+/ Admin actions
 - if current_server.connected? && command_accessible?("player")
   = render "servers/players/admin_actions", current_server:, target_uid: current_player.uid
 
