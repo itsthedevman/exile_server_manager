@@ -137,9 +137,13 @@ describe ESM::Command do
   end
 
   describe ".all" do
-    # The registry is a frozen global that every command lookup reads from. Reloading it under a stubbed environment
-    # would otherwise hand the rest of the suite a filtered copy.
+    # The registry is a frozen global that every command lookup reads from, so it has to be rebuilt unfiltered before
+    # the next example reads it. An `after` hook still runs while the example's stubs are live, so the environment has
+    # to be pointed back at the real one first; reloading before that rebuilds the same filtered copy this is meant to
+    # undo, and every command marked unreleased stays missing for the rest of the run.
     after do
+      allow(ESM.env).to receive(:production?).and_call_original
+
       commands.clear
       commands.load
     end

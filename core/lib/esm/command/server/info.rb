@@ -47,15 +47,11 @@ module ESM
           #   that it will do some filter...
           embed =
             if arguments.territory_id.present?
-              query_for_territory_info!.tap do |territory|
-                territory = ESM::Exile::Territory.new(server: target_server, territory:)
-                territory.to_embed
-              end
+              territory = ESM::Exile::Territory.new(server: target_server, territory: query_for_territory_info!)
+              territory.to_embed
             else
-              query_for_player_info!.tap do |player|
-                player = ESM::Exile::Player.new(server: target_server, player:)
-                player.to_embed
-              end
+              player = ESM::Exile::Player.new(server: target_server, player: query_for_player_info!)
+              player.to_embed
             end
 
           reply(embed)
