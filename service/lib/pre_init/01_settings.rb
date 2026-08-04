@@ -19,6 +19,8 @@ Config.setup do |config|
   # Keys alpha-sorted top-level and within each hash. Field semantics, units,
   # and override locations are documented inline in config/settings.yml.
   config.schema do
+    required(:base_url).filled(:string)
+
     required(:bot_delivery_overseer).hash do
       required(:check_every).filled { int? | float? }
     end
@@ -64,7 +66,6 @@ Config.setup do |config|
       required(:check_every).filled { int? | float? }
     end
 
-    required(:request_url).filled(:string)
     required(:steam_api_key).filled(:string)
     required(:tips).array(:string)
     required(:token).filled(:string)

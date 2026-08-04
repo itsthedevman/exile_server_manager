@@ -25,8 +25,8 @@ developer_guild_id: ""
 # Discord channel ID for posting unhandled errors. Leave blank to disable.
 error_logging_channel_id: ""
 
-# Website URL used to build accept/decline links in /requests embeds.
-request_url: "http://localhost:3000/requests"
+# Root of the ESM website, without a trailing slash. Every link the bot hands out is built from this.
+base_url: "http://localhost:3000"
 
 # Mirror log output to stdout in addition to log files.
 print_to_stdout: true

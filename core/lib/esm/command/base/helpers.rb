@@ -469,8 +469,16 @@ module ESM
           send_request_message(description: description, target: to)
         end
 
+        def base_url
+          ESM.config.base_url
+        end
+
         def request_url
-          ESM.config.request_url
+          "#{base_url}/requests"
+        end
+
+        def server_players_url(server)
+          "#{base_url}/servers/#{server.public_id}/players"
         end
 
         def accept_request_url(uuid)

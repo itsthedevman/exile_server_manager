@@ -94,7 +94,14 @@ module ESM
         end
 
         def check_for_players!(players)
-          raise_error!(:no_players, user: current_user, server_id: target_server.server_id) if players.blank?
+          return if players.present?
+
+          raise_error!(
+            :no_players,
+            user: current_user,
+            server_id: target_server.server_id,
+            players_url: server_players_url(target_server)
+          )
         end
       end
     end

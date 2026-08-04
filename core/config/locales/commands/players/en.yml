@@ -14,4 +14,6 @@ en:
         limit:
           description: The most players to return in one response. Provided by the server dashboard
       errors:
-        no_players: Hey %{user}, there's no one online on `%{server_id}` right now.
+        no_players: |-
+          Hey %{user}, there's no one online on `%{server_id}` right now.
+          Want to see who's been on recently? Check the server dashboard: %{players_url}
