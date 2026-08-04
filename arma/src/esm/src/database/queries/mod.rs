@@ -12,6 +12,7 @@ import_and_export!(check_if_territory_owner);
 import_and_export!(command_all_territories);
 import_and_export!(command_player_info);
 import_and_export!(command_player_territories);
+import_and_export!(command_players_list);
 import_and_export!(command_reset_all);
 import_and_export!(command_reset_player);
 import_and_export!(command_restore);
@@ -35,6 +36,7 @@ load_sql! {
     command_all_territories,
     command_player_info,
     command_player_territories, // Used by multiple commands
+    command_players_list,
     command_reset_all,
     command_reset_player,
     command_restore_construction,

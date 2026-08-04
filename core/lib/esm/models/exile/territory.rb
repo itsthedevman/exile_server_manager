@@ -92,6 +92,19 @@ module ESM
         @last_paid_at ||= ESM::Time.parse(@territory[:last_paid_at])
       end
 
+      # When set, Exile has flagged this territory for removal on the next restart (it clears flagged rows one restart
+      # after marking them). Only the admin all-territories read carries deleted_at; the per-territory info read filters
+      # them out, so a modal territory always reads not-marked.
+      def deleted_at
+        return if @territory[:deleted_at].blank?
+
+        @deleted_at ||= ESM::Time.parse(@territory[:deleted_at])
+      end
+
+      def marked_for_deletion?
+        @territory[:deleted_at].present?
+      end
+
       def next_due_date
         return if last_paid_at.nil?
 

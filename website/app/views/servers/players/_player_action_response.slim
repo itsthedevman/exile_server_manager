@@ -1,0 +1,11 @@
+/ locals: command, current_server, target_uid, refreshed_player, viewing_self
+= player_action_outcome_toast(command)
+- if command.completed? && refreshed_player.present?
+  / The refreshed overview re-renders the whole admin card, so its forms come back fresh (cleared, new keys).
+  = turbo_stream.update "player_overview" do
+    = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:, fetched_at: Time.current
+- else
+  / No overview refresh (failed, timed out, or nothing to reload) - swap just this action's region for a fresh-key form
+  / so a retry isn't deduped against the settled command by its idempotency key.
+  = turbo_stream.replace player_action_region_id(command.arguments[:action]) do
+    = render "servers/players/player_action", current_server:, target_uid:, spec: player_action_spec(command.arguments[:action])

@@ -1,0 +1,3 @@
+/ locals: command, current_server, refreshed_player, viewing_self
+- if command.settled?
+  = render "servers/players/reset_settled", command:, target: service_command_id(command), current_server:, refreshed_player:, viewing_self:

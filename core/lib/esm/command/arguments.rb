@@ -9,6 +9,10 @@ module ESM
         @command_instance = command
         @templates = templates.symbolize_keys
 
+        if @command_instance&.origin
+          @templates.select! { |_, template| template.available_to?(@command_instance.origin.source) }
+        end
+
         # Map the display name to the name itself
         @display_name_mapping = templates.values.each_with_object({}) { |a, hash| hash[a.display_name] = a.name }
 

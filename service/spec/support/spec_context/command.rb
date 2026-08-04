@@ -142,8 +142,8 @@ RSpec.shared_context("command") do
   end
 
   #
-  # Executes the command through the website workflow instead of Discord: mints a ServiceCommand row
-  # the way the website controller does, drives it through #from_website! via the website event hook,
+  # Executes the command through the website's async workflow instead of Discord: mints a ServiceCommand
+  # row the way the website controller does, drives it through #from_website! via the website async hook,
   # and returns the settled row so specs can assert on its status/result/error_message.
   #
   # @param user [ESM::User] The user to run as. Defaults to the `user` let binding
@@ -180,9 +180,36 @@ RSpec.shared_context("command") do
       status: :pending
     )
 
-    command_class.website_event_hook(service_command)
+    command_class.website_async_hook(service_command)
 
     service_command.reload
+  end
+
+  #
+  # Executes the command through the website's synchronous workflow instead of Discord: builds the event the
+  # service API handler builds and returns whatever the command replied with. Nothing is persisted, because the
+  # caller is a web request still waiting on the value.
+  #
+  # @param user [ESM::User] The user to run as. Defaults to the `user` let binding
+  # @param command_class [ESM::Command::Base] The command to run. Defaults to the `command_class` let binding
+  # @param community [ESM::Community] The community the command was run from. Defaults to the `community` let binding
+  # @param arguments [Hash] The command arguments, as the controller would build them
+  #
+  # @return [Object, nil] the command's reply, or nil when it never replied
+  #
+  def execute_sync!(**opts)
+    send_as = opts.delete(:user) || user
+    command_class = opts.delete(:command_class) || self.command_class
+    from_community = opts.delete(:community) || community
+    arguments = opts.delete(:arguments) || {}
+
+    # Arguments reach the bot as JSON over NATS, so a Time arrives as an ISO8601 string and nothing keeps its class.
+    # Round-tripping here stops a spec from handing the command a value the real transport could never deliver.
+    arguments = ::JSON.parse(arguments.to_json, symbolize_names: true)
+
+    event = Datum.new(user: send_as, community: from_community, arguments:)
+
+    command_class.website_sync_hook(event)
   end
 
   def wait_for_completion!(event = :on_execute)

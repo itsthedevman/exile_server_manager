@@ -1,6 +1,6 @@
-use std::{fs, process::Command};
+use std::{collections::HashSet, fs, process::Command};
 
-use chrono::prelude::*;
+use chrono::{prelude::*, Duration};
 use fake::{
     faker::{
         boolean::en::Boolean,
@@ -43,7 +43,14 @@ lazy_static! {
 
 // How many fake players to seed alongside my_steam_uid. Replaces the old
 // hand-maintained steam_uids list in config.yml.
-const STEAM_UID_COUNT: usize = 100;
+const STEAM_UID_COUNT: usize = 500;
+
+// How many of those accounts are left connected. The player listing splits online from offline, so a run needs
+// enough of both to fill pages on either side of the split.
+const MIN_ONLINE: usize = 5;
+const MAX_ONLINE: usize = 64;
+
+const MINUTES_PER_DAY: i64 = 24 * 60;
 
 pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
     let sql = generate_sql(&ctx.config, ctx.args.seed_xm8_notify);
@@ -137,7 +144,7 @@ fn generate_sql(config: &Config, xm8_notify: bool) -> String {
     let mut steam_uids = generate_steam_uids(STEAM_UID_COUNT, rng);
     steam_uids.push(config.my_steam_uid.clone());
 
-    let accounts = generate_accounts(&steam_uids);
+    let accounts = generate_accounts(&steam_uids, &config.my_steam_uid, rng);
     let players = generate_players(&accounts);
     let territories =
         generate_territories(&steam_uids, &config.my_steam_uid, xm8_notify);
@@ -199,19 +206,113 @@ fn generate_steam_uids(count: usize, rng: &mut impl Rng) -> Vec<String> {
         .collect()
 }
 
-fn generate_accounts(steam_uids: &[String]) -> Vec<Account> {
+fn generate_accounts(
+    steam_uids: &[String],
+    my_steam_uid: &str,
+    rng: &mut impl Rng,
+) -> Vec<Account> {
+    let online = choose_online(steam_uids, my_steam_uid, rng);
+
     steam_uids
         .iter()
-        .map(|uid| Account {
-            uid: uid.clone(),
-            name: Name().fake::<String>().replace('\'', ""),
-            score: (10_000..9_000_000).fake(),
-            kills: (0..1000).fake(),
-            deaths: (0..1000).fake(),
-            locker: (10_000..9_000_000).fake(),
-            total_connections: (0..50_000).fake(),
+        .enumerate()
+        .map(|(index, uid)| {
+            let (last_connect_at, last_disconnect_at) =
+                connection_times(online.contains(&index), rng);
+
+            // Exile keeps one row per account forever, so the first connection is the oldest thing on it. Anchoring
+            // it to the last connection rather than to now keeps a two-year veteran from reading as brand new.
+            let first_connect_at =
+                last_connect_at - Duration::days(rng.gen_range(1..730));
+
+            Account {
+                uid: uid.clone(),
+                name: Name().fake::<String>().replace('\'', ""),
+                score: (10_000..9_000_000).fake(),
+                kills: (0..1000).fake(),
+                deaths: (0..1000).fake(),
+                locker: (10_000..9_000_000).fake(),
+                total_connections: (0..50_000).fake(),
+                first_connect_at: format_timestamp(first_connect_at),
+                last_connect_at: format_timestamp(last_connect_at),
+                last_disconnect_at: last_disconnect_at
+                    .map(format_timestamp)
+                    .unwrap_or_else(|| "NULL".into()),
+            }
         })
         .collect()
+}
+
+// The indexes of the accounts left connected. My own account is always one of them, so the dashboards I'm testing
+// against have a live player in them without having to reseed until the dice cooperate.
+fn choose_online(
+    steam_uids: &[String],
+    my_steam_uid: &str,
+    rng: &mut impl Rng,
+) -> HashSet<usize> {
+    let mut candidates: Vec<usize> = steam_uids
+        .iter()
+        .enumerate()
+        .filter(|(_, uid)| uid.as_str() != my_steam_uid)
+        .map(|(index, _)| index)
+        .collect();
+
+    candidates.shuffle(rng);
+
+    let count = rng.gen_range(MIN_ONLINE..=MAX_ONLINE);
+    let mut online: HashSet<usize> =
+        candidates.into_iter().take(count - 1).collect();
+
+    if let Some(index) = steam_uids.iter().position(|uid| uid == my_steam_uid) {
+        online.insert(index);
+    }
+
+    online
+}
+
+// A connect/disconnect pair. Exile reads an account as online when it has no disconnect on record or its last
+// connect is the more recent of the two, so the pair is what decides the flag rather than a column of its own.
+fn connection_times(
+    online: bool,
+    rng: &mut impl Rng,
+) -> (DateTime<Local>, Option<DateTime<Local>>) {
+    if online {
+        let connected_at =
+            Local::now() - Duration::minutes(rng.gen_range(1..6 * 60));
+
+        // Most players have played before; the rest are on their first session and have never disconnected, which
+        // is the other way a row reads as online.
+        let previous_session_ended = (rng.gen_range(0..100) >= 20).then(|| {
+            connected_at - Duration::minutes(rng.gen_range(10..14 * MINUTES_PER_DAY))
+        });
+
+        return (connected_at, previous_session_ended);
+    }
+
+    let connected_at = random_last_connect(rng);
+    let session = Duration::minutes(rng.gen_range(5..5 * 60));
+
+    // A session that would end in the future would read as still connected, so it gets clamped back to now.
+    let disconnected_at = (connected_at + session).min(Local::now());
+
+    (connected_at, Some(disconnected_at))
+}
+
+// Offline connect times are spread across the listing's look-back windows on purpose: each window needs enough rows
+// to page through, and the oldest bucket proves the window filters rather than showing whatever exists.
+fn random_last_connect(rng: &mut impl Rng) -> DateTime<Local> {
+    let minutes_ago = match rng.gen_range(0..100) {
+        0..=24 => rng.gen_range(30..MINUTES_PER_DAY),
+        25..=59 => rng.gen_range(MINUTES_PER_DAY..7 * MINUTES_PER_DAY),
+        60..=84 => rng.gen_range(7 * MINUTES_PER_DAY..30 * MINUTES_PER_DAY),
+        _ => rng.gen_range(30 * MINUTES_PER_DAY..180 * MINUTES_PER_DAY),
+    };
+
+    Local::now() - Duration::minutes(minutes_ago)
+}
+
+fn format_timestamp(at: DateTime<Local>) -> String {
+    at.format("'%Y-%m-%d %H:%M:%S'").to_string()
 }
 
 fn generate_players(accounts: &[Account]) -> Vec<Player> {
@@ -270,6 +371,7 @@ fn generate_territories(
     ];
 
     let mut territories: Vec<Territory> = Vec::new();
+    let mut used_custom_ids: HashSet<String> = HashSet::new();
 
     for (name, last_paid, stolen) in showcase {
         let id = territories.len() + 1;
@@ -278,6 +380,7 @@ fn generate_territories(
             my_steam_uid,
             steam_uids,
             rng,
+            &mut used_custom_ids,
             name.to_string(),
             last_paid.to_string(),
             stolen,
@@ -297,6 +400,7 @@ fn generate_territories(
             owner,
             steam_uids,
             rng,
+            &mut used_custom_ids,
             name,
             "NOW()".to_string(),
             stolen,
@@ -307,11 +411,31 @@ fn generate_territories(
     territories
 }
 
+// esm_custom_id carries a UNIQUE index, and the fake username pool is small enough that a few hundred territories
+// will draw the same name twice. A numeric suffix keeps the ids readable while guaranteeing the insert lands.
+fn unique_custom_id(used: &mut HashSet<String>) -> String {
+    if !Boolean(50).fake::<bool>() {
+        return "NULL".into();
+    }
+
+    let base = Username().fake::<String>().replace('\'', "");
+    let mut candidate = base.clone();
+    let mut suffix = 2;
+
+    while !used.insert(candidate.clone()) {
+        candidate = format!("{base}{suffix}");
+        suffix += 1;
+    }
+
+    format!("'{candidate}'")
+}
+
 fn make_territory(
     id: usize,
     owner: &str,
     steam_uids: &[String],
     rng: &mut impl rand::Rng,
+    used_custom_ids: &mut HashSet<String>,
     name: String,
     last_paid_at: String,
     stolen: bool,
@@ -329,11 +453,7 @@ fn make_territory(
 
     Territory {
         id,
-        esm_custom_id: if Boolean(50).fake() {
-            format!("'{}'", Username().fake::<String>().replace('\'', ""))
-        } else {
-            "NULL".into()
-        },
+        esm_custom_id: unique_custom_id(used_custom_ids),
         owner_uid: owner.to_string(),
         name,
         position_x: (0.0..5000.0).fake(),
@@ -378,6 +498,8 @@ fn generate_constructions(territories: &[Territory]) -> Vec<Construction> {
 struct Account {
     uid: String, name: String, score: isize, kills: usize,
     deaths: usize, locker: isize, total_connections: usize,
+    first_connect_at: String, last_connect_at: String,
+    last_disconnect_at: String,
 }
 
 impl Display for Account {
@@ -387,8 +509,8 @@ impl Display for Account {
             "('{uid}',{clan},'{name}',{score},{kills},{deaths},{locker},{first},{last_c},{last_d},'{total}')",
             uid = self.uid, clan = "NULL", name = self.name,
             score = self.score, kills = self.kills, deaths = self.deaths,
-            locker = self.locker, first = random_timestamp(),
-            last_c = "NOW()", last_d = random_timestamp(),
+            locker = self.locker, first = self.first_connect_at,
+            last_c = self.last_connect_at, last_d = self.last_disconnect_at,
             total = self.total_connections,
         )
     }

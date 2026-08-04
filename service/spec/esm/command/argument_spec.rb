@@ -111,6 +111,67 @@ describe ESM::Command::Argument do
     end
   end
 
+  context "when :origins is not provided" do
+    it "is available to every origin" do
+      expect(argument.origins).to contain_exactly(:discord, :website)
+      expect(argument.available_to?(:discord)).to be(true)
+      expect(argument.available_to?(:website)).to be(true)
+    end
+  end
+
+  context "when :origins is provided" do
+    subject(:argument) { new_argument(:with_locale, origins: [:website]) }
+
+    it "is available only to the origins listed" do
+      expect(argument.available_to?(:website)).to be(true)
+      expect(argument.available_to?(:discord)).to be(false)
+    end
+
+    it "accepts strings" do
+      argument = new_argument(:with_locale, origins: ["website"])
+
+      expect(argument.origins).to contain_exactly(:website)
+    end
+
+    # `required: true` says "the command needs this", not "Discord must ask for it". Since Discord is never offered
+    # the argument, the requirement lands on the bot alone instead of becoming a contradiction the author has to
+    # spell their way around.
+    context "and the argument is required" do
+      subject(:argument) { new_argument(:with_locale, required: true, origins: [:website]) }
+
+      it "requires it of the bot but not of Discord" do
+        expect(argument.required?).to be(true)
+        expect(argument.required_by_bot?).to be(true)
+        expect(argument.required_by_discord?).to be(false)
+        expect(argument.optional?).to be(false)
+      end
+    end
+
+    context "and the argument is required by the bot only" do
+      subject(:argument) { new_argument(:with_locale, required: {discord: false, bot: true}, origins: [:website]) }
+
+      it "is allowed" do
+        expect(argument.required_by_bot?).to be(true)
+        expect(argument.required_by_discord?).to be(false)
+      end
+    end
+
+    # The Hash form is explicit enough to state the contradiction outright, so it is still caught at definition
+    # time: Discord cannot be handed a required option it was never registered with.
+    context "and the argument is explicitly required by Discord" do
+      subject(:argument) { new_argument(:with_locale, required: {discord: true, bot: false}, origins: [:website]) }
+
+      it "raises an exception" do
+        expect { argument }.to raise_error(
+          ArgumentError,
+          "#{command_class}:argument.with_locale - cannot be required by Discord: :origins does not include " \
+          ":discord, so Discord is never given this argument to ask for. Add :discord to :origins, or require it " \
+          "of the bot only with `required: {bot: true}`"
+        )
+      end
+    end
+  end
+
   context "when :template is provided" do
     subject(:argument) { new_argument(template: :community_id) }
 

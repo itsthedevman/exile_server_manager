@@ -22,13 +22,24 @@ module ESM
           end
 
           #
-          # The website counterpart to #event_hook. Wraps a web-initiated invocation and drives it
-          # through the same command execution lifecycle.
+          # The website counterpart to #event_hook, for an invocation the page is not waiting on. Drives a persisted
+          # ESM::ServiceCommand row through the command execution lifecycle and records the outcome on it.
           #
           # @!visibility private
           #
-          def website_event_hook(event)
-            event = ESM::Website::Event::ApplicationCommand.new(event)
+          def website_async_hook(event)
+            event = ESM::Website::Event::AsyncCommand.new(event)
+            event.on_execution(self)
+          end
+
+          #
+          # The website counterpart to #event_hook, for an invocation the page is waiting on. Drives the same command
+          # execution lifecycle but returns the command's reply rather than recording it.
+          #
+          # @!visibility private
+          #
+          def website_sync_hook(event)
+            event = ESM::Website::Event::SyncCommand.new(event)
             event.on_execution(self)
           end
         end

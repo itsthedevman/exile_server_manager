@@ -46,6 +46,12 @@ module ESM
           tables.each { |table| reply("```\n#{table}\n```") }
         end
 
+        def on_website_execute
+          check_for_owned_server!
+
+          reply(query_exile_database!("all_territories"))
+        end
+
         module V1
           def on_execute
             check_for_owned_server!

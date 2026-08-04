@@ -12,7 +12,7 @@ RSpec.describe "Servers::Players", type: :request do
 
     # The player snapshot and the online check are NATS reads against the game
     # server; stub both so the pages render their offline state without the bot.
-    allow_any_instance_of(ESM::Server).to receive(:player_info).and_return(nil)
+    allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return(nil)
     allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
   end
 
@@ -74,7 +74,7 @@ RSpec.describe "Servers::Players", type: :request do
 
       command = ESM::ServiceCommand.last
       expect(command.command_name).to eq("stuck")
-      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 

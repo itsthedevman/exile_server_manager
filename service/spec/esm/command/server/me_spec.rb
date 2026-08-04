@@ -35,6 +35,75 @@ describe ESM::Command::Server::Me, category: "command" do
       expect(command.type).to eq(:player)
     end
 
+    # The website runs the same query but wants the raw player data to render its own page rather than an embed.
+    describe "#on_website_execute", :requires_connection do
+      include_context "connection"
+
+      subject(:player_data) do
+        execute_sync!(arguments: {server_id: server.server_id})
+      end
+
+      before do
+        user.exile_account
+        user.exile_player
+      end
+
+      context "when the user has an account on the server" do
+        it "returns the player's data" do
+          player = ESM::Exile::Player.new(server: server, player: player_data)
+
+          expect(player_data).to be_present
+          expect(player).to be_alive
+        end
+      end
+
+      context "when the user owns territories on the server" do
+        let!(:territories) do
+          owner_uid = user.steam_uid
+
+          create_list(
+            :exile_territory, 2,
+            owner_uid: owner_uid,
+            moderators: [owner_uid],
+            build_rights: [owner_uid],
+            server_id: server.id
+          )
+        end
+
+        it "includes those territories in the data" do
+          player = ESM::Exile::Player.new(server: server, player: player_data)
+
+          territories.each do |territory|
+            expect(player.territories.map(&:id)).to include(territory.encoded_id)
+          end
+        end
+      end
+
+      context "when the user's player is dead" do
+        before { ESM::ExilePlayer.from(user).kill! }
+
+        it "still returns their account data, marked not alive" do
+          player = ESM::Exile::Player.new(server: server, player: player_data)
+
+          expect(player).not_to be_alive
+          expect(player.locker).not_to be_nil
+        end
+      end
+
+      context "when the user does not have an account on the server" do
+        before do
+          ESM::ExilePlayer.from(user).kill!
+
+          ESM::ExileAccount.from(user).delete
+        end
+
+        # Nothing to return, so the page renders its own empty state from the nil rather than a stand-in.
+        it "returns nil" do
+          expect(player_data).to be_nil
+        end
+      end
+    end
+
     describe "#on_execute/#on_response", :requires_connection do
       include_context "connection"
 

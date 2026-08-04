@@ -7,7 +7,7 @@ module Servers
     def create
       return unless check_for_command_access("sqf")
 
-      command = call_service_command(
+      command = call_async_command(
         "sqf",
         arguments: {code_to_execute: params.require(:code_to_execute), target: sqf_target}
       )

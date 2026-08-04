@@ -1,0 +1,17 @@
+---
+en:
+  commands:
+    players:
+      description: Displays every player currently online on a server, along with their Steam UIDs
+      description_extra: Only players who are connected right now are listed. To browse players who have connected recently, use the server dashboard
+      examples:
+        - description: Lists everyone currently online on `esm_malden`
+          arguments:
+            "on": esm_malden
+      arguments:
+        connected_since:
+          description: The oldest connection time to include. Provided by the server dashboard
+        limit:
+          description: The most players to return in one response. Provided by the server dashboard
+      errors:
+        no_players: Hey %{user}, there's no one online on `%{server_id}` right now.

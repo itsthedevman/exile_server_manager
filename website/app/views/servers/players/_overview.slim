@@ -1,31 +1,15 @@
-/ The player's on-server snapshot: identity, poptab/stat cards, and territory
-/ cards. Rendered on the initial /me load and re-rendered into #player_overview
-/ after a successful action that moves the locker (pay, upgrade), so the page
-/ reflects the new totals and due state without a manual reload.
-/ locals: current_server, current_player
-/ Identity strip
+/ locals: current_server, current_player, viewing_self, fetched_at
 .card.mb-4
   .card-body
     .d-flex.align-items-center.gap-3.flex-wrap
-      - if current_user.steam_data&.avatar
-        img.rounded-circle.border.border-2.border-success[
-          src=current_user.steam_data.avatar
-          alt=current_user.steam_data.username
-          width="64"
-          height="64"
-        ]
-      - else
-        img.rounded-circle.border.border-2.border-success[
-          src=image_url("default_steam_avatar.png")
-          alt="Default Steam Avatar"
-          width="64"
-          height="64"
-        ]
+      = render "servers/players/status_avatar", player: current_player, viewing_self:, size: 64
       div
-        h2.mb-0 = current_player.name
+        .d-flex.align-items-center.gap-2.flex-wrap
+          h2.mb-0 = current_player.name
+          = render "servers/players/status_pill", player: current_player
         small.text-muted.font-monospace = current_player.uid
       .ms-auto
-        = render "servers/players/actions", current_server:
+        = render "shared/data_freshness", at: fetched_at
 
 .row.g-4.mb-4
   / Character status
@@ -84,7 +68,7 @@
             - if current_player.alive?
               = poptabs(current_player.money)
             - else
-              span.text-muted 0
+              i.bi.bi-dash-lg.text-muted[role="img" aria-label="No pocket cash"]
         div
           .text-muted.small.text-uppercase Locker
           .fs-2.fw-bold.text-success
@@ -133,6 +117,10 @@
         .d-flex.justify-content-between
           span.text-muted.small.text-uppercase Connections
           span.fw-medium = number_with_delimiter(current_player.total_connections)
+
+/ Admin actions
+- if current_server.connected? && command_accessible?("player")
+  = render "servers/players/admin_actions", current_server:, target_uid: current_player.uid
 
 / Territories
 - if command_accessible?("territories")

@@ -3,7 +3,7 @@
 module ESM
   module Website
     module Command
-      class Origin < ESM::Command::Origin
+      class AsyncOrigin < ESM::Command::Origin
         def initialize(service_command)
           @service_command = service_command
           @source = :website
@@ -39,12 +39,6 @@ module ESM
             end
 
           @service_command.update!(status: :failed, error_message: strip_markup(body))
-        end
-
-        def log_context
-          {
-            service_command: @service_command.attributes
-          }
         end
 
         # The website doesn't execute from within a channel

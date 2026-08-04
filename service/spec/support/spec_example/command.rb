@@ -70,6 +70,14 @@ RSpec.shared_examples("raises_server_not_connected") do
   end
 end
 
+# For commands that exist only on V2. The server is reachable and the player may run the command - it's the server's
+# ESM version that can't answer, so the copy points them at the server owners rather than at anything they did.
+RSpec.shared_examples("raises_server_version_not_supported") do
+  include_examples "raises_check_failure" do
+    let!(:matcher) { "`#{server.server_id}` does not support this command" }
+  end
+end
+
 RSpec.shared_examples("arma_error_player_needs_to_join") do
   include_examples "raises_extension_error", "is expected to raise PlayerNeedsToJoin" do
     let!(:matcher) { "need to join" }

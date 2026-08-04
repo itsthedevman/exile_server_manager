@@ -53,6 +53,29 @@ module Commands
   end
 
   ##
+  # Runs command_name against the current server and blocks on its reply. Unlike {#call_async_command} nothing is
+  # persisted: the page is holding this request open waiting for the value.
+  #
+  # @param command_name [String, Symbol] The name of the command
+  # @param arguments [Hash] Extra command arguments merged into the server context
+  #
+  # @return [Object, nil] Whatever the command replied with, or nil when it had nothing to say
+  #
+  def call_sync_command(command_name, arguments: {})
+    raise ArgumentError, "Unknown command: #{command_name}" if ESM::Command[command_name].nil?
+
+    # A sync command is a read the page is blocking on, so a timeout is safe to retry - it can't double-run anything.
+    ESM::Service::API.call(
+      :sync_command,
+      command_name:,
+      user_id: current_user.id,
+      community_id: current_server.community.id,
+      arguments: arguments.merge(server_id: current_server.server_id),
+      idempotent: true
+    )
+  end
+
+  ##
   # Creates (or reuses) the ServiceCommand for command_name and, when it is freshly pending, dispatches it to the service
   # API and briefly polls for it to settle before returning.
   #
@@ -61,12 +84,12 @@ module Commands
   #
   # @return [ESM::ServiceCommand] The command, settled if it resolved within the poll window, else still pending
   #
-  def call_service_command(command_name, arguments: {})
-    command = create_command_for(command_name, arguments:)
+  def call_async_command(command_name, arguments: {})
+    command = create_async_command_for(command_name, arguments:)
 
     # Only the request that created the row dispatches, so a same-key retry (double-click, Turbo replay) dedupes to the
     # existing command instead of firing the work a second time.
-    ESM::Service::API.call(:service_command, command_id: command.id) if command.previously_new_record?
+    ESM::Service::API.call(:async_command, command_id: command.id) if command.previously_new_record?
 
     # Give a quick command a moment to land so it resolves in this response rather than flashing a spinner the client
     # poller clears a beat later. An already-settled row skips the wait; a retry rides the in-flight command's result.
@@ -87,7 +110,7 @@ module Commands
   #
   # @raise [ActionController::ParameterMissing] When the request omits :idempotency_key
   #
-  def create_command_for(command_name, arguments: {})
+  def create_async_command_for(command_name, arguments: {})
     ESM::ServiceCommand.find_or_create_by(
       user_id: current_user.id,
       idempotency_key: params.require(:idempotency_key)

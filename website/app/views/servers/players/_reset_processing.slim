@@ -1,0 +1,5 @@
+/ locals: command
+div id=service_command_id(command) data-controller="service-command" data-service-command-url-value=player_command_status_path(command)
+  button.btn.btn-outline-danger.btn-sm.w-100[type="button" disabled aria-label=reset_processing_label(command)]
+    span.spinner-border.spinner-border-sm.me-1[role="status" aria-hidden="true"]
+    = reset_processing_label(command)

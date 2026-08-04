@@ -122,9 +122,7 @@ module ESM
     def time_left_before_restart
       return "Offline" if server_start_time.nil?
 
-      restart_time = server_start_time +
-        server_setting.server_restart_hour.hours +
-        server_setting.server_restart_min.minutes
+      restart_time = server_start_time + restart_interval
 
       ESM::Time.distance_of_time_in_words(restart_time)
     end
@@ -159,6 +157,10 @@ module ESM
 
     def attributes_for_logging
       attributes.except("id", "server_key")
+    end
+
+    def restart_interval
+      server_setting.server_restart_hour.hours + server_setting.server_restart_min.minutes
     end
 
     private

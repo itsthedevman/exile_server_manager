@@ -1,0 +1,26 @@
+/ locals: current_server, lookback
+- content_for :title, "Players on #{current_server.server_name}"
+
+= render "servers/container", current_server: do
+  .d-flex.mb-4.align-items-center.gap-3
+    div
+      h1.mb-1 Players
+      p.text-muted.mb-0 Everyone who's connected recently. Search, sort, or filter to online-only to track down a specific player.
+    - if current_server.connected? && command_accessible?("reset")
+      .ms-auto.d-flex.flex-column.align-items-end.gap-2
+        button.btn.btn-outline-danger.btn-sm[type="button" data-bs-toggle="modal" data-bs-target="#reset_all_modal"]
+          i.bi.bi-exclamation-octagon.me-1
+          | Reset stuck players
+        #reset_all_result
+
+  = turbo_frame_tag "players_list",
+    src: list_server_players_path(current_server.public_id, window: lookback),
+    loading: :lazy
+
+    .card
+      .card-body.text-center.text-muted.py-5
+        .spinner-border.spinner-border-sm.me-2[role="status"]
+        | Loading players...
+
+  - if current_server.connected? && command_accessible?("reset")
+    = render "servers/players/reset_all_modal", current_server:

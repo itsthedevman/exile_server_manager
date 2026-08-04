@@ -1,0 +1,8 @@
+/ locals: player, viewing_self, size
+img.rounded-circle.border.border-2.flex-shrink-0[
+  class=player_status(player).ring_class
+  src=player_avatar_url(player, viewing_self:)
+  alt=player_avatar_alt(player, viewing_self:)
+  width=size
+  height=size
+]

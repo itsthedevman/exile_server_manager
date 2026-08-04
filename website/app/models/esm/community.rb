@@ -44,7 +44,7 @@ module ESM
     end
 
     def modifiable_by?(user)
-      ESM::Service::API.call(:community_modifiable_by, id:, user_id: user.id) || false
+      ESM::Service::API.call(:community_modifiable_by, id:, user_id: user.id, idempotent: true) || false
     end
 
     #
@@ -55,15 +55,15 @@ module ESM
     #   [category_hash, Array<Channel>]... # Categories + channels
     # ]
     def channels
-      @channels ||= ESM::Service::API.call(:community_channels, id:, user_id: nil) || []
+      @channels ||= ESM::Service::API.call(:community_channels, id:, user_id: nil, idempotent: true) || []
     end
 
     def player_channels(user)
-      @player_channels ||= ESM::Service::API.call(:community_channels, id:, user_id: user.id) || []
+      @player_channels ||= ESM::Service::API.call(:community_channels, id:, user_id: user.id, idempotent: true) || []
     end
 
     def roles
-      @roles ||= (ESM::Service::API.call(:community_roles, id:) || []).map(&:to_struct)
+      @roles ||= (ESM::Service::API.call(:community_roles, id:, idempotent: true) || []).map(&:to_struct)
     end
 
     #
@@ -72,13 +72,19 @@ module ESM
     # see Discord role membership - so command permission checks source it here. An unseeable guild or membership
     # degrades to an empty membership, which reads as "holds no allowlisted role".
     #
+    # Memoized per user, because a single page resolves several command permissions and each verdict reads this same
+    # membership - without the memo one render fans out into one identical bot call per command checked.
+    #
     # @param user [ESM::User]
     #
     # @return [Struct] responds to #role_ids ([String]) and #administrator (Boolean)
     #
     def membership_for(user)
-      payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id)
-      (payload || {role_ids: [], administrator: false}).to_struct
+      @memberships ||= {}
+      @memberships[user.id] ||= begin
+        payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id, idempotent: true)
+        (payload || {role_ids: [], administrator: false}).to_struct
+      end
     end
 
     #
@@ -97,6 +103,34 @@ module ESM
       validate_and_decorate_roles(dashboard_access_role_ids)
     end
 
+    ##
+    # This community's territory-admin users: members holding a Discord administrator role or one of the community's
+    # configured territory-admin roles, plus the guild owner. Only the bot can resolve Discord role membership, so it
+    # computes the set and writes the resolved ids to the store this app shares with it; this reads them back, warming a
+    # cold key through the bot on first read (a server up long enough for the entry to lapse without a reboot to refresh
+    # it). Memoized per instance.
+    #
+    # @return [ActiveRecord::Relation<ESM::User>] the territory-admin users; empty when the community has none or the
+    #   bot can't be reached
+    #
+    def territory_admin_users
+      @territory_admin_users ||=
+        ESM::User.where(id: ESM.cache.read(territory_admin_users_cache_key) || warm_territory_admin_ids).load
+    end
+
+    #
+    # Whether the user holds territory-admin rights in this community. A territory admin gets write access to every
+    # territory's web actions (arma still enforces the actual in-game rights), a broader grant than access to a single
+    # command like info.
+    #
+    # @param user [ESM::User]
+    #
+    # @return [Boolean]
+    #
+    def territory_admin?(user)
+      territory_admin_users.include?(user)
+    end
+
     def update_community_id!(new_id)
       # Adjust the server IDs
       ESM::Server.where(community_id: id).each do |server|
@@ -111,6 +145,16 @@ module ESM
     end
 
     private
+
+    # Asks the bot to compute the territory-admin users (which repopulates the shared cache for later reads) and hands
+    # back their ids. A down or unreachable bot fails closed - an empty list reads as "not a territory admin" - so a
+    # transient outage denies the elevated action rather than 500ing the page.
+    def warm_territory_admin_ids
+      ESM::Service::API.call(:territory_admins, community_id: id, idempotent: true) || []
+    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+      Rails.logger.warn("[territory_admin_uids] warm failed: #{e.message}")
+      []
+    end
 
     def validate_and_decorate_roles(role_ids)
       return [] if role_ids.blank?

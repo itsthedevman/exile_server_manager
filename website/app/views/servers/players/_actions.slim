@@ -1,9 +1,0 @@
-/ locals: current_server
-/ Player-actions region for the identity strip. Self-view only today - a single confirm-guarded reset. When the admin
-/ players page reuses this view for another player, this slot renders the admin action dropdown instead.
-.d-flex.flex-column.align-items-end.gap-2.mt-2
-  - if command_accessible?("stuck")
-    = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your character on #{current_server.server_name}?\nThis wipes your current character - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
-      i.bi.bi-arrow-counterclockwise.me-1
-      | I'm stuck - reset character
-    #player_action_result.w-100

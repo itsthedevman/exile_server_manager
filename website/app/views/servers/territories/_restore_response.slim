@@ -1,0 +1,9 @@
+/ locals: command, current_server
+- if command.completed?
+  = turbo_stream.replace "territories_list" do
+    = turbo_frame_tag "territories_list", src: list_server_territories_path(current_server.public_id)
+  = create_success_toast("Territory #{command.arguments[:territory_id]} restored.", title: "Territory restored", color: "green")
+- elsif command.settled?
+  = create_error_toast(territory_restore_failure_message(command), title: "Restore failed", color: "red")
+- else
+  = create_info_toast("Restore is still processing - refresh in a moment to confirm.", title: "Restoring", color: "blue")

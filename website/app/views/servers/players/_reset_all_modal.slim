@@ -1,0 +1,21 @@
+/ locals: current_server
+= render "shared/modal",
+  id: "reset_all_modal",
+  data: {bs_backdrop: "static", controller: "reset-confirm"} do
+  .modal-header.border-danger.bg-danger.bg-opacity-10
+    h5.modal-title.text-danger-emphasis
+      i.bi.bi-exclamation-triangle-fill.me-2
+      | Reset stuck players on #{current_server.server_name}
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  .modal-body
+    p.text-light.mb-0 This clears the character of every player who's dead, so they spawn back in fresh. Use this if anyone is stuck in "bunny mode" and unable to respawn. Players who are currently alive aren't affected, and this can't be undone.
+
+  .modal-footer
+    button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
+    = button_to reset_all_server_players_path(current_server.public_id),
+      params: {idempotency_key: SecureRandom.uuid, dom_id: "reset_all_result"},
+      class: "btn btn-danger",
+      form: {data: {action: "turbo:submit-start->reset-confirm#close"}} do
+      i.bi.bi-arrow-counterclockwise.me-1
+      | Reset stuck players

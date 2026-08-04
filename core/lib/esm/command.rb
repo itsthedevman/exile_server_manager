@@ -61,10 +61,12 @@ module ESM
       @all = []
       @by_type = []
       @by_namespace = {}
+      @configurations = nil
 
       ApplicationCommand.subclasses.each do |command_class|
         # Background commands do not have types
         next if command_class.type.nil?
+        next if ESM.env.production? && !command_class.released?
 
         @all << command_class
 

@@ -1,0 +1,10 @@
+/ locals: command, target, current_server, refreshed_player, viewing_self
+= turbo_stream.replace target do
+  div id=target
+= reset_command_outcome_toast(command)
+- if command.completed? && reset_kind(command) != :all
+  = turbo_stream.update "player_overview" do
+    - if refreshed_player.present?
+      = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:, fetched_at: Time.current
+    - else
+      = render "servers/players/no_character", current_server:, viewing_self:

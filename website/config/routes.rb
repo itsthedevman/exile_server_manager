@@ -109,6 +109,12 @@ Rails.application.routes.draw do
     end
   end
 
+  if Rails.env.local?
+    # /dev/login/:discord_id
+    # Signs in as an existing user so local browsing and browser-driven tests skip Discord OAuth.
+    get "dev/login/:discord_id", to: "dev/sessions#create", as: :dev_login
+  end
+
   # /discover
   resource :discover, only: [:show]
 
@@ -180,7 +186,7 @@ Rails.application.routes.draw do
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
       # /servers/:server_id/players
-      resources :players, controller: "servers/players", only: [], param: :user_id do
+      resources :players, controller: "servers/players", only: [:index, :show], param: :uid do
         collection do
           # /servers/:server_id/players/me
           get :me
@@ -188,13 +194,33 @@ Rails.application.routes.draw do
           # /servers/:server_id/players/summary — lazy My Player card on the hub
           get :summary
 
+          # /servers/:server_id/players/list — lazy listing frame on the admin players page
+          get :list
+
           # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
           post :reset_me
+
+          # /servers/:server_id/players/reset_all — admin reset of every character on the server (typed-confirm guarded)
+          post :reset_all
+
+          # /servers/:server_id/players/commands/:command_id/status — poller target for an async reset
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
+
+        member do
+          # /servers/:server_id/players/:uid/reset — admin character reset for the viewed player
+          post :reset
+
+          # /servers/:server_id/players/:uid/modify — admin player action (heal/kill/money/locker/respect)
+          post :modify
         end
       end
 
       # /servers/:server_id/territories
-      resources :territories, controller: "servers/territories", only: [:show], param: :territory_id do
+      resources :territories, controller: "servers/territories", only: [:index, :show], param: :territory_id do
+        # /servers/:server_id/territories/:territory_id/restore — admin restore of a territory marked for deletion
+        post :restore
+
         # /servers/:server_id/territories/:territory_id/pay
         post :pay
 
@@ -217,6 +243,9 @@ Rails.application.routes.draw do
         post :set_id
 
         collection do
+          # /servers/:server_id/territories/list — lazy listing frame on the admin territories page
+          get :list
+
           # /servers/:server_id/territories/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
         end

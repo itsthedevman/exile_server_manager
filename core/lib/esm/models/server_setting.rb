@@ -116,10 +116,10 @@ module ESM
     # Lifetime of a territory in days
     attribute :territory_lifetime, :integer, default: 7
 
-    # Hour of the day when server restarts
+    # Hours between server restarts
     attribute :server_restart_hour, :integer, default: 3
 
-    # Minute of the hour when server restarts
+    # Minutes to add to the hours between restarts
     attribute :server_restart_min, :integer, default: 0
 
     ##########################

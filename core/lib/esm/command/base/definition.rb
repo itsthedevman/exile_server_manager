@@ -32,6 +32,7 @@ module ESM
           class_attribute :examples_raw
           class_attribute :limited_to
           class_attribute :namespace
+          class_attribute :released
           class_attribute :requirements
           class_attribute :skipped_actions
           class_attribute :type
@@ -144,6 +145,20 @@ module ESM
           #
           alias_method :use_root_namespace, :command_namespace
 
+          ##
+          # Marks this command as unreleased, keeping it out of the registry in production. The command still loads
+          # everywhere else, so it can be built and tested while whatever it depends on is waiting to ship.
+          #
+          # An unreleased command is never registered with Discord, never receives a configuration row, and cannot be
+          # resolved through ESM::Command[]. Deleting this call releases the command everywhere.
+          #
+          # @return [self]
+          #
+          def unreleased!
+            self.released = false
+            self
+          end
+
           #
           # Returns a hash representation of this command
           #
@@ -174,8 +189,10 @@ module ESM
           # @return [Hash]
           #
           def to_details
+            arguments = self.arguments.values.select { |argument| argument.available_to?(:discord) }
+
             documented_arguments =
-              arguments.values.index_by(&:display_name).transform_values do |argument|
+              arguments.index_by(&:display_name).transform_values do |argument|
                 {
                   name: argument.name,
                   display_name: argument.display_name,
@@ -251,12 +268,13 @@ module ESM
             command_namespace(category.to_sym) # Sets the default namespace to be: /<category> <command_name>
 
             self.description = I18n.t("commands.#{command_name}.description", default: "")
-            self.description_extra = I18n.t("commands.#{command_name}.description_extra", default: nil)
-            self.examples_raw = I18n.t("commands.#{command_name}.examples", default: [])
+            self.description_extra = I18n.t("commands.#{command_name}.description_extra", default: "")
+            self.examples_raw = I18n.t("commands.#{command_name}.examples", default: ->(_) { [] })
 
             self.limited_to = nil
             self.type = :player
             self.requirements = Inquirer.new(:dev, :registration)
+            self.released = true
 
             self.skipped_actions = Inquirer.new(
               :connected_server, :cooldown, :nil_target_user,
@@ -289,8 +307,10 @@ module ESM
 
           # @!visibility private
           def register_arguments(builder)
+            arguments = self.arguments.values.select { |argument| argument.available_to?(:discord) }
+
             # Required arguments must be first (Discord requirement)
-            sorted_arguments = arguments.values.sort_by { |argument| argument.required_by_discord? ? 0 : 1 }
+            sorted_arguments = arguments.sort_by { |argument| argument.required_by_discord? ? 0 : 1 }
 
             sorted_arguments.each do |argument|
               if !builder.respond_to?(argument.type)

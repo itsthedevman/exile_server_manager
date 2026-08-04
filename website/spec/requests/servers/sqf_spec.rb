@@ -48,7 +48,7 @@ RSpec.describe "Servers::Sqf", type: :request do
         code_to_execute: "hint 'hi';",
         target: "76561198000000042"
       )
-      expect(ESM::Service::API).to have_received(:call).with(:service_command, command_id: command.id)
+      expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
       expect(response).to have_http_status(:ok)
     end
 

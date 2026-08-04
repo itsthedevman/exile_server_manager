@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe ESM::Website::API::Handlers::ServiceCommand do
+RSpec.describe ESM::Website::API::Handlers::AsyncCommand do
   let!(:community) { create(:community) }
   let!(:server) { create(:server, community:) }
   let!(:user) { create(:user) }
@@ -25,7 +25,7 @@ RSpec.describe ESM::Website::API::Handlers::ServiceCommand do
     end
 
     it "dispatches the row through its command's website event hook" do
-      expect(ESM::Command::Server::Gamble).to receive(:website_event_hook).with(
+      expect(ESM::Command::Server::Gamble).to receive(:website_async_hook).with(
         an_instance_of(ESM::ServiceCommand)
       )
 

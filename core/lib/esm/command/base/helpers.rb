@@ -29,7 +29,8 @@ module ESM
             command_statement << namespace[:command_name]
 
             if with_args && self.arguments.size > 0
-              self.arguments.each do |(name, template)|
+              discord_arguments = self.arguments.select { |_, argument| argument.available_to?(:discord) }
+              discord_arguments.each do |(name, template)|
                 # Better support for falsey values
                 value =
                   if arguments.key?(name)
@@ -322,6 +323,15 @@ module ESM
           )
 
           raise error
+        end
+
+        def raise_server_version_not_supported!
+          raise_error!(
+            :server_version_not_supported,
+            path_prefix: "command_errors",
+            user: current_user,
+            server_id: target_server.server_id
+          )
         end
 
         def skip_action(*)

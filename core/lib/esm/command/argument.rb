@@ -125,7 +125,8 @@ module ESM
         :default_value, :modifier, :placeholder,
         :description, :description_extra, :optional_text,
         :description_web, :description_extra_web,
-        :options, :checked_against, :checked_against_if
+        :options, :checked_against, :checked_against_if,
+        :origins
 
       #
       # A configurable representation of a command argument
@@ -213,6 +214,10 @@ module ESM
       #
       #   @option opts [String, Symbol] :placeholder
       #     Used when the command usage is displayed and use_placeholders are true. Defaults to the display name
+      #
+      #   @option opts [Array<String, Symbol>] :origins
+      #     Controls which origins can utilize this argument. Defaults to [:discord, :website]
+      #
       def initialize(name, type = nil, opts = {})
         template_name = (opts[:template] || name).to_sym
 
@@ -232,13 +237,14 @@ module ESM
         @checked_against = opts[:checked_against]
         @checked_against_if = opts[:checked_against_if]
         @placeholder = opts[:placeholder].presence || name
+        @origins = (opts[:origins]&.map(&:to_sym) || [:discord, :website]).to_set
 
         if opts[:required].is_a?(Hash)
           @required_by_discord = !!opts.dig(:required, :discord)
           @required_by_bot = !!opts.dig(:required, :bot)
         else
           required = !!opts[:required]
-          @required_by_discord = required
+          @required_by_discord = available_to?(:discord) && required
           @required_by_bot = required
         end
 
@@ -367,6 +373,22 @@ module ESM
         }
       end
 
+      ##
+      # Whether this argument is offered to any of the given origins. An argument declares the surfaces it belongs
+      # to with the :origins option, keeping a Discord-only or website-only argument out of the other surface's
+      # usage text, help documentation, and validation.
+      #
+      # @param origins [Array<Symbol>] One or more origins to check, such as :discord or :website
+      #
+      # @return [Boolean] true if the argument is available to at least one of the given origins
+      #
+      # @example Matching any origin, not all of them
+      #   argument.available_to?(:discord, :website) # => true when the argument reaches either surface
+      #
+      def available_to?(*origins)
+        @origins.intersect?(origins)
+      end
+
       private
 
       def load_locale_or_provided(path, suffix)
@@ -441,6 +463,13 @@ module ESM
 
         if description.length < 1
           raise ArgumentError, "#{command_class}:argument.#{name} - description must be at least 1 character long"
+        end
+
+        if required_by_discord? && !origins.include?(:discord)
+          raise ArgumentError,
+            "#{command_class}:argument.#{name} - cannot be required by Discord: :origins does not include :discord, " \
+            "so Discord is never given this argument to ask for. Add :discord to :origins, or require it of the bot " \
+            "only with `required: {bot: true}`"
         end
       end
 

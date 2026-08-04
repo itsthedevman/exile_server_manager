@@ -3,31 +3,12 @@
 - if current_player
   .card-body
     .d-flex.align-items-center.gap-3.mb-3
-      - if current_user.steam_data&.avatar
-        img.rounded-circle.border.border-2.border-success[
-          src=current_user.steam_data.avatar
-          alt=current_user.steam_data.username
-          width="48"
-          height="48"
-        ]
-      - else
-        img.rounded-circle.border.border-2.border-success[
-          src=image_url("default_steam_avatar.png")
-          alt="Default Steam Avatar"
-          width="48"
-          height="48"
-        ]
+      = render "servers/players/status_avatar", player: current_player, viewing_self: true, size: 48
       .min-w-0
-        .fw-bold.text-truncate = current_player.name
+        .d-flex.align-items-center.gap-2
+          span.fw-bold.text-truncate.min-w-0 = current_player.name
+          = render "servers/players/status_pill", player: current_player
         .text-muted.small.font-monospace.text-truncate = current_player.uid
-        - if current_player.alive?
-          small.text-success
-            i.bi.bi-heart-pulse.me-1
-            | Alive
-        - else
-          small.text-muted
-            i.bi.bi-person-x.me-1
-            | No active character
 
     .row.g-2.text-center.mb-3
       .col-6
@@ -36,7 +17,7 @@
           - if current_player.alive?
             = poptabs(current_player.money, inline: true)
           - else
-            span.text-muted 0
+            i.bi.bi-dash-lg.text-muted[role="img" aria-label="No pocket cash"]
       .col-6
         .text-muted.small.text-uppercase Locker
         #player_locker.fs-5.fw-bold.text-success = poptabs(current_player.locker, inline: true)
