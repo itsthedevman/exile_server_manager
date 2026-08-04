@@ -9,10 +9,28 @@ version contract and are anchored by date. Year format is Holocene.
 
 ## [@esm Unreleased]
 
+### Added
+
+- `players_list` query returning each player's stats, connection history, and live online/offline status
+
 ### Changed
 
-- `command_me` query consolidated into `player_info` (internal; supports the upcoming website player view)
-- Admin SQF execution now returns the result's type alongside the value, for type-aware rendering on the website
+- `all_territories` query now returns territory level, object count, last-paid timestamp, and stolen/deleted state, and includes territories whose owner account is missing instead of silently excluding them
+
+---
+
+## [Unreleased]
+
+### Added
+
+- **(website)** Server hub: a per-server dashboard that adapts to the viewer, with a self-service card for registered players and management tools for admins
+- **(website)** Admin players page: browse recently connected players, search by name or Steam UID, and heal, kill, adjust money, locker, or respect, or reset a stuck character
+- **(website)** Player detail page showing health, money, locker, kill/death record, connection history, and territories grouped into stolen, payment due, and up to date. Players see their own; admins see anyone on the server
+- **(website)** Admin territories page: every territory on a server, with search and one-click restore for anything Exile has flagged for deletion, plus a detail view where territory admins can pay dues, upgrade, rename, and manage membership
+- **(website)** Gambling: bet poptabs, with win/loss streaks, net winnings, and personal and server-wide leaderboards
+- **(website)** Admin SQF console: a syntax-highlighted editor for running SQF against the server, all players, or one player by Steam UID
+- **(website)** Players can favorite servers, available on the Discover page and the community dashboard
+- **(core)** Website actions run through the same command engine as Discord, so per-community permissions, cooldowns, and argument validation apply identically on both surfaces. A command can also declare arguments and help text for one origin only
 
 ---
 
@@ -26,6 +44,8 @@ version contract and are anchored by date. Year format is Holocene.
 ### Changed
 
 - Message encryption moved from OpenSSL bindings to the pure-Rust `aes-gcm` crate (same AES-256-GCM and wire format, so no bot/extension protocol change)
+- `command_me` query consolidated into `player_info`
+- Admin SQF execution now returns the result's type alongside the value, so a boolean or number arrives as its real type rather than a string
 - Updated workspace dependencies (tokio 1.47, uuid 1.18, regex 1.11, and others)
 
 ### Fixed
@@ -41,6 +61,47 @@ version contract and are anchored by date. Year format is Holocene.
 ### Changed
 
 - Fixed client reconnection interval calculation
+
+---
+
+## 12026-08-03
+
+### Added
+
+- **(website)** My Requests page under Account for accepting or declining pending requests without leaving the website, replacing the standalone request-failure page
+- **(website)** Live filter on the Command Configuration page for searching commands by name
+- **(core)** Error messages for reusing a territory ID that is already taken and for hitting the remote territory payment limit
+- **(dev)** `bin/dev`, backed by overmind, runs the website, service, and arma dev processes together in one terminal, each in its own pty so `binding.pry` still works
+- **(dev)** One root `docker-compose.yml` for all backing services (Postgres, MySQL, MySQL v1, Redis, NATS on a shared `esm` network), replacing the compose files each component ran independently. The migration generator moved to `bin/create_postgres_migration`
+- **(dev)** Local-only `/dev/login/:discord_id` route that signs in as an existing user, skipping Discord OAuth, for local browsing and browser-driven tests
+- **(arma, dev)** `bin/paa2png` converts an Arma PAA texture to PNG, or to whatever format its output extension implies
+- **(arma, dev)** `--seed-xm8-notify` build flag arms the seeded showcase territories to fire their protection-money XM8 notification once on server start; a routine dev start seeds them already notified
+- **(arma, dev)** The dev server launcher runs a heartbeat inside the container so `arma3server` is reaped if the build tool dies, preventing orphaned server processes
+
+### Changed
+
+- **(website)** Website-to-bot calls run over NATS RPC, either synchronously or in the background, with automatic retries and a 2 second timeout, down from 10. Pages that depend on the bot fall back to a safe default instead of erroring when it is unreachable
+- **(website)** The website shares a Redis connection with the bot via `REDIS_HOST`, caching cross-process data such as resolved territory-admin membership
+- **(website)** The Discover page shows server results before community results, and its search copy leads with server search
+- **(service)** Outbound Discord delivery is a fixed pool of four pacing workers draining a shared queue, replacing the two-thread Redis-polling tracker. A slow rate-limit sleep on one channel no longer stalls every other queued message, most noticeable during synchronized multi-server restarts
+- **(service)** Requests accepted or declined without an originating channel, such as from the website, reply via the user's DM instead of requiring the original channel to still exist
+- **(core)** Territory admins can add a player to a territory directly, the same as a self-add, instead of sending a consent request the player must accept
+- **(core)** A community's command cooldown reconciles for everyone currently on it as soon as the new value is saved, instead of waiting until each cooldown is next read
+- **(arma, dev)** PBO packing uses HEMTT's native writer instead of shelling out to the vendored armake2 binary, which was removed from the toolchain
+- **(arma, dev)** Release workflow split in two: `bin/package` builds and zips every @esm artifact, `bin/release` tags the commit and publishes the built zip. `--use-existing` was dropped in favor of always packaging first, and `bin/package` gained `--skip-updater`
+- **(arma, dev)** Dev database seeding generates 500 fake Steam UIDs with realistic connect/disconnect history instead of reading a hand-maintained list, so `config.yml` no longer needs one. Territories get a spread of payment due dates, including a deterministic showcase covering every urgency state
+- **(arma, dev)** 32-bit Windows and Linux cross-compile toolchains fixed in the Nix dev shell, so 32-bit extension builds work alongside the existing 64-bit cross-compilation
+- **(arma, dev)** `bin/dev` no longer runs `cargo test --workspace` on startup
+- **(dev)** The Nix dev shell auto-starts the `nats` and `mysql_db` docker services on entry if they are not already running
+- **(dev)** core's test suite shares the `esm_test` Postgres database the service and website suites provision, instead of copying its schema into a separate database
+
+### Fixed
+
+- **(service)** XM8 notifications with multiple destinations record as sent when any destination succeeds. A failed custom route could previously overwrite an already-successful DM delivery and mark the whole notification failed
+- **(website)** Production boot failure where Devise drew routes before `ESM::User` was loaded; core now loads once via a `to_prepare` hook
+- **(core)** `/territory admin restore` confirms the restore with a reply instead of silently succeeding
+- **(core)** `/server sqf` casts boolean and numeric results to their real type instead of returning raw strings
+- **(core)** Garbled non-breaking-space characters in several CUP and RHS item names, which broke their display in reward lists
 
 ---
 
