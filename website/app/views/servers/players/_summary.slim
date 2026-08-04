@@ -7,7 +7,7 @@
       .min-w-0
         .d-flex.align-items-center.gap-2
           span.fw-bold.text-truncate.min-w-0 = current_player.name
-          = render "servers/players/status_pill", player: current_player
+          = player_status_pill(player_status(current_player))
         .text-muted.small.font-monospace.text-truncate = current_player.uid
 
     .row.g-2.text-center.mb-3
@@ -38,7 +38,7 @@
 - elsif current_server.connected?
   .card-body.text-center.text-muted.py-5
     i.bi.bi-person-x.fs-3.d-block.mb-2
-    | No character on this server yet.
+    | No player on this server yet.
 
 - else
   .card-body.text-center.text-muted.py-5

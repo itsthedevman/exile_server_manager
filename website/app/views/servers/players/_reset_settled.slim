@@ -7,4 +7,4 @@
     - if refreshed_player.present?
       = render "servers/players/overview", current_server:, current_player: refreshed_player, viewing_self:, fetched_at: Time.current
     - else
-      = render "servers/players/no_character", current_server:, viewing_self:
+      = render "servers/players/no_player", current_server:, viewing_self:

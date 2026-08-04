@@ -9,16 +9,16 @@ module PlayersHelper
     {action: "respect", label: "Respect", icon: "star-fill"}
   ].freeze
 
-  # The character actions: single-button, no amount. Kill confirms because it's destructive to the in-game character.
-  PLAYER_CHARACTER_ACTIONS = [
+  # The life actions: single-button, no amount. Kill confirms because it's destructive to the player in-game.
+  PLAYER_LIFE_ACTIONS = [
     {action: "heal", label: "Heal", icon: "heart-pulse-fill", variant: "outline-success"},
     {action: "kill", label: "Kill", icon: "x-octagon-fill", variant: "outline-danger",
-     confirm: "Kill this player's character? They'll die in-game."}
+     confirm: "Kill this player? They'll die in-game."}
   ].freeze
 
   # Survival stats round to whole percents for the progress bars. They read nil
-  # for a dead or absent character, but the view gates them behind #alive? so the
-  # bars only render when there's a living character to describe.
+  # for a dead or absent player, but the view gates them behind #alive? so the
+  # bars only render when there's a living player to describe.
   def player_health_percentage(player)
     player.health&.round
   end
@@ -116,9 +116,8 @@ module PlayersHelper
   ##
   # The at-a-glance status dressing for a player: the avatar ring color, plus a pill - color, icon, and word - that sits
   # beside the name so the state reads without leaning on color alone. Exile draws no dead-versus-never-spawned
-  # distinction (it just drops the character row), so this is binary: a living character reads alive, anything else
-  # reads as having no character. Memoized per uid because the avatar and pill partials each read fields off the one
-  # result.
+  # distinction (it just drops the player row), so this is binary: a living player reads alive, anything else reads as
+  # dead. Memoized per uid because the avatar and pill partials each read fields off the one result.
   #
   # @param player [ESM::Exile::Player]
   #
@@ -126,26 +125,66 @@ module PlayersHelper
   #
   def player_status(player)
     @player_statuses ||= {}
-    @player_statuses[player.uid] ||=
-      if player.alive?
-        Datum.new(
-          ring_class: "border-success",
-          pill_class: "text-success-emphasis bg-success-subtle border-success-subtle",
-          icon_class: "bi-heart-fill",
-          label: "Alive"
-        )
-      else
-        Datum.new(
-          ring_class: "border-danger",
-          pill_class: "text-danger-emphasis bg-danger-subtle border-danger-subtle",
-          icon_class: "bi-person-x",
-          label: "No character"
-        )
-      end
+    @player_statuses[player.uid] ||= player_status_for(player.alive?)
+  end
+
+  ##
+  # The same status dressing for one row of the players listing. The listing renders raw query rows rather than
+  # Player objects, so the alive rule is asked of the model instead of being restated here.
+  #
+  # @param row [Hash] one player from the listing query
+  #
+  # @return [Datum] responds to #ring_class, #pill_class, #icon_class, and #label
+  #
+  def player_row_status(row)
+    player_status_for(ESM::Exile::Player.alive?(row))
+  end
+
+  ##
+  # The status pill: a rounded badge carrying the status color, its icon, and the word itself.
+  #
+  # Built here rather than in a partial because the listing draws one per row, and a partial render per row costs more
+  # than this much markup is worth.
+  #
+  # @param status [Datum] from #player_status or #player_row_status
+  #
+  # @return [ActiveSupport::SafeBuffer] the pill
+  #
+  def player_status_pill(status)
+    tag.span(
+      class: ["badge rounded-pill border flex-shrink-0 d-inline-flex align-items-center gap-1", status.pill_class]
+    ) do
+      tag.i(class: ["bi", status.icon_class], aria: {hidden: true}) + status.label
+    end
+  end
+
+  ##
+  # The status dressing itself, shared by the player pages and the listing.
+  #
+  # @param alive [Boolean] whether the account has a living player
+  #
+  # @return [Datum] responds to #ring_class, #pill_class, #icon_class, and #label
+  #
+  def player_status_for(alive)
+    if alive
+      Datum.new(
+        ring_class: "border-success",
+        pill_class: "text-success-emphasis bg-success-subtle border-success-subtle",
+        icon_class: "bi-heart-fill",
+        label: "Alive"
+      )
+    else
+      Datum.new(
+        ring_class: "border-danger",
+        pill_class: "text-danger-emphasis bg-danger-subtle border-danger-subtle",
+        icon_class: "bi-person-x",
+        label: "Dead"
+      )
+    end
   end
 
   # Which flavor of reset a command is, driving the copy and whether a single overview gets refreshed on settle: the
-  # player's own self-service stuck reset, an admin reset of one player, or an admin reset of every character (the reset
+  # player's own self-service stuck reset, an admin reset of one player, or an admin reset of every player (the reset
   # command with no target).
   def reset_kind(command)
     return :self if command.command_name == "stuck"
@@ -163,25 +202,25 @@ module PlayersHelper
   # The spinner label shown while a reset is still in flight.
   def reset_processing_label(command)
     case reset_kind(command)
-    when :self then "Resetting your character..."
+    when :self then "Resetting your player..."
     when :all then "Resetting stuck players..."
-    else "Resetting the character..."
+    else "Resetting the player..."
     end
   end
 
   # The toast that announces a settled reset's outcome - success in green, failure in red.
   def reset_command_outcome_toast(command)
-    return create_success_toast(reset_success_message(command), title: "Character reset", color: "green") if command.completed?
+    return create_success_toast(reset_success_message(command), title: "Player reset", color: "green") if command.completed?
 
     create_error_toast(reset_command_failure_message(command), title: "Reset failed", color: "red")
   end
 
-  # Success copy for a settled reset. Self-service speaks in the first person; an admin reset speaks about the character(s).
+  # Success copy for a settled reset. Self-service speaks in the first person; an admin reset speaks about the player(s).
   def reset_success_message(command)
     case reset_kind(command)
-    when :self then "Your character has been reset - hop back in."
+    when :self then "Your player has been reset - hop back in."
     when :all then "Stuck players on #{command.server.server_name} have been reset."
-    else "The character has been reset."
+    else "The player has been reset."
     end
   end
 
@@ -198,8 +237,8 @@ module PlayersHelper
     PLAYER_BALANCE_ACTIONS
   end
 
-  def player_character_actions
-    PLAYER_CHARACTER_ACTIONS
+  def player_life_actions
+    PLAYER_LIFE_ACTIONS
   end
 
   # Whether an action takes a give/remove amount (money/locker/respect) rather than being a one-shot (heal/kill). Drives
@@ -211,7 +250,7 @@ module PlayersHelper
   # The display config for an action, from whichever group owns it - so a turbo response can re-render the region for the
   # action a command carries.
   def player_action_spec(action)
-    (PLAYER_BALANCE_ACTIONS + PLAYER_CHARACTER_ACTIONS).find { |spec| spec[:action] == action }
+    (PLAYER_BALANCE_ACTIONS + PLAYER_LIFE_ACTIONS).find { |spec| spec[:action] == action }
   end
 
   # DOM id for one player action's region, so a turbo response replaces just that action's control after it fires.

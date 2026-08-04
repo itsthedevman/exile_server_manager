@@ -19,7 +19,7 @@ describe ESM::Command::General::Register, category: "command" do
         expectation = <<~STRING.chomp
           Greetings #{user.mention}!
 
-          My name is Exile Server Manager and I'm here to help make interacting with your character on a Exile server easier. In order to use my commands, I'll need you to link your Steam account with your Discord account on my website; this will require you to authenticate with your Discord and Steam accounts.
+          My name is Exile Server Manager and I'm here to help make interacting with your player on a Exile server easier. In order to use my commands, I'll need you to link your Steam account with your Discord account on my website; this will require you to authenticate with your Discord and Steam accounts.
 
           Before you sign into your Steam account, please double check the Discord account you are signed into as you may be signed into another account in your browser.
           **This Discord account is #{user.distinct}.**

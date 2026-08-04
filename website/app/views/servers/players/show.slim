@@ -24,7 +24,7 @@
     = render "shared/turbo_modal", id: "territory_detail", class: "modal-lg"
 
   - elsif current_server.connected?
-    = render "servers/players/no_character", current_server:, viewing_self: false
+    = render "servers/players/no_player", current_server:, viewing_self: false
 
   - else
     / Server is offline, so we couldn't load the player's data

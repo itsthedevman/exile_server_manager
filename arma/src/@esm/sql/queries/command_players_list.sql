@@ -10,6 +10,7 @@ SELECT
     a.last_disconnect_at,
     a.total_connections,
     p.money,
+    p.damage,
     (
         a.last_disconnect_at IS NULL
         OR a.last_connect_at > a.last_disconnect_at

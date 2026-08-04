@@ -65,7 +65,7 @@ en:
         player:
           title: Player Commands
           description: |-
-            These commands are for players to interact with their character in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode enabled.
+            These commands are for interacting with your player in game. They are primarily used in a Direct Message with me, but can be available to use in a community's Discord server or on your own with Player Mode enabled.
 
             _**Note:** Communities have the ability to disable or limit access to commands for their servers, regardless of where the command is used_
 

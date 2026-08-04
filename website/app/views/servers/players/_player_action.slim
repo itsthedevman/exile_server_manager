@@ -1,6 +1,6 @@
 / locals: current_server, target_uid, spec
 / One admin player-action control, in its own region so a settled response can replace just this one. A balance action is
-/ an amount field with Give/Remove; a character action is a single button that stretches to fill the column height (kill
+/ an amount field with Give/Remove; a life action is a single button that stretches to fill the column height (kill
 / confirms). Each carries a fresh idempotency key, so a double-click dedupes and the region re-renders with a new key
 / after it fires. The action is sent as player_action, not action - `action` is Rails' reserved routing key.
 - if player_balance_action?(spec[:action])

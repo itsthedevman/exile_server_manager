@@ -76,6 +76,7 @@
                     span.badge.text-bg-success.me-1 Online
                   - else
                     span.badge.text-bg-secondary.me-1 Offline
+                  = player_status_pill(player_row_status(player))
                   - if (last_seen = player_last_seen_at(player))
                     .small.text-muted
                       - if player[:online]
@@ -88,7 +89,7 @@
                   - if player[:money]
                     = poptabs(player[:money], inline: true)
                   - else
-                    span.text-muted title="No character on the server right now" —
+                    span.text-muted title="No player on the server right now" —
                   .small.text-muted
                     = poptabs(player[:locker], inline: true)
                     | locker

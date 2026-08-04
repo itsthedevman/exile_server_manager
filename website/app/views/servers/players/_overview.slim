@@ -6,13 +6,13 @@
       div
         .d-flex.align-items-center.gap-2.flex-wrap
           h2.mb-0 = current_player.name
-          = render "servers/players/status_pill", player: current_player
+          = player_status_pill(player_status(current_player))
         small.text-muted.font-monospace = current_player.uid
       .ms-auto
         = render "shared/data_freshness", at: fetched_at
 
 .row.g-4.mb-4
-  / Character status
+  / Player status
   .col-12.col-xl-6
     .card.h-100
       .card-header
@@ -51,7 +51,7 @@
         - else
           .text-center.text-muted.py-4
             i.bi.bi-person-x.fs-3.d-block.mb-2
-            | No active character
+            | No active player
 
   / Account stats
   .col-12.col-xl-6

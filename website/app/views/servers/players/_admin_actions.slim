@@ -13,7 +13,7 @@
           - player_balance_actions.each do |spec|
             = render "servers/players/player_action", current_server:, target_uid:, spec:
       .col-12.col-lg-5.d-flex.flex-column
-        .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Character
+        .text-uppercase.small.fw-bold.text-secondary-emphasis.mb-2 Life
         .d-flex.flex-column.justify-content-between.gap-2.flex-grow-1
-          - player_character_actions.each do |spec|
+          - player_life_actions.each do |spec|
             = render "servers/players/player_action", current_server:, target_uid:, spec:

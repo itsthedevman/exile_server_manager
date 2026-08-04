@@ -6,7 +6,7 @@
     h1.mb-1 My Player
     - if current_server.connected? && command_accessible?("stuck")
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
-        = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your character on #{current_server.server_name}?\nThis wipes your current character - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
+        = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your player on #{current_server.server_name}?\nThis wipes your current player - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
           i.bi.bi-arrow-counterclockwise.me-1
           | I'm stuck - reset me!
         #player_action_result
@@ -19,7 +19,7 @@
     = render "shared/turbo_modal", id: "territory_detail", class: "modal-lg"
 
   - elsif current_server.connected?
-    = render "servers/players/no_character", current_server:, viewing_self: true
+    = render "servers/players/no_player", current_server:, viewing_self: true
 
   - else
     / Server is offline, so we couldn't load the player's data
@@ -27,4 +27,4 @@
       .card-body.text-center.py-5
         i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
         h5.text-light.mb-2 #{current_server.server_name} is offline
-        p.text-muted.mb-0 We can't load your character while the server is offline. Check back once it's back up.
+        p.text-muted.mb-0 We can't load your player while the server is offline. Check back once it's back up.

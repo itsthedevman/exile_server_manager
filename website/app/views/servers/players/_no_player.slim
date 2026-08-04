@@ -1,0 +1,10 @@
+/ locals: current_server, viewing_self
+.card.border-secondary
+  .card-body.text-center.py-5
+    i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
+    - if viewing_self
+      h5.text-light.mb-2 No player on #{current_server.server_name}
+      p.text-muted.mb-0 You haven't spawned in on this server yet. Hop in-game to spawn, then check back here.
+    - else
+      h5.text-light.mb-2 No player found
+      p.text-muted.mb-0 Nobody with that Steam UID has spawned in on #{current_server.server_name}.

@@ -11,7 +11,7 @@ version contract and are anchored by date. Year format is Holocene.
 
 ### Added
 
-- `players_list` query returning each player's stats, connection history, and live online/offline status
+- `players_list` query returning each player's stats, connection history, live online/offline status, and whether their player is still alive
 
 ### Changed
 
@@ -24,7 +24,7 @@ version contract and are anchored by date. Year format is Holocene.
 ### Added
 
 - **(website)** Server hub: a per-server dashboard that adapts to the viewer, with a self-service card for registered players and management tools for admins
-- **(website)** Admin players page: browse recently connected players, search by name or Steam UID, and heal, kill, adjust money, locker, or respect, or reset a stuck character
+- **(website)** Admin players page: browse recently connected players, search by name or Steam UID, and heal, kill, adjust money, locker, or respect, or reset a stuck player
 - **(website)** Player detail page showing health, money, locker, kill/death record, connection history, and territories grouped into stolen, payment due, and up to date. Players see their own; admins see anyone on the server
 - **(website)** Admin territories page: every territory on a server, with search and one-click restore for anything Exile has flagged for deletion, plus a detail view where territory admins can pay dues, upgrade, rename, and manage membership
 - **(website)** Gambling: bet poptabs, with win/loss streaks, net winnings, and personal and server-wide leaderboards

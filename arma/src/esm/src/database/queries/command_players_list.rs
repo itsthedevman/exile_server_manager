@@ -13,6 +13,7 @@ struct Account {
     last_disconnect_at: Option<NaiveDateTime>,
     total_connections: isize,
     money: Option<isize>,
+    damage: Option<f64>,
     online: bool,
 }
 
@@ -63,6 +64,7 @@ fn convert_result(row: Row) -> Result<String, String> {
         last_disconnect_at: select_column(&row, "last_disconnect_at")?,
         total_connections: select_column(&row, "total_connections")?,
         money: select_column(&row, "money")?,
+        damage: select_column(&row, "damage")?,
         online: select_column(&row, "online")?,
     };
 

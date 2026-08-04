@@ -21,10 +21,25 @@ module ESM
         new(server:, player: data)
       end
 
+      ##
+      # Whether a set of player data describes a living player.
+      #
+      # A nil damage means Exile has no player row for the account at all, and a damage of 1 is the glitched,
+      # unspawnable state the reset commands exist to clear. Both read as dead to whoever is looking.
+      #
+      # @param data [Hash] player data, symbol-keyed
+      #
+      # @return [Boolean] true when the account has a living player
+      #
+      def self.alive?(data)
+        damage = data.to_h[:damage]
+
+        !(damage.nil? || damage == 1)
+      end
+
       def initialize(server:, player:)
         @server = server
         @data = player.to_h
-        @alive = true
 
         # Dead or absent players don't return every field.
         normalize
@@ -121,7 +136,7 @@ module ESM
       # Alive players return all of these fields.
       # Dead players return: locker, score, name, kills, deaths, territories
       def normalize
-        @alive = false if @data[:damage].nil? || @data[:damage] == 1
+        @alive = self.class.alive?(@data)
         @data[:damage] ||= 1
         @data[:hunger] ||= 0
         @data[:thirst] ||= 0
