@@ -46,7 +46,7 @@ RSpec.describe ESM::Website::API::Handlers::SyncCommand do
 
         # The handler returns the calling user's row, proving the user_id was resolved into a player and the seeded
         # data round-tripped through Arma.
-        data = promise.value!(10).to_istruct
+        data = promise.value!(10).to_datum
         expect(data.uid).to eq(steam_uid)
         expect(data.name).to eq(account.name)
         expect(data.locker).to eq(25_000)
@@ -67,7 +67,7 @@ RSpec.describe ESM::Website::API::Handlers::SyncCommand do
       let(:territory_owner) { steam_uid }
 
       it "forwards the command's own arguments and resolves to the territory" do
-        data = call("territory", territory_id: territory.encoded_id).value!(10).to_istruct
+        data = call("territory", territory_id: territory.encoded_id).value!(10).to_datum
 
         expect(data.territory_name).to eq(territory.name)
         expect(data.owner_uid).to eq(steam_uid)
