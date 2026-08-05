@@ -37,6 +37,21 @@ module ESM
         !(damage.nil? || damage == 1)
       end
 
+      ##
+      # Whether a set of player data describes a stuck player: one Exile holds a row for but cannot spawn.
+      #
+      # Dying drops the player row, so an ordinary dead player has no damage at all and spawns back in on their next
+      # connect. A damage of exactly 1 means the row survived at full damage instead, which no amount of reconnecting
+      # clears. That is the state the reset commands exist for, and the only one worth an admin's attention.
+      #
+      # @param data [Hash] player data, symbol-keyed
+      #
+      # @return [Boolean] true when the account has a player row it cannot spawn
+      #
+      def self.stuck?(data)
+        data.to_h[:damage] == 1
+      end
+
       def initialize(server:, player:)
         @server = server
         @data = player.to_h
@@ -55,6 +70,10 @@ module ESM
 
       def alive?
         @alive
+      end
+
+      def stuck?
+        @stuck
       end
 
       # Arma stores damage 0 (full health) to 1 (dead); surface it as a health %.
@@ -136,7 +155,11 @@ module ESM
       # Alive players return all of these fields.
       # Dead players return: locker, score, name, kills, deaths, territories
       def normalize
+        # Both read the raw damage, so they have to settle before the default below rewrites a missing one to 1 and
+        # makes every ordinary dead player look stuck.
         @alive = self.class.alive?(@data)
+        @stuck = self.class.stuck?(@data)
+
         @data[:damage] ||= 1
         @data[:hunger] ||= 0
         @data[:thirst] ||= 0

@@ -38,6 +38,11 @@
               input.form-check-input#players_online_only[type="checkbox" data-players-table-target="onlineOnly" data-action="change->players-table#filter"]
               label.form-check-label.small[for="players_online_only"] Online only
 
+          .col-auto
+            .form-check.form-switch.mb-0
+              input.form-check-input#players_stuck_only[type="checkbox" data-players-table-target="stuckOnly" data-action="change->players-table#filter"]
+              label.form-check-label.small[for="players_stuck_only" title="Players Exile holds a row for but can't spawn. Only a reset clears it."] Stuck only
+
           .col-auto.ms-md-auto
             small.text-muted data-players-table-target="count"
 
@@ -67,7 +72,7 @@
                 span.visually-hidden Actions
           tbody
             - players.each do |player|
-              tr data-players-table-target="row" data-online=player[:online].to_s data-search=player_search_terms(player) data-sort-name=player[:name].to_s.downcase data-sort-status=(player[:online] ? 1 : 0) data-sort-poptabs=(player[:money] || -1) data-sort-score=player[:score].to_i data-sort-kd=player_kill_death_ratio(player) data-sort-connections=player[:total_connections].to_i
+              tr data-players-table-target="row" data-online=player[:online].to_s data-stuck=player_row_stuck?(player).to_s data-search=player_search_terms(player) data-sort-name=player[:name].to_s.downcase data-sort-status=(player[:online] ? 1 : 0) data-sort-poptabs=(player[:money] || -1) data-sort-score=player[:score].to_i data-sort-kd=player_kill_death_ratio(player) data-sort-connections=player[:total_connections].to_i
                 td
                   .fw-medium.text-truncate = player[:name]
                   small.text-muted.font-monospace = player[:uid]

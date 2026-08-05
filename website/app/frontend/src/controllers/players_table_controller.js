@@ -10,6 +10,7 @@ export default class extends ApplicationController {
     "row",
     "search",
     "onlineOnly",
+    "stuckOnly",
     "count",
     "empty",
     "limitWarning",
@@ -53,6 +54,10 @@ export default class extends ApplicationController {
 
     if (this.hasOnlineOnlyTarget && typeof saved.onlineOnly === "boolean") {
       this.onlineOnlyTarget.checked = saved.onlineOnly;
+    }
+
+    if (this.hasStuckOnlyTarget && typeof saved.stuckOnly === "boolean") {
+      this.stuckOnlyTarget.checked = saved.stuckOnly;
     }
   }
 
@@ -138,9 +143,13 @@ export default class extends ApplicationController {
       : "";
 
     const onlineOnly = this.hasOnlineOnlyTarget && this.onlineOnlyTarget.checked;
+    const stuckOnly = this.hasStuckOnlyTarget && this.stuckOnlyTarget.checked;
 
+    // The two switches narrow rather than widen, so checking both asks for the players who are connected right now and
+    // can't spawn. That pairing is the closest the listing gets to "who needs a reset".
     return this.rowTargets.filter((row) => {
       if (onlineOnly && row.dataset.online !== "true") return false;
+      if (stuckOnly && row.dataset.stuck !== "true") return false;
 
       return query === "" || row.dataset.search.includes(query);
     });
@@ -180,8 +189,9 @@ export default class extends ApplicationController {
   isFiltering() {
     const searching = this.hasSearchTarget && this.searchTarget.value.trim() !== "";
     const onlineOnly = this.hasOnlineOnlyTarget && this.onlineOnlyTarget.checked;
+    const stuckOnly = this.hasStuckOnlyTarget && this.stuckOnlyTarget.checked;
 
-    return searching || onlineOnly;
+    return searching || onlineOnly || stuckOnly;
   }
 
   // data-sort-key="score" addresses the row's data-sort-score, which reaches the element as dataset.sortScore.
@@ -210,6 +220,7 @@ export default class extends ApplicationController {
       page: this.page,
       search: this.hasSearchTarget ? this.searchTarget.value : "",
       onlineOnly: this.hasOnlineOnlyTarget && this.onlineOnlyTarget.checked,
+      stuckOnly: this.hasStuckOnlyTarget && this.stuckOnlyTarget.checked,
     };
 
     try {

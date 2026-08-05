@@ -9,6 +9,30 @@ module PlayersHelper
     {action: "respect", label: "Respect", icon: "star-fill"}
   ].freeze
 
+  # The three states a player's life can read as, each pairing its color with an icon and a word so the state survives
+  # being seen in grayscale. Stuck is the one an admin can act on, so it gets the warning treatment rather than sharing
+  # dead's red.
+  PLAYER_STATUS_ALIVE = Datum.new(
+    ring_class: "border-success",
+    pill_class: "text-success-emphasis bg-success-subtle border-success-subtle",
+    icon_class: "bi-heart-fill",
+    label: "Alive"
+  )
+
+  PLAYER_STATUS_DEAD = Datum.new(
+    ring_class: "border-danger",
+    pill_class: "text-danger-emphasis bg-danger-subtle border-danger-subtle",
+    icon_class: "bi-person-x",
+    label: "Dead"
+  )
+
+  PLAYER_STATUS_STUCK = Datum.new(
+    ring_class: "border-warning",
+    pill_class: "text-warning-emphasis bg-warning-subtle border-warning-subtle",
+    icon_class: "bi-exclamation-triangle-fill",
+    label: "Stuck"
+  )
+
   # The life actions: single-button, no amount. Kill confirms because it's destructive to the player in-game.
   PLAYER_LIFE_ACTIONS = [
     {action: "heal", label: "Heal", icon: "heart-pulse-fill", variant: "outline-success"},
@@ -115,9 +139,8 @@ module PlayersHelper
 
   ##
   # The at-a-glance status dressing for a player: the avatar ring color, plus a pill - color, icon, and word - that sits
-  # beside the name so the state reads without leaning on color alone. Exile draws no dead-versus-never-spawned
-  # distinction (it just drops the player row), so this is binary: a living player reads alive, anything else reads as
-  # dead. Memoized per uid because the avatar and pill partials each read fields off the one result.
+  # beside the name so the state reads without leaning on color alone. Memoized per uid because the avatar and pill
+  # partials each read fields off the one result.
   #
   # @param player [ESM::Exile::Player]
   #
@@ -125,19 +148,30 @@ module PlayersHelper
   #
   def player_status(player)
     @player_statuses ||= {}
-    @player_statuses[player.uid] ||= player_status_for(player.alive?)
+    @player_statuses[player.uid] ||= player_status_for(alive: player.alive?, stuck: player.stuck?)
   end
 
   ##
   # The same status dressing for one row of the players listing. The listing renders raw query rows rather than
-  # Player objects, so the alive rule is asked of the model instead of being restated here.
+  # Player objects, so both rules are asked of the model instead of being restated here.
   #
   # @param row [Hash] one player from the listing query
   #
   # @return [Datum] responds to #ring_class, #pill_class, #icon_class, and #label
   #
   def player_row_status(row)
-    player_status_for(ESM::Exile::Player.alive?(row))
+    player_status_for(alive: ESM::Exile::Player.alive?(row), stuck: ESM::Exile::Player.stuck?(row))
+  end
+
+  ##
+  # Whether one listing row is a stuck player, for the table's stuck-only filter.
+  #
+  # @param row [Hash] one player from the listing query
+  #
+  # @return [Boolean]
+  #
+  def player_row_stuck?(row)
+    ESM::Exile::Player.stuck?(row)
   end
 
   ##
@@ -161,26 +195,20 @@ module PlayersHelper
   ##
   # The status dressing itself, shared by the player pages and the listing.
   #
+  # Stuck outranks dead because it is the actionable one: an ordinary dead player spawns back in unaided, while a stuck
+  # player stays that way until an admin resets them. Reading both as "Dead" is what left an admin scanning the column
+  # by eye for the handful that actually needed something.
+  #
   # @param alive [Boolean] whether the account has a living player
+  # @param stuck [Boolean] whether the account has a player row it cannot spawn
   #
   # @return [Datum] responds to #ring_class, #pill_class, #icon_class, and #label
   #
-  def player_status_for(alive)
-    if alive
-      Datum.new(
-        ring_class: "border-success",
-        pill_class: "text-success-emphasis bg-success-subtle border-success-subtle",
-        icon_class: "bi-heart-fill",
-        label: "Alive"
-      )
-    else
-      Datum.new(
-        ring_class: "border-danger",
-        pill_class: "text-danger-emphasis bg-danger-subtle border-danger-subtle",
-        icon_class: "bi-person-x",
-        label: "Dead"
-      )
-    end
+  def player_status_for(alive:, stuck:)
+    return PLAYER_STATUS_ALIVE if alive
+    return PLAYER_STATUS_STUCK if stuck
+
+    PLAYER_STATUS_DEAD
   end
 
   # Which flavor of reset a command is, driving the copy and whether a single overview gets refreshed on settle: the
