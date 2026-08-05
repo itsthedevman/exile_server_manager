@@ -4,14 +4,16 @@
     h1.mb-3.text-primary Community Dashboard
     p.lead.mb-4 Select a community to manage servers and settings.
 
+  - if Rails.env.local?
+    .row
+      .col
+        = render "communities/favorite_servers", favorite_servers:
+  hr.pb-4
+
   / Two-column layout
   .row.g-5
     / Left Column - Communities
     .col-lg-8
-      - if Rails.env.local?
-        = render "communities/favorite_servers", favorite_servers:
-        hr.pb-4
-
       - if server_communities.size > 0 || player_communities.size > 0
         / Server Communities Section
         - if server_communities.size > 0
