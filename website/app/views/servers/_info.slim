@@ -1,0 +1,23 @@
+/ locals: current_server
+/ Sits under the sidebar's status line, so it repeats neither the server id nor whether the server is up. Rendered on
+/ every server page rather than just the dashboard: an address or a mod list is what someone reaches for while they're
+/ somewhere else in the hub waiting out a restart.
+.border-top.mt-3.pt-3
+  .row.g-3
+    .col-6.col-lg-12.col-xxl-6
+      .small.text-muted Connection
+      .font-monospace.small.text-truncate title=server_address(current_server) = server_address(current_server)
+    .col
+      - if server_restart_countdown(current_server)
+        .small.text-muted Restarts in
+        .small = server_restart_countdown(current_server)
+
+  - server_mod_groups(current_server).each do |group|
+    .small.text-muted.mt-3 = group.label
+    ul.list-unstyled.small.mb-0
+      - group.mods.each do |mod|
+        li.text-truncate
+          - if mod.mod_link.present?
+            = link_to server_mod_label(mod), mod.mod_link, target: "_blank", rel: "noopener", class: "link-info"
+          - else
+            = server_mod_label(mod)

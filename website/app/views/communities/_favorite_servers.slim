@@ -23,8 +23,12 @@
               .card-body.d-flex.align-items-center.py-3
                 / Server icon
                 .me-3.flex-shrink-0
-                  .bg-warning.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
-                    i.bi.bi-hdd-network.text-warning.fs-4
+                  - if server.connected?
+                    .bg-success.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                      i.bi.bi-hdd-network.text-success.fs-4
+                  - else
+                    .bg-secondary.bg-opacity-25.rounded.d-flex.align-items-center.justify-content-center style="width: 48px; height: 48px;"
+                      i.bi.bi-hdd-network.text-secondary.fs-4
 
                 / Server info
                 .flex-grow-1.min-w-0
