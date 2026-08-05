@@ -23,25 +23,37 @@ module PlayerLoading
 
   private
 
-  def load_player(force: false)
+  # The viewer's own on-server snapshot, read through me. It carries the read time alongside the payload so /me's
+  # freshness stamp reports the read rather than the render: the entry outlives the request, so a render that timed
+  # itself would call every cache hit current. Keyed on server and viewer, since the command reads as the current user
+  # against the current server and keying it any other way would file one player's payload under another's. The nil
+  # caches too, so a down server isn't hammered on every refresh.
+  def current_player_snapshot(force: false)
     key = current_player_cache_key
     ESM.cache.delete(key) if force
 
-    data =
-      ESM.cache.fetch(key, expires_in: 5.seconds) do
-        call_sync_command("me")
-      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
-        # The bot or the game server is unreachable. Degrade to "no data" (the
-        # page shows an offline empty state) rather than a 500, and cache the nil
-        # briefly so a down server isn't hammered on every refresh.
-        Rails.logger.warn("[load_player] player unavailable: #{e.message}")
-        nil
-      end
+    ESM.cache.fetch(key, expires_in: 5.seconds) do
+      data = call_sync_command("me")
 
-    # No character on this server yet (never spawned in, or server offline)
-    return if data.blank?
+      data.blank? ? nil : {fetched_at: Time.current, data:}
+    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+      # The bot or the game server is unreachable. Degrade to "no data" (the page shows an offline empty state)
+      # rather than a 500.
+      Rails.logger.warn("[current_player_snapshot] player unavailable: #{e.message}")
+      nil
+    end
+  end
 
-    ESM::Exile::Player.new(server: current_server, player: data)
+  def load_player(force: false)
+    player_from(current_player_snapshot(force:))
+  end
+
+  # A snapshot's payload as a player, or nothing when there's no snapshot to build from - an absent player (never
+  # spawned in), an unknown uid, or a server that couldn't be reached.
+  def player_from(snapshot)
+    return if snapshot.blank?
+
+    ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
   end
 
   # One target player's on-server snapshot, read as the current user through the info command (the admin path) rather
@@ -71,26 +83,26 @@ module PlayerLoading
   def refreshed_player(command)
     return unless command.completed?
 
-    # A reset-all wipes every character, so there's no single overview to reload - skip the read entirely.
+    # A reset-all wipes every player, so there's no single overview to reload - skip the read entirely.
     return if command.command_name == "reset" && command.arguments[:target].blank?
 
     viewed_uid = session[:viewing_player_uid]
     return load_player(force: true) if viewed_uid.blank?
 
-    snapshot = target_player_snapshot(viewed_uid, force: true)
-    return if snapshot.blank?
-
-    ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
+    player_from(target_player_snapshot(viewed_uid, force: true))
   end
 
   def current_player_cache_key
     # The command reads as the current user against the current server, so the key is built from the same pair.
     # Keying it any other way would file one player's payload under another's.
-    "player_#{current_server.id}_#{current_user.steam_uid}"
+    #
+    # The entry is a stamped snapshot rather than a bare payload, and the cache outlives a deploy, so the key carries
+    # the shape. Reading a pre-stamp entry back would hand the page a player with every field missing.
+    "player_snapshot_#{current_server.id}_#{current_user.steam_uid}"
   end
 
   # Keyed on server and target uid, matching the admin info read. Shared so target_player_snapshot and a reset that
-  # drops the read after wiping the character key it identically.
+  # drops the read after wiping the player key it identically.
   def target_player_cache_key(uid)
     "player_info_#{current_server.id}_#{uid}"
   end

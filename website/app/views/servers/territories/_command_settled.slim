@@ -7,7 +7,7 @@
 - if refreshed_territory.present?
   = turbo_stream.replace "territory_detail_frame" do
     = turbo_frame "territory_detail" do
-      = render "servers/territories/detail", current_server:, current_territory: refreshed_territory
+      = render "servers/territories/detail", current_server:, current_territory: refreshed_territory, fetched_at: Time.current
 
 - if refreshed_player.present?
   = turbo_stream.update "player_overview" do

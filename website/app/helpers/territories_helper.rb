@@ -174,21 +174,23 @@ module TerritoriesHelper
     time.strftime("%b %-d, %Y")
   end
 
+  # Whether the viewer sees the add-member form. Only the owner and moderators can add (arma enforces the
+  # same "moderator" access in ESMs_command_add); builders and non-members don't. A visibility guard only -
+  # arma remains the authority, so a bypassed request still gets rejected.
+  #
+  # Territory-admin rights are a request-level fact, so they arrive as an argument rather than being asked for here.
+  def territory_addable_by?(territory, steam_uid, admin: false)
+    return false if steam_uid.blank?
+    return true if admin
+
+    [territory.owner, *territory.moderators].compact.any? { |member| member.steam_uid == steam_uid }
+  end
+
   # A labeled group of territory members (an array of Territory::Member). Renders
   # nothing when the group is empty, so an owner-only territory shows just the
   # owner. territory_id + server_public_id thread down so each row can post its
   # promote/demote/remove action; the member list only lives in the modal, so
   # surface defaults there.
-  # Whether the viewer sees the add-member form. Only the owner and moderators can add (arma enforces the
-  # same "moderator" access in ESMs_command_add); builders and non-members don't. A visibility guard only -
-  # arma remains the authority, so a bypassed request still gets rejected.
-  def territory_addable_by?(territory, steam_uid)
-    return false if steam_uid.blank?
-    return true if territory_admin?
-
-    [territory.owner, *territory.moderators].compact.any? { |member| member.steam_uid == steam_uid }
-  end
-
   def territory_member_group(label, members, icon:, territory_id:, server_public_id:, color: "text-info", wrapper_class: "mb-3", surface: "modal")
     return if members.blank?
 

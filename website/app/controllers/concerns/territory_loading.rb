@@ -13,6 +13,8 @@ module TerritoryLoading
   extend ActiveSupport::Concern
 
   included do
+    # Whether the viewer holds territory-admin rights on the current server. It answers from the request - the server
+    # being viewed and who is asking - so it stays here rather than in a view helper, where neither is in scope.
     def territory_admin?
       current_server.community.territory_admin?(current_user)
     end
@@ -22,32 +24,47 @@ module TerritoryLoading
 
   private
 
-  def load_territory(territory_id, force: false)
+  # One territory's snapshot, carrying the read time alongside the payload so the modal's freshness stamp reports the
+  # read rather than the render. The entry outlives the request, so a modal that timed itself would call every cache
+  # hit current.
+  def territory_snapshot(territory_id, force: false)
     admin = command_accessible?("info")
 
     key = territory_cache_key(territory_id, admin:)
     ESM.cache.delete(key) if force
 
-    territory_data =
-      ESM.cache.fetch(key, expires_in: 5.seconds) do
-        call_sync_command(admin ? "info" : "territory", arguments: {territory_id:})
-      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
-        # The bot or the game server is unreachable. Degrade to "no data" (the
-        # modal shows its unavailable state) rather than a 500.
-        Rails.logger.warn("[load_territory] territory unavailable: #{e.message}")
-        nil
-      end
+    ESM.cache.fetch(key, expires_in: 5.seconds) do
+      data = call_sync_command(admin ? "info" : "territory", arguments: {territory_id:})
 
-    return if territory_data.blank?
+      data.blank? ? nil : {fetched_at: Time.current, data:}
+    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+      # The bot or the game server is unreachable. Degrade to "no data" (the
+      # modal shows its unavailable state) rather than a 500.
+      Rails.logger.warn("[territory_snapshot] territory unavailable: #{e.message}")
+      nil
+    end
+  end
 
-    ESM::Exile::Territory.new(server: current_server, territory: territory_data)
+  def load_territory(territory_id, force: false)
+    territory_from(territory_snapshot(territory_id, force:))
+  end
+
+  # A snapshot's payload as a territory, or nothing when there's no snapshot to build from - an unknown id, a member
+  # who failed the access check, or a server that couldn't be reached.
+  def territory_from(snapshot)
+    return if snapshot.blank?
+
+    ESM::Exile::Territory.new(server: current_server, territory: snapshot[:data])
   end
 
   # An admin's view of a territory is identical to every other admin's, so they share one entry; a member's read is
   # keyed to them because the miss is what enforces their membership. Keep the admin and non-admin key spaces disjoint
   # so a non-admin can never resolve to the shared entry an admin warmed.
+  #
+  # The entry is a stamped snapshot rather than a bare payload, and the cache outlives a deploy, so the key carries the
+  # shape. Reading a pre-stamp entry back would hand the modal a territory with every field missing.
   def territory_cache_key(territory_id, admin:)
-    base = "territory_#{current_server.id}_#{territory_id}"
+    base = "territory_snapshot_#{current_server.id}_#{territory_id}"
     admin ? base : "#{base}_#{current_user.steam_uid}"
   end
 

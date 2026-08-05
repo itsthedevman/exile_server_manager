@@ -62,15 +62,10 @@ module Servers
 
       snapshot = target_player_snapshot(target_uid)
 
-      target_player =
-        if snapshot
-          ESM::Exile::Player.new(server: current_server, player: snapshot[:data])
-        end
-
       render locals: {
         current_server:,
         target_uid:,
-        target_player:,
+        target_player: player_from(snapshot),
         fetched_at: snapshot&.dig(:fetched_at)
       }
     end
@@ -82,9 +77,12 @@ module Servers
       # than a stale viewed player.
       session.delete(:viewing_player_uid)
 
+      snapshot = current_player_snapshot
+
       render locals: {
         current_server:,
-        current_player:
+        current_player: player_from(snapshot),
+        fetched_at: snapshot&.dig(:fetched_at)
       }
     end
 

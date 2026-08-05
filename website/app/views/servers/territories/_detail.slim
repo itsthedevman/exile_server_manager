@@ -1,7 +1,7 @@
 / Territory detail modal body. Rendered into territory_detail_frame on the
 / initial open (show.slim, which adds the modal:show trigger) and again on a
 / successful action's refresh (trigger-less, so a closed modal stays closed).
-/ locals: current_server, current_territory
+/ locals: current_server, current_territory, fetched_at
 - if current_territory
   .modal-header.align-items-center.gap-3
     img.rounded-3.border.border-secondary.flex-shrink-0[
@@ -49,11 +49,11 @@
       = territory_member_group("Owner", [current_territory.owner], icon: "key-fill", color: "text-warning", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Moderators", current_territory.moderators, icon: "shield-fill", color: "text-info", wrapper_class: current_territory.builders.any? ? "mb-3" : "", territory_id: current_territory.id, server_public_id: current_server.public_id)
       = territory_member_group("Build rights", current_territory.builders, icon: "hammer", color: "text-success", wrapper_class: "", territory_id: current_territory.id, server_public_id: current_server.public_id)
-      - if command_accessible?("add") && (viewing_self? || territory_admin?) && territory_addable_by?(current_territory, current_user.steam_uid)
+      - if command_accessible?("add") && (viewing_self? || territory_admin?) && territory_addable_by?(current_territory, current_user.steam_uid, admin: territory_admin?)
         = render "servers/territories/add_member", server_public_id: current_server.public_id, territory_id: current_territory.id
   .modal-footer
     .flex-shrink-0.align-self-end
-      = render "shared/data_freshness", at: Time.current
+      = render "shared/data_freshness", at: fetched_at
 - else
   .modal-header
     h5.modal-title.mb-0 Territory unavailable

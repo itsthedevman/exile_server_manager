@@ -55,6 +55,16 @@ RSpec.describe TerritoriesHelper, type: :helper do
   end
 
   describe "#territory_member_actions" do
+    # Which actions a member row offers depends on who is asking: the command has to be enabled for the community and
+    # the viewer has to own the territory or hold territory-admin rights. Both answers come from the request, so a
+    # helper spec has to supply them the way it would current_user. They reach a view as controller helper_methods
+    # rather than as methods on the view itself, so verification has to stand down to stub them.
+    before do
+      without_partial_double_verification do
+        allow(helper).to receive_messages(command_accessible?: true, viewing_self?: true, territory_admin?: false)
+      end
+    end
+
     it "gives the owner no actions" do
       expect(helper.territory_member_actions(member(:owner))).to be_empty
     end
@@ -136,8 +146,16 @@ RSpec.describe TerritoriesHelper, type: :helper do
       expect(helper.territory_addable_by?(territory, "76561198000000009")).to be(false)
     end
 
+    it "lets a territory admin add without being a member" do
+      expect(helper.territory_addable_by?(territory, "76561198000000009", admin: true)).to be(true)
+    end
+
     it "is false when the viewer has no steam uid" do
       expect(helper.territory_addable_by?(territory, nil)).to be(false)
+    end
+
+    it "is false when the viewer has no steam uid, even for a territory admin" do
+      expect(helper.territory_addable_by?(territory, nil, admin: true)).to be(false)
     end
   end
 

@@ -44,9 +44,12 @@ module Servers
     end
 
     def show
+      snapshot = territory_snapshot(params[:territory_id])
+
       render locals: {
         current_server:,
-        current_territory:
+        current_territory: territory_from(snapshot),
+        fetched_at: snapshot&.dig(:fetched_at)
       }
     end
 
@@ -128,10 +131,6 @@ module Servers
       return if rows.nil?
 
       rows.map { |row| ESM::Exile::Territory.new(server: current_server, territory: row) }
-    end
-
-    def current_territory
-      load_territory(params[:territory_id])
     end
 
     def run_territory_command(command_name, arguments: {})
