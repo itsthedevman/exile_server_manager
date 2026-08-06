@@ -1,23 +1,41 @@
 / locals: current_server
-/ Sits under the sidebar's status line, so it repeats neither the server id nor whether the server is up. Rendered on
-/ every server page rather than just the dashboard: an address or a mod list is what someone reaches for while they're
-/ somewhere else in the hub waiting out a restart.
 .border-top.mt-3.pt-3
   .row.g-3
-    .col-6.col-lg-12.col-xxl-6
-      .small.text-muted Connection
-      .font-monospace.small.text-truncate title=server_address(current_server) = server_address(current_server)
-    .col
-      - if server_restart_countdown(current_server)
-        .small.text-muted Restarts in
-        .small = server_restart_countdown(current_server)
+    / Map and player count come from a Steam query against the server itself, so they load on their own rather than
+    / holding up the page around them.
+    = turbo_frame_tag "server_live", src: live_server_path(current_server.public_id), loading: :lazy, class: "col"
 
   - server_mod_groups(current_server).each do |group|
-    .small.text-muted.mt-3 = group.label
-    ul.list-unstyled.small.mb-0
-      - group.mods.each do |mod|
-        li.text-truncate
-          - if mod.mod_link.present?
-            = link_to server_mod_label(mod), mod.mod_link, target: "_blank", rel: "noopener", class: "link-info"
-          - else
-            = server_mod_label(mod)
+    .d-flex.align-items-center.justify-content-between.gap-2.mt-3
+      .small.text-muted = group.label
+      button.btn.btn-link.btn-sm.p-0.text-muted.text-decoration-none.collapsed[
+        type="button"
+        aria-expanded="false"
+        aria-controls=group.dom_id
+        aria-label="Show #{group.label}"
+        data-bs-toggle="collapse"
+        data-bs-target="##{group.dom_id}"
+      ]
+        i.bi.bi-chevron-down.disclosure-chevron
+
+    .collapse id=group.dom_id
+      ul.list-unstyled.small.mb-0.mt-2
+        - group.mods.each do |mod|
+          li.text-truncate
+            - if mod.mod_link.present?
+              = link_to server_mod_label(mod), mod.mod_link, target: "_blank", rel: "noopener", class: "link-info"
+            - else
+              = server_mod_label(mod)
+
+  / The one thing here that does something rather than says something, so it gets a rule above it and the full width
+  / instead of sitting in the run of muted labels as though it were another field.
+  .mt-3.pt-3.border-top
+    button.btn.btn-outline-secondary.btn-sm.w-100[
+      type="button"
+      title=server_address(current_server)
+      data-controller="clipboard"
+      data-action="click->clipboard#copy"
+      data-clipboard-text-value=server_address(current_server)
+    ]
+      i.bi.bi-clipboard.me-1
+      span[data-clipboard-target="label"] Copy connection

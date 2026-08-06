@@ -185,6 +185,12 @@ Rails.application.routes.draw do
   if Rails.env.local?
     # /servers/:id (the server hub — role-adaptive dashboard)
     resources :servers, only: [:show] do
+      # /servers/:id/live — lazy sidebar frame for the Steam query (map, players, version). Its own request because
+      # the query is a UDP round trip to the owner's box, and a server that has gone dark must not stall every page.
+      member do
+        get :live
+      end
+
       # /servers/:server_id/players
       resources :players, controller: "servers/players", only: [:index, :show], param: :uid do
         collection do

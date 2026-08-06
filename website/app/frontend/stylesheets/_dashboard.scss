@@ -24,6 +24,19 @@
     }
 }
 
+// Bootstrap puts .collapsed on a collapse trigger whose target is closed, so the chevron can point at what the next
+// click does without any JS of our own.
+.disclosure-chevron {
+    // Bootstrap Icons only makes the ::before inline-block, leaving the <i> itself inline, and transforms are
+    // ignored on non-replaced inline elements. Without this the rotation below is silently dropped.
+    display: inline-block;
+    transition: transform 0.15s ease-in-out;
+}
+
+.collapsed .disclosure-chevron {
+    transform: rotate(-90deg);
+}
+
 // Better spacing and typography for sidebar items
 .dashboard-sidebar {
     .list-group-item {

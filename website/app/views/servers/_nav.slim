@@ -22,17 +22,28 @@
           h5.mb-1.fw-bold.text-truncate = current_server.server_name
           .text-muted.font-monospace.small.text-truncate = current_server.server_id
 
-      .d-flex.align-items-center.gap-1.mt-3
-        - if current_server.connected?
-          .server-status.server-status--online
-          .text-muted
-            small 
+      .mt-3
+        .d-flex.align-items-center.gap-1
+          - if current_server.connected?
+            .server-status.server-status--online
+            small.text-muted
               | Online
               - if current_server.server_start_time?
                 |< for #{current_server.uptime}
-        - else
-          .server-status.server-status--offline
-          small.text-muted Offline
+          - else
+            .server-status.server-status--offline
+            small.text-muted Offline
+
+        / Uptime and the next restart are the same fact read from either end, so they sit together rather than being
+        / separated by anything else in the rail. Indented to hang under the status text rather than under its dot.
+        - if server_restart_at(current_server)
+          .small.text-muted.ms-3
+            ' Next restart
+            span[
+              data-controller="restart-countdown"
+              data-restart-countdown-datetime-value=server_restart_at(current_server).iso8601
+            ]
+              = current_server.time_left_before_restart
 
       = render "servers/info", current_server:
 

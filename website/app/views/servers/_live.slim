@@ -1,0 +1,13 @@
+/ locals: current_server, info
+= turbo_frame_tag "server_live"
+  - if info
+    .row.g-3
+      .col-12.col-sm-6.col-lg-12.col-xl-6
+        .small.text-muted Map
+        .small.text-truncate title=info.map = info.map
+
+      .col-12.col-sm-6.col-lg-12.col-xl-6
+        .small.text-muted Players
+        .small = "#{info.players}/#{info.max_players}"
+  - elsif server_query_unreachable?(current_server)
+    .small.text-warning = server_query_unreachable_message(current_server)
