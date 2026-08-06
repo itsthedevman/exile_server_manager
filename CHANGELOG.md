@@ -32,6 +32,10 @@ version contract and are anchored by date. Year format is Holocene.
 - **(website)** Players can favorite servers, available on the Discover page and the community dashboard
 - **(core)** Website actions run through the same command engine as Discord, so per-community permissions, cooldowns, and argument validation apply identically on both surfaces. A command can also declare arguments and help text for one origin only
 
+### Fixed
+
+- **(service)** `/server` shows the map, player count, and game version again. Valve made the Steam query challenge mandatory in December 2020 and the old client never answered it, so those three fields have been missing from every server's details since
+
 ---
 
 ## @esm v2.0.2 — 12026-07-28
