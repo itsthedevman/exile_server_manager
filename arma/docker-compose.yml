@@ -19,6 +19,12 @@ services:
       - "./.docker-volumes/steam-data:/steamcmd"
       - "./.docker-volumes/tmp-data:/tmp"
     tty: true
+    # Published, not just exposed, so anything on the host can reach the Steam query port: the bot and website both
+    # run outside this network, and A2S is how they read the map, player count, and game version. 2303 is the one
+    # that matters (game port plus one); the rest of the range comes along so the container behaves like a real
+    # server if anything else ever needs it.
+    ports:
+      - "2302-2306:2302-2306/udp"
     networks:
       - esm
     extra_hosts: # Allows linux host to use host.docker.internal.

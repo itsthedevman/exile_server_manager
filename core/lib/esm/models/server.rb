@@ -92,6 +92,12 @@ module ESM
       server_id.split("_", 2).second
     end
 
+    # Arma answers Steam queries on the port above the one players join on. Owners configure only the join port, so
+    # this is derived rather than stored.
+    def query_port
+      server_port.to_i + 1
+    end
+
     def token
       @token ||= {access: public_id, secret: server_key}
     end

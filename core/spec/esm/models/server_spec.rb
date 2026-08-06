@@ -153,6 +153,19 @@ RSpec.describe ESM::Server do
     end
   end
 
+  describe "#query_port" do
+    it "is the port above the one players join on" do
+      server = create(:server, community: community, server_port: "2302")
+      expect(server.query_port).to eq(2303)
+    end
+
+    # server_port is a string column, so the offset has to survive being read back as text.
+    it "returns an integer regardless of how the port was stored" do
+      server = create(:server, community: community, server_port: 2302)
+      expect(server.query_port).to eq(2303)
+    end
+  end
+
   describe "callbacks" do
     describe "before_validation :generate_public_id" do
       it "generates a UUID on create" do

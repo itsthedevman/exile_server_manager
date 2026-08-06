@@ -57,19 +57,17 @@ module ESM
         #########################
         # Command Methods
         #########################
+
         def query_server
-          # I store the connection port. Query port is always +1
-          server = SourceServer.new(IPAddr.new(target_server.server_ip), target_server.server_port.to_i + 1)
+          ESM::Steam::ServerQuery.info(host: target_server.server_ip, port: target_server.query_port)
+        rescue ESM::Steam::ServerQuery::Error => e
+          warn!(
+            reason: e.message,
+            exception_class: e.class,
+            server_id: target_server.server_id,
+            host: "#{target_server.server_ip}:#{target_server.query_port}"
+          )
 
-          # Connect to the server
-          server.init
-
-          # This contains:
-          #     :protocol_version, :server_name, :map_name, :game_directory, :game_description, :app_id, :number_of_players,
-          #     :max_players, :number_of_bots, :dedicated, :operating_system, :password_needed, :secure, :game_version, :server_port,
-          #     :server_id, :server_tags, :game_id
-          server.server_info.to_datum
-        rescue
           nil
         end
 
@@ -87,9 +85,9 @@ module ESM
           query_response = query_server
           return if query_response.nil?
 
-          e.add_field(name: I18n.t(:map), value: query_response.map_name, inline: true)
-          e.add_field(name: I18n.t(:players), value: "#{query_response.number_of_players}/#{query_response.max_players}", inline: true)
-          e.add_field(name: I18n.t(:game_version), value: query_response.game_version, inline: true)
+          e.add_field(name: I18n.t(:map), value: query_response.map, inline: true)
+          e.add_field(name: I18n.t(:players), value: "#{query_response.players}/#{query_response.max_players}", inline: true)
+          e.add_field(name: I18n.t(:game_version), value: query_response.version, inline: true)
         end
 
         def add_server_mods(e)

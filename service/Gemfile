@@ -93,9 +93,6 @@ gem "faye-websocket"                      # WebSocket client
 ## External APIs & Integrations
 ####################################################################################################
 
-# Steam platform integration
-gem "steam-condenser"                     # Steam server queries and RCON
-
 # HTTP client
 gem "httparty"                            # Simple HTTP requests
 

@@ -122,7 +122,6 @@
   "securerandom",
   "semantic",
   "socket",
-  "steam-condenser",
   "terminal-table",
   "yaml",
   "zeitwerk"
