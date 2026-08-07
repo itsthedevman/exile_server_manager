@@ -217,7 +217,10 @@ describe ESM::Command::Server::Logs, category: "command" do
       end
 
       context "when there are no results" do
-        let!(:target) { Faker::String.random }
+        # Faker::String.random draws from the whole Unicode range, and about one in twenty of its strings carries a
+        # null byte. The target is looked up as a user before it is ever searched for, so that byte reaches a Postgres
+        # query, which rejects it outright. All this context needs is something no log entry contains.
+        let!(:target) { SecureRandom.uuid }
 
         include_examples "raises_check_failure" do
           let!(:matcher) { /hey .+, i was unable to find any logs that match your query./i }
