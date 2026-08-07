@@ -107,7 +107,9 @@ ESM::Server.create!(
   community_id: other_community.id,
   server_id: "esm3_other",
   server_name: "Exile Server Manager (Other)",
-  server_key: "dM34fkvl7FIcL63HGquV8ANXYWyXZs1epBvNDm0E30SnkvibqpwvhgtVHKlI8XMr9uUhhNXsR2kkkqRj19q5QfcCWsJv5AiChU7KsFdaXb4ommnADOVIWXa8kBzckadUrpQ1Yjdf0VzlIpazF3823DQBEBhMdFj7Ym5y8vERioyUuMV8KJo6h0OmTsXDc20Ndhi6oDnMOxN4YHrIHepcpAQIFFBoP9l7Myi3vt03IW9WBwnG"
+  server_key: "dM34fkvl7FIcL63HGquV8ANXYWyXZs1epBvNDm0E30SnkvibqpwvhgtVHKlI8XMr9uUhhNXsR2kkkqRj19q5QfcCWsJv5AiChU7KsFdaXb4ommnADOVIWXa8kBzckadUrpQ1Yjdf0VzlIpazF3823DQBEBhMdFj7Ym5y8vERioyUuMV8KJo6h0OmTsXDc20Ndhi6oDnMOxN4YHrIHepcpAQIFFBoP9l7Myi3vt03IW9WBwnG",
+  server_ip: "127.0.0.1",
+  server_port: "2902"
 )
 puts " done"
 
@@ -399,7 +401,9 @@ puts " done"
 # FINALIZATION
 # =============================================================================
 
-Redis.new.set("server_key", server_1.token.to_json)
+redis = Redis.new
+ESM::Server.all.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
+redis.set("server_key", server_1.token.to_json)
 
 puts ""
 puts "Seeds completed successfully!"

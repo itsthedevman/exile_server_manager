@@ -3,25 +3,29 @@ use std::{fs, path::Path};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    context::BuildContext,
+    context::{BuildContext, InstanceContext},
     error::{BuildError, BuildResult},
 };
 
-pub fn deploy(ctx: &mut BuildContext) -> BuildResult {
-    let staging = ctx.local_build_path.join("@esm");
-    let server_esm = ctx.target.server_path().join("@esm");
+pub fn deploy(ictx: &InstanceContext) -> BuildResult {
+    let staging = ictx.build.local_build_path.join("@esm");
+    let server_esm = ictx.server_path().join("@esm");
 
     // Write runtime config.yml into staging before uploading
-    write_runtime_config(ctx, &staging)?;
+    write_runtime_config(ictx, &staging)?;
 
     // If a key file was provided (release + start-server), copy it in
-    if ctx.args.has_key_file() {
-        fs::copy(ctx.args.key_file_path(), staging.join("esm.key"))?;
+    if ictx.args().has_key_file() {
+        fs::copy(ictx.args().key_file_path(), staging.join("esm.key"))?;
     }
 
-    // Remove old @esm from the server, then copy the complete staging area in
-    ctx.target.run(&format!("rm -rf '{}'", server_esm.display()))?;
-    ctx.target.upload(&staging, ctx.target.server_path())?;
+    // Empty the old deploy out rather than removing the directory: @esm is this server's bind mount, so the
+    // mount point itself cannot be unlinked from inside the container.
+    ictx.target.run(&format!(
+        "mkdir -p '{dir}' && find '{dir}' -mindepth 1 -delete",
+        dir = server_esm.display()
+    ))?;
+    ictx.target.upload(&staging, &server_esm)?;
 
     Ok(())
 }
@@ -40,7 +44,7 @@ pub fn package_release(ctx: &mut BuildContext) -> BuildResult {
     Ok(())
 }
 
-fn write_runtime_config(ctx: &BuildContext, staging: &Path) -> BuildResult {
+fn write_runtime_config(ictx: &InstanceContext, staging: &Path) -> BuildResult {
     #[derive(Serialize, Deserialize)]
     struct RuntimeConfig {
         connection_uri: String,
@@ -49,8 +53,8 @@ fn write_runtime_config(ctx: &BuildContext, staging: &Path) -> BuildResult {
     }
 
     let config = RuntimeConfig {
-        connection_uri: ctx.args.bot_host().to_string(),
-        log_level: ctx.args.log_level().to_string(),
+        connection_uri: ictx.args().bot_host().to_string(),
+        log_level: ictx.args().log_level().to_string(),
         additional_logs: vec!["test.log".to_string(), "/tmp/test.rpt".to_string()],
     };
 

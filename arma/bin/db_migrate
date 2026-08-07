@@ -5,7 +5,7 @@ set -euo pipefail
 readonly root_dir="$(pwd)"
 readonly sql_files="$root_dir/src/@esm/sql/*.sql"
 readonly password="${MYSQL_PASSWORD:-password12345}"
-readonly database="${MYSQL_PASSWORD:-exile_esm}"
+readonly database="${MYSQL_DATABASE:-exile_esm}"
 
 function call_mysql() {
     mysql -uroot -p"$password" --host 127.0.0.1 "$database" "$@"

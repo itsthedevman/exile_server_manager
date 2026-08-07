@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    config::{parse, Config},
+    config::{parse, Config, Instance},
     error::BuildError,
     file_watcher::FileWatcher,
     target::{build_target, Target},
@@ -83,6 +83,14 @@ pub struct Args {
     #[arg(short, long)]
     start_server: bool,
 
+    /// Which server to run, by its ESM server_id (see `instances` in config.yml). Defaults to the first entry.
+    #[arg(long)]
+    server_id: Option<String>,
+
+    /// Run every server declared under `instances` in config.yml
+    #[arg(long)]
+    all: bool,
+
     /// Builds with the production environment (no development feature flag)
     #[arg(short, long)]
     pub release: bool,
@@ -145,6 +153,14 @@ impl Args {
     pub fn key_file_path(&self) -> PathBuf {
         PathBuf::from(&self.key_file)
     }
+
+    pub fn all_instances(&self) -> bool {
+        self.all
+    }
+
+    pub fn server_id(&self) -> Option<&str> {
+        self.server_id.as_deref()
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -162,17 +178,20 @@ impl fmt::Display for LogLevel {
     }
 }
 
-/// Central state for the entire build run.
+/// State shared by the whole run. The mod and the extension are built once no matter how many servers are
+/// started, so everything here is deliberately singular; anything that varies per server lives on
+/// [`InstanceContext`].
 pub struct BuildContext {
     pub args: Args,
     pub config: Config,
-    pub target: Box<dyn Target>,
     pub git_path: PathBuf,
     /// Local Rust `target/` directory
     pub local_build_path: PathBuf,
     pub file_watcher: FileWatcher,
     pub rebuild_mod: bool,
     pub rebuild_extension: bool,
+    /// Servers this run targets, resolved from `--server-id` / `--all`. Never empty.
+    pub instances: Vec<Instance>,
 }
 
 impl BuildContext {
@@ -180,7 +199,7 @@ impl BuildContext {
         let git_path = find_git_root()?;
         let local_build_path = git_path.join("target");
         let config = parse(&git_path.join("config.yml"))?;
-        let target = build_target(&args, &config)?;
+        let instances = select_instances(&args, &config)?;
 
         let file_watcher = FileWatcher::new(&git_path, &local_build_path)
             .watch(&git_path.join("src").join("@esm"))
@@ -197,12 +216,12 @@ impl BuildContext {
         Ok(BuildContext {
             args,
             config,
-            target,
             git_path,
             local_build_path,
             file_watcher,
             rebuild_mod,
             rebuild_extension,
+            instances,
         })
     }
 
@@ -250,6 +269,100 @@ impl BuildContext {
             (BuildOS::Windows, BuildArch::X64) => "x86_64-pc-windows-gnu",
         }
     }
+}
+
+/// One server's slice of a run: which server it is, and how to reach the container holding it.
+///
+/// Paths *inside* the container are identical for every server, so the target it carries differs only in which
+/// container it execs into and which game port it launches with.
+pub struct InstanceContext<'a> {
+    pub build: &'a BuildContext,
+    pub instance: &'a Instance,
+    pub target: Box<dyn Target>,
+}
+
+impl<'a> InstanceContext<'a> {
+    pub fn new(build: &'a BuildContext, instance: &'a Instance) -> Result<Self, BuildError> {
+        let target = build_target(&build.args, &build.config, instance)?;
+        Ok(InstanceContext {
+            build,
+            instance,
+            target,
+        })
+    }
+
+    pub fn args(&self) -> &Args {
+        &self.build.args
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.build.config
+    }
+
+    pub fn container(&self) -> String {
+        self.instance.container()
+    }
+
+    pub fn server_path(&self) -> &Path {
+        self.target.server_path()
+    }
+
+    /// Whether this is the first server in config.yml, which is the one a bare `bin/build --start-server`
+    /// runs and the one that answers for the unnamespaced Redis key slot.
+    pub fn is_default_instance(&self) -> bool {
+        self.build
+            .config
+            .instances
+            .first()
+            .is_some_and(|first| first.server_id == self.instance.server_id)
+    }
+
+    /// Staging directory for artefacts belonging to this server alone, as opposed to the shared `target/@esm`
+    /// tree that every server deploys from.
+    pub fn instance_staging_path(&self) -> PathBuf {
+        self.build
+            .local_build_path
+            .join("instances")
+            .join(&self.instance.server_id)
+    }
+}
+
+/// Resolve `--server-id` / `--all` against the configured servers.
+fn select_instances(args: &Args, config: &Config) -> Result<Vec<Instance>, BuildError> {
+    if args.all_instances() {
+        if args.has_key_file() {
+            return Err(BuildError::Config(
+                "--key-file applies to a single server, so it cannot be combined with --all. Pass \
+                 --server-id to name the one server the key belongs to."
+                    .into(),
+            ));
+        }
+
+        return Ok(config.instances.clone());
+    }
+
+    // `parse` rejects an empty list, so the first entry is always there to fall back on.
+    let Some(server_id) = args.server_id() else {
+        return Ok(vec![config.instances[0].clone()]);
+    };
+
+    config
+        .instances
+        .iter()
+        .find(|instance| instance.server_id == server_id)
+        .map(|instance| vec![instance.clone()])
+        .ok_or_else(|| {
+            let configured: Vec<&str> = config
+                .instances
+                .iter()
+                .map(|instance| instance.server_id.as_str())
+                .collect();
+
+            BuildError::Config(format!(
+                "No server with server_id '{server_id}' in config.yml. Configured: {}.",
+                configured.join(", ")
+            ))
+        })
 }
 
 fn find_git_root() -> Result<PathBuf, BuildError> {

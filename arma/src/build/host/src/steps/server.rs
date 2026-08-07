@@ -5,9 +5,9 @@ use std::{
 };
 
 use crate::{
-    context::{BuildArch, BuildContext},
+    context::{BuildArch, BuildContext, InstanceContext},
     error::{BuildError, BuildResult},
-    ARMA_CONTAINER, ARMA_PATH, LINUX_EXES,
+    ARMA_PATH, LINUX_EXES,
 };
 
 // Heartbeat reaper. The host process touches HEARTBEAT_FILE every few seconds
@@ -22,13 +22,16 @@ const HEARTBEAT_INTERVAL_SECS: u64 = 5;
 const HEARTBEAT_STALE_SECS: u64 = 15;
 const HEARTBEAT_POLL_SECS: u64 = 3;
 
+/// Name prefix shared by every server's container, and so the way to spot one whose config entry is gone.
+const CONTAINER_PREFIX: &str = "ESM_ARMA_";
+
 /// Touch the heartbeat file in the container on a loop until the process exits.
 /// Runs on a detached daemon thread, so it stops the instant the host process
 /// goes away and the container-side watchdog takes over from there.
-fn spawn_heartbeat() {
-    thread::spawn(|| loop {
+fn spawn_heartbeat(container: String) {
+    thread::spawn(move || loop {
         let _ = Command::new("docker")
-            .args(["exec", ARMA_CONTAINER, "touch", HEARTBEAT_FILE])
+            .args(["exec", &container, "touch", HEARTBEAT_FILE])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status();
@@ -36,26 +39,104 @@ fn spawn_heartbeat() {
     });
 }
 
-/// Ensure the Docker Compose stack is running.
-pub fn ensure_container(_ctx: &mut BuildContext) -> BuildResult {
-    if !is_container_running() {
-        Command::new("docker")
-            .args(["compose", "up", "-d"])
-            .status()
-            .map_err(|e| BuildError::Docker(e.to_string()))?;
+/// Ensure this server's container is running.
+///
+/// The bind-mount sources under `.docker-volumes/instances/` are left for Docker to create. They end up owned
+/// by root, same as the shared volumes, which is what the container wants: everything inside it runs as root,
+/// and the build only ever reaches in through `docker cp` and `docker exec`.
+pub fn ensure_container(ictx: &InstanceContext) -> BuildResult {
+    let container = ictx.container();
+
+    // Run this even when the container is already up: compose recreates on config drift, which is what picks
+    // up a changed mount or port. Skipping it while running would silently keep an outdated container alive.
+    // One compose project per server so each gets its own container, ports, and volume set out of the same
+    // compose file. The env vars are what the file interpolates.
+    //
+    // Output is captured rather than inherited: compose draws a live progress display, and letting it write
+    // to the terminal means it and the spinner redraw over each other.
+    let output = Command::new("docker")
+        .args([
+            "compose",
+            "--progress",
+            "quiet",
+            "-p",
+            &ictx.instance.compose_project(),
+            "up",
+            "-d",
+        ])
+        .current_dir(&ictx.build.git_path)
+        .env("ESM_SERVER_ID", &ictx.instance.server_id)
+        .env("ESM_CONTAINER", &container)
+        .env("ESM_PORT_BASE", ictx.instance.port.to_string())
+        .env("ESM_PORT_LAST", ictx.instance.last_port().to_string())
+        .output()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    if !output.status.success() {
+        return Err(BuildError::Docker(format!(
+            "docker compose up failed for {container}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )));
     }
 
     const TIMEOUT_SECS: u32 = 30;
     for _ in 0..TIMEOUT_SECS {
-        if is_container_running() {
+        if is_container_running(&container) {
             return Ok(());
         }
         thread::sleep(Duration::from_secs(1));
     }
 
-    Err(BuildError::Docker(
-        "Timed out waiting for the Arma container to start".into(),
-    ))
+    Err(BuildError::Docker(format!(
+        "Timed out waiting for the Arma container {container} to start"
+    )))
+}
+
+/// Remove containers whose server is no longer declared in config.yml.
+///
+/// Dropping an `instances` entry otherwise leaves its container behind still holding its published ports, so
+/// the next server to claim that range collides with a server nobody remembers configuring. Only containers
+/// are removed: the host-side volumes stay, so restoring the entry picks its state back up.
+pub fn remove_orphaned_containers(ctx: &mut BuildContext) -> BuildResult {
+    let configured: Vec<String> = ctx
+        .config
+        .instances
+        .iter()
+        .map(|instance| instance.container())
+        .collect();
+
+    let output = Command::new("docker")
+        .args([
+            "ps",
+            "-a",
+            "--filter",
+            &format!("name=^{CONTAINER_PREFIX}"),
+            "--format",
+            "{{.Names}}",
+        ])
+        .output()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    let names = String::from_utf8_lossy(&output.stdout).into_owned();
+    let orphans: Vec<&str> = names
+        .lines()
+        .map(str::trim)
+        .filter(|name| !name.is_empty() && !configured.iter().any(|known| known == name))
+        .collect();
+
+    if orphans.is_empty() {
+        return Ok(());
+    }
+
+    Command::new("docker")
+        .args(["rm", "-f"])
+        .args(&orphans)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    Ok(())
 }
 
 /// Check that the Exile mod files are present locally (required on the server).
@@ -80,8 +161,10 @@ pub fn check_for_exile_files(ctx: &mut BuildContext) -> BuildResult {
 }
 
 /// Update the Arma 3 server via SteamCMD (only if files are absent or --update).
-pub fn update_arma(ctx: &mut BuildContext) -> BuildResult {
-    ctx.target.run(
+///
+/// The install is shared by every server, so this runs once per build rather than once per server.
+pub fn update_arma(ictx: &InstanceContext) -> BuildResult {
+    ictx.target.run(
         "if [ ! -f /steamcmd/steamcmd.sh ]; then \
            mkdir -p /steamcmd && \
            wget -qO- 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz' \
@@ -95,16 +178,16 @@ pub fn update_arma(ctx: &mut BuildContext) -> BuildResult {
          +login {user} {pass} \
          +app_update 233780 validate \
          +quit",
-        user = ctx.config.server.steam_user,
-        pass = ctx.config.server.steam_password,
+        user = ictx.config().server.steam_user,
+        pass = ictx.config().server.steam_password,
     );
 
-    ctx.target.run(&script)?;
+    ictx.target.run(&script)?;
     Ok(())
 }
 
 /// Stop any running Arma 3 server processes in the container.
-pub fn kill_arma(ctx: &mut BuildContext) -> BuildResult {
+pub fn kill_arma(ictx: &InstanceContext) -> BuildResult {
     let exes = LINUX_EXES
         .iter()
         .map(|e| format!("'{}'", e.rsplit('/').next().unwrap_or(e)))
@@ -121,13 +204,13 @@ pub fn kill_arma(ctx: &mut BuildContext) -> BuildResult {
         spid = SERVER_PID_FILE,
     );
 
-    ctx.target.run(&script).ok(); // ignore errors — no process is fine
+    ictx.target.run(&script).ok(); // ignore errors — no process is fine
     Ok(())
 }
 
 /// Clean old log and RPT files from the container.
-pub fn clean_logs(ctx: &mut BuildContext) -> BuildResult {
-    let server = ctx.target.server_path();
+pub fn clean_logs(ictx: &InstanceContext) -> BuildResult {
+    let server = ictx.server_path();
     let script = format!(
         "rm -f '{server}/server_profile/'*.log \
                '{server}/server_profile/'*.rpt \
@@ -137,19 +220,19 @@ pub fn clean_logs(ctx: &mut BuildContext) -> BuildResult {
          rm -rf '{server}/@exileserver/logs'",
         server = server.display()
     );
-    ctx.target.run(&script).ok(); // best-effort
+    ictx.target.run(&script).ok(); // best-effort
     Ok(())
 }
 
 /// Start the Arma 3 server inside the container, guarded by a heartbeat
 /// watchdog so it dies with the host process (see the module header).
-pub fn start_server(ctx: &mut BuildContext) -> BuildResult {
-    let server = ctx.target.server_path();
-    let exe = match ctx.args.build_arch() {
+pub fn start_server(ictx: &InstanceContext) -> BuildResult {
+    let server = ictx.server_path();
+    let exe = match ictx.args().build_arch() {
         BuildArch::X32 => "arma3server",
         BuildArch::X64 => "arma3server_x64",
     };
-    let args = ctx.target.server_args().to_string();
+    let args = ictx.target.server_args().to_string();
 
     // The watchdog reaps the server by its recorded PID once the heartbeat
     // stops being refreshed, then cleans up its own bookkeeping. It is wrapped
@@ -179,23 +262,23 @@ pub fn start_server(ctx: &mut BuildContext) -> BuildResult {
         stale = HEARTBEAT_STALE_SECS,
     );
 
-    ctx.target.run(&script)?;
-    spawn_heartbeat();
+    ictx.target.run(&script)?;
+    spawn_heartbeat(ictx.container());
     Ok(())
 }
 
-pub fn needs_arma_update(ctx: &BuildContext) -> bool {
+pub fn needs_arma_update(ictx: &InstanceContext) -> bool {
     let check = format!(
         "test -f '{ARMA_PATH}/arma3server' && echo 1 || echo 0"
     );
 
-    let result = ctx.target.run(&check).unwrap_or_default();
-    result.trim() != "1" || ctx.args.update_arma()
+    let result = ictx.target.run(&check).unwrap_or_default();
+    result.trim() != "1" || ictx.args().update_arma()
 }
 
-fn is_container_running() -> bool {
+fn is_container_running(container: &str) -> bool {
     let Ok(output) = Command::new("docker")
-        .args(["container", "inspect", "-f", "{{.State.Status}}", ARMA_CONTAINER])
+        .args(["container", "inspect", "-f", "{{.State.Status}}", container])
         .output()
     else {
         return false;

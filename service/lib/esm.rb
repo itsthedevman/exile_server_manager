@@ -207,10 +207,15 @@ module ESM
         .each { |path| load path }
 
       if env.development?
-        # Seed the server token into redis so the dev TCP listener can
-        # validate the local Arma server without waiting for a real handshake.
-        server = Server.all.first
-        redis.set("server_key", server.token.to_json) if server
+        # Seed the server tokens into redis so the dev TCP listener can validate local Arma servers without
+        # waiting for a real handshake. Each server gets its own slot, keyed by server_id, so that several
+        # running at once each pick up their own key instead of racing for one. The unnamespaced slot stays
+        # for the first server: the spec suite writes there, since its server comes from a factory and no
+        # config could name that slot ahead of time.
+        servers = Server.all.to_a
+
+        servers.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
+        redis.set("server_key", servers.first.token.to_json) if servers.any?
       end
 
       SignalHandler.start unless env.test?

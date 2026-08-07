@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     path::PathBuf,
     process::Command,
+    sync::{atomic::Ordering, mpsc},
     thread,
     time::{Duration, Instant},
 };
@@ -9,10 +10,9 @@ use std::{
 use colored::Colorize;
 
 use crate::{
-    context::BuildContext,
+    context::InstanceContext,
     display::color,
     error::BuildResult,
-    ARMA_CONTAINER,
 };
 
 const POLL_MS: u64 = 125;
@@ -38,7 +38,22 @@ struct FileState {
     color_idx: usize,
 }
 
-pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
+/// One rendered log line on its way from a server's watcher thread to the printer.
+struct LogLine {
+    server_id: String,
+    server_color: (u8, u8, u8),
+    label: String,
+    label_color: (u8, u8, u8),
+    line_no: u64,
+    content: String,
+}
+
+/// Tail every running server at once, printing their lines to one stream as they arrive.
+///
+/// Each server is polled by its own thread, because a `docker exec` round-trip against one container should
+/// not hold up the others. The threads only render lines; printing stays on this thread so that output from
+/// several servers can't interleave mid-line.
+pub fn stream_logs(contexts: &[InstanceContext]) -> BuildResult {
     let dim = color::DIM;
     let steel = color::STEEL;
 
@@ -51,7 +66,72 @@ pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
     );
     println!();
 
-    let server = ctx.target.server_path().to_path_buf();
+    // With one server the name adds nothing to every line; with several it is the only way to tell them
+    // apart. Pad to the longest name so the columns after it stay aligned.
+    let server_width = if contexts.len() > 1 {
+        contexts
+            .iter()
+            .map(|ictx| ictx.instance.server_id.len())
+            .max()
+            .unwrap_or(0)
+    } else {
+        0
+    };
+
+    let (sender, receiver) = mpsc::channel::<LogLine>();
+
+    for (index, ictx) in contexts.iter().enumerate() {
+        let sender = sender.clone();
+        let container = ictx.container();
+        let server_id = ictx.instance.server_id.clone();
+        let server_color = LABEL_COLORS[index % LABEL_COLORS.len()];
+        let server_path = ictx.server_path().to_path_buf();
+
+        thread::spawn(move || {
+            watch_server(container, server_id, server_color, server_path, sender);
+        });
+    }
+
+    // The watchers each hold a clone; this one would otherwise keep the channel open forever.
+    drop(sender);
+
+    let mut last_heartbeat = Instant::now() - Duration::from_secs(HEARTBEAT_SECS + 1);
+    let mut saw_output = false;
+
+    loop {
+        if crate::CTRL_C_RECEIVED.load(Ordering::SeqCst) {
+            break;
+        }
+
+        match receiver.recv_timeout(Duration::from_millis(POLL_MS)) {
+            Ok(line) => {
+                saw_output = true;
+                print_log_line(&line, server_width);
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+
+        if !saw_output && last_heartbeat.elapsed().as_secs() >= HEARTBEAT_SECS {
+            println!(
+                "{}",
+                "  · waiting for server…".truecolor(dim.0, dim.1, dim.2).italic()
+            );
+            last_heartbeat = Instant::now();
+        }
+    }
+
+    Ok(())
+}
+
+/// Poll one server's log files, sending each new line to the printer.
+fn watch_server(
+    container: String,
+    server_id: String,
+    server_color: (u8, u8, u8),
+    server: PathBuf,
+    sender: mpsc::Sender<LogLine>,
+) {
     // server.log: Arma's logFile from config.cfg
     // esm.log:    ESM extension log
     // *.rpt files and extdb logs are discovered dynamically
@@ -65,22 +145,18 @@ pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
     let mut file_state: HashMap<PathBuf, FileState> = HashMap::new();
     let mut color_counter: usize = 0;
     let mut discovered: Vec<PathBuf> = Vec::new();
-    let mut last_heartbeat =
-        Instant::now() - Duration::from_secs(HEARTBEAT_SECS + 1);
-    let mut last_scan =
-        Instant::now() - Duration::from_secs(SCAN_SECS + 1);
-    let mut saw_output = false;
+    let mut last_scan = Instant::now() - Duration::from_secs(SCAN_SECS + 1);
 
     loop {
-        if crate::CTRL_C_RECEIVED.load(std::sync::atomic::Ordering::SeqCst) {
-            break;
+        if crate::CTRL_C_RECEIVED.load(Ordering::SeqCst) {
+            return;
         }
 
         let iter_start = Instant::now();
 
         // Periodically re-scan for newly created RPT / extdb files
         if last_scan.elapsed().as_secs() >= SCAN_SECS {
-            discovered = discover_files(ARMA_CONTAINER, &rpt_dir, &extdb_dir);
+            discovered = discover_files(&container, &rpt_dir, &extdb_dir);
             last_scan = Instant::now();
         }
 
@@ -95,7 +171,7 @@ pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
             .map(|(k, v)| (k.clone(), v.offset))
             .collect();
 
-        if let Some(results) = batch_read(ARMA_CONTAINER, &all_files, &offsets) {
+        if let Some(results) = batch_read(&container, &all_files, &offsets) {
             for (path, content, new_size) in results {
                 // Assign a label+color the first time we see this file
                 let next_color = color_counter;
@@ -111,26 +187,26 @@ pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
 
                 state.offset = new_size;
                 for line in content.lines() {
-                    if !line.trim().is_empty() {
-                        saw_output = true;
-                        state.line_no += 1;
-                        print_log_line(
-                            &state.label,
-                            LABEL_COLORS[state.color_idx],
-                            state.line_no,
-                            line,
-                        );
+                    if line.trim().is_empty() {
+                        continue;
+                    }
+
+                    state.line_no += 1;
+                    let sent = sender.send(LogLine {
+                        server_id: server_id.clone(),
+                        server_color,
+                        label: state.label.clone(),
+                        label_color: LABEL_COLORS[state.color_idx],
+                        line_no: state.line_no,
+                        content: line.to_string(),
+                    });
+
+                    // The printer has gone away, so there is nobody left to write for.
+                    if sent.is_err() {
+                        return;
                     }
                 }
             }
-        }
-
-        if !saw_output && last_heartbeat.elapsed().as_secs() >= HEARTBEAT_SECS {
-            println!(
-                "{}",
-                "  · waiting for server…".truecolor(dim.0, dim.1, dim.2).italic()
-            );
-            last_heartbeat = Instant::now();
         }
 
         // Sleep only the remainder of the poll interval so the docker exec
@@ -141,8 +217,6 @@ pub fn stream_logs(ctx: &mut BuildContext) -> BuildResult {
             thread::sleep(target - elapsed);
         }
     }
-
-    Ok(())
 }
 
 /// Derive a short display label from a file path.
@@ -266,30 +340,44 @@ fn batch_read(
     if results.is_empty() { None } else { Some(results) }
 }
 
-fn print_log_line(
-    label: &str,
-    label_color: (u8, u8, u8),
-    line_no: u64,
-    content: &str,
-) {
+/// A `server_width` of zero means a single-server run, where the name is left off entirely.
+fn print_log_line(line: &LogLine, server_width: usize) {
     use common::HIGHLIGHTS;
 
     let steel = color::STEEL;
     let dim = color::DIM;
 
-    let padded_label = format!("{:>width$}", label, width = LABEL_WIDTH);
-    let padded_no = format!("{:>width$}", line_no, width = LINE_NO_WIDTH);
+    let padded_label = format!("{:>width$}", line.label, width = LABEL_WIDTH);
+    let padded_no = format!("{:>width$}", line.line_no, width = LINE_NO_WIDTH);
 
-    let highlight = HIGHLIGHTS.iter().find(|h| h.regex.is_match(content));
+    let highlight = HIGHLIGHTS.iter().find(|h| h.regex.is_match(&line.content));
     let styled_content = if let Some(h) = highlight {
-        content.truecolor(h.color[0], h.color[1], h.color[2]).bold().to_string()
+        line.content
+            .truecolor(h.color[0], h.color[1], h.color[2])
+            .bold()
+            .to_string()
     } else {
-        content.to_string()
+        line.content.clone()
+    };
+
+    let server_prefix = if server_width > 0 {
+        let padded = format!("{:<width$}", line.server_id, width = server_width);
+        format!(
+            "{} ",
+            format!("[{padded}]")
+                .truecolor(line.server_color.0, line.server_color.1, line.server_color.2)
+                .bold()
+        )
+    } else {
+        String::new()
     };
 
     println!(
-        "  {}:{} {} {}",
-        padded_label.truecolor(label_color.0, label_color.1, label_color.2).bold(),
+        "  {}{}:{} {} {}",
+        server_prefix,
+        padded_label
+            .truecolor(line.label_color.0, line.label_color.1, line.label_color.2)
+            .bold(),
         padded_no.truecolor(dim.0, dim.1, dim.2),
         "│".truecolor(steel.0, steel.1, steel.2),
         styled_content,

@@ -88,7 +88,11 @@ RSpec.shared_context("connection") do
       wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
       wait(timeout: 5).for { server.reload.connected? }.to be(true)
     rescue RSpec::Expectations::ExpectationNotMetError
-      raise "esm_arma never connected after #{max_attempts} attempts. From the esm_arma repo, please run `bin/bot_testing`" if attempts >= max_attempts
+      if attempts >= max_attempts
+        raise "esm_arma never connected after #{max_attempts} attempts. Run `bin/dev` from arma/ to start it. " \
+              "Specs only reach the first server in arma/config.yml, so a --server-id run of any other one " \
+              "will not answer."
+      end
 
       connection_server.pause
       retry

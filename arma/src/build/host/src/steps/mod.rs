@@ -6,4 +6,5 @@ pub mod keys;
 pub mod logs;
 pub mod mod_build;
 pub mod server;
+pub mod server_mod;
 pub mod staging;

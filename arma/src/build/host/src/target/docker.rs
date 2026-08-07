@@ -1,22 +1,68 @@
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command as Cmd;
+use std::process::{Command as Cmd, Stdio};
 
-use crate::{config::Config, error::BuildError, ARMA_CONTAINER, ARMA_SERVICE};
+use crate::{
+    config::{Config, Instance},
+    error::BuildError,
+};
+
+/// Write a file inside a container, piping the contents over stdin.
+///
+/// Going through stdin rather than the command line keeps shell quoting out of the picture, which matters for
+/// server keys and config values that can hold anything.
+pub fn write_file(
+    container: &str,
+    path: &Path,
+    contents: &[u8],
+) -> Result<(), BuildError> {
+    let cmd = format!("cat > '{}'", path.display());
+
+    let mut child = Cmd::new("docker")
+        .args(["exec", "-i", container, "/bin/bash", "-c", &cmd])
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(contents)
+            .map_err(|e| BuildError::Docker(e.to_string()))?;
+    }
+
+    let status = child
+        .wait()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    if !status.success() {
+        return Err(BuildError::Docker(format!(
+            "Failed to write {} in {container} (exit {:?})",
+            path.display(),
+            status.code()
+        )));
+    }
+
+    Ok(())
+}
 
 pub struct DockerTarget {
     #[allow(dead_code)]
     build_path: PathBuf,
     server_path: PathBuf,
     server_args: String,
+    container: String,
 }
 
 impl DockerTarget {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, instance: &Instance) -> Self {
+        // The game port is the one launch argument that has to differ per server; config.yml carries the rest
+        // verbatim because every other path resolves the same way inside every container.
         let server_args = config
             .server
             .server_args
             .iter()
             .map(|arg| format!("-{arg}"))
+            .chain(std::iter::once(format!("-port={}", instance.port)))
             .collect::<Vec<_>>()
             .join(" ");
 
@@ -24,6 +70,7 @@ impl DockerTarget {
             build_path: PathBuf::from("/tmp/esm"),
             server_path: PathBuf::from(crate::ARMA_PATH),
             server_args,
+            container: instance.container(),
         }
     }
 
@@ -55,7 +102,7 @@ impl super::Target for DockerTarget {
         let output = Cmd::new("docker")
             .args([
                 "exec",
-                ARMA_CONTAINER,
+                &self.container,
                 "/bin/bash",
                 "-c",
                 cmd,
@@ -78,17 +125,20 @@ impl super::Target for DockerTarget {
     }
 
     fn upload(&self, local: &Path, dest: &Path) -> Result<(), BuildError> {
-        let dest_str = format!("{}:{}", ARMA_SERVICE, dest.display());
+        // The trailing `/.` copies the contents rather than the directory itself, which is what a bind-mounted
+        // destination needs: the mount point already exists and cannot be replaced from inside the container.
+        let src_str = format!("{}/.", local.display());
+        let dest_str = format!("{}:{}", self.container, dest.display());
 
         let output = Cmd::new("docker")
-            .args(["compose", "cp", &local.display().to_string(), &dest_str])
+            .args(["cp", &src_str, &dest_str])
             .output()
             .map_err(|e| BuildError::Docker(e.to_string()))?;
 
         if !output.status.success() {
             let msg = String::from_utf8_lossy(&output.stderr);
             return Err(BuildError::Docker(format!(
-                "docker compose cp upload failed: {}",
+                "docker cp upload failed: {}",
                 msg.trim()
             )));
         }
@@ -97,17 +147,17 @@ impl super::Target for DockerTarget {
     }
 
     fn download(&self, remote: &Path, local: &Path) -> Result<(), BuildError> {
-        let src_str = format!("{}:{}", ARMA_SERVICE, remote.display());
+        let src_str = format!("{}:{}", self.container, remote.display());
 
         let output = Cmd::new("docker")
-            .args(["compose", "cp", &src_str, &local.display().to_string()])
+            .args(["cp", &src_str, &local.display().to_string()])
             .output()
             .map_err(|e| BuildError::Docker(e.to_string()))?;
 
         if !output.status.success() {
             let msg = String::from_utf8_lossy(&output.stderr);
             return Err(BuildError::Docker(format!(
-                "docker compose cp download failed: {}",
+                "docker cp download failed: {}",
                 msg.trim()
             )));
         }
@@ -120,7 +170,7 @@ impl super::Target for DockerTarget {
             .args([
                 "exec",
                 "-t",
-                ARMA_CONTAINER,
+                &self.container,
                 "/bin/bash",
                 "-c",
                 &format!("test -e '{}' && echo 1 || echo 0", path.display()),

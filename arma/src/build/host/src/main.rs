@@ -4,6 +4,7 @@ mod context;
 mod display;
 mod error;
 mod file_watcher;
+mod locks;
 mod spinner;
 mod string_table;
 mod steps;
@@ -16,7 +17,7 @@ use std::{
 
 use clap::Parser;
 use colored::Colorize;
-use context::{Args, BuildContext};
+use context::{Args, BuildContext, InstanceContext};
 use error::BuildResult;
 use lazy_static::lazy_static;
 
@@ -32,8 +33,8 @@ pub const ADDONS: &[&str] = &[
     "exile_server_player_connected",
 ];
 
-pub const ARMA_CONTAINER: &str = "ESM_ARMA_SERVER";
-pub const ARMA_SERVICE: &str = "arma_server";
+// Every server runs in its own container, so these paths are the same no matter which one is running. What
+// differs per server is the container name, its host-side volumes, and its game port — all on `Instance`.
 pub const ARMA_PATH: &str = "/arma3server";
 
 pub const LINUX_EXES: &[&str] =
@@ -95,11 +96,14 @@ fn main() {
 
 fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
     use steps::{
-        database, deploy, ext_build, keys, logs, mod_build, server, staging,
+        database, deploy, ext_build, keys, logs, mod_build, server, server_mod, staging,
     };
 
     // --- Build phase (always runs) ---
     // detect_rebuild already ran before the header was printed.
+    // Held only for the build: the staging tree is the one thing every server shares.
+    let build_lock = locks::BuildLock::acquire(&ctx.local_build_path)?;
+
     run_step(ctx, "Preparing staging", staging::prepare_staging)?;
 
     // Multi-spinner steps handle their own output — don't wrap in run_step.
@@ -128,29 +132,56 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
     }
 
     // --- Orchestration phase (requires Docker) ---
-    run_step(ctx, "Ensuring container", server::ensure_container)?;
     run_step(ctx, "Checking Exile files", server::check_for_exile_files)?;
+    run_step(ctx, "Removing stale containers", server::remove_orphaned_containers)?;
 
-    if server::needs_arma_update(ctx) {
-        run_step(ctx, "Updating Arma", server::update_arma)?;
+    let instances = ctx.instances.clone();
+    let contexts = instances
+        .iter()
+        .map(|instance| InstanceContext::new(ctx, instance))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // Claimed before anything touches a container, and held for the rest of the run.
+    let _server_locks = contexts
+        .iter()
+        .map(|ictx| locks::ServerLock::acquire(&ictx.instance_staging_path(), &ictx.instance.server_id))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for ictx in &contexts {
+        run_instance_step(ictx, "Ensuring container", server::ensure_container)?;
+    }
+
+    // The Arma install is shared by every container, so one update covers all of them.
+    if server::needs_arma_update(&contexts[0]) {
+        run_instance_step(&contexts[0], "Updating Arma", server::update_arma)?;
     }
 
     if !ctx.args.start_server() {
         return Ok(());
     }
 
-    run_step(ctx, "Stopping server", server::kill_arma)?;
-    run_step(ctx, "Cleaning logs", server::clean_logs)?;
-    run_step(ctx, "Seeding database", database::seed_database)?;
-    run_step(ctx, "Deploying", deploy::deploy)?;
-    run_step(ctx, "Starting server", server::start_server)?;
+    for ictx in &contexts {
+        run_instance_step(ictx, "Stopping server", server::kill_arma)?;
+        run_instance_step(ictx, "Cleaning logs", server::clean_logs)?;
+        run_instance_step(ictx, "Preparing server mod", server_mod::prepare_server_mod)?;
+        run_instance_step(ictx, "Ensuring database", database::ensure_database)?;
+        run_instance_step(ictx, "Seeding database", database::seed_database)?;
+        run_instance_step(ictx, "Deploying", deploy::deploy)?;
+        run_instance_step(ictx, "Starting server", server::start_server)?;
 
-    keys::start_key_exchange(ctx)?;
+        keys::start_key_exchange(ictx)?;
+    }
 
-    let result = logs::stream_logs(ctx);
+    // Everything that touches the shared staging tree is done. Streaming runs for as long as the server does,
+    // so holding the lock across it would stop any other server from ever starting.
+    drop(build_lock);
 
-    // Kill the server whenever we stop streaming (CTRL-C or error)
-    server::kill_arma(ctx).ok();
+    let result = logs::stream_logs(&contexts);
+
+    // Kill every server whenever we stop streaming (CTRL-C or error)
+    for ictx in &contexts {
+        server::kill_arma(ictx).ok();
+    }
 
     result
 }
@@ -162,6 +193,25 @@ fn run_step(
 ) -> BuildResult {
     let sp = spinner::Spinner::start(label);
     match step(ctx) {
+        Ok(()) => { sp.done(); Ok(()) }
+        Err(e) => { sp.fail(); Err(e) }
+    }
+}
+
+fn run_instance_step(
+    ictx: &InstanceContext,
+    label: &str,
+    step: fn(&InstanceContext) -> BuildResult,
+) -> BuildResult {
+    // Only name the server once more than one is in play; a single-server run reads better without it.
+    let label = if ictx.build.instances.len() > 1 {
+        format!("{label} ({})", ictx.instance.server_id)
+    } else {
+        label.to_string()
+    };
+
+    let sp = spinner::Spinner::start(&label);
+    match step(ictx) {
         Ok(()) => { sp.done(); Ok(()) }
         Err(e) => { sp.fail(); Err(e) }
     }

@@ -56,13 +56,20 @@ pub fn print_header(ctx: &BuildContext) {
         queue_parts.join(", ")
     };
 
+    let servers = ctx
+        .instances
+        .iter()
+        .map(|instance| format!("{} :{}", instance.server_id, instance.port))
+        .collect::<Vec<_>>()
+        .join(", ");
+
     let rows: Vec<(&str, String)> = vec![
         ("queue",      queue_str),
         ("env",        if ctx.args.release { "production".into() } else { "development".into() }),
         ("log level",  ctx.args.log_level().to_string()),
         ("git dir",    shorten_path(&ctx.git_path.to_string_lossy())),
         ("build dir",  shorten_path(&ctx.local_build_path.join("@esm").to_string_lossy())),
-        ("server dir", shorten_path(&ctx.target.server_path().to_string_lossy())),
+        ("servers",    servers),
     ];
 
     // Compute box width to fit the longest value row.

@@ -1,30 +1,39 @@
-name: esm_arma
-
-# The Arma 3 server only. Its backing mysql lives in the root docker-compose.yml
-# on the shared `esm` network, reached here by service name `mysql_db` (see
-# config.yml mysql_uri and @exileserver/extdb3-conf.ini). Bring up the root
-# infra first so the `esm` network exists.
+# One Arma 3 server. The build host brings this up once per server declared under `instances` in config.yml,
+# each as its own compose project (`docker compose -p esm_arma_<server_id>`), passing the variables below.
+# Running it by hand needs those set too; prefer `bin/build --start-server`.
+#
+# Backing mysql lives in the root docker-compose.yml on the shared `esm` network, reached here by service name
+# `mysql_db` (see config.yml mysql_uri and @exileserver/extdb3-conf.ini). Bring the root infra up first so the
+# `esm` network exists.
 
 services:
   arma_server:
     build: .
-    container_name: ESM_ARMA_SERVER
+    # Named explicitly so every server's compose project reuses one image instead of building its own copy
+    # under a project-prefixed name.
+    image: esm_arma_server
+    container_name: ${ESM_CONTAINER}
     volumes:
-      - "./tools/server/@exile:/arma3server/@exile"
-      - "./tools/server/@exileserver:/arma3server/@exileserver"
-      - "./tools/server/mpmissions:/arma3server/mpmissions"
-      - "./tools/server/test.log:/arma3server/test.log"
-      - "./tools/server/test.rpt:/tmp/test.rpt"
+      # Shared across every server: the game install steamcmd manages, and the read-only mod content.
       - "./.docker-volumes/server-data:/arma3server"
       - "./.docker-volumes/steam-data:/steamcmd"
-      - "./.docker-volumes/tmp-data:/tmp"
+      - "./tools/server/@exile:/arma3server/@exile"
+      - "./tools/server/mpmissions:/arma3server/mpmissions"
+      - "./tools/server/test.log:/arma3server/test.log"
+      # This server's own state, layered over the shared install so in-container paths stay identical.
+      # @exileserver is per-server because extdb3-conf.ini names the database and config.cfg names the server.
+      - "./.docker-volumes/instances/${ESM_SERVER_ID}/esm:/arma3server/@esm"
+      - "./.docker-volumes/instances/${ESM_SERVER_ID}/exileserver:/arma3server/@exileserver"
+      - "./.docker-volumes/instances/${ESM_SERVER_ID}/profile:/arma3server/server_profile"
+      - "./.docker-volumes/instances/${ESM_SERVER_ID}/tmp:/tmp"
+      - "./tools/server/test.rpt:/tmp/test.rpt"
     tty: true
     # Published, not just exposed, so anything on the host can reach the Steam query port: the bot and website both
-    # run outside this network, and A2S is how they read the map, player count, and game version. 2303 is the one
-    # that matters (game port plus one); the rest of the range comes along so the container behaves like a real
+    # run outside this network, and A2S is how they read the map, player count, and game version. The game port
+    # plus one is the one that matters; the rest of the range comes along so the container behaves like a real
     # server if anything else ever needs it.
     ports:
-      - "2302-2306:2302-2306/udp"
+      - "${ESM_PORT_BASE}-${ESM_PORT_LAST}:${ESM_PORT_BASE}-${ESM_PORT_LAST}/udp"
     networks:
       - esm
     extra_hosts: # Allows linux host to use host.docker.internal.

@@ -17,7 +17,7 @@ use std::fmt::Display;
 
 use crate::{
     config::Config,
-    context::BuildContext,
+    context::InstanceContext,
     error::{BuildError, BuildResult},
 };
 
@@ -52,66 +52,208 @@ const MAX_ONLINE: usize = 64;
 
 const MINUTES_PER_DAY: i64 = 24 * 60;
 
-pub fn seed_database(ctx: &mut BuildContext) -> BuildResult {
-    let sql = generate_sql(&ctx.config, ctx.args.seed_xm8_notify);
+/// Container running the shared MySQL server, from the root docker-compose stack.
+const MYSQL_CONTAINER: &str = "ESM_DB_MYSQL";
 
-    // Write SQL to a temp file on the host
-    let sql_path = ctx.local_build_path.join("seed.sql");
-    fs::write(&sql_path, &sql)?;
+/// Create this server's Exile database and build its schema if it is new.
+///
+/// Two sources make up a complete schema. `exile.sql` is Exile's own dump, which opens by dropping and
+/// recreating a hardcoded database name; naming that database per server lets the script do the right thing
+/// on its own. On top of it go ESM's own changes from `src/@esm/sql`, the same files `bin/db_migrate` applies,
+/// without which the seed fails on a territory column and a missing table.
+///
+/// The only judgement here is whether to run at all: an existing database keeps its data, a new one is built
+/// from scratch. That also means resetting a server no longer means deleting the whole MySQL volume.
+pub fn ensure_database(ictx: &InstanceContext) -> BuildResult {
+    let (user, password, _host_port) = parse_mysql_uri(&ictx.config().server.mysql_uri)?;
+    let database = &ictx.instance.database;
 
-    // Parse credentials from mysql_uri: mysql://user:password@host:port/database
-    let (user, password, _host_port, database) =
-        parse_mysql_uri(&ctx.config.server.mysql_uri)?;
-
-    // Copy SQL into the MySQL container, then execute it
-    let container = "ESM_DB_MYSQL";
-    let remote_sql = "/tmp/esm_seed.sql";
-
-    // mysql lives in the root compose now, so address the container by name
-    // rather than `docker compose cp <service>` (no such service in this project).
-    let cp_output = Command::new("docker")
-        .args([
-            "cp",
-            &sql_path.to_string_lossy().to_string(),
-            &format!("{container}:{remote_sql}"),
-        ])
-        .output()
-        .map_err(|e| BuildError::Docker(e.to_string()))?;
-
-    if !cp_output.status.success() {
-        let msg = String::from_utf8_lossy(&cp_output.stderr);
-        return Err(BuildError::Docker(format!(
-            "Failed to copy seed.sql into MySQL container: {}",
-            msg.trim()
-        )));
+    if database_is_populated(&user, &password, database)? {
+        return Ok(());
     }
 
-    let exec_output = Command::new("docker")
+    let schema_path = ictx.build.git_path.join("exile.sql");
+    let schema = fs::read_to_string(&schema_path).map_err(|e| {
+        BuildError::Config(format!(
+            "{e} — Could not read the Exile schema at {}",
+            schema_path.display()
+        ))
+    })?;
+
+    let schema = schema.replace(SCHEMA_DEFAULT_DATABASE, database);
+    let local_schema = ictx
+        .build
+        .local_build_path
+        .join(format!("exile-{database}.sql"));
+    fs::write(&local_schema, &schema)?;
+
+    let remote_schema = format!("/tmp/esm_schema_{database}.sql");
+    copy_into_mysql(&local_schema, &remote_schema)?;
+    run_mysql_script(&user, &password, None, &remote_schema)?;
+
+    apply_esm_migrations(ictx, &user, &password, database)?;
+
+    Ok(())
+}
+
+/// Apply ESM's additions to the Exile schema, in filename order.
+///
+/// These are plain `ALTER`/`CREATE` statements with no guard, which is safe because this only ever runs
+/// against a database that was just created.
+fn apply_esm_migrations(
+    ictx: &InstanceContext,
+    user: &str,
+    password: &str,
+    database: &str,
+) -> BuildResult {
+    let pattern = ictx
+        .build
+        .git_path
+        .join("src")
+        .join("@esm")
+        .join("sql")
+        .join("*.sql");
+
+    let mut migrations: Vec<_> = glob::glob(&pattern.to_string_lossy())
+        .map_err(|e| BuildError::General(e.to_string()))?
+        .filter_map(|entry| entry.ok())
+        .collect();
+    migrations.sort();
+
+    for migration in migrations {
+        let name = migration
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+
+        let remote = format!("/tmp/esm_migration_{database}_{name}");
+        copy_into_mysql(&migration, &remote)?;
+        run_mysql_script(user, password, Some(database), &remote)?;
+    }
+
+    Ok(())
+}
+
+/// The database name `exile.sql` ships with, rewritten per server before the schema is loaded.
+const SCHEMA_DEFAULT_DATABASE: &str = "exile_esm";
+
+/// Whether the database already holds the Exile schema, checked via a table every install has.
+fn database_is_populated(
+    user: &str,
+    password: &str,
+    database: &str,
+) -> Result<bool, BuildError> {
+    let output = Command::new("docker")
         .args([
             "exec",
-            container,
+            "-e",
+            &format!("MYSQL_PWD={password}"),
+            MYSQL_CONTAINER,
             "mysql",
             &format!("-u{user}"),
-            &format!("-p{password}"),
-            &database,
+            "--skip-column-names",
             "-e",
-            &format!("source {remote_sql}"),
+            &format!(
+                "SELECT COUNT(*) FROM information_schema.tables \
+                 WHERE table_schema = '{database}' AND table_name = 'account'"
+            ),
         ])
         .output()
         .map_err(|e| BuildError::Docker(e.to_string()))?;
 
-    if !exec_output.status.success() {
-        let err = String::from_utf8_lossy(&exec_output.stderr);
+    Ok(String::from_utf8_lossy(&output.stdout).trim() == "1")
+}
+
+fn copy_into_mysql(local: &std::path::Path, remote: &str) -> BuildResult {
+    let output = Command::new("docker")
+        .args([
+            "cp",
+            &local.to_string_lossy(),
+            &format!("{MYSQL_CONTAINER}:{remote}"),
+        ])
+        .output()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    if !output.status.success() {
+        let msg = String::from_utf8_lossy(&output.stderr);
         return Err(BuildError::Docker(format!(
-            "Database seed failed: {}", err.trim()
+            "Failed to copy SQL into the MySQL container: {}",
+            msg.trim()
         )));
     }
 
     Ok(())
 }
 
-fn parse_mysql_uri(uri: &str) -> Result<(String, String, String, String), BuildError> {
-    // mysql://user:password@host:port/database
+/// Run a `.sql` file already inside the MySQL container. A `database` of `None` lets the script pick its own,
+/// which is what the schema dump does.
+fn run_mysql_script(
+    user: &str,
+    password: &str,
+    database: Option<&str>,
+    remote_path: &str,
+) -> BuildResult {
+    // The password goes through the environment rather than -p, so mysql's "insecure" warning stays out of
+    // stderr and can't bury the actual error when a script fails.
+    let mut args = vec![
+        "exec".to_string(),
+        "-e".to_string(),
+        format!("MYSQL_PWD={password}"),
+        MYSQL_CONTAINER.to_string(),
+        "mysql".to_string(),
+        format!("-u{user}"),
+    ];
+
+    if let Some(database) = database {
+        args.push(database.to_string());
+    }
+
+    args.push("-e".to_string());
+    args.push(format!("source {remote_path}"));
+
+    let output = Command::new("docker")
+        .args(&args)
+        .output()
+        .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr);
+        return Err(BuildError::Docker(format!(
+            "MySQL script failed: {}",
+            err.trim()
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn seed_database(ictx: &InstanceContext) -> BuildResult {
+    let sql = generate_sql(ictx.config(), ictx.args().seed_xm8_notify);
+
+    // One seed file per server, so concurrent runs can't overwrite each other's SQL mid-copy.
+    let sql_path = ictx
+        .build
+        .local_build_path
+        .join(format!("seed-{}.sql", ictx.instance.server_id));
+    fs::write(&sql_path, &sql)?;
+
+    // Credentials come from the shared mysql_uri; the database is this server's own, which is what confines
+    // the wholesale DELETEs in the generated SQL to one server's data.
+    let (user, password, _host_port) = parse_mysql_uri(&ictx.config().server.mysql_uri)?;
+    let database = &ictx.instance.database;
+
+    let remote_sql = format!("/tmp/esm_seed_{}.sql", ictx.instance.server_id);
+    copy_into_mysql(&sql_path, &remote_sql)?;
+    run_mysql_script(&user, &password, Some(database), &remote_sql)?;
+
+    Ok(())
+}
+
+/// Split `mysql://user:password@host:port` into its parts.
+///
+/// A trailing `/database` is tolerated and ignored: which database to use is a per-server decision that lives
+/// on the instance, not in the shared connection URI.
+fn parse_mysql_uri(uri: &str) -> Result<(String, String, String), BuildError> {
     let without_scheme = uri
         .strip_prefix("mysql://")
         .ok_or_else(|| BuildError::Config(format!("Invalid mysql_uri: {uri}")))?;
@@ -124,15 +266,12 @@ fn parse_mysql_uri(uri: &str) -> Result<(String, String, String, String), BuildE
         BuildError::Config(format!("Invalid mysql_uri (missing : in credentials): {uri}"))
     })?;
 
-    let (host_port, database) = rest.split_once('/').ok_or_else(|| {
-        BuildError::Config(format!("Invalid mysql_uri (missing /database): {uri}"))
-    })?;
+    let host_port = rest.split_once('/').map_or(rest, |(host, _)| host);
 
     Ok((
         user.to_string(),
         password.to_string(),
         host_port.to_string(),
-        database.to_string(),
     ))
 }
 

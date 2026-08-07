@@ -15,6 +15,9 @@ serde_yaml = "0.9.34"
 serde_json = "1.0"
 regex = "1"
 glob = "0.3.3"
+# Advisory lock around the build phase so two `bin/build` processes (one per server) can't tread on the
+# shared target/@esm staging tree.
+fs2 = "0.4"
 redis = "0.25"
 chrono = "0.4"
 rand = "0.8"

@@ -1,31 +1,55 @@
-use std::{
-    io::Write,
-    process::{Command, Stdio},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 
 use redis::Commands;
 
 use crate::{
-    context::BuildContext,
+    context::InstanceContext,
     error::{BuildError, BuildResult},
-    ARMA_CONTAINER,
+    target::docker,
 };
 
 const REDIS_KEY: &str = "server_key";
 const REDIS_KEY_CONFIRM: &str = "server_key_set";
 
+/// The Redis slots this server watches for its key, most specific first.
+///
+/// Each server has its own slot so that several build processes can't steal each other's keys. The first
+/// server configured also watches the unnamespaced slot, which is the one the spec suite writes to: its
+/// server is built by a factory, so its server_id is random and no config could name the slot in advance.
+fn key_slots(ictx: &InstanceContext) -> Vec<String> {
+    let mut slots = vec![format!("{REDIS_KEY}:{}", ictx.instance.server_id)];
+
+    if ictx.is_default_instance() {
+        slots.push(REDIS_KEY.to_string());
+    }
+
+    slots
+}
+
+/// Confirmation flags to set once a key has been written, mirroring [`key_slots`].
+fn confirm_slots(ictx: &InstanceContext) -> Vec<String> {
+    let mut slots = vec![format!("{REDIS_KEY_CONFIRM}:{}", ictx.instance.server_id)];
+
+    if ictx.is_default_instance() {
+        slots.push(REDIS_KEY_CONFIRM.to_string());
+    }
+
+    slots
+}
+
 /// Spawn a background thread that watches Redis for new server keys and writes
 /// them into the container's `@esm/esm.key` (plus a `.RELOAD` trigger).
 ///
 /// Returns immediately — the thread runs until the process exits.
-pub fn start_key_exchange(ctx: &mut BuildContext) -> BuildResult {
+pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
     let redis = redis::Client::open("redis://127.0.0.1/0")
         .map_err(|e| BuildError::Redis(e))?;
 
-    let server_path = ctx.target.server_path().to_path_buf();
-    let build_path = ctx.local_build_path.join("@esm");
+    let server_path = ictx.server_path().to_path_buf();
+    let build_path = ictx.instance_staging_path();
+    let container = ictx.container();
+    let read_slots = key_slots(ictx);
+    let write_slots = confirm_slots(ictx);
 
     thread::spawn(move || {
         let mut conn = match redis.get_connection() {
@@ -39,13 +63,11 @@ pub fn start_key_exchange(ctx: &mut BuildContext) -> BuildResult {
         let mut last_key = String::new();
 
         loop {
-            let key: Option<String> = match conn.get_del(REDIS_KEY) {
-                Ok(k) => k,
-                Err(_) => {
-                    thread::sleep(Duration::from_millis(100));
-                    continue;
-                }
-            };
+            // Reading destructively is what keeps the two slots from fighting: a key is claimed once, so the
+            // namespaced slot can't re-assert a stale value over one the spec suite just published.
+            let key = read_slots.iter().find_map(|slot| {
+                conn.get_del::<_, Option<String>>(slot).ok().flatten()
+            });
 
             let Some(key) = key else {
                 thread::sleep(Duration::from_millis(100));
@@ -57,62 +79,40 @@ pub fn start_key_exchange(ctx: &mut BuildContext) -> BuildResult {
                 continue;
             }
 
-            // Write key file inside container — pipe key via stdin to avoid
-            // any shell escaping issues with special characters in the key.
-            let server_key_path = server_path.join("@esm").join("esm.key");
-            let reload_path = server_path.join("@esm").join(".RELOAD");
+            let esm_dir = server_path.join("@esm");
 
-            let write_cmd = format!(
-                "cat > '{key_path}' && printf 'true' > '{reload}'",
-                key_path = server_key_path.display(),
-                reload = reload_path.display(),
-            );
-
-            if let Err(e) = run_in_container_with_stdin(&write_cmd, key.as_bytes()) {
+            if let Err(e) = docker::write_file(
+                &container,
+                &esm_dir.join("esm.key"),
+                key.as_bytes(),
+            )
+            .and_then(|_| {
+                // The sentinel is what makes the extension re-read the key without a restart.
+                docker::write_file(&container, &esm_dir.join(".RELOAD"), b"true")
+            }) {
                 eprintln!("[keys] Failed to write server key: {e}");
                 thread::sleep(Duration::from_millis(100));
                 continue;
             }
 
-            // Also write to local build staging
-            if let Err(e) = std::fs::write(build_path.join("esm.key"), key.as_bytes()) {
+            // Keep a host-side copy for inspection. It goes in this server's own staging directory: a shared
+            // one would mean each server overwriting the others' keys, and a stale key riding into the wrong
+            // container on the next deploy.
+            if let Err(e) = std::fs::create_dir_all(&build_path)
+                .and_then(|_| std::fs::write(build_path.join("esm.key"), key.as_bytes()))
+            {
                 eprintln!("[keys] Failed to write local key: {e}");
             }
 
             last_key = key;
 
-            let _: Result<(), _> = conn.set(REDIS_KEY_CONFIRM, "true");
+            for slot in &write_slots {
+                let _: Result<(), _> = conn.set(slot, "true");
+            }
 
             thread::sleep(Duration::from_millis(100));
         }
     });
-
-    Ok(())
-}
-
-fn run_in_container_with_stdin(cmd: &str, input: &[u8]) -> Result<(), BuildError> {
-    let mut child = Command::new("docker")
-        .args(["exec", "-i", ARMA_CONTAINER, "/bin/bash", "-c", cmd])
-        .stdin(Stdio::piped())
-        .spawn()
-        .map_err(|e| BuildError::Docker(e.to_string()))?;
-
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin
-            .write_all(input)
-            .map_err(|e| BuildError::Docker(e.to_string()))?;
-    }
-
-    let status = child
-        .wait()
-        .map_err(|e| BuildError::Docker(e.to_string()))?;
-
-    if !status.success() {
-        return Err(BuildError::Docker(format!(
-            "docker exec failed (exit {:?})",
-            status.code()
-        )));
-    }
 
     Ok(())
 }

@@ -4,6 +4,16 @@
 my_steam_uid: YOUR_UID
 
 #
+# The Arma 3 servers to run. Each one gets its own container, ports, Exile database, and ESM server key.
+# `server_id` is the ESM server's own identifier and decides everything else, so adding a server is just
+# another entry here. `bin/build --start-server` runs the first; --server-id picks one; --all runs them all.
+# Give servers ports at least 5 apart: Arma claims the game port through +4.
+instances:
+  - server_id: esm_malden
+    port: 2302
+    database: exile_esm
+
+#
 # Config for the Linux Arma 3 server
 server:
   # Steam username used to login to steamcmd
@@ -14,18 +24,19 @@ server:
   # Password cannot contain any un-escaped special characters, nor can it be more than 64 characters long
   steam_password: account_password
 
-  # The connection URI (e.g. mysql://user:password@ip_or_domain:port/database) for the same MySQL server as defined in the config file for extDB2/3
+  # The connection URI (e.g. mysql://user:password@ip_or_domain:port) for the same MySQL server as defined in the config file for extDB2/3
+  # Which database to use is per server, so it lives on the instance instead.
   # This is already pre-configured to work with the docker image
-  mysql_uri: mysql://root:password12345@mysql_db:3306/exile_esm
+  mysql_uri: mysql://root:password12345@mysql_db:3306
 
   # The command line arguments that are given to the Arma 3 server
   # Omit the dash (-) prefix. It is added automatically.
   # Linux must escape the semi-colons
+  # The game port is not listed here: it comes from each instance's `port`.
   server_args:
   - mod=@exile\;
   - servermod=@exileserver\;@esm\;
   - config=@exileserver/config.cfg
-  - port=2302
   - profiles=server_profile
   - cfg=@exileserver/basic.cfg
   - name=server_profile

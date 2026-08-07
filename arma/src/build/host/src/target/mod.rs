@@ -7,7 +7,7 @@ pub use remote::RemoteTarget;
 use std::path::Path;
 
 use crate::{
-    config::Config,
+    config::{Config, Instance},
     context::{Args, BuildOS},
     error::BuildError,
 };
@@ -18,7 +18,7 @@ pub trait Target: Send + Sync {
     /// Run a shell command in the target environment, return stdout.
     fn run(&self, cmd: &str) -> Result<String, BuildError>;
 
-    /// Copy a local path into the target at `dest`.
+    /// Copy the contents of the local directory `local` into the directory `dest` on the target.
     fn upload(&self, local: &Path, dest: &Path) -> Result<(), BuildError>;
 
     /// Copy a path from the target to a local destination.
@@ -40,9 +40,10 @@ pub trait Target: Send + Sync {
 pub fn build_target(
     args: &Args,
     config: &Config,
+    instance: &Instance,
 ) -> Result<Box<dyn Target>, BuildError> {
     match args.build_os() {
-        BuildOS::Linux => Ok(Box::new(DockerTarget::new(config))),
+        BuildOS::Linux => Ok(Box::new(DockerTarget::new(config, instance))),
         BuildOS::Windows => RemoteTarget::new(),
     }
 }
