@@ -50,17 +50,30 @@ fn remaining(deadline: Instant) -> Result<std::time::Duration, UpdaterError> {
     Ok(deadline - now)
 }
 
-fn get_bytes(url: &str, deadline: Instant) -> Result<Vec<u8>, UpdaterError> {
-    let timeout = remaining(deadline)?;
+/// GET `url` and hand back a reader over the response body.
+///
+/// The timeout lives on the agent rather than the request, so what's left of the deadline has to be resolved before
+/// the call is built rather than attached to it.
+fn get_reader(
+    url: &str,
+    deadline: Instant,
+) -> Result<ureq::BodyReader<'static>, UpdaterError> {
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(remaining(deadline)?))
+        .build()
+        .into();
 
-    let response = ureq::get(url)
-        .timeout(timeout)
+    let response = agent
+        .get(url)
         .call()
         .map_err(|e| UpdaterError::Http(e.to_string()))?;
 
+    Ok(response.into_body().into_reader())
+}
+
+fn get_bytes(url: &str, deadline: Instant) -> Result<Vec<u8>, UpdaterError> {
     let mut buf = Vec::new();
-    response
-        .into_reader()
+    get_reader(url, deadline)?
         .read_to_end(&mut buf)
         .map_err(UpdaterError::Io)?;
 
@@ -72,19 +85,13 @@ fn download_inner(
     dest_path: &Path,
     deadline: Instant,
 ) -> Result<(), UpdaterError> {
-    let timeout = remaining(deadline)?;
-
-    let response = ureq::get(url)
-        .timeout(timeout)
-        .call()
-        .map_err(|e| UpdaterError::Http(e.to_string()))?;
+    let mut reader = get_reader(url, deadline)?;
 
     if let Some(parent) = dest_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
 
     let mut file = std::fs::File::create(dest_path)?;
-    let mut reader = response.into_reader();
 
     let mut buf = [0u8; 65536];
     loop {

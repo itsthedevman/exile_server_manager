@@ -1,18 +1,18 @@
 [package]
 name = "common"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vfs = "0.12.2"
-uuid = { version = "1.18.0", features = ["serde", "v4", "fast-rng"] }
+vfs = "0.13"
+uuid = { version = "1.24", features = ["serde", "v4", "fast-rng"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9.34"
 parking_lot = "0.12"
 compiler = { path = "../compiler" }
-redis = "0.25"
+redis = "1.5"
 regex = "1"
-colored = "2"
+colored = "3"
 lazy_static = "1"

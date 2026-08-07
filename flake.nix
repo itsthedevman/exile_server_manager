@@ -161,10 +161,14 @@
             # (RaiseFailFastException, NtRaiseHardError), which the import libs have to supply.
             export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS="-L ${pkgs.pkgsCross.mingw32.windows.pthreads}/lib -L ${pkgs.pkgsCross.mingw32.windows.mcfgthreads}/lib -C link-arg=-l:libmcfgthread.a -C link-arg=-lkernel32 -C link-arg=-lntdll"
 
-            # Arma: the 32-bit Linux extension compiles C sources (zstd-sys, libz) and so needs a
-            # toolchain targeting i686. The wrapper is referenced by absolute path rather than added
-            # to PATH, where its gcc would shadow the native one every other build here depends on.
+            # Arma: linking any 32-bit Linux artifact needs a toolchain targeting i686. The wrapper is referenced by
+            # absolute path rather than added to PATH, where its gcc would shadow the native one every other build
+            # here depends on.
             export CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER="${pkgs.pkgsi686Linux.stdenv.cc}/bin/gcc"
+
+            # CC/AR are separate from the linker above: they compile C *sources* for the target, which only the
+            # updater still does. Its TLS stack pulls ring, whose curve25519 and friends are C. The main extension is
+            # pure Rust and links without these, so dropping ring is what would retire them.
             export CC_i686_unknown_linux_gnu="${pkgs.pkgsi686Linux.stdenv.cc}/bin/gcc"
             export AR_i686_unknown_linux_gnu="${pkgs.pkgsi686Linux.stdenv.cc}/bin/ar"
 

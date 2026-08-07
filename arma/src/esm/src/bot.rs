@@ -8,7 +8,6 @@ use flate2::Compression;
 use humantime::format_duration;
 use message_io::network::{Endpoint, NetEvent, SendStatus, Transport};
 use message_io::node::{self, NodeHandler, NodeListener, NodeTask};
-use rand::prelude::*;
 use std::cmp::min;
 use std::io::prelude::*;
 use std::net::ToSocketAddrs;
@@ -436,7 +435,7 @@ fn on_disconnect(endpoint: Endpoint) {
         Duration::from_millis(500)
     } else {
         // Add jitter of 1-5 seconds to prevent slamming the server all at once
-        let jitter = Duration::from_secs_f32(thread_rng().gen_range(1.0..5.0));
+        let jitter = Duration::from_secs_f32(rand::random_range(1.0..5.0));
 
         min(RECONNECT_MIN * current_count as u32 + jitter, RECONNECT_MAX)
     };

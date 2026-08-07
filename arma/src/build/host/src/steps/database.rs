@@ -12,7 +12,7 @@ use fake::{
     Fake,
 };
 use lazy_static::lazy_static;
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::{IndexedRandom, SliceRandom}, Rng, RngExt};
 use std::fmt::Display;
 
 use crate::{
@@ -278,7 +278,7 @@ fn parse_mysql_uri(uri: &str) -> Result<(String, String, String), BuildError> {
 // ─── SQL generation ──────────────────────────────────────────────────────────
 
 fn generate_sql(config: &Config, xm8_notify: bool) -> String {
-    let rng = &mut rand::thread_rng();
+    let rng = &mut rand::rng();
 
     let mut steam_uids = generate_steam_uids(STEAM_UID_COUNT, rng);
     steam_uids.push(config.my_steam_uid.clone());
@@ -338,7 +338,7 @@ fn generate_steam_uids(count: usize, rng: &mut impl Rng) -> Vec<String> {
     (0..count)
         .map(|_| {
             let suffix: String =
-                (0..10).map(|_| rng.gen_range(0..10).to_string()).collect();
+                (0..10).map(|_| rng.random_range(0..10).to_string()).collect();
 
             format!("7656119{suffix}")
         })
@@ -362,7 +362,7 @@ fn generate_accounts(
             // Exile keeps one row per account forever, so the first connection is the oldest thing on it. Anchoring
             // it to the last connection rather than to now keeps a two-year veteran from reading as brand new.
             let first_connect_at =
-                last_connect_at - Duration::days(rng.gen_range(1..730));
+                last_connect_at - Duration::days(rng.random_range(1..730));
 
             Account {
                 uid: uid.clone(),
@@ -398,7 +398,7 @@ fn choose_online(
 
     candidates.shuffle(rng);
 
-    let count = rng.gen_range(MIN_ONLINE..=MAX_ONLINE);
+    let count = rng.random_range(MIN_ONLINE..=MAX_ONLINE);
     let mut online: HashSet<usize> =
         candidates.into_iter().take(count - 1).collect();
 
@@ -417,19 +417,19 @@ fn connection_times(
 ) -> (DateTime<Local>, Option<DateTime<Local>>) {
     if online {
         let connected_at =
-            Local::now() - Duration::minutes(rng.gen_range(1..6 * 60));
+            Local::now() - Duration::minutes(rng.random_range(1..6 * 60));
 
         // Most players have played before; the rest are on their first session and have never disconnected, which
         // is the other way a row reads as online.
-        let previous_session_ended = (rng.gen_range(0..100) >= 20).then(|| {
-            connected_at - Duration::minutes(rng.gen_range(10..14 * MINUTES_PER_DAY))
+        let previous_session_ended = (rng.random_range(0..100) >= 20).then(|| {
+            connected_at - Duration::minutes(rng.random_range(10..14 * MINUTES_PER_DAY))
         });
 
         return (connected_at, previous_session_ended);
     }
 
     let connected_at = random_last_connect(rng);
-    let session = Duration::minutes(rng.gen_range(5..5 * 60));
+    let session = Duration::minutes(rng.random_range(5..5 * 60));
 
     // A session that would end in the future would read as still connected, so it gets clamped back to now.
     let disconnected_at = (connected_at + session).min(Local::now());
@@ -440,11 +440,11 @@ fn connection_times(
 // Offline connect times are spread across the listing's look-back windows on purpose: each window needs enough rows
 // to page through, and the oldest bucket proves the window filters rather than showing whatever exists.
 fn random_last_connect(rng: &mut impl Rng) -> DateTime<Local> {
-    let minutes_ago = match rng.gen_range(0..100) {
-        0..=24 => rng.gen_range(30..MINUTES_PER_DAY),
-        25..=59 => rng.gen_range(MINUTES_PER_DAY..7 * MINUTES_PER_DAY),
-        60..=84 => rng.gen_range(7 * MINUTES_PER_DAY..30 * MINUTES_PER_DAY),
-        _ => rng.gen_range(30 * MINUTES_PER_DAY..180 * MINUTES_PER_DAY),
+    let minutes_ago = match rng.random_range(0..100) {
+        0..=24 => rng.random_range(30..MINUTES_PER_DAY),
+        25..=59 => rng.random_range(MINUTES_PER_DAY..7 * MINUTES_PER_DAY),
+        60..=84 => rng.random_range(7 * MINUTES_PER_DAY..30 * MINUTES_PER_DAY),
+        _ => rng.random_range(30 * MINUTES_PER_DAY..180 * MINUTES_PER_DAY),
     };
 
     Local::now() - Duration::minutes(minutes_ago)
@@ -480,7 +480,7 @@ fn generate_territories(
     my_steam_uid: &str,
     xm8_notify: bool,
 ) -> Vec<Territory> {
-    let rng = &mut rand::thread_rng();
+    let rng = &mut rand::rng();
 
     // Exile latches xm8_protectionmoney_notified per due cycle: a near/overdue
     // territory with notified = 0 fires a protection-money XM8 notification on
@@ -582,11 +582,11 @@ fn make_territory(
 ) -> Territory {
     let n = 5;
 
-    let mut build_rights: Vec<String> = steam_uids.choose_multiple(rng, n).cloned().collect();
+    let mut build_rights: Vec<String> = steam_uids.sample(rng, n).cloned().collect();
     build_rights.push(owner.to_string());
     build_rights.dedup();
 
-    let mut moderators: Vec<String> = build_rights.choose_multiple(rng, n).cloned().collect();
+    let mut moderators: Vec<String> = build_rights.sample(rng, n).cloned().collect();
     moderators.push(owner.to_string());
     moderators.dedup();
 

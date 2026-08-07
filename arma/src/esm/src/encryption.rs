@@ -4,7 +4,7 @@ use aes_gcm::{
     Aes256Gcm, Key, Nonce,
     aead::{Aead, KeyInit, Payload},
 };
-use rand::{RngCore, rngs::OsRng};
+use rand::{TryRng, rngs::SysRng};
 
 const NONCE_SIZE: u8 = 12; // GCM typically uses 12 bytes for nonce
 const TAG_SIZE: usize = 16; // GCM authentication tag is 16 bytes
@@ -46,21 +46,33 @@ pub fn reset_session_id() {
     *lock!(SESSION_ID) = None;
 }
 
+/// The AES-256 key is the first 32 bytes of the server key, so both directions build their cipher the same way.
+fn cipher_from(server_key: &[u8]) -> Result<Aes256Gcm, String> {
+    let Some(encryption_key) = server_key.get(0..32) else {
+        return Err(format!(
+            "Server key must contain at least 32 bytes, got {}",
+            server_key.len()
+        ));
+    };
+
+    let key = <&Key<Aes256Gcm>>::try_from(encryption_key)
+        .map_err(|e| format!("Server key is not a usable AES-256 key: {e}"))?;
+
+    Ok(Aes256Gcm::new(key))
+}
+
 pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String> {
-    if server_key.len() < 32 {
-        return Err("Server key must contain at least 32 bytes".into());
-    }
+    let cipher = cipher_from(server_key)?;
 
-    let encryption_key = &server_key[0..32];
-
-    // Generate nonce
+    // Drawn straight from the OS rather than a userspace generator, and a failure to read it is returned rather than
+    // swallowed: GCM's security rests on never reusing a nonce under the same key, so encrypting with whatever bytes
+    // happened to be in the buffer would be worse than not sending the message at all.
     let mut nonce_bytes = [0u8; NONCE_SIZE as usize];
-    OsRng.fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    SysRng
+        .try_fill_bytes(&mut nonce_bytes)
+        .map_err(|e| format!("Failed to read a nonce from the system random source: {e}"))?;
 
-    // Setup cipher
-    let key = Key::<Aes256Gcm>::from_slice(encryption_key);
-    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from(nonce_bytes);
 
     // Build payload with AAD (session_id if set)
     let session_id_guard = lock!(SESSION_ID);
@@ -72,7 +84,7 @@ pub fn encrypt_request(data: &[u8], server_key: &[u8]) -> Result<Vec<u8>, String
 
     // Encrypt; output is ciphertext || 16-byte GCM tag
     let mut packet = cipher
-        .encrypt(nonce, payload)
+        .encrypt(&nonce, payload)
         .map_err(|e| format!("Encryption failed: {e}"))?;
 
     // Insert nonce at specified positions
@@ -88,10 +100,7 @@ pub fn decrypt_request(
     encoded_bytes: Vec<u8>,
     server_key: &[u8],
 ) -> Result<Vec<u8>, String> {
-    if server_key.len() < 32 {
-        return Err("Server key must contain at least 32 bytes".into());
-    }
-
+    let cipher = cipher_from(server_key)?;
     let nonce_indices = lock!(INDICES).clone();
 
     let mut nonce: Vec<u8> = vec![];
@@ -118,10 +127,6 @@ pub fn decrypt_request(
         return Err("Encrypted data too short".into());
     }
 
-    // Setup cipher
-    let key = Key::<Aes256Gcm>::from_slice(&server_key[0..32]);
-    let cipher = Aes256Gcm::new(key);
-
     // Build payload with AAD; packet = ciphertext || tag (aes-gcm validates tag)
     let session_id_guard = lock!(SESSION_ID);
     let aad = session_id_guard
@@ -130,9 +135,13 @@ pub fn decrypt_request(
         .unwrap_or(b"");
     let payload = Payload { msg: &packet, aad };
 
-    let nonce = Nonce::from_slice(&nonce[..NONCE_SIZE as usize]);
+    let nonce_bytes: [u8; NONCE_SIZE as usize] = nonce[..NONCE_SIZE as usize]
+        .try_into()
+        .map_err(|_| format!("Nonce is not the {NONCE_SIZE} bytes GCM expects"))?;
+
+    let nonce = Nonce::from(nonce_bytes);
     let plaintext = cipher
-        .decrypt(nonce, payload)
+        .decrypt(&nonce, payload)
         .map_err(|e| format!("Decryption failed: {e}"))?;
 
     Ok(plaintext)

@@ -134,7 +134,7 @@ impl Transfers {
                 }
             };
 
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let transfer = match reader.values().choose(&mut rng) {
                 Some(t) => t,
                 None => continue,

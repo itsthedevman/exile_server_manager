@@ -73,9 +73,8 @@ pub(crate) fn extract_raw_pubkey(der: &[u8]) -> Result<&[u8], UpdaterError> {
 pub fn sign_for_test(data: &[u8]) -> (Vec<u8>, Vec<u8>) {
     use ed25519_dalek::Signer;
     use ed25519_dalek::SigningKey;
-    use rand::rngs::OsRng;
 
-    let signing_key = SigningKey::generate(&mut OsRng);
+    let signing_key = SigningKey::generate(&mut rand::rng());
     let sig = signing_key.sign(data);
     let verifying_key = signing_key.verifying_key();
     (verifying_key.as_bytes().to_vec(), sig.to_bytes().to_vec())
