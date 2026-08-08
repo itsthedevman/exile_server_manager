@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateApiTokensTable < ActiveRecord::Migration[6.1]
+class CreateAPITokensTable < ActiveRecord::Migration[6.1]
   def change
     create_table :api_tokens do |t|
       t.string :token, null: false, index: true

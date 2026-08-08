@@ -113,16 +113,18 @@ class Loader
 
     #
     # Loads core's Rails/ActiveRecord extensions: the custom type classes under `core/lib/types`,
-    # the ESM and UID inflection acronyms, and the `:hash` ActiveRecord attribute type.
+    # the ESM, UID and API inflection acronyms, and the `:hash` ActiveRecord attribute type.
     #
     # @param method [Symbol] the loader method to require the type files with (:require or :load)
     #
     def load_rails_extensions(method: :require)
       dir("core", "lib", "types", method:)
 
+      # These must stay in sync with the website's own acronym list
       ActiveSupport::Inflector.inflections(:en) do |inflect|
         inflect.acronym("ESM")
         inflect.acronym("UID")
+        inflect.acronym("API")
       end
 
       ActiveRecord::Type.register(:hash, HashType)
