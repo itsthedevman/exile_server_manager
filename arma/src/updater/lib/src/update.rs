@@ -92,6 +92,19 @@ pub struct AvailableUpdate {
     pub blocked_by: Option<String>,
 }
 
+/// Everything a read-only check found.
+#[derive(Debug)]
+pub struct CheckOutcome {
+    /// Components the manifest offers in a newer version than what is installed.
+    pub available: Vec<AvailableUpdate>,
+
+    /// Set when the manifest offers a newer CLI than the one that asked.
+    ///
+    /// Reported rather than installed. Replacing the running binary is deliberately left to the operator, so this is
+    /// only ever a message.
+    pub newer_cli: Option<Version>,
+}
+
 /// Record of a successfully updated component returned by `run_cli_update`.
 #[derive(Debug)]
 pub struct UpdatedComponent {
@@ -271,11 +284,20 @@ impl Updater {
     pub fn run_cli_update(
         selection: UpdateSelection,
         manifest_url_override: Option<String>,
+        running_cli: &Version,
     ) -> Result<Vec<UpdatedComponent>, UpdaterError> {
         let deadline = Instant::now() + Duration::from_secs(30);
         let cfg = Config::new().with_manifest_url(manifest_url_override);
 
         let manifest = load_manifest(&cfg.updater_url, deadline)?;
+
+        // Warned about here as well as in `check`, because an operator who only ever runs `update` would otherwise
+        // never hear it, and this is the component whose age affects how every other component gets installed.
+        if let Some(offered) = newer_cli_than(&manifest, running_cli) {
+            log::warn!(
+                "[update] this updater is {running_cli}; {offered} is available and is what the manifest expects"
+            );
+        }
 
         let mut results = Vec::new();
 
@@ -334,15 +356,20 @@ impl Updater {
     ///
     /// Reads only. Nothing is downloaded, nothing on disk is touched, and the manifest URL override is honoured so a
     /// staging manifest can be inspected without committing to it.
+    ///
+    /// `running_cli` has to be supplied by the caller because only the binary knows its own version; this crate is
+    /// compiled into both the CLI and the Arma extension, so its own `CARGO_PKG_VERSION` describes neither.
     pub fn run_check(
         manifest_url_override: Option<String>,
-    ) -> Result<Vec<AvailableUpdate>, UpdaterError> {
+        running_cli: &Version,
+    ) -> Result<CheckOutcome, UpdaterError> {
         let deadline = Instant::now() + Duration::from_secs(30);
         let cfg = Config::new().with_manifest_url(manifest_url_override);
 
         let manifest = load_manifest(&cfg.updater_url, deadline)?;
         let installed = installed_versions::load()?;
 
+        let newer_cli = newer_cli_than(&manifest, running_cli);
         let mut available = Vec::new();
 
         for component in Component::ALL {
@@ -376,8 +403,17 @@ impl Updater {
             });
         }
 
-        Ok(available)
+        Ok(CheckOutcome { available, newer_cli })
     }
+}
+
+/// The manifest's CLI version, when it is newer than `running`.
+fn newer_cli_than(manifest: &VersionManifest, running: &Version) -> Option<Version> {
+    manifest
+        .updater_cli
+        .as_ref()
+        .map(|entry| entry.version.clone())
+        .filter(|offered| offered > running)
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────

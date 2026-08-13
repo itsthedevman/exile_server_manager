@@ -417,13 +417,14 @@ fn test_run_check_reports_without_installing() {
     ]);
 
     let url = format!("{}/versions.json", server.base_url);
-    let available = with_cwd(&dir, || {
+    let outcome = with_cwd(&dir, || {
         test_key::set(&raw_pub);
-        let out = Updater::run_check(Some(url)).unwrap();
+        let out = Updater::run_check(Some(url), &Version::new(1, 0, 0)).unwrap();
         test_key::clear();
         out
     });
 
+    let available = &outcome.available;
     assert_eq!(available.len(), 1, "expected one available update: {available:?}");
     assert_eq!(available[0].name, "esm");
     assert_eq!(available[0].installed, Version::new(0, 0, 0));
@@ -461,13 +462,14 @@ fn test_run_check_reports_blocked_updates() {
 
     // Deliberately not written into config.yml — this proves the override is used.
     let url = format!("{}/versions.json", server.base_url);
-    let available = with_cwd(&dir, || {
+    let outcome = with_cwd(&dir, || {
         test_key::set(&raw_pub);
-        let out = Updater::run_check(Some(url)).unwrap();
+        let out = Updater::run_check(Some(url), &Version::new(1, 0, 0)).unwrap();
         test_key::clear();
         out
     });
 
+    let available = &outcome.available;
     assert_eq!(available.len(), 1, "expected one entry: {available:?}");
     assert_eq!(
         available[0].blocked_by.as_deref(),
@@ -497,14 +499,81 @@ fn test_run_check_is_empty_when_current() {
     ]);
 
     let url = format!("{}/versions.json", server.base_url);
-    let available = with_cwd(&dir, || {
+    let outcome = with_cwd(&dir, || {
         test_key::set(&raw_pub);
-        let out = Updater::run_check(Some(url)).unwrap();
+        let out = Updater::run_check(Some(url), &Version::new(1, 0, 0)).unwrap();
         test_key::clear();
         out
     });
 
-    assert!(available.is_empty(), "expected nothing available: {available:?}");
+    assert!(
+        outcome.available.is_empty(),
+        "expected nothing available: {:?}",
+        outcome.available
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a manifest offering a newer CLI is reported, never installed.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_run_check_reports_a_stale_cli_without_installing_it() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    let manifest = r#"{"updater_cli":{"version":"4.0.0","url":"http://example.invalid/cli","sha256":"abc"}}"#;
+    let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
+    let server = MockServer::new(vec![
+        ("/versions.json".to_string(), manifest.as_bytes().to_vec()),
+        ("/versions.json.sig".to_string(), sig),
+    ]);
+
+    let url = format!("{}/versions.json", server.base_url);
+    let outcome = with_cwd(&dir, || {
+        test_key::set(&raw_pub);
+        let out = Updater::run_check(Some(url), &Version::new(1, 0, 0)).unwrap();
+        test_key::clear();
+        out
+    });
+
+    assert_eq!(
+        outcome.newer_cli,
+        Some(Version::new(4, 0, 0)),
+        "a newer CLI should be reported"
+    );
+    assert!(
+        outcome.available.is_empty(),
+        "the CLI is advisory and must not appear as an installable update: {:?}",
+        outcome.available
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a CLI at or above the manifest's version draws no warning.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_run_check_is_quiet_about_a_current_cli() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    let manifest = r#"{"updater_cli":{"version":"2.0.0","url":"http://example.invalid/cli","sha256":"abc"}}"#;
+    let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
+    let server = MockServer::new(vec![
+        ("/versions.json".to_string(), manifest.as_bytes().to_vec()),
+        ("/versions.json.sig".to_string(), sig),
+    ]);
+
+    let url = format!("{}/versions.json", server.base_url);
+    let outcome = with_cwd(&dir, || {
+        test_key::set(&raw_pub);
+        let out = Updater::run_check(Some(url), &Version::new(2, 0, 0)).unwrap();
+        test_key::clear();
+        out
+    });
+
+    assert_eq!(outcome.newer_cli, None, "an equal version is not stale");
 }
 
 // ---------------------------------------------------------------------------
@@ -706,6 +775,7 @@ fn test_cli_update_rejects_a_manifest_not_signed_by_the_production_key() {
         Updater::run_cli_update(
             UpdateSelection::All,
             Some(format!("{}/versions.json", server.base_url)),
+            &Version::new(1, 0, 0),
         )
     });
 

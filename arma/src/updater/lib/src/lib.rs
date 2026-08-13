@@ -20,5 +20,5 @@ pub mod update;
 pub use error::UpdaterError;
 pub use manifest::Component;
 pub use update::{
-    AvailableUpdate, BootCheckResult, UpdateSelection, UpdatedComponent, Updater,
+    AvailableUpdate, BootCheckResult, CheckOutcome, UpdateSelection, UpdatedComponent, Updater,
 };

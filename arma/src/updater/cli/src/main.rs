@@ -112,6 +112,30 @@ fn main() {
     std::process::exit(exit_code);
 }
 
+/// This binary's own version.
+///
+/// Unlike the components it installs, the CLI genuinely can ask itself: it is the running process, so its crate
+/// version is the right answer rather than a stand-in for one. An unparseable version falls back to `0.0.0`, which
+/// reads as "ancient" and errs toward telling the operator to update.
+fn running_version() -> semver::Version {
+    semver::Version::parse(env!("CARGO_PKG_VERSION"))
+        .unwrap_or_else(|_| semver::Version::new(0, 0, 0))
+}
+
+/// Tell the operator when they are driving an updater older than the manifest expects.
+///
+/// Nothing is replaced. Swapping the binary that is mid-update is the operator's call, and a wrong version is worth
+/// knowing about precisely because it changes how everything else gets installed.
+fn warn_if_stale(newer: Option<&semver::Version>) {
+    let Some(newer) = newer else { return };
+
+    eprintln!(
+        "warning: this updater is {}, but {newer} is available.",
+        running_version()
+    );
+    eprintln!("         Download the newer updater before installing anything else.");
+}
+
 /// Returns exit code: 0 = ok, 1 = error, 2 = updates available (check only).
 fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
     match cli.command {
@@ -125,14 +149,16 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
                 std::env::set_current_dir(&root)?;
             }
 
-            let available = Updater::run_check(manifest_url)?;
+            let outcome = Updater::run_check(manifest_url, &running_version())?;
 
-            if available.is_empty() {
+            warn_if_stale(outcome.newer_cli.as_ref());
+
+            if outcome.available.is_empty() {
                 println!("Everything is up to date.");
                 return Ok(0);
             }
 
-            for update in &available {
+            for update in &outcome.available {
                 match &update.blocked_by {
                     Some(requirement) => println!(
                         "{}: {} -> {} (blocked, needs {requirement})",
@@ -158,7 +184,7 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             }
             let selection: UpdateSelection = target.into();
             let updated =
-                Updater::run_cli_update(selection, manifest_url)?;
+                Updater::run_cli_update(selection, manifest_url, &running_version())?;
             for comp in &updated {
                 info!(
                     "[update] {} | total={}ms",
@@ -179,8 +205,11 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             if let Some(root) = server_root {
                 std::env::set_current_dir(&root)?;
             }
-            let updated =
-                Updater::run_cli_update(UpdateSelection::All, manifest_url)?;
+            let updated = Updater::run_cli_update(
+                UpdateSelection::All,
+                manifest_url,
+                &running_version(),
+            )?;
             for comp in &updated {
                 info!(
                     "[update] {} | total={}ms",

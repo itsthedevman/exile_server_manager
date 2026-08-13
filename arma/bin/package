@@ -134,8 +134,12 @@ if [[ "$skip_updater" == false ]]; then
         target/x86_64-unknown-linux-gnu/release/esm_updater \
         $release_dir/@esm/bin/esm_updater
 
-    echo "Windows CLI is still a manual step"
-    echo "  Place esm_updater.exe in $release_dir/@esm/bin/ before releasing"
+    echo_step "Building esm_updater CLI (Windows)"
+    run_command cargo build --release -p esm_updater_cli \
+        --target x86_64-pc-windows-gnu
+    run_command cp \
+        target/x86_64-pc-windows-gnu/release/esm_updater.exe \
+        $release_dir/@esm/bin/esm_updater.exe
 fi
 
 ##################################
@@ -152,7 +156,8 @@ if [[ "$skip_updater" == false ]]; then
         @esm/esm_updater_x64.dll \
         @esm/esm_updater.so \
         @esm/esm_updater_x64.so \
-        @esm/bin/esm_updater
+        @esm/bin/esm_updater \
+        @esm/bin/esm_updater.exe
 fi
 
 ##################################

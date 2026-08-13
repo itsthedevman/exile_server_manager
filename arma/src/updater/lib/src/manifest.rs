@@ -91,6 +91,13 @@ pub struct VersionManifest {
 
     /// The mod-side updater PBO.
     pub mod_updater: Option<ComponentVersion>,
+
+    /// The operator-facing updater CLI.
+    ///
+    /// Advisory only, which is why it is not a `Component`: the CLI is the running process during an update, and
+    /// nothing here installs it. It exists so a stale CLI can be reported to the operator instead of silently
+    /// carrying on, since an old updater is the one component whose bugs affect every other component's install.
+    pub updater_cli: Option<ComponentVersion>,
 }
 
 impl VersionManifest {
