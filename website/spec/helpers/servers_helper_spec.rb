@@ -87,4 +87,32 @@ RSpec.describe ServersHelper, type: :helper do
       expect(helper.server_mod_label(mod)).to eq("Exile")
     end
   end
+
+  describe "#render_setting" do
+    # A setting the owner never touched, or set back to the default, is written as a comment so the generated
+    # config.yml documents what the value would be without pinning it.
+    it "comments out a setting left at its default" do
+      settings = {updater_enabled: true}.with_indifferent_access
+
+      expect(helper.render_setting(:updater_enabled, settings)).to eq("# updater_enabled: true")
+    end
+
+    it "comments out a setting that was never set" do
+      expect(helper.render_setting(:updater_enabled, {}.with_indifferent_access)).to eq("# updater_enabled: true")
+    end
+
+    # The one that matters for a toggle: `false` is a choice, not an absent value. Rendering it as a comment would
+    # ship a config.yml that leaves the feature on while the website shows it switched off.
+    it "writes a real key for a boolean turned off" do
+      settings = {updater_enabled: false}.with_indifferent_access
+
+      expect(helper.render_setting(:updater_enabled, settings)).to eq("updater_enabled: false")
+    end
+
+    it "writes a real key for a value that differs from the default" do
+      settings = {number_locale: "de"}.with_indifferent_access
+
+      expect(helper.render_setting(:number_locale, settings)).to eq('number_locale: "de"')
+    end
+  end
 end

@@ -217,7 +217,7 @@ module Communities
           :server_restart_hour, :server_restart_min,
           :database_uri, :exile_logs_search_days,
           :extdb_conf_header_name, :extdb_conf_path, :extdb_version,
-          :log_output, :logging_path, :number_locale, :server_mod_name,
+          :log_output, :logging_path, :number_locale, :server_mod_name, :updater_enabled,
           :request_thread_type, :request_thread_tick, # V1
           additional_logs: []
         ]

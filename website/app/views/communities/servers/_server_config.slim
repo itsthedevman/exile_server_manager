@@ -168,6 +168,31 @@
             code
               | C:\ArmaServer\logs\esm.log
 
+    / Auto-Updater
+    / Hidden outside local until the updater ships. The column and the config.yml key are live either way, so a
+    / server that has never seen this control still gets the enabled default.
+    - if Rails.env.local?
+      hr.my-4
+
+      .mb-0
+        h5.mb-3
+          i.bi.bi-arrow-repeat.text-info.me-2
+          | Auto-Updater
+        p.text-muted.small.mb-4
+          | Lets your server install new ESM versions on its own, checked once while the server boots
+
+        .row.g-3
+          .col-12.col-lg-6
+            .form-check.form-switch
+              = f.check_box :updater_enabled,
+                  class: "form-check-input",
+                  checked: server.server_setting&.updater_enabled != false
+              = f.label :updater_enabled, class: "form-check-label fw-medium" do
+                | Check for updates on startup
+                span.badge.bg-info.ms-2 NEW
+            small.form-text.text-muted.mt-1
+              | Turning this off keeps your server on its current version until you update it yourself
+
     hr.my-4
 
     / Log Search Configuration

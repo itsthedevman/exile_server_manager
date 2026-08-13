@@ -20,6 +20,7 @@ module ESM
       number_locale
       exile_logs_search_days
       additional_logs
+      updater_enabled
     ].freeze
 
     CONFIG_DEFAULTS = {
@@ -34,7 +35,8 @@ module ESM
       server_mod_name: "@ExileServer",
       number_locale: "en",
       exile_logs_search_days: 14,
-      additional_logs: []
+      additional_logs: [],
+      updater_enabled: true
     }.with_indifferent_access.freeze
 
     # =============================================================================
@@ -155,6 +157,9 @@ module ESM
 
     # Exile server mod directory name
     attribute :server_mod_name, :string, default: nil
+
+    # Whether the Arma server checks for and installs ESM updates on boot
+    attribute :updater_enabled, :boolean, default: true
 
     ##########################
     # V1

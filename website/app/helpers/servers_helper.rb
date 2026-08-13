@@ -120,8 +120,12 @@ module ServersHelper
     value = settings[key]
     default_value = ESM::ServerSetting::CONFIG_DEFAULTS[key].presence
 
+    # `false` is a chosen value, not an absent one. Testing `present?` alone folds it in with blank strings and
+    # empty arrays, so a setting toggled off would render as a commented-out default and silently stay on.
+    chosen = value == false || value.present?
+
     line =
-      if has_key && value.present? && value != default_value
+      if has_key && chosen && value != default_value
         if value.is_a?(Array)
           if value.empty?
             "#{key}: []"
@@ -129,7 +133,7 @@ module ServersHelper
             "#{key}:\n#{value.map { |v| "- #{v.to_json}" }.join("\n")}"
           end
         else
-          "#{key}: #{(value || "").to_json}"
+          "#{key}: #{value.to_json}"
         end
       else
         "# #{key}: #{(default_value || "").to_json}"
