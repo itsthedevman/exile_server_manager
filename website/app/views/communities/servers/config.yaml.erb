@@ -48,6 +48,23 @@
 ##   Linux: "@exileserver"
 ###
 <%= render_setting("server_mod_name", settings) %>
+<%# The auto-updater has not shipped, so the key stays out of generated configs until it does. Omitting it is safe:
+    the updater treats a missing key as enabled, which is the default this would have written anyway. %>
+<% if Rails.env.local? %>
+
+###
+## Whether the server checks for and installs ESM updates while it boots
+##
+## When enabled, the server asks ESM for the current version on startup and
+## installs it if one is available. The check is skipped on any error, so the
+## server always starts even if ESM cannot be reached.
+##
+## Set to false to stay on the installed version until you update it yourself.
+##
+## Default: true
+###
+<%= render_setting("updater_enabled", settings) %>
+<% end %>
 
 #########################
 ## ExtDB Settings
