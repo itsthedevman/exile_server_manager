@@ -158,6 +158,22 @@ impl Updater {
             };
 
         // -- Log informational notices ------------------------------------
+        //
+        // The boot path deliberately installs nothing but the extension, and only announces the rest. Two reasons, and
+        // both are about the window this runs in.
+        //
+        // The budget is `updater_timeout_ms` (800ms by default) for the whole check, because this sits between Arma
+        // starting and the server accepting players. That is enough to fetch a manifest and swap one file, not enough
+        // to pull down a mod bundle.
+        //
+        // More importantly, swapping one dormant file is safe in a way that swapping the rest is not. The extension
+        // works because Arma has not mapped `esm_x64.so` yet, so it is still just a file on disk. PBOs are already
+        // being read by the engine by this point, and the updater components are what would be doing the swapping, so
+        // replacing them mid-run means a process rewriting itself while it works. Those belong in the CLI path, where
+        // an operator is present, the server is stopped, and a failure is recoverable by hand.
+        //
+        // So the owner learns an update exists on the boot they would have found out anyway, and applies it when the
+        // server is down.
         if let Some(eu) = &manifest.extension_updater {
             log::info!(
                 "[check_update] extension_updater {} available",
