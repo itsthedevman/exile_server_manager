@@ -35,7 +35,7 @@ done
 if [[ "$skip_updater" == true ]]; then
     readonly total_steps=8
 else
-    readonly total_steps=10
+    readonly total_steps=13
 fi
 
 step=0
@@ -140,6 +140,32 @@ if [[ "$skip_updater" == false ]]; then
     run_command cp \
         target/x86_64-pc-windows-gnu/release/esm_updater.exe \
         $release_dir/@esm/bin/esm_updater.exe
+fi
+
+##################################
+# Updater artifacts that aren't part of the mod folder itself
+if [[ "$skip_updater" == false ]]; then
+    echo_step "Building @esm-addons.tar.gz"
+
+    # The updater installs the mod by unpacking this over @esm/addons, so the PBOs sit at the archive root with no
+    # enclosing directory. tar.gz rather than zip because that is what updater_lib knows how to extract.
+    run_command tar -czf $release_dir/@esm-addons.tar.gz -C $release_dir/@esm/addons .
+
+    # Seed the updater's record of what is installed. Without this a fresh install reads as "nothing installed",
+    # and the first boot re-downloads everything the package already contains.
+    echo_step "Seeding installed_versions.yml"
+    cat > $release_dir/@esm/installed_versions.yml <<EOF
+# Written by the ESM updater. Records the version of each component currently installed so the next
+# update check knows what it is comparing against.
+#
+# Safe to delete. The updater treats a missing entry as "very old", so removing this file causes the
+# next check to reinstall everything and write it out again.
+
+esm: $crate_version
+"@esm": $crate_version
+extension_updater: $crate_version
+mod_updater: $crate_version
+EOF
 fi
 
 ##################################

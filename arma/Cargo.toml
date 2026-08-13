@@ -5,6 +5,7 @@ members = [
     "src/tools/paa2png",
     "src/build/common",
     "src/build/compiler",
+    "src/build/publisher",
     "src/esm",
     "src/updater/lib",
     "src/updater/extension",

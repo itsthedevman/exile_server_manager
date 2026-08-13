@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+# Builds and signs versions.json from an already-packaged release.
+# Run bin/package first - this script never builds artifacts, it only describes them.
+#
+# Deliberately separate from bin/release. Publishing a manifest is how a version gets offered to servers, and
+# keeping that separate from cutting a release means a version can be retargeted or rolled back by publishing a
+# new manifest, without building or tagging anything.
+#
+# The signing key is read from the path given to --key and is never stored in this repo. Pull it from Vaultwarden,
+# run this, then remove it:
+#
+#   bin/manifest --key ~/updater.key && shred -u ~/updater.key
+
+set -ueo pipefail
+trap "exit" INT
+
+##################################
+# Variables
+readonly root_dir="$(pwd)"
+readonly release_dir=$root_dir/target/build_release
+
+readonly crate_version=$(
+    cargo pkgid -p esm |
+        cut -d# -f2 |
+        cut -d@ -f2
+)
+
+readonly tag="arma/v$crate_version"
+readonly github_repo="itsthedevman/exile_server_manager"
+readonly base_url="https://github.com/$github_repo/releases/download/$tag"
+
+key_path=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --key)
+        key_path="$2"
+        shift 2
+        ;;
+    *)
+        echo "Unknown argument: $1"
+        exit 1
+        ;;
+    esac
+done
+
+##################################
+# The package has to exist before describing it is worth anything
+if [[ ! -d "$release_dir/@esm" ]]; then
+    echo "Fatal - $release_dir/@esm not found"
+    echo "Run bin/package first"
+    exit 1
+fi
+
+if [[ -z "$key_path" ]]; then
+    echo "Fatal - --key is required"
+    echo "  An unsigned manifest is rejected by every server, so there is no useful unsigned mode here."
+    exit 1
+fi
+
+if [[ ! -f "$key_path" ]]; then
+    echo "Fatal - no key at $key_path"
+    exit 1
+fi
+
+##################################
+# Build and sign
+cargo run --quiet --release -p esm_publisher -- \
+    --release-dir "$release_dir" \
+    --version "$crate_version" \
+    --base-url "$base_url" \
+    --out "$release_dir/versions.json" \
+    --esm-requires-mod ">=$crate_version" \
+    --key "$key_path"
+
+##################################
+# Woohoo!
+echo
+echo "Manifest built for $tag"
+echo "  Artifacts are expected at $base_url/<filename>"
+echo
+echo "Upload order matters: publish the GitHub release first, then serve versions.json."
+echo "Draft releases are not publicly downloadable, so a manifest published ahead of the"
+echo "release points every server at URLs that 404."

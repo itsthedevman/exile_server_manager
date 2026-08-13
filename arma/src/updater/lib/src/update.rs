@@ -12,7 +12,7 @@ use crate::{
     download::{extract_tar_gz, verify_sha256},
     http::{download_to, fetch_manifest},
     installed_versions,
-    manifest::{Component, ComponentVersion, VersionManifest},
+    manifest::{self, Artifact, Component, ComponentVersion, VersionManifest},
     signing::{verification_key, verify_with_key},
     UpdaterError,
 };
@@ -407,6 +407,20 @@ impl Updater {
     }
 }
 
+/// The artifact this machine should download for `comp`.
+///
+/// A release that offers nothing for this platform is an error rather than a silent skip: the caller only gets here
+/// after deciding an update is wanted, so "there is no file for you" is information the operator needs.
+fn artifact_for(comp: &ComponentVersion) -> Result<&Artifact, UpdaterError> {
+    comp.artifact().ok_or_else(|| {
+        UpdaterError::Parse(format!(
+            "release {} offers no artifact for {}",
+            comp.version,
+            manifest::current_platform()
+        ))
+    })
+}
+
 /// The manifest's CLI version, when it is newer than `running`.
 fn newer_cli_than(manifest: &VersionManifest, running: &Version) -> Option<Version> {
     manifest
@@ -471,11 +485,12 @@ fn download_and_swap_extension(
     std::fs::create_dir_all(temp_dir)?;
     let temp_file = temp_dir.join("esm_update");
 
-    download_to(&comp.url, &temp_file, deadline)?;
+    let artifact = artifact_for(comp)?;
+    download_to(&artifact.url, &temp_file, deadline)?;
     let download_elapsed_ms = download_started_at.elapsed().as_millis();
 
     let checksum_started_at = Instant::now();
-    if let Err(e) = verify_sha256(&temp_file, &comp.sha256) {
+    if let Err(e) = verify_sha256(&temp_file, &artifact.sha256) {
         let _ = std::fs::remove_file(&temp_file);
         return Err(e);
     }
@@ -520,8 +535,9 @@ fn update_mod_bundle(
     let started_at = Instant::now();
     let temp_dir = Path::new("@esm/temp/addons_stage");
     let archive = Path::new("@esm/temp/at_esm_update.tar.gz");
-    download_to(&comp.url, archive, deadline)?;
-    verify_sha256(archive, &comp.sha256)?;
+    let artifact = artifact_for(comp)?;
+    download_to(&artifact.url, archive, deadline)?;
+    verify_sha256(archive, &artifact.sha256)?;
     extract_tar_gz(archive, temp_dir)?;
 
     let addons = Path::new("@esm/addons");
@@ -553,8 +569,9 @@ fn update_esm_extension(
     let temp_dir = Path::new("@esm/temp");
     std::fs::create_dir_all(temp_dir)?;
     let temp_file = temp_dir.join("esm_update");
-    download_to(&comp.url, &temp_file, deadline)?;
-    verify_sha256(&temp_file, &comp.sha256)?;
+    let artifact = artifact_for(comp)?;
+    download_to(&artifact.url, &temp_file, deadline)?;
+    verify_sha256(&temp_file, &artifact.sha256)?;
 
     let dest = Path::new("@esm").join(filename);
     swap_file(&temp_file, &dest)?;
@@ -577,8 +594,9 @@ fn update_updater_extension(
     let dest = Path::new("@esm/esm_updater_ext");
     let temp = Path::new("@esm/temp/ext_updater");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
-    download_to(&comp.url, temp, deadline)?;
-    verify_sha256(temp, &comp.sha256)?;
+    let artifact = artifact_for(comp)?;
+    download_to(&artifact.url, temp, deadline)?;
+    verify_sha256(temp, &artifact.sha256)?;
     swap_file(temp, dest)?;
     record_installed(Component::ExtensionUpdater, &comp.version);
 
@@ -599,8 +617,9 @@ fn update_mod_updater_pbo(
     let dest = Path::new("@esm/esm_mod_updater.pbo");
     let temp = Path::new("@esm/temp/mod_updater.pbo");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
-    download_to(&comp.url, temp, deadline)?;
-    verify_sha256(temp, &comp.sha256)?;
+    let artifact = artifact_for(comp)?;
+    download_to(&artifact.url, temp, deadline)?;
+    verify_sha256(temp, &artifact.sha256)?;
     swap_file(temp, dest)?;
     record_installed(Component::ModUpdater, &comp.version);
 

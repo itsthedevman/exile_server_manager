@@ -239,7 +239,7 @@ fn test_boot_check_skips_when_installed_version_is_current() {
         &dir,
         |base| {
             format!(
-                r#"{{"esm":{{"version":"2.0.0","url":"{base}/artifact","sha256":"{sha}","requires":{{}}}}}}"#
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"{sha}"}}}},"requires":{{}}}}}}"#
             )
         },
         vec![("/artifact".into(), artifact)],
@@ -282,7 +282,7 @@ fn test_boot_check_installs_newer_extension_and_records_it() {
         &dir,
         |base| {
             format!(
-                r#"{{"esm":{{"version":"2.0.0","url":"{base}/artifact","sha256":"{sha}","requires":{{}}}}}}"#
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"{sha}"}}}},"requires":{{}}}}}}"#
             )
         },
         vec![("/artifact".into(), artifact.clone())],
@@ -328,7 +328,7 @@ fn test_boot_check_is_a_noop_on_the_second_boot() {
     let sha = sha256_hex(&artifact);
     let manifest_for = |base: &str| {
         format!(
-            r#"{{"esm":{{"version":"2.0.0","url":"{base}/artifact","sha256":"{sha}","requires":{{}}}}}}"#
+            r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"{sha}"}}}},"requires":{{}}}}}}"#
         )
     };
 
@@ -371,7 +371,7 @@ fn test_boot_check_defers_on_unmet_dependency() {
         &dir,
         |base| {
             format!(
-                r#"{{"esm":{{"version":"2.0.0","url":"{base}/artifact","sha256":"abc","requires":{{"@esm":">=9.0.0"}}}}}}"#
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"abc"}}}},"requires":{{"@esm":">=9.0.0"}}}}}}"#
             )
         },
         vec![],
@@ -405,7 +405,7 @@ fn test_run_check_reports_without_installing() {
 
     let artifact = b"newer-extension".to_vec();
     let manifest = format!(
-        r#"{{"esm":{{"version":"3.0.0","url":"/artifact","sha256":"{}","requires":{{}}}}}}"#,
+        r#"{{"esm":{{"version":"3.0.0","artifacts":{{"linux-x64":{{"url":"http://example.invalid/artifact","sha256":"{}"}}}},"requires":{{}}}}}}"#,
         sha256_hex(&artifact)
     );
 
@@ -452,7 +452,7 @@ fn test_run_check_reports_blocked_updates() {
     let dir = tmpdir.path().to_path_buf();
     std::fs::create_dir_all(dir.join("@esm")).unwrap();
 
-    let manifest = r#"{"esm":{"version":"3.0.0","url":"/artifact","sha256":"abc","requires":{"@esm":">=9.0.0"}}}"#;
+    let manifest = r#"{"esm":{"version":"3.0.0","artifacts":{"linux-x64":{"url":"http://example.invalid/a","sha256":"abc"}},"requires":{"@esm":">=9.0.0"}}}"#;
 
     let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
     let server = MockServer::new(vec![
@@ -491,7 +491,7 @@ fn test_run_check_is_empty_when_current() {
         installed_versions::record(Component::Esm, &Version::new(5, 0, 0)).unwrap()
     });
 
-    let manifest = r#"{"esm":{"version":"5.0.0","url":"/artifact","sha256":"abc","requires":{}}}"#;
+    let manifest = r#"{"esm":{"version":"5.0.0","artifacts":{"linux-x64":{"url":"http://example.invalid/a","sha256":"abc"}},"requires":{}}}"#;
     let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
     let server = MockServer::new(vec![
         ("/versions.json".to_string(), manifest.as_bytes().to_vec()),
@@ -522,7 +522,7 @@ fn test_run_check_reports_a_stale_cli_without_installing_it() {
     let dir = tmpdir.path().to_path_buf();
     std::fs::create_dir_all(dir.join("@esm")).unwrap();
 
-    let manifest = r#"{"updater_cli":{"version":"4.0.0","url":"http://example.invalid/cli","sha256":"abc"}}"#;
+    let manifest = r#"{"updater_cli":{"version":"4.0.0","artifacts":{"linux-x64":{"url":"http://example.invalid/cli","sha256":"abc"}}}}"#;
     let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
     let server = MockServer::new(vec![
         ("/versions.json".to_string(), manifest.as_bytes().to_vec()),
@@ -558,7 +558,7 @@ fn test_run_check_is_quiet_about_a_current_cli() {
     let dir = tmpdir.path().to_path_buf();
     std::fs::create_dir_all(dir.join("@esm")).unwrap();
 
-    let manifest = r#"{"updater_cli":{"version":"2.0.0","url":"http://example.invalid/cli","sha256":"abc"}}"#;
+    let manifest = r#"{"updater_cli":{"version":"2.0.0","artifacts":{"linux-x64":{"url":"http://example.invalid/cli","sha256":"abc"}}}}"#;
     let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
     let server = MockServer::new(vec![
         ("/versions.json".to_string(), manifest.as_bytes().to_vec()),
@@ -574,6 +574,134 @@ fn test_run_check_is_quiet_about_a_current_cli() {
     });
 
     assert_eq!(outcome.newer_cli, None, "an equal version is not stale");
+}
+
+// ---------------------------------------------------------------------------
+// Test: a manifest in the exact shape `publisher` emits installs cleanly.
+//
+// The publisher builds its output from this crate's own types, so the schema
+// cannot drift silently. This guards the rest of the contract: platform keys
+// spelled the way the client looks them up, `any` used for the components that
+// ship one file, and every entry present at once rather than one at a time.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_a_published_manifest_installs() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"old-extension").unwrap();
+
+    let extension = b"extension-2.1.0".to_vec();
+    let extension_sha = sha256_hex(&extension);
+    let mod_bundle = make_tar_gz("exile_server_manager.pbo", b"pbo bytes");
+    let mod_sha = sha256_hex(&mod_bundle);
+
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{
+                  "esm": {{
+                    "version": "2.1.0",
+                    "artifacts": {{
+                      "linux-x64":   {{"url": "{base}/esm_x64.so",  "sha256": "{extension_sha}"}},
+                      "linux-x86":   {{"url": "{base}/esm.so",      "sha256": "{extension_sha}"}},
+                      "windows-x64": {{"url": "{base}/esm_x64.dll", "sha256": "{extension_sha}"}},
+                      "windows-x86": {{"url": "{base}/esm.dll",     "sha256": "{extension_sha}"}}
+                    }},
+                    "requires": {{"@esm": ">=2.0.0"}}
+                  }},
+                  "@esm": {{
+                    "version": "2.1.0",
+                    "artifacts": {{"any": {{"url": "{base}/esm-addons.tar.gz", "sha256": "{mod_sha}"}}}}
+                  }},
+                  "mod_updater": {{
+                    "version": "2.1.0",
+                    "artifacts": {{"any": {{"url": "{base}/esm_updater.pbo", "sha256": "{mod_sha}"}}}}
+                  }},
+                  "updater_cli": {{
+                    "version": "2.1.0",
+                    "artifacts": {{"linux-x64": {{"url": "{base}/esm_updater", "sha256": "{mod_sha}"}}}}
+                  }}
+                }}"#
+            )
+        },
+        vec![("/esm_x64.so".into(), extension.clone())],
+    );
+
+    // The mod requirement is satisfied by the mod installed below, so seed it first via the recorded version.
+    match result {
+        BootCheckResult::Pending { component, .. } => {
+            assert_eq!(component, "esm", "a fresh install has no @esm recorded yet");
+        }
+        other => panic!("expected the dependency to defer the first boot, got {other:?}"),
+    }
+
+    // Record the mod as present, then the same manifest should install the extension.
+    with_cwd(&dir, || {
+        installed_versions::record(Component::EsmMod, &Version::new(2, 0, 0)).unwrap()
+    });
+
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{
+                  "esm": {{
+                    "version": "2.1.0",
+                    "artifacts": {{
+                      "linux-x64":   {{"url": "{base}/esm_x64.so",  "sha256": "{extension_sha}"}},
+                      "windows-x64": {{"url": "{base}/esm_x64.dll", "sha256": "{extension_sha}"}}
+                    }},
+                    "requires": {{"@esm": ">=2.0.0"}}
+                  }}
+                }}"#
+            )
+        },
+        vec![("/esm_x64.so".into(), extension.clone())],
+    );
+
+    assert!(
+        matches!(result, BootCheckResult::Updated { .. }),
+        "expected the extension to install once its dependency was met, got {result:?}"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm_x64.so")).unwrap(),
+        extension,
+        "the linux-x64 artifact is the one that should have been chosen"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a release that offers nothing for this platform installs nothing.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_skips_a_release_with_no_artifact_for_this_platform() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"untouched").unwrap();
+
+    // Windows-only release; the test runs on linux-x64.
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"9.0.0","artifacts":{{"windows-x86":{{"url":"{base}/esm.dll","sha256":"abc"}}}},"requires":{{}}}}}}"#
+            )
+        },
+        vec![],
+    );
+
+    assert!(
+        matches!(result, BootCheckResult::Ok),
+        "a release with nothing for this platform must be a no-op, got {result:?}"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm_x64.so")).unwrap(),
+        b"untouched",
+        "nothing should have been installed"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -661,7 +789,7 @@ fn test_boot_check_sha256_mismatch_leaves_extension_untouched() {
         &dir,
         |base| {
             format!(
-                r#"{{"esm":{{"version":"2.0.0","url":"{base}/artifact","sha256":"{wrong_sha}","requires":{{}}}}}}"#
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"{wrong_sha}"}}}},"requires":{{}}}}}}"#
             )
         },
         vec![("/artifact".into(), b"data-that-does-not-match".to_vec())],
@@ -696,7 +824,7 @@ fn test_boot_check_bad_signature() {
 
     let artifact_sha = sha256_hex(b"fake-data");
     let manifest_json = format!(
-        r#"{{"esm":{{"version":"999.0.0","url":"/artifact","sha256":"{artifact_sha}","requires":{{}}}}}}"#
+        r#"{{"esm":{{"version":"999.0.0","artifacts":{{"linux-x64":{{"url":"http://example.invalid/a","sha256":"{artifact_sha}"}}}},"requires":{{}}}}}}"#
     );
     let bad_sig = vec![0u8; 64];
 
@@ -745,8 +873,8 @@ fn test_cli_update_rejects_a_manifest_not_signed_by_the_production_key() {
 
     let manifest_json = format!(
         r#"{{
-          "@esm":{{"version":"999.0.0","url":"/at_esm.tar.gz","sha256":"{tar_sha}"}},
-          "esm":{{"version":"999.0.0","url":"/esm_artifact","sha256":"{ext_sha}","requires":{{}}}}
+          "@esm":{{"version":"999.0.0","artifacts":{{"any":{{"url":"http://example.invalid/at_esm.tar.gz","sha256":"{tar_sha}"}}}}}},
+          "esm":{{"version":"999.0.0","artifacts":{{"linux-x64":{{"url":"http://example.invalid/esm","sha256":"{ext_sha}"}}}},"requires":{{}}}}
         }}"#
     );
 
