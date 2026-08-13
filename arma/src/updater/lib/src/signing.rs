@@ -52,6 +52,50 @@ pub fn verify_with_key(
         .map_err(|_| UpdaterError::BadSignature)
 }
 
+/// The raw 32-byte ed25519 key that manifest signatures are checked against.
+///
+/// Production always resolves to the key baked in at compile time. Under the `testing` feature a process may install
+/// a different one, which is the only way the suite can exercise what happens *after* a signature verifies: with the
+/// production key unreachable, every manifest a test can build is unsigned as far as this crate is concerned, and
+/// the run stops at the signature check before reaching any version comparison or download.
+pub(crate) fn verification_key() -> Result<Vec<u8>, UpdaterError> {
+    #[cfg(any(test, feature = "testing"))]
+    if let Some(key) = test_key::get() {
+        return Ok(key);
+    }
+
+    extract_raw_pubkey(UPDATER_PUBKEY).map(<[u8]>::to_vec)
+}
+
+/// Process-wide override for the manifest verification key. Test builds only.
+///
+/// The suite already serializes anything touching global state through its cwd lock, so a plain `RwLock` is
+/// sufficient here; tests that install a key are expected to clear it when they finish.
+#[cfg(any(test, feature = "testing"))]
+pub mod test_key {
+    use std::sync::RwLock;
+
+    static OVERRIDE: RwLock<Option<Vec<u8>>> = RwLock::new(None);
+
+    /// Verify manifests against `key` (raw 32 bytes) for the rest of this process, or until `clear`.
+    pub fn set(key: &[u8]) {
+        if let Ok(mut slot) = OVERRIDE.write() {
+            *slot = Some(key.to_vec());
+        }
+    }
+
+    /// Go back to the production key baked in at compile time.
+    pub fn clear() {
+        if let Ok(mut slot) = OVERRIDE.write() {
+            *slot = None;
+        }
+    }
+
+    pub(crate) fn get() -> Option<Vec<u8>> {
+        OVERRIDE.read().ok().and_then(|slot| slot.clone())
+    }
+}
+
 /// Extract the raw 32-byte key material from a DER SubjectPublicKeyInfo blob.
 ///
 /// The DER encoding for ed25519 is a fixed 12-byte header followed by 32 bytes

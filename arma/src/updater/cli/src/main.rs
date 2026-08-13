@@ -12,7 +12,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use log::{error, info};
 use updater_lib::{UpdateSelection, Updater};
-use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
 // CLI argument structures
@@ -31,6 +30,7 @@ struct Cli {
 enum Commands {
     /// Check for available updates without installing.
     ///
+    /// Reads only: nothing is downloaded and nothing on disk is modified.
     /// Exits with code 0 if everything is up-to-date, or 2 if updates are
     /// available.
     Check {
@@ -125,16 +125,27 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
                 std::env::set_current_dir(&root)?;
             }
 
-            let deadline =
-                Instant::now() + Duration::from_millis(800);
-            let result = Updater::run_boot_check(deadline)?;
-            let status = result.to_status_string();
-            println!("{status}");
+            let available = Updater::run_check(manifest_url)?;
 
-            let updates_available = status.starts_with("updated")
-                || status.starts_with("pending");
-            let _ = manifest_url; // boot_check uses config; URL not exposed here
-            Ok(if updates_available { 2 } else { 0 })
+            if available.is_empty() {
+                println!("Everything is up to date.");
+                return Ok(0);
+            }
+
+            for update in &available {
+                match &update.blocked_by {
+                    Some(requirement) => println!(
+                        "{}: {} -> {} (blocked, needs {requirement})",
+                        update.name, update.installed, update.available
+                    ),
+                    None => println!(
+                        "{}: {} -> {}",
+                        update.name, update.installed, update.available
+                    ),
+                }
+            }
+
+            Ok(2)
         }
 
         Commands::Update {

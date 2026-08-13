@@ -12,12 +12,13 @@ pub mod config;
 pub mod download;
 pub mod error;
 pub mod http;
+pub mod installed_versions;
 pub mod manifest;
 pub mod signing;
 pub mod update;
-pub mod version_file;
 
 pub use error::UpdaterError;
+pub use manifest::Component;
 pub use update::{
-    BootCheckResult, UpdateSelection, UpdatedComponent, Updater,
+    AvailableUpdate, BootCheckResult, UpdateSelection, UpdatedComponent, Updater,
 };

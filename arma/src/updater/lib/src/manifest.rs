@@ -32,6 +32,47 @@ pub struct ComponentVersion {
     pub requires: BTreeMap<String, semver::VersionReq>,
 }
 
+/// The four things the updater knows how to install.
+///
+/// Used as the shared vocabulary between the remote manifest and the local record of what is installed, so both
+/// documents key their entries the same way.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Component {
+    /// The Arma 3 extension binary.
+    Esm,
+    /// The `@esm` mod bundle.
+    EsmMod,
+    /// The updater's own extension.
+    ExtensionUpdater,
+    /// The updater's mod-side PBO.
+    ModUpdater,
+}
+
+impl Component {
+    /// Every component, in dependency order: the mod before the extension that may require it.
+    pub const ALL: [Component; 4] = [
+        Component::EsmMod,
+        Component::Esm,
+        Component::ExtensionUpdater,
+        Component::ModUpdater,
+    ];
+
+    /// Resolve a manifest key back to a component, or `None` for a name this updater does not know how to install.
+    pub fn from_key(key: &str) -> Option<Component> {
+        Component::ALL.into_iter().find(|component| component.key() == key)
+    }
+
+    /// The component's name as it appears in both the manifest and the installed-versions record.
+    pub fn key(&self) -> &'static str {
+        match self {
+            Component::Esm => "esm",
+            Component::EsmMod => "@esm",
+            Component::ExtensionUpdater => "extension_updater",
+            Component::ModUpdater => "mod_updater",
+        }
+    }
+}
+
 /// Top-level version manifest.
 ///
 /// Each field corresponds to a named ESM component; absent keys mean
@@ -43,11 +84,23 @@ pub struct VersionManifest {
 
     /// The Arma 3 mod PBO bundle.
     #[serde(rename = "@esm")]
-    pub at_esm: Option<ComponentVersion>,
+    pub esm_mod: Option<ComponentVersion>,
 
     /// The extension-side updater component.
     pub extension_updater: Option<ComponentVersion>,
 
     /// The mod-side updater PBO.
     pub mod_updater: Option<ComponentVersion>,
+}
+
+impl VersionManifest {
+    /// The manifest's entry for `component`, if it offers one.
+    pub fn get(&self, component: Component) -> Option<&ComponentVersion> {
+        match component {
+            Component::Esm => self.esm.as_ref(),
+            Component::EsmMod => self.esm_mod.as_ref(),
+            Component::ExtensionUpdater => self.extension_updater.as_ref(),
+            Component::ModUpdater => self.mod_updater.as_ref(),
+        }
+    }
 }

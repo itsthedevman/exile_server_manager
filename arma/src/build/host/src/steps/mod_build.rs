@@ -273,12 +273,13 @@ fn copy_extras(
         copy_dir(&sql_src, &sql_dst)?;
     }
 
-    // Version sidecar for the auto-updater, parked until the updater is tested and shipped. It's the
-    // only consumer of @esm/version and we build with --skip-updater for now, so writing it just
-    // ships a file nothing reads. Re-enable with the updater: uncomment, rename _ctx -> ctx in the
-    // signature above, and drop the allow(dead_code) on esm_crate_version.
+    // Seeding the updater's installed-version record, parked until the updater is tested and shipped. The updater is
+    // its only consumer and we build with --skip-updater for now, so writing it just ships a file nothing reads.
+    // Re-enable with the updater: uncomment, rename _ctx -> ctx in the signature above, and drop the
+    // allow(dead_code) on esm_crate_version. Note the updater owns the whole file, so a build that writes it must
+    // write the `@esm` key rather than the bare version this used to emit.
     // let version = esm_crate_version(&ctx.git_path);
-    // fs::write(build_path.join("version"), format!("{version}\n"))?;
+    // fs::write(build_path.join("installed_versions.yml"), format!("\"@esm\": {version}\n"))?;
 
     Ok(())
 }

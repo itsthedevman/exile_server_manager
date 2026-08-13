@@ -11,10 +11,10 @@ use crate::{
     config::Config,
     download::{extract_tar_gz, verify_sha256},
     http::{download_to, fetch_manifest},
-    manifest::{ComponentVersion, VersionManifest},
-    signing::{extract_raw_pubkey, verify_with_key},
-    version_file,
-    UpdaterError, UPDATER_PUBKEY,
+    installed_versions,
+    manifest::{Component, ComponentVersion, VersionManifest},
+    signing::{verification_key, verify_with_key},
+    UpdaterError,
 };
 use semver::Version;
 use std::path::Path;
@@ -77,6 +77,21 @@ pub enum UpdateSelection {
     Updater,
 }
 
+/// A component whose manifest version is newer than what is installed.
+///
+/// Produced by `Updater::run_check`, which only ever reads.
+#[derive(Debug)]
+pub struct AvailableUpdate {
+    /// Component name as it appears in the manifest (e.g. `"esm"`, `"@esm"`).
+    pub name: String,
+    /// Version currently installed, or `0.0.0` when nothing has recorded one yet.
+    pub installed: Version,
+    /// Version offered by the manifest.
+    pub available: Version,
+    /// Set when the update exists but a dependency requirement is not yet satisfied.
+    pub blocked_by: Option<String>,
+}
+
 /// Record of a successfully updated component returned by `run_cli_update`.
 #[derive(Debug)]
 pub struct UpdatedComponent {
@@ -111,11 +126,10 @@ impl Updater {
             return Ok(BootCheckResult::Disabled);
         }
 
-        // Read installed mod version (missing = 0.0.0).
-        let installed_mod_ver =
-            version_file::read_installed_mod_version().unwrap_or_else(|_| {
-                Version::new(0, 0, 0)
-            });
+        // Unreadable is treated as nothing-installed here rather than as an error, because this is the fail-open
+        // path and a corrupt record must not be able to stop a server from booting.
+        let installed = installed_versions::load().unwrap_or_default();
+        let installed_mod_ver = installed.version_of(Component::EsmMod);
 
         // -- Fetch manifest (fail-open) ------------------------------------
         let manifest_started_at = Instant::now();
@@ -133,11 +147,14 @@ impl Updater {
 
         // -- Verify signature (fail-open) ----------------------------------
         let verify_started_at = Instant::now();
-        let production_pubkey = extract_raw_pubkey(UPDATER_PUBKEY)
-            .unwrap_or(&UPDATER_PUBKEY[UPDATER_PUBKEY.len().saturating_sub(32)..]);
-        if let Err(e) =
-            verify_with_key(&manifest_bytes, &sig_bytes, production_pubkey)
-        {
+        let pubkey = match verification_key() {
+            Ok(key) => key,
+            Err(e) => {
+                log::warn!("[check_update] verification key unusable (fail-open): {e}");
+                return Ok(BootCheckResult::Ok);
+            }
+        };
+        if let Err(e) = verify_with_key(&manifest_bytes, &sig_bytes, &pubkey) {
             log::warn!(
                 "[check_update] manifest signature invalid (fail-open): {e}"
             );
@@ -183,7 +200,7 @@ impl Updater {
         if let Some(mu) = &manifest.mod_updater {
             log::info!("[check_update] mod_updater {} available", mu.version);
         }
-        if let Some(at) = &manifest.at_esm {
+        if let Some(at) = &manifest.esm_mod {
             log::info!("[check_update] @esm {} available", at.version);
         }
 
@@ -201,13 +218,10 @@ impl Updater {
             Some(c) => c,
         };
 
-        let current_ver: Version =
-            match Version::parse(env!("CARGO_PKG_VERSION")) {
-                Ok(v) => v,
-                Err(_) => {
-                    return Ok(BootCheckResult::Ok);
-                }
-            };
+        // The installed version has to be read off disk. This code is compiled into the updater, not the extension,
+        // so its own `CARGO_PKG_VERSION` describes the wrong crate entirely, and the extension cannot be asked
+        // directly because Arma has not loaded it yet.
+        let current_ver = installed.version_of(Component::Esm);
 
         if esm_comp.version <= current_ver {
             log::info!(
@@ -217,20 +231,15 @@ impl Updater {
         }
 
         // -- Check dependency requirements ---------------------------------
-        if let Some(req) = esm_comp.requires.get("@esm") {
-            if !req.matches(&installed_mod_ver) {
-                let reason = format!(
-                    "@esm {installed_mod_ver} does not satisfy {req}"
-                );
-                log::info!(
-                    "[check_update] esm {} deferred: {reason}",
-                    esm_comp.version
-                );
-                return Ok(BootCheckResult::Pending {
-                    component: "esm".into(),
-                    reason,
-                });
-            }
+        if let Some(req) = esm_comp.requires.get("@esm")
+            && !req.matches(&installed_mod_ver)
+        {
+            let reason = format!("@esm {installed_mod_ver} does not satisfy {req}");
+            log::info!("[check_update] esm {} deferred: {reason}", esm_comp.version);
+            return Ok(BootCheckResult::Pending {
+                component: "esm".into(),
+                reason,
+            });
         }
 
         // -- Download and swap --------------------------------------------
@@ -270,16 +279,14 @@ impl Updater {
 
         let mut results = Vec::new();
 
+        let installed = installed_versions::load()?;
+
         // Determine whether @esm should be updated before esm (dep ordering).
         let esm_needs_mod_first = manifest
             .esm
             .as_ref()
             .and_then(|e| e.requires.get("@esm"))
-            .map(|req| {
-                let installed = version_file::read_installed_mod_version()
-                    .unwrap_or(Version::new(0, 0, 0));
-                !req.matches(&installed)
-            })
+            .map(|req| !req.matches(&installed.version_of(Component::EsmMod)))
             .unwrap_or(false);
 
         let update_mod = matches!(
@@ -296,19 +303,17 @@ impl Updater {
         );
 
         // @esm first when esm depends on it.
-        if (update_mod || (esm_needs_mod_first && update_ext))
-            && manifest.at_esm.is_some()
+        if let Some(comp) = &manifest.esm_mod
+            && (update_mod || (esm_needs_mod_first && update_ext))
         {
-            if let Some(comp) = &manifest.at_esm {
-                results.push(update_mod_bundle(comp, deadline)?);
-            }
+            results.push(update_mod_bundle(comp, deadline)?);
         }
 
         // esm extension.
-        if update_ext {
-            if let Some(comp) = &manifest.esm {
-                results.push(update_esm_extension(comp, deadline)?);
-            }
+        if let Some(comp) = &manifest.esm
+            && update_ext
+        {
+            results.push(update_esm_extension(comp, deadline)?);
         }
 
         // Updater components.
@@ -320,20 +325,58 @@ impl Updater {
             if let Some(comp) = &manifest.mod_updater {
                 results.push(update_mod_updater_pbo(comp, deadline)?);
             }
-
-            // Self-update the CLI binary.
-            if let Ok(current_exe) = std::env::current_exe() {
-                if let Some(dir) = current_exe.parent() {
-                    // Only self-update if there's a manifest entry for the
-                    // CLI updater (reusing extension_updater slot or
-                    // a dedicated field — here we skip if none available).
-                    // Self-update is a best-effort operation; log and continue.
-                    let _ = dir; // suppress unused warning
-                }
-            }
         }
 
         Ok(results)
+    }
+
+    /// Report which components the manifest offers in a newer version than what is installed.
+    ///
+    /// Reads only. Nothing is downloaded, nothing on disk is touched, and the manifest URL override is honoured so a
+    /// staging manifest can be inspected without committing to it.
+    pub fn run_check(
+        manifest_url_override: Option<String>,
+    ) -> Result<Vec<AvailableUpdate>, UpdaterError> {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let cfg = Config::new().with_manifest_url(manifest_url_override);
+
+        let manifest = load_manifest(&cfg.updater_url, deadline)?;
+        let installed = installed_versions::load()?;
+
+        let mut available = Vec::new();
+
+        for component in Component::ALL {
+            let Some(offered) = manifest.get(component) else {
+                continue;
+            };
+
+            let installed_ver = installed.version_of(component);
+            if offered.version <= installed_ver {
+                continue;
+            }
+
+            // A dependency the operator has not satisfied yet is still an available update; it just cannot be taken
+            // on its own. Reporting it as blocked rather than hiding it is the difference between "nothing to do"
+            // and "update the mod first". A requirement naming something this updater does not install cannot be
+            // evaluated, so it is reported as blocking rather than quietly passed.
+            let blocked_by = offered
+                .requires
+                .iter()
+                .find(|(name, req)| match Component::from_key(name) {
+                    Some(dependency) => !req.matches(&installed.version_of(dependency)),
+                    None => true,
+                })
+                .map(|(name, req)| format!("{name} {req}"));
+
+            available.push(AvailableUpdate {
+                name: component.key().to_string(),
+                installed: installed_ver,
+                available: offered.version.clone(),
+                blocked_by,
+            });
+        }
+
+        Ok(available)
     }
 }
 
@@ -347,8 +390,7 @@ fn load_manifest(
     deadline: Instant,
 ) -> Result<VersionManifest, UpdaterError> {
     let (manifest_bytes, sig_bytes) = fetch_manifest(url, deadline)?;
-    let production_pubkey = extract_raw_pubkey(UPDATER_PUBKEY)?;
-    verify_with_key(&manifest_bytes, &sig_bytes, production_pubkey)?;
+    verify_with_key(&manifest_bytes, &sig_bytes, &verification_key()?)?;
     serde_json::from_slice(&manifest_bytes)
         .map_err(|e| UpdaterError::Parse(e.to_string()))
 }
@@ -409,12 +451,28 @@ fn download_and_swap_extension(
     swap_file(&temp_file, &dest)?;
     let swap_elapsed_ms = swap_started_at.elapsed().as_millis();
 
+    record_installed(Component::Esm, &comp.version);
+
     log::info!(
         "[check_update] download={download_elapsed_ms}ms \
          checksum={checksum_elapsed_ms}ms swap={swap_elapsed_ms}ms"
     );
 
     Ok(())
+}
+
+/// Record the version just installed, downgrading a write failure to a warning.
+///
+/// The install is the part that matters and it has already happened by the time this runs. Failing here would report
+/// that the update did not happen when it did; the real cost of an unrecorded version is one redundant download on
+/// the next check, which the signature and checksum still guard.
+fn record_installed(component: Component, version: &Version) {
+    if let Err(e) = installed_versions::record(component, version) {
+        log::warn!(
+            "[update] {} updated to {version} but recording the version failed: {e}",
+            component.key()
+        );
+    }
 }
 
 // ── CLI per-component update functions ───────────────────────────────────────
@@ -436,7 +494,7 @@ fn update_mod_bundle(
         std::fs::rename(addons, backup)?;
     }
     std::fs::rename(temp_dir, addons)?;
-    version_file::write_version(&comp.version)?;
+    record_installed(Component::EsmMod, &comp.version);
     if backup.exists() {
         let _ = std::fs::remove_dir_all(backup);
     }
@@ -464,6 +522,7 @@ fn update_esm_extension(
 
     let dest = Path::new("@esm").join(filename);
     swap_file(&temp_file, &dest)?;
+    record_installed(Component::Esm, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
     log::info!("[update] esm | total={elapsed_ms}ms");
@@ -485,6 +544,7 @@ fn update_updater_extension(
     download_to(&comp.url, temp, deadline)?;
     verify_sha256(temp, &comp.sha256)?;
     swap_file(temp, dest)?;
+    record_installed(Component::ExtensionUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
     log::info!("[update] extension_updater | total={elapsed_ms}ms");
@@ -506,6 +566,7 @@ fn update_mod_updater_pbo(
     download_to(&comp.url, temp, deadline)?;
     verify_sha256(temp, &comp.sha256)?;
     swap_file(temp, dest)?;
+    record_installed(Component::ModUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
     log::info!("[update] mod_updater | total={elapsed_ms}ms");
