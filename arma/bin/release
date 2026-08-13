@@ -94,30 +94,6 @@ if [[ -f "$release_dir/@esm-install.zip" ]]; then
     assets+=("$release_dir/@esm-install.zip")
 fi
 
-# The updater downloads individual files, not the zips, so every artifact the manifest can name has to be its own
-# release asset. These are uploaded whether or not a manifest has been built yet, since publishing the manifest is
-# a separate step and the assets have to exist before it can point at them.
-updater_assets=(
-    "$release_dir/@esm/esm.so"
-    "$release_dir/@esm/esm_x64.so"
-    "$release_dir/@esm/esm.dll"
-    "$release_dir/@esm/esm_x64.dll"
-    "$release_dir/@esm/esm_updater.so"
-    "$release_dir/@esm/esm_updater_x64.so"
-    "$release_dir/@esm/esm_updater.dll"
-    "$release_dir/@esm/esm_updater_x64.dll"
-    "$release_dir/@esm/addons/esm_updater.pbo"
-    "$release_dir/@esm/bin/esm_updater"
-    "$release_dir/@esm/bin/esm_updater.exe"
-    "$release_dir/@esm-addons.tar.gz"
-)
-
-for asset in "${updater_assets[@]}"; do
-    if [[ -f "$asset" ]]; then
-        assets+=("$asset")
-    fi
-done
-
 if confirm "Create a draft GitHub release for $tag?"; then
     gh release create "$tag" \
         --repo "$github_repo" \

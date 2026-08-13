@@ -20,6 +20,8 @@ pub struct Config {
 
     /// URL of the JSON version manifest.
     /// A detached signature is expected at `{url}.sig`.
+    ///
+    /// Served from `/updates/` rather than `/downloads/`, which the website routes for its own human-facing links.
     #[serde(default = "default_updater_url")]
     pub updater_url: String,
 
@@ -50,7 +52,7 @@ fn default_updater_enabled() -> bool {
 }
 
 fn default_updater_url() -> String {
-    "https://esmbot.com/versions.json".into()
+    "https://esmbot.com/updates/arma/versions.json".into()
 }
 
 fn default_updater_timeout_ms() -> u64 {

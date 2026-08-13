@@ -27,8 +27,10 @@ readonly crate_version=$(
 )
 
 readonly tag="arma/v$crate_version"
-readonly github_repo="itsthedevman/exile_server_manager"
-readonly base_url="https://github.com/$github_repo/releases/download/$tag"
+
+# Artifacts are served off esmbot.com, not the GitHub release. The releases page stays a human-facing list of one
+# zip, and the updater gets its own prefix that Rails does not route (/downloads/ belongs to the site's own links).
+readonly base_url="https://esmbot.com/updates/arma/v$crate_version"
 
 key_path=""
 
@@ -80,6 +82,5 @@ echo
 echo "Manifest built for $tag"
 echo "  Artifacts are expected at $base_url/<filename>"
 echo
-echo "Upload order matters: publish the GitHub release first, then serve versions.json."
-echo "Draft releases are not publicly downloadable, so a manifest published ahead of the"
-echo "release points every server at URLs that 404."
+echo "Upload order matters: put the artifacts in place before serving versions.json."
+echo "A manifest published ahead of its artifacts points every server at URLs that 404."

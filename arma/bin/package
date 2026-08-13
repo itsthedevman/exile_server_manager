@@ -62,6 +62,10 @@ function run_command() {
 echo_step "Running tests"
 run_command cargo test --workspace --quiet
 
+# The updater's integration tests are gated behind `required-features = ["testing"]`, so --workspace alone silently
+# skips every one of them. They are the only coverage of the download-verify-swap path that ships to servers.
+run_command cargo test -p updater_lib --features testing --quiet
+
 ##################################
 # Preparation
 echo_step "Preparing to build"
