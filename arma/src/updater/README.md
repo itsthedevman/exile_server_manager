@@ -39,11 +39,12 @@ what declares the checksum in the first place.
 
 ### Building against a different key
 
-`ESM_UPDATER_PUBKEY` points a build at another DER public key instead of the committed default.
+`ESM_UPDATER_PUBKEY_PATH` points a build at another DER public key instead of the committed default.
 The two are mutually exclusive by construction: neither build will accept a manifest signed for the other, so a
 manifest that reaches the wrong binary fails its signature check rather than installing successfully.
 
-Releases are built without it, and `bin/package` refuses to run when it is set.
+Packaging such a build is fine; publishing one is not, so the check lives at the publish step rather than at
+`bin/package`.
 A build on any other key announces it on startup, in the extension's log and on the CLI's first line of output, so
 one that escaped is visible immediately rather than at the moment it declines an update.
 

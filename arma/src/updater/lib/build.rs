@@ -1,13 +1,13 @@
 //! Chooses which ed25519 public key this build verifies manifests against.
 //!
-//! The default is the key committed alongside this crate. Setting `ESM_UPDATER_PUBKEY` to another DER public key
+//! The default is the key committed alongside this crate. Setting `ESM_UPDATER_PUBKEY_PATH` to another DER public key
 //! builds against that one instead, and the two are mutually exclusive: neither will accept a manifest signed for
 //! the other. The chosen key is copied into `OUT_DIR` so the crate can `include_bytes!` a fixed path regardless of
 //! which one won.
 
 use std::path::PathBuf;
 
-const OVERRIDE_VAR: &str = "ESM_UPDATER_PUBKEY";
+const OVERRIDE_VAR: &str = "ESM_UPDATER_PUBKEY_PATH";
 const DEFAULT_KEY: &str = "keys/updater.pub";
 
 /// A DER SubjectPublicKeyInfo for ed25519 is a fixed 12-byte header followed by 32 bytes of key material.
