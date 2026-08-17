@@ -22,6 +22,14 @@ readonly crate_version=$(
 )
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
 
+# A release has to be built against the default key. Anything else produces binaries that silently refuse every
+# official manifest, and the refusal would not show up until servers stopped updating in the field.
+if [[ -n "${ESM_UPDATER_PUBKEY:-}" ]]; then
+    echo "Fatal - ESM_UPDATER_PUBKEY is set, which builds against a custom verification key"
+    echo "  Unset it before packaging a release"
+    exit 1
+fi
+
 skip_updater=false
 
 for arg in "$@"; do

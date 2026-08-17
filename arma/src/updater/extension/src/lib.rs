@@ -60,8 +60,9 @@ pub fn init() -> Extension {
     lazy_static::initialize(&CONFIG);
 
     log::info!(
-        "[init] ESM Updater v{} initializing",
-        env!("CARGO_PKG_VERSION")
+        "[init] ESM Updater v{} initializing, verifying against the {}",
+        env!("CARGO_PKG_VERSION"),
+        updater_lib::verification_key_label()
     );
 
     endpoints::register()

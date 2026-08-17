@@ -355,7 +355,7 @@ impl Updater {
     /// Report which components the manifest offers in a newer version than what is installed.
     ///
     /// Reads only. Nothing is downloaded, nothing on disk is touched, and the manifest URL override is honoured so a
-    /// staging manifest can be inspected without committing to it.
+    /// manifest can be inspected without committing to it.
     ///
     /// `running_cli` has to be supplied by the caller because only the binary knows its own version; this crate is
     /// compiled into both the CLI and the Arma extension, so its own `CARGO_PKG_VERSION` describes neither.

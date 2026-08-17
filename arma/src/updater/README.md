@@ -23,19 +23,29 @@ else: PBOs are already in use by then, and the updater components are the ones d
 | `lib/`                 | Fetch, verify, download, swap, and version bookkeeping. Every other crate here is a thin caller. |
 | `extension/`           | The `preInit` cdylib. One command, `check_update`.                                               |
 | `cli/`                 | `esm_updater`, the operator-facing binary.                                                       |
-| `lib/keys/updater.pub` | The manifest verification key, compiled into every build.                                        |
+| `lib/keys/updater.pub` | The default manifest verification key, compiled in at build time.                                |
 
 The mod-side half lives at `src/@esm/addons/esm_updater/`, whose `fn_preInit.sqf` is what calls `check_update`.
 
 ## Trust model
 
 `versions.json` is signed with an ed25519 key, and the detached signature sits beside it at `versions.json.sig`.
-The public half is compiled into every build from `lib/keys/updater.pub`.
+The public half is compiled in at build time, defaulting to `lib/keys/updater.pub`.
 The manifest carries a SHA-256 per artifact.
 
 The signature authorises the manifest, and the manifest authorises the binaries.
 Both halves are load-bearing: a per-artifact checksum is not a substitute for the signature, because the manifest is
 what declares the checksum in the first place.
+
+### Building against a different key
+
+`ESM_UPDATER_PUBKEY` points a build at another DER public key instead of the committed default.
+The two are mutually exclusive by construction: neither build will accept a manifest signed for the other, so a
+manifest that reaches the wrong binary fails its signature check rather than installing successfully.
+
+Releases are built without it, and `bin/package` refuses to run when it is set.
+A build on any other key announces it on startup, in the extension's log and on the CLI's first line of output, so
+one that escaped is visible immediately rather than at the moment it declines an update.
 
 ## Boot path
 
@@ -61,7 +71,7 @@ esm_updater version
 `check` exits `0` when everything is current, `2` when updates are available, and `1` on error, so it drops into a
 cron job or a pre-restart script without parsing output.
 
-`--manifest-url` points any subcommand at a different manifest, which is how staging gets tested.
+`--manifest-url` points any subcommand at a different manifest, which is how an unpublished one gets tested.
 `--server-root` changes directory first, since every path the updater touches is relative to the server root.
 
 The CLI never replaces itself.

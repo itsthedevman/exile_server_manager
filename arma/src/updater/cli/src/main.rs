@@ -116,9 +116,28 @@ impl From<UpdateTarget> for UpdateSelection {
 // Entry point
 // ---------------------------------------------------------------------------
 
+/// Say so when this build verifies against something other than the default key.
+///
+/// Such a build refuses official releases outright, which looks identical to the updater being broken. The warning
+/// is what separates the two. A default build stays quiet, since saying so every run is just noise.
+fn warn_on_custom_key() {
+    if updater_lib::USES_DEFAULT_KEY {
+        return;
+    }
+
+    eprintln!(
+        "warning: this updater verifies against a {}.",
+        updater_lib::verification_key_label()
+    );
+    eprintln!("         It will not accept official ESM releases. Use an official build on a live server.");
+}
+
 fn main() {
     env_logger::init();
+
+    // After parsing, so `--help` and `--version` stay clean.
     let cli = Cli::parse();
+    warn_on_custom_key();
 
     let exit_code = match run(cli) {
         Ok(code) => code,
