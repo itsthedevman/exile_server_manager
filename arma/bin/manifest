@@ -3,7 +3,7 @@
 # Builds and signs versions.json from an already-packaged release.
 # Run bin/package first - this script never builds artifacts, it only describes them.
 #
-# Deliberately separate from bin/release. Publishing a manifest is how a version gets offered to servers, and
+# Deliberately separate from cutting a release. Publishing a manifest is how a version gets offered to servers, and
 # keeping that separate from cutting a release means a version can be retargeted or rolled back by publishing a
 # new manifest, without building or tagging anything.
 #
@@ -64,6 +64,40 @@ fi
 if [[ ! -f "$key_path" ]]; then
     echo "Fatal - no key at $key_path"
     exit 1
+fi
+
+##################################
+# A manifest signed by a key the packaged binaries do not trust verifies nowhere. Catching it here beats watching a
+# server reject the signature and having to work backwards to which of the two halves was wrong.
+readonly packaged_cli=$release_dir/@esm/bin/esm_updater
+
+if [[ -x "$packaged_cli" ]]; then
+    # Both sides are the last four bytes of the DER public key, lowercase hex, matching what the build stamps in.
+    built_key=$("$packaged_cli" version | grep -oE '[0-9a-f]{8}\)$' | tr -d ')')
+    readonly built_key
+
+    signing_key=$(
+        openssl pkey -in "$key_path" -pubout -outform DER |
+            tail -c 4 |
+            od -An -tx1 |
+            tr -d ' \n'
+    )
+    readonly signing_key
+
+    if [[ -z "$built_key" || -z "$signing_key" ]]; then
+        echo "Fatal - could not read both keys to compare them"
+        echo "  package trusts: ${built_key:-<unreadable>}"
+        echo "  signing with:   ${signing_key:-<unreadable>}"
+        exit 1
+    fi
+
+    if [[ "$built_key" != "$signing_key" ]]; then
+        echo "Fatal - this key does not match the one the package was built against"
+        echo "  package trusts: $built_key"
+        echo "  signing with:   $signing_key"
+        echo "  Rebuild the package, or sign with the matching key."
+        exit 1
+    fi
 fi
 
 ##################################

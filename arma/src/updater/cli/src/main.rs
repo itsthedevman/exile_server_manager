@@ -178,7 +178,13 @@ fn warn_if_stale(newer: Option<&semver::Version>) {
 fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Version => {
-            println!("{}", env!("CARGO_PKG_VERSION"));
+            // The key is named here as well as warned about, so the release tooling can compare what a package was
+            // built against with what is about to sign for it, and so a support request carries both facts at once.
+            println!(
+                "{} ({})",
+                env!("CARGO_PKG_VERSION"),
+                updater_lib::verification_key_label()
+            );
             Ok(0)
         }
 
