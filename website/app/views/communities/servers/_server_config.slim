@@ -191,7 +191,8 @@
                 | Check for updates on startup
                 span.badge.bg-info.ms-2 NEW
             small.form-text.text-muted.mt-1
-              | Turning this off keeps your server on its current version until you update it yourself
+              |> Turning this off keeps your server on its current version until you update it yourself.
+              = link_to "How updates work", "#{server_setup_docs_path}#automatic_updates", target: "_blank"
 
     hr.my-4
 

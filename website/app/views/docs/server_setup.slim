@@ -253,6 +253,72 @@
               = link_to "Discord support", join_path, class: "text-warning"
               |  for help.
 
+      / Automatic Updates
+      / Hidden outside local until the updater ships, matching the toggle on the server configuration page.
+      - if Rails.env.local?
+        .card.mb-5.border-info#automatic_updates
+          .card-header.bg-info.bg-opacity-10
+            h3.mb-0.text-info
+              i.bi.bi-arrow-repeat.me-2
+              | Automatic Updates
+
+          .card-body
+            p.mb-4
+              | Your server can install new ESM versions on its own. It checks once while it boots, and if a newer
+                version is available, it updates before it finishes starting.
+
+            .row.g-3.mb-4
+              .col-md-6
+                .card.bg-dark.border-secondary.h-100
+                  .card-body
+                    h6.text-light.mb-3
+                      i.bi.bi-shield-check.text-success.me-2
+                      | Safe by default
+                    ul.small.text-muted.mb-0
+                      li The check runs for under a second, then gives up
+                      li Anything that goes wrong is skipped, and your server starts as normal
+                      li Updates are signed, so only genuine ESM releases are installed
+
+              .col-md-6
+                .card.bg-dark.border-secondary.h-100
+                  .card-body
+                    h6.text-light.mb-3
+                      i.bi.bi-toggle-on.text-info.me-2
+                      | Turning it off
+                    ul.small.text-muted.mb-0
+                      li Open your server's settings on the #{link_to "web dashboard", communities_path, target: "_blank"}
+                      li Untick <strong>Check for updates on startup</strong>
+                      li Your server stays on its current version until you update it yourself
+
+            .card.bg-dark.border-secondary.mb-4
+              .card-body
+                h6.text-light.mb-2
+                  i.bi.bi-terminal.me-2
+                  | Updating by hand
+                p.small.text-muted.mb-3
+                  | The startup check only ever replaces the ESM extension. Mod files are updated with the
+                    <code>esm_updater.exe</code> tool in your <code>@esm\bin</code> folder, with your server stopped.
+                p.small.text-muted.mb-2
+                  | Open a command prompt in your server folder, the one containing <code>@esm</code>, and run:
+                pre.bg-body.p-2.rounded.mb-3
+                  | @esm\bin\esm_updater.exe check
+                    @esm\bin\esm_updater.exe update all
+                p.small.text-muted.mb-0
+                  | <code>check</code> only reports what is available. <code>update all</code> is what installs it.
+
+                hr.border-secondary.my-3
+
+                p.small.text-muted.mb-0
+                  i.bi.bi-info-circle.me-2
+                  strong.text-light Linux servers:
+                  |< the tool is <code>@esm/bin/esm_updater</code>. The commands are
+                    otherwise identical.
+
+            .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
+              p.small.mb-0
+                |> Update activity is recorded in <code>@esm\log\updater.log</code>. If your server is not picking up
+                  new versions, that log will say why.
+
       / Success Section
       .card.border-success.bg-success.bg-opacity-10
         .card-body.text-center.py-5
