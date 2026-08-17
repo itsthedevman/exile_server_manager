@@ -32,7 +32,7 @@ pub fn deploy(ictx: &InstanceContext) -> BuildResult {
 
 pub fn package_release(ctx: &mut BuildContext) -> BuildResult {
     // For release builds, the staging area IS the output — nothing to copy.
-    // The caller (bin/release) zips target/@esm/ directly.
+    // The caller zips target/@esm/ directly.
     // Just confirm the staging area is present.
     let staging = ctx.local_build_path.join("@esm");
     if !staging.exists() {

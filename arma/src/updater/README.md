@@ -151,8 +151,8 @@ Nothing installs it, and it exists so a stale CLI can be reported rather than si
 
 ## Publishing a release
 
-The manifest is generated and signed on a workstation, never by the website, and deliberately not wired into
-`bin/release`.
+The manifest is generated and signed on a workstation, never by the website, and deliberately not wired into cutting
+a release.
 Keeping the two apart means a version can be retargeted, rolled back, or staged to one server by publishing a new
 manifest, without building or tagging anything.
 

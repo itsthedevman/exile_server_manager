@@ -3,7 +3,7 @@
 //! This is the other half of the auto-updater: `updater_lib` consumes a signed `versions.json`, and this produces
 //! one. It runs on a workstation, never on a server, and the signing key never leaves the machine it runs on.
 //!
-//! It is deliberately separate from `bin/release`. Decoupling them means a version can be retargeted or rolled back
+//! It is deliberately separate from cutting a release. Decoupling them means a version can be retargeted or rolled back
 //! by publishing a new manifest, without cutting a release to do it.
 //!
 //! The manifest is built out of `updater_lib`'s own types rather than assembled as raw JSON, so the document this

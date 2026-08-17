@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Builds every @esm artifact and zips them for distribution. Does not tag or publish anything -
-# run bin/release afterwards to put the zip on GitHub.
+# publishing the zip is a separate step afterwards.
 #
 # --skip-updater leaves the auto-updater out of the package: no esm_updater.pbo, no updater
 # extensions, no CLI, and no @esm-install.zip. Use it when the updater isn't ready to ship.
@@ -198,4 +198,4 @@ if [[ "$skip_updater" == true ]]; then
     echo "Auto-updater was excluded from this package"
 fi
 
-echo "Run bin/release to tag and publish it"
+echo "Tag and publish it when ready"
