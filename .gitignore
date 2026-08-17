@@ -92,8 +92,8 @@ arma/.env
 arma/build_config.yml
 arma/*.zip
 arma/src/esm/.build-sha
-arma/src/updater/lib/keys/*.key
-arma/src/updater/lib/keys/*.pem
+arma/src/updater/lib/keys/*
+!arma/src/updater/lib/keys/updater.pub
 arma/bin/upload
 arma/bin/release
 arma/tools/server/@exile/addons/*.pbo

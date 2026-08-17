@@ -166,6 +166,10 @@ bin/upload                           # publish
 Artifact URLs are the base URL plus a bare filename, so the published layout is flat.
 A file that keeps its packaged subdirectory is a file the manifest does not point at.
 
+`bin/manifest --base-url` describes the same package as being served from somewhere else, which is how the whole
+chain gets exercised without publishing anything.
+The version directory is appended, so the layout under a local server matches the published one.
+
 **The artifacts go up before the manifest that describes them.**
 A manifest published ahead of its files points every server at URLs that 404, and while the boot path fails open on
 that, it is a self-inflicted outage of the feature.

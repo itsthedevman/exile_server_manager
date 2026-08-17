@@ -11,6 +11,11 @@
 # run this, then remove it:
 #
 #   bin/manifest --key ~/updater.key && shred -u ~/updater.key
+#
+# --base-url takes the root the artifacts will be served from; the version directory is appended to it. Pointing it
+# at a local server is how a manifest gets tested without publishing anything:
+#
+#   bin/manifest --key ~/test.key --base-url http://host.docker.internal:8099
 
 set -ueo pipefail
 trap "exit" INT
@@ -30,14 +35,19 @@ readonly tag="arma/v$crate_version"
 
 # Artifacts are served off esmbot.com, not the GitHub release. The releases page stays a human-facing list of one
 # zip, and the updater gets its own prefix that Rails does not route (/downloads/ belongs to the site's own links).
-readonly base_url="https://esmbot.com/updates/arma/v$crate_version"
+readonly default_base_root="https://esmbot.com/updates/arma"
 
 key_path=""
+base_root="$default_base_root"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
     --key)
         key_path="$2"
+        shift 2
+        ;;
+    --base-url)
+        base_root="${2%/}"
         shift 2
         ;;
     *)
@@ -46,6 +56,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
+
+# Appended rather than typed, so a local test serves the same layout production does and the version cannot drift
+# from the package being described.
+readonly base_url="$base_root/v$crate_version"
 
 ##################################
 # The package has to exist before describing it is worth anything
