@@ -17,7 +17,13 @@ use updater_lib::{UpdateSelection, Updater};
 // CLI argument structures
 // ---------------------------------------------------------------------------
 
-/// ESM update tool.
+/// Keeps an Arma 3 server's ESM install up to date.
+///
+/// Your server already checks for a new extension by itself each time it boots. This tool covers what that check
+/// does not: the @esm mod files, the updater's own components, and updating on demand instead of waiting for a
+/// restart.
+///
+/// Run it from your server folder, the one containing @esm.
 #[derive(Parser)]
 #[command(name = "esm_updater", version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
@@ -34,37 +40,46 @@ enum Commands {
     /// Exits with code 0 if everything is up-to-date, or 2 if updates are
     /// available.
     Check {
-        /// Override the manifest URL (useful for staging).
+        /// Use a different update source. Rarely needed outside testing.
         #[arg(long)]
         manifest_url: Option<String>,
 
-        /// Change working directory before running (server root).
+        /// Run against a different server folder instead of the one you are in.
+        ///
+        /// Useful if you stage updates somewhere separate and copy them to your server yourself.
         #[arg(long)]
         server_root: Option<String>,
     },
 
-    /// Download and apply updates.
+    /// Download and install updates.
+    ///
+    /// Stop your server first. Every file is checked against a signature and a checksum before anything is
+    /// replaced, and a file that fails either check is left alone.
     Update {
-        /// Which component to update.
+        /// Which part of ESM to update.
         #[arg(default_value = "all")]
         target: UpdateTarget,
 
-        /// Override the manifest URL.
+        /// Use a different update source. Rarely needed outside testing.
         #[arg(long)]
         manifest_url: Option<String>,
 
-        /// Change working directory before running.
+        /// Run against a different server folder instead of the one you are in.
+        ///
+        /// Useful if you stage updates somewhere separate and copy them to your server yourself.
         #[arg(long)]
         server_root: Option<String>,
     },
 
     /// Download and apply all updates (alias for `update all`).
     Install {
-        /// Override the manifest URL.
+        /// Use a different update source. Rarely needed outside testing.
         #[arg(long)]
         manifest_url: Option<String>,
 
-        /// Change working directory before running.
+        /// Run against a different server folder instead of the one you are in.
+        ///
+        /// Useful if you stage updates somewhere separate and copy them to your server yourself.
         #[arg(long)]
         server_root: Option<String>,
     },
@@ -76,9 +91,13 @@ enum Commands {
 /// Component selection for the `update` subcommand.
 #[derive(Clone, ValueEnum)]
 enum UpdateTarget {
+    /// Everything this server has an update available for.
     All,
+    /// The ESM extension only, which your server also updates by itself while it boots.
     Extension,
+    /// The @esm mod files only.
     Mod,
+    /// The updater's own components only.
     Updater,
 }
 
