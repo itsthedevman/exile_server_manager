@@ -22,8 +22,17 @@ fn main() {
 
     let (source, is_default) = match override_path {
         Some(path) => {
-            println!("cargo::rerun-if-changed={path}");
-            (PathBuf::from(path), false)
+            let path = PathBuf::from(path);
+
+            // Build scripts run with the crate root as their working directory, so a relative override resolves
+            // against src/updater/lib rather than wherever it was typed. Saying so beats a not-found error naming a
+            // path that plainly exists.
+            if path.is_relative() {
+                panic!("{OVERRIDE_VAR} must be an absolute path, got {}", path.display());
+            }
+
+            println!("cargo::rerun-if-changed={}", path.display());
+            (path, false)
         }
         None => (PathBuf::from(DEFAULT_KEY), true),
     };
