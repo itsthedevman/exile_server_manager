@@ -3,6 +3,7 @@
 .direnv/
 result
 result-*
+*.local
 
 # service/
 service/.bundle/
@@ -66,7 +67,6 @@ website/node_modules
 website/.direnv
 website/vendor/bundle
 website/public/vite*
-website/*.local
 website/config/credentials/development.key
 website/config/credentials/production.key
 website/config/credentials/production.yml.enc
