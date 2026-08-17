@@ -94,6 +94,7 @@ arma/*.zip
 arma/src/esm/.build-sha
 arma/src/updater/lib/keys/*.key
 arma/src/updater/lib/keys/*.pem
+arma/bin/upload
 arma/tools/server/@exile/addons/*.pbo
 arma/tools/server/@exile/addons/*.exile.bisign
 arma/tools/server/@exile/addons/*.txt

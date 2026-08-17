@@ -82,5 +82,4 @@ echo
 echo "Manifest built for $tag"
 echo "  Artifacts are expected at $base_url/<filename>"
 echo
-echo "Upload order matters: put the artifacts in place before serving versions.json."
-echo "A manifest published ahead of its artifacts points every server at URLs that 404."
+echo "Publish it with bin/upload, which ships the artifacts before the manifest that describes them."
