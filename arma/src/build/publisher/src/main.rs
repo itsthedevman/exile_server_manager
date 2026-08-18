@@ -94,7 +94,7 @@ const ESM_MOD: &[Mapping] = &[Mapping { platform: "any", relative_path: "@esm-ad
 
 /// The mod-side updater PBO, likewise platform-neutral.
 const MOD_UPDATER: &[Mapping] =
-    &[Mapping { platform: "any", relative_path: "@esm/addons/esm_updater.pbo" }];
+    &[Mapping { platform: "any", relative_path: "@esm/addons/exile_server_manager_updater.pbo" }];
 
 fn main() {
     if let Err(e) = run() {

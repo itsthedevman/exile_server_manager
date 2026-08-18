@@ -20,7 +20,7 @@ class CfgFunctions
 		{
 			class preInit
 			{
-				file = os_path!("esm_updater", "bootstrap", "fn_preInit.sqf");
+				file = os_path!("exile_server_manager_updater", "bootstrap", "fn_preInit.sqf");
 				preInit = 1;
 			};
 		};

@@ -25,7 +25,7 @@ else: PBOs are already in use by then, and the updater components are the ones d
 | `cli/`                 | `esm_updater`, the operator-facing binary.                                                       |
 | `lib/keys/updater.pub` | The default manifest verification key, compiled in at build time.                                |
 
-The mod-side half lives at `src/@esm/addons/esm_updater/`, whose `fn_preInit.sqf` is what calls `check_update`.
+The mod-side half lives at `src/@esm/addons/exile_server_manager_updater/`, whose `fn_preInit.sqf` is what calls `check_update`.
 
 ## Trust model
 

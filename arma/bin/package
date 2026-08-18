@@ -113,7 +113,7 @@ run_command find $build_dir/addons -mindepth 1 -type d -exec rm -rf {} +
 run_command rm -f $build_dir/addons/esm_test.pbo
 
 if [[ "$skip_updater" == true ]]; then
-    run_command rm -f $build_dir/addons/esm_updater.pbo
+    run_command rm -f $build_dir/addons/exile_server_manager_updater.pbo
 fi
 
 run_command cp -rf $build_dir $release_dir

@@ -617,7 +617,7 @@ fn test_a_published_manifest_installs() {
                   }},
                   "mod_updater": {{
                     "version": "2.1.0",
-                    "artifacts": {{"any": {{"url": "{base}/esm_updater.pbo", "sha256": "{mod_sha}"}}}}
+                    "artifacts": {{"any": {{"url": "{base}/exile_server_manager_updater.pbo", "sha256": "{mod_sha}"}}}}
                   }},
                   "updater_cli": {{
                     "version": "2.1.0",
@@ -952,7 +952,7 @@ fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
           }},
           "mod_updater": {{
             "version": "2.1.0",
-            "artifacts": {{"any": {{"url": "{base_url}/esm_updater.pbo", "sha256": "{pbo_sha}"}}}}
+            "artifacts": {{"any": {{"url": "{base_url}/exile_server_manager_updater.pbo", "sha256": "{pbo_sha}"}}}}
           }}
         }}"#
     );
@@ -968,7 +968,7 @@ fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
             ("/esm_updater.so".into(), extension.clone()),
             ("/esm_updater_x64.dll".into(), extension.clone()),
             ("/esm_updater.dll".into(), extension.clone()),
-            ("/esm_updater.pbo".into(), pbo.clone()),
+            ("/exile_server_manager_updater.pbo".into(), pbo.clone()),
         ],
     );
     write_config(&dir, &format!("{}/versions.json", server.base_url));
@@ -1005,7 +1005,7 @@ fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
         "the updater extension belongs at the filename Arma resolves, not one only the installer knows"
     );
     assert_eq!(
-        std::fs::read(dir.join("@esm/addons/esm_updater.pbo")).unwrap(),
+        std::fs::read(dir.join("@esm/addons/exile_server_manager_updater.pbo")).unwrap(),
         pbo,
         "the updater addon belongs in @esm/addons, where Arma looks for PBOs"
     );

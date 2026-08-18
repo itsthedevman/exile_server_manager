@@ -622,7 +622,7 @@ fn update_mod_updater_pbo(
     deadline: Instant,
 ) -> Result<UpdatedComponent, UpdaterError> {
     let started_at = Instant::now();
-    let dest = Path::new("@esm/addons/esm_updater.pbo");
+    let dest = Path::new("@esm/addons/exile_server_manager_updater.pbo");
     let temp = Path::new("@esm/temp/mod_updater.pbo");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
     std::fs::create_dir_all(Path::new("@esm/addons"))?;

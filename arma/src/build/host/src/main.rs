@@ -22,7 +22,7 @@ use error::BuildResult;
 use lazy_static::lazy_static;
 
 pub const ADDONS: &[&str] = &[
-    "esm_updater",
+    "exile_server_manager_updater",
     "exile_server_manager",
     "exile_server_overwrites",
     "exile_server_xm8",
