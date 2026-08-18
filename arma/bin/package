@@ -5,6 +5,10 @@
 #
 # --skip-updater leaves the auto-updater out of the package: no esm_updater.pbo, no updater
 # extensions, no CLI, and no @esm-install.zip. Use it when the updater isn't ready to ship.
+#
+# --local builds only what a Linux x64 test server can run, skipping the other three targets, the Windows CLI, the
+# tests, and both zips. It exists so bin/updater_tester can rebuild in under a minute instead of cross-compiling
+# four platforms nobody is about to run. The result is not distributable and marks itself as such.
 
 set -ueo pipefail
 trap "exit" INT
@@ -23,20 +27,35 @@ readonly crate_version=$(
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
 
 skip_updater=false
+local_build=false
 
 for arg in "$@"; do
     case $arg in
     --skip-updater)
         skip_updater=true
         ;;
+    --local)
+        local_build=true
+        ;;
     esac
 done
 
-if [[ "$skip_updater" == true ]]; then
-    readonly total_steps=8
+# Derived rather than hardcoded, because the two flags cut different steps out of the same run.
+if [[ "$local_build" == true ]]; then
+    total_steps=3
 else
-    readonly total_steps=13
+    total_steps=8
 fi
+
+if [[ "$skip_updater" == false ]]; then
+    if [[ "$local_build" == true ]]; then
+        total_steps=$((total_steps + 3))
+    else
+        total_steps=$((total_steps + 5))
+    fi
+fi
+
+readonly total_steps
 
 step=0
 
@@ -59,12 +78,17 @@ function run_command() {
 
 ##################################
 # Run tests
-echo_step "Running tests"
-run_command cargo test --workspace --quiet
+# Skipped for a local build: nothing ships from one, and the suite is the single slowest step in the loop it exists
+# to speed up. Run bin/test when you want them.
+if [[ "$local_build" == false ]]; then
+    echo_step "Running tests"
+    run_command cargo test --workspace --quiet
 
-# The updater's integration tests are gated behind `required-features = ["testing"]`, so --workspace alone silently
-# skips every one of them. They are the only coverage of the download-verify-swap path that ships to servers.
-run_command cargo test -p updater_lib --features testing --quiet
+    # The updater's integration tests are gated behind `required-features = ["testing"]`, so --workspace alone
+    # silently skips every one of them. They are the only coverage of the download-verify-swap path that ships to
+    # servers.
+    run_command cargo test -p updater_lib --features testing --quiet
+fi
 
 ##################################
 # Preparation
@@ -88,33 +112,39 @@ fi
 run_command cp -rf $build_dir $release_dir
 
 ##################################
-# Extension - Windows (x32)
-echo_step "Building esm.dll"
-run_command ./bin/build --only=extension --release --target=windows --x32
-run_command cp $build_dir/esm.dll $release_dir/@esm
+# Every target but Linux x64. The manifest names artifacts per platform and the publisher skips the ones a package
+# does not carry, so leaving these out yields a manifest that offers Linux x64 and nothing else - which is exactly
+# what a local test server asks for.
+if [[ "$local_build" == false ]]; then
+    ##################################
+    # Extension - Windows (x32)
+    echo_step "Building esm.dll"
+    run_command ./bin/build --only=extension --release --target=windows --x32
+    run_command cp $build_dir/esm.dll $release_dir/@esm
 
-if [[ "$skip_updater" == false ]]; then
-    run_command cp $build_dir/esm_updater.dll $release_dir/@esm
-fi
+    if [[ "$skip_updater" == false ]]; then
+        run_command cp $build_dir/esm_updater.dll $release_dir/@esm
+    fi
 
-##################################
-# Extension - Windows (x64)
-echo_step "Building esm_x64.dll"
-run_command ./bin/build --only=extension --release --target=windows
-run_command cp $build_dir/esm_x64.dll $release_dir/@esm
+    ##################################
+    # Extension - Windows (x64)
+    echo_step "Building esm_x64.dll"
+    run_command ./bin/build --only=extension --release --target=windows
+    run_command cp $build_dir/esm_x64.dll $release_dir/@esm
 
-if [[ "$skip_updater" == false ]]; then
-    run_command cp $build_dir/esm_updater_x64.dll $release_dir/@esm
-fi
+    if [[ "$skip_updater" == false ]]; then
+        run_command cp $build_dir/esm_updater_x64.dll $release_dir/@esm
+    fi
 
-##################################
-# Extension - Linux (x32)
-echo_step "Building esm.so"
-run_command ./bin/build --only=extension --release --target=linux --x32
-run_command cp $build_dir/esm.so $release_dir/@esm
+    ##################################
+    # Extension - Linux (x32)
+    echo_step "Building esm.so"
+    run_command ./bin/build --only=extension --release --target=linux --x32
+    run_command cp $build_dir/esm.so $release_dir/@esm
 
-if [[ "$skip_updater" == false ]]; then
-    run_command cp $build_dir/esm_updater.so $release_dir/@esm
+    if [[ "$skip_updater" == false ]]; then
+        run_command cp $build_dir/esm_updater.so $release_dir/@esm
+    fi
 fi
 
 ##################################
@@ -138,12 +168,14 @@ if [[ "$skip_updater" == false ]]; then
         target/x86_64-unknown-linux-gnu/release/esm_updater \
         $release_dir/@esm/bin/esm_updater
 
-    echo_step "Building esm_updater CLI (Windows)"
-    run_command cargo build --release -p esm_updater_cli \
-        --target x86_64-pc-windows-gnu
-    run_command cp \
-        target/x86_64-pc-windows-gnu/release/esm_updater.exe \
-        $release_dir/@esm/bin/esm_updater.exe
+    if [[ "$local_build" == false ]]; then
+        echo_step "Building esm_updater CLI (Windows)"
+        run_command cargo build --release -p esm_updater_cli \
+            --target x86_64-pc-windows-gnu
+        run_command cp \
+            target/x86_64-pc-windows-gnu/release/esm_updater.exe \
+            $release_dir/@esm/bin/esm_updater.exe
+    fi
 fi
 
 ##################################
@@ -174,28 +206,42 @@ fi
 
 ##################################
 # Zipping
-echo_step "Zipping $zip_filename"
-cd $release_dir && zip -r $zip_filename ./@esm
+# A local build is missing three of the four platforms, so a zip of it would be a download waiting to disappoint
+# whoever found it. The directory is still there for anything that wants to read the files directly.
+if [[ "$local_build" == false ]]; then
+    echo_step "Zipping $zip_filename"
+    cd $release_dir && zip -r $zip_filename ./@esm
 
-##################################
-# Install bundle - updater artifacts only, for a first-time install
-if [[ "$skip_updater" == false ]]; then
-    echo_step "Zipping @esm-install.zip"
-    cd $release_dir && zip @esm-install.zip \
-        @esm/esm_updater.dll \
-        @esm/esm_updater_x64.dll \
-        @esm/esm_updater.so \
-        @esm/esm_updater_x64.so \
-        @esm/bin/esm_updater \
-        @esm/bin/esm_updater.exe
+    ##################################
+    # Install bundle - updater artifacts only, for a first-time install
+    if [[ "$skip_updater" == false ]]; then
+        echo_step "Zipping @esm-install.zip"
+        cd $release_dir && zip @esm-install.zip \
+            @esm/esm_updater.dll \
+            @esm/esm_updater_x64.dll \
+            @esm/esm_updater.so \
+            @esm/esm_updater_x64.so \
+            @esm/bin/esm_updater \
+            @esm/bin/esm_updater.exe
+    fi
 fi
 
 ##################################
 # Woohoo!
-echo "Package built: $release_dir/$zip_filename"
+if [[ "$local_build" == true ]]; then
+    # Left for bin/upload to find. A package this incomplete reaching servers would offer Linux x64 to everyone and
+    # nothing to the platforms most of them actually run, and the missing artifacts are invisible in the manifest -
+    # they simply are not there.
+    touch $release_dir/.local_build
 
-if [[ "$skip_updater" == true ]]; then
-    echo "Auto-updater was excluded from this package"
+    echo "Local package built: $release_dir"
+    echo "Linux x64 only, unzipped, and not publishable"
+else
+    echo "Package built: $release_dir/$zip_filename"
+
+    if [[ "$skip_updater" == true ]]; then
+        echo "Auto-updater was excluded from this package"
+    fi
+
+    echo "Tag and publish it when ready"
 fi
-
-echo "Tag and publish it when ready"
