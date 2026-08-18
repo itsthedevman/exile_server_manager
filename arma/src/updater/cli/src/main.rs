@@ -10,7 +10,8 @@
 //! - `version` — print the binary version.
 
 use clap::{Parser, Subcommand, ValueEnum};
-use log::{error, info};
+use log::error;
+use std::path::{Path, PathBuf};
 use updater_lib::{UpdateSelection, Updater};
 
 // ---------------------------------------------------------------------------
@@ -132,9 +133,62 @@ fn warn_on_custom_key() {
     eprintln!("         It will not accept official ESM releases. Use an official build on a live server.");
 }
 
-fn main() {
-    env_logger::init();
+/// Settle on the server root before anything reads a path.
+///
+/// Every path the updater touches is relative to the server root, and a missing `@esm/config.yml` reads as "this
+/// server has no config" rather than "you are in the wrong place". Left alone, that means a run from the wrong
+/// folder quietly falls back to the built-in defaults and reaches for the public release host, surfacing as a 404
+/// that has nothing to do with what was asked for.
+///
+/// Three ways to land somewhere real, in order of how much they were asked for: an explicit `--server-root`, the
+/// current directory, then the binary's own location. That last one usually settles it, because the CLI ships
+/// inside the server it maintains, at `<root>/@esm/bin/`. Only a binary that was copied elsewhere runs out of
+/// options, and guessing past that point risks installing into the wrong server.
+fn enter_server_root(server_root: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(root) = server_root {
+        std::env::set_current_dir(&root)?;
+    } else if !is_server_root(Path::new("."))
+        && let Some(root) = server_root_from_executable()
+    {
+        // Said out loud, since a run that quietly picks its own target is the thing being fixed here.
+        println!("Running against {}", root.display());
+        std::env::set_current_dir(&root)?;
+    }
 
+    if is_server_root(Path::new(".")) {
+        // Only now does the configured log path point where it should.
+        updater_lib::logging::initialize(&updater_lib::config::Config::new().log_path);
+        return Ok(());
+    }
+
+    let here = std::env::current_dir()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| "this directory".into());
+
+    Err(format!(
+        "no @esm folder in {here}, and this copy of the updater is not installed in one\n       \
+         Run it from your server folder, or point it at one with --server-root."
+    )
+    .into())
+}
+
+/// A server root is any folder holding an `@esm`.
+fn is_server_root(path: &Path) -> bool {
+    path.join("@esm").is_dir()
+}
+
+/// Work back to the server root from the running binary, installed at `<root>/@esm/bin/esm_updater`.
+///
+/// Confirmed rather than assumed: a path that does not actually contain an `@esm` is not a server root, however
+/// the binary got there.
+fn server_root_from_executable() -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok()?;
+    let root = executable.parent()?.parent()?.parent()?;
+
+    is_server_root(root).then(|| root.to_path_buf())
+}
+
+fn main() {
     // After parsing, so `--help` and `--version` stay clean.
     let cli = Cli::parse();
     warn_on_custom_key();
@@ -142,6 +196,9 @@ fn main() {
     let exit_code = match run(cli) {
         Ok(code) => code,
         Err(e) => {
+            // Both, and stderr first. The log file is the trail; the operator standing there is the audience, and
+            // anything failing before the log file is open would otherwise vanish without a word.
+            eprintln!("error: {e}");
             error!("{e}");
             1
         }
@@ -189,9 +246,7 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
         }
 
         Commands::Check { manifest_url, server_root } => {
-            if let Some(root) = server_root {
-                std::env::set_current_dir(&root)?;
-            }
+            enter_server_root(server_root)?;
 
             let outcome = Updater::run_check(manifest_url, &running_version())?;
 
@@ -223,17 +278,13 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             manifest_url,
             server_root,
         } => {
-            if let Some(root) = server_root {
-                std::env::set_current_dir(&root)?;
-            }
+            enter_server_root(server_root)?;
+
             let selection: UpdateSelection = target.into();
             let updated =
                 Updater::run_cli_update(selection, manifest_url, &running_version())?;
             for comp in &updated {
-                info!(
-                    "[update] {} | total={}ms",
-                    comp.name, comp.elapsed_ms
-                );
+                // The library already logged this component's trail; stdout is for the operator watching.
                 println!(
                     "Updated {} to {}  ({}ms)",
                     comp.name, comp.version, comp.elapsed_ms
@@ -246,19 +297,15 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
         }
 
         Commands::Install { manifest_url, server_root } => {
-            if let Some(root) = server_root {
-                std::env::set_current_dir(&root)?;
-            }
+            enter_server_root(server_root)?;
+
             let updated = Updater::run_cli_update(
                 UpdateSelection::All,
                 manifest_url,
                 &running_version(),
             )?;
             for comp in &updated {
-                info!(
-                    "[update] {} | total={}ms",
-                    comp.name, comp.elapsed_ms
-                );
+                // The library already logged this component's trail; stdout is for the operator watching.
                 println!(
                     "Updated {} to {}  ({}ms)",
                     comp.name, comp.version, comp.elapsed_ms

@@ -33,6 +33,7 @@ pub mod download;
 pub mod error;
 pub mod http;
 pub mod installed_versions;
+pub mod logging;
 pub mod manifest;
 pub mod signing;
 pub mod update;

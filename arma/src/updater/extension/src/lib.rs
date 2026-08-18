@@ -8,9 +8,6 @@
 
 use arma_rs::{arma, Extension};
 use lazy_static::lazy_static;
-use log4rs::append::file::FileAppender;
-use log4rs::config::{Appender, Config as LogConfig, Root};
-use log4rs::encode::pattern::PatternEncoder;
 use updater_lib::config::Config;
 
 mod endpoints;
@@ -21,40 +18,10 @@ lazy_static! {
     pub static ref CONFIG: Config = Config::new();
 }
 
-fn initialize_logger() {
-    let log_pattern = "[{d(%Y-%m-%d %H:%M:%S%.3f)(utc)}Z {h({l})} {M}:{L}] {m}{n}";
-
-    let logfile = match FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(log_pattern)))
-        .build(&CONFIG.log_path)
-    {
-        Ok(f) => f,
-        Err(e) => {
-            println!("[ESM Updater] failed to create log file at {}: {e}", CONFIG.log_path);
-            return;
-        }
-    };
-
-    let log_config = match LogConfig::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(Root::builder().appender("logfile").build(log::LevelFilter::Info))
-    {
-        Ok(c) => c,
-        Err(e) => {
-            println!("[ESM Updater] failed to build log config: {e}");
-            return;
-        }
-    };
-
-    if let Err(e) = log4rs::init_config(log_config) {
-        println!("[ESM Updater] failed to init logger: {e}");
-    }
-}
-
 #[arma]
 pub fn init() -> Extension {
     if !cfg!(test) {
-        initialize_logger();
+        updater_lib::logging::initialize(&CONFIG.log_path);
     }
 
     lazy_static::initialize(&CONFIG);

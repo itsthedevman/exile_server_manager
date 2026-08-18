@@ -439,8 +439,18 @@ fn load_manifest(
     url: &str,
     deadline: Instant,
 ) -> Result<VersionManifest, UpdaterError> {
+    log::info!("[load_manifest] fetching {url}");
+
     let (manifest_bytes, sig_bytes) = fetch_manifest(url, deadline)?;
+    log::info!(
+        "[load_manifest] fetched {} bytes, signature {} bytes",
+        manifest_bytes.len(),
+        sig_bytes.len()
+    );
+
     verify_with_key(&manifest_bytes, &sig_bytes, &verification_key()?)?;
+    log::info!("[load_manifest] signature verified");
+
     serde_json::from_slice(&manifest_bytes)
         .map_err(|e| UpdaterError::Parse(e.to_string()))
 }
@@ -526,6 +536,40 @@ fn record_installed(component: Component, version: &Version) {
     }
 }
 
+/// Download one artifact, verify it, and swap it into place, saying so at each step.
+///
+/// The three file-swap components differ only in where the bytes come from and where they land. Narrating it once
+/// here means a run that failed halfway says which of download, checksum, or swap it died on, and a run that
+/// succeeded says what it actually wrote, which is the question a support request usually turns on.
+fn install_artifact(
+    component: &str,
+    comp: &ComponentVersion,
+    temp: &Path,
+    dest: &Path,
+    deadline: Instant,
+) -> Result<(), UpdaterError> {
+    let artifact = artifact_for(comp)?;
+
+    log::info!("[update] {component}: downloading {}", artifact.url);
+
+    let download_started_at = Instant::now();
+    download_to(&artifact.url, temp, deadline)?;
+
+    let size = std::fs::metadata(temp).map(|meta| meta.len()).unwrap_or(0);
+    log::info!(
+        "[update] {component}: downloaded {size} bytes in {}ms",
+        download_started_at.elapsed().as_millis()
+    );
+
+    verify_sha256(temp, &artifact.sha256)?;
+    log::info!("[update] {component}: checksum verified");
+
+    swap_file(temp, dest)?;
+    log::info!("[update] {component}: installed to {}", dest.display());
+
+    Ok(())
+}
+
 // ── CLI per-component update functions ───────────────────────────────────────
 
 fn update_mod_bundle(
@@ -536,9 +580,23 @@ fn update_mod_bundle(
     let temp_dir = Path::new("@esm/temp/addons_stage");
     let archive = Path::new("@esm/temp/at_esm_update.tar.gz");
     let artifact = artifact_for(comp)?;
+
+    log::info!("[update] @esm: downloading {}", artifact.url);
+
+    let download_started_at = Instant::now();
     download_to(&artifact.url, archive, deadline)?;
+
+    let size = std::fs::metadata(archive).map(|meta| meta.len()).unwrap_or(0);
+    log::info!(
+        "[update] @esm: downloaded {size} bytes in {}ms",
+        download_started_at.elapsed().as_millis()
+    );
+
     verify_sha256(archive, &artifact.sha256)?;
+    log::info!("[update] @esm: checksum verified");
+
     extract_tar_gz(archive, temp_dir)?;
+    log::info!("[update] @esm: extracted to {}", temp_dir.display());
 
     let addons = Path::new("@esm/addons");
     let backup = Path::new("@esm/addons.backup");
@@ -546,6 +604,8 @@ fn update_mod_bundle(
         std::fs::rename(addons, backup)?;
     }
     std::fs::rename(temp_dir, addons)?;
+    log::info!("[update] @esm: installed to {}", addons.display());
+
     record_installed(Component::EsmMod, &comp.version);
     if backup.exists() {
         let _ = std::fs::remove_dir_all(backup);
@@ -565,16 +625,13 @@ fn update_esm_extension(
     deadline: Instant,
 ) -> Result<UpdatedComponent, UpdaterError> {
     let started_at = Instant::now();
-    let filename = esm_extension_filename();
     let temp_dir = Path::new("@esm/temp");
     std::fs::create_dir_all(temp_dir)?;
-    let temp_file = temp_dir.join("esm_update");
-    let artifact = artifact_for(comp)?;
-    download_to(&artifact.url, &temp_file, deadline)?;
-    verify_sha256(&temp_file, &artifact.sha256)?;
 
-    let dest = Path::new("@esm").join(filename);
-    swap_file(&temp_file, &dest)?;
+    let temp_file = temp_dir.join("esm_update");
+    let dest = Path::new("@esm").join(esm_extension_filename());
+
+    install_artifact("esm", comp, &temp_file, &dest, deadline)?;
     record_installed(Component::Esm, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -598,10 +655,8 @@ fn update_updater_extension(
     let dest = Path::new("@esm").join(updater_extension_filename());
     let temp = Path::new("@esm/temp/ext_updater");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
-    let artifact = artifact_for(comp)?;
-    download_to(&artifact.url, temp, deadline)?;
-    verify_sha256(temp, &artifact.sha256)?;
-    swap_file(temp, &dest)?;
+
+    install_artifact("extension_updater", comp, temp, &dest, deadline)?;
     record_installed(Component::ExtensionUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -626,10 +681,8 @@ fn update_mod_updater_pbo(
     let temp = Path::new("@esm/temp/mod_updater.pbo");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
     std::fs::create_dir_all(Path::new("@esm/addons"))?;
-    let artifact = artifact_for(comp)?;
-    download_to(&artifact.url, temp, deadline)?;
-    verify_sha256(temp, &artifact.sha256)?;
-    swap_file(temp, dest)?;
+
+    install_artifact("mod_updater", comp, temp, dest, deadline)?;
     record_installed(Component::ModUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;

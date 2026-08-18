@@ -72,6 +72,16 @@ esm_updater version
 `check` exits `0` when everything is current, `2` when updates are available, and `1` on error, so it drops into a
 cron job or a pre-restart script without parsing output.
 
+Every path the updater touches is relative to the server root, so it works out which one it means before doing
+anything: `--server-root` if given, otherwise the current folder if it holds an `@esm`, otherwise its own location,
+since the CLI ships inside the server it maintains. Anything but the first is announced. A copy of the binary
+living outside a server has nothing left to go on and says so, rather than falling back to defaults and reaching
+for the public release host.
+
+The CLI writes to `@esm/log/updater.log`, the same file the boot path uses, naming each artifact it fetched and the
+path it wrote. One log therefore covers every update a server has had, however it arrived. Operator-facing summaries
+and errors also go to stdout and stderr.
+
 `--manifest-url` points any subcommand at a different manifest, which is how an unpublished one gets tested.
 `--server-root` changes directory first, since every path the updater touches is relative to the server root.
 
