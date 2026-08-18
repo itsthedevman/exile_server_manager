@@ -1,3 +1,40 @@
 #!/usr/bin/env bash
 
-docker compose exec arma_server /bin/bash
+# Opens a shell inside a server's container.
+#
+# Compose cannot reach the container on its own any more. One container per server means the compose file
+# interpolates ESM_CONTAINER and friends, and only bin/build sets those, so `docker compose exec` fails on a blank
+# container name. The container is named by convention instead, which needs nothing but config.yml.
+#
+#   bin/bash              # the first server in config.yml
+#   bin/bash esm_test     # a named one
+
+set -ueo pipefail
+
+config_path="$(pwd)/config.yml"
+readonly config_path
+
+instance=${1:-}
+
+if [[ -z $instance ]]; then
+    instance=$(awk '/^instances:/ { found = 1; next } found && $2 == "server_id:" { print $3; exit }' "$config_path")
+fi
+
+if ! grep -qE "^[[:space:]]*- server_id: +${instance}[[:space:]]*$" "$config_path"; then
+    echo "Fatal - no instance '$instance' in $config_path"
+    echo "  Configured: $(awk '$2 == "server_id:" { printf "%s ", $3 }' "$config_path")"
+    exit 1
+fi
+
+readonly container="ESM_ARMA_${instance^^}"
+
+status=$(docker container inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
+readonly status
+
+if [[ $status != running ]]; then
+    echo "Fatal - container $container is not running (status: ${status:-absent})"
+    echo "  Run bin/dev to bring it up. Ctrl-C leaves the container running with the server stopped."
+    exit 1
+fi
+
+exec docker exec -it "$container" /bin/bash
