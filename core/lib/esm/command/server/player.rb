@@ -42,6 +42,10 @@ module ESM
         # Configuration
         #
 
+        # 2.0.2 and earlier wrote a player's poptabs against a database ID it had just overwritten with -1, so the
+        # change never persisted and nothing else about that player saved for the rest of their session either.
+        MINIMUM_MONEY_VERSION = "2.0.3"
+
         change_attribute :allowlist_enabled, default: true
 
         command_namespace :server, :admin, command_name: :modify_player
@@ -53,6 +57,7 @@ module ESM
 
         def on_execute
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
+          check_for_money_support!
 
           result = call_sqf_function!("ESMs_command_player", action: arguments.action, amount: arguments.amount).data
 
@@ -78,6 +83,7 @@ module ESM
 
         def on_website_execute
           check_for_registered_target_user! if target_user.is_a?(ESM::User)
+          check_for_money_support!
 
           result = call_sqf_function!(
             "ESMs_command_player",
@@ -121,6 +127,16 @@ module ESM
 
             reply(embed)
           end
+        end
+
+        private
+
+        # Only the money action is affected, so the rest of the command stays usable on an older server. The V1 path
+        # is deliberately not gated: it runs Exile's own modifyPlayer and never touches the affected code.
+        def check_for_money_support!
+          return unless arguments.action == "money"
+
+          check_for_server_version!(MINIMUM_MONEY_VERSION)
         end
       end
     end

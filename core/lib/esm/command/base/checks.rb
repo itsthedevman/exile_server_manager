@@ -214,6 +214,28 @@ module ESM
           check_failed!(:owned_server, user: current_user, community_id: current_community.community_id)
         end
 
+        ##
+        # Blocks the command unless the target server's mod is at least the given version.
+        #
+        # @param minimum_version [String] The lowest mod version that supports the behaviour, e.g. "2.0.3"
+        #
+        # @raise [ESM::Exception::CheckFailure] If the server is older, or has never reported a version
+        #
+        def check_for_server_version!(minimum_version)
+          return if target_server.nil?
+          return if target_server.version?(minimum_version)
+
+          check_failed!(
+            :server_version_too_old,
+            user: current_user,
+            server_id: target_server.server_id,
+            # The extension reports its build commit as semver build metadata. It carries no weight in the
+            # comparison above and is noise to whoever reads this.
+            current_version: target_server.version.to_s.split("+").first,
+            required_version: minimum_version
+          )
+        end
+
         # TODO: Docs (redo)
         # Checks if the target_user is registered
         # This will always raise if the target_user is an instance of User::Ephemeral. (They aren't registered)

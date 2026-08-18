@@ -114,3 +114,6 @@ en:
     server_version_not_supported: |-
       Hey %{user}, `%{server_id}` does not support this command. 
       Please reach out to the server owners and politely ask them to update ESM to the latest version.
+    server_version_too_old: |-
+      Hey %{user}, that requires ESM `v%{required_version}` or newer. `%{server_id}` is running `v%{current_version}`.
+      Please reach out to the server owners and politely ask them to update ESM, then try again.
