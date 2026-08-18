@@ -458,6 +458,10 @@ fn load_manifest(
 /// Atomically swap `source` into `dest` using a `.backup` intermediate.
 ///
 /// On success the backup is removed. On failure the backup is restored.
+///
+/// The replacement inherits the permissions of the file it replaces. A downloaded file carries whatever the
+/// download gave it, so without this an updated install ends up subtly different from a packaged one for no reason
+/// anybody chose.
 fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
     let backup = dest.with_file_name(format!(
         "{}.backup",
@@ -465,11 +469,27 @@ fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
             .unwrap_or_default()
             .to_string_lossy()
     ));
+
+    // Read before the rename below moves the file out from under it.
+    #[cfg(unix)]
+    let existing_mode = {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(dest)
+            .ok()
+            .map(|meta| meta.permissions().mode())
+    };
+
     if dest.exists() {
         std::fs::rename(dest, &backup)?;
     }
     match std::fs::rename(source, dest) {
         Ok(()) => {
+            #[cfg(unix)]
+            if let Some(mode) = existing_mode {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = std::fs::set_permissions(dest, std::fs::Permissions::from_mode(mode));
+            }
+
             let _ = std::fs::remove_file(&backup);
             Ok(())
         }
