@@ -23,9 +23,26 @@ struct Cli {
     #[arg(long, default_value = "target/build_release")]
     release_dir: PathBuf,
 
-    /// Version being published, e.g. `2.1.0`.
+    /// Version of the extension and the mod bundle, e.g. `2.1.0`.
+    ///
+    /// Those two ship as a matched pair and the mod carries no version of its own, so one number covers both.
     #[arg(long)]
     version: semver::Version,
+
+    /// Version of the updater's own extension and addon, e.g. `0.1.0`.
+    ///
+    /// Separate from `--version` because the updater changes on its own schedule. Sharing one number would mean
+    /// either offering an unchanged component to every server because the extension moved, or never offering a
+    /// changed one because it did not.
+    #[arg(long)]
+    updater_version: semver::Version,
+
+    /// Version of the operator CLI, e.g. `0.1.0`.
+    ///
+    /// Separate again, and load-bearing: the CLI compares this against the version it was built with in order to
+    /// tell an operator they are driving a stale tool. A number it cannot match is a warning nobody can act on.
+    #[arg(long)]
+    cli_version: semver::Version,
 
     /// URL prefix every artifact is served from. Each file is appended to this by name.
     #[arg(long)]
@@ -89,17 +106,19 @@ fn main() {
 fn run() -> Result<(), String> {
     let cli = Cli::parse();
 
-    let mut esm = component(&cli, ESM)?;
+    let mut esm = component(&cli, ESM, &cli.version)?;
     if let Some(requirement) = &cli.esm_requires_mod {
         esm.requires.insert("@esm".to_string(), requirement.clone());
     }
 
+    // The updater's extension and addon share a number because they are a matched pair: the addon calls into the
+    // extension, so shipping one without the other is never what anyone wants.
     let manifest = VersionManifest {
         esm: Some(esm),
-        esm_mod: Some(component(&cli, ESM_MOD)?),
-        extension_updater: Some(component(&cli, EXTENSION_UPDATER)?),
-        mod_updater: Some(component(&cli, MOD_UPDATER)?),
-        updater_cli: Some(component(&cli, UPDATER_CLI)?),
+        esm_mod: Some(component(&cli, ESM_MOD, &cli.version)?),
+        extension_updater: Some(component(&cli, EXTENSION_UPDATER, &cli.updater_version)?),
+        mod_updater: Some(component(&cli, MOD_UPDATER, &cli.updater_version)?),
+        updater_cli: Some(component(&cli, UPDATER_CLI, &cli.cli_version)?),
     };
 
     let json = serde_json::to_vec_pretty(&manifest)
@@ -129,7 +148,14 @@ fn run() -> Result<(), String> {
 /// A missing file is skipped rather than fatal, because not every release ships every platform, and a package built
 /// with `--skip-updater` legitimately has no updater artifacts at all. A component with no files at all is the
 /// caller's problem to notice, so it is reported.
-fn component(cli: &Cli, mappings: &[Mapping]) -> Result<ComponentVersion, String> {
+///
+/// `version` is passed rather than read from `cli` because components version independently; see the flags on
+/// `Cli` for which number belongs to which.
+fn component(
+    cli: &Cli,
+    mappings: &[Mapping],
+    version: &semver::Version,
+) -> Result<ComponentVersion, String> {
     let mut artifacts = BTreeMap::new();
 
     for mapping in mappings {
@@ -162,7 +188,7 @@ fn component(cli: &Cli, mappings: &[Mapping]) -> Result<ComponentVersion, String
     }
 
     Ok(ComponentVersion {
-        version: cli.version.clone(),
+        version: version.clone(),
         artifacts,
         release_date: None,
         changes: None,

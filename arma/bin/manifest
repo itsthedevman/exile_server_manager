@@ -31,6 +31,21 @@ readonly crate_version=$(
         cut -d@ -f2
 )
 
+# The updater ships on its own schedule, so it carries its own numbers. One version across everything would either
+# offer every server an unchanged component because the extension moved, or never offer a changed one because it
+# did not. The extension and addon share a number because neither is any use without the other.
+readonly updater_version=$(
+    cargo pkgid -p esm_updater |
+        cut -d# -f2 |
+        cut -d@ -f2
+)
+
+readonly cli_version=$(
+    cargo pkgid -p esm_updater_cli |
+        cut -d# -f2 |
+        cut -d@ -f2
+)
+
 readonly tag="arma/v$crate_version"
 
 # Artifacts are served off esmbot.com, not the GitHub release. The releases page stays a human-facing list of one
@@ -119,6 +134,8 @@ fi
 cargo run --quiet --release -p esm_publisher -- \
     --release-dir "$release_dir" \
     --version "$crate_version" \
+    --updater-version "$updater_version" \
+    --cli-version "$cli_version" \
     --base-url "$base_url" \
     --out "$release_dir/versions.json" \
     --esm-requires-mod ">=$crate_version" \
@@ -128,6 +145,7 @@ cargo run --quiet --release -p esm_publisher -- \
 # Woohoo!
 echo
 echo "Manifest built for $tag"
+echo "  esm and @esm $crate_version, updater $updater_version, cli $cli_version"
 echo "  Artifacts are expected at $base_url/<filename>"
 echo
 echo "Publish it with bin/upload, which ships the artifacts before the manifest that describes them."

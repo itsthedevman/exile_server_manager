@@ -26,6 +26,13 @@ readonly crate_version=$(
 )
 readonly zip_filename="@esm-$(echo "$crate_version" | sed 's/\.//g').zip"
 
+# Seeded into installed_versions.yml, so it has to match what bin/manifest stamps for the same components.
+readonly updater_version=$(
+    cargo pkgid -p esm_updater |
+        cut -d# -f2 |
+        cut -d@ -f2
+)
+
 skip_updater=false
 local_build=false
 
@@ -226,8 +233,8 @@ if [[ "$skip_updater" == false ]]; then
 
 esm: $crate_version
 "@esm": $crate_version
-extension_updater: $crate_version
-mod_updater: $crate_version
+extension_updater: $updater_version
+mod_updater: $updater_version
 EOF
 fi
 
