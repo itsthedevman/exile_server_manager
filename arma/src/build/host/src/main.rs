@@ -99,36 +99,43 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
         database, deploy, ext_build, keys, logs, mod_build, server, server_mod, staging,
     };
 
-    // --- Build phase (always runs) ---
+    // --start-only exists to leave the server's files alone, so it skips everything that would write to them:
+    // the build, the deploy, and the database work below. What is left is the container coming up and the server
+    // starting, which is the part it is actually asking for.
+    let start_only = ctx.args.start_only();
+
+    // --- Build phase ---
     // detect_rebuild already ran before the header was printed.
     // Held only for the build: the staging tree is the one thing every server shares.
     let build_lock = locks::BuildLock::acquire(&ctx.local_build_path)?;
 
-    run_step(ctx, "Preparing staging", staging::prepare_staging)?;
+    if !start_only {
+        run_step(ctx, "Preparing staging", staging::prepare_staging)?;
 
-    // Multi-spinner steps handle their own output — don't wrap in run_step.
-    if ctx.rebuild_mod() {
-        mod_build::build_mod(ctx)?;
-    }
-
-    if ctx.rebuild_extension() {
-        ext_build::build_extension(ctx)?;
-    }
-
-    if ctx.args.release {
-        run_step(ctx, "Packaging release", deploy::package_release)?;
-        return Ok(());
-    }
-
-    if !ctx.args.start_server() && !ctx.args.update_arma() {
-        if !ctx.rebuild_mod() && !ctx.rebuild_extension() {
-            let dim = display::color::DIM;
-            println!(
-                "  {}",
-                "Nothing to build.".truecolor(dim.0, dim.1, dim.2).italic()
-            );
+        // Multi-spinner steps handle their own output — don't wrap in run_step.
+        if ctx.rebuild_mod() {
+            mod_build::build_mod(ctx)?;
         }
-        return Ok(());
+
+        if ctx.rebuild_extension() {
+            ext_build::build_extension(ctx)?;
+        }
+
+        if ctx.args.release {
+            run_step(ctx, "Packaging release", deploy::package_release)?;
+            return Ok(());
+        }
+
+        if !ctx.args.start_server() && !ctx.args.update_arma() {
+            if !ctx.rebuild_mod() && !ctx.rebuild_extension() {
+                let dim = display::color::DIM;
+                println!(
+                    "  {}",
+                    "Nothing to build.".truecolor(dim.0, dim.1, dim.2).italic()
+                );
+            }
+            return Ok(());
+        }
     }
 
     // --- Orchestration phase (requires Docker) ---
@@ -152,7 +159,7 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
     }
 
     // The Arma install is shared by every container, so one update covers all of them.
-    if server::needs_arma_update(&contexts[0]) {
+    if !start_only && server::needs_arma_update(&contexts[0]) {
         run_instance_step(&contexts[0], "Updating Arma", server::update_arma)?;
     }
 
@@ -163,12 +170,19 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
     for ictx in &contexts {
         run_instance_step(ictx, "Stopping server", server::kill_arma)?;
         run_instance_step(ictx, "Cleaning logs", server::clean_logs)?;
-        run_instance_step(ictx, "Preparing server mod", server_mod::prepare_server_mod)?;
-        run_instance_step(ictx, "Ensuring database", database::ensure_database)?;
-        run_instance_step(ictx, "Seeding database", database::seed_database)?;
-        run_instance_step(ictx, "Deploying", deploy::deploy)?;
+
+        // Every one of these writes to the server. Deploying is the loud one, since it empties @esm before
+        // uploading, but the server mod and the database seed replace state too.
+        if !start_only {
+            run_instance_step(ictx, "Preparing server mod", server_mod::prepare_server_mod)?;
+            run_instance_step(ictx, "Ensuring database", database::ensure_database)?;
+            run_instance_step(ictx, "Seeding database", database::seed_database)?;
+            run_instance_step(ictx, "Deploying", deploy::deploy)?;
+        }
+
         run_instance_step(ictx, "Starting server", server::start_server)?;
 
+        // Kept: it only watches for a key the bot publishes, so a server whose key was rotated can still connect.
         keys::start_key_exchange(ictx)?;
     }
 

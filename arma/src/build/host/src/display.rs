@@ -50,7 +50,11 @@ pub fn print_header(ctx: &BuildContext) {
         queue_parts.push(&esm_ext);
         queue_parts.push(&upd_ext);
     }
-    let queue_str = if queue_parts.is_empty() {
+    // The queue describes what this run will build, so a run that builds nothing says so rather than listing what
+    // it would have built.
+    let queue_str = if ctx.args.start_only() {
+        "start only, nothing built or deployed".to_string()
+    } else if queue_parts.is_empty() {
         "none".to_string()
     } else {
         queue_parts.join(", ")

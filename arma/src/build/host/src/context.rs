@@ -83,6 +83,14 @@ pub struct Args {
     #[arg(short, long)]
     start_server: bool,
 
+    /// Start the server and nothing else: no build, no deploy, no database work.
+    ///
+    /// Every file on the server is left exactly as it is, which is what makes it useful for testing something
+    /// staged by hand. A normal start redeploys @esm, and that would put back the config.yml and version records
+    /// the test just set up.
+    #[arg(long)]
+    start_only: bool,
+
     /// Which server to run, by its ESM server_id (see `instances` in config.yml). Defaults to the first entry.
     #[arg(long)]
     server_id: Option<String>,
@@ -142,8 +150,16 @@ impl Args {
         self.update
     }
 
+    /// Whether this run ends with a running server.
+    ///
+    /// `--start-only` implies it: skipping the build is about what happens on the way there, not about whether the
+    /// server comes up at the end.
     pub fn start_server(&self) -> bool {
-        self.start_server
+        self.start_server || self.start_only
+    }
+
+    pub fn start_only(&self) -> bool {
+        self.start_only
     }
 
     pub fn has_key_file(&self) -> bool {
