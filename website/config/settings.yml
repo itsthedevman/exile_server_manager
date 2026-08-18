@@ -8,7 +8,7 @@
 #
 
 # ESM Arma mod version the website advertises (download links, /about page).
-mod_version: "2.0.2"
+mod_version: "2.0.3"
 
 # Discord OAuth credentials for the "Sign in with Discord" flow. Required -
 # define real values in settings.local.yml (dev) or the production overlay.
@@ -40,10 +40,5 @@ nats:
   # Per-request timeout (seconds). On expiry, ESM::Service::API raises Unreachable.
   request_timeout: 2
 
-  # HMAC-SHA256 key used to sign the wire envelope on every RPC. The website
-  # signs; the bot verifies with the same value. The value below is a committed
-  # dev seed so contributors can run both sides locally without extra setup.
-  # IMPORTANT: production MUST override this in its settings overlay with a
-  # fresh random secret (e.g. `openssl rand -hex 32`). Keep it identical on
-  # both website and bot or every request rejects with signature_invalid.
+  # HMAC-SHA256 key used to sign the wire envelope on every RPC.
   shared_secret: "0bbb8d3b285597fafaa4eced7cdeba4e5d1a1758de9cd9bec49f92281627714c"
