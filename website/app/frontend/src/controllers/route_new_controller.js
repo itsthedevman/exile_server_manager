@@ -3,7 +3,6 @@ import $ from "../helpers/cash_dom";
 import * as R from "ramda";
 import CardSelector from "../helpers/card_selector";
 import { onModalHidden } from "../helpers/modals";
-import axios from "axios";
 import throttle from "lodash/throttle";
 import Validate from "../helpers/validator";
 import { disableSubmitOnEnter, Serializer } from "../helpers/forms";
@@ -321,12 +320,20 @@ export default class extends ApplicationController {
       return;
     }
 
-    axios
-      .get(`/communities/${communityID}/channels`, {
-        params: { user: true, slim_select: true },
-      })
+    const params = new URLSearchParams({ user: true, slim_select: true });
+
+    fetch(`/communities/${communityID}/channels?${params}`, {
+      headers: { Accept: "application/json" },
+    })
       .then((response) => {
-        this.channels[communityID] = response.data.content.channels;
+        if (!response.ok) {
+          throw new Error(`${response.status} ${response.statusText}`);
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        this.channels[communityID] = data.content.channels;
         this.setSlimData(channelElem, this.channels[communityID]);
         this.enableSlim(channelElem);
       })

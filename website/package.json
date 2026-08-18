@@ -2,7 +2,6 @@
   "name": "app",
   "private": true,
   "devDependencies": {
-    "esbuild": "^0.27.2",
     "vite": "^8.0.0",
     "vite-plugin-rails": "^0.5.0",
     "vite-plugin-ruby": "^5.2.0"
@@ -18,7 +17,6 @@
     "@lezer/highlight": "^1.2.3",
     "@popperjs/core": "^2.11.8",
     "autoprefixer": "^10.4.24",
-    "axios": "^1.13.4",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "cash-dom": "^8.1.5",

@@ -29,15 +29,6 @@ group :development do
   gem "rubocop-rails"                     # Rails-specific cops
   gem "rubocop-rspec"                     # RSpec best practices
 
-  # === Deployment ===
-  gem "capistrano", require: false
-  gem "capistrano-asdf", require: false
-  gem "capistrano-bundler", require: false
-
-  # SSH dependencies for Capistrano
-  gem "ed25519", require: false
-  gem "bcrypt_pbkdf", require: false
-
   # === Security & Dependencies ===
   gem "bundle-audit"                      # Security vulnerability scanner
   gem "bundler"                           # Dependency management

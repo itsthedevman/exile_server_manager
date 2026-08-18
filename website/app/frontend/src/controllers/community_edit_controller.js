@@ -61,7 +61,7 @@ export default class extends ApplicationController {
           rule: "ajax",
           url: this.communityIdCheckPathValue,
           params: (value) => ({ id: value }),
-          responseHandler: (response) => response.data.available,
+          responseHandler: (data) => data.available,
           cache: true,
           errorMessage: "Community ID already exists",
         },

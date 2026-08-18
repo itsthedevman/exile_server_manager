@@ -1,7 +1,6 @@
 import $ from "cash-dom";
 import * as R from "ramda";
 import { debounce } from "lodash";
-import axios from "axios";
 
 export default class Validator {
   constructor(form, options = {}) {
@@ -258,26 +257,36 @@ export default class Validator {
 
   async #performAjaxValidation(value, rule) {
     try {
-      const config = {
-        url: rule.url,
-        method: rule.method || "GET",
+      const method = (rule.method || "GET").toUpperCase();
+      const paramData = rule.params ? rule.params(value) : { value };
+
+      const url = new URL(rule.url, window.location.origin);
+      const init = {
+        method,
+        headers: { Accept: "application/json" },
         ...rule.config,
       };
 
-      const isGet = config.method.toUpperCase() === "GET";
-      const paramData = rule.params ? rule.params(value) : { value };
-
-      if (isGet) {
-        config.params = paramData;
+      if (method === "GET") {
+        url.search = new URLSearchParams(paramData).toString();
       } else {
-        config.data = rule.data ? rule.data(value) : paramData;
+        init.headers = { ...init.headers, "Content-Type": "application/json" };
+        init.body = JSON.stringify(rule.data ? rule.data(value) : paramData);
       }
 
-      const response = await axios(config);
+      const response = await fetch(url, init);
+
+      // fetch resolves on 4xx and 5xx, so a failed lookup has to be turned into a throw by hand or it reads as a
+      // successful validation returning undefined.
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
 
       return rule.responseHandler
-        ? rule.responseHandler(response)
-        : response.data === true || response.data.valid === true;
+        ? rule.responseHandler(data)
+        : data === true || data.valid === true;
     } catch (error) {
       console.error("AJAX validation failed:", error);
       return false;
