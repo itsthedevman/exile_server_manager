@@ -206,7 +206,7 @@ module ESM
         .select(&:exist?)
         .each { |path| load path }
 
-      if env.development?
+      if env.development? && !bare
         # Seed the server tokens into redis so the dev TCP listener can validate local Arma servers without
         # waiting for a real handshake. Each server gets its own slot, keyed by server_id, so that several
         # running at once each pick up their own key instead of racing for one. The unnamespaced slot stays
