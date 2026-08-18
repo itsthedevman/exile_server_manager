@@ -87,7 +87,7 @@ try
 		format[
 			"setPlayerMoney:%1:%2",
 			_playerMoney,
-			_playerObject getVariable ["ExileDatabaseID", 0]
+			_playerObject getVariable ["ExileDatabaseID", -1]
 		] call ExileServer_system_database_query_fireAndForget;
 
 		_receipt pushBack [localize!("Reward_PlayerPoptabs"), _rewardMoney];
