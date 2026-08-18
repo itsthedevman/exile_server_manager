@@ -6,7 +6,7 @@
 //! The extension exposes one command — `check_update` — which is called from
 //! SQF during `preInit` before `exile_server_manager` loads `esm.dll/.so`.
 
-use arma_rs::{arma, Extension};
+use arma_rs::{Extension, arma};
 use lazy_static::lazy_static;
 use updater_lib::config::Config;
 
@@ -21,7 +21,7 @@ lazy_static! {
 #[arma]
 pub fn init() -> Extension {
     if !cfg!(test) {
-        updater_lib::logging::initialize(&CONFIG.log_path);
+        updater_lib::logging::initialize(&CONFIG.updater_log_path);
     }
 
     lazy_static::initialize(&CONFIG);

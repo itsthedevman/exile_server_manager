@@ -1,8 +1,8 @@
 //! File logging shared by the extension and the CLI.
 //!
-//! Both write to the path in `config.log_path` so one file tells the whole story of a server's updates, whether a
-//! component arrived during boot or because an operator asked for it. Splitting them across two destinations means
-//! answering "what happened to this server" requires knowing which half to ask first.
+//! Both write to the path in `config.updater_log_path` so one file tells the whole story of a server's updates,
+//! whether a component arrived during boot or because an operator asked for it. Splitting them across two
+//! destinations means answering "what happened to this server" requires knowing which half to ask first.
 
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config as LogConfig, Root};

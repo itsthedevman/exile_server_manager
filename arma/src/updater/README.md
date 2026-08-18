@@ -99,9 +99,14 @@ A missing file, a missing key, or a parse error all fall back to defaults, so a 
 | `updater_enabled` | `true` | `false` returns before any network request is made. |
 | `updater_url` | `https://esmbot.com/updates/arma/versions.json` | The `.sig` is fetched from the same path plus `.sig`. |
 | `updater_timeout_ms` | `800` | Shared deadline across the whole boot-check network path. |
-| `log_path` | `@esm/log/updater.log` | |
+| `updater_log_path` | `@esm/log/updater.log` | |
 
-`updater_enabled` is the one an owner sets from the website's server configuration page.
+`updater_enabled`, `updater_timeout_ms`, and `updater_log_path` are set from the website's server configuration
+page, and the generated `config.yml` is what carries them to the server.
+`updater_url` is deliberately not offered there: the only address that works is the compiled default, so the
+setting has no use beyond silently stopping a server from updating.
+It stays readable from `config.yml` because `bin/updater_tester` writes it, and the CLI's `--manifest-url` is the
+supported way to point a one-off run somewhere else.
 
 ## Installed versions
 

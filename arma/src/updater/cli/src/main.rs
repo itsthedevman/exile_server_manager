@@ -130,7 +130,9 @@ fn warn_on_custom_key() {
         "warning: this updater verifies against a {}.",
         updater_lib::verification_key_label()
     );
-    eprintln!("         It will not accept official ESM releases. Use an official build on a live server.");
+    eprintln!(
+        "         It will not accept official ESM releases. Use an official build on a live server."
+    );
 }
 
 /// Settle on the server root before anything reads a path.
@@ -157,7 +159,7 @@ fn enter_server_root(server_root: Option<String>) -> Result<(), Box<dyn std::err
 
     if is_server_root(Path::new(".")) {
         // Only now does the configured log path point where it should.
-        updater_lib::logging::initialize(&updater_lib::config::Config::new().log_path);
+        updater_lib::logging::initialize(&updater_lib::config::Config::new().updater_log_path);
         return Ok(());
     }
 
@@ -245,7 +247,10 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             Ok(0)
         }
 
-        Commands::Check { manifest_url, server_root } => {
+        Commands::Check {
+            manifest_url,
+            server_root,
+        } => {
             enter_server_root(server_root)?;
 
             let outcome = Updater::run_check(manifest_url, &running_version())?;
@@ -281,8 +286,7 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             enter_server_root(server_root)?;
 
             let selection: UpdateSelection = target.into();
-            let updated =
-                Updater::run_cli_update(selection, manifest_url, &running_version())?;
+            let updated = Updater::run_cli_update(selection, manifest_url, &running_version())?;
             for comp in &updated {
                 // The library already logged this component's trail; stdout is for the operator watching.
                 println!(
@@ -296,14 +300,14 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
             Ok(0)
         }
 
-        Commands::Install { manifest_url, server_root } => {
+        Commands::Install {
+            manifest_url,
+            server_root,
+        } => {
             enter_server_root(server_root)?;
 
-            let updated = Updater::run_cli_update(
-                UpdateSelection::All,
-                manifest_url,
-                &running_version(),
-            )?;
+            let updated =
+                Updater::run_cli_update(UpdateSelection::All, manifest_url, &running_version())?;
             for comp in &updated {
                 // The library already logged this component's trail; stdout is for the operator watching.
                 println!(

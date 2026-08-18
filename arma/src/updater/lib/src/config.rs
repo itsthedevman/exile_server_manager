@@ -31,9 +31,9 @@ pub struct Config {
     pub updater_timeout_ms: u64,
 
     /// Path to the updater log file.
-    /// Defaults to `@esm/log/esm_updater.log` relative to cwd.
-    #[serde(default = "default_log_path")]
-    pub log_path: String,
+    /// Defaults to `@esm/log/updater.log` relative to cwd.
+    #[serde(default = "default_updater_log_path")]
+    pub updater_log_path: String,
 }
 
 impl Default for Config {
@@ -42,7 +42,7 @@ impl Default for Config {
             updater_enabled: default_updater_enabled(),
             updater_url: default_updater_url(),
             updater_timeout_ms: default_updater_timeout_ms(),
-            log_path: default_log_path(),
+            updater_log_path: default_updater_log_path(),
         }
     }
 }
@@ -59,7 +59,7 @@ fn default_updater_timeout_ms() -> u64 {
     800
 }
 
-fn default_log_path() -> String {
+fn default_updater_log_path() -> String {
     match std::env::current_dir() {
         Ok(mut path) => {
             path.push("@esm");
