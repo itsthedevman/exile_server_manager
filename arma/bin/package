@@ -158,6 +158,21 @@ if [[ "$skip_updater" == false ]]; then
 fi
 
 ##################################
+# Take the build machine out of the artifacts.
+#
+# The nix toolchain wraps the linker to record where its own libraries live, which is correct here and meaningless
+# on a server: the RPATH names this checkout and a handful of store paths, none of which exist anywhere else. The
+# loader skips what it cannot find, so nothing has ever broken, but every release has carried a local filesystem
+# path in a public download.
+#
+# Safe because nothing here needs a path to be found. Both extensions declare only libgcc_s, libm, libc, and the
+# loader itself, all of which resolve from the default search path.
+for artifact in "$release_dir"/@esm/*.so; do
+    [[ -e "$artifact" ]] || continue
+    run_command patchelf --remove-rpath "$artifact"
+done
+
+##################################
 # CLI
 if [[ "$skip_updater" == false ]]; then
     echo_step "Building esm_updater CLI (Linux)"
@@ -166,6 +181,18 @@ if [[ "$skip_updater" == false ]]; then
     run_command mkdir -p $release_dir/@esm/bin
     run_command cp \
         target/x86_64-unknown-linux-gnu/release/esm_updater \
+        $release_dir/@esm/bin/esm_updater
+
+    # Built here, run anywhere. The toolchain bakes in an ELF interpreter under /nix/store and an RPATH pointing at
+    # this checkout, so as shipped the binary dies with "required file not found" on every server that is not this
+    # machine, and carries a local filesystem path into a public download on the way. /lib64 is where every glibc
+    # distro keeps its loader, and libc and libgcc_s resolve from the default search path without any RPATH help.
+    #
+    # Only the CLI needs this. The extensions are shared objects with no interpreter of their own, loaded by
+    # whatever ld.so the server already runs.
+    run_command patchelf \
+        --set-interpreter /lib64/ld-linux-x86-64.so.2 \
+        --remove-rpath \
         $release_dir/@esm/bin/esm_updater
 
     if [[ "$local_build" == false ]]; then
