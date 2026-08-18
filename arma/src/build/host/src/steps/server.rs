@@ -22,7 +22,10 @@ const HEARTBEAT_INTERVAL_SECS: u64 = 5;
 const HEARTBEAT_STALE_SECS: u64 = 15;
 const HEARTBEAT_POLL_SECS: u64 = 3;
 
-/// Name prefix shared by every server's container, and so the way to spot one whose config entry is gone.
+/// Name prefix shared by every server's container, and so the way to spot one this build should be managing.
+///
+/// Matched unanchored on purpose. An interrupted `docker compose up` leaves the container it was replacing
+/// renamed to `<id prefix>_<name>`, which still contains this but no longer starts with it.
 const CONTAINER_PREFIX: &str = "ESM_ARMA_";
 
 /// Touch the heartbeat file in the container on a loop until the process exits.
@@ -92,11 +95,17 @@ pub fn ensure_container(ictx: &InstanceContext) -> BuildResult {
     )))
 }
 
-/// Remove containers whose server is no longer declared in config.yml.
+/// Remove every ESM container that no configured server answers to.
 ///
-/// Dropping an `instances` entry otherwise leaves its container behind still holding its published ports, so
-/// the next server to claim that range collides with a server nobody remembers configuring. Only containers
-/// are removed: the host-side volumes stay, so restoring the entry picks its state back up.
+/// Two ways one gets there. Dropping an `instances` entry leaves its container behind still holding its published
+/// ports, so the next server to claim that range collides with a server nobody remembers configuring. An
+/// interrupted `docker compose up` leaves a container Docker renamed out of the way mid-recreate, which no step
+/// can reach afterwards because every one of them addresses containers by their configured name; the symptom is
+/// the next build timing out waiting for a container that already exists under a name nobody is looking for.
+///
+/// Either way the name is the whole story: a container no configured server answers to cannot be managed, so it
+/// goes. Only containers are removed. The host-side volumes stay, so a server picks its state back up on the next
+/// start, which is what makes clearing one out cheap enough to do unprompted.
 pub fn remove_orphaned_containers(ctx: &mut BuildContext) -> BuildResult {
     let configured: Vec<String> = ctx
         .config
@@ -110,7 +119,7 @@ pub fn remove_orphaned_containers(ctx: &mut BuildContext) -> BuildResult {
             "ps",
             "-a",
             "--filter",
-            &format!("name=^{CONTAINER_PREFIX}"),
+            &format!("name={CONTAINER_PREFIX}"),
             "--format",
             "{{.Names}}",
         ])
