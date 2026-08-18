@@ -102,7 +102,7 @@ try
 				_previousAmount = _playerObject getVariable ["ExileMoney", 0];
 				_playerObject setVariable ["ExileMoney", _previousAmount + _amount, true];
 
-				_databaseID = _playerObject setVariable ["ExileDatabaseID", -1];
+				_databaseID = _playerObject getVariable ["ExileDatabaseID", -1];
 			}
 			else
 			{
