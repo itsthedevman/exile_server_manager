@@ -918,6 +918,100 @@ fn test_cli_update_rejects_a_manifest_not_signed_by_the_production_key() {
 }
 
 // ---------------------------------------------------------------------------
+// Test: the updater's own components install where the server loads them from.
+//
+// Both used to land on filenames nothing reads, so an update downloaded the right bytes, verified them, recorded
+// the new version, and left the server running the old files with nothing to say so.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
+    let extension = b"updater-extension-2.1.0".to_vec();
+    let extension_sha = sha256_hex(&extension);
+    let pbo = b"updater-pbo-2.1.0".to_vec();
+    let pbo_sha = sha256_hex(&pbo);
+
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    let port = free_port();
+    let base_url = format!("http://127.0.0.1:{port}");
+
+    // Every platform is offered at once, the way a published manifest does it, so the assertion below is about
+    // which one this build chose rather than which one the manifest happened to carry.
+    let manifest = format!(
+        r#"{{
+          "extension_updater": {{
+            "version": "2.1.0",
+            "artifacts": {{
+              "linux-x64":   {{"url": "{base_url}/esm_updater_x64.so",  "sha256": "{extension_sha}"}},
+              "linux-x86":   {{"url": "{base_url}/esm_updater.so",      "sha256": "{extension_sha}"}},
+              "windows-x64": {{"url": "{base_url}/esm_updater_x64.dll", "sha256": "{extension_sha}"}},
+              "windows-x86": {{"url": "{base_url}/esm_updater.dll",     "sha256": "{extension_sha}"}}
+            }}
+          }},
+          "mod_updater": {{
+            "version": "2.1.0",
+            "artifacts": {{"any": {{"url": "{base_url}/esm_updater.pbo", "sha256": "{pbo_sha}"}}}}
+          }}
+        }}"#
+    );
+
+    let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
+
+    let server = MockServer::on_port(
+        port,
+        vec![
+            ("/versions.json".into(), manifest.as_bytes().to_vec()),
+            ("/versions.json.sig".into(), sig),
+            ("/esm_updater_x64.so".into(), extension.clone()),
+            ("/esm_updater.so".into(), extension.clone()),
+            ("/esm_updater_x64.dll".into(), extension.clone()),
+            ("/esm_updater.dll".into(), extension.clone()),
+            ("/esm_updater.pbo".into(), pbo.clone()),
+        ],
+    );
+    write_config(&dir, &format!("{}/versions.json", server.base_url));
+
+    let updated = with_cwd(&dir, || {
+        test_key::set(&raw_pub);
+        let result = Updater::run_cli_update(
+            UpdateSelection::Updater,
+            Some(format!("{}/versions.json", server.base_url)),
+            &Version::new(2, 1, 0),
+        );
+        test_key::clear();
+        result
+    })
+    .unwrap();
+
+    assert_eq!(updated.len(), 2, "both updater components should have installed");
+
+    let expected_extension = if cfg!(target_os = "windows") {
+        if cfg!(target_pointer_width = "64") {
+            "esm_updater_x64.dll"
+        } else {
+            "esm_updater.dll"
+        }
+    } else if cfg!(target_pointer_width = "64") {
+        "esm_updater_x64.so"
+    } else {
+        "esm_updater.so"
+    };
+
+    assert_eq!(
+        std::fs::read(dir.join("@esm").join(expected_extension)).unwrap(),
+        extension,
+        "the updater extension belongs at the filename Arma resolves, not one only the installer knows"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/addons/esm_updater.pbo")).unwrap(),
+        pbo,
+        "the updater addon belongs in @esm/addons, where Arma looks for PBOs"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Test: no record on disk → every component reads as 0.0.0.
 // ---------------------------------------------------------------------------
 #[test]

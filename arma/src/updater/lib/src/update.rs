@@ -586,18 +586,22 @@ fn update_esm_extension(
     })
 }
 
+/// Install the updater's own Arma extension over the copy the server loads at boot.
+///
+/// The destination has to be the exact filename Arma resolves `"esm_updater" callExtension` to, or the download
+/// succeeds, the version is recorded, and the next boot still runs the old binary.
 fn update_updater_extension(
     comp: &ComponentVersion,
     deadline: Instant,
 ) -> Result<UpdatedComponent, UpdaterError> {
     let started_at = Instant::now();
-    let dest = Path::new("@esm/esm_updater_ext");
+    let dest = Path::new("@esm").join(updater_extension_filename());
     let temp = Path::new("@esm/temp/ext_updater");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
     let artifact = artifact_for(comp)?;
     download_to(&artifact.url, temp, deadline)?;
     verify_sha256(temp, &artifact.sha256)?;
-    swap_file(temp, dest)?;
+    swap_file(temp, &dest)?;
     record_installed(Component::ExtensionUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -609,14 +613,19 @@ fn update_updater_extension(
     })
 }
 
+/// Install the updater's own addon into the folder Arma loads PBOs from.
+///
+/// `@esm/addons` is created when it is missing, since updating only the updater is a valid thing to ask for on an
+/// install that has nothing else yet.
 fn update_mod_updater_pbo(
     comp: &ComponentVersion,
     deadline: Instant,
 ) -> Result<UpdatedComponent, UpdaterError> {
     let started_at = Instant::now();
-    let dest = Path::new("@esm/esm_mod_updater.pbo");
+    let dest = Path::new("@esm/addons/esm_updater.pbo");
     let temp = Path::new("@esm/temp/mod_updater.pbo");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
+    std::fs::create_dir_all(Path::new("@esm/addons"))?;
     let artifact = artifact_for(comp)?;
     download_to(&artifact.url, temp, deadline)?;
     verify_sha256(temp, &artifact.sha256)?;
@@ -633,6 +642,24 @@ fn update_mod_updater_pbo(
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
+
+/// Return the platform-appropriate filename for the updater's own Arma extension.
+///
+/// Named to match what `bin/package` ships and what the manifest offers per platform, since this is the file the
+/// `esm_updater` addon calls into during `preInit`.
+fn updater_extension_filename() -> &'static str {
+    if cfg!(target_os = "windows") {
+        if cfg!(target_pointer_width = "64") {
+            "esm_updater_x64.dll"
+        } else {
+            "esm_updater.dll"
+        }
+    } else if cfg!(target_pointer_width = "64") {
+        "esm_updater_x64.so"
+    } else {
+        "esm_updater.so"
+    }
+}
 
 /// Return the platform-appropriate filename for the ESM Arma extension.
 fn esm_extension_filename() -> &'static str {
