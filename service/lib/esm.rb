@@ -215,7 +215,7 @@ module ESM
         servers = Server.all.to_a
 
         servers.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
-        redis.set("server_key", servers.first.token.to_json) if servers.any?
+        redis.set("server_key", Server.find_by(server_id: "esm_malden").token.to_json) if servers.any?
       end
 
       SignalHandler.start unless env.test?
