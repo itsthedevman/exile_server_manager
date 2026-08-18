@@ -38,6 +38,14 @@ version contract and are anchored by date. Year format is Holocene.
 
 ---
 
+## @esm v2.0.3 — 12026-08-18
+
+### Fixed
+
+- Adjusting an online player's poptabs with `/server admin modify_player` stopped that player from saving for the rest of their session. The poptabs adjustment itself never saved either
+
+---
+
 ## @esm v2.0.2 — 12026-07-28
 
 ### Removed
@@ -65,6 +73,18 @@ version contract and are anchored by date. Year format is Holocene.
 ### Changed
 
 - Fixed client reconnection interval calculation
+
+---
+
+## 12026-08-18
+
+### Changed
+
+- **(core)** `/server admin modify_player` refuses the poptabs action on servers below @esm v2.0.3, naming the version that server is running
+
+### Security
+
+- **(website, service)** Updated the Ruby and JavaScript dependencies, clearing every published advisory across both
 
 ---
 
