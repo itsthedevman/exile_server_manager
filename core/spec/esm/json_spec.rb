@@ -11,7 +11,7 @@ RSpec.describe ESM::JSON do
     end
 
     it "parses JSON arrays" do
-      result = described_class.parse('[1, 2, 3]')
+      result = described_class.parse("[1, 2, 3]")
 
       expect(result).to be_an(Array)
       expect(result).to eq([1, 2, 3])

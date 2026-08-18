@@ -67,12 +67,21 @@ module ESM
         in_lobby = @lobby.delete(client)
         was_connected = !@connections.delete(client.public_id).nil?
 
+        from =
+          if in_lobby
+            :lobby
+          elsif was_connected
+            :connections
+          else
+            :untracked
+          end
+
         info!(
           state: :removed,
           address: client.address,
           public_id: client.public_id,
           server_id: client.server_id,
-          from: (in_lobby ? :lobby : (was_connected ? :connections : :untracked)),
+          from:,
           lobby_size: @lobby.size,
           connection_size: @connections.size
         )

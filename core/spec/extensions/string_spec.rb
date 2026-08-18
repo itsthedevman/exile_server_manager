@@ -81,7 +81,7 @@ RSpec.describe String do
     end
   end
 
-  describe "#to_deep_h" do 
+  describe "#to_deep_h" do
     describe "with invalid JSON" do
       it "returns nil" do
         expect("not valid json".to_deep_h).to be_nil

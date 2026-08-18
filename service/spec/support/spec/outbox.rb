@@ -68,7 +68,7 @@ module Spec
 
       loop do
         return true if size >= n
-        
+
         if Time.now >= deadline
           raise "test_outbox#await_size: expected at least #{n} message(s), still at #{size} after #{timeout}s"
         end

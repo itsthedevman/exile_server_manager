@@ -65,7 +65,7 @@ class String
       end
     end
 
-    result = self.parse_json
+    result = parse_json
     return if result.nil?
 
     recursive_convert.call(result)

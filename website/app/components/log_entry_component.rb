@@ -80,12 +80,12 @@ class LogEntryComponent < ApplicationComponent
   end
 
   def territory_operation?(entry = @entry)
-    entry.match?(/PLAYER\s*\(\s*[\w]+\s*\).*?(STOLE A LEVEL|PAID.*RANSOM|PAID.*PROTECT TERRITORY|PURCHASE A TERRITORY FLAG|RESTORED THE FLAG|UPGRADE TERRITORY)/i)
+    entry.match?(/PLAYER\s*\(\s*\w+\s*\).*?(STOLE A LEVEL|PAID.*RANSOM|PAID.*PROTECT TERRITORY|PURCHASE A TERRITORY FLAG|RESTORED THE FLAG|UPGRADE TERRITORY)/i)
   end
 
   def purchase_sale_operation?(entry = @entry)
     # More flexible regex to handle "REMOTE" transactions and weird usernames
-    entry.match?(/PLAYER:\s*\(\s*[\w]+\s*\).*?(PURCHASED|SOLD)/i)
+    entry.match?(/PLAYER:\s*\(\s*\w+\s*\).*?(PURCHASED|SOLD)/i)
   end
 
   def death_message?
@@ -100,7 +100,7 @@ class LogEntryComponent < ApplicationComponent
 
   def parse_territory_operation(entry = @entry)
     case entry
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+STOLE A LEVEL\s+(\d+)\s+FLAG FROM TERRITORY #(\d+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+STOLE A LEVEL\s+(\d+)\s+FLAG FROM TERRITORY #(\d+)/i
       uid, player, level, territory_id = $1, $2, $3, $4
       safe_join([
         player_badge(uid, player),
@@ -112,7 +112,7 @@ class LogEntryComponent < ApplicationComponent
         territory_badge(territory_id)
       ])
 
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS FOR THE RANSOM OF TERRITORY #(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS FOR THE RANSOM OF TERRITORY #(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
       uid, player, amount, territory_id, total = $1, $2, $3, $4, $5
       safe_join([
         player_badge(uid, player),
@@ -126,7 +126,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO PROTECT TERRITORY #(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO PROTECT TERRITORY #(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
       uid, player, amount, territory_id, total = $1, $2, $3, $4, $5
       safe_join([
         player_badge(uid, player),
@@ -140,7 +140,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO PURCHASE A TERRITORY FLAG\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO PURCHASE A TERRITORY FLAG\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
       uid, player, amount, total = $1, $2, $3, $4
       safe_join([
         player_badge(uid, player),
@@ -152,7 +152,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+RESTORED THE FLAG OF TERRITORY #(\d+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+RESTORED THE FLAG OF TERRITORY #(\d+)/i
       uid, player, territory_id = $1, $2, $3
       safe_join([
         player_badge(uid, player),
@@ -162,7 +162,7 @@ class LogEntryComponent < ApplicationComponent
         territory_badge(territory_id)
       ])
 
-    when /PLAYER\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO UPGRADE TERRITORY #(\d+) TO LEVEL\s+(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
+    when /PLAYER\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PAID\s+([\d,]+)\s+POP TABS TO UPGRADE TERRITORY #(\d+) TO LEVEL\s+(\d+)\s*\|\s*PLAYER TOTAL POP TABS:\s*([\d,]+)/i
       uid, player, amount, territory_id, level, total = $1, $2, $3, $4, $5, $6
       safe_join([
         player_badge(uid, player),
@@ -179,7 +179,7 @@ class LogEntryComponent < ApplicationComponent
       ])
 
     # Complex timestamped remote sales with cargo and balance (like line 523)
-    when /\[([^\]]+)\]\s*\[([^\]]+)\]\s*PLAYER:\s*\(\s*([\w]+)\s*\)\s*R NSTR:\d+\s*\(([^)]+)\)\s*REMOTE SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,.e\+]+)\s+POPTABS AND\s+([\d,.e\+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /\[([^\]]+)\]\s*\[([^\]]+)\]\s*PLAYER:\s*\(\s*(\w+)\s*\)\s*R NSTR:\d+\s*\(([^)]+)\)\s*REMOTE SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,.e+]+)\s+POPTABS AND\s+([\d,.e+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       timestamp, thread, uid, player, vehicle, vehicle_id, cargo, price, respect, total = $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
       safe_join([
         content_tag(:span, "[#{timestamp}]", class: "text-muted me-2"),
@@ -209,7 +209,7 @@ class LogEntryComponent < ApplicationComponent
   def parse_purchase_sale(entry = @entry)
     case entry
     # Remote purchase transactions (flexible username matching)
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*.*?\s+REMOTE\s+PURCHASED ITEM\s+(.+?)\s+FOR\s+([\d,.e\+]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*.*?\s+REMOTE\s+PURCHASED ITEM\s+(.+?)\s+FOR\s+([\d,.e+]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, item, price, total = $1, $2, $3, $4
       # Extract player name from the middle part if we can
       player_name = extract_player_name(entry, uid)
@@ -227,7 +227,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*.*?\s+REMOTE\s+PURCHASED VEHICLE\s+(.+?)\s+FOR\s+([\d,.e\+]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*.*?\s+REMOTE\s+PURCHASED VEHICLE\s+(.+?)\s+FOR\s+([\d,.e+]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, vehicle, price, total = $1, $2, $3, $4
       player_name = extract_player_name(entry, uid)
       safe_join([
@@ -245,7 +245,7 @@ class LogEntryComponent < ApplicationComponent
       ])
 
     # Remote sale transactions
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*.*?\s+REMOTE\s+SOLD ITEM\s+(.+?)\s+FOR\s+([\d,.e\+]+)\s+POPTABS AND\s+([\d,.e\+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*.*?\s+REMOTE\s+SOLD ITEM\s+(.+?)\s+FOR\s+([\d,.e+]+)\s+POPTABS AND\s+([\d,.e+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, item, price, respect, total = $1, $2, $3, $4, $5
       player_name = extract_player_name(entry, uid)
       safe_join([
@@ -265,7 +265,7 @@ class LogEntryComponent < ApplicationComponent
       ])
 
     # Remote sale with cargo (the complex one)
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*.*?\s+REMOTE\s+SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,.e\+]+)\s+POPTABS AND\s+([\d,.e\+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*.*?\s+REMOTE\s+SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,.e+]+)\s+POPTABS AND\s+([\d,.e+]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, vehicle, vehicle_id, cargo, price, respect, total = $1, $2, $3, $4, $5, $6, $7
       player_name = extract_player_name(entry, uid)
       safe_join([
@@ -287,7 +287,7 @@ class LogEntryComponent < ApplicationComponent
       ])
 
     # Regular (non-remote) purchase transactions
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PURCHASED ITEM\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PURCHASED ITEM\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, player, item, price, total = $1, $2, $3, $4, $5
       safe_join([
         player_badge(uid, player),
@@ -301,7 +301,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PURCHASED VEHICLE\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PURCHASED VEHICLE\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, player, vehicle, price, total = $1, $2, $3, $4, $5
       safe_join([
         player_badge(uid, player),
@@ -315,7 +315,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+PURCHASED VEHICLE SKIN\s+(.+?)\s+\((.+?)\)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*(.+?)\s+PURCHASED VEHICLE SKIN\s+(.+?)\s+\((.+?)\)\s+FOR\s+([\d,]+)\s+POPTABS\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, player, skin, vehicle, price, total = $1, $2, $3, $4, $5, $6
       safe_join([
         player_badge(uid, player),
@@ -331,7 +331,7 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+SOLD ITEM\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS AND\s+([\d,]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*(.+?)\s+SOLD ITEM\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS AND\s+([\d,]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
       uid, player, item, price, respect, total = $1, $2, $3, $4, $5, $6
       safe_join([
         player_badge(uid, player),
@@ -347,8 +347,8 @@ class LogEntryComponent < ApplicationComponent
         total_currency(total)
       ])
 
-    when /PLAYER:\s*\(\s*([\w]+)\s*\)\s*(.+?)\s+SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS AND\s+([\d,]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
-      uid, player, vehicle, vehicle_id, cargo, price, respect, total = $1, $2, $3, $4, $5, $6, $7, $8
+    when /PLAYER:\s*\(\s*(\w+)\s*\)\s*(.+?)\s+SOLD ITEM:\s*(.+?)\s*\(ID#\s*(\d+)\)\s*with Cargo\s+(.+?)\s+FOR\s+([\d,]+)\s+POPTABS AND\s+([\d,]+)\s+RESPECT\s*\|\s*PLAYER TOTAL MONEY:\s*([\d,]+)/i
+      uid, player, vehicle, vehicle_id, _, price, respect, total = $1, $2, $3, $4, $5, $6, $7, $8
       safe_join([
         player_badge(uid, player),
         " ",
@@ -542,8 +542,8 @@ class LogEntryComponent < ApplicationComponent
 
   def parse_timestamped_entry
     # Handle complex timestamp formats like [02:55:06:071228 --5:00] [Thread 91468]
-    if @entry.match?(/^\[([^\]]+)\]\s*\[([^\]]+)\]\s*(.+)/)
-      timestamp, thread, message = $1, $2, $3
+    if (parts = @entry.match(/^\[([^\]]+)\]\s*\[([^\]]+)\]\s*(.+)/))
+      timestamp, thread, message = parts.captures
       safe_join([
         content_tag(:span, "[#{timestamp}]", class: "text-muted me-2"),
         content_tag(:span, "[#{thread}]", class: "text-secondary me-2"),

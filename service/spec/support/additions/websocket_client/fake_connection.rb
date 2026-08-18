@@ -76,6 +76,7 @@ class WebsocketClient
     #
     # No-op overrides. The base implementations would touch the Faye connection that we don't have.
     #
-    def ping; end
+    def ping
+    end
   end
 end
