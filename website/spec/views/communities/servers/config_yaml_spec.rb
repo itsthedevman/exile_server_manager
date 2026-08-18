@@ -11,20 +11,22 @@ RSpec.describe "communities/servers/config", type: :view do
     rendered
   end
 
-  # The auto-updater has not shipped. Until it does the key stays out of generated configs, so an owner never sees an
-  # option for something their server cannot do. Omitting it is safe on its own terms: a missing key reads as enabled,
-  # which is the value this would have written.
-  describe "the auto-updater setting" do
-    it "is written when the feature is visible" do
+  # The auto-updater has not shipped. Until it does its keys stay out of generated configs, so an owner never sees
+  # options for something their server cannot do. Omitting them is safe on its own terms: every one of them has a
+  # default the updater falls back to when the key is absent.
+  describe "the auto-updater settings" do
+    let(:updater_keys) { %w[updater_enabled updater_timeout_ms updater_log_path] }
+
+    it "are written when the feature is visible" do
       allow(Rails.env).to receive(:local?).and_return(true)
 
-      expect(config).to include("updater_enabled")
+      expect(config).to include(*updater_keys)
     end
 
-    it "is left out entirely everywhere else" do
+    it "are left out entirely everywhere else" do
       allow(Rails.env).to receive(:local?).and_return(false)
 
-      expect(config).not_to include("updater_enabled")
+      updater_keys.each { |key| expect(config).not_to include(key) }
     end
   end
 

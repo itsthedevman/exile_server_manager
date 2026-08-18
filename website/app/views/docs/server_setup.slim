@@ -290,6 +290,10 @@
                       li Untick <strong>Check for updates on startup</strong>
                       li Your server stays on its current version until you update it yourself
 
+            p.small.text-muted.mb-4
+              | How long the check runs and where it writes its log can both be adjusted on the same settings page,
+                under the toggle. The defaults suit most servers.
+
             .card.bg-dark.border-secondary.mb-4
               .card-body
                 h6.text-light.mb-2
@@ -316,8 +320,9 @@
 
             .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
               p.small.mb-0
-                |> Update activity is recorded in <code>@esm\log\updater.log</code>. If your server is not picking up
-                  new versions, that log will say why.
+                |> Update activity is recorded in <code>@esm\log\updater.log</code>, or wherever you pointed
+                  <strong>Updater Log File Path</strong>. If your server is not picking up new versions, that log
+                  will say why.
 
       / Success Section
       .card.border-success.bg-success.bg-opacity-10

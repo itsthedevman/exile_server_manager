@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_18_181035) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -249,6 +249,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_000000) do
     t.integer "territory_price_per_object", default: 10
     t.integer "territory_upgrade_tax", default: 0
     t.boolean "updater_enabled"
+    t.text "updater_log_path"
+    t.integer "updater_timeout_ms"
     t.index ["deleted_at"], name: "index_server_settings_on_deleted_at"
     t.index ["server_id"], name: "index_server_settings_on_server_id"
   end

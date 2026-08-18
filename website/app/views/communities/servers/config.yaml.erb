@@ -48,9 +48,13 @@
 ##   Linux: "@exileserver"
 ###
 <%= render_setting("server_mod_name", settings) %>
-<%# The auto-updater has not shipped, so the key stays out of generated configs until it does. Omitting it is safe:
-    the updater treats a missing key as enabled, which is the default this would have written anyway. %>
+
+<%# The auto-updater has not shipped, so its keys stay out of generated configs until it does. Omitting them is
+    safe: every one of them has a default the updater falls back to when the key is absent. %>
 <% if Rails.env.local? %>
+#########################
+## Updater Settings
+#########################
 
 ###
 ## Whether the server checks for and installs ESM updates while it boots
@@ -64,6 +68,30 @@
 ## Default: true
 ###
 <%= render_setting("updater_enabled", settings) %>
+
+###
+## How long the startup check may run, in milliseconds
+##
+## Covers the whole check: fetching the version list, verifying it, downloading, and installing. When the time
+## runs out the server finishes starting on the version it already has and tries again on the next boot.
+##
+## Raise this if the updater log shows the check running out of time, which is most likely on a server far away
+## from ESM. Updating by hand has no such limit.
+##
+## Default: 800
+###
+<%= render_setting("updater_timeout_ms", settings) %>
+
+###
+## Where the updater writes its log
+##
+## Records every check, download, and install, from both the startup check and the command line tool. This is
+## separate from logging_path, which is the ESM extension's own log.
+##
+## Default: "@esm/log/updater.log"
+###
+<%= render_setting("updater_log_path", settings) %>
+
 <% end %>
 
 #########################

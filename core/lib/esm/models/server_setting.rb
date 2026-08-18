@@ -21,6 +21,8 @@ module ESM
       exile_logs_search_days
       additional_logs
       updater_enabled
+      updater_timeout_ms
+      updater_log_path
     ].freeze
 
     CONFIG_DEFAULTS = {
@@ -36,7 +38,9 @@ module ESM
       number_locale: "en",
       exile_logs_search_days: 14,
       additional_logs: [],
-      updater_enabled: true
+      updater_enabled: true,
+      updater_timeout_ms: 800,
+      updater_log_path: ""
     }.with_indifferent_access.freeze
 
     # =============================================================================
@@ -160,6 +164,12 @@ module ESM
 
     # Whether the Arma server checks for and installs ESM updates on boot
     attribute :updater_enabled, :boolean, default: true
+
+    # Milliseconds the boot check may spend before it gives up and lets the server finish starting
+    attribute :updater_timeout_ms, :integer, default: 800
+
+    # Updater log file path
+    attribute :updater_log_path, :text, default: nil
 
     ##########################
     # V1
