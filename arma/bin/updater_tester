@@ -207,7 +207,32 @@ function run_serve() {
     echo "the fetch times out rather than refusing. Serve on a port the host already allows."
     echo
 
-    cd "$testbed_root" && exec python3 -m http.server "$port" --bind "$bind"
+    # Not `python3 -m http.server`, which is single-threaded and dies on the first client that drops a
+    # connection: a port probe, an updater that times out, a browser tab closed mid-download. It exits with a
+    # ConnectionResetError traceback, and every later fetch then fails as a refused connection, which reads as
+    # a broken updater rather than as a server that is no longer there.
+    cd "$testbed_root" || exit 1
+
+    exec python3 -c '
+import sys
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+
+class Server(ThreadingHTTPServer):
+    daemon_threads = True
+    # A client hanging up is routine here and says nothing about the manifest. Swallow it rather than let the
+    # default handler print a traceback that looks like the server broke.
+    def handle_error(self, request, client_address):
+        kind = sys.exc_info()[0]
+        if kind is not None and issubclass(kind, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
+            return
+        super().handle_error(request, client_address)
+
+
+bind, port = sys.argv[1], int(sys.argv[2])
+Server((bind, port), partial(SimpleHTTPRequestHandler, directory=".")).serve_forever()
+' "$bind" "$port"
 }
 
 ##################################
