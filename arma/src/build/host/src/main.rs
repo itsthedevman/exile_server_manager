@@ -184,6 +184,9 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
         // Every one of these writes to the server. Deploying is the loud one, since it empties @esm before
         // uploading, but the server mod and the database seed replace state too.
         if !start_only {
+            // Before the server mod, because it is the slow one and a missing @exile is the failure most likely
+            // to be mistaken for a broken build.
+            server_mod::sync_shared_content(ictx)?;
             run_instance_step(ictx, "Preparing server mod", server_mod::prepare_server_mod)?;
             run_instance_step(ictx, "Ensuring database", database::ensure_database)?;
             run_instance_step(ictx, "Seeding database", database::seed_database)?;
