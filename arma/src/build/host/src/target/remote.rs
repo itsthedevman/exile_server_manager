@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use crate::{
     config::{Config, Instance, WindowsConfig},
+    context::BuildArch,
     error::BuildError,
 };
 
@@ -21,7 +22,24 @@ const SSH_OPTIONS: &[&str] = &[
     "ConnectTimeout=10",
     "-o",
     "LogLevel=ERROR",
+    // One connection, reused. A build makes hundreds of round trips and the heartbeat adds one every few
+    // seconds for as long as the server runs; without multiplexing each is a full key exchange, which costs
+    // more than everything it carries. The socket is dropped shortly after the last user goes away.
+    "-o",
+    "ControlMaster=auto",
+    "-o",
+    "ControlPath=/tmp/esm-build-%r@%h:%p",
+    "-o",
+    "ControlPersist=60",
 ];
+
+// Mirrors the container's bookkeeping. Same mechanism, same meaning, different spelling: the build refreshes
+// the heartbeat while it lives, and a watchdog on the far side kills the server once it goes stale.
+const HEARTBEAT_FILE: &str = "C:\\temp\\esm_heartbeat";
+const SERVER_PID_FILE: &str = "C:\\temp\\esm_server.pid";
+const WATCHDOG_PID_FILE: &str = "C:\\temp\\esm_watchdog.pid";
+const HEARTBEAT_STALE_SECS: u64 = 15;
+const HEARTBEAT_POLL_SECS: u64 = 3;
 
 /// Target implementation for a Windows host reached over SSH.
 ///
@@ -237,6 +255,134 @@ impl super::Target for RemoteTarget {
         Ok(())
     }
 
+    fn install_arma(&self, steam_user: &str, steam_password: &str) -> Result<(), BuildError> {
+        // SteamCMD is expected to already be installed. The Linux container bootstraps its own because the image
+        // ships without one; a Windows host is set up by hand, and silently downloading an installer onto it is
+        // a bigger liberty than saying where to put one.
+        let steamcmd = self.steamcmd_path.join("steamcmd.exe");
+
+        if !self.exists(&steamcmd)? {
+            return Err(BuildError::Remote(format!(
+                "No steamcmd.exe at {}. Install SteamCMD on the Windows host, or point \
+                 `windows.steamcmd_path` in config.yml at where it already lives.",
+                steamcmd.display()
+            )));
+        }
+
+        // force_install_dir has to precede app_update or it is ignored, and the login cannot be anonymous:
+        // 233780 refuses an anonymous app access token and reports it as `Missing configuration`.
+        self.run(&format!(
+            "& {steamcmd} +force_install_dir {server} +login {user} {password} \
+             +app_update 233780 validate +quit",
+            steamcmd = ps_literal(&steamcmd.display().to_string()),
+            server = ps_literal(&self.server_path.display().to_string()),
+            user = ps_literal(steam_user),
+            password = ps_literal(steam_password),
+        ))?;
+
+        Ok(())
+    }
+
+    fn arma_installed(&self, arch: BuildArch) -> bool {
+        self.exists(&self.server_path.join(arma_executable(arch)))
+            .unwrap_or(false)
+    }
+
+    fn kill_arma(&self) -> Result<(), BuildError> {
+        let names = ARMA_PROCESS_NAMES
+            .iter()
+            .map(|name| ps_literal(name))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        // By name rather than by the recorded PID, because a server that outlived its watchdog has no readable
+        // record left and is exactly the one that needs killing.
+        self.run(&format!(
+            "Get-Process -Name {names} -ErrorAction SilentlyContinue | Stop-Process -Force\n\
+             if (Test-Path -LiteralPath {wpid}) {{\n\
+             \x20 Get-Content -LiteralPath {wpid} | ForEach-Object {{ Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }}\n\
+             }}\n\
+             Remove-Item -LiteralPath {hb},{spid},{wpid} -Force -ErrorAction SilentlyContinue",
+            hb = ps_literal(HEARTBEAT_FILE),
+            spid = ps_literal(SERVER_PID_FILE),
+            wpid = ps_literal(WATCHDOG_PID_FILE),
+        ))
+        .ok(); // nothing running is the expected case, not a failure
+
+        Ok(())
+    }
+
+    fn clean_logs(&self) -> Result<(), BuildError> {
+        let profile = self.server_path.join("server_profile");
+
+        self.run(&format!(
+            "Get-ChildItem -LiteralPath {profile} -Include *.log,*.rpt,*.bidmp,*.mdmp,*.txt -Recurse \
+                 -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue\n\
+             Remove-Item -LiteralPath {logs} -Recurse -Force -ErrorAction SilentlyContinue",
+            profile = ps_literal(&profile.display().to_string()),
+            logs = ps_literal(&self.server_path.join("@exileserver").join("logs").display().to_string()),
+        ))
+        .ok(); // best effort: a first run has nothing to clean
+
+        Ok(())
+    }
+
+    fn start_arma(&self, arch: BuildArch) -> Result<(), BuildError> {
+        let exe = self.server_path.join(arma_executable(arch));
+
+        // The watchdog is encoded here and embedded as one base64 token, rather than nested as a quoted string
+        // inside the outer script. Two layers of PowerShell quoting around a script holding both kinds of quote
+        // is the sort of thing that works until an argument changes.
+        let watchdog = Self::encode(&format!(
+            "$target = [int](Get-Content -LiteralPath {spid})\n\
+             while ($true) {{\n\
+             \x20 Start-Sleep -Seconds {poll}\n\
+             \x20 $beat = if (Test-Path -LiteralPath {hb}) {{ (Get-Item -LiteralPath {hb}).LastWriteTimeUtc }} \
+                 else {{ [DateTime]::MinValue }}\n\
+             \x20 if (((Get-Date).ToUniversalTime() - $beat).TotalSeconds -ge {stale}) {{\n\
+             \x20\x20 Stop-Process -Id $target -Force -ErrorAction SilentlyContinue\n\
+             \x20\x20 Remove-Item -LiteralPath {hb},{spid},{wpid} -Force -ErrorAction SilentlyContinue\n\
+             \x20\x20 exit\n\
+             \x20 }}\n\
+             }}",
+            hb = ps_literal(HEARTBEAT_FILE),
+            spid = ps_literal(SERVER_PID_FILE),
+            wpid = ps_literal(WATCHDOG_PID_FILE),
+            poll = HEARTBEAT_POLL_SECS,
+            stale = HEARTBEAT_STALE_SECS,
+        ));
+
+        self.run(&format!(
+            "New-Item -ItemType Directory -Force -Path {profile} | Out-Null\n\
+             New-Item -ItemType Directory -Force -Path (Split-Path -Parent {hb}) | Out-Null\n\
+             Set-Content -LiteralPath {hb} -Value ''\n\
+             $server = Start-Process -FilePath {exe} -ArgumentList {args} -WorkingDirectory {server} \
+                 -PassThru -WindowStyle Hidden\n\
+             Set-Content -LiteralPath {spid} -Value $server.Id\n\
+             $watchdog = Start-Process powershell -WindowStyle Hidden -PassThru \
+                 -ArgumentList '-NoProfile','-EncodedCommand','{watchdog}'\n\
+             Set-Content -LiteralPath {wpid} -Value $watchdog.Id",
+            profile = ps_literal(&self.server_path.join("server_profile").display().to_string()),
+            exe = ps_literal(&exe.display().to_string()),
+            args = ps_literal(&self.server_args),
+            server = ps_literal(&self.server_path.display().to_string()),
+            hb = ps_literal(HEARTBEAT_FILE),
+            spid = ps_literal(SERVER_PID_FILE),
+            wpid = ps_literal(WATCHDOG_PID_FILE),
+        ))?;
+
+        Ok(())
+    }
+
+    fn heartbeat(&self) -> Result<(), BuildError> {
+        self.run(&format!(
+            "Set-Content -LiteralPath {hb} -Value ''",
+            hb = ps_literal(HEARTBEAT_FILE)
+        ))?;
+
+        Ok(())
+    }
+
     fn build_path(&self) -> &Path {
         &self.build_path
     }
@@ -248,6 +394,25 @@ impl super::Target for RemoteTarget {
     fn server_args(&self) -> &str {
         &self.server_args
     }
+}
+
+/// Process names to stop, without the `.exe`, which is how `Get-Process` names them.
+const ARMA_PROCESS_NAMES: &[&str] = &["arma3server", "arma3server_x64"];
+
+fn arma_executable(arch: BuildArch) -> &'static str {
+    match arch {
+        BuildArch::X32 => "arma3server.exe",
+        BuildArch::X64 => "arma3server_x64.exe",
+    }
+}
+
+/// Wrap a value as a PowerShell single-quoted string.
+///
+/// Single quotes because PowerShell expands `$` and backticks inside double-quoted ones, and paths and launch
+/// arguments hold both. Doubling is how a literal single quote is written inside one, which is the only escape
+/// the form has and the only one needed.
+fn ps_literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
 }
 
 /// Assemble the launch arguments, falling back to nothing rather than to the Linux ones.

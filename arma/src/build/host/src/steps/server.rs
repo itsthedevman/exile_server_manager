@@ -1,26 +1,19 @@
 use std::{
     process::{Command, Stdio},
+    sync::Arc,
     thread,
     time::Duration,
 };
 
 use crate::{
-    context::{BuildArch, BuildContext, BuildOS, InstanceContext},
+    context::{BuildContext, BuildOS, InstanceContext},
     error::{BuildError, BuildResult},
-    ARMA_PATH, LINUX_EXES,
+    target::Target,
 };
 
-// Heartbeat reaper. The host process touches HEARTBEAT_FILE every few seconds
-// (spawn_heartbeat); a watchdog inside the container kills the server when
-// those touches go stale. This couples the server's life to the host process
-// no matter how the host dies — Ctrl-C, a closed terminal, even an uncatchable
-// SIGKILL — so arma3server can't be orphaned inside the persistent container.
-const HEARTBEAT_FILE: &str = "/tmp/esm_heartbeat";
-const SERVER_PID_FILE: &str = "/tmp/esm_server.pid";
-const WATCHDOG_PID_FILE: &str = "/tmp/esm_watchdog.pid";
+/// How often the build tells the target it is still alive. The staleness threshold it is measured against
+/// belongs to the watchdog, and so lives with the target that spawns one.
 const HEARTBEAT_INTERVAL_SECS: u64 = 5;
-const HEARTBEAT_STALE_SECS: u64 = 15;
-const HEARTBEAT_POLL_SECS: u64 = 3;
 
 /// Name prefix shared by every server's container, and so the way to spot one this build should be managing.
 ///
@@ -28,16 +21,15 @@ const HEARTBEAT_POLL_SECS: u64 = 3;
 /// renamed to `<id prefix>_<name>`, which still contains this but no longer starts with it.
 const CONTAINER_PREFIX: &str = "ESM_ARMA_";
 
-/// Touch the heartbeat file in the container on a loop until the process exits.
-/// Runs on a detached daemon thread, so it stops the instant the host process
-/// goes away and the container-side watchdog takes over from there.
-fn spawn_heartbeat(container: String) {
+/// Report in on a loop until the build exits.
+///
+/// Runs on a detached daemon thread, so it stops the instant the build process goes away and the target-side
+/// watchdog takes over from there. Errors are dropped on purpose: a missed beat is what the watchdog is
+/// tolerant of, and a build that printed a warning every time the network hiccuped would train people to
+/// ignore it.
+fn spawn_heartbeat(target: Arc<dyn Target>) {
     thread::spawn(move || loop {
-        let _ = Command::new("docker")
-            .args(["exec", &container, "touch", HEARTBEAT_FILE])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
+        let _ = target.heartbeat();
         thread::sleep(Duration::from_secs(HEARTBEAT_INTERVAL_SECS));
     });
 }
@@ -179,120 +171,35 @@ pub fn check_for_exile_files(ctx: &mut BuildContext) -> BuildResult {
     )))
 }
 
-/// Update the Arma 3 server via SteamCMD (only if files are absent or --update).
+/// Install or update the Arma 3 server through SteamCMD, if absent or `--update` was passed.
 ///
-/// The install is shared by every server, so this runs once per build rather than once per server.
+/// The install is shared by every server on a target, so this runs once per build rather than once per server.
 pub fn update_arma(ictx: &InstanceContext) -> BuildResult {
-    ictx.target.run(
-        "if [ ! -f /steamcmd/steamcmd.sh ]; then \
-           mkdir -p /steamcmd && \
-           wget -qO- 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz' \
-             | tar zxf - -C /steamcmd; \
-         fi",
-    )?;
-
-    let script = format!(
-        "cd /steamcmd; \
-         ./steamcmd.sh +force_install_dir {ARMA_PATH} \
-         +login {user} {pass} \
-         +app_update 233780 validate \
-         +quit",
-        user = ictx.config().server.steam_user,
-        pass = ictx.config().server.steam_password,
-    );
-
-    ictx.target.run(&script)?;
-    Ok(())
+    ictx.target.install_arma(
+        &ictx.config().server.steam_user,
+        &ictx.config().server.steam_password,
+    )
 }
 
-/// Stop any running Arma 3 server processes in the container.
+/// Stop any running Arma 3 server on the target.
 pub fn kill_arma(ictx: &InstanceContext) -> BuildResult {
-    let exes = LINUX_EXES
-        .iter()
-        .map(|e| format!("'{}'", e.rsplit('/').next().unwrap_or(e)))
-        .collect::<Vec<_>>()
-        .join("|");
-
-    let script = format!(
-        "for pid in $(ps -ef | awk '/({exes})/ {{print $2}}'); \
-         do kill -9 \"$pid\" 2>/dev/null || true; done; \
-         kill -9 $(cat {wpid} 2>/dev/null) 2>/dev/null || true; \
-         rm -f {hb} {spid} {wpid}",
-        wpid = WATCHDOG_PID_FILE,
-        hb = HEARTBEAT_FILE,
-        spid = SERVER_PID_FILE,
-    );
-
-    ictx.target.run(&script).ok(); // ignore errors — no process is fine
-    Ok(())
+    ictx.target.kill_arma()
 }
 
-/// Clean old log and RPT files from the container.
+/// Clean the logs, RPTs and crash dumps left by the previous run.
 pub fn clean_logs(ictx: &InstanceContext) -> BuildResult {
-    let server = ictx.server_path();
-    let script = format!(
-        "rm -f '{server}/server_profile/'*.log \
-               '{server}/server_profile/'*.rpt \
-               '{server}/server_profile/'*.bidmp \
-               '{server}/server_profile/'*.mdmp \
-               '{server}/server_profile/'*.txt; \
-         rm -rf '{server}/@exileserver/logs'",
-        server = server.display()
-    );
-    ictx.target.run(&script).ok(); // best-effort
-    Ok(())
+    ictx.target.clean_logs()
 }
 
-/// Start the Arma 3 server inside the container, guarded by a heartbeat
-/// watchdog so it dies with the host process (see the module header).
+/// Start the Arma 3 server, guarded by a watchdog so it dies with this build process.
 pub fn start_server(ictx: &InstanceContext) -> BuildResult {
-    let server = ictx.server_path();
-    let exe = match ictx.args().build_arch() {
-        BuildArch::X32 => "arma3server",
-        BuildArch::X64 => "arma3server_x64",
-    };
-    let args = ictx.target.server_args().to_string();
-
-    // The watchdog reaps the server by its recorded PID once the heartbeat
-    // stops being refreshed, then cleans up its own bookkeeping. It is wrapped
-    // in single quotes so its `$(...)` expand at watchdog runtime, not here.
-    let script = format!(
-        "mkdir -p '{server}/server_profile'; \
-         touch {hb}; \
-         nohup '{server}/{exe}' {args} \
-           >'{server}/server_profile/server.log' 2>&1 </dev/null & \
-         echo $! > {spid}; \
-         nohup bash -c '\
-           spid=$(cat {spid}); \
-           while sleep {poll}; do \
-             beat=$(stat -c %Y {hb} 2>/dev/null || echo 0); \
-             if [ $(( $(date +%s) - beat )) -ge {stale} ]; then \
-               kill -9 $spid 2>/dev/null; \
-               rm -f {hb} {spid} {wpid}; \
-               exit 0; \
-             fi; \
-           done' >/dev/null 2>&1 </dev/null & \
-         echo $! > {wpid}",
-        server = server.display(),
-        hb = HEARTBEAT_FILE,
-        spid = SERVER_PID_FILE,
-        wpid = WATCHDOG_PID_FILE,
-        poll = HEARTBEAT_POLL_SECS,
-        stale = HEARTBEAT_STALE_SECS,
-    );
-
-    ictx.target.run(&script)?;
-    spawn_heartbeat(ictx.container());
+    ictx.target.start_arma(ictx.args().build_arch())?;
+    spawn_heartbeat(ictx.target.clone());
     Ok(())
 }
 
 pub fn needs_arma_update(ictx: &InstanceContext) -> bool {
-    let check = format!(
-        "test -f '{ARMA_PATH}/arma3server' && echo 1 || echo 0"
-    );
-
-    let result = ictx.target.run(&check).unwrap_or_default();
-    result.trim() != "1" || ictx.args().update_arma()
+    !ictx.target.arma_installed(ictx.args().build_arch()) || ictx.args().update_arma()
 }
 
 fn is_container_running(container: &str) -> bool {

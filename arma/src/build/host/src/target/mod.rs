@@ -8,7 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use crate::{
     config::{Config, Instance},
-    context::{Args, BuildOS},
+    context::{Args, BuildArch, BuildOS},
     error::BuildError,
 };
 
@@ -47,6 +47,35 @@ pub trait Target: Send + Sync {
     /// inside the container. Windows has no such constraint, but keeping one meaning for the operation is what
     /// lets the steps stay target-agnostic.
     fn clear_directory(&self, path: &Path) -> Result<(), BuildError>;
+
+    /// Install or update the Arma 3 dedicated server through SteamCMD.
+    ///
+    /// Credentials are required, not optional: `app_update 233780` under an anonymous login is refused an app
+    /// access token and fails as `Missing configuration`, which reads like a broken install rather than a
+    /// missing password.
+    fn install_arma(&self, steam_user: &str, steam_password: &str) -> Result<(), BuildError>;
+
+    /// Whether the Arma 3 server binary for `arch` is already on the target.
+    fn arma_installed(&self, arch: BuildArch) -> bool;
+
+    /// Stop any running Arma 3 server, and the watchdog guarding it.
+    ///
+    /// Nothing running is a success. Every caller either just asked for a clean slate or is on the way out.
+    fn kill_arma(&self) -> Result<(), BuildError>;
+
+    /// Remove the logs, RPTs and crash dumps left by the previous run.
+    fn clean_logs(&self) -> Result<(), BuildError>;
+
+    /// Launch the Arma 3 server, recording the PID for [`Target::kill_arma`] and starting the watchdog that
+    /// reaps it once [`Target::heartbeat`] stops being called.
+    fn start_arma(&self, arch: BuildArch) -> Result<(), BuildError>;
+
+    /// Mark the build process as still alive, so the target-side watchdog leaves the server running.
+    ///
+    /// The watchdog is what stops an Arma server outliving the build that started it, however that build died:
+    /// Ctrl-C, a closed terminal, or a signal nothing can catch. The build calls this on a loop; the target
+    /// decides what going quiet means.
+    fn heartbeat(&self) -> Result<(), BuildError>;
 
     /// Staging area root on the target (e.g. `/tmp/esm`).
     fn build_path(&self) -> &Path;
