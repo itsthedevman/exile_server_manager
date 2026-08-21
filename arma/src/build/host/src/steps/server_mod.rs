@@ -7,6 +7,13 @@ use crate::{
     spinner::MultiSpinner,
 };
 
+/// Files that belong in the Arma server root on Windows, as a directory under `tools/server`.
+///
+/// Separate from the mod content because where a file goes is the whole point: extDB3's allocator has to sit
+/// next to `arma3server.exe`, since Windows resolves a DLL's dependencies against the process directory rather
+/// than against the directory the extension was loaded from.
+const WINDOWS_ROOT_CONTENT: &str = "windows";
+
 /// Content the Linux container gets from a bind mount, named relative to `tools/server`.
 ///
 /// `@exileserver` is deliberately absent: it is rewritten per server and uploaded by [`prepare_server_mod`]
@@ -133,8 +140,8 @@ fn render_server_cfg(
 /// `-mod=@exile;` naming a directory that does not exist, and Arma reports that as a missing addon rather than as
 /// missing setup, which sends you looking in the wrong place.
 ///
-/// Sent only when absent, because `@exile` is well over a gigabyte and changes about as often as Exile releases;
-/// re-sending it every build would cost minutes to change nothing. `--full` forces it.
+/// Sent only when the target does not already have this exact content, because `@exile` is well over a gigabyte
+/// and changes about as often as Exile releases. `--full` forces it.
 pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
     // Docker already mounted it. Nothing to do, and copying it in would shadow the mount with a stale duplicate.
     if matches!(ictx.args().build_os(), BuildOS::Linux) {
@@ -156,10 +163,20 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
             )));
         }
 
-        let dest = ictx.server_path().join(name);
+        let (files, bytes) = measure(&source);
 
-        if ictx.args().full_rebuild() || !ictx.target.exists(&dest)? {
-            pending.push((*name, source, dest));
+        // Keyed on what the source holds, not on whether the destination exists. Arma's own install creates
+        // `mpmissions` with a readme in it, so a destination that exists says nothing about whether the mission
+        // is in there: checking existence skipped the upload and left the server with no mission to load.
+        // Putting the fingerprint in the name means a changed source is a name that is simply not there yet.
+        let stamp = ictx
+            .target
+            .build_path()
+            .join("sync")
+            .join(format!("{name}-{files}-{bytes}.stamp"));
+
+        if ictx.args().full_rebuild() || !ictx.target.exists(&stamp)? {
+            pending.push((*name, source, ictx.server_path().join(name), stamp, bytes));
         }
     }
 
@@ -172,11 +189,18 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
     let mut spinner = MultiSpinner::start("Syncing server content");
     let counter = spinner.line_counter();
 
-    for (name, source, dest) in pending {
-        print_subprocess_line(&format!("{name} ({}) -> {}", human_size(&source), dest.display()));
+    for (name, source, dest, stamp, bytes) in pending {
+        print_subprocess_line(&format!("{name} ({}) -> {}", human_size(bytes), dest.display()));
         counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         if let Err(e) = ictx.target.upload(&source, &dest) {
+            spinner.sub_fail(name, true);
+            return Err(e);
+        }
+
+        // Written only after the upload returns, so an interrupted transfer is retried rather than remembered
+        // as done.
+        if let Err(e) = ictx.target.write_file(&stamp, b"") {
             spinner.sub_fail(name, true);
             return Err(e);
         }
@@ -186,23 +210,29 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
     Ok(())
 }
 
-/// Rough on-disk size of a directory tree, for telling someone why a step is going to take a while.
-fn human_size(path: &Path) -> String {
-    fn total(path: &Path) -> u64 {
-        let Ok(entries) = fs::read_dir(path) else {
-            return 0;
-        };
+/// Count the files in a tree and add up their sizes, which together are enough to notice a source has changed.
+fn measure(path: &Path) -> (u64, u64) {
+    let Ok(entries) = fs::read_dir(path) else {
+        return (0, 0);
+    };
 
-        entries
-            .filter_map(Result::ok)
-            .map(|entry| match entry.file_type() {
-                Ok(kind) if kind.is_dir() => total(&entry.path()),
-                _ => entry.metadata().map(|meta| meta.len()).unwrap_or(0),
-            })
-            .sum()
-    }
+    entries
+        .filter_map(Result::ok)
+        .fold((0, 0), |(files, bytes), entry| match entry.file_type() {
+            Ok(kind) if kind.is_dir() => {
+                let (sub_files, sub_bytes) = measure(&entry.path());
+                (files + sub_files, bytes + sub_bytes)
+            }
+            _ => (
+                files + 1,
+                bytes + entry.metadata().map(|meta| meta.len()).unwrap_or(0),
+            ),
+        })
+}
 
-    let bytes = total(path) as f64;
+/// Size in the largest unit that leaves a number worth reading, for telling someone why a step will take a while.
+fn human_size(bytes: u64) -> String {
+    let bytes = bytes as f64;
 
     for (limit, unit) in [(1e9, "GB"), (1e6, "MB"), (1e3, "KB")] {
         if bytes >= limit {
@@ -211,4 +241,36 @@ fn human_size(path: &Path) -> String {
     }
 
     format!("{bytes:.0}B")
+}
+
+/// Put the Windows-only files that belong beside `arma3server.exe` into the server root.
+///
+/// Only extDB3's allocator so far. Linux needs no equivalent: extDB3 is a `.so` there with nothing to place
+/// alongside it, which is why this has no counterpart on the container target rather than being a no-op there.
+pub fn install_windows_runtime(ictx: &InstanceContext) -> BuildResult {
+    if matches!(ictx.args().build_os(), BuildOS::Linux) {
+        return Ok(());
+    }
+
+    let source = ictx
+        .build
+        .git_path
+        .join("tools")
+        .join("server")
+        .join(WINDOWS_ROOT_CONTENT);
+
+    if !source.exists() {
+        return Err(BuildError::General(format!(
+            "Missing {}.\n\
+             It holds the files that belong next to arma3server.exe, which currently means extDB3's allocator.\n\
+             Without them extDB3 cannot load and Exile shuts the server down reporting the extension missing.",
+            source.display()
+        )));
+    }
+
+    // Straight into the root every time. It is a few hundred kilobytes, and skipping it on a stamp would mean
+    // an operator who cleaned out the server directory gets the failure this exists to prevent.
+    ictx.target.upload(&source, ictx.server_path())?;
+
+    Ok(())
 }

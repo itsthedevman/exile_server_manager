@@ -536,11 +536,17 @@ fn ps_literal(value: &str) -> String {
 /// carry backslash escapes that arrive on Windows as literal backslashes and name mods that do not exist. A
 /// server that starts with no mods looks like a broken build, so an unconfigured Windows host gets bare
 /// arguments and says as much through the missing mods rather than through a silently mangled command line.
+///
+/// Path separators are normalised here, and that one is not cosmetic. Arma on Windows does not resolve
+/// `-config=@exileserver/config.cfg`, and it does not complain either: it starts, loads every mod, joins Steam,
+/// and sits in the lobby forever, because the config it never read is what names the mission. No mission means
+/// no `preInit`, which means none of ESM runs, and the only sign of it is an absence. Exile's own
+/// `start server.bat` has always spelled these with backslashes.
 fn launch_args(windows: &WindowsConfig, instance: &Instance) -> String {
     windows
         .server_args
         .iter()
-        .map(|arg| format!("-{arg}"))
+        .map(|arg| format!("-{}", arg.replace('/', "\\")))
         .chain(std::iter::once(format!("-port={}", instance.port)))
         .collect::<Vec<_>>()
         .join(" ")

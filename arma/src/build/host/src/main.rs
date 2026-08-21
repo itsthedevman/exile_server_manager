@@ -188,6 +188,11 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
             // to be mistaken for a broken build.
             server_mod::sync_shared_content(ictx)?;
             run_instance_step(ictx, "Preparing server mod", server_mod::prepare_server_mod)?;
+            // Windows only, and skipped at the call site rather than inside the step so a Linux run does not
+            // report having installed something that does not exist there.
+            if !uses_containers {
+                run_instance_step(ictx, "Installing runtime", server_mod::install_windows_runtime)?;
+            }
             run_instance_step(ictx, "Ensuring database", database::ensure_database)?;
             run_instance_step(ictx, "Seeding database", database::seed_database)?;
             run_instance_step(ictx, "Deploying", deploy::deploy)?;
