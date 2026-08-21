@@ -4,13 +4,19 @@ mod remote;
 pub use docker::DockerTarget;
 pub use remote::RemoteTarget;
 
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, path::{Path, PathBuf}, sync::Arc};
 
 use crate::{
     config::{Config, Instance},
     context::{Args, BuildArch, BuildOS},
     error::BuildError,
 };
+
+/// Frames [`Target::read_appended`]: one `<separator>:<path>:<size>` line, then that file's new bytes.
+///
+/// One round trip carries every file that grew, because the alternative is a round trip per file per poll and
+/// the poll interval is measured in milliseconds. Both targets emit it; the reader in `steps::logs` parses it.
+pub const LOG_FRAME_SEPARATOR: &str = "__ESM_FILE__";
 
 /// Abstracts where build commands execute and where files live.
 ///
@@ -76,6 +82,22 @@ pub trait Target: Send + Sync {
     /// Ctrl-C, a closed terminal, or a signal nothing can catch. The build calls this on a loop; the target
     /// decides what going quiet means.
     fn heartbeat(&self) -> Result<(), BuildError>;
+
+    /// Find the log files that only exist once a server has run.
+    ///
+    /// `rpt_dir` is scanned one level deep for Arma's `.rpt` files; every entry in `log_dirs` is searched
+    /// recursively for `.log` files. Discovered rather than listed by name so that a component gaining a log
+    /// starts being followed without anything here knowing it exists.
+    fn discover_logs(&self, rpt_dir: &Path, log_dirs: &[&Path]) -> Vec<PathBuf>;
+
+    /// Read whatever was appended to each file past its recorded offset, in a single round trip.
+    ///
+    /// Returns the framed output described by [`LOG_FRAME_SEPARATOR`], or `None` when nothing grew.
+    fn read_appended(
+        &self,
+        files: &[&PathBuf],
+        offsets: &HashMap<PathBuf, u64>,
+    ) -> Option<String>;
 
     /// Staging area root on the target (e.g. `/tmp/esm`).
     fn build_path(&self) -> &Path;

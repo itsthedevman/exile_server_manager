@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command as Cmd, Stdio};
@@ -258,11 +259,15 @@ impl super::Target for DockerTarget {
 
     fn clean_logs(&self) -> Result<(), BuildError> {
         self.run(&format!(
+            // @esm/log is cleaned too, and it is the one that used to be missed. A deploy empties @esm and so
+            // hid this, but --start-only deliberately skips the deploy, leaving a log the streamer then replayed
+            // from the top: every run reprinting the last one before showing anything new.
             "rm -f '{server}/server_profile/'*.log \
                    '{server}/server_profile/'*.rpt \
                    '{server}/server_profile/'*.bidmp \
                    '{server}/server_profile/'*.mdmp \
-                   '{server}/server_profile/'*.txt; \
+                   '{server}/server_profile/'*.txt \
+                   '{server}/@esm/log/'*.log; \
              rm -rf '{server}/@exileserver/logs'",
             server = self.server_path.display()
         ))
@@ -313,6 +318,63 @@ impl super::Target for DockerTarget {
             .map_err(|e| BuildError::Docker(e.to_string()))?;
 
         Ok(())
+    }
+
+    fn discover_logs(&self, rpt_dir: &Path, log_dirs: &[&Path]) -> Vec<PathBuf> {
+        let mut script = format!(
+            "find '{rpt}' -maxdepth 1 -type f -name '*.rpt' 2>/dev/null; ",
+            rpt = rpt_dir.display()
+        );
+
+        for dir in log_dirs {
+            script.push_str(&format!(
+                "find '{dir}' -type f -name '*.log' 2>/dev/null; ",
+                dir = dir.display()
+            ));
+        }
+
+        let listing = self.run(&script);
+
+        listing
+            .unwrap_or_default()
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(PathBuf::from)
+            .collect()
+    }
+
+    fn read_appended(
+        &self,
+        files: &[&PathBuf],
+        offsets: &HashMap<PathBuf, u64>,
+    ) -> Option<String> {
+        if files.is_empty() {
+            return None;
+        }
+
+        let separator = crate::target::LOG_FRAME_SEPARATOR;
+        let script: String = files
+            .iter()
+            .map(|path| {
+                let offset = offsets.get(*path).copied().unwrap_or(0);
+                let path = path.display();
+                format!(
+                    "if [ -f '{path}' ]; then \
+                        _sz=$(wc -c < '{path}' 2>/dev/null || echo 0); \
+                        if [ \"$_sz\" -gt {offset} ]; then \
+                            printf '{separator}:%s:%s\\n' '{path}' \"$_sz\"; \
+                            tail -c +{skip} '{path}'; \
+                            printf '\\n'; \
+                        fi; \
+                    fi;",
+                    skip = offset + 1,
+                )
+            })
+            .collect();
+
+        let raw = self.run(&script).ok()?;
+
+        if raw.trim().is_empty() { None } else { Some(raw) }
     }
 
     fn build_path(&self) -> &Path {
@@ -381,5 +443,34 @@ mod tests {
         target.kill_arma().expect("kill_arma with no server running");
 
         target.run(&format!("rm -rf '{}'", scratch.display())).expect("cleanup");
+    }
+
+    /// The log path end to end: a file that grew is framed, and one already read past is not.
+    #[test]
+    #[ignore = "needs the first configured server's container to be running"]
+    fn read_appended_frames_only_what_grew() {
+        use std::collections::HashMap;
+        use std::path::PathBuf;
+
+        let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
+        let config = parse(std::path::Path::new(config_path)).expect("config.yml");
+        let instance = config.instances[0].clone();
+        let target = super::DockerTarget::new(&config, &instance);
+
+        let log = PathBuf::from("/tmp/esm-log-test.log");
+        target.write_file(&log, b"alpha\nbeta\n").expect("write log");
+
+        let files = vec![&log];
+        let mut offsets: HashMap<PathBuf, u64> = HashMap::new();
+
+        let raw = target.read_appended(&files, &offsets).expect("something grew");
+        assert!(raw.contains(crate::target::LOG_FRAME_SEPARATOR));
+        assert!(raw.contains("alpha"), "expected the file contents, got: {raw}");
+
+        // Reading past the end returns nothing, which is what stops every poll reprinting the whole file.
+        offsets.insert(log.clone(), 64);
+        assert!(target.read_appended(&files, &offsets).is_none());
+
+        target.run("rm -f /tmp/esm-log-test.log").expect("cleanup");
     }
 }

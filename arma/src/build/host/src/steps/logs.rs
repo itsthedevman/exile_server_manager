@@ -1,8 +1,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
-    process::Command,
-    sync::{atomic::Ordering, mpsc},
+    sync::{atomic::Ordering, mpsc, Arc},
     thread,
     time::{Duration, Instant},
 };
@@ -13,6 +12,7 @@ use crate::{
     context::InstanceContext,
     display::color,
     error::BuildResult,
+    target::{Target, LOG_FRAME_SEPARATOR},
 };
 
 const POLL_MS: u64 = 125;
@@ -50,8 +50,7 @@ struct LogLine {
 
 /// Tail every running server at once, printing their lines to one stream as they arrive.
 ///
-/// Each server is polled by its own thread, because a `docker exec` round-trip against one container should
-/// not hold up the others. The threads only render lines; printing stays on this thread so that output from
+/// Each server is polled by its own thread, because one server's round-trip should not hold up the others. The threads only render lines; printing stays on this thread so that output from
 /// several servers can't interleave mid-line.
 pub fn stream_logs(contexts: &[InstanceContext]) -> BuildResult {
     let dim = color::DIM;
@@ -82,13 +81,13 @@ pub fn stream_logs(contexts: &[InstanceContext]) -> BuildResult {
 
     for (index, ictx) in contexts.iter().enumerate() {
         let sender = sender.clone();
-        let container = ictx.container();
+        let target = ictx.target.clone();
         let server_id = ictx.instance.server_id.clone();
         let server_color = LABEL_COLORS[index % LABEL_COLORS.len()];
         let server_path = ictx.server_path().to_path_buf();
 
         thread::spawn(move || {
-            watch_server(container, server_id, server_color, server_path, sender);
+            watch_server(target, server_id, server_color, server_path, sender);
         });
     }
 
@@ -126,21 +125,19 @@ pub fn stream_logs(contexts: &[InstanceContext]) -> BuildResult {
 
 /// Poll one server's log files, sending each new line to the printer.
 fn watch_server(
-    container: String,
+    target: Arc<dyn Target>,
     server_id: String,
     server_color: (u8, u8, u8),
     server: PathBuf,
     sender: mpsc::Sender<LogLine>,
 ) {
-    // server.log: Arma's logFile from config.cfg
-    // esm.log:    ESM extension log
-    // *.rpt files and extdb logs are discovered dynamically
-    let fixed = vec![
-        server.join("server_profile/server.log"),
-        server.join("@esm/log/esm.log"),
-    ];
+    // server.log is Arma's own logFile from config.cfg, and is the only one named here: it is created on
+    // start and never moves. Everything else is discovered, including @esm/log, so the updater's log gets
+    // followed on the same terms as the extension's without either being listed.
+    let fixed = vec![server.join("server_profile/server.log")];
     let rpt_dir = server.join("server_profile");
     let extdb_dir = server.join("@exileserver/logs");
+    let esm_log_dir = server.join("@esm/log");
 
     let mut file_state: HashMap<PathBuf, FileState> = HashMap::new();
     let mut color_counter: usize = 0;
@@ -156,7 +153,7 @@ fn watch_server(
 
         // Periodically re-scan for newly created RPT / extdb files
         if last_scan.elapsed().as_secs() >= SCAN_SECS {
-            discovered = discover_files(&container, &rpt_dir, &extdb_dir);
+            discovered = target.discover_logs(&rpt_dir, &[&extdb_dir, &esm_log_dir]);
             last_scan = Instant::now();
         }
 
@@ -171,7 +168,10 @@ fn watch_server(
             .map(|(k, v)| (k.clone(), v.offset))
             .collect();
 
-        if let Some(results) = batch_read(&container, &all_files, &offsets) {
+        if let Some(results) = target
+            .read_appended(&all_files, &offsets)
+            .and_then(|raw| parse_frames(&raw))
+        {
             for (path, content, new_size) in results {
                 // Assign a label+color the first time we see this file
                 let next_color = color_counter;
@@ -209,8 +209,7 @@ fn watch_server(
             }
         }
 
-        // Sleep only the remainder of the poll interval so the docker exec
-        // round-trip doesn't add on top of the sleep.
+        // Sleep only the remainder of the poll interval so the round-trip doesn't add on top of the sleep.
         let elapsed = iter_start.elapsed();
         let target = Duration::from_millis(POLL_MS);
         if elapsed < target {
@@ -243,75 +242,12 @@ fn make_label(path: &PathBuf) -> String {
     stem.chars().take(LABEL_WIDTH).collect()
 }
 
-/// Discover dynamic log files (RPT in server_profile, logs in extdb dir) via
-/// a single docker exec to avoid two round-trips per scan cycle.
-fn discover_files(
-    container: &str,
-    rpt_dir: &PathBuf,
-    extdb_dir: &PathBuf,
-) -> Vec<PathBuf> {
-    let cmd = format!(
-        "find '{rpt}' -maxdepth 1 -type f -name '*.rpt' 2>/dev/null; \
-         find '{ext}' -type f -name '*.log' 2>/dev/null",
-        rpt = rpt_dir.display(),
-        ext = extdb_dir.display(),
-    );
-
-    let output = match Command::new("docker")
-        .args(["exec", container, "/bin/bash", "-c", &cmd])
-        .output()
-    {
-        Ok(o) => o,
-        Err(_) => return vec![],
-    };
-
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter(|l| !l.trim().is_empty())
-        .map(PathBuf::from)
-        .collect()
-}
-
-/// Run one `docker exec` that reads new bytes from every file and returns
-/// `(path, new_content, new_file_size)` tuples.
-fn batch_read(
-    container: &str,
-    files: &[&PathBuf],
-    offsets: &HashMap<PathBuf, u64>,
-) -> Option<Vec<(PathBuf, String, u64)>> {
-    if files.is_empty() {
-        return None;
-    }
-
-    let sep = "__ESM_FILE__";
-    let script: String = files
-        .iter()
-        .map(|path| {
-            let offset = offsets.get(*path).copied().unwrap_or(0);
-            let p = path.display();
-            format!(
-                "if [ -f '{p}' ]; then \
-                    _sz=$(wc -c < '{p}' 2>/dev/null || echo 0); \
-                    if [ \"$_sz\" -gt {offset} ]; then \
-                        printf '{sep}:%s:%s\\n' '{p}' \"$_sz\"; \
-                        tail -c +{skip} '{p}'; \
-                        printf '\\n'; \
-                    fi; \
-                fi;",
-                skip = offset + 1,
-            )
-        })
-        .collect();
-
-    let output = Command::new("docker")
-        .args(["exec", container, "/bin/bash", "-c", &script])
-        .output()
-        .ok()?;
-
-    let raw = String::from_utf8_lossy(&output.stdout);
-    if raw.trim().is_empty() {
-        return None;
-    }
+/// Split framed [`Target::read_appended`] output into `(path, new content, new size)` per file.
+///
+/// The size is split off the right rather than the left, which is what lets a Windows path keep its drive
+/// letter: `C:\\arma3server\\foo.rpt:12345` has two colons and only the last one separates anything.
+fn parse_frames(raw: &str) -> Option<Vec<(PathBuf, String, u64)>> {
+    let prefix = format!("{LOG_FRAME_SEPARATOR}:");
 
     let mut results = Vec::new();
     let mut current_path: Option<PathBuf> = None;
@@ -319,20 +255,23 @@ fn batch_read(
     let mut current_lines: Vec<&str> = Vec::new();
 
     for line in raw.lines() {
-        if let Some(rest) = line.strip_prefix(&format!("{sep}:")) {
+        if let Some(rest) = line.strip_prefix(&prefix) {
             if let Some(path) = current_path.take() {
                 results.push((path, current_lines.join("\n"), current_size));
                 current_lines.clear();
             }
+
             let mut parts = rest.rsplitn(2, ':');
-            let size_str = parts.next().unwrap_or("0");
-            let path_str = parts.next().unwrap_or("");
-            current_path = Some(PathBuf::from(path_str));
-            current_size = size_str.parse().unwrap_or(0);
+            let size = parts.next().unwrap_or("0");
+            let path = parts.next().unwrap_or("");
+
+            current_path = Some(PathBuf::from(path));
+            current_size = size.trim().parse().unwrap_or(0);
         } else if current_path.is_some() {
             current_lines.push(line);
         }
     }
+
     if let Some(path) = current_path {
         results.push((path, current_lines.join("\n"), current_size));
     }
@@ -382,4 +321,45 @@ fn print_log_line(line: &LogLine, server_width: usize) {
         "│".truecolor(steel.0, steel.1, steel.2),
         styled_content,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_frames;
+    use crate::target::LOG_FRAME_SEPARATOR;
+
+    #[test]
+    fn parses_a_windows_path_keeping_its_drive_letter() {
+        let raw = format!(
+            "{LOG_FRAME_SEPARATOR}:C:\\arma3server\\server_profile\\foo.rpt:42\nfirst\nsecond\n"
+        );
+
+        let parsed = parse_frames(&raw).expect("one frame");
+        assert_eq!(parsed.len(), 1);
+
+        let (path, content, size) = &parsed[0];
+        assert_eq!(path.display().to_string(), "C:\\arma3server\\server_profile\\foo.rpt");
+        assert_eq!(content, "first\nsecond");
+        assert_eq!(*size, 42);
+    }
+
+    #[test]
+    fn splits_several_files_in_one_batch() {
+        let raw = format!(
+            "{LOG_FRAME_SEPARATOR}:/arma3server/a.log:3\naaa\n\
+             {LOG_FRAME_SEPARATOR}:/arma3server/b.log:5\nbbbbb\n"
+        );
+
+        let parsed = parse_frames(&raw).expect("two frames");
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].0.display().to_string(), "/arma3server/a.log");
+        assert_eq!(parsed[1].0.display().to_string(), "/arma3server/b.log");
+        assert_eq!(parsed[1].1, "bbbbb");
+    }
+
+    #[test]
+    fn nothing_framed_is_nothing_to_print() {
+        assert!(parse_frames("").is_none());
+        assert!(parse_frames("noise with no frame\n").is_none());
+    }
 }

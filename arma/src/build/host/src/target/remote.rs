@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command as Cmd, Stdio};
@@ -316,10 +317,16 @@ impl super::Target for RemoteTarget {
         let profile = self.server_path.join("server_profile");
 
         self.run(&format!(
+            // @esm/log is cleaned too, and it is the one that used to be missed. A deploy empties @esm and so
+            // hid this, but --start-only deliberately skips the deploy, leaving a log the streamer then replayed
+            // from the top: every run reprinting the last one before showing anything new.
             "Get-ChildItem -LiteralPath {profile} -Include *.log,*.rpt,*.bidmp,*.mdmp,*.txt -Recurse \
+                 -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue\n\
+             Get-ChildItem -LiteralPath {esm_logs} -Filter *.log -File \
                  -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue\n\
              Remove-Item -LiteralPath {logs} -Recurse -Force -ErrorAction SilentlyContinue",
             profile = ps_literal(&profile.display().to_string()),
+            esm_logs = ps_literal(&self.server_path.join("@esm").join("log").display().to_string()),
             logs = ps_literal(&self.server_path.join("@exileserver").join("logs").display().to_string()),
         ))
         .ok(); // best effort: a first run has nothing to clean
@@ -352,19 +359,27 @@ impl super::Target for RemoteTarget {
             stale = HEARTBEAT_STALE_SECS,
         ));
 
+        // Launched through WMI rather than Start-Process, and this is not a style choice. Windows' sshd puts
+        // each session in a job object and kills the whole tree when the session ends, so anything started the
+        // obvious way dies the moment this command returns: the build reports a server started, and there is no
+        // server. Win32_Process.Create is serviced by the WMI provider host, outside that job, so what it
+        // spawns outlives the session that asked for it.
         self.run(&format!(
             "New-Item -ItemType Directory -Force -Path {profile} | Out-Null\n\
              New-Item -ItemType Directory -Force -Path (Split-Path -Parent {hb}) | Out-Null\n\
              Set-Content -LiteralPath {hb} -Value ''\n\
-             $server = Start-Process -FilePath {exe} -ArgumentList {args} -WorkingDirectory {server} \
-                 -PassThru -WindowStyle Hidden\n\
-             Set-Content -LiteralPath {spid} -Value $server.Id\n\
-             $watchdog = Start-Process powershell -WindowStyle Hidden -PassThru \
-                 -ArgumentList '-NoProfile','-EncodedCommand','{watchdog}'\n\
-             Set-Content -LiteralPath {wpid} -Value $watchdog.Id",
+             $server = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{{\n\
+             \x20 CommandLine = {command}\n\
+             \x20 CurrentDirectory = {server}\n\
+             }}\n\
+             if ($server.ReturnValue -ne 0) {{ throw \"Win32_Process.Create failed: $($server.ReturnValue)\" }}\n\
+             Set-Content -LiteralPath {spid} -Value $server.ProcessId\n\
+             $watchdog = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{{\n\
+             \x20 CommandLine = 'powershell.exe -NoProfile -EncodedCommand {watchdog}'\n\
+             }}\n\
+             Set-Content -LiteralPath {wpid} -Value $watchdog.ProcessId",
             profile = ps_literal(&self.server_path.join("server_profile").display().to_string()),
-            exe = ps_literal(&exe.display().to_string()),
-            args = ps_literal(&self.server_args),
+            command = ps_literal(&format!("\"{}\" {}", exe.display(), self.server_args)),
             server = ps_literal(&self.server_path.display().to_string()),
             hb = ps_literal(HEARTBEAT_FILE),
             spid = ps_literal(SERVER_PID_FILE),
@@ -381,6 +396,76 @@ impl super::Target for RemoteTarget {
         ))?;
 
         Ok(())
+    }
+
+    fn discover_logs(&self, rpt_dir: &Path, log_dirs: &[&Path]) -> Vec<PathBuf> {
+        // RPTs sit directly in the profile directory; extDB nests its own under a dated tree, so only the
+        // log searches recurse. All of them stay silent when the directory does not exist yet, which is the
+        // normal state until a server has run once.
+        let mut script = format!(
+            "Get-ChildItem -LiteralPath {rpt} -Filter *.rpt -File -ErrorAction SilentlyContinue | \
+                 ForEach-Object {{ $_.FullName }}\n",
+            rpt = ps_literal(&rpt_dir.display().to_string()),
+        );
+
+        for dir in log_dirs {
+            script.push_str(&format!(
+                "Get-ChildItem -LiteralPath {dir} -Filter *.log -File -Recurse \
+                     -ErrorAction SilentlyContinue | ForEach-Object {{ $_.FullName }}\n",
+                dir = ps_literal(&dir.display().to_string()),
+            ));
+        }
+
+        let listing = self.run(&script);
+
+        listing
+            .unwrap_or_default()
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(PathBuf::from)
+            .collect()
+    }
+
+    fn read_appended(
+        &self,
+        files: &[&PathBuf],
+        offsets: &HashMap<PathBuf, u64>,
+    ) -> Option<String> {
+        if files.is_empty() {
+            return None;
+        }
+
+        let separator = crate::target::LOG_FRAME_SEPARATOR;
+        let script: String = files
+            .iter()
+            .map(|path| {
+                let offset = offsets.get(*path).copied().unwrap_or(0);
+                let quoted = ps_literal(&path.display().to_string());
+
+                // FileShare.ReadWrite is the whole reason this opens a stream by hand rather than calling
+                // Get-Content. Arma holds its RPT open while it runs, and Windows refuses a second handle
+                // unless the reader explicitly tolerates the writer, so anything simpler reads nothing at all
+                // for exactly as long as there is something worth reading.
+                format!(
+                    "if (Test-Path -LiteralPath {quoted}) {{\n\
+                     \x20 $length = (Get-Item -LiteralPath {quoted}).Length\n\
+                     \x20 if ($length -gt {offset}) {{\n\
+                     \x20\x20 \"{separator}:$({quoted}):$length\"\n\
+                     \x20\x20 $stream = [IO.File]::Open({quoted}, 'Open', 'Read', 'ReadWrite')\n\
+                     \x20\x20 $stream.Seek({offset}, 'Begin') | Out-Null\n\
+                     \x20\x20 $buffer = New-Object byte[] ($length - {offset})\n\
+                     \x20\x20 $read = $stream.Read($buffer, 0, $buffer.Length)\n\
+                     \x20\x20 $stream.Close()\n\
+                     \x20\x20 [Text.Encoding]::UTF8.GetString($buffer, 0, $read)\n\
+                     \x20 }}\n\
+                     }}\n"
+                )
+            })
+            .collect();
+
+        let raw = self.run(&script).ok()?;
+
+        if raw.trim().is_empty() { None } else { Some(raw) }
     }
 
     fn build_path(&self) -> &Path {
@@ -555,5 +640,95 @@ mod tests {
         target
             .run(&format!("Remove-Item -LiteralPath '{}' -Recurse -Force", remote.display()))
             .expect("cleanup");
+    }
+
+    /// Reading a log Arma still holds open is the whole reason `read_appended` opens a stream by hand.
+    ///
+    /// Windows refuses a second handle to an open file unless the reader tolerates the existing writer, so a
+    /// writer is held open across the read here. Drop `FileShare.ReadWrite` from `read_appended` and this must
+    /// fail; if it still passes, the test is reading a leftover file rather than a locked one, which is exactly
+    /// what happened the first time it was written.
+    ///
+    /// The writer is spawned through WMI for the same reason `start_arma` is: a process started any other way
+    /// over SSH is killed with the session that started it, and would already be gone by the time the next
+    /// command connects to check on it.
+    #[test]
+    #[ignore = "needs the Windows host from config.yml to be reachable"]
+    fn read_appended_can_read_a_file_held_open_by_another_process() {
+        use std::collections::HashMap;
+
+        let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
+        let config = parse(std::path::Path::new(config_path)).expect("config.yml");
+        let instance = config.instances[0].clone();
+        let target = super::RemoteTarget::new(&config, &instance).expect("windows: section");
+
+        let log = std::path::PathBuf::from("C:\\temp\\esm-held-open.log");
+        let holder_script = "C:\\temp\\esm-holder.ps1";
+
+        // Start from nothing, or a file left behind by an earlier run makes the whole test vacuous. The
+        // delete is allowed to fail (PowerShell exits non-zero even for a suppressed error); the assertion
+        // below is what actually has to hold.
+        target
+            .run(&format!(
+                "Remove-Item -LiteralPath '{path}' -Force -ErrorAction SilentlyContinue",
+                path = log.display()
+            ))
+            .ok();
+        assert!(
+            !target.exists(&log).expect("exists"),
+            "a leftover log would let this pass without anything holding it open"
+        );
+
+        // FileShare.Read: other processes may read it, but only if they permit this writer to keep writing.
+        // That is the condition read_appended has to satisfy, and it is how arma3server holds its RPT.
+        let holder_pid = target
+            .run(&format!(
+                "$holder = @'\n\
+                 $file = [IO.File]::Open('{path}', 'Create', 'Write', 'Read')\n\
+                 $bytes = [Text.Encoding]::UTF8.GetBytes('held open')\n\
+                 $file.Write($bytes, 0, $bytes.Length)\n\
+                 $file.Flush()\n\
+                 Start-Sleep -Seconds 30\n\
+                 $file.Close()\n\
+                 '@\n\
+                 New-Item -ItemType Directory -Force -Path 'C:\\temp' | Out-Null\n\
+                 Set-Content -LiteralPath '{script}' -Value $holder\n\
+                 $p = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{{\n\
+                 \x20 CommandLine = 'powershell.exe -NoProfile -File {script}'\n\
+                 }}\n\
+                 Start-Sleep -Seconds 3\n\
+                 $p.ProcessId",
+                path = log.display(),
+                script = holder_script,
+            ))
+            .expect("start holder");
+
+        let holder_pid: u32 = holder_pid.trim().parse().expect("holder pid");
+
+        // The writer has to still be alive at the moment of the read, or there is no lock to work around.
+        let alive = target
+            .run(&format!(
+                "if (Get-Process -Id {holder_pid} -ErrorAction SilentlyContinue) {{ '1' }} else {{ '0' }}"
+            ))
+            .expect("holder liveness");
+        assert_eq!(alive.trim(), "1", "the holder exited before the read, so nothing was locked");
+
+        let files = vec![&log];
+        let offsets: HashMap<std::path::PathBuf, u64> = HashMap::new();
+
+        let raw = target
+            .read_appended(&files, &offsets)
+            .expect("a file held open by a writer must still be readable");
+        assert!(raw.contains("held open"), "expected the contents, got: {raw}");
+
+        target
+            .run(&format!(
+                "Stop-Process -Id {holder_pid} -Force -ErrorAction SilentlyContinue\n\
+                 Start-Sleep -Milliseconds 500\n\
+                 Remove-Item -LiteralPath '{path}','{script}' -Force -ErrorAction SilentlyContinue",
+                path = log.display(),
+                script = holder_script,
+            ))
+            .ok();
     }
 }
