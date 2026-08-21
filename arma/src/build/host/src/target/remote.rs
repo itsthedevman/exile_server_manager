@@ -256,7 +256,12 @@ impl super::Target for RemoteTarget {
         Ok(())
     }
 
-    fn install_arma(&self, steam_user: &str, steam_password: &str) -> Result<(), BuildError> {
+    fn install_arma(
+        &self,
+        steam_user: &str,
+        steam_password: &str,
+        on_line: &mut dyn FnMut(&str),
+    ) -> Result<(), BuildError> {
         // SteamCMD is expected to already be installed. The Linux container bootstraps its own because the image
         // ships without one; a Windows host is set up by hand, and silently downloading an installer onto it is
         // a bigger liberty than saying where to put one.
@@ -272,14 +277,39 @@ impl super::Target for RemoteTarget {
 
         // force_install_dir has to precede app_update or it is ignored, and the login cannot be anonymous:
         // 233780 refuses an anonymous app access token and reports it as `Missing configuration`.
-        self.run(&format!(
-            "& {steamcmd} +force_install_dir {server} +login {user} {password} \
+        let script = format!(
+            "$ProgressPreference = 'SilentlyContinue'\n\
+             & {steamcmd} +force_install_dir {server} +login {user} {password} \
              +app_update 233780 validate +quit",
             steamcmd = ps_literal(&steamcmd.display().to_string()),
             server = ps_literal(&self.server_path.display().to_string()),
             user = ps_literal(steam_user),
             password = ps_literal(steam_password),
-        ))?;
+        );
+
+        let mut child = self
+            .ssh()
+            .args(["powershell", "-NoProfile", "-EncodedCommand", &Self::encode(&script)])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| BuildError::Remote(e.to_string()))?;
+
+        if let Some(stdout) = child.stdout.take() {
+            crate::target::stream_lines(stdout, on_line);
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| BuildError::Remote(e.to_string()))?;
+
+        if !output.status.success() {
+            return Err(BuildError::Remote(format!(
+                "SteamCMD failed (exit {}): {}",
+                output.status.code().unwrap_or(-1),
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
 
         Ok(())
     }

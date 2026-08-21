@@ -207,7 +207,12 @@ impl super::Target for DockerTarget {
         Ok(result == "1")
     }
 
-    fn install_arma(&self, steam_user: &str, steam_password: &str) -> Result<(), BuildError> {
+    fn install_arma(
+        &self,
+        steam_user: &str,
+        steam_password: &str,
+        on_line: &mut dyn FnMut(&str),
+    ) -> Result<(), BuildError> {
         // The container ships without SteamCMD, so the first run fetches it. Windows installs it by hand
         // instead, which is the one place the two targets genuinely differ rather than just spelling things
         // differently.
@@ -219,14 +224,37 @@ impl super::Target for DockerTarget {
              fi",
         )?;
 
-        self.run(&format!(
+        let script = format!(
             "cd /steamcmd; \
              ./steamcmd.sh +force_install_dir {server} \
              +login {steam_user} {steam_password} \
              +app_update 233780 validate \
              +quit",
             server = self.server_path.display()
-        ))?;
+        );
+
+        let mut child = Cmd::new("docker")
+            .args(["exec", &self.container, "/bin/bash", "-c", &script])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+        if let Some(stdout) = child.stdout.take() {
+            crate::target::stream_lines(stdout, on_line);
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| BuildError::Docker(e.to_string()))?;
+
+        if !output.status.success() {
+            return Err(BuildError::Docker(format!(
+                "SteamCMD failed (exit {}): {}",
+                output.status.code().unwrap_or(-1),
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
 
         Ok(())
     }

@@ -138,9 +138,16 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
         }
     }
 
-    // --- Orchestration phase (requires Docker) ---
+    // --- Orchestration phase ---
     run_step(ctx, "Checking Exile files", server::check_for_exile_files)?;
-    run_step(ctx, "Removing stale containers", server::remove_orphaned_containers)?;
+
+    // Containers are a Linux-target concern. Skipped at the call site rather than inside the step, so a Windows
+    // run does not report having done work that never happened.
+    let uses_containers = matches!(ctx.args.build_os(), context::BuildOS::Linux);
+
+    if uses_containers {
+        run_step(ctx, "Removing stale containers", server::remove_orphaned_containers)?;
+    }
 
     let instances = ctx.instances.clone();
     let contexts = instances
@@ -154,13 +161,16 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
         .map(|ictx| locks::ServerLock::acquire(&ictx.instance_staging_path(), &ictx.instance.server_id))
         .collect::<Result<Vec<_>, _>>()?;
 
-    for ictx in &contexts {
-        run_instance_step(ictx, "Ensuring container", server::ensure_container)?;
+    if uses_containers {
+        for ictx in &contexts {
+            run_instance_step(ictx, "Ensuring container", server::ensure_container)?;
+        }
     }
 
-    // The Arma install is shared by every container, so one update covers all of them.
+    // The Arma install is shared by every server on a target, so one update covers all of them. Not wrapped in
+    // run_step: it streams SteamCMD's output and handles its own spinner.
     if !start_only && server::needs_arma_update(&contexts[0]) {
-        run_instance_step(&contexts[0], "Updating Arma", server::update_arma)?;
+        server::update_arma(&contexts[0])?;
     }
 
     if !ctx.args.start_server() {

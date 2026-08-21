@@ -4,7 +4,7 @@ mod remote;
 pub use docker::DockerTarget;
 pub use remote::RemoteTarget;
 
-use std::{collections::HashMap, path::{Path, PathBuf}, sync::Arc};
+use std::{collections::HashMap, io::Read, path::{Path, PathBuf}, sync::Arc};
 
 use crate::{
     config::{Config, Instance},
@@ -59,7 +59,15 @@ pub trait Target: Send + Sync {
     /// Credentials are required, not optional: `app_update 233780` under an anonymous login is refused an app
     /// access token and fails as `Missing configuration`, which reads like a broken install rather than a
     /// missing password.
-    fn install_arma(&self, steam_user: &str, steam_password: &str) -> Result<(), BuildError>;
+    ///
+    /// Output is handed to `on_line` as it arrives rather than returned at the end. A validating download of a
+    /// 5GB install is minutes of silence otherwise, which is indistinguishable from a hang.
+    fn install_arma(
+        &self,
+        steam_user: &str,
+        steam_password: &str,
+        on_line: &mut dyn FnMut(&str),
+    ) -> Result<(), BuildError>;
 
     /// Whether the Arma 3 server binary for `arch` is already on the target.
     fn arma_installed(&self, arch: BuildArch) -> bool;
@@ -119,5 +127,83 @@ pub fn build_target(
     match args.build_os() {
         BuildOS::Linux => Ok(Arc::new(DockerTarget::new(config, instance))),
         BuildOS::Windows => RemoteTarget::new(config, instance),
+    }
+}
+
+/// Read `reader` to exhaustion, handing each line to `on_line` as it arrives.
+///
+/// Splits on carriage returns as well as newlines. SteamCMD reports download progress by rewriting a single
+/// line with `\r` and no newline until it finishes, so splitting only on `\n` would buffer the entire download
+/// and deliver it in one piece at the end, which is precisely when nobody needs it any more.
+pub fn stream_lines(mut reader: impl Read, on_line: &mut dyn FnMut(&str)) {
+    let mut buffer = [0u8; 4096];
+    let mut line = Vec::new();
+
+    loop {
+        let read = match reader.read(&mut buffer) {
+            Ok(0) | Err(_) => break,
+            Ok(read) => read,
+        };
+
+        for byte in &buffer[..read] {
+            match byte {
+                b'\n' | b'\r' => {
+                    if !line.is_empty() {
+                        on_line(String::from_utf8_lossy(&line).trim_end());
+                        line.clear();
+                    }
+                }
+                _ => line.push(*byte),
+            }
+        }
+    }
+
+    if !line.is_empty() {
+        on_line(String::from_utf8_lossy(&line).trim_end());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stream_lines;
+
+    fn collect(input: &[u8]) -> Vec<String> {
+        let mut lines = Vec::new();
+        stream_lines(input, &mut |line| lines.push(line.to_string()));
+        lines
+    }
+
+    #[test]
+    fn splits_on_carriage_returns_so_progress_arrives_while_it_matters() {
+        // How SteamCMD reports a download: one line rewritten, no newline until it is finished.
+        let raw = b"progress: 12.34\rprogress: 56.78\rprogress: 100.00\nSuccess!\n";
+        assert_eq!(
+            collect(raw),
+            vec!["progress: 12.34", "progress: 56.78", "progress: 100.00", "Success!"]
+        );
+    }
+
+    #[test]
+    fn treats_crlf_as_one_break_rather_than_two() {
+        assert_eq!(collect(b"alpha\r\nbeta\r\n"), vec!["alpha", "beta"]);
+    }
+
+    #[test]
+    fn emits_a_trailing_line_that_was_never_terminated() {
+        assert_eq!(collect(b"no newline at the end"), vec!["no newline at the end"]);
+    }
+
+    #[test]
+    fn nothing_in_nothing_out() {
+        assert!(collect(b"").is_empty());
+        assert!(collect(b"\r\n\r\n").is_empty());
+    }
+
+    #[test]
+    fn reassembles_a_line_split_across_reads() {
+        // The reader hands back 4096 bytes at a time, so a long line arrives in pieces and must not be split.
+        let long = "x".repeat(10_000);
+        let raw = format!("{long}\n");
+        assert_eq!(collect(raw.as_bytes()), vec![long]);
     }
 }

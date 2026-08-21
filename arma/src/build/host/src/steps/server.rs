@@ -5,9 +5,13 @@ use std::{
     time::Duration,
 };
 
+use std::sync::atomic::Ordering as AtomicOrdering;
+
 use crate::{
     context::{BuildContext, BuildOS, InstanceContext},
+    display::print_subprocess_line,
     error::{BuildError, BuildResult},
+    spinner::MultiSpinner,
     target::Target,
 };
 
@@ -174,11 +178,38 @@ pub fn check_for_exile_files(ctx: &mut BuildContext) -> BuildResult {
 /// Install or update the Arma 3 server through SteamCMD, if absent or `--update` was passed.
 ///
 /// The install is shared by every server on a target, so this runs once per build rather than once per server.
+///
+/// Draws its own progress instead of going through `run_instance_step`, because a validating download of a 5GB
+/// install is minutes long: a spinner with nothing under it is indistinguishable from a hang, which is exactly
+/// what it looked like before.
 pub fn update_arma(ictx: &InstanceContext) -> BuildResult {
-    ictx.target.install_arma(
+    let mut spinner = MultiSpinner::start("Updating Arma");
+    let counter = spinner.line_counter();
+
+    let result = ictx.target.install_arma(
         &ictx.config().server.steam_user,
         &ictx.config().server.steam_password,
-    )
+        &mut |line| {
+            // SteamCMD is chatty about things nobody is waiting on, and its own progress lines are the point.
+            if line.trim().is_empty() {
+                return;
+            }
+
+            print_subprocess_line(line);
+            counter.fetch_add(1, AtomicOrdering::Relaxed);
+        },
+    );
+
+    match result {
+        Ok(()) => {
+            spinner.done();
+            Ok(())
+        }
+        Err(e) => {
+            spinner.sub_fail("SteamCMD", true);
+            Err(e)
+        }
+    }
 }
 
 /// Stop any running Arma 3 server on the target.
