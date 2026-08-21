@@ -39,7 +39,8 @@ readonly default_port=54321
 
 function usage() {
     echo "Usage:"
-    echo "  bin/updater_tester serve --key <path> [--port <n>] [--bind <addr>] [--skip-build]"
+    echo "  bin/updater_tester serve --key <path> [--port <n>] [--bind <addr>] [--base-url <url>]"
+    echo "                           [--skip-build]"
     echo "  bin/updater_tester state [--instance <id>] [--esm <version>] [--mod <version>]"
     echo "                           [--updater-ext <version>] [--updater-mod <version>]"
     echo "                           [--wipe] [--cli] [--url <url>]"
@@ -95,6 +96,7 @@ function run_serve() {
     local key_path=""
     local port=$default_port
     local bind=""
+    local base_url=""
     local skip_build=false
 
     while [[ $# -gt 0 ]]; do
@@ -109,6 +111,10 @@ function run_serve() {
             ;;
         --bind)
             bind="$2"
+            shift 2
+            ;;
+        --base-url)
+            base_url="$2"
             shift 2
             ;;
         --skip-build)
@@ -145,13 +151,20 @@ function run_serve() {
         exit 1
     fi
 
+    # host.docker.internal only resolves inside a docker container. A client that is not one, such as a Windows VM
+    # on another bridge, needs the address spelled out, so --base-url overrides what goes into the manifest. It is
+    # separate from --bind because they answer different questions: where this listens, and what the client dials.
+    if [[ -z $base_url ]]; then
+        base_url="http://host.docker.internal:$port"
+    fi
+
     if [[ $skip_build == false ]]; then
         ./bin/package --local
     fi
 
     # bin/manifest appends the version directory, so a local layout matches the published one and the artifact URLs
     # the updater builds are exercised rather than bypassed.
-    ./bin/manifest --key "$key_path" --base-url "http://host.docker.internal:$port"
+    ./bin/manifest --key "$key_path" --base-url "$base_url"
 
     local version
     version=$(crate_version)
@@ -184,11 +197,11 @@ function run_serve() {
 
     echo
     echo "Serving $testbed_root on $bind:$port"
-    echo "  manifest: http://host.docker.internal:$port/versions.json"
+    echo "  manifest: $base_url/versions.json"
     echo "  artifacts: ${#wanted[@]} under v$version"
     echo
     echo "Point an instance at it with:"
-    echo "  bin/updater_tester state --url http://host.docker.internal:$port/versions.json"
+    echo "  bin/updater_tester state --url $base_url/versions.json"
     echo
     echo "A container that cannot reach this is being stopped by the host firewall, not by anything here:"
     echo "the fetch times out rather than refusing. Serve on a port the host already allows."
