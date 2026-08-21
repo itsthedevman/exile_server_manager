@@ -21,10 +21,7 @@ pub fn deploy(ictx: &InstanceContext) -> BuildResult {
 
     // Empty the old deploy out rather than removing the directory: @esm is this server's bind mount, so the
     // mount point itself cannot be unlinked from inside the container.
-    ictx.target.run(&format!(
-        "mkdir -p '{dir}' && find '{dir}' -mindepth 1 -delete",
-        dir = server_esm.display()
-    ))?;
+    ictx.target.clear_directory(&server_esm)?;
     ictx.target.upload(&staging, &server_esm)?;
 
     Ok(())

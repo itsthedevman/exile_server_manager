@@ -165,6 +165,19 @@ impl super::Target for DockerTarget {
         Ok(())
     }
 
+    fn write_file(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError> {
+        write_file(&self.container, path, contents)
+    }
+
+    fn clear_directory(&self, path: &Path) -> Result<(), BuildError> {
+        self.run(&format!(
+            "mkdir -p '{dir}' && find '{dir}' -mindepth 1 -delete",
+            dir = path.display()
+        ))?;
+
+        Ok(())
+    }
+
     fn exists(&self, path: &Path) -> Result<bool, BuildError> {
         let output = Cmd::new("docker")
             .args([

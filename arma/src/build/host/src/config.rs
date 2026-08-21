@@ -9,6 +9,58 @@ pub struct Config {
     pub server: ServerConfig,
     pub my_steam_uid: String,
     pub instances: Vec<Instance>,
+
+    /// Where `--target=windows` runs the server. Absent on a machine that only ever builds Linux, which is why
+    /// this is optional rather than defaulted: a wrong address fails as a connection timeout minutes later,
+    /// while a missing section can say what to add.
+    #[serde(default)]
+    pub windows: Option<WindowsConfig>,
+}
+
+/// The Windows host a `--target=windows` server runs on, reached over SSH.
+///
+/// SSH rather than an agent daemon on purpose. The host already has to be reachable to be useful, key auth is
+/// already how it is administered, and an agent would be a second thing to install, keep running, and version
+/// against this build tool.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowsConfig {
+    /// Hostname or address. An entry in `~/.ssh/config` works and is preferred, since it keeps credentials and
+    /// jump hosts out of this file.
+    pub host: String,
+
+    #[serde(default = "default_windows_user")]
+    pub user: String,
+
+    #[serde(default = "default_windows_server_path")]
+    pub server_path: String,
+
+    #[serde(default = "default_windows_steamcmd_path")]
+    pub steamcmd_path: String,
+
+    /// Address the Windows host reaches the Exile database on.
+    ///
+    /// The Linux containers resolve `mysql_db` over Docker's own DNS, which means nothing outside that network.
+    /// A guest on another bridge needs the address spelled out, so `extdb3-conf.ini` is rewritten with this one.
+    /// Left unset, the server mod step says so rather than deploying a config that resolves to nothing.
+    #[serde(default)]
+    pub database_host: Option<String>,
+
+    /// Launch arguments for the Windows server. Separate from `server.server_args` because the two shells
+    /// disagree about semicolons: Linux escapes them, `cmd.exe` does not.
+    #[serde(default)]
+    pub server_args: Vec<String>,
+}
+
+fn default_windows_user() -> String {
+    "Administrator".to_string()
+}
+
+fn default_windows_server_path() -> String {
+    "C:\\arma3server".to_string()
+}
+
+fn default_windows_steamcmd_path() -> String {
+    "C:\\steamcmd".to_string()
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]

@@ -14,7 +14,7 @@ instances:
     database: exile_esm
 
 #
-# Config for the Linux Arma 3 server
+# Config for the Linux Arma 3 server, run in Docker
 server:
   # Steam username used to login to steamcmd
   # This account does not need to own Arma 3, but must have Steam Guard disabled
@@ -46,3 +46,45 @@ server:
   - world=empty
   - noSound
   - nosplash
+
+#
+# The Windows host `--target=windows` runs a server on, reached over SSH. Optional: leave it out on a machine
+# that only ever builds Linux, and --target=windows will say what to add.
+#
+# SSH rather than an agent daemon, so nothing has to be installed or kept running on the far side. Key auth has
+# to already work: the build never prompts for a password.
+windows:
+  # Hostname, address, or an entry in ~/.ssh/config. An ssh alias is preferred, since it keeps jump hosts and
+  # identity files here out of this file.
+  host: 10.0.0.2
+
+  # Defaults to Administrator. Windows' sshd reads authorized keys for administrators from
+  # %ProgramData%\ssh\administrators_authorized_keys, not from the account's own .ssh directory.
+  user: Administrator
+
+  # Defaults to C:\arma3server. SteamCMD installs the server here and @esm is deployed inside it.
+  server_path: C:\arma3server
+
+  # Defaults to C:\steamcmd. Unlike the Linux container, this is not bootstrapped: install SteamCMD yourself.
+  steamcmd_path: C:\steamcmd
+
+  # Where this host reaches the Exile database. Required, and there is no sensible default: the shipped
+  # extdb3-conf.ini names `mysql_db`, which resolves only inside Docker's own network.
+  database_host: 10.0.0.1
+
+  # The same arguments as `server.server_args` above, minus the semicolon escapes, which Linux needs and
+  # Windows does not. Kept separate rather than shared because an escaped semicolon arrives here as a literal
+  # backslash and names a mod that does not exist, which looks like a broken build rather than bad config.
+  server_args:
+    - mod=@exile;
+    - servermod=@exileserver;@esm;
+    - config=@exileserver/config.cfg
+    - profiles=server_profile
+    - cfg=@exileserver/basic.cfg
+    - name=server_profile
+    - autoinit
+    - enableHT
+    - loadMissionToMemory
+    - world=empty
+    - noSound
+    - nosplash

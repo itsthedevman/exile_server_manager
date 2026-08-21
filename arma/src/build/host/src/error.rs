@@ -8,6 +8,9 @@ pub enum BuildError {
     #[error("Docker: {0}")]
     Docker(String),
 
+    #[error("Remote: {0}")]
+    Remote(String),
+
     #[error("Config: {0}")]
     Config(String),
 

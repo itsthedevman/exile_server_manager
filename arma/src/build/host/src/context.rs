@@ -1,6 +1,7 @@
 use std::{
     fmt,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use crate::{
@@ -294,7 +295,7 @@ impl BuildContext {
 pub struct InstanceContext<'a> {
     pub build: &'a BuildContext,
     pub instance: &'a Instance,
-    pub target: Box<dyn Target>,
+    pub target: Arc<dyn Target>,
 }
 
 impl<'a> InstanceContext<'a> {
@@ -321,6 +322,21 @@ impl<'a> InstanceContext<'a> {
 
     pub fn server_path(&self) -> &Path {
         self.target.server_path()
+    }
+
+    /// Address to write into `extdb3-conf.ini`, or `None` to leave the shipped one alone.
+    ///
+    /// Only the Windows target overrides it. A container resolves `mysql_db` through Docker's DNS and so needs
+    /// no help; anything outside that network cannot resolve it at all.
+    pub fn database_host(&self) -> Option<&str> {
+        match self.args().build_os() {
+            BuildOS::Linux => None,
+            BuildOS::Windows => self
+                .config()
+                .windows
+                .as_ref()
+                .and_then(|windows| windows.database_host.as_deref()),
+        }
     }
 
     /// Whether this is the first server in config.yml, which is the one a bare `bin/build --start-server`

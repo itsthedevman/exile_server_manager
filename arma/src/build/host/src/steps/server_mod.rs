@@ -1,9 +1,8 @@
 use std::{fs, path::Path};
 
 use crate::{
-    context::InstanceContext,
+    context::{BuildOS, InstanceContext},
     error::{BuildError, BuildResult},
-    target::docker,
 };
 
 /// Section of `extdb3-conf.ini` holding the Exile database connection.
@@ -24,6 +23,15 @@ pub fn prepare_server_mod(ictx: &InstanceContext) -> BuildResult {
         .join("@exileserver");
     let dest = ictx.server_path().join("@exileserver");
 
+    if matches!(ictx.args().build_os(), BuildOS::Windows) && ictx.database_host().is_none() {
+        return Err(BuildError::Config(
+            "A Windows server needs `windows.database_host` in config.yml: the address it reaches the Exile \
+             database on. The shipped extdb3-conf.ini names `mysql_db`, which only resolves inside Docker's \
+             own network, so a host outside it would deploy a config pointing at a name that does not exist."
+                .into(),
+        ));
+    }
+
     if !source.join("extdb3-conf.ini").exists() {
         return Err(BuildError::General(format!(
             "Missing @exileserver mod files in {}.\n\
@@ -34,31 +42,29 @@ pub fn prepare_server_mod(ictx: &InstanceContext) -> BuildResult {
 
     // Replace the contents rather than the directory: it is a bind mount, so the mount point itself cannot be
     // unlinked from inside the container.
-    ictx.target.run(&format!(
-        "mkdir -p '{dir}' && find '{dir}' -mindepth 1 -delete",
-        dir = dest.display()
-    ))?;
+    ictx.target.clear_directory(&dest)?;
     ictx.target.upload(&source, &dest)?;
 
-    let extdb_conf = render_extdb_conf(&source, &ictx.instance.database)?;
-    docker::write_file(
-        &ictx.container(),
-        &dest.join("extdb3-conf.ini"),
-        extdb_conf.as_bytes(),
-    )?;
+    let extdb_conf = render_extdb_conf(&source, &ictx.instance.database, ictx.database_host())?;
+    ictx.target
+        .write_file(&dest.join("extdb3-conf.ini"), extdb_conf.as_bytes())?;
 
     let server_cfg = render_server_cfg(&source, &ictx.instance.server_id, ictx.instance.port)?;
-    docker::write_file(
-        &ictx.container(),
-        &dest.join("config.cfg"),
-        server_cfg.as_bytes(),
-    )?;
+    ictx.target
+        .write_file(&dest.join("config.cfg"), server_cfg.as_bytes())?;
 
     Ok(())
 }
 
 /// Point the `[exile]` section at this server's own database, leaving every other section untouched.
-fn render_extdb_conf(source: &Path, database: &str) -> Result<String, BuildError> {
+///
+/// `host` rewrites the address too, which only a target outside the Docker network needs; `None` keeps whatever
+/// the shipped file names.
+fn render_extdb_conf(
+    source: &Path,
+    database: &str,
+    host: Option<&str>,
+) -> Result<String, BuildError> {
     let contents = fs::read_to_string(source.join("extdb3-conf.ini"))?;
     let mut in_exile_section = false;
     let mut rendered = String::with_capacity(contents.len());
@@ -73,6 +79,13 @@ fn render_extdb_conf(source: &Path, database: &str) -> Result<String, BuildError
         if in_exile_section && trimmed.starts_with("Database") {
             rendered.push_str(&format!("Database = {database}\n"));
             continue;
+        }
+
+        if in_exile_section && trimmed.starts_with("IP") {
+            if let Some(host) = host {
+                rendered.push_str(&format!("IP = {host}\n"));
+                continue;
+            }
         }
 
         rendered.push_str(line);

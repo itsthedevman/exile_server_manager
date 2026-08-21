@@ -5,7 +5,6 @@ use redis::Commands;
 use crate::{
     context::InstanceContext,
     error::{BuildError, BuildResult},
-    target::docker,
 };
 
 const REDIS_KEY: &str = "server_key";
@@ -47,7 +46,9 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
 
     let server_path = ictx.server_path().to_path_buf();
     let build_path = ictx.instance_staging_path();
-    let container = ictx.container();
+    // Cloned rather than borrowed: this thread outlives the step that starts it, so it needs its own handle on
+    // wherever the server lives.
+    let target = ictx.target.clone();
     let read_slots = key_slots(ictx);
     let write_slots = confirm_slots(ictx);
 
@@ -81,15 +82,13 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
 
             let esm_dir = server_path.join("@esm");
 
-            if let Err(e) = docker::write_file(
-                &container,
-                &esm_dir.join("esm.key"),
-                key.as_bytes(),
-            )
-            .and_then(|_| {
-                // The sentinel is what makes the extension re-read the key without a restart.
-                docker::write_file(&container, &esm_dir.join(".RELOAD"), b"true")
-            }) {
+            if let Err(e) = target
+                .write_file(&esm_dir.join("esm.key"), key.as_bytes())
+                .and_then(|_| {
+                    // The sentinel is what makes the extension re-read the key without a restart.
+                    target.write_file(&esm_dir.join(".RELOAD"), b"true")
+                })
+            {
                 eprintln!("[keys] Failed to write server key: {e}");
                 thread::sleep(Duration::from_millis(100));
                 continue;

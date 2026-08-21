@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    context::{BuildArch, BuildContext, InstanceContext},
+    context::{BuildArch, BuildContext, BuildOS, InstanceContext},
     error::{BuildError, BuildResult},
     ARMA_PATH, LINUX_EXES,
 };
@@ -48,6 +48,12 @@ fn spawn_heartbeat(container: String) {
 /// by root, same as the shared volumes, which is what the container wants: everything inside it runs as root,
 /// and the build only ever reaches in through `docker cp` and `docker exec`.
 pub fn ensure_container(ictx: &InstanceContext) -> BuildResult {
+    // A remote host is not something this tool brings up. It is already running, or the build fails at the
+    // first command with an ssh error that says so far better than a container check could.
+    if matches!(ictx.args().build_os(), BuildOS::Windows) {
+        return Ok(());
+    }
+
     let container = ictx.container();
 
     // Run this even when the container is already up: compose recreates on config drift, which is what picks
@@ -107,6 +113,10 @@ pub fn ensure_container(ictx: &InstanceContext) -> BuildResult {
 /// goes. Only containers are removed. The host-side volumes stay, so a server picks its state back up on the next
 /// start, which is what makes clearing one out cheap enough to do unprompted.
 pub fn remove_orphaned_containers(ctx: &mut BuildContext) -> BuildResult {
+    if matches!(ctx.args.build_os(), BuildOS::Windows) {
+        return Ok(());
+    }
+
     let configured: Vec<String> = ctx
         .config
         .instances
