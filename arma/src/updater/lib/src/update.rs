@@ -462,6 +462,56 @@ fn load_manifest(
 /// The replacement inherits the permissions of the file it replaces. A downloaded file carries whatever the
 /// download gave it, so without this an updated install ends up subtly different from a packaged one for no reason
 /// anybody chose.
+/// Whether an IO error is Windows refusing to touch a file another process holds open.
+///
+/// `ERROR_SHARING_VIOLATION` (32) and `ERROR_LOCK_VIOLATION` (33) are the two ways it surfaces. Linux has no
+/// equivalent: it will happily rename a file out from under a running process, which is why this whole class of
+/// failure is invisible until the code runs on Windows.
+#[cfg(windows)]
+fn is_file_in_use(error: &std::io::Error) -> bool {
+    matches!(error.raw_os_error(), Some(32) | Some(33))
+}
+
+#[cfg(not(windows))]
+fn is_file_in_use(_error: &std::io::Error) -> bool {
+    false
+}
+
+/// Turn an IO error into [`UpdaterError::FileInUse`] when that is what it is, and a plain IO error otherwise.
+fn describe_io(error: std::io::Error, path: &Path) -> UpdaterError {
+    if is_file_in_use(&error) {
+        return UpdaterError::FileInUse {
+            path: path.display().to_string(),
+        };
+    }
+
+    UpdaterError::Io(error)
+}
+
+/// Replace the directory `dest` with `stage`, putting `dest` back if the move fails.
+///
+/// The two renames differ in what a failure costs. The first is safe: nothing has moved yet, so returning an
+/// error leaves the install exactly as it was. The second is not, because `dest` has already been moved aside;
+/// returning without restoring it leaves the server with no addons directory at all rather than an out-of-date
+/// one, its contents stranded under a backup name nothing looks for.
+///
+/// Removing `backup` on success is the caller's, since only it knows whether the version record was written.
+fn replace_directory(stage: &Path, dest: &Path, backup: &Path) -> Result<(), UpdaterError> {
+    if dest.exists() {
+        std::fs::rename(dest, backup).map_err(|e| describe_io(e, dest))?;
+    }
+
+    if let Err(e) = std::fs::rename(stage, dest) {
+        if backup.exists() {
+            let _ = std::fs::rename(backup, dest);
+        }
+
+        return Err(describe_io(e, dest));
+    }
+
+    Ok(())
+}
+
 fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
     let backup = dest.with_file_name(format!(
         "{}.backup",
@@ -480,7 +530,7 @@ fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
     };
 
     if dest.exists() {
-        std::fs::rename(dest, &backup)?;
+        std::fs::rename(dest, &backup).map_err(|e| describe_io(e, dest))?;
     }
     match std::fs::rename(source, dest) {
         Ok(()) => {
@@ -497,7 +547,7 @@ fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
             if backup.exists() {
                 let _ = std::fs::rename(&backup, dest);
             }
-            Err(UpdaterError::Io(e))
+            Err(describe_io(e, dest))
         }
     }
 }
@@ -581,10 +631,17 @@ fn install_artifact(
         download_started_at.elapsed().as_millis()
     );
 
-    verify_sha256(temp, &artifact.sha256)?;
+    verify_sha256(temp, &artifact.sha256).inspect_err(|_| {
+        let _ = std::fs::remove_file(temp);
+    })?;
     log::info!("[update] {component}: checksum verified");
 
-    swap_file(temp, dest)?;
+    // The staged copy is removed whichever way the swap goes. Left behind it is a whole extension of dead
+    // weight per failed attempt, and the most likely reason to fail here is a running server, which is also the
+    // most likely thing to be retried a few times before anybody stops it.
+    swap_file(temp, dest).inspect_err(|_| {
+        let _ = std::fs::remove_file(temp);
+    })?;
     log::info!("[update] {component}: installed to {}", dest.display());
 
     Ok(())
@@ -612,24 +669,33 @@ fn update_mod_bundle(
         download_started_at.elapsed().as_millis()
     );
 
-    verify_sha256(archive, &artifact.sha256)?;
+    verify_sha256(archive, &artifact.sha256).inspect_err(|_| {
+        let _ = std::fs::remove_file(archive);
+    })?;
     log::info!("[update] @esm: checksum verified");
 
-    extract_tar_gz(archive, temp_dir)?;
+    extract_tar_gz(archive, temp_dir).inspect_err(|_| {
+        let _ = std::fs::remove_dir_all(temp_dir);
+        let _ = std::fs::remove_file(archive);
+    })?;
     log::info!("[update] @esm: extracted to {}", temp_dir.display());
 
     let addons = Path::new("@esm/addons");
     let backup = Path::new("@esm/addons.backup");
-    if addons.exists() {
-        std::fs::rename(addons, backup)?;
-    }
-    std::fs::rename(temp_dir, addons)?;
+
+    replace_directory(temp_dir, addons, backup).inspect_err(|_| {
+        let _ = std::fs::remove_dir_all(temp_dir);
+        let _ = std::fs::remove_file(archive);
+    })?;
+
     log::info!("[update] @esm: installed to {}", addons.display());
 
     record_installed(Component::EsmMod, &comp.version);
     if backup.exists() {
         let _ = std::fs::remove_dir_all(backup);
     }
+
+    let _ = std::fs::remove_file(archive);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
     log::info!("[update] @esm | total={elapsed_ms}ms");
@@ -746,5 +812,95 @@ fn esm_extension_filename() -> &'static str {
         "esm_x64.so"
     } else {
         "esm.so"
+    }
+}
+
+#[cfg(test)]
+mod swap_tests {
+    use super::{replace_directory, swap_file};
+    use std::fs;
+
+    /// The rollback the Windows test bed could not trigger by racing: extraction and rename together take about
+    /// 11ms, so nothing external gets between them reliably. Making the second rename fail on purpose is the
+    /// only way to actually execute the path, rather than read it and assume.
+    #[test]
+    fn replace_directory_puts_the_original_back_when_the_move_fails() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("addons");
+        let backup = root.path().join("addons.backup");
+        let stage = root.path().join("addons_stage");
+
+        fs::create_dir(&dest).unwrap();
+        fs::write(dest.join("exile_server_manager.pbo"), b"the installed mod").unwrap();
+
+        // `stage` deliberately does not exist, so the second rename fails after the first has already moved
+        // `dest` aside. That is the state the missing rollback used to leave behind.
+        let result = replace_directory(&stage, &dest, &backup);
+        assert!(result.is_err(), "a missing stage directory must not report success");
+
+        assert!(dest.is_dir(), "addons was left missing, which is worse than being out of date");
+        assert_eq!(
+            fs::read(dest.join("exile_server_manager.pbo")).unwrap(),
+            b"the installed mod",
+            "addons came back without its contents"
+        );
+        assert!(!backup.exists(), "the backup name was left behind for nothing to find");
+    }
+
+    #[test]
+    fn replace_directory_installs_the_staged_copy() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("addons");
+        let backup = root.path().join("addons.backup");
+        let stage = root.path().join("addons_stage");
+
+        fs::create_dir(&dest).unwrap();
+        fs::write(dest.join("old.pbo"), b"old").unwrap();
+        fs::create_dir(&stage).unwrap();
+        fs::write(stage.join("new.pbo"), b"new").unwrap();
+
+        replace_directory(&stage, &dest, &backup).unwrap();
+
+        assert!(dest.join("new.pbo").exists());
+        assert!(!dest.join("old.pbo").exists());
+        assert!(!stage.exists(), "the staging directory should have been moved, not copied");
+    }
+
+    #[test]
+    fn replace_directory_works_on_a_first_install_with_nothing_to_replace() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("addons");
+        let backup = root.path().join("addons.backup");
+        let stage = root.path().join("addons_stage");
+
+        fs::create_dir(&stage).unwrap();
+        fs::write(stage.join("new.pbo"), b"new").unwrap();
+
+        replace_directory(&stage, &dest, &backup).unwrap();
+
+        assert!(dest.join("new.pbo").exists());
+        assert!(!backup.exists());
+    }
+
+    #[test]
+    fn swap_file_puts_the_original_back_when_the_move_fails() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("esm_x64.dll");
+        let source = root.path().join("esm_update");
+
+        fs::write(&dest, b"the installed extension").unwrap();
+
+        // Same shape as above: no source, so the swap fails once the original has been moved aside.
+        assert!(swap_file(&source, &dest).is_err());
+
+        assert_eq!(
+            fs::read(&dest).unwrap(),
+            b"the installed extension",
+            "the extension was not restored after a failed swap"
+        );
+        assert!(
+            !dest.with_file_name("esm_x64.dll.backup").exists(),
+            "a .backup file was left next to the extension"
+        );
     }
 }

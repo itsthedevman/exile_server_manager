@@ -25,6 +25,19 @@ pub enum UpdaterError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// A file could not be replaced because another process is holding it open.
+    ///
+    /// Its own variant rather than a plain IO error because it is the one failure an operator can act on, and
+    /// the raw message ("The process cannot access the file because it is being used by another process") names
+    /// neither the file nor the process nor what to do about it.
+    #[error(
+        "{path} is in use by another process, so it could not be replaced.\n\
+         Stop the Arma server and run this again. Windows will not rename or delete a file while a running \
+         process holds it open, and a server that has loaded the extension holds it for as long as it runs.\n\
+         Nothing was changed."
+    )]
+    FileInUse { path: String },
+
     /// Extracting the tar.gz archive failed.
     #[error("archive error: {0}")]
     Extract(String),
