@@ -132,7 +132,7 @@ impl Init {
             errors.push("\"extension_version\" was not provided".into());
         }
 
-        if let Err(e) = self.price_per_object.parse::<usize>() {
+        if let Err(e) = self.price_per_object.parse::<u64>() {
             errors.push(format!(
                 "Could not parse \"{}\" provided to \"price_per_object\" - {}",
                 self.price_per_object, e
@@ -147,7 +147,7 @@ impl Init {
             errors.push("\"territory_data\" was not provided".into());
         }
 
-        if let Err(e) = self.territory_lifetime.parse::<usize>() {
+        if let Err(e) = self.territory_lifetime.parse::<u64>() {
             errors.push(format!(
                 "Could not parse \"{}\" provided to \"territory_lifetime\" - {}",
                 self.territory_lifetime, e

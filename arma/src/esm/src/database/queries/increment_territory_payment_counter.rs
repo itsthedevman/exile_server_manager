@@ -3,7 +3,7 @@ use super::*;
 pub async fn increment_territory_payment_counter(
     context: &Database,
     connection: &mut Conn,
-    database_id: usize,
+    database_id: u64,
 ) -> Result<(), Error> {
     let result = connection
         .exec_drop(

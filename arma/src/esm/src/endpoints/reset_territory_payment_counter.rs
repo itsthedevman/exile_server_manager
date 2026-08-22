@@ -10,9 +10,9 @@ pub fn reset_territory_payment_counter(database_ids: String) -> Result<(), Strin
     );
 
     // Convert the database Ids from "['1','2']" to [1,2]
-    let database_ids: Vec<usize> =
+    let database_ids: Vec<u64> =
         match Parser::from_arma::<Vec<String>>(&database_ids) {
-            Ok(ids) => ids.iter().filter_map(|i| i.parse::<usize>().ok()).collect(),
+            Ok(ids) => ids.iter().filter_map(|i| i.parse::<u64>().ok()).collect(),
             Err(e) => return Err(e),
         };
 

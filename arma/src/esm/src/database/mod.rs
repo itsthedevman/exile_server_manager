@@ -229,8 +229,8 @@ impl Database {
 
     pub async fn get_territory_payment_counter(
         &self,
-        database_id: usize,
-    ) -> Result<usize, Error> {
+        database_id: u64,
+    ) -> Result<u64, Error> {
         let mut connection = self.connection().await?;
 
         queries::get_territory_payment_counter(&self, &mut connection, database_id)
@@ -239,7 +239,7 @@ impl Database {
 
     pub async fn increment_territory_payment_counter(
         &self,
-        database_id: usize,
+        database_id: u64,
     ) -> Result<(), Error> {
         let mut connection = self.connection().await?;
 
@@ -253,8 +253,8 @@ impl Database {
 
     pub async fn set_territory_payment_counter(
         &self,
-        database_id: usize,
-        counter_value: usize,
+        database_id: u64,
+        counter_value: u64,
     ) -> Result<(), Error> {
         let mut connection = self.connection().await?;
 

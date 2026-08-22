@@ -9,7 +9,7 @@ pub type Data = HashMap<String, Value>;
 
 pub trait DataExt {
     fn require_i64(&self, key: &str, tag: &str) -> Result<i64, Error>;
-    fn require_usize(&self, key: &str, tag: &str) -> Result<usize, Error>;
+    fn require_u64(&self, key: &str, tag: &str) -> Result<u64, Error>;
     fn require_str(&self, key: &str, tag: &str) -> Result<&str, Error>;
     fn require_array(&self, key: &str, tag: &str) -> Result<&Vec<Value>, Error>;
 }
@@ -22,12 +22,11 @@ impl DataExt for Data {
             .ok_or_else(|| Error::message(format!("[{tag}] `{key}` is not an i64")))
     }
 
-    fn require_usize(&self, key: &str, tag: &str) -> Result<usize, Error> {
+    fn require_u64(&self, key: &str, tag: &str) -> Result<u64, Error> {
         self.get(key)
             .ok_or_else(|| Error::message(format!("[{tag}] Missing key `{key}`")))?
             .as_u64()
-            .map(|n| n as usize)
-            .ok_or_else(|| Error::message(format!("[{tag}] `{key}` is not a usize")))
+            .ok_or_else(|| Error::message(format!("[{tag}] `{key}` is not a u64")))
     }
 
     fn require_str(&self, key: &str, tag: &str) -> Result<&str, Error> {

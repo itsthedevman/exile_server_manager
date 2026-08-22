@@ -7,7 +7,7 @@ use database::QueryError;
 use std::{
     collections::HashSet,
     iter::FromIterator,
-    sync::{atomic::AtomicUsize, Mutex as SyncMutex},
+    sync::{atomic::AtomicU64, Mutex as SyncMutex},
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -17,7 +17,7 @@ lazy_static! {
         Arc::new(SyncMutex::new(HashSet::new()));
     static ref CALLBACK: Arc<SyncMutex<Option<Context>>> =
         Arc::new(SyncMutex::new(None));
-    pub static ref MAX_PAYMENT_COUNT: AtomicUsize = AtomicUsize::new(0);
+    pub static ref MAX_PAYMENT_COUNT: AtomicU64 = AtomicU64::new(0);
 }
 
 pub fn is_territory_admin(steam_uid: &str) -> bool {
@@ -155,8 +155,10 @@ async fn post_initialization(mut message: Message) -> MessageResult {
         HashSet::from_iter(territory_admin_uids.iter().cloned());
 
     // Cache the max payment count
+    // Clamped rather than rejected. A count below zero is a setting nobody configured, which is what zero
+    // already means here, and failing post_init over it would cost the server its whole connection.
     let payment_count = data.require_i64("max_payment_count", "post_init")?;
-    MAX_PAYMENT_COUNT.store(payment_count as usize, Ordering::SeqCst);
+    MAX_PAYMENT_COUNT.store(payment_count.max(0) as u64, Ordering::SeqCst);
 
     info!("[post_init] Updating Arma global variables...");
 
@@ -327,7 +329,7 @@ async fn check_payment_counter(message: &Message) -> ESMResult {
 
     let territory_id = message
         .data
-        .require_usize("territory_database_id", "check_payment_counter")?;
+        .require_u64("territory_database_id", "check_payment_counter")?;
 
     let payment_counter =
         DATABASE.get_territory_payment_counter(territory_id).await?;

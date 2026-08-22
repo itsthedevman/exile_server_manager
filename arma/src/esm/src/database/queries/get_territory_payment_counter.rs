@@ -3,9 +3,9 @@ use super::*;
 pub async fn get_territory_payment_counter(
     context: &Database,
     connection: &mut Conn,
-    database_id: usize,
-) -> Result<usize, Error> {
-    let result: Option<usize> = connection
+    database_id: u64,
+) -> Result<u64, Error> {
+    let result: Option<u64> = connection
         .exec_first(
             &context.sql.get_territory_payment_counter,
             params! {
