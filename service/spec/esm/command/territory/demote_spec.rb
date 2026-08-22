@@ -82,6 +82,10 @@ describe ESM::Command::Territory::Demote, category: "command" do
     describe "#on_execute", requires_connection: true do
       include_context "connection"
 
+      # Every failure path in this command throws before it writes anything, so a failing example must find the
+      # territory exactly as it left it
+      let(:unchanged_territory_attributes) { %i[moderators build_rights] }
+
       let!(:territory) do
         owner_uid = Faker::Steam.uid
         create(
@@ -117,6 +121,9 @@ describe ESM::Command::Territory::Demote, category: "command" do
 
           expect(territory.moderators).not_to include(second_user.steam_uid)
           expect(territory.build_rights).to include(second_user.steam_uid)
+
+          # A demoted moderator stays a builder, so build rights are checked to prove the flag kept them
+          expect_territory_flag_to_match_database(:moderators, :build_rights)
 
           expect(
             ESM.discord_bot.test_outbox.retrieve(

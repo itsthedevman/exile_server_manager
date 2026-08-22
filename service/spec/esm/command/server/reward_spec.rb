@@ -105,8 +105,19 @@ describe ESM::Command::Server::Reward, category: "command" do
         result
       end
 
+      # What the player is wearing when they spawn, which decides whether reward items fit on them or end up in a
+      # holder at their feet. It has to be on the exile_player row before the spawn, since the harness builds the
+      # player object by replaying that row.
+      let(:player_loadout) { {} }
+
       before do
+        user.exile_player.update!(**player_loadout) if player_loadout.any?
+
         spawn_player_for(user)
+
+        # ExileClientPlayerScore is a single global. The test player is a server-spawned bambi, so its owner is the
+        # server and updateRespect's remoteExec lands in this namespace, where it outlives the example that set it.
+        execute_sqf!("ExileClientPlayerScore = nil; true")
       end
 
       context "when there are rewards" do
@@ -153,6 +164,90 @@ describe ESM::Command::Server::Reward, category: "command" do
 
           expect(embed).not_to be(nil)
           expect(embed.description).to match(expected_reward_items)
+
+          # Poptabs on the player object and in the player row. setPlayerMoney keys off ExileDatabaseID, so this is
+          # also what a corrupted ID would take down - see the immutability example below.
+          wait_for { get_player_variable!(user.net_id, "ExileMoney", -1) }.to eq(player_poptabs)
+          expect(user.exile_player.reload.money).to eq(player_poptabs)
+
+          expect_locker_to_eq(user, locker_poptabs)
+
+          # ExileScore is not broadcast: it reaches the client through updateRespect's remoteExec, so it is read
+          # once rather than polled
+          expect(get_player_variable!(user.net_id, "ExileScore", -1)).to eq(respect)
+          expect(user.exile_account.reload.score).to eq(respect)
+          expect(execute_sqf!(%(missionNamespace getVariable ["ExileClientPlayerScore", -1]))).to eq(respect)
+
+          # Every rewarded item reaches the player one way or the other: onto them if it fits, into a holder at
+          # their feet if it does not
+          delivered = get_player_cargo!(user.net_id) + nearby_loot_holders!(user.net_id).flatten
+
+          expect(delivered.tally).to include(
+            "Exile_Weapon_AKM" => 1,
+            "Exile_Magazine_30Rnd_762x39_AK" => 3
+          )
+        end
+
+        include_examples "arma_exile_db_id_immutable" do
+          let(:net_id) { user.net_id }
+        end
+      end
+
+      context "when the player has room to carry the reward" do
+        let!(:player_loadout) { {uniform: "Exile_Uniform_BambiOverall"} }
+        let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 1} }
+
+        before do
+          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+        end
+
+        it "puts the items on the player and drops nothing" do
+          execute_command
+
+          expect(get_player_cargo!(user.net_id)).to include("Exile_Magazine_30Rnd_762x39_AK")
+          expect(nearby_loot_holders!(user.net_id).flatten).to be_empty
+        end
+      end
+
+      context "when the player has nowhere to put the reward" do
+        # No uniform, vest or backpack, which is what an exile_player row carries by default
+        let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 3} }
+
+        before do
+          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+        end
+
+        it "spawns a holder at their feet and fills it with the items" do
+          execute_command
+
+          expect(get_player_cargo!(user.net_id)).to be_empty
+
+          holders = nearby_loot_holders!(user.net_id)
+
+          expect(holders.size).to eq(1)
+          expect(holders.first).to eq(["Exile_Magazine_30Rnd_762x39_AK"] * 3)
+        end
+      end
+
+      context "when a reward item is not a real classname" do
+        let!(:number_of_messages) { 5 }
+        let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 2, NotAThingAnyoneOwns: 1} }
+
+        before do
+          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+        end
+
+        it "logs the invalid item and still delivers the rest" do
+          execute_command
+
+          expect(
+            ESM.discord_bot.test_outbox.retrieve("Invalid Reward Item")
+          ).not_to be(nil)
+
+          delivered = get_player_cargo!(user.net_id) + nearby_loot_holders!(user.net_id).flatten
+
+          expect(delivered.tally).to include("Exile_Magazine_30Rnd_762x39_AK" => 2)
+          expect(delivered).not_to include("NotAThingAnyoneOwns")
         end
       end
 

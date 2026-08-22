@@ -82,6 +82,10 @@ describe ESM::Command::Territory::Promote, category: "command" do
     describe "#on_execute", requires_connection: true do
       include_context "connection"
 
+      # Every failure path in this command throws before it writes anything, so a failing example must find the
+      # territory exactly as it left it
+      let(:unchanged_territory_attributes) { %i[moderators build_rights] }
+
       let!(:territory) do
         owner_uid = Faker::Steam.uid
         create(
@@ -119,6 +123,9 @@ describe ESM::Command::Territory::Promote, category: "command" do
 
           expect(territory.moderators).to include(second_user.steam_uid)
           expect(territory.build_rights).to include(second_user.steam_uid)
+
+          # updateRights only writes moderators, so build rights are here to catch it reaching further than it should
+          expect_territory_flag_to_match_database(:moderators, :build_rights)
 
           expect(
             ESM.discord_bot.test_outbox.retrieve(
@@ -203,8 +210,10 @@ describe ESM::Command::Territory::Promote, category: "command" do
         end
 
         it "raises Promote_MissingRights" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
+          expect_territory_unchanged do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
+            end
           end
         end
       end
@@ -219,8 +228,10 @@ describe ESM::Command::Territory::Promote, category: "command" do
         end
 
         it "raises Promote_MissingRights" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
+          expect_territory_unchanged do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.to_embed.description).to match("#{second_user.mention} is not a member this territory")
+            end
           end
         end
       end
@@ -231,8 +242,10 @@ describe ESM::Command::Territory::Promote, category: "command" do
         end
 
         it "raises Promote_ExistingRights" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.to_embed.description).to match("#{second_user.mention} is already a moderator")
+          expect_territory_unchanged do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.to_embed.description).to match("#{second_user.mention} is already a moderator")
+            end
           end
         end
       end

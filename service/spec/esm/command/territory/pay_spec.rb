@@ -62,6 +62,10 @@ describe ESM::Command::Territory::Pay, category: "command" do
       # Happy path
       shared_examples "successful_territory_payment" do
         it "pays the territory's protection money using poptabs from the player's locker" do
+          # ExileTerritoryLastPayed comes from extDB's LOCAL_TIME as an array while the column is a MySQL datetime,
+          # so the two cannot be compared to each other. Checking the flag's value moved is the honest check.
+          last_paid_on_flag = get_territory_variable!(territory.id, "ExileTerritoryLastPayed")
+
           execute_command
 
           # Player response, admin log, xm8 notification
@@ -79,13 +83,11 @@ describe ESM::Command::Territory::Pay, category: "command" do
             ESM.discord_bot.test_outbox.retrieve("Territory protection money paid")
           ).not_to be(nil)
 
-          user.exile_account.reload
-
           # Handle taxes
           tax = respond_to?(:territory_payment_tax) ? territory_payment_tax : 0
           tax = (territory_protection_price * (tax / 100.0)).round if tax > 0
 
-          expect(user.exile_account.locker).to eq(locker_balance - territory_protection_price - tax)
+          expect_locker_to_eq(user, locker_balance - territory_protection_price - tax)
 
           territory.reload
 
@@ -94,6 +96,10 @@ describe ESM::Command::Territory::Pay, category: "command" do
 
           # Check for time change
           expect(territory.last_paid_at).not_to be(nil)
+          expect(get_territory_variable!(territory.id, "ExileTerritoryLastPayed")).not_to eq(last_paid_on_flag)
+
+          # Paying extends the due date and nothing else, so the rest of the flag has to come through untouched
+          expect_territory_flag_to_match_database(:level, :radius, :moderators, :build_rights)
         end
       end
 

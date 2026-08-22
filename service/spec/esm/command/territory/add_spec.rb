@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 describe ESM::Command::Territory::Add, category: "command" do
+  # Build rights have to land in two places: the territory table, so they survive a restart, and the flag object in
+  # game, so the target can build the moment they are added. Asserting the row holds the UID and that the flag
+  # mirrors the row covers both without a second trip into Arma.
+  def expect_build_rights_granted_to(target)
+    expect(territory.reload.build_rights).to include(target.steam_uid)
+
+    expect_territory_flag_to_match_database(:build_rights, :moderators)
+  end
+
   describe "V1" do
     include_context "command"
     include_examples "validate_command"
@@ -142,7 +151,7 @@ describe ESM::Command::Territory::Add, category: "command" do
       end
 
       context "when the user is a moderator and the target is a different player" do
-        it "adds the player to the territory, notifies the user and target, and creates a log in the logging channel" do
+        subject(:execute_command) do
           execute!(
             arguments: {
               server_id: server.server_id,
@@ -161,6 +170,12 @@ describe ESM::Command::Territory::Add, category: "command" do
           # 4: Requestor's confirmation
           # 5: Discord log
           ESM.discord_bot.test_outbox.await_size(5)
+        end
+
+        it "adds the player to the territory, notifies the user and target, and creates a log in the logging channel" do
+          execute_command
+
+          expect_build_rights_granted_to(second_user)
 
           # The last messages are not always in order...
           # Requestee message
@@ -202,10 +217,6 @@ describe ESM::Command::Territory::Add, category: "command" do
             expect(field.name).to eq(test_field[:name])
             expect(field.value).to eq(test_field[:value])
           end
-
-          # Check that Arma update the territory
-          territory.reload
-          expect(territory.build_rights).to include(second_user.steam_uid)
         end
       end
 
@@ -218,39 +229,55 @@ describe ESM::Command::Territory::Add, category: "command" do
             .and_return(ESM::User.where(id: user.id))
         end
 
-        it "allows them to add any player" do
-          execute!(
-            arguments: {
-              server_id: server.server_id,
-              territory_id: territory.encoded_id,
-              target: second_user.steam_uid
-            }
-          )
+        context "and the target is another player" do
+          subject(:execute_command) do
+            execute!(
+              arguments: {
+                server_id: server.server_id,
+                territory_id: territory.encoded_id,
+                target: second_user.steam_uid
+              }
+            )
 
-          ESM.discord_bot.test_outbox.await_size(1)  # We bypass request checks
+            ESM.discord_bot.test_outbox.await_size(1)  # We bypass request checks
+          end
 
-          expect(
-            ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
-          ).not_to be_nil
+          it "allows them to add any player" do
+            execute_command
+
+            expect_build_rights_granted_to(second_user)
+
+            expect(
+              ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
+            ).not_to be_nil
+          end
         end
 
-        it "allows the user to add themselves" do
-          territory.revoke_membership(user.steam_uid)
+        context "and the target is themselves" do
+          subject(:execute_command) do
+            execute!(
+              handle_error: true,
+              arguments: {
+                server_id: server.server_id,
+                territory_id: territory.encoded_id,
+                target: user.steam_uid
+              }
+            )
 
-          execute!(
-            handle_error: true,
-            arguments: {
-              server_id: server.server_id,
-              territory_id: territory.encoded_id,
-              target: user.steam_uid
-            }
-          )
+            ESM.discord_bot.test_outbox.await_size(1) # We bypass request checks
+          end
 
-          ESM.discord_bot.test_outbox.await_size(1) # We bypass request checks
+          before { territory.revoke_membership(user.steam_uid) }
 
-          expect(
-            ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
-          ).not_to be_nil
+          it "allows the user to add themselves" do
+            execute_command
+
+            expect_build_rights_granted_to(user)
+
+            expect(
+              ESM.discord_bot.test_outbox.retrieve(/you've been added to territory `#{territory.encoded_id}`/i)
+            ).not_to be_nil
+          end
         end
       end
 

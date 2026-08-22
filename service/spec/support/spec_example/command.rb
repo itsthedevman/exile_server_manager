@@ -106,8 +106,11 @@ end
 
 RSpec.shared_examples("arma_error_null_flag") do
   it "raises NullFlag and NullFlag_Admin" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.to_embed.description).to match("I was unable to find a territory")
+    # The flag is gone in this scenario, so there is nothing in game to compare the row against
+    expect_territory_unchanged(flag: false) do
+      expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+        expect(error.to_embed.description).to match("I was unable to find a territory")
+      end
     end
 
     ESM.discord_bot.test_outbox.await_size(1)
@@ -121,8 +124,10 @@ end
 
 RSpec.shared_examples("arma_error_missing_territory_access") do
   it "raises MissingTerritoryAccess and MissingTerritoryAccess_Admin" do
-    expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-      expect(error.to_embed.description).to match("you do not have permission")
+    expect_territory_unchanged do
+      expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+        expect(error.to_embed.description).to match("you do not have permission")
+      end
     end
 
     ESM.discord_bot.test_outbox.await_size(1)

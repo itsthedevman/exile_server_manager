@@ -53,6 +53,20 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
       # Happy path
       shared_examples "successful_territory_upgrade" do
         it "upgrades the territory using poptabs from the player's locker" do
+          # territory_purchase_price is keyed on the territory's current level, so it has to be read before the
+          # command moves the territory off that level
+          previous_level = territory.level
+          upgraded_level = previous_level + 1
+
+          # The territories row keyed to the current level is the one being bought: it carries both the price (see
+          # the territory_purchase_price let) and the radius the territory ends up with
+          expected_radius = server.territories.where(territory_level: previous_level).pick(:territory_radius)
+
+          # Handle taxes
+          tax = respond_to?(:territory_upgrade_tax) ? territory_upgrade_tax : 0
+          tax = (territory_purchase_price * (tax / 100.0)).to_i if tax > 0
+          expected_locker = locker_balance - territory_purchase_price - tax
+
           execute_command
 
           ESM.discord_bot.test_outbox.await_size(2)
@@ -60,25 +74,27 @@ describe ESM::Command::Territory::Upgrade, category: "command" do
           # Player response
           expect(
             ESM.discord_bot.test_outbox.retrieve(
-              "`#{territory.encoded_id}` has been upgraded to level #{territory.level + 1}"
+              "`#{territory.encoded_id}` has been upgraded to level #{upgraded_level}"
             )
           ).not_to be(nil)
 
           # Admin log
           expect(
-            ESM.discord_bot.test_outbox.retrieve("Territory upgraded to level #{territory.level + 1}")
+            ESM.discord_bot.test_outbox.retrieve("Territory upgraded to level #{upgraded_level}")
           ).not_to be(nil)
 
-          user.exile_account.reload
-
-          # Handle taxes
-          tax = respond_to?(:territory_upgrade_tax) ? territory_upgrade_tax : 0
-          tax = (territory_purchase_price * (tax / 100.0)).to_i if tax > 0
-
-          expect(user.exile_account.locker).to(
-            eq(locker_balance - territory_purchase_price - tax),
+          expect_locker_to_eq(
+            user, expected_locker,
             "Purchase price: #{territory_purchase_price}. Tax: #{tax}"
           )
+
+          territory.reload
+
+          expect(territory.level).to eq(upgraded_level)
+          expect(territory.radius).to eq(expected_radius)
+
+          # moderators and build rights ride along to catch the upgrade reaching further than the level and size
+          expect_territory_flag_to_match_database(:level, :radius, :moderators, :build_rights)
         end
       end
 

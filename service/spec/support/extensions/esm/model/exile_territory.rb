@@ -145,6 +145,18 @@ module ESM
       ESM::Server.find(server_id)
     end
 
+    # server_id and number_of_constructions are not columns on Exile's territory table, they only exist in memory.
+    # A plain reload drops them, which leaves #server and #encoded_id raising RecordNotFound on a territory that
+    # looks perfectly fine.
+    def reload(...)
+      in_memory = slice("server_id", "number_of_constructions")
+
+      super
+
+      assign_attributes(in_memory)
+      self
+    end
+
     def encoded_id
       @encoded_id ||= begin
         hashids = Hashids.new(server.server_key, 5, "abcdefghijklmnopqrstuvwxyz")
@@ -224,6 +236,36 @@ module ESM
       end
     end
 
+    ##
+    # The flag variables in game that mirror the given attributes, paired with the value each one should be holding.
+    #
+    # The values come back formatted the way Arma stores them, which is not always the way the column stores them:
+    # `flag_stolen` is a 1/0 flag in game and `last_paid_at` is a SQL-formatted string.
+    #
+    # @param attributes [Array<Symbol, String>] Territory attributes that are mirrored onto the flag
+    #
+    # @return [Hash<String, Object>] Arma variable name => the value the flag should be holding
+    #
+    # @raise [ArgumentError] If an attribute is not mirrored onto the flag
+    #
+    # @example
+    #   territory.arma_variables_for(:level, :build_rights)
+    #   #=> {"ExileTerritoryLevel" => 3, "ExileTerritoryBuildRights" => ["76561198037177305"]}
+    #
+    def arma_variables_for(*attributes)
+      attributes.to_h do |attribute|
+        attribute = attribute.to_s
+
+        arma_variable = MAPPING.fetch(attribute) do
+          raise ArgumentError,
+            "Territory attribute #{attribute.in_quotes} is not mirrored onto the flag. " \
+            "Mirrored attributes: #{MAPPING.keys.join(", ")}"
+        end
+
+        [arma_variable, arma_value_for(attribute)]
+      end
+    end
+
     private
 
     MAPPING = {
@@ -247,16 +289,19 @@ module ESM
           next
         end
 
-        value =
-          if attribute == "flag_stolen"
-            flag_stolen ? 1 : 0
-          elsif attribute == "last_paid_at"
-            last_paid_at.strftime(ESM::Time::Format::SQL_TIME)
-          else
-            public_send(attribute)
-          end
+        "_territory setVariable [#{arma_variable.to_json}, #{arma_value_for(attribute).to_json}];"
+      end
+    end
 
-        "_territory setVariable [#{arma_variable.to_json}, #{value.to_json}];"
+    # Arma does not carry every attribute the way the column stores it.
+    def arma_value_for(attribute)
+      case attribute
+      when "flag_stolen"
+        flag_stolen ? 1 : 0
+      when "last_paid_at"
+        last_paid_at.strftime(ESM::Time::Format::SQL_TIME)
+      else
+        public_send(attribute)
       end
     end
 

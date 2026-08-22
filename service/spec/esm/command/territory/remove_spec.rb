@@ -81,6 +81,10 @@ describe ESM::Command::Territory::Remove, category: "command" do
     describe "#on_execute", requires_connection: true do
       include_context "connection"
 
+      # Every failure path in this command throws before it writes anything, so a failing example must find the
+      # territory exactly as it left it
+      let(:unchanged_territory_attributes) { %i[moderators build_rights] }
+
       let(:target) { second_user.mention }
       let(:target_uid) { second_user.steam_uid }
 
@@ -121,6 +125,8 @@ describe ESM::Command::Territory::Remove, category: "command" do
 
           expect(territory.moderators).not_to include(target_uid)
           expect(territory.build_rights).not_to include(target_uid)
+
+          expect_territory_flag_to_match_database(:moderators, :build_rights)
         end
       end
 
@@ -244,8 +250,10 @@ describe ESM::Command::Territory::Remove, category: "command" do
         before { territory.add_moderators!(user.steam_uid) }
 
         it "raise Remove_CannotRemoveOwner" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.to_embed.description).to match("you have no power here")
+          expect_territory_unchanged do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.to_embed.description).to match("you have no power here")
+            end
           end
         end
       end
@@ -254,8 +262,10 @@ describe ESM::Command::Territory::Remove, category: "command" do
         before { territory.add_moderators!(user.steam_uid) }
 
         it "raise Remove_CannotRemoveNothing" do
-          expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
-            expect(error.to_embed.description).to match("you can't remove someone you have no power over")
+          expect_territory_unchanged do
+            expect { execute_command }.to raise_error(ESM::Exception::ExtensionError) do |error|
+              expect(error.to_embed.description).to match("you can't remove someone you have no power over")
+            end
           end
         end
       end

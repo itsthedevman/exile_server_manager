@@ -186,22 +186,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
           expect(embed.description).to match("#{won_amount_delimited} poptabs")
           expect(embed.footer.text).to eq("Current Streak: #{streak}")
 
-          new_locker_balance = locker_balance + won_amount
-          if defined?(net_id)
-            # The in-game locker is set via a networked setVariable, which settles a
-            # frame or two after the command response returns. Poll until it lands.
-            wait_for {
-              execute_sqf! <<~SQF
-                private _playerObject = objectFromNetID "#{net_id}";
-                if (isNull _playerObject) exitWith { nil };
-
-                _playerObject getVariable ["ExileLocker", -1]
-              SQF
-            }.to eq(new_locker_balance)
-          end
-
-          user.exile_account.reload
-          expect(user.exile_account.reload.locker).to eq(new_locker_balance)
+          expect_locker_to_eq(user, locker_balance + won_amount)
         end
       end
 
@@ -223,22 +208,7 @@ describe ESM::Command::Server::Gamble, category: "command" do
           expect(embed.description).to match("#{loss_amount_delimited} poptabs")
           expect(embed.footer.text).to eq("Current Streak: #{streak}")
 
-          new_locker_balance = locker_balance - loss_amount
-          if defined?(net_id)
-            # The in-game locker is set via a networked setVariable, which settles a
-            # frame or two after the command response returns. Poll until it lands.
-            wait_for {
-              execute_sqf! <<~SQF
-                private _playerObject = objectFromNetID "#{net_id}";
-                if (isNull _playerObject) exitWith { nil };
-
-                _playerObject getVariable ["ExileLocker", -1]
-              SQF
-            }.to eq(new_locker_balance)
-          end
-
-          user.exile_account.reload
-          expect(user.exile_account.reload.locker).to eq(new_locker_balance)
+          expect_locker_to_eq(user, locker_balance - loss_amount)
         end
       end
 
