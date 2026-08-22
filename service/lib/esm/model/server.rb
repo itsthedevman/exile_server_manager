@@ -68,7 +68,7 @@ module ESM
       message = ESM::Message.new.set_type(:call)
         .set_data(
           function_name: "ESMs_command_sqf",
-          execute_on: "server",
+          execute_on:,
           code: ESM::Arma::Sqf.strip_comments(code)
         )
         .set_metadata(player:, target:)
