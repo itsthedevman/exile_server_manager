@@ -6,12 +6,15 @@ use std::{
 };
 
 use crate::{
-    context::{BuildContext, BuildOS, git_sha_short},
+    context::{BuildArch, BuildContext, BuildOS, git_sha_short},
     display::print_subprocess_line,
     error::{BuildError, BuildResult},
     spinner::MultiSpinner,
     steps::detect::{extension_filename, updater_filename},
 };
+
+/// Linker def file giving the extension cdylibs the decorated export names Arma x86 looks for.
+const WINDOWS_X86_EXPORTS: &str = "windows-x86-exports.def";
 
 pub fn build_extension(ctx: &mut BuildContext) -> BuildResult {
     let mut sp = MultiSpinner::start("Building extension");
@@ -55,7 +58,7 @@ fn build_esm(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult {
     }
     args.extend_from_slice(&release_flags);
 
-    run_cargo(&args, &extension_path.to_string_lossy(), counter, &windows_debug_rustflags(ctx))?;
+    run_cargo(&args, &extension_path.to_string_lossy(), counter, &windows_rustflags(ctx))?;
 
     let build_dir = if ctx.args.release { "release" } else { "debug" };
     let src = match ctx.args.build_os() {
@@ -96,7 +99,7 @@ fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult 
     };
     args.extend_from_slice(&release_flags);
 
-    run_cargo(&args, &updater_path.to_string_lossy(), counter, &windows_debug_rustflags(ctx))?;
+    run_cargo(&args, &updater_path.to_string_lossy(), counter, &windows_rustflags(ctx))?;
 
     let build_dir = if ctx.args.release { "release" } else { "debug" };
     let src = match ctx.args.build_os() {
@@ -125,9 +128,12 @@ fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult 
     Ok(())
 }
 
-/// Extra rustc flags a debug Windows extension needs, as `(variable, value)` pairs ready for the cargo environment.
+/// Extra rustc flags a Windows extension needs, as `(variable, value)` pairs ready for the cargo environment.
 ///
-/// Arma hands `RVExtensionArgs` an argv pointer that is only 4-byte aligned on Windows, and arma-rs reads it as
+/// Two unrelated problems, both specific to a Windows target and neither visible on Linux.
+///
+/// The first is the debug profile. Arma hands `RVExtensionArgs` an argv pointer that is only 4-byte aligned, and
+/// arma-rs reads it as
 /// `&[*mut c_char; N]`, which Rust requires to be 8-byte aligned. x86-64 loads it happily either way, so a release
 /// build never notices, but with debug assertions on the compiler's alignment check turns that read into a
 /// *non-unwinding* panic: the server aborts with `0xc0000409` on the first call into the extension, before any of
@@ -138,11 +144,33 @@ fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult 
 /// which takes a branch that never touches the pointer: the constraint belongs to the platform, not to one crate,
 /// and the first argument added to `check_update` would otherwise resurrect this.
 ///
+/// The second is 32-bit only, applies to every profile, and is why `--x32 --target=windows` produced a server
+/// that loaded no extension at all: `src/windows-x86-exports.def` gives Arma the decorated export names it looks
+/// for on x86. That file explains itself.
+///
 /// Appended to the target-scoped variable rather than set as `RUSTFLAGS`, because the dev shell already exports it
 /// to point the linker at winpthreads and the two do not merge: a plain `RUSTFLAGS` silently replaces it, and the
 /// link then fails on a missing `libpthread.a`.
-fn windows_debug_rustflags(ctx: &BuildContext) -> Vec<(String, String)> {
-    if ctx.args.release || !matches!(ctx.args.build_os(), BuildOS::Windows) {
+fn windows_rustflags(ctx: &BuildContext) -> Vec<(String, String)> {
+    if !matches!(ctx.args.build_os(), BuildOS::Windows) {
+        return vec![];
+    }
+
+    let mut flags = String::new();
+
+    // Only the debug profile carries the alignment check described above, and release already has overflow
+    // checks off, so turning them back on there would change what a release build means.
+    if !ctx.args.release {
+        flags.push_str(" -C debug-assertions=off -C overflow-checks=on");
+    }
+
+    // 32-bit only: see the file itself for why Arma cannot find the entry points without it.
+    if matches!(ctx.args.build_arch(), BuildArch::X32) {
+        let exports = ctx.git_path.join("src").join(WINDOWS_X86_EXPORTS);
+        flags.push_str(&format!(" -C link-arg={}", exports.display()));
+    }
+
+    if flags.is_empty() {
         return vec![];
     }
 
@@ -152,9 +180,8 @@ fn windows_debug_rustflags(ctx: &BuildContext) -> Vec<(String, String)> {
     );
 
     let existing = std::env::var(&variable).unwrap_or_default();
-    let value = format!("{existing} -C debug-assertions=off -C overflow-checks=on");
 
-    vec![(variable, value)]
+    vec![(variable, format!("{existing}{flags}"))]
 }
 
 /// Run `cargo <args>` in `working_dir`, streaming output through the tree pipe.

@@ -1,0 +1,25 @@
+; Export aliases for 32-bit Windows builds of the extension cdylibs.
+;
+; Arma's x86 entry points are __stdcall, so it looks them up by their decorated names: _Name@bytes, where bytes is
+; the size of the argument list on the stack. x64 has a single calling convention and no decoration, which is why
+; nothing here applies to it.
+;
+; rustc already emits correctly decorated *symbols* for these functions: `#[no_mangle] extern "system" fn
+; RVExtension` compiles to `_RVExtension@12`. What it gets wrong is the *export table*, where its generated .def
+; lists the undecorated `RVExtension`. Arma then finds no entry point it recognises, declines the extension, and
+; says nothing at all about it: no `CallExtension loaded` line, no error, and callExtension returns an empty
+; string with both result codes zero.
+;
+; Each line below aliases the decorated export name onto the symbol rustc emitted. Passed as an extra linker
+; input, these merge with rustc's own def rather than replacing it, so both spellings end up exported.
+;
+; `#[export_name]` cannot do this: rustc applies stdcall decoration on top of whatever name is given, so
+; `export_name = "_RVExtension@12"` produces `__RVExtension@12@12`. `--add-stdcall-alias` cannot either, since
+; the generated def pins the export name before the flag is consulted.
+
+EXPORTS
+_RVExtension@12 = RVExtension@12
+_RVExtensionArgs@20 = RVExtensionArgs@20
+_RVExtensionVersion@8 = RVExtensionVersion@8
+_RVExtensionRegisterCallback@4 = RVExtensionRegisterCallback@4
+_RVExtensionContext@8 = RVExtensionContext@8
