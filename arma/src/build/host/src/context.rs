@@ -64,9 +64,9 @@ pub struct Args {
     #[arg(short, long, value_enum, default_value_t = LogLevel::Debug)]
     log_level: LogLevel,
 
-    /// The URI of the server hosting esm_bot
-    #[arg(long, default_value_t = String::from("host.docker.internal:3003"))]
-    bot_host: String,
+    /// The URI of the server hosting esm_bot. Defaults per target; see `InstanceContext::bot_host`.
+    #[arg(long)]
+    bot_host: Option<String>,
 
     /// Forces a full rebuild of everything
     #[arg(short, long)]
@@ -139,8 +139,9 @@ impl Args {
         self.log_level
     }
 
-    pub fn bot_host(&self) -> &str {
-        &self.bot_host
+    /// `--bot-host` as given, or `None` to let the target decide.
+    pub fn bot_host(&self) -> Option<&str> {
+        self.bot_host.as_deref()
     }
 
     pub fn full_rebuild(&self) -> bool {
@@ -292,6 +293,9 @@ impl BuildContext {
 ///
 /// Paths *inside* the container are identical for every server, so the target it carries differs only in which
 /// container it execs into and which game port it launches with.
+/// Where a container reaches the machine running the bot. Docker resolves it; nothing else does.
+const DEFAULT_BOT_HOST: &str = "host.docker.internal:3003";
+
 pub struct InstanceContext<'a> {
     pub build: &'a BuildContext,
     pub instance: &'a Instance,
@@ -336,6 +340,27 @@ impl<'a> InstanceContext<'a> {
                 .windows
                 .as_ref()
                 .and_then(|windows| windows.database_host.as_deref()),
+        }
+    }
+
+    /// Address to write into the deployed `@esm/config.yml` as `connection_uri`.
+    ///
+    /// `host.docker.internal` is a Docker invention and resolves only inside a container, so it is the right
+    /// default for the Linux target and useless on any other host. A Windows guest names the bot's address in
+    /// `windows.bot_host` instead. An explicit `--bot-host` outranks both.
+    pub fn bot_host(&self) -> &str {
+        if let Some(host) = self.args().bot_host() {
+            return host;
+        }
+
+        match self.args().build_os() {
+            BuildOS::Linux => DEFAULT_BOT_HOST,
+            BuildOS::Windows => self
+                .config()
+                .windows
+                .as_ref()
+                .and_then(|windows| windows.bot_host.as_deref())
+                .unwrap_or(DEFAULT_BOT_HOST),
         }
     }
 

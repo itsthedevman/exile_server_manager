@@ -72,6 +72,12 @@ windows:
   # extdb3-conf.ini names `mysql_db`, which resolves only inside Docker's own network.
   database_host: 10.0.0.1
 
+  # Where this host reaches the bot. Same problem as database_host: the default written into the deployed
+  # @esm/config.yml is `host.docker.internal`, which is a Docker invention and resolves to nothing off it.
+  # Left unset, the extension boots and then fails config validation instead of connecting. `--bot-host`
+  # overrides this when given.
+  bot_host: 10.0.0.1:3003
+
   # The same arguments as `server.server_args` above, minus the semicolon escapes, which Linux needs and
   # Windows does not. Kept separate rather than shared because an escaped semicolon arrives here as a literal
   # backslash and names a mod that does not exist, which looks like a broken build rather than bad config.

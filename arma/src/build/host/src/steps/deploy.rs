@@ -50,7 +50,7 @@ fn write_runtime_config(ictx: &InstanceContext, staging: &Path) -> BuildResult {
     }
 
     let config = RuntimeConfig {
-        connection_uri: ictx.args().bot_host().to_string(),
+        connection_uri: ictx.bot_host().to_string(),
         log_level: ictx.args().log_level().to_string(),
         additional_logs: vec!["test.log".to_string(), "/tmp/test.rpt".to_string()],
     };

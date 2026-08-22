@@ -45,6 +45,15 @@ pub struct WindowsConfig {
     #[serde(default)]
     pub database_host: Option<String>,
 
+    /// Address the Windows host reaches the bot on, written into the deployed `@esm/config.yml`.
+    ///
+    /// Same problem as `database_host` and the same shape of answer. The default suits a container, which reaches
+    /// the machine running the bot as `host.docker.internal`; a guest on another bridge resolves that to nothing
+    /// and the extension fails config validation on boot rather than connecting. `--bot-host` overrides this when
+    /// it is given.
+    #[serde(default)]
+    pub bot_host: Option<String>,
+
     /// Launch arguments for the Windows server. Separate from `server.server_args` because the two shells
     /// disagree about semicolons: Linux escapes them, `cmd.exe` does not.
     #[serde(default)]
