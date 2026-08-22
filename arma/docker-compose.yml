@@ -19,14 +19,12 @@ services:
       - "./.docker-volumes/steam-data:/steamcmd"
       - "./tools/server/@exile:/arma3server/@exile"
       - "./tools/server/mpmissions:/arma3server/mpmissions"
-      - "./tools/server/test.log:/arma3server/test.log"
       # This server's own state, layered over the shared install so in-container paths stay identical.
       # @exileserver is per-server because extdb3-conf.ini names the database and config.cfg names the server.
       - "./.docker-volumes/instances/${ESM_SERVER_ID}/esm:/arma3server/@esm"
       - "./.docker-volumes/instances/${ESM_SERVER_ID}/exileserver:/arma3server/@exileserver"
       - "./.docker-volumes/instances/${ESM_SERVER_ID}/profile:/arma3server/server_profile"
       - "./.docker-volumes/instances/${ESM_SERVER_ID}/tmp:/tmp"
-      - "./tools/server/test.rpt:/tmp/test.rpt"
     tty: true
     # Published, not just exposed, so anything on the host can reach the Steam query port: the bot and website both
     # run outside this network, and A2S is how they read the map, player count, and game version. The game port
