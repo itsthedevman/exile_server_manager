@@ -11,9 +11,8 @@ use hemtt_pbo::WritablePbo;
 use crate::{
     compile::bind_replacements,
     context::BuildContext,
-    display::print_subprocess_line,
     error::{BuildError, BuildResult},
-    spinner::MultiSpinner,
+    spinner::{MultiSpinner, SubLines},
     string_table, ADDONS,
 };
 
@@ -29,6 +28,7 @@ pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
     let addon_count = ADDONS.len() + if has_test { 1 } else { 0 };
 
     let mut sp = MultiSpinner::start("Building mod");
+    let sub_lines = sp.sub_lines();
 
     // Sub-steps: compile, stringtable, sqf check, pack
     compile_sqf(ctx, &source_path, &work_path, &build_path).map_err(|e| {
@@ -58,7 +58,7 @@ pub fn build_mod(ctx: &mut BuildContext) -> BuildResult {
     })?;
     sp.sub_done("Checking SQF", false);
 
-    pack_addons(&work_path, &build_path, has_test).map_err(|e| {
+    pack_addons(&work_path, &build_path, has_test, &sub_lines).map_err(|e| {
         sp.sub_fail("Packing addons", false);
         e
     })?;
@@ -150,6 +150,7 @@ fn pack_addons(
     work_path: &Path,
     build_path: &Path,
     include_test: bool,
+    sub_lines: &SubLines,
 ) -> BuildResult {
     let src_addons = work_path.join("addons");
     let dst_addons = build_path.join("addons");
@@ -168,7 +169,7 @@ fn pack_addons(
         let dst = dst_addons.join(format!("{addon}.pbo"));
 
         let file_count = pack_pbo(&src, &dst)?;
-        print_subprocess_line(&format!("{addon}.pbo ({file_count} files)"));
+        sub_lines.print(&format!("{addon}.pbo ({file_count} files)"));
     }
 
     Ok(())

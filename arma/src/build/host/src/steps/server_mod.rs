@@ -2,7 +2,6 @@ use std::{fs, path::Path};
 
 use crate::{
     context::{BuildOS, InstanceContext},
-    display::print_subprocess_line,
     error::{BuildError, BuildResult},
     spinner::MultiSpinner,
 };
@@ -187,11 +186,10 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
     // Its own spinner with a line per item: this is minutes of silence otherwise, and the size is the only
     // answer to "why is it stuck".
     let mut spinner = MultiSpinner::start("Syncing server content");
-    let counter = spinner.line_counter();
+    let sub_lines = spinner.sub_lines();
 
     for (name, source, dest, stamp, bytes) in pending {
-        print_subprocess_line(&format!("{name} ({}) -> {}", human_size(bytes), dest.display()));
-        counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        sub_lines.print(&format!("{name} ({}) -> {}", human_size(bytes), dest.display()));
 
         if let Err(e) = ictx.target.upload(&source, &dest) {
             spinner.sub_fail(name, true);

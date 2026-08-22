@@ -143,8 +143,3 @@ pub fn tree_pipe() -> String {
     let steel = color::STEEL;
     "   │  ".truecolor(steel.0, steel.1, steel.2).to_string()
 }
-
-/// Print a sub-process output line with tree pipe indentation.
-pub fn print_subprocess_line(line: &str) {
-    println!("{}{}", tree_pipe(), line.trim_end());
-}

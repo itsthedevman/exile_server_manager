@@ -1,8 +1,8 @@
 use std::{
     io::{self, Write},
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc,
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, MutexGuard,
     },
     thread,
     time::Duration,
@@ -10,7 +10,7 @@ use std::{
 
 use colored::Colorize;
 
-use crate::display::{color, dot_leader, tree_branch};
+use crate::display::{color, dot_leader, tree_branch, tree_pipe};
 
 const FRAMES: &[char] = &['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const STEP_WIDTH: usize = 36;
@@ -108,6 +108,37 @@ impl Drop for Spinner {
 
 // ─── Multi-step Spinner ───────────────────────────────────────────────────────
 
+/// How many lines sit below a [`MultiSpinner`]'s header, and the lock every write to that region takes.
+///
+/// A mutex rather than an atomic because the count and the cursor are one piece of state. The animation thread
+/// reads the count, jumps up by it, rewrites the header and jumps back; a line printed anywhere in the middle of
+/// that leaves the cursor somewhere the count no longer describes, and the header lands on top of it.
+type LineCount = Arc<Mutex<usize>>;
+
+fn lines(count: &LineCount) -> MutexGuard<'_, usize> {
+    // A panic mid-print is a build-tool crash either way, and `stop_thread` runs from `Drop`: treating the
+    // poison as fatal there would turn that crash into an abort with nothing useful printed.
+    count.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// Prints sub-process output below a [`MultiSpinner`]'s header, keeping the header's line count in step.
+///
+/// Printing and counting are deliberately one operation. They used to be two, and every caller had to remember
+/// the second: `pack_addons` printed ten PBO lines without it, so the header animation spent the rest of the
+/// step redrawing itself ten lines below where the header actually was.
+#[derive(Clone)]
+pub struct SubLines {
+    count: LineCount,
+}
+
+impl SubLines {
+    pub fn print(&self, line: &str) {
+        let mut count = lines(&self.count);
+        println!("{}{}", tree_pipe(), line.trim_end());
+        *count += 1;
+    }
+}
+
 /// Spinner for steps that stream sub-step output below a header line.
 ///
 /// The header line animates in a background thread by using ANSI cursor-up to
@@ -115,23 +146,22 @@ impl Drop for Spinner {
 pub struct MultiSpinner {
     label: String,
     /// Number of lines printed below the header (sub-steps).
-    lines_below: Arc<AtomicUsize>,
+    lines_below: LineCount,
     stop: Arc<AtomicBool>,
     handle: Option<thread::JoinHandle<()>>,
 }
 
 impl MultiSpinner {
-    /// Returns a clone of the internal line counter.
-    /// Pass it to any code that prints below the header (e.g. cargo output)
-    /// so the animation thread knows exactly how far up to jump.
-    pub fn line_counter(&self) -> Arc<AtomicUsize> {
-        Arc::clone(&self.lines_below)
+    /// Handle for anything that prints below the header — cargo's output, SteamCMD's progress, one line per
+    /// packed addon. It is the only way to write there, so the header can never lose track of the count.
+    pub fn sub_lines(&self) -> SubLines {
+        SubLines { count: Arc::clone(&self.lines_below) }
     }
 
     pub fn start(label: impl Into<String>) -> Self {
         let label: String = label.into();
         let stop = Arc::new(AtomicBool::new(false));
-        let lines_below = Arc::new(AtomicUsize::new(0));
+        let lines_below: LineCount = Arc::new(Mutex::new(0));
 
         let stop_clone = Arc::clone(&stop);
         let lines_clone = Arc::clone(&lines_below);
@@ -150,11 +180,13 @@ impl MultiSpinner {
                     break;
                 }
 
-                let n = lines_clone.load(Ordering::Relaxed);
+                // Held across the rewrite, not just the read: nothing may print below the header while the
+                // cursor is parked on it.
+                let n = lines(&lines_clone);
                 // Cursor is currently at line (header + n + 1).
                 // Move up (n+1) to reach the header line, rewrite it,
                 // then move back down (n+1) and return to column 0.
-                let up = n + 1;
+                let up = *n + 1;
                 let frame = FRAMES[idx % FRAMES.len()];
                 let yellow = color::YELLOW;
 
@@ -174,18 +206,20 @@ impl MultiSpinner {
     /// Print a label before a sub-step begins (e.g. before cargo output).
     pub fn sub_start(&mut self, label: &str, is_last: bool) {
         let dim = color::DIM;
+        let mut count = lines(&self.lines_below);
         println!(
             "  {}{}",
             tree_branch(is_last),
             label.truecolor(dim.0, dim.1, dim.2).italic(),
         );
-        self.lines_below.fetch_add(1, Ordering::Relaxed);
+        *count += 1;
     }
 
     /// Print a sub-step success line.
     pub fn sub_done(&mut self, label: &str, is_last: bool) {
         let green = color::GREEN;
         let dots = dot_leader(label, STEP_WIDTH - 6);
+        let mut count = lines(&self.lines_below);
         println!(
             "  {}{}{} {}",
             tree_branch(is_last),
@@ -193,13 +227,14 @@ impl MultiSpinner {
             dots,
             "done".truecolor(green.0, green.1, green.2),
         );
-        self.lines_below.fetch_add(1, Ordering::Relaxed);
+        *count += 1;
     }
 
     /// Print a sub-step failure line.
     pub fn sub_fail(&mut self, label: &str, is_last: bool) {
         let red = color::RED;
         let dots = dot_leader(label, STEP_WIDTH - 6);
+        let mut count = lines(&self.lines_below);
         println!(
             "  {}{}{} {}",
             tree_branch(is_last),
@@ -207,7 +242,7 @@ impl MultiSpinner {
             dots,
             "failed".truecolor(red.0, red.1, red.2),
         );
-        self.lines_below.fetch_add(1, Ordering::Relaxed);
+        *count += 1;
     }
 
     pub fn done(mut self) {
@@ -223,8 +258,8 @@ impl MultiSpinner {
 
         // The animation thread left the last braille frame in the header.
         // Replace it with a static · so it doesn't look stuck.
-        let n = self.lines_below.load(Ordering::Relaxed);
-        let up = n + 1;
+        let n = lines(&self.lines_below);
+        let up = *n + 1;
         let dim = color::DIM;
         print!(
             "\x1b[{up}A\r  {dot} {label}\x1b[{up}B\r",

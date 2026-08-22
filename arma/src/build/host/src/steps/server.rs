@@ -5,11 +5,8 @@ use std::{
     time::Duration,
 };
 
-use std::sync::atomic::Ordering as AtomicOrdering;
-
 use crate::{
     context::{BuildContext, BuildOS, InstanceContext},
-    display::print_subprocess_line,
     error::{BuildError, BuildResult},
     spinner::MultiSpinner,
     target::Target,
@@ -184,7 +181,7 @@ pub fn check_for_exile_files(ctx: &mut BuildContext) -> BuildResult {
 /// what it looked like before.
 pub fn update_arma(ictx: &InstanceContext) -> BuildResult {
     let mut spinner = MultiSpinner::start("Updating Arma");
-    let counter = spinner.line_counter();
+    let sub_lines = spinner.sub_lines();
 
     let result = ictx.target.install_arma(
         &ictx.config().server.steam_user,
@@ -195,8 +192,7 @@ pub fn update_arma(ictx: &InstanceContext) -> BuildResult {
                 return;
             }
 
-            print_subprocess_line(line);
-            counter.fetch_add(1, AtomicOrdering::Relaxed);
+            sub_lines.print(line);
         },
     );
 

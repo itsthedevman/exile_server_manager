@@ -2,14 +2,12 @@ use std::{
     fs,
     io::{BufRead, BufReader},
     process::{Command, Stdio},
-    sync::{atomic::{AtomicUsize, Ordering}, Arc},
 };
 
 use crate::{
     context::{BuildArch, BuildContext, BuildOS, git_sha_short},
-    display::print_subprocess_line,
     error::{BuildError, BuildResult},
-    spinner::MultiSpinner,
+    spinner::{MultiSpinner, SubLines},
     steps::detect::{extension_filename, updater_filename},
 };
 
@@ -18,24 +16,24 @@ const WINDOWS_X86_EXPORTS: &str = "windows-x86-exports.def";
 
 pub fn build_extension(ctx: &mut BuildContext) -> BuildResult {
     let mut sp = MultiSpinner::start("Building extension");
-    let counter = sp.line_counter();
+    let sub_lines = sp.sub_lines();
 
     let ext_name = extension_filename(ctx.args.build_arch(), ctx.args.build_os());
     let upd_name = updater_filename(ctx.args.build_arch(), ctx.args.build_os());
 
     sp.sub_start("esm", false);
-    build_esm(ctx, &counter).map_err(|e| { sp.sub_fail(&ext_name, false); e })?;
+    build_esm(ctx, &sub_lines).map_err(|e| { sp.sub_fail(&ext_name, false); e })?;
     sp.sub_done(&ext_name, false);
 
     sp.sub_start("esm_updater", true);
-    build_updater(ctx, &counter).map_err(|e| { sp.sub_fail(&upd_name, true); e })?;
+    build_updater(ctx, &sub_lines).map_err(|e| { sp.sub_fail(&upd_name, true); e })?;
     sp.sub_done(&upd_name, true);
 
     sp.done();
     Ok(())
 }
 
-fn build_esm(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult {
+fn build_esm(ctx: &BuildContext, sub_lines: &SubLines) -> BuildResult {
     let extension_path = ctx.git_path.join("src").join("esm");
 
     fs::write(
@@ -58,7 +56,7 @@ fn build_esm(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult {
     }
     args.extend_from_slice(&release_flags);
 
-    run_cargo(&args, &extension_path.to_string_lossy(), counter, &windows_rustflags(ctx))?;
+    run_cargo(&args, &extension_path.to_string_lossy(), sub_lines, &windows_rustflags(ctx))?;
 
     let build_dir = if ctx.args.release { "release" } else { "debug" };
     let src = match ctx.args.build_os() {
@@ -87,7 +85,7 @@ fn build_esm(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult {
     Ok(())
 }
 
-fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult {
+fn build_updater(ctx: &BuildContext, sub_lines: &SubLines) -> BuildResult {
     let updater_path = ctx.git_path.join("src").join("updater").join("extension");
     let target = ctx.extension_build_target();
     let mut args = vec!["build", "--target", target];
@@ -99,7 +97,7 @@ fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult 
     };
     args.extend_from_slice(&release_flags);
 
-    run_cargo(&args, &updater_path.to_string_lossy(), counter, &windows_rustflags(ctx))?;
+    run_cargo(&args, &updater_path.to_string_lossy(), sub_lines, &windows_rustflags(ctx))?;
 
     let build_dir = if ctx.args.release { "release" } else { "debug" };
     let src = match ctx.args.build_os() {
@@ -170,7 +168,7 @@ fn windows_rustflags(ctx: &BuildContext) -> Vec<(String, String)> {
 fn run_cargo(
     args: &[&str],
     working_dir: &str,
-    counter: &Arc<AtomicUsize>,
+    sub_lines: &SubLines,
     env: &[(String, String)],
 ) -> BuildResult {
     let mut child = Command::new("cargo")
@@ -186,8 +184,7 @@ fn run_cargo(
     if let Some(stderr) = child.stderr.take() {
         let reader = BufReader::new(stderr);
         for line in reader.lines().flatten() {
-            print_subprocess_line(&line);
-            counter.fetch_add(1, Ordering::Relaxed);
+            sub_lines.print(&line);
         }
     }
 
@@ -199,8 +196,7 @@ fn run_cargo(
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines() {
             if !line.trim().is_empty() {
-                print_subprocess_line(line);
-                counter.fetch_add(1, Ordering::Relaxed);
+                sub_lines.print(line);
             }
         }
         return Err(BuildError::General(format!(
