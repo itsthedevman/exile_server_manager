@@ -130,23 +130,13 @@ fn build_updater(ctx: &BuildContext, counter: &Arc<AtomicUsize>) -> BuildResult 
 
 /// Extra rustc flags a Windows extension needs, as `(variable, value)` pairs ready for the cargo environment.
 ///
-/// Two unrelated problems, both specific to a Windows target and neither visible on Linux.
+/// Only one thing left here, and only for 32-bit: `src/windows-x86-exports.def` gives Arma the decorated export
+/// names it looks for on x86. Without it `--x32 --target=windows` produces a server that loads no extension at
+/// all and reports nothing about why. That file explains itself.
 ///
-/// The first is the debug profile. Arma hands `RVExtensionArgs` an argv pointer that is only 4-byte aligned, and
-/// arma-rs reads it as
-/// `&[*mut c_char; N]`, which Rust requires to be 8-byte aligned. x86-64 loads it happily either way, so a release
-/// build never notices, but with debug assertions on the compiler's alignment check turns that read into a
-/// *non-unwinding* panic: the server aborts with `0xc0000409` on the first call into the extension, before any of
-/// ESM's own code runs. Nothing on our side can satisfy the check, since the pointer belongs to Arma.
-///
-/// Overflow checks are the half of `debug-assertions` worth keeping, so they go back on by hand instead of
-/// following it off. The updater is built the same way despite currently exposing only a zero-argument command,
-/// which takes a branch that never touches the pointer: the constraint belongs to the platform, not to one crate,
-/// and the first argument added to `check_update` would otherwise resurrect this.
-///
-/// The second is 32-bit only, applies to every profile, and is why `--x32 --target=windows` produced a server
-/// that loaded no extension at all: `src/windows-x86-exports.def` gives Arma the decorated export names it looks
-/// for on x86. That file explains itself.
+/// A `-C debug-assertions=off` workaround used to live here too, for an abort caused by arma-rs reading Arma's
+/// unaligned argv as an aligned array reference. That is fixed properly in the fork now pinned in `Cargo.toml`,
+/// so Windows debug builds keep their assertions like every other target.
 ///
 /// Appended to the target-scoped variable rather than set as `RUSTFLAGS`, because the dev shell already exports it
 /// to point the linker at winpthreads and the two do not merge: a plain `RUSTFLAGS` silently replaces it, and the
@@ -156,23 +146,13 @@ fn windows_rustflags(ctx: &BuildContext) -> Vec<(String, String)> {
         return vec![];
     }
 
-    let mut flags = String::new();
-
-    // Only the debug profile carries the alignment check described above, and release already has overflow
-    // checks off, so turning them back on there would change what a release build means.
-    if !ctx.args.release {
-        flags.push_str(" -C debug-assertions=off -C overflow-checks=on");
-    }
-
-    // 32-bit only: see the file itself for why Arma cannot find the entry points without it.
-    if matches!(ctx.args.build_arch(), BuildArch::X32) {
-        let exports = ctx.git_path.join("src").join(WINDOWS_X86_EXPORTS);
-        flags.push_str(&format!(" -C link-arg={}", exports.display()));
-    }
-
-    if flags.is_empty() {
+    // 32-bit only, every profile: see the file itself for why Arma cannot find the entry points without it.
+    if !matches!(ctx.args.build_arch(), BuildArch::X32) {
         return vec![];
     }
+
+    let exports = ctx.git_path.join("src").join(WINDOWS_X86_EXPORTS);
+    let flags = format!(" -C link-arg={}", exports.display());
 
     let variable = format!(
         "CARGO_TARGET_{}_RUSTFLAGS",

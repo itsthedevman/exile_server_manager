@@ -13,3 +13,19 @@ members = [
 ]
 default-members = ["src/esm"]
 resolver = "2"
+
+# arma-rs is consumed from a fork rather than crates.io, and not as a convenience: 32-bit Windows does not run
+# without it. Two fixes live there, both architecture-specific bugs that only surface on Windows.
+#
+#   - Arma's callback is __cdecl, but arma-rs declares it extern "system", which is __stdcall on x86. Every
+#     callback return leaves 12 bytes of arguments on the stack, and the server dies seconds after connecting to
+#     the bot. This one is why the fork is mandatory for --x32.
+#   - Arma hands RVExtensionArgs a 4-byte-aligned argv, which arma-rs reads as an 8-byte-aligned array reference.
+#     Harmless in release, an immediate abort in any x64 build with debug assertions on.
+#
+# Both are meant to go upstream; this block comes out when they land. The branch floats rather than pinning a
+# rev, so fixes flow without an edit here. Cargo.lock is not committed, so a fresh checkout resolves to whatever
+# the branch head is at the time: pin a `rev` instead if that ever needs to be reproducible.
+[patch.crates-io]
+arma-rs = { git = "https://github.com/itsthedevman/arma-rs", branch = "esm/windows-fixes" }
+arma-rs-proc = { git = "https://github.com/itsthedevman/arma-rs", branch = "esm/windows-fixes" }
