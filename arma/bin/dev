@@ -4,5 +4,8 @@ set -euo pipefail
 
 readonly args=("$@")
 
+# No --target here even though the dev server is usually the Linux container: clap already defaults to it, and
+# naming it would make `bin/dev --target windows` fail as a repeated argument rather than pass through.
+#
 # Tests live in bin/test, not the dev lifecycle: run them when you want them.
-exec "./bin/build" --target=linux --start-server "${args[@]}"
+exec "./bin/build" --start-server "${args[@]}"
