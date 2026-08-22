@@ -3,6 +3,7 @@
 module ESM
   class User
     attr_accessor :role_id, :connected
+    attr_reader :net_id
 
     def deregister!
       update!(steam_uid: nil)
@@ -31,78 +32,22 @@ module ESM
     # This allows us to "spawn" players on the server
     # All this does is spawns a bambi and assigns player variables so the bambi AI
     # can be treated as a player
-    def connect_to(server, **player_attributes)
+    def connect_to(server)
       # Ensure these exist
       exile_account
       exile_player
 
-      spawn_test_user(server, **player_attributes)
+      spawn_test_user(server)
     end
 
-    def spawn_test_user(server, **player_attributes)
-      attributes = {
-        damage: 0,
-        hunger: 100,
-        thirst: 100,
-        alcohol: 0,
-        oxygen_remaining: 1,
-        bleeding_remaining: 0,
-        hitpoints: [["face_hub", 0], ["neck", 0], ["head", 0], ["pelvis", 0], ["spine1", 0], ["spine2", 0], ["spine3", 0], ["body", 0], ["arms", 0], ["hands", 0], ["legs", 0], ["body", 0]],
-        direction: 0,
-        position_x: 0,
-        position_y: 0,
-        position_z: 0,
-        assigned_items: [],
-        backpack: "",
-        backpack_items: [],
-        backpack_magazines: [],
-        backpack_weapons: [],
-        current_weapon: "",
-        goggles: "",
-        handgun_items: ["", "", "", ""],
-        handgun_weapon: "",
-        headgear: "",
-        binocular: "",
-        loaded_magazines: [],
-        primary_weapon: "",
-        primary_weapon_items: ["", "", "", ""],
-        secondary_weapon: "",
-        secondary_weapon_items: [],
-        uniform: "",
-        uniform_items: [],
-        uniform_magazines: [],
-        uniform_weapons: [],
-        vest: "",
-        vest_items: [],
-        vest_magazines: [],
-        vest_weapons: [],
-        account_money: exile_account.locker,
-        account_score: exile_account.score,
-        account_kills: exile_account.kills,
-        account_deaths: exile_account.deaths,
-        clan_id: "",
-        clan_name: "",
-        temperature: 37,
-        wetness: 0,
-        account_locker: exile_account.locker
-      }
-
-      attributes.each { |key, value| attributes[key] = player_attributes[key] || value }
-
-      # Offset the unused values
-      data = ["", "", ""] + attributes.values
-
+    def spawn_test_user(server)
       sqf = <<~SQF
-        private _data = #{data};
-        private _pos2D = (call ExileClient_util_world_getAllAirportPositions) select 0;
+        private _data = "loadPlayer:#{steam_uid}" call ExileServer_system_database_query_selectSingle;
 
-        _data set [11, _pos2D select 0];
-        _data set [12, _pos2D select 1];
-
-        [_data, objNull, "#{steam_uid}", 0] call ExileServer_object_player_database_load;
-        _createdPlayer = ([_pos2D select 0, _pos2D select 1, 0] nearEntities ["Exile_Unit_Player", 100]) select 0;
-        if (isNil "_createdPlayer") exitWith {};
-
+        [_data, objNull, #{steam_uid.in_quotes}, #{SecureRandom.hex(4).in_quotes}] call ExileServer_object_player_database_load;
+        _createdPlayer = #{steam_uid.in_quotes} call ExileClient_util_player_objectFromPlayerUID;
+        if (isNull _createdPlayer) exitWith { nil };
+        
         ESM_TestUser_#{steam_uid} = _createdPlayer;
         _createdPlayer allowDamage false;
         _createdPlayer setDamage 0;
