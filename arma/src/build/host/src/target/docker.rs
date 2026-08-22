@@ -310,7 +310,7 @@ impl super::Target for DockerTarget {
         self.run(&format!(
             "mkdir -p '{server}/server_profile'; \
              touch {hb}; \
-             nohup '{server}/{exe}' {args} \
+             {env}nohup '{server}/{exe}' {args} \
                >'{server}/server_profile/server.log' 2>&1 </dev/null & \
              echo $! > {spid}; \
              nohup bash -c '\
@@ -325,6 +325,7 @@ impl super::Target for DockerTarget {
                done' >/dev/null 2>&1 </dev/null & \
              echo $! > {wpid}",
             server = self.server_path.display(),
+            env = arma_environment(&self.server_path, arch),
             exe = arma_executable(arch),
             args = self.server_args,
             hb = HEARTBEAT_FILE,
@@ -422,6 +423,25 @@ fn arma_executable(arch: BuildArch) -> &'static str {
     match arch {
         BuildArch::X32 => "arma3server",
         BuildArch::X64 => "arma3server_x64",
+    }
+}
+
+/// Environment the server is launched with, as a shell prefix.
+///
+/// extDB3's 32-bit build needs `libtbbmalloc.so.2`, which Ubuntu has no i386 package for. Arma ships one in the
+/// Steam runtime it carries, so that directory goes on the search path for a 32-bit server. Without it the
+/// extension fails to load and Arma reports it as "could not be loaded", which reads like a missing file rather
+/// than a missing dependency.
+///
+/// A 64-bit server resolves everything from the system and gets nothing, since an i386 directory on its path
+/// would only be entries the loader skips.
+fn arma_environment(server_path: &Path, arch: BuildArch) -> String {
+    match arch {
+        BuildArch::X32 => format!(
+            "LD_LIBRARY_PATH='{}/steam-runtime/usr/lib/i386-linux-gnu':\"${{LD_LIBRARY_PATH:-}}\" ",
+            server_path.display()
+        ),
+        BuildArch::X64 => String::new(),
     }
 }
 

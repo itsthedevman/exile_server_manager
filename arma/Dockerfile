@@ -34,6 +34,9 @@ RUN apt-get update \
         libuchardet0 \
         # extDB3
         libtbb-dev \
+        # extDB3, 32-bit. Its other 32-bit dependency, libtbbmalloc.so.2, has no i386 build in Ubuntu at all and
+        # comes from the runtime Arma ships instead; see arma_library_path in target/docker.rs.
+        zlib1g:i386 \
     # Cleanup
     && apt-get clean autoclean \
     && apt-get autoremove -y \
