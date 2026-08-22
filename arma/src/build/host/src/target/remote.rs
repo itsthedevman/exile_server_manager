@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command as Cmd, Stdio};
 use std::sync::Arc;
 
+use super::Target;
 use crate::{
     config::{Config, Instance, WindowsConfig},
     context::BuildArch,
@@ -65,10 +66,12 @@ pub struct RemoteTarget {
     server_args: String,
     destination: String,
     steamcmd_path: PathBuf,
+    server_id: String,
+    ports: (u16, u16),
 }
 
 impl RemoteTarget {
-    pub fn new(config: &Config, instance: &Instance) -> Result<Arc<dyn super::Target>, BuildError> {
+    pub fn new(config: &Config, instance: &Instance) -> Result<Arc<dyn Target>, BuildError> {
         let Some(windows) = config.windows.as_ref() else {
             return Err(BuildError::Config(
                 "--target=windows needs a `windows:` section in config.yml naming the host to run on. Add:\n\
@@ -88,6 +91,8 @@ impl RemoteTarget {
             server_args: launch_args(windows, instance),
             destination: format!("{}@{}", windows.user, windows.host),
             steamcmd_path: PathBuf::from(&windows.steamcmd_path),
+            server_id: instance.server_id.clone(),
+            ports: (instance.port, instance.last_port()),
         }))
     }
 
@@ -107,6 +112,30 @@ impl RemoteTarget {
         base64_encode(&utf16)
     }
 
+    /// Open this server's UDP ports through Windows Firewall, replacing any rule left by a previous port range.
+    ///
+    /// A container publishes its ports and is reachable; a Windows host does not, and its firewall is on by
+    /// default for every profile. Arma binds `0.0.0.0` and answers nothing from outside, which reads as a server
+    /// that started but never came up: A2S times out, so `server details` reports no map, no players and no
+    /// version, and the spec suite's Steam query specs fail against a server that is running perfectly well.
+    ///
+    /// Torn down and recreated rather than created if missing, so that changing an instance's `port` in
+    /// config.yml moves the hole in the firewall with it instead of leaving the old one open.
+    fn open_firewall(&self) -> Result<(), BuildError> {
+        let name = format!("ESM Arma {}", self.server_id);
+
+        self.run(&format!(
+            "Remove-NetFirewallRule -DisplayName {name} -ErrorAction SilentlyContinue\n\
+             New-NetFirewallRule -DisplayName {name} -Direction Inbound -Action Allow \
+                 -Protocol UDP -LocalPort {first}-{last} -Profile Any | Out-Null",
+            name = ps_literal(&name),
+            first = self.ports.0,
+            last = self.ports.1,
+        ))?;
+
+        Ok(())
+    }
+
     fn ssh(&self) -> Cmd {
         let mut command = Cmd::new("ssh");
         command.args(SSH_OPTIONS).arg(&self.destination);
@@ -114,7 +143,7 @@ impl RemoteTarget {
     }
 }
 
-impl super::Target for RemoteTarget {
+impl Target for RemoteTarget {
     fn run(&self, cmd: &str) -> Result<String, BuildError> {
         // Progress records are silenced at the top of every script. PowerShell writes them to the error stream,
         // and over a non-interactive session they arrive as CLIXML that would otherwise be read as failure output.
@@ -360,8 +389,14 @@ impl super::Target for RemoteTarget {
             // @esm/log is cleaned too, and it is the one that used to be missed. A deploy empties @esm and so
             // hid this, but --start-only deliberately skips the deploy, leaving a log the streamer then replayed
             // from the top: every run reprinting the last one before showing anything new.
-            "Get-ChildItem -LiteralPath {profile} -Include *.log,*.rpt,*.bidmp,*.mdmp,*.txt -Recurse \
-                 -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue\n\
+            //
+            // The profile sweep filters on `Extension` rather than passing `-Include`. `-Include` matches against
+            // the *path* it was given, so it needs that path to end in a wildcard, and `-LiteralPath` is by
+            // definition a path that cannot. The two together match nothing, silently, and every RPT a server has
+            // ever written stays where it is.
+            "Get-ChildItem -LiteralPath {profile} -File -Recurse -ErrorAction SilentlyContinue | \
+                 Where-Object {{ $_.Extension -in '.log','.rpt','.bidmp','.mdmp','.txt' }} | \
+                 Remove-Item -Force -ErrorAction SilentlyContinue\n\
              Get-ChildItem -LiteralPath {esm_logs} -Filter *.log -File \
                  -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue\n\
              Remove-Item -LiteralPath {logs} -Recurse -Force -ErrorAction SilentlyContinue",
@@ -376,6 +411,10 @@ impl super::Target for RemoteTarget {
 
     fn start_arma(&self, arch: BuildArch) -> Result<(), BuildError> {
         let exe = self.server_path.join(arma_executable(arch));
+
+        // Every start, including `--start-only`: the rule is what makes the server reachable, and a run that
+        // skips the deploy is exactly the one that would otherwise never create it.
+        self.open_firewall()?;
 
         // The watchdog is encoded here and embedded as one base64 token, rather than nested as a quoted string
         // inside the outer script. Two layers of PowerShell quoting around a script holding both kinds of quote

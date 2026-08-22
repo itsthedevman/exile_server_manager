@@ -31,3 +31,21 @@ When it is missing, the loader fails on the second hop and Arma reports it again
 Call extension 'extDB3' could not be loaded: The specified module could not be found.
 "ExileServer - MySQL Error: Error Required extDB3 Version 1.027 or higher: "
 ```
+
+## Reaching the server from outside
+
+`bin/build --target=windows` opens the instance's UDP port range (`port` through `port + 4`) through Windows
+Firewall on every start, so nothing here needs doing by hand. Worth knowing what it is for: the firewall is on by
+default for all three profiles, Arma binds `0.0.0.0` and answers nothing from outside it, and the result reads as
+a server that started but never came up. Steam A2S is what notices first, because `server details` gets its map,
+player count and game version from it.
+
+A2S is also the one part of the spec suite that talks to the server directly instead of through the bot, so it is
+the one part that has to know where the server is. Point it at the host:
+
+```sh
+export ESM_ARMA_QUERY_HOST=<host>   # service/.envrc.local
+```
+
+Without it the query specs aim at `127.0.0.1`, where the Docker container publishes its ports and a remote host
+has nothing listening.
