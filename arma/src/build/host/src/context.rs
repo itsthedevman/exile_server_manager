@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    config::{parse, Config, Instance},
+    config::{parse, Config, Instance, WindowsConfig},
     error::BuildError,
     file_watcher::FileWatcher,
     target::{build_target, Target},
@@ -364,6 +364,20 @@ impl<'a> InstanceContext<'a> {
         }
     }
 
+    /// Where a game client reaches this server, as `host:port`.
+    ///
+    /// This is the address Steam queries and players connect to, which is not something anything else here
+    /// needs: the bot is reached over TCP the extension opens itself, and the database over a connection string.
+    /// Only a client talking straight to the game port cares, and the only one of those in this project is the
+    /// A2S spec.
+    pub fn game_address(&self) -> String {
+        game_address(
+            self.args().build_os(),
+            self.config().windows.as_ref(),
+            self.instance.port,
+        )
+    }
+
     /// Whether this is the first server in config.yml, which is the one a bare `bin/build --start-server`
     /// runs and the one that answers for the unnamespaced Redis key slot.
     pub fn is_default_instance(&self) -> bool {
@@ -382,6 +396,23 @@ impl<'a> InstanceContext<'a> {
             .join("instances")
             .join(&self.instance.server_id)
     }
+}
+
+/// Where a game client reaches a server, given the target it was built for.
+///
+/// A container publishes its ports onto the machine running the build, so `127.0.0.1` reaches it and no config
+/// can say otherwise. Anywhere else the address has to be named, and `game_host` is what names it; falling back
+/// to `host` keeps the common case (one literal address, used for both SSH and the game) free of a second key
+/// that would only ever repeat the first.
+fn game_address(os: BuildOS, windows: Option<&WindowsConfig>, port: u16) -> String {
+    let host = match os {
+        BuildOS::Linux => "127.0.0.1",
+        BuildOS::Windows => windows
+            .map(|windows| windows.game_host.as_deref().unwrap_or(&windows.host))
+            .unwrap_or("127.0.0.1"),
+    };
+
+    format!("{host}:{port}")
 }
 
 /// Resolve `--server-id` / `--all` against the configured servers.
@@ -447,4 +478,40 @@ pub fn has_directory_changed(watcher: &FileWatcher, path: &Path) -> bool {
     file_paths
         .filter_map(|p| p.ok())
         .any(|p| watcher.was_modified(&p))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn windows(host: &str, game_host: Option<&str>) -> WindowsConfig {
+        WindowsConfig {
+            host: host.to_string(),
+            user: "Administrator".to_string(),
+            server_path: "C:\\arma3server".to_string(),
+            steamcmd_path: "C:\\steamcmd".to_string(),
+            database_host: None,
+            bot_host: None,
+            game_host: game_host.map(|host| host.to_string()),
+            server_args: vec![],
+        }
+    }
+
+    #[test]
+    fn a_container_publishes_onto_the_build_machine() {
+        let config = windows("winvm", Some("10.0.0.2"));
+        assert_eq!(game_address(BuildOS::Linux, Some(&config), 2302), "127.0.0.1:2302");
+    }
+
+    #[test]
+    fn game_host_wins_over_the_ssh_target() {
+        let config = windows("winvm", Some("10.0.0.2"));
+        assert_eq!(game_address(BuildOS::Windows, Some(&config), 2302), "10.0.0.2:2302");
+    }
+
+    #[test]
+    fn host_stands_in_while_it_is_still_an_address() {
+        let config = windows("10.0.0.2", None);
+        assert_eq!(game_address(BuildOS::Windows, Some(&config), 2302), "10.0.0.2:2302");
+    }
 }

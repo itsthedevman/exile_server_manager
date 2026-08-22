@@ -1,4 +1,5 @@
 use std::{
+    fs,
     process::{Command, Stdio},
     sync::Arc,
     thread,
@@ -15,6 +16,10 @@ use crate::{
 /// How often the build tells the target it is still alive. The staleness threshold it is measured against
 /// belongs to the watchdog, and so lives with the target that spawns one.
 const HEARTBEAT_INTERVAL_SECS: u64 = 5;
+
+/// Where `record_game_address` leaves the address, relative to the local `target/` directory. Read by the
+/// service's A2S specs; see `spec/esm/steam/server_query_spec.rb`.
+const GAME_ADDRESS_FILE: &str = "dev-server-address";
 
 /// Name prefix shared by every server's container, and so the way to spot one this build should be managing.
 ///
@@ -221,7 +226,30 @@ pub fn clean_logs(ictx: &InstanceContext) -> BuildResult {
 /// Start the Arma 3 server, guarded by a watchdog so it dies with this build process.
 pub fn start_server(ictx: &InstanceContext) -> BuildResult {
     ictx.target.start_arma(ictx.args().build_arch())?;
+    record_game_address(ictx)?;
     spawn_heartbeat(ictx.target.clone());
+    Ok(())
+}
+
+/// Leave the started server's address where the spec suite can find it.
+///
+/// Steam queries go over UDP straight at the game port, so unlike everything else the specs do they cannot ride
+/// the connection the extension already holds open: they have to name a host. Which host that is depends on what
+/// this build was aimed at, and this run is the last thing that knew. Writing it down turns a target switch into
+/// something the specs pick up on their own, rather than a value kept in step by hand in two places.
+///
+/// Only the default instance writes it, because only the default instance is reachable: the spec harness talks
+/// to the first server in config.yml and says so when it cannot. A `--server-id` run of any other server leaves
+/// this alone rather than pointing the specs at a server they will not connect to.
+fn record_game_address(ictx: &InstanceContext) -> BuildResult {
+    if !ictx.is_default_instance() {
+        return Ok(());
+    }
+
+    let path = ictx.build.local_build_path.join(GAME_ADDRESS_FILE);
+    fs::create_dir_all(&ictx.build.local_build_path)?;
+    fs::write(path, ictx.game_address())?;
+
     Ok(())
 }
 

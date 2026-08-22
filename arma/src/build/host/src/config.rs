@@ -54,6 +54,15 @@ pub struct WindowsConfig {
     #[serde(default)]
     pub bot_host: Option<String>,
 
+    /// Address a *game client* reaches this host on, as opposed to `host`, which is how the *build* reaches it.
+    ///
+    /// The two are usually the same address and differ in kind: `host` is an SSH target, so it is allowed to be
+    /// an alias carrying a jump host and an identity file, and none of that means anything to a client sending
+    /// UDP at the game port. Left unset this falls back to `host`, which is correct for as long as `host` stays
+    /// a literal address; set it the moment `host` becomes an alias.
+    #[serde(default)]
+    pub game_host: Option<String>,
+
     /// Launch arguments for the Windows server. Separate from `server.server_args` because the two shells
     /// disagree about semicolons: Linux escapes them, `cmd.exe` does not.
     #[serde(default)]

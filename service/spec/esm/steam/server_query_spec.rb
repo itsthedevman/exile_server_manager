@@ -13,17 +13,33 @@
 # UDP query. Depending on it would let an unrelated harness problem report itself as a protocol failure.
 #
 describe ESM::Steam::ServerQuery, requires_connection: true do
-  # Arma answers A2S on the game port plus one. The default is the container arma/docker-compose.yml publishes on
-  # this host; a server running anywhere else answers on its own address, which is what the override is for.
-  let(:query_host) { ENV.fetch("ESM_ARMA_QUERY_HOST", "127.0.0.1") }
-  let(:query_port) { ENV.fetch("ESM_ARMA_QUERY_PORT", "2303").to_i }
+  # Where the dev server actually is. Every other spec reaches Arma through the connection the extension opened
+  # to the bot, so none of them need to know; a Steam query goes over UDP straight at the game port and has to
+  # name a host. That host is decided by whichever target the last `bin/build --start-server` was aimed at, so
+  # the build writes it down rather than leaving the two to be kept in step by hand.
+  let(:game_address) do
+    path = Loader.arma_path.join("target", "dev-server-address")
+
+    unless path.exist?
+      raise "No dev server address at #{path}. Start one with `bin/dev` from arma/ (add `--target windows` " \
+            "for the Windows host), which writes the address of the server it starts."
+    end
+
+    path.read.strip
+  end
+
+  let(:query_host) { ENV.fetch("ESM_ARMA_QUERY_HOST") { game_address.rpartition(":").first } }
+
+  # Arma answers Steam queries on the port above the one players join on, the same derivation ESM::Server#query_port
+  # makes from a configured join port.
+  let(:query_port) { ENV.fetch("ESM_ARMA_QUERY_PORT") { game_address.rpartition(":").last.to_i + 1 }.to_i }
 
   before do
     described_class.info(host: query_host, port: query_port, timeout: 2)
   rescue described_class::Error => e
     raise "Arma isn't answering A2S on #{query_host}:#{query_port} (#{e.message}). " \
-          "Bring it up with `bin/dev` from arma/, which publishes the query port. " \
-          "Against a server on another host, point ESM_ARMA_QUERY_HOST (and ESM_ARMA_QUERY_PORT) at it."
+          "That address came from the last `bin/build --start-server`, so a server that has since stopped or " \
+          "moved needs another one. ESM_ARMA_QUERY_HOST and ESM_ARMA_QUERY_PORT override it."
   end
 
   describe ".info" do

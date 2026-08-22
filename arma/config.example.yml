@@ -78,6 +78,11 @@ windows:
   # overrides this when given.
   bot_host: 10.0.0.1:3003
 
+  # Where a game client reaches this host, as opposed to `host` above, which is where the build reaches it.
+  # Defaults to `host`, which is right until `host` becomes an ssh alias: a jump host and an identity file mean
+  # nothing to a client sending UDP at the game port. Set this as soon as `host` stops being a literal address.
+  game_host: 10.0.0.2
+
   # The same arguments as `server.server_args` above, minus the semicolon escapes, which Linux needs and
   # Windows does not. Kept separate rather than shared because an escaped semicolon arrives here as a literal
   # backslash and names a mod that does not exist, which looks like a broken build rather than bad config.
