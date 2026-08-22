@@ -42,6 +42,16 @@ const WATCHDOG_PID_FILE: &str = "C:\\temp\\esm_watchdog.pid";
 const HEARTBEAT_STALE_SECS: u64 = 15;
 const HEARTBEAT_POLL_SECS: u64 = 3;
 
+/// Longest script worth handing to `-EncodedCommand` in one go.
+///
+/// Windows caps a command line at 8191 characters and the encoding inflates a script by roughly 2.7x, so
+/// somewhere around three thousand characters a command stops being sendable. What makes this worth measuring
+/// rather than discovering is how it fails: sshd refuses the exec request outright, so nothing runs and there is
+/// no far-side error to report. A caller reading that as "nothing came back" sees an ordinary quiet instead of a
+/// failure. Log streaming hit exactly that, going silent for the rest of the run once a server had been started
+/// often enough to leave a dozen log files behind.
+const MAX_SCRIPT_CHARS: usize = 2000;
+
 /// Target implementation for a Windows host reached over SSH.
 ///
 /// Commands go out as PowerShell rather than `cmd`, encoded rather than quoted. Windows' sshd hands a bare
@@ -466,7 +476,7 @@ impl super::Target for RemoteTarget {
         }
 
         let separator = crate::target::LOG_FRAME_SEPARATOR;
-        let script: String = files
+        let blocks: Vec<String> = files
             .iter()
             .map(|path| {
                 let offset = offsets.get(*path).copied().unwrap_or(0);
@@ -493,7 +503,20 @@ impl super::Target for RemoteTarget {
             })
             .collect();
 
-        let raw = self.run(&script).ok()?;
+        // One script per handful of files rather than one for all of them. The list grows with every run a
+        // server has ever had, since each leaves an RPT and extDB leaves a dated directory, so a single script
+        // outgrows what a command line can carry after surprisingly few builds. Batching keeps each one well
+        // inside that ceiling no matter how much history has piled up.
+        let mut raw = String::new();
+
+        for batch in batch_scripts(&blocks) {
+            let Ok(chunk) = self.run(&batch) else {
+                continue;
+            };
+
+            raw.push_str(&chunk);
+            raw.push('\n');
+        }
 
         if raw.trim().is_empty() { None } else { Some(raw) }
     }
@@ -519,6 +542,29 @@ fn arma_executable(arch: BuildArch) -> &'static str {
         BuildArch::X32 => "arma3server.exe",
         BuildArch::X64 => "arma3server_x64.exe",
     }
+}
+
+/// Group per-file script fragments into scripts that each stay under [`MAX_SCRIPT_CHARS`].
+///
+/// A fragment longer than the budget on its own still gets its own script: it will fail, but splitting it would
+/// produce two halves of a PowerShell block, which fails less legibly.
+fn batch_scripts(blocks: &[String]) -> Vec<String> {
+    let mut batches = Vec::new();
+    let mut current = String::new();
+
+    for block in blocks {
+        if !current.is_empty() && current.len() + block.len() > MAX_SCRIPT_CHARS {
+            batches.push(std::mem::take(&mut current));
+        }
+
+        current.push_str(block);
+    }
+
+    if !current.is_empty() {
+        batches.push(current);
+    }
+
+    batches
 }
 
 /// Wrap a value as a PowerShell single-quoted string.

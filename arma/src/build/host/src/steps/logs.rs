@@ -219,10 +219,16 @@ fn watch_server(
 }
 
 /// Derive a short display label from a file path.
+///
+/// The name is picked out by hand rather than with `file_stem`, and that is not a style choice. These paths name
+/// files on whichever host the server runs on, while the `Path` doing the parsing was built here: to a Linux
+/// `Path`, a Windows path is one long component with no separators in it at all, so its "stem" is the whole thing
+/// and every label comes out as the first few characters of `C:\...`. Splitting on both separators reads the name
+/// the far side meant.
 fn make_label(path: &PathBuf) -> String {
-    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let path_str = path.to_string_lossy();
+    let name = path_str.rsplit(['/', '\\']).next().unwrap_or(&path_str);
+    let (stem, ext) = name.rsplit_once('.').unwrap_or((name, ""));
 
     if ext == "rpt" {
         return "rpt".into();
