@@ -13,7 +13,8 @@
 # UDP query. Depending on it would let an unrelated harness problem report itself as a protocol failure.
 #
 describe ESM::Steam::ServerQuery, requires_connection: true do
-  # Published by arma/docker-compose.yml. Arma answers A2S on the game port plus one.
+  # Arma answers A2S on the game port plus one. The default is the container arma/docker-compose.yml publishes on
+  # this host; a server running anywhere else answers on its own address, which is what the override is for.
   let(:query_host) { ENV.fetch("ESM_ARMA_QUERY_HOST", "127.0.0.1") }
   let(:query_port) { ENV.fetch("ESM_ARMA_QUERY_PORT", "2303").to_i }
 
@@ -21,7 +22,8 @@ describe ESM::Steam::ServerQuery, requires_connection: true do
     described_class.info(host: query_host, port: query_port, timeout: 2)
   rescue described_class::Error => e
     raise "Arma isn't answering A2S on #{query_host}:#{query_port} (#{e.message}). " \
-          "Bring it up with `bin/dev` from arma/, which publishes the query port."
+          "Bring it up with `bin/dev` from arma/, which publishes the query port. " \
+          "Against a server on another host, point ESM_ARMA_QUERY_HOST (and ESM_ARMA_QUERY_PORT) at it."
   end
 
   describe ".info" do
