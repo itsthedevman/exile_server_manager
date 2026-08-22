@@ -24,13 +24,13 @@ pub struct Territory {
     owner_name: String,
     territory_name: String,
     radius: f64,
-    level: isize,
+    level: i64,
     flag_texture: String,
     flag_stolen: bool,
     last_paid_at: NaiveDateTime,
     build_rights: Vec<Account>,
     moderators: Vec<Account>,
-    object_count: isize,
+    object_count: i64,
     esm_custom_id: Option<String>,
 }
 
@@ -99,8 +99,8 @@ pub fn map_results(mut row: Row) -> Result<Territory, Error> {
             Err(e) => Err(e.to_string()),
         };
 
-    let id: isize = select_column(&mut row, "id")?;
-    let flag_stolen: isize = select_column(&mut row, "flag_stolen")?;
+    let id: i64 = select_column(&mut row, "id")?;
+    let flag_stolen: i64 = select_column(&mut row, "flag_stolen")?;
     let build_rights: String = select_column(&mut row, "build_rights")?;
     let moderators: String = select_column(&mut row, "moderators")?;
 

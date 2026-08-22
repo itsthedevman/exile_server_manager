@@ -11,8 +11,8 @@ struct Territory {
     // website never has to treat 0 as truthy.
     #[serde(deserialize_with = "bool_from_int")]
     flag_stolen: bool,
-    level: isize,
-    object_count: isize,
+    level: i64,
+    object_count: i64,
 }
 
 // territories arrive as a JSON aggregate, so flag_stolen comes in as 0/1 rather
@@ -28,14 +28,14 @@ where
 struct Account {
     uid: String,
     name: String,
-    locker: isize,
-    score: isize,
-    kills: isize,
-    deaths: isize,
+    locker: i64,
+    score: i64,
+    kills: i64,
+    deaths: i64,
     first_connect_at: NaiveDateTime,
     last_disconnect_at: Option<NaiveDateTime>,
-    total_connections: isize,
-    money: Option<isize>,
+    total_connections: i64,
+    money: Option<i64>,
     damage: Option<f64>,
     hunger: Option<f64>,
     thirst: Option<f64>,

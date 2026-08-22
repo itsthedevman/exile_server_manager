@@ -50,6 +50,13 @@ load_sql! {
     set_territory_payment_counter
 }
 
+/// Read one column off a row, converted to `T`.
+///
+/// Ask for a fixed width. Every integer column here holds a domain value rather than a length, and `isize`/`usize`
+/// follow the pointer width: 64 bits on the x64 build and 32 on the i686 one, so `money`, `kills`, `deaths` and
+/// `total_connections` (all `int unsigned`, up to 4,294,967,295) stop converting past 2,147,483,647 on 32-bit
+/// alone. `FromValue` reports that as an error, which takes the whole query down rather than the one field, and
+/// the server it happens on is the only one that sees it.
 pub fn select_column<T>(row: &Row, index: &str) -> Result<T, String>
 where
     T: FromValue,
