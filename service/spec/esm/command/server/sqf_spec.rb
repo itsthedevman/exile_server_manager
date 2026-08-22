@@ -170,6 +170,53 @@ describe ESM::Command::Server::Sqf, category: "command" do
         end
       end
 
+      # Arma only strips comments in its file-reading preprocessor, and this code is compiled from a string, so
+      # anything left in would come back as a silent nil with the reason buried in the server's RPT.
+      context "when the code is commented" do
+        it "executes it and returns the result" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              code_to_execute: <<~SQF
+                // Work out the answer
+                private _test = 1 + 1; /* inline */
+                _test
+              SQF
+            }
+          )
+
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
+
+          result_embed = ESM.discord_bot.test_outbox.first.content
+
+          expect(result_embed.description).to eq(
+            previous_command.t("responses.server_with_result", server_id: server.server_id, result: "2", user: user.mention)
+          )
+        end
+      end
+
+      context "when the code has a comment marker inside a string" do
+        it "leaves the string intact" do
+          execute!(
+            arguments: {
+              server_id: server.server_id,
+              code_to_execute: 'private _url = "http://esmbot.com"; // a comment' + "\n_url"
+            }
+          )
+
+          wait_for { ESM.discord_bot.test_outbox }.not_to be_empty
+
+          result_embed = ESM.discord_bot.test_outbox.first.content
+
+          expect(result_embed.description).to eq(
+            previous_command.t(
+              "responses.server_with_result",
+              server_id: server.server_id, result: "http://esmbot.com", user: user.mention
+            )
+          )
+        end
+      end
+
       context "when the code is executed on the server and the code does not return a result" do
         it "executes the code and a success embed is sent without the result" do
           execute!(

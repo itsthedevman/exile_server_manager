@@ -69,7 +69,7 @@ module ESM
         .set_data(
           function_name: "ESMs_command_sqf",
           execute_on: "server",
-          code: code
+          code: ESM::Arma::Sqf.strip_comments(code)
         )
         .set_metadata(player:, target:)
 
@@ -118,6 +118,10 @@ module ESM
     # @return [ESM::Message] the response
     #
     def call_sqf_function!(function_name, player: nil, target: nil, **arguments)
+      # Arma compiles this straight from a string, and only its file-reading preprocessor knows how to strip
+      # comments, so anything left in here is a syntax error by the time it lands
+      arguments[:code] = ESM::Arma::Sqf.strip_comments(arguments[:code]) if arguments[:code]
+
       message = ESM::Message.new
         .set_type(:call)
         .set_data(function_name:, **arguments)
