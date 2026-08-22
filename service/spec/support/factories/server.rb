@@ -37,7 +37,10 @@ FactoryBot.define do
       server_id { "esm_malden" }
       server_name { "Exile Server Manager Test" }
       server_ip { "127.0.0.1" }
-      server_port { "2602" }
+      # Matches the port arma/config.yml gives esm_malden, and so the one a dev server is actually reachable
+      # on. core/db/seeds.rb names the same pairing; the two drifting apart is what made this record describe a
+      # server nothing was listening for.
+      server_port { "2302" }
     end
 
     trait :v2 do
