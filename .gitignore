@@ -97,7 +97,7 @@ arma/src/updater/lib/keys/*
 arma/bin/upload
 arma/bin/release
 arma/tools/server/@exile/addons/*.pbo
-arma/tools/server/@exile/addons/*.exile.bisign
+arma/tools/server/@exile/addons/*.bisign
 arma/tools/server/@exile/addons/*.txt
 arma/tools/server/@exile/mod.paa
 arma/tools/server/@exileserver/logs
