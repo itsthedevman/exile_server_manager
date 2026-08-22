@@ -78,6 +78,20 @@ RSpec.shared_examples("raises_server_version_not_supported") do
   end
 end
 
+RSpec.shared_examples("arma_exile_db_id_immutable") do
+  let(:net_id) {}
+
+  # This is because of a bug that snuck through in a command that changed ExileDatabaseID on the player itself.
+  it "is expected to not change ExileDatabaseID", requires_connection: true do
+    execute_command
+
+    database_id = get_player_variable!(net_id, "ExileDatabaseID", -1)
+
+    expect(database_id).not_to be(nil), "Player object is nil"
+    expect(database_id).to be_positive
+  end
+end
+
 RSpec.shared_examples("arma_error_player_needs_to_join") do
   include_examples "raises_extension_error", "is expected to raise PlayerNeedsToJoin" do
     let!(:matcher) { "need to join" }

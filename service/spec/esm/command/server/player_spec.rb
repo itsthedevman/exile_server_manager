@@ -289,6 +289,33 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:final_amount) { amount }
 
           include_examples "modifies"
+
+          context "and the player is online" do
+            before { spawn_player_for(second_user) }
+
+            it "is expected to save correctly" do
+              execute_command
+
+              # Polled rather than read once: the networked setVariable settles a frame or two after the command's
+              # response is already back in Ruby, so a single read races it and loses on fast hardware.
+              wait_for { get_player_variable!(second_user.net_id, "ExileMoney", -1) }.to eq(final_amount)
+
+              expect(player.reload.money).to eq(final_amount)
+            end
+
+            include_examples "arma_exile_db_id_immutable" do
+              let(:net_id) { second_user.net_id }
+            end
+          end
+
+          context "and the player is offline" do
+            it "is expected to save correctly" do
+              execute_command
+
+              expect(second_user.net_id).to be(nil)
+              expect(player.reload.money).to eq(final_amount)
+            end
+          end
         end
 
         context "and the amount is negative" do
@@ -342,6 +369,29 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:final_amount) { amount }
 
           include_examples "modifies"
+
+          context "and the player is online" do
+            before { spawn_player_for(second_user) }
+
+            it "is expected to save correctly" do
+              execute_command
+
+              # Polled rather than read once: ExileLocker is set with the public flag, so it settles a frame or two
+              # after the command's response is already back in Ruby.
+              wait_for { get_player_variable!(second_user.net_id, "ExileLocker", -1) }.to eq(final_amount)
+
+              expect(account.reload.locker).to eq(final_amount)
+            end
+          end
+
+          context "and the player is offline" do
+            it "is expected to save correctly" do
+              execute_command
+
+              expect(second_user.net_id).to be(nil)
+              expect(account.reload.locker).to eq(final_amount)
+            end
+          end
         end
 
         context "and the amount is negative" do
@@ -395,6 +445,29 @@ describe ESM::Command::Server::Player, category: "command" do
           let!(:final_amount) { amount }
 
           include_examples "modifies"
+
+          context "and the player is online" do
+            before { spawn_player_for(second_user) }
+
+            it "is expected to save correctly" do
+              execute_command
+
+              # Read once rather than polled: ExileScore is set without the public flag, so it has already settled
+              # by the time the command's response returns.
+              expect(get_player_variable!(second_user.net_id, "ExileScore", -1)).to eq(final_amount)
+
+              expect(account.reload.score).to eq(final_amount)
+            end
+          end
+
+          context "and the player is offline" do
+            it "is expected to save correctly" do
+              execute_command
+
+              expect(second_user.net_id).to be(nil)
+              expect(account.reload.score).to eq(final_amount)
+            end
+          end
         end
 
         context "and the amount is negative" do

@@ -56,6 +56,15 @@ RSpec.shared_context("connection") do
     net_id
   end
 
+  def get_player_variable!(net_id, variable, default = nil)
+    server.execute_sqf! <<~SQF
+      private _playerObject = objectFromNetId "#{net_id}";
+      if (isNull(_playerObject)) exitWith { nil };
+
+      _playerObject getVariable ["#{variable}", #{default.to_json}]
+    SQF
+  end
+
   def reinitialize_server!
     server.connection.close
 
