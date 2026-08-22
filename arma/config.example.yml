@@ -99,3 +99,14 @@ windows:
     - world=empty
     - noSound
     - nosplash
+
+#
+# The Arma 3 client `bin/client` launches, for testing against a running dev server by hand.
+#
+# Optional. Without it the client connects to localhost, which is right when the server runs on the same machine
+# as the game. Set it when they are different machines, so the address stays here rather than in the script.
+client:
+  # Where the game client reaches the server. An address or a name this machine resolves; `bin/client` resolves it
+  # before handing it over, since Arma runs under Proton and a name known only to Linux does not exist inside the
+  # prefix. Ignored when --host is passed.
+  host: 10.0.0.2

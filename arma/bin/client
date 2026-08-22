@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+
+# Launches an Arma 3 client and connects it to a dev server.
+#
+# This runs on the machine with the display, which is not always the one running the server. When the two are
+# different machines, put the server's address in config.yml under `client.host` rather than passing --host every
+# time; config.yml is gitignored, so a machine name stays on the machine it belongs to.
+#
+# The client only needs @ExileMod. @esm and @exileserver are server mods, so nothing built out of this repo has
+# to reach the client, and a client launch never has to wait on a build.
+
+set -euo pipefail
+
+readonly arma_app_id=107410
+readonly exile_workshop_id=1487484880
+readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+host=""
+server_id=""
+port=""
+password=""
+profile="esm_dev"
+connect=1
+dry_run=0
+extra_args=()
+
+usage() {
+  cat <<'TEXT'
+Usage: bin/client [options] [-- extra arma args]
+
+  --host HOST        Server to connect to (default: config.yml's client.host, else localhost)
+  --server-id ID     Which instance from config.yml to join (default: the first one)
+  --port PORT        Skip the config.yml lookup and use this port
+  --password PASS    Server password (default: read from the dev server's config.cfg)
+  --profile NAME     Arma profile name (default: esm_dev)
+  --no-connect       Launch the game with the mods loaded but do not join a server
+  --dry-run          Print the launch command instead of running it
+  -h, --help         Show this
+
+Anything after `--` is appended to the Arma command line untouched.
+TEXT
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host) host="$2"; shift 2 ;;
+    --server-id) server_id="$2"; shift 2 ;;
+    --port) port="$2"; shift 2 ;;
+    --password) password="$2"; shift 2 ;;
+    --profile) profile="$2"; shift 2 ;;
+    --no-connect) connect=0; shift ;;
+    --dry-run) dry_run=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; extra_args=("$@"); break ;;
+    *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+  esac
+done
+
+# Steam spreads libraries across drives and libraryfolders.vdf keeps stale entries for ones that are not mounted,
+# so every candidate is checked for the game rather than trusting the first path listed.
+find_arma_directory() {
+  if [[ -n "${ARMA3_PATH:-}" ]]; then
+    echo "${ARMA3_PATH}"
+    return
+  fi
+
+  local vdf="${HOME}/.steam/steam/steamapps/libraryfolders.vdf"
+  [[ -f "${vdf}" ]] || return 1
+
+  local library candidate
+  while IFS= read -r library; do
+    candidate="${library}/steamapps/common/Arma 3"
+    if [[ -d "${candidate}" ]]; then
+      echo "${candidate}"
+      return
+    fi
+  done < <(grep -oE '"path"[[:space:]]*"[^"]+"' "${vdf}" | sed -E 's/.*"path"[[:space:]]*"(.*)"/\1/')
+
+  return 1
+}
+
+# Reads a port out of config.yml for the given server_id, or the first instance's when none was asked for.
+# config.yml is gitignored and machine-local, so this reads whatever this machine has rather than a committed copy.
+lookup_port() {
+  local config="${repo_root}/config.yml" wanted="$1"
+
+  [[ -f "${config}" ]] || return 1
+
+  awk -v wanted="${wanted}" '
+    /^[[:space:]]*-[[:space:]]*server_id:/ {
+      current = $0
+      sub(/.*server_id:[[:space:]]*/, "", current)
+      gsub(/[[:space:]"]/, "", current)
+      if (wanted == "") wanted = current
+    }
+    /^[[:space:]]*port:/ && current == wanted {
+      value = $0
+      sub(/.*port:[[:space:]]*/, "", value)
+      gsub(/[[:space:]]/, "", value)
+      print value
+      exit
+    }
+  ' "${config}"
+}
+
+# The server's address, when it is not this machine. Scoped to the `client` block on purpose: `windows` carries a
+# `host` of its own, and a looser match would happily hand back the Windows build host instead.
+lookup_client_host() {
+  local config="${repo_root}/config.yml"
+
+  [[ -f "${config}" ]] || return 1
+
+  awk '
+    /^[^[:space:]#]/ { section = $0; sub(/:.*/, "", section) }
+    section == "client" && /^[[:space:]]+host:/ {
+      value = $0
+      sub(/.*host:[[:space:]]*/, "", value)
+      gsub(/[[:space:]"]/, "", value)
+      print value
+      exit
+    }
+  ' "${config}"
+}
+
+lookup_password() {
+  local config="${repo_root}/tools/server/@exileserver/config.cfg"
+
+  [[ -f "${config}" ]] || return 1
+
+  grep -iE '^[[:space:]]*password[[:space:]]*=' "${config}" |
+    head -1 |
+    sed -E 's/.*=[[:space:]]*"?([^";]*)"?[[:space:]]*;.*/\1/'
+}
+
+arma_directory="$(find_arma_directory)" || {
+  echo "Could not find an Arma 3 install. Set ARMA3_PATH to its directory." >&2
+  exit 1
+}
+
+# Workshop content is a sibling of `common`, not of the game. Normalised through cd so the symlink this ends up
+# pointing at reads as a real path rather than one with `../..` buried in the middle of it.
+readonly steamapps_directory="$(cd "${arma_directory}/../.." && pwd)"
+readonly workshop_mod="${steamapps_directory}/workshop/content/${arma_app_id}/${exile_workshop_id}"
+
+if [[ ! -d "${workshop_mod}" ]]; then
+  echo "@ExileMod is not installed. Subscribe to workshop item ${exile_workshop_id} and let Steam download it." >&2
+  exit 1
+fi
+
+# Arma resolves a relative -mod against its own directory, and a relative path is the one form that survives the
+# Linux-to-Windows path translation Proton does. Hence a symlink next to the game rather than an absolute path.
+readonly mod_link="${arma_directory}/@ExileMod"
+
+if [[ ! -e "${mod_link}" ]]; then
+  ln -s "${workshop_mod}" "${mod_link}"
+  echo "Linked @ExileMod -> ${workshop_mod}"
+fi
+
+if [[ -z "${host}" ]]; then
+  host="$(lookup_client_host)" || true
+  host="${host:-localhost}"
+fi
+
+if [[ -z "${port}" ]]; then
+  port="$(lookup_port "${server_id}")" || true
+fi
+
+if [[ ${connect} -eq 1 && -z "${port}" ]]; then
+  echo "Could not work out which port to join. Pass --port, or --server-id naming an entry in config.yml." >&2
+  exit 1
+fi
+
+if [[ -z "${password}" ]]; then
+  password="$(lookup_password)" || true
+fi
+
+# Resolved here rather than left to the game. Arma is a Windows binary under Proton and does its own name
+# resolution inside the prefix, where a name that only exists in this machine's /etc/hosts does not. It fails by
+# sitting on the loading screen without logging anything, so the name never gets that far.
+if [[ ${connect} -eq 1 && ! "${host}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  resolved="$(getent ahostsv4 "${host}" 2>/dev/null | awk 'NR == 1 { print $1 }')" || true
+
+  if [[ -z "${resolved}" ]]; then
+    echo "Could not resolve '${host}'. Pass --host with an IP address." >&2
+    exit 1
+  fi
+
+  echo "Resolved ${host} -> ${resolved}"
+  host="${resolved}"
+fi
+
+launch_args=(
+  -noLauncher
+  -mod=@ExileMod
+  "-name=${profile}"
+  -nosplash
+  -skipIntro
+  -world=empty
+)
+
+if [[ ${connect} -eq 1 ]]; then
+  launch_args+=("-connect=${host}" "-port=${port}")
+  [[ -n "${password}" ]] && launch_args+=("-password=${password}")
+fi
+
+[[ ${#extra_args[@]} -gt 0 ]] && launch_args+=("${extra_args[@]}")
+
+if [[ ${dry_run} -eq 1 ]]; then
+  echo "steam -applaunch ${arma_app_id} ${launch_args[*]}"
+  exit 0
+fi
+
+if [[ ${connect} -eq 1 ]]; then
+  echo "Connecting to ${host}:${port} as ${profile}"
+else
+  echo "Launching with @ExileMod, no server"
+fi
+
+# Launched through Steam rather than Proton directly: Steam owns the compatibility tool, the prefix and the
+# runtime, and reimplementing that here would break every time any of the three moved.
+exec steam -applaunch "${arma_app_id}" "${launch_args[@]}"
