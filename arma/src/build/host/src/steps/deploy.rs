@@ -10,6 +10,9 @@ use crate::{
 /// Where the fixture logs the `logs` command's specs search live locally.
 const TEST_LOG_DIR: &str = "tools/server";
 
+/// The server's authentication key. Named the same on both sides, since staging uploads it verbatim.
+const SERVER_KEY_FILE: &str = "esm.key";
+
 pub fn deploy(ictx: &InstanceContext) -> BuildResult {
     let staging = ictx.build.local_build_path.join("@esm");
     let server_esm = ictx.server_path().join("@esm");
@@ -20,10 +23,7 @@ pub fn deploy(ictx: &InstanceContext) -> BuildResult {
     // Write runtime config.yml into staging before uploading
     write_runtime_config(ictx, &staging, additional_logs)?;
 
-    // If a key file was provided (release + start-server), copy it in
-    if ictx.args().has_key_file() {
-        fs::copy(ictx.args().key_file_path(), staging.join("esm.key"))?;
-    }
+    stage_server_key(ictx, &staging, &server_esm)?;
 
     // Empty the old deploy out rather than removing the directory: @esm is this server's bind mount, so the
     // mount point itself cannot be unlinked from inside the container.
@@ -93,6 +93,42 @@ fn write_runtime_config(
 
     let yaml = serde_yaml::to_string(&config)?;
     fs::write(staging.join("config.yml"), yaml)?;
+
+    Ok(())
+}
+
+/// Carry the server's key into staging so that deploying does not take it away.
+///
+/// `esm.key` is not something staging builds. The bot publishes a key through Redis and the key exchange writes it
+/// straight onto the target, so emptying `@esm` and uploading over it used to leave the server with no key at all:
+/// the first boot after any deploy authenticated against nothing and logged `Invalid "esm.key" detected` until the
+/// exchange caught up a few seconds later.
+///
+/// `--key-file` wins, since it is the one case where a key was named on purpose. Failing that, the key already on
+/// the target comes across. Neither is final: the exchange starts after this and writes whatever Redis hands it
+/// over the top, so a rotated key still lands.
+fn stage_server_key(ictx: &InstanceContext, staging: &Path, server_esm: &Path) -> BuildResult {
+    let staged = staging.join(SERVER_KEY_FILE);
+
+    if ictx.args().has_key_file() {
+        fs::copy(ictx.args().key_file_path(), &staged)?;
+        return Ok(());
+    }
+
+    let deployed = server_esm.join(SERVER_KEY_FILE);
+
+    // Staging is shared by every server, so a key sitting in it belongs to whichever one deployed last. Better
+    // none than somebody else's: an absent key fails the boot check this is already expected to fail, while a
+    // wrong one authenticates as another server until the exchange corrects it.
+    if !ictx.target.exists(&deployed)? {
+        if staged.exists() {
+            fs::remove_file(&staged)?;
+        }
+
+        return Ok(());
+    }
+
+    ictx.target.download(&deployed, &staged)?;
 
     Ok(())
 }
