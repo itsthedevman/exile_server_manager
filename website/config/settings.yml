@@ -8,7 +8,7 @@
 #
 
 # ESM Arma mod version the website advertises (download links, /about page).
-mod_version: "2.0.3"
+mod_version: "2.0.4"
 
 # Discord OAuth credentials for the "Sign in with Discord" flow. Required -
 # define real values in settings.local.yml (dev) or the production overlay.

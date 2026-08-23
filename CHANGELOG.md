@@ -17,6 +17,12 @@ version contract and are anchored by date. Year format is Holocene.
 
 - `all_territories` query now returns territory level, object count, last-paid timestamp, and stolen/deleted state, and includes territories whose owner account is missing instead of silently excluding them
 
+### Fixed
+
+- The auto-updater names the file it could not replace and says to stop the server first, rather than passing along Windows' own message, which names neither the file nor the process holding it
+- The auto-updater cleans up its staged download when verification, extraction, or the swap fails, instead of leaving a full copy behind per attempt
+- A failed mod swap puts the addons directory back. It used to return with the directory already moved aside, leaving the server no addons at all rather than out-of-date ones
+
 ---
 
 ## [Unreleased]
@@ -35,6 +41,21 @@ version contract and are anchored by date. Year format is Holocene.
 ### Fixed
 
 - **(service)** `/server` shows the map, player count, and game version again. Valve made the Steam query challenge mandatory in December 2020 and the old client never answered it, so those three fields have been missing from every server's details since
+
+---
+
+## @esm v2.0.4 — 12026-08-23
+
+### Changed
+
+- `ESM_LogOutput` now defaults to `rpt`, so ESM's logging lands in the server's RPT without being switched on
+
+### Fixed
+
+- The Windows 32-bit extension never loaded. Arma looks for decorated export names on x86 and the DLL exported undecorated ones, so `callExtension` returned an empty string with both status codes zero: no error, no log line, and a server running with ESM silently absent
+- Windows 32-bit servers crashed a few seconds after connecting to the bot. Arma's extension callback is `__cdecl` and was being called as `__stdcall`, leaving 12 bytes of arguments on the stack on every callback
+- Poptab, respect, and locker values past 2,147,483,647 failed on Windows 32-bit servers, and took the whole query down rather than the one field. The same values worked on 64-bit
+- `ESMs_util_number_toString` returned nothing on Windows 32-bit for values past 4,294,967,295, which pop tabs and respect totals reach routinely
 
 ---
 
@@ -73,6 +94,27 @@ version contract and are anchored by date. Year format is Holocene.
 ### Changed
 
 - Fixed client reconnection interval calculation
+
+---
+
+## 12026-08-22
+
+### Added
+
+- **(arma, dev)** `--target=windows` drives a real Windows Arma server over SSH: deploy, launch, log streaming, SteamCMD updates, and the firewall rule the game's UDP ports need. `bin/dev` takes the flag too
+- **(arma, dev)** `bin/build --start-server` records the address of the server it started, so the A2S specs find it without being told which target is running
+
+### Changed
+
+- **(arma, dev)** Log streaming runs through the build target rather than Docker directly, and no longer replays the previous run's output or degrades as log files accumulate
+- **(arma, dev)** SteamCMD output streams while it runs, so a multi-minute install is distinguishable from a hang
+
+### Fixed
+
+- **(arma, dev)** Windows log cleanup deleted nothing: the sweep paired `-Include` with `-LiteralPath`, which matches nothing and reports no error, so every RPT a server had ever written stayed on disk
+- **(arma, dev)** Sub-process lines printed under a build spinner were not counted, so the spinner's header redrew on top of them
+- **(arma, dev)** The `logs` command's spec fixtures are deployed to the server instead of bind-mounted, so they exist on a Windows target
+- **(arma, dev)** `updater_tester serve` kept its manifest server alive when a client hung up, and gained `--base-url` for non-Docker clients
 
 ---
 
