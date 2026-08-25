@@ -53,6 +53,20 @@ module ESM
 
     delegate :number_of_vac_bans, :days_since_last_ban, to: :bans
 
+    def to_h
+      {
+        username:,
+        avatar:,
+        profile_url:,
+        profile_visibility:,
+        profile_created_at:,
+        community_banned: community_banned?,
+        vac_banned: vac_banned?,
+        number_of_vac_bans:,
+        days_since_last_ban:
+      }
+    end
+
     private
 
     def params

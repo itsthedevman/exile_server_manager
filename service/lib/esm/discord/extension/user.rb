@@ -17,8 +17,11 @@ module Discordrb
     def to_h
       {
         id: id.to_s,
-        username: username,
-        avatar_url: avatar_url
+        username:,
+        avatar_url:,
+        distinct:,
+        status:,
+        creation_time:
       }
     end
 

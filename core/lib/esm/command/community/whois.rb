@@ -40,6 +40,16 @@ module ESM
           reply(embed)
         end
 
+        def on_website_execute
+          data = {steam: target_user.steam_data.to_h}
+
+          if user_has_access? && target_user.is_a?(ESM::User)
+            data[:discord] = target_user.discord_user.to_h
+          end
+
+          reply(data)
+        end
+
         private
 
         # Argument e is an embed
@@ -93,14 +103,20 @@ module ESM
           e.add_field(name: I18n.t("commands.whois.steam.days_since_vac_ban"), value: @steam_data.days_since_last_ban, inline: true)
         end
 
-        def check_for_user_access!
-          return if current_user.developer?
+        def user_has_access?
+          return true if current_user.developer?
 
           # This is just a steam uid, go ahead and allow it.
-          return if target_user.is_a?(ESM::User::Ephemeral)
+          return true if target_user.is_a?(ESM::User::Ephemeral)
 
           # Ensure the user in question is a member of the current Discord. This keeps players from inviting ESM and abusing the command to find admins of other servers.
-          return if current_community.discord_server.member(target_user.discord_id.to_i).present?
+          return true if current_community.discord_server.member(target_user.discord_id.to_i).present?
+
+          false
+        end
+
+        def check_for_user_access!
+          return if user_has_access?
 
           raise_error!(:access_denied, user: current_user)
         end
