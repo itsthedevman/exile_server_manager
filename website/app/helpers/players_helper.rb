@@ -131,6 +131,12 @@ module PlayersHelper
     :no_account
   end
 
+  # What to call this player, in the order the admin is most likely to recognize: the name they use in-game, then the
+  # Steam handle behind it, and only "Unknown player" when neither the server nor Steam has anything to offer.
+  def player_identity_title(target_player, identity)
+    target_player&.name.presence || identity.dig(:steam, :username).presence || "Unknown player"
+  end
+
   # Steam's own avatar, or the stand-in when Steam has nothing to give: a private profile, an outage, or a UID Steam
   # doesn't recognize.
   def player_identity_avatar_url(identity)

@@ -1,60 +1,103 @@
-/ locals: current_server, target_uid, identity
-.card.mb-4
-  .card-body
-    .row.g-4
-      .col-12.col-md-6
-        .d-flex.align-items-center.gap-3
-          = image_tag player_identity_avatar_url(identity), class: "rounded", width: 64, height: 64, alt: "Steam avatar"
+/ locals: current_server, target_uid, target_player, identity
+.row.g-4.mb-4
+  / The account. On any real server the UID on the server and the Steam account behind it are one person, so they are
+  / one block rather than two that repeat each other's avatar and UID.
+  .col-12.col-xl-6
+    .card.h-100.border-warning-subtle
+      .card-header.d-flex.align-items-center.gap-2
+        i.bi.bi-person-vcard.text-warning
+        h5.mb-0 Player
+
+      .card-body
+        .d-flex.align-items-center.gap-3.mb-3
+          img.rounded-circle.border.border-2.flex-shrink-0[
+            class=(target_player ? player_status(target_player).ring_class : "border-secondary")
+            src=player_identity_avatar_url(identity)
+            alt=(identity.dig(:steam, :username) || "Steam avatar")
+            width="56"
+            height="56"
+          ]
+
           div.min-w-0
-            .small.text-muted.text-uppercase Steam
-            - if identity.dig(:steam, :username).present?
-              h5.mb-1.text-truncate
-                - if identity.dig(:steam, :profile_url).present?
-                  = link_to identity.dig(:steam, :username), identity.dig(:steam, :profile_url), target: "_blank", rel: "noopener"
-                - else
-                  = identity.dig(:steam, :username)
+            .fs-5.fw-medium.text-truncate = player_identity_title(target_player, identity)
+            small.text-muted.font-monospace.d-block = target_uid
+
+        - if identity.dig(:steam, :username).present?
+          .d-flex.justify-content-between
+            span.text-muted.small.text-uppercase Username
+            span.fw-medium.text-truncate.ms-2
+              = link_to identity.dig(:steam, :username), identity.dig(:steam, :profile_url).presence || "#", target: "_blank", rel: "noopener", class: "text-light"
+          - if (created = player_timestamp(identity.dig(:steam, :profile_created_at)))
+            .d-flex.justify-content-between
+              span.text-muted.small.text-uppercase Created
+              span.fw-medium = created.strftime("%b %-d, %Y")
+          - if identity.dig(:steam, :profile_visibility).present?
+            .d-flex.justify-content-between
+              span.text-muted.small.text-uppercase Visibility
+              span.fw-medium = identity.dig(:steam, :profile_visibility)
+
+          .d-flex.justify-content-between.align-items-start
+            span.text-muted.small.text-uppercase Bans
+            - if identity.dig(:steam, :vac_banned) || identity.dig(:steam, :community_banned)
+              span.d-flex.flex-column.gap-1.align-items-end
+                - if identity.dig(:steam, :vac_banned)
+                  span.badge.text-bg-danger
+                    i.bi.bi-shield-exclamation.me-1
+                    | #{pluralize(identity.dig(:steam, :number_of_vac_bans).to_i, "VAC ban")}, #{pluralize(identity.dig(:steam, :days_since_last_ban).to_i, "day")} ago
+                - if identity.dig(:steam, :community_banned)
+                  span.badge.text-bg-warning
+                    i.bi.bi-slash-circle.me-1
+                    | Community banned
             - else
-              h5.mb-1.text-muted Steam has nothing for this UID
-            .small.text-muted.font-monospace = target_uid
-            - if (created = player_timestamp(identity.dig(:steam, :profile_created_at)))
-              .small.text-muted Account created #{created.strftime("%b %-d, %Y")}
-            - if identity.dig(:steam, :profile_visibility).present?
-              .small.text-muted Profile #{identity.dig(:steam, :profile_visibility).downcase}
+              span.fw-medium.text-success None
+        - else
+          .small.text-muted Nothing came back for this UID. The profile may be private, or Steam may not know it at all.
 
-        - if identity.dig(:steam, :vac_banned) || identity.dig(:steam, :community_banned)
-          .mt-3.d-flex.flex-wrap.gap-2
-            - if identity.dig(:steam, :vac_banned)
-              span.badge.text-bg-danger
-                i.bi.bi-shield-exclamation.me-1
-                | #{pluralize(identity.dig(:steam, :number_of_vac_bans).to_i, "VAC ban")}, last #{pluralize(identity.dig(:steam, :days_since_last_ban).to_i, "day")} ago
-            - if identity.dig(:steam, :community_banned)
-              span.badge.text-bg-warning
-                i.bi.bi-slash-circle.me-1
-                | Community banned
+  / Discord is the identity that genuinely may not exist, so it gets its own block and its own reason why.
+  .col-12.col-xl-6
+    .card.h-100.border-warning-subtle
+      .card-header.d-flex.align-items-center.gap-2
+        i.bi.bi-discord.text-warning
+        h5.mb-0 Discord
 
-      .col-12.col-md-6
+      .card-body
         - case player_identity_status(identity)
         - when :linked
-          .d-flex.align-items-center.gap-3
-            = image_tag player_identity_discord_avatar_url(identity), class: "rounded-circle", width: 64, height: 64, alt: "Discord avatar"
+          .d-flex.align-items-center.gap-3.mb-3
+            img.rounded-circle.border.border-2.border-secondary.flex-shrink-0[
+              src=player_identity_discord_avatar_url(identity)
+              alt=identity.dig(:discord, :username)
+              width="56"
+              height="56"
+            ]
             div.min-w-0
-              .small.text-muted.text-uppercase Discord
-              h5.mb-1.text-truncate = identity.dig(:discord, :username)
-              .small.text-muted.font-monospace = identity.dig(:discord, :id)
-              - if (created = player_timestamp(identity.dig(:discord, :creation_time)))
-                .small.text-muted Account created #{created.strftime("%b %-d, %Y")}
+              .fs-5.fw-medium.text-truncate = identity.dig(:discord, :username)
+              small.text-muted.font-monospace.d-block = identity.dig(:discord, :id)
+
+          - if (created = player_timestamp(identity.dig(:discord, :creation_time)))
+            .d-flex.justify-content-between
+              span.text-muted.small.text-uppercase Created
+              span.fw-medium = created.strftime("%b %-d, %Y")
+
+          - if identity.dig(:discord, :status).present?
+            .d-flex.justify-content-between
+              span.text-muted.small.text-uppercase Status
+              span.fw-medium = identity.dig(:discord, :status).to_s.capitalize
 
         - when :not_in_discord
-          .small.text-muted.text-uppercase.mb-1 Discord
-          p.text-muted.mb-0
-            | Registered with ESM, but not a member of #{current_server.community.community_name}'s Discord.
-            |  Players don't have to join your Discord to play here, so this is normal.
+          .text-center.text-muted.py-4
+            i.bi.bi-discord.fs-3.d-block.mb-2
+            .text-light.mb-1 Not in your Discord
+            .small Registered with ESM, but never joined #{current_server.community.community_name}. Players never have to.
 
         - when :unlinked
-          .small.text-muted.text-uppercase.mb-1 Discord
-          p.text-muted.mb-0 In your Discord, but they've never linked a Steam account to ESM.
+          .text-center.text-muted.py-4
+            i.bi.bi-steam.fs-3.d-block.mb-2
+            .text-light.mb-1 No Steam account linked
+            .small In your Discord, but has never linked Steam to ESM.
 
         - else
-          .small.text-muted.text-uppercase.mb-1 Discord
-          p.text-muted.mb-0
-            | No ESM account. This UID has only ever been seen on your server, so there's no Discord identity to find.
+          .text-center.text-muted.py-4
+            i.bi.bi-person-x.fs-3.d-block.mb-2
+            .text-light.mb-1 No ESM account
+            .small Only ever seen on your server, so there's no Discord identity to find.

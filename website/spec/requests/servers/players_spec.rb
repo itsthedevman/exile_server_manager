@@ -196,6 +196,64 @@ RSpec.describe "Servers::Players", type: :request do
       }
     end
 
+    # Every other example here runs with info: nil, so the identity block's live-character branches never render.
+    # This one hands it a real character so the alive ring and the in-game name are actually exercised.
+    context "with a character on the server" do
+      let(:character) do
+        {
+          uid: target_uid,
+          name: "Antonia Jacobson",
+          damage: 0.06,
+          hunger: 80,
+          thirst: 46,
+          money: 100,
+          locker: 200,
+          score: 10,
+          kills: 1,
+          deaths: 1,
+          first_connect_at: 2.days.ago.iso8601,
+          last_disconnect_at: nil,
+          total_connections: 3,
+          territories: []
+        }
+      end
+
+      it "titles the block with the in-game name and rings the avatar alive" do
+        stub_commands(whois: {steam: steam_identity, has_account: false, registered: false}, info: character)
+
+        get "/servers/#{server.public_id}/players/#{target_uid}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Antonia Jacobson")
+        expect(response.body).to include("border-success")
+      end
+    end
+
+    # A clean record is a finding on a page built to answer "is this player a cheater". Rendering nothing when there
+    # are no bans is what makes it look like the check never ran.
+    it "reports a clean ban record rather than staying silent" do
+      stub_commands(whois: {steam: steam_identity, has_account: false, registered: false})
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response.body).to include("Bans")
+      expect(response.body).to include("None")
+    end
+
+    it "names the bans when there are some" do
+      banned = steam_identity.merge(vac_banned: true, number_of_vac_bans: 2, days_since_last_ban: 43, community_banned: true)
+      stub_commands(whois: {steam: banned, has_account: false, registered: false})
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response.body).to include("2 VAC bans, 43 days ago")
+      expect(response.body).to include("Community banned")
+
+      # Pairs with the clean-record example above: "None" belongs to that branch alone, so each proves the other is
+      # matching the ban row rather than something incidental elsewhere on the page.
+      expect(response.body).not_to include("None")
+    end
+
     # The whole point of the page: a UID with no character here still gets a real answer rather than a dead end.
     it "renders identity even when the player has never connected" do
       stub_commands(whois: {steam: steam_identity, has_account: false, registered: false}, info: nil)
@@ -213,7 +271,7 @@ RSpec.describe "Servers::Players", type: :request do
 
       get "/servers/#{server.public_id}/players/#{target_uid}"
 
-      expect(response.body).to include("not a member of")
+      expect(response.body).to include("Not in your Discord")
       expect(response.body).not_to include("No ESM account")
     end
 
@@ -231,7 +289,7 @@ RSpec.describe "Servers::Players", type: :request do
       get "/servers/#{server.public_id}/players/#{target_uid}"
 
       expect(response.body).to include("dave_on_discord", "987654321098765432")
-      expect(response.body).not_to include("not a member of")
+      expect(response.body).not_to include("Not in your Discord")
     end
 
     # Reachable by Discord ID rather than by UID, so this page can't produce it today. The branch exists so the
@@ -241,7 +299,7 @@ RSpec.describe "Servers::Players", type: :request do
 
       get "/servers/#{server.public_id}/players/#{target_uid}"
 
-      expect(response.body).to include("never linked a Steam account")
+      expect(response.body).to include("No Steam account linked")
       expect(response.body).not_to include("No ESM account")
     end
 

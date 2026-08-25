@@ -7,8 +7,7 @@
     = link_to server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary", title: "Back to players"
       i.bi.bi-arrow-left
     div
-      h1.mb-1 Player details
-      p.text-muted.mb-0.font-monospace = target_uid
+      h1.mb-0 Player details
     - if current_server.connected? && command_accessible?("reset")
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
         = button_to reset_server_player_path(current_server, target_uid), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset #{target_player&.name || "this player"}'s player on #{current_server.server_name}?\nThis wipes their player - they lose all items and respawn fresh, and it can't be undone."}} do
@@ -16,10 +15,8 @@
           | Reset player
         #player_action_result
 
-  / Who this UID belongs to, answered from Steam and ESM rather than from the game server. It stands whether or not
-  / the character below loaded, which is the point: "never connected here" is an answer, not a dead end.
   - if identity
-    = render "servers/players/identity", current_server:, target_uid:, identity:
+    = render "servers/players/identity", current_server:, target_uid:, target_player:, identity:
 
   - if target_player
     #player_overview
