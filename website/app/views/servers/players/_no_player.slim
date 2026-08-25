@@ -6,5 +6,7 @@
       h5.text-light.mb-2 No player on #{current_server.server_name}
       p.text-muted.mb-0 You haven't spawned in on this server yet. Hop in-game to spawn, then check back here.
     - else
-      h5.text-light.mb-2 No player found
-      p.text-muted.mb-0 Nobody with that Steam UID has spawned in on #{current_server.server_name}.
+      / Not a failed lookup. The UID resolved fine, it simply has no character on this server, which is an answer in
+      / its own right when the question is "have they ever played here".
+      h5.text-light.mb-2 Never connected to #{current_server.server_name}
+      p.text-muted.mb-0 This Steam UID has no character here, so there's nothing on the server to show.

@@ -1,11 +1,19 @@
-/ locals: current_server, lookback, lookback_options, players, fetched_at, row_limit
+/ locals: current_server, lookback, lookback_options, search_name, players, fetched_at, row_limit
 .card
   .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
-    .btn-group.btn-group-sm[role="group" aria-label="Look-back window"]
-      - lookback_options.each do |key, window|
-        = link_to window[:label],
-          list_server_players_path(current_server.public_id, window: key),
-          class: class_names("btn", key == lookback ? "btn-primary" : "btn-outline-secondary")
+    / A name search reaches past every window, so the window control has nothing to steer while one is on screen.
+    - if search_name
+      .d-flex.align-items-center.gap-2
+        span.badge.text-bg-primary.d-inline-flex.align-items-center.gap-1
+          i.bi.bi-search
+          | Matching "#{search_name}"
+        = link_to "Clear", list_server_players_path(current_server.public_id, window: lookback), class: "btn btn-sm btn-link p-0"
+    - else
+      .btn-group.btn-group-sm[role="group" aria-label="Look-back window"]
+        - lookback_options.each do |key, window|
+          = link_to window[:label],
+            list_server_players_path(current_server.public_id, window: key),
+            class: class_names("btn", key == lookback ? "btn-primary" : "btn-outline-secondary")
 
     .d-flex.align-items-center.gap-3
       - if fetched_at
@@ -17,6 +25,13 @@
       h5.text-light.mb-2 Can't reach #{current_server.server_name}
       p.text-muted.mb-0 The server is offline or unreachable, so we couldn't load its players. Try again once it's back up.
 
+  - elsif players.empty? && search_name
+    .card-body.text-center.py-5
+      i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Nobody named "#{search_name}"
+      p.text-muted.mb-2 No account on #{current_server.server_name} has that in its name, however long ago they played.
+      = link_to "Back to recent players", list_server_players_path(current_server.public_id, window: lookback), class: "btn btn-sm btn-outline-secondary"
+
   - elsif players.empty?
     .card-body.text-center.py-5
       i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
@@ -24,7 +39,7 @@
       p.text-muted.mb-0 No one has connected to #{current_server.server_name} in this window. Try a wider one.
 
   - else
-    div data-controller="players-table" data-players-table-storage-key-value="players-table:#{current_server.public_id}:#{lookback}"
+    div data-controller="players-table" data-players-table-storage-key-value=players_table_storage_key(current_server, lookback:, search_name:) data-players-table-search-url-value=list_server_players_path(current_server.public_id)
       .card-body.border-bottom
         .row.g-2.align-items-center
           .col-12.col-md-5
@@ -112,7 +127,16 @@
       .card-body.text-center.py-5[hidden data-players-table-target="empty"]
         i.bi.bi-search.text-muted.fs-1.d-block.mb-3
         h5.text-light.mb-2 No matches
-        p.text-muted.mb-0 Nobody in this window matches what you're looking for.
+        - if search_name
+          p.text-muted.mb-0 Nobody in these results matches what you're looking for.
+        - else
+          / Reading "no matches" as "never played here" is the mistake this catches: the box only ever searched the
+          / rows this window loaded. The escalation asks the server about every account it has.
+          p.text-muted.mb-3 Nobody loaded in this window matches. They may not have played in the last #{lookback_options[lookback][:label]}.
+          / Href and visibility come from the controller, which knows what is currently in the search box.
+          = link_to "#", class: "btn btn-sm btn-outline-primary", hidden: true, data: {players_table_target: "searchAll"} do
+            i.bi.bi-binoculars.me-1
+            | Search every player on #{current_server.server_name} by name
 
       .card-footer.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
         / The note describes the whole capped fetch, so the controller hides it the moment a search or filter narrows
@@ -121,7 +145,10 @@
           - if players.size >= row_limit
             small.text-warning data-players-table-target="limitWarning"
               i.bi.bi-exclamation-triangle.me-1
-              | Showing the #{number_with_delimiter(row_limit)} most recent. Narrow the window to see fewer, older players.
+              - if search_name
+                | Showing the #{number_with_delimiter(row_limit)} most recent matches. Try a more specific name.
+              - else
+                | Showing the #{number_with_delimiter(row_limit)} most recent. Narrow the window to see fewer, older players.
 
         div.d-flex.align-items-center.gap-2[hidden data-players-table-target="pagination"]
           button.btn.btn-sm.btn-outline-secondary[type="button" data-players-table-target="previous" data-action="players-table#previous"]

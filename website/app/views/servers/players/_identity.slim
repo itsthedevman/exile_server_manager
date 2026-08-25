@@ -1,0 +1,60 @@
+/ locals: current_server, target_uid, identity
+.card.mb-4
+  .card-body
+    .row.g-4
+      .col-12.col-md-6
+        .d-flex.align-items-center.gap-3
+          = image_tag player_identity_avatar_url(identity), class: "rounded", width: 64, height: 64, alt: "Steam avatar"
+          div.min-w-0
+            .small.text-muted.text-uppercase Steam
+            - if identity.dig(:steam, :username).present?
+              h5.mb-1.text-truncate
+                - if identity.dig(:steam, :profile_url).present?
+                  = link_to identity.dig(:steam, :username), identity.dig(:steam, :profile_url), target: "_blank", rel: "noopener"
+                - else
+                  = identity.dig(:steam, :username)
+            - else
+              h5.mb-1.text-muted Steam has nothing for this UID
+            .small.text-muted.font-monospace = target_uid
+            - if (created = player_timestamp(identity.dig(:steam, :profile_created_at)))
+              .small.text-muted Account created #{created.strftime("%b %-d, %Y")}
+            - if identity.dig(:steam, :profile_visibility).present?
+              .small.text-muted Profile #{identity.dig(:steam, :profile_visibility).downcase}
+
+        - if identity.dig(:steam, :vac_banned) || identity.dig(:steam, :community_banned)
+          .mt-3.d-flex.flex-wrap.gap-2
+            - if identity.dig(:steam, :vac_banned)
+              span.badge.text-bg-danger
+                i.bi.bi-shield-exclamation.me-1
+                | #{pluralize(identity.dig(:steam, :number_of_vac_bans).to_i, "VAC ban")}, last #{pluralize(identity.dig(:steam, :days_since_last_ban).to_i, "day")} ago
+            - if identity.dig(:steam, :community_banned)
+              span.badge.text-bg-warning
+                i.bi.bi-slash-circle.me-1
+                | Community banned
+
+      .col-12.col-md-6
+        - case player_identity_status(identity)
+        - when :linked
+          .d-flex.align-items-center.gap-3
+            = image_tag player_identity_discord_avatar_url(identity), class: "rounded-circle", width: 64, height: 64, alt: "Discord avatar"
+            div.min-w-0
+              .small.text-muted.text-uppercase Discord
+              h5.mb-1.text-truncate = identity.dig(:discord, :username)
+              .small.text-muted.font-monospace = identity.dig(:discord, :id)
+              - if (created = player_timestamp(identity.dig(:discord, :creation_time)))
+                .small.text-muted Account created #{created.strftime("%b %-d, %Y")}
+
+        - when :not_in_discord
+          .small.text-muted.text-uppercase.mb-1 Discord
+          p.text-muted.mb-0
+            | Registered with ESM, but not a member of #{current_server.community.community_name}'s Discord.
+            |  Players don't have to join your Discord to play here, so this is normal.
+
+        - when :unlinked
+          .small.text-muted.text-uppercase.mb-1 Discord
+          p.text-muted.mb-0 In your Discord, but they've never linked a Steam account to ESM.
+
+        - else
+          .small.text-muted.text-uppercase.mb-1 Discord
+          p.text-muted.mb-0
+            | No ESM account. This UID has only ever been seen on your server, so there's no Discord identity to find.

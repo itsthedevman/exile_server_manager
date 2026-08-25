@@ -40,12 +40,17 @@ module ESM
           reply(embed)
         end
 
+        # An absent :discord is ambiguous on its own - the target may have no ESM account, may have one they never
+        # linked a Steam UID to, or may simply not be in the caller's Discord. Those are three different answers, and
+        # the caller can only tell them apart if the flags come along to say which.
         def on_website_execute
-          data = {steam: target_user.steam_data.to_h}
+          data = {
+            steam: target_user.steam_data.to_h,
+            has_account: target_user.is_a?(ESM::User),
+            registered: target_user.registered?
+          }
 
-          if user_has_access? && target_user.is_a?(ESM::User)
-            data[:discord] = target_user.discord_user.to_h
-          end
+          data[:discord] = target_user.discord_user.to_h if data[:has_account] && user_has_access?
 
           reply(data)
         end

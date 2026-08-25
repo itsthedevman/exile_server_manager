@@ -1,4 +1,4 @@
-/ locals: current_server, lookback
+/ locals: current_server, lookback, search_name
 - content_for :title, "Players on #{current_server.server_name}"
 
 = render "servers/container", current_server: do
@@ -14,7 +14,7 @@
         #reset_all_result
 
   = turbo_frame_tag "players_list",
-    src: list_server_players_path(current_server.public_id, window: lookback),
+    src: list_server_players_path(current_server.public_id, window: lookback, name: search_name),
     loading: :lazy
 
     .card

@@ -108,6 +108,10 @@ describe ESM::Command::Community::Whois, category: "command" do
         expect(result[:steam]).to be_present
         expect(result).not_to have_key(:discord)
       end
+
+      it "still reports that the target has an account" do
+        expect(result).to include(has_account: true, registered: true)
+      end
     end
 
     # A bare Steam UID has no ESM account behind it, so there is no Discord identity to withhold in the first place.
@@ -117,6 +121,20 @@ describe ESM::Command::Community::Whois, category: "command" do
       it "returns Steam information and withholds Discord information" do
         expect(result[:steam]).to be_present
         expect(result).not_to have_key(:discord)
+      end
+
+      it "reports that there is no account behind the UID" do
+        expect(result).to include(has_account: false, registered: false)
+      end
+    end
+
+    # Without the flags this is indistinguishable from the UID above, and the two deserve different answers: one has
+    # never touched ESM, the other is in the caller's Discord and simply never linked Steam.
+    context "when the target has an account but never linked a Steam UID" do
+      let(:target) { second_user.tap { |user| user.update!(steam_uid: nil) }.discord_id }
+
+      it "separates having an account from having registered" do
+        expect(result).to include(has_account: true, registered: false)
       end
     end
   end

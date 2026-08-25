@@ -53,6 +53,232 @@ RSpec.describe "Servers::Players", type: :request do
     end
   end
 
+  describe "GET list" do
+    before { allow_access(denied: false) }
+
+    # The arguments handed to the players command are the whole contract between this page and the game server, so
+    # they are what these assert on rather than the rendered markup.
+    def command_arguments
+      captured = nil
+
+      allow(ESM::Service::API).to receive(:call) do |handler, **options|
+        captured = options[:arguments] if handler == :sync_command
+        nil
+      end
+
+      yield
+
+      captured
+    end
+
+    it "asks for the look-back window when no name is given" do
+      arguments = command_arguments { get "/servers/#{server.public_id}/players/list?window=7d" }
+
+      expect(arguments).to include(:connected_since)
+      expect(arguments).not_to have_key(:name)
+    end
+
+    it "passes a name through to the query" do
+      arguments = command_arguments { get "/servers/#{server.public_id}/players/list?name=Dave" }
+
+      expect(arguments[:name]).to eq("Dave")
+    end
+
+    # A blank name would match every account, so it has to read as "no name given" rather than as a search.
+    it "treats a blank name as absent" do
+      arguments = command_arguments { get "/servers/#{server.public_id}/players/list?name=%20%20" }
+
+      expect(arguments).not_to have_key(:name)
+    end
+
+    it "caps a name at the width of the column it searches" do
+      arguments = command_arguments { get "/servers/#{server.public_id}/players/list?name=#{"a" * 100}" }
+
+      expect(arguments[:name].length).to eq(64)
+    end
+
+    # The specs above all run with players: nil, which renders the "can't reach the server" state and skips the table
+    # entirely. These hand the page a real row so the name-mode markup is actually exercised.
+    context "with players to show" do
+      let(:player_row) do
+        {
+          uid: "76561198000000001",
+          name: "Dave",
+          locker: 0,
+          score: 10,
+          kills: 1,
+          deaths: 1,
+          first_connect_at: 2.days.ago.iso8601,
+          last_connect_at: 1.hour.ago.iso8601,
+          last_disconnect_at: nil,
+          total_connections: 3,
+          money: 100,
+          damage: 0.0,
+          online: true
+        }
+      end
+
+      before { allow(ESM::Service::API).to receive(:call).and_return([player_row]) }
+
+      it "names what it is matching and offers a way back" do
+        get "/servers/#{server.public_id}/players/list?name=Dave"
+
+        expect(response.body).to include('Matching "Dave"')
+        expect(response.body).to include("Clear")
+      end
+
+      # The searched-for name is drawn straight into the header, so it is user input rendered as markup.
+      it "escapes the name it echoes back" do
+        get "/servers/#{server.public_id}/players/list?name=#{CGI.escape("<script>x</script>")}"
+
+        expect(response.body).not_to include("<script>x</script>")
+        expect(response.body).to include("&lt;script&gt;")
+      end
+
+      # Without this the client-side box's "no matches" is indistinguishable from "never played here".
+      it "offers to search past the window when not already searching" do
+        get "/servers/#{server.public_id}/players/list?window=7d"
+
+        expect(response.body).to include("Search every player on")
+        expect(response.body).to include("players-table-search-url-value")
+      end
+
+      it "drops the escalation once the search has already reached past the window" do
+        get "/servers/#{server.public_id}/players/list?name=Dave"
+
+        expect(response.body).not_to include("Search every player on")
+      end
+    end
+
+    # A name search and the recency listing answer different questions. Sharing a cache entry would let whichever ran
+    # first serve the other for the rest of the TTL.
+    it "does not serve a name search from the listing's cache" do
+      calls = 0
+
+      allow(ESM::Service::API).to receive(:call) do |handler, **|
+        calls += 1 if handler == :sync_command
+        nil
+      end
+
+      get "/servers/#{server.public_id}/players/list?window=7d"
+      get "/servers/#{server.public_id}/players/list?name=Dave"
+
+      expect(calls).to eq(2)
+    end
+  end
+
+  describe "GET show" do
+    before { allow_access(denied: false) }
+
+    # The page asks two different questions of two different systems: who is this (whois) and what is their character
+    # here (info). Routing the stub by command name is what lets one answer while the other doesn't.
+    def stub_commands(whois:, info: nil)
+      allow(ESM::Service::API).to receive(:call) do |handler, **options|
+        next nil unless handler == :sync_command
+
+        (options[:command_name].to_s == "whois") ? whois : info
+      end
+    end
+
+    let(:target_uid) { "76561198000000001" }
+
+    let(:steam_identity) do
+      {
+        username: "Dave",
+        avatar: nil,
+        profile_url: "https://steamcommunity.com/id/dave",
+        profile_visibility: "Public",
+        profile_created_at: 5.years.ago.iso8601,
+        community_banned: false,
+        vac_banned: false,
+        number_of_vac_bans: 0,
+        days_since_last_ban: 0
+      }
+    end
+
+    # The whole point of the page: a UID with no character here still gets a real answer rather than a dead end.
+    it "renders identity even when the player has never connected" do
+      stub_commands(whois: {steam: steam_identity, has_account: false, registered: false}, info: nil)
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Dave")
+      expect(response.body).to include("No ESM account")
+    end
+
+    # Three different findings that used to render as the same shrug.
+    it "distinguishes a registered non-member from someone with no account" do
+      stub_commands(whois: {steam: steam_identity, has_account: true, registered: true}, info: nil)
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response.body).to include("not a member of")
+      expect(response.body).not_to include("No ESM account")
+    end
+
+    it "shows the Discord identity when whois hands one over" do
+      discord = {
+        id: "987654321098765432",
+        username: "dave_on_discord",
+        avatar_url: nil,
+        distinct: "dave#0",
+        status: nil,
+        creation_time: 3.years.ago.iso8601
+      }
+      stub_commands(whois: {steam: steam_identity, has_account: true, registered: true, discord:}, info: nil)
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response.body).to include("dave_on_discord", "987654321098765432")
+      expect(response.body).not_to include("not a member of")
+    end
+
+    # Reachable by Discord ID rather than by UID, so this page can't produce it today. The branch exists so the
+    # resolver has somewhere to land rather than falling through to "no ESM account", which would be wrong.
+    it "separates an unlinked account from one with no account at all" do
+      stub_commands(whois: {steam: steam_identity, has_account: true, registered: false}, info: nil)
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response.body).to include("never linked a Steam account")
+      expect(response.body).not_to include("No ESM account")
+    end
+
+    # Losing the identity lookup must not cost the admin the character data they came for.
+    it "still renders when the identity lookup fails" do
+      allow(ESM::Service::API).to receive(:call) do |handler, **options|
+        next nil unless handler == :sync_command
+        raise ESM::Service::API::Unreachable if options[:command_name].to_s == "whois"
+
+        nil
+      end
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    # Whether Discord comes back depends on the caller's community, so one community's answer must never be handed to
+    # another's admin out of the cache.
+    it "keys the identity cache per community" do
+      other_server = create(:server, community: create(:community))
+      seen = []
+
+      allow(ESM::Service::API).to receive(:call) do |handler, **options|
+        next nil unless handler == :sync_command && options[:command_name].to_s == "whois"
+
+        seen << options[:community_id]
+        {steam: steam_identity, has_account: false, registered: false}
+      end
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+      get "/servers/#{other_server.public_id}/players/#{target_uid}"
+
+      expect(seen.uniq.length).to eq(2)
+    end
+  end
+
   describe "POST reset_me" do
     def post_reset(idempotency_key: SecureRandom.uuid)
       post "/servers/#{server.public_id}/players/reset_me",

@@ -1,4 +1,4 @@
-/ locals: current_server, target_uid, target_player, fetched_at
+/ locals: current_server, target_uid, target_player, identity, fetched_at
 - content_for :title, "#{target_player&.name || "Player"} on #{current_server.server_name}"
 
 = render "servers/container", current_server: do
@@ -15,6 +15,11 @@
           i.bi.bi-arrow-counterclockwise.me-1
           | Reset player
         #player_action_result
+
+  / Who this UID belongs to, answered from Steam and ESM rather than from the game server. It stands whether or not
+  / the character below loaded, which is the point: "never connected here" is an answer, not a dead end.
+  - if identity
+    = render "servers/players/identity", current_server:, target_uid:, identity:
 
   - if target_player
     #player_overview
