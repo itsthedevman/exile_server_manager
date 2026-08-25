@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe PlayersHelper, type: :helper do
   describe "#player_status_for" do
     it "reads a living player as alive" do

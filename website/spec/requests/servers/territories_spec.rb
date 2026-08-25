@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe "Servers::Territories", type: :request do
   # A describe-body local (not a let) so it's in scope where the table is built.
   target_uid = "76561198000000042"

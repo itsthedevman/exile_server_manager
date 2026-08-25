@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe "docs/server_setup", type: :view do
   subject(:page) do
     render(template: "docs/server_setup")

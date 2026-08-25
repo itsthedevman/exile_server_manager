@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe TerritoriesHelper, type: :helper do
   def member(role)
     ESM::Exile::Territory::Member.new(name: "Someone", steam_uid: "76561198000000000", role:)

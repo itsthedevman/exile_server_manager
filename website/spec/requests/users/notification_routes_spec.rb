@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 # The player-facing XM8 notification routing (/account/notification_routes).
 # `create` reaches into the Discord bot (channel lookup + send_message) and the
 # granular `destroy` re-groups route cards - both want their own dedicated pass.

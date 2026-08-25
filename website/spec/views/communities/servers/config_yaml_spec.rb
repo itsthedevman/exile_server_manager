@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe "communities/servers/config", type: :view do
   let(:server) { create(:server) }
   let(:settings) { server.server_setting.attributes.with_indifferent_access }
