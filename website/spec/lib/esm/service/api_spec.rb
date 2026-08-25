@@ -76,5 +76,27 @@ RSpec.describe ESM::Service::API do
     it "raises Unreachable when the broker is up but no subscriber answers" do
       expect { described_class.call(:not_a_real_action) }.to raise_error(ESM::Service::API::Unreachable)
     end
+
+    # The client is told not to reconnect, which is what keeps a down bot from blocking a request for the better part
+    # of a minute. This is the other half of that bargain: a client parked at DISCONNECTED still dials again on its
+    # next request, so the shared connection survives a bot restart without anyone reaching for reset!.
+    it "recovers on its own after the broker restarts" do
+      responder = proc { |msg| msg.respond({ok: true, result: {pong: true}}.to_json) }
+
+      stub_nats.subscribe("#{subject_prefix}ping", &responder)
+      stub_nats.flush
+
+      expect(described_class.call(:ping)).to eq({pong: true})
+
+      broker.restart
+
+      resubscribed = NATS.connect(broker.url)
+      resubscribed.subscribe("#{subject_prefix}ping", &responder)
+      resubscribed.flush
+
+      expect(described_class.call(:ping, idempotent: true)).to eq({pong: true})
+    ensure
+      resubscribed&.close
+    end
   end
 end
