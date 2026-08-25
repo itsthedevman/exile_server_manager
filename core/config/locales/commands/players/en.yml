@@ -13,6 +13,8 @@ en:
           description: The oldest connection time to include. Provided by the server dashboard
         limit:
           description: The most players to return in one response. Provided by the server dashboard
+        name:
+          description: A player name to search for, ignoring the connection window. Provided by the server dashboard
       errors:
         no_players: |-
           Hey %{user}, there's no one online on `%{server_id}` right now.

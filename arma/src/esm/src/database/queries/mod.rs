@@ -36,7 +36,8 @@ load_sql! {
     command_all_territories,
     command_player_info,
     command_player_territories, // Used by multiple commands
-    command_players_list,
+    command_players_matching_name, // Both are served by command_players_list.rs
+    command_players_recently_connected,
     command_reset_all,
     command_reset_player,
     command_restore_construction,

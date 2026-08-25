@@ -1,3 +1,8 @@
+-- Paired with command_players_recently_connected.sql: both feed the same Account struct in
+-- command_players_list.rs, so a column added here has to be added there and to the struct.
+--
+-- No window constraint. Reaching past the recency cutoff is the entire point of a name search: the
+-- player being looked up is usually one who stopped showing up in the listing.
 SELECT
     a.uid,
     a.name,
@@ -19,7 +24,7 @@ FROM
     account a
     LEFT JOIN player p ON a.uid = p.account_uid
 WHERE
-    a.last_connect_at >= :connected_since
+    a.name LIKE CONCAT('%', :name, '%')
 ORDER BY
     online DESC,
     a.last_connect_at DESC
