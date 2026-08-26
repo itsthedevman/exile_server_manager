@@ -1,4 +1,4 @@
-- content_for :title, "My Player on #{current_server.server_name}"
+- content_for :title, "My Player on #{current_server.server_id}"
 
 = render "servers/container", current_server: do
   / Page header
@@ -6,7 +6,7 @@
     h1.mb-1 My Player
     - if current_server.connected? && command_accessible?("stuck")
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
-        = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your player on #{current_server.server_name}?\nThis wipes your current player - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
+        = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your player on #{current_server.server_id}?\nThis wipes your current player - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
           i.bi.bi-arrow-counterclockwise.me-1
           | I'm stuck - reset me!
         #player_action_result
@@ -26,5 +26,5 @@
     .card.border-secondary
       .card-body.text-center.py-5
         i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
-        h5.text-light.mb-2 #{current_server.server_name} is offline
+        h5.text-light.mb-2 #{current_server.server_id} is offline
         p.text-muted.mb-0 We can't load your player while the server is offline. Check back once it's back up.

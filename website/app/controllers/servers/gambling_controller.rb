@@ -57,11 +57,11 @@ module Servers
       when :unregistered
         "Link your Steam account on your account page before you can gamble."
       when :disabled
-        "Gambling is not enabled on #{current_server.server_name}."
+        "Gambling is not enabled on #{current_server.server_id}."
       when :not_allowlisted
-        "You do not have permission to gamble on #{current_server.server_name}."
+        "You do not have permission to gamble on #{current_server.server_id}."
       when :server_offline
-        "#{current_server.server_name} is offline. Betting is unavailable."
+        "#{current_server.server_id} is offline. Betting is unavailable."
       else
         "You can't gamble right now."
       end

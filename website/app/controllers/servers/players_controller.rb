@@ -58,6 +58,26 @@ module Servers
       }
     end
 
+    # The server hub's lookup bar, where an admin arrives holding whichever identifier they happen to have. Everything
+    # but a name resolves to a Steam UID, so those hand off to the pages already built to answer for one. What is left
+    # is the two ways a Discord ID dead-ends, and those are answers in their own right rather than a failed lookup.
+    def lookup
+      return unless check_for_command_access("info")
+
+      result = ESM::PlayerLookup.call(params[:q])
+
+      case result.kind
+      when :steam_uid
+        redirect_to server_player_path(current_server.public_id, result.steam_uid)
+      when :name
+        redirect_to server_players_path(current_server.public_id, name: result.query)
+      when :blank
+        redirect_to server_path(current_server.public_id)
+      else
+        render locals: {current_server:, result:}
+      end
+    end
+
     # One player's full on-server snapshot - the admin counterpart to /me, reached from the listing's row button or a
     # direct UID. It runs as the admin against a target UID, so a player who's dropped off the listing's recency window
     # is still reachable by UID alone.

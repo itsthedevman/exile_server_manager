@@ -3,7 +3,7 @@
   = form_with url: server_sqf_path(current_server.public_id), method: :post, data: {action: "formdata->sqf#fillFormData turbo:submit-end->sqf#submitEnded"} do |form|
     = form.hidden_field :idempotency_key, value: SecureRandom.uuid, data: {sqf_target: "idempotencyKey"}
 
-    .sqf-editor data-sqf-target="editor"
+    .sqf-editor data-sqf-target="editor" data-action="turbo:before-morph-element->sqf#preserveEditor"
 
     / Top-aligned, not center: the uid field's inline validation message grows this row taller, and center
     / alignment would re-center every sibling (select, Run, Clear) each time it appears - a visible jump.
@@ -24,4 +24,4 @@
 - else
   .text-muted.small.text-center.py-2
     i.bi.bi-plug.me-1
-    | #{current_server.server_name} is offline. SQF is unavailable.
+    | #{current_server.server_id} is offline. SQF is unavailable.

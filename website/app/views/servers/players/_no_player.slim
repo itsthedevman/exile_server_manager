@@ -3,10 +3,10 @@
   .card-body.text-center.py-5
     i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
     - if viewing_self
-      h5.text-light.mb-2 No player on #{current_server.server_name}
+      h5.text-light.mb-2 No player on #{current_server.server_id}
       p.text-muted.mb-0 You haven't spawned in on this server yet. Hop in-game to spawn, then check back here.
     - else
       / Not a failed lookup. The UID resolved fine, it simply has no character on this server, which is an answer in
       / its own right when the question is "have they ever played here".
-      h5.text-light.mb-2 Never connected to #{current_server.server_name}
+      h5.text-light.mb-2 Never connected to #{current_server.server_id}
       p.text-muted.mb-0 This Steam UID has no character here, so there's nothing on the server to show.

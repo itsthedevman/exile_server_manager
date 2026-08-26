@@ -135,7 +135,7 @@ module Commands
   # @return [String] The message to show the player
   #
   def command_denied_message(reason)
-    server = current_server.server_name
+    server = current_server.server_id
 
     case reason
     when :unregistered

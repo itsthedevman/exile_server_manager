@@ -1,14 +1,15 @@
 / locals: current_server, lookback, search_name
-- content_for :title, "Players on #{current_server.server_name}"
+- content_for :title, "Players on #{current_server.server_id}"
 
 = render "servers/container", current_server: do
   .d-flex.mb-4.align-items-center.gap-3
     div
       h1.mb-1 Players
-      p.text-muted.mb-0 Everyone who's connected recently. Search, sort, or filter to online-only to track down a specific player.
+      p.text-muted.mb-0 Everyone who's connected recently. Filter and sort to track down a specific player.
     - if current_server.connected? && command_accessible?("reset")
-      .ms-auto.d-flex.flex-column.align-items-end.gap-2
-        button.btn.btn-outline-danger.btn-sm[type="button" data-bs-toggle="modal" data-bs-target="#reset_all_modal"]
+      / Holds its width against the intro copy beside it, which is free to grow and wrap; the button is not.
+      .ms-auto.flex-shrink-0.d-flex.flex-column.align-items-end.gap-2
+        button.btn.btn-outline-danger.btn-sm.text-nowrap[type="button" data-bs-toggle="modal" data-bs-target="#reset_all_modal"]
           i.bi.bi-exclamation-octagon.me-1
           | Reset stuck players
         #reset_all_result

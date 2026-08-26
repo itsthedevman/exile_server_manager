@@ -1,11 +1,11 @@
-- content_for :title, current_server.server_name
+- content_for :title, current_server.server_id
 
 = render "servers/container", current_server: do
   .mb-4
     h1.mb-0 = current_server.server_name
 
   - if current_user.registered?
-    - if cards_available || admin_cards_available
+    - if cards_available || admin_tools_available
       - if cards_available
         / Feature cards — each gates on its command being enabled for the community
         .row.g-4
@@ -17,10 +17,16 @@
           - if command_accessible?("gamble")
             = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
 
-      - if admin_cards_available
+      - if admin_tools_available
         / Admin tools — each gates on its command being enabled and the user's allowlist
         .mt-4
           h2.h5.text-uppercase.text-secondary.mb-3 Admin tools
+
+          / A bar rather than a card: one input needs one row, and every identifier an admin might walk in holding
+          / enters through here so the resolution stays server-side.
+          - if command_accessible?("info")
+            = render "servers/players/lookup", current_server:
+
           .row.g-4
             / SQF Console
             - if command_accessible?("sqf")
@@ -31,7 +37,7 @@
           i.bi.bi-toggles.display-4.text-secondary.mb-3.d-block
           h4.mb-2 Nothing enabled here yet
           p.text-muted.mx-auto style="max-width: 34rem;"
-            | The community running #{current_server.server_name} hasn't enabled any ESM features for this server yet. If you think something should be available, let the server's admins know.
+            | The community running #{current_server.server_id} hasn't enabled any ESM features for this server yet. If you think something should be available, let the server's admins know.
 
   - else
     .card

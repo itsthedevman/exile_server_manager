@@ -1,8 +1,9 @@
 import ApplicationController from "./application_controller";
 
-// Search, online-only filtering, column sorting, and pagination for the server players listing. The whole look-back
-// window arrives as one capped read, so every control here works against rows the page already holds and never costs
-// another trip to the game server.
+// Text filtering, online-only and stuck-only toggles, column sorting, and pagination for the server players listing.
+// The whole look-back window arrives as one capped read, so every control here works against rows the page already
+// holds and never costs another trip to the game server. The one exception is the escalation link, which is a real
+// search: see updateSearchAll.
 //
 // Connects to data-controller="players-table"
 export default class extends ApplicationController {

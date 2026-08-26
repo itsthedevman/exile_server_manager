@@ -125,6 +125,14 @@ RSpec.describe "Servers::Players", type: :request do
         expect(response.body).to include("Clear")
       end
 
+      # The name lives in the page's query string, not the frame's, so a Clear aimed at the frame would drop the
+      # search from view while leaving it in the address bar for the next reload to run all over again.
+      it "clears back to the page's own URL rather than reloading the frame" do
+        get "/servers/#{server.public_id}/players/list?name=Dave"
+
+        expect(response.body).to include(%(href="/servers/#{server.public_id}/players?window=7d"))
+      end
+
       # The searched-for name is drawn straight into the header, so it is user input rendered as markup.
       it "escapes the name it echoes back" do
         get "/servers/#{server.public_id}/players/list?name=#{CGI.escape("<script>x</script>")}"
@@ -138,7 +146,10 @@ RSpec.describe "Servers::Players", type: :request do
         get "/servers/#{server.public_id}/players/list?window=7d"
 
         expect(response.body).to include("Search every player on")
-        expect(response.body).to include("players-table-search-url-value")
+
+        # Aimed at the page, not the frame, for the same reason Clear is: the search it starts has to end up in the
+        # address bar or a reload silently undoes it.
+        expect(response.body).to include(%(data-players-table-search-url-value="/servers/#{server.public_id}/players"))
       end
 
       it "drops the escalation once the search has already reached past the window" do
@@ -162,6 +173,72 @@ RSpec.describe "Servers::Players", type: :request do
       get "/servers/#{server.public_id}/players/list?name=Dave"
 
       expect(calls).to eq(2)
+    end
+  end
+
+  describe "GET lookup" do
+    before do
+      allow_access(denied: false)
+
+      # Only the two dead-end examples render a page, and the hub shell they render into asks the bot whether this
+      # admin can manage the server. Every other example here redirects before a view is involved.
+      allow(ESM::Service::API).to receive(:call).with(:community_modifiable_by, any_args).and_return(false)
+    end
+
+    def lookup(query)
+      get "/servers/#{server.public_id}/players/lookup", params: {q: query}
+    end
+
+    it "sends a Steam UID straight to that player's page" do
+      lookup("76561198037177305")
+
+      expect(response).to redirect_to("/servers/#{server.public_id}/players/76561198037177305")
+    end
+
+    # A name belongs to no one person, so it stays a search rather than resolving to a page.
+    it "sends a name to the listing, the only thing that can search for one" do
+      lookup("Dave")
+
+      expect(response).to redirect_to("/servers/#{server.public_id}/players?name=Dave")
+    end
+
+    it "follows a Discord ID through registration to the UID it is linked to" do
+      target = create(:user)
+
+      lookup(target.discord_id)
+
+      expect(response).to redirect_to("/servers/#{server.public_id}/players/#{target.steam_uid}")
+    end
+
+    # No UID means no player page to land on. Saying so is the answer; a 404 would read as "we couldn't look that up".
+    it "answers a Discord account that never linked Steam rather than 404ing" do
+      target = create(:user, steam_uid: nil)
+
+      lookup(target.discord_id)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("No Steam account linked")
+    end
+
+    it "separates a Discord ID ESM has never seen from one that simply never registered" do
+      lookup("800000000000009999")
+
+      expect(response.body).to include("No ESM account")
+      expect(response.body).not_to include("No Steam account linked")
+    end
+
+    it "goes back to the hub when nothing was typed" do
+      lookup("   ")
+
+      expect(response).to redirect_to("/servers/#{server.public_id}")
+    end
+
+    it "404s for an admin without access to the page it leads to" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      lookup("76561198037177305")
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 

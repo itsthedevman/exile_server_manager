@@ -1,5 +1,5 @@
 / locals: current_server, target_uid, target_player, identity, fetched_at
-- content_for :title, "#{target_player&.name || "Player"} on #{current_server.server_name}"
+- content_for :title, "#{target_player&.name || "Player"} on #{current_server.server_id}"
 
 = render "servers/container", current_server: do
   / Page header
@@ -10,7 +10,7 @@
       h1.mb-0 Player details
     - if current_server.connected? && command_accessible?("reset")
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
-        = button_to reset_server_player_path(current_server, target_uid), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset #{target_player&.name || "this player"}'s player on #{current_server.server_name}?\nThis wipes their player - they lose all items and respawn fresh, and it can't be undone."}} do
+        = button_to reset_server_player_path(current_server, target_uid), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset #{target_player&.name || "this player"}'s player on #{current_server.server_id}?\nThis wipes their player - they lose all items and respawn fresh, and it can't be undone."}} do
           i.bi.bi-arrow-counterclockwise.me-1
           | Reset player
         #player_action_result
@@ -33,5 +33,5 @@
     .card.border-secondary
       .card-body.text-center.py-5
         i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
-        h5.text-light.mb-2 #{current_server.server_name} is offline
+        h5.text-light.mb-2 #{current_server.server_id} is offline
         p.text-muted.mb-0 We can't load this player while the server is offline. Check back once it's back up.

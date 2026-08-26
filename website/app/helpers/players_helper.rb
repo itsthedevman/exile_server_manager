@@ -291,7 +291,7 @@ module PlayersHelper
   def reset_success_message(command)
     case reset_kind(command)
     when :self then "Your player has been reset - hop back in."
-    when :all then "Stuck players on #{command.server.server_name} have been reset."
+    when :all then "Stuck players on #{command.server.server_id} have been reset."
     else "The player has been reset."
     end
   end

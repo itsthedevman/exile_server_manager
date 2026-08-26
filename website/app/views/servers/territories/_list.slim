@@ -10,14 +10,14 @@
   - if territories.nil?
     .card-body.text-center.py-5
       i.bi.bi-plug.text-muted.fs-1.d-block.mb-3
-      h5.text-light.mb-2 Can't reach #{current_server.server_name}
+      h5.text-light.mb-2 Can't reach #{current_server.server_id}
       p.text-muted.mb-0 The server is offline or unreachable, so we couldn't load its territories. Try again once it's back up.
 
   - elsif territories.empty?
     .card-body.text-center.py-5
       i.bi.bi-flag.text-muted.fs-1.d-block.mb-3
       h5.text-light.mb-2 No territories yet
-      p.text-muted.mb-0 Nobody has placed a territory flag on #{current_server.server_name}.
+      p.text-muted.mb-0 Nobody has placed a territory flag on #{current_server.server_id}.
 
   - else
     div data-controller="territories-table" data-territories-table-storage-key-value="territories-table:#{current_server.public_id}"
@@ -27,7 +27,7 @@
             .input-group.input-group-sm
               span.input-group-text
                 i.bi.bi-search
-              input.form-control[type="search" placeholder="Search by territory, ID, or owner" aria-label="Search territories" data-territories-table-target="search" data-action="input->territories-table#filter"]
+              input.form-control[type="search" placeholder="Filter these territories by name, ID, or owner" aria-label="Filter territories" data-territories-table-target="search" data-action="input->territories-table#filter"]
 
           .col-auto.ms-md-auto
             small.text-muted data-territories-table-target="count"
