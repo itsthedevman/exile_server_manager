@@ -3,6 +3,14 @@
 module ESM
   class Websocket
     class Server
+      # Puma raises `NoMethodError: undefined method 'each' for nil` when a Rack app returns nil, so every stray
+      # HTTP request that reaches this port needs a real triple back instead of an implicit nil.
+      NON_WEBSOCKET_RESPONSE = [
+        400,
+        {"content-type" => "text/plain"},
+        ["This endpoint only accepts WebSocket upgrade requests"]
+      ].freeze
+
       def self.run
         # Load Faye support for puma
         Faye::WebSocket.load_adapter("puma")
@@ -19,7 +27,7 @@ module ESM
       end
 
       def self.call(env)
-        return if !Faye::WebSocket.websocket?(env)
+        return NON_WEBSOCKET_RESPONSE if !Faye::WebSocket.websocket?(env)
 
         # Create a new websocket client
         ws = Faye::WebSocket.new(env)
