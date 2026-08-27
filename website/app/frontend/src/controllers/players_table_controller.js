@@ -1,8 +1,9 @@
 import ApplicationController from "./application_controller";
 
-// Search, online-only filtering, column sorting, and pagination for the server players listing. The whole look-back
-// window arrives as one capped read, so every control here works against rows the page already holds and never costs
-// another trip to the game server.
+// Text filtering, online-only and stuck-only toggles, column sorting, and pagination for the server players listing.
+// The whole look-back window arrives as one capped read, so every control here works against rows the page already
+// holds and never costs another trip to the game server. The one exception is the escalation link, which is a real
+// search: see updateSearchAll.
 //
 // Connects to data-controller="players-table"
 export default class extends ApplicationController {
@@ -19,11 +20,13 @@ export default class extends ApplicationController {
     "pageInfo",
     "previous",
     "next",
+    "searchAll",
   ];
 
   static values = {
     perPage: { type: Number, default: 50 },
     storageKey: { type: String, default: "" },
+    searchUrl: { type: String, default: "" },
   };
 
   connect() {
@@ -118,6 +121,7 @@ export default class extends ApplicationController {
 
     this.countTarget.textContent = this.countLabel(matches.length);
     this.emptyTarget.hidden = matches.length > 0;
+    this.updateSearchAll();
 
     // The "showing the most recent N" note describes the unfiltered fetch, so it only reads true while the reader is
     // looking at that whole set. Once they search or filter, the count in front of them is the honest one.
@@ -135,6 +139,22 @@ export default class extends ApplicationController {
     // Every control funnels through render, so persisting here captures the whole view state on any change with one
     // call site rather than sprinkling saves through each handler.
     this.saveState();
+  }
+
+  // The escape hatch out of this controller's reach. Everything else here works against the rows the page already
+  // holds, so a name that never played inside the window looks identical to one that never played at all. This hands
+  // the name to the server, which searches every account regardless of when they last connected.
+  //
+  // Only offered with something typed, since an empty search would ask for the whole account table.
+  updateSearchAll() {
+    if (!this.hasSearchAllTarget) return;
+
+    const query = this.hasSearchTarget ? this.searchTarget.value.trim() : "";
+
+    this.searchAllTarget.hidden = query.length === 0;
+    if (query.length === 0) return;
+
+    this.searchAllTarget.href = `${this.searchUrlValue}?name=${encodeURIComponent(query)}`;
   }
 
   matchingRows() {

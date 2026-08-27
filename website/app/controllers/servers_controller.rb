@@ -4,15 +4,18 @@ class ServersController < AuthenticatedController
   include Commands
 
   COMMAND_CARDS = %w[me gamble]
-  ADMIN_COMMAND_CARDS = %w[sqf]
+
+  # Not all cards - info is the player lookup bar. What these share is that each one puts something in the Admin
+  # tools section, so any of them is reason enough to render the section at all.
+  ADMIN_TOOLS = %w[info sqf]
 
   def show
     not_found! if current_server.nil?
 
     cards_available = COMMAND_CARDS.any? { |c| command_accessible?(c) }
-    admin_cards_available = ADMIN_COMMAND_CARDS.any? { |c| command_accessible?(c) }
+    admin_tools_available = ADMIN_TOOLS.any? { |c| command_accessible?(c) }
 
-    render locals: {current_server:, cards_available:, admin_cards_available:}
+    render locals: {current_server:, cards_available:, admin_tools_available:}
   end
 
   # What Steam knows about the server right now: its map, how many are on, and the game version. Loaded lazily into

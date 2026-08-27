@@ -64,10 +64,77 @@ describe ESM::Command::Community::Whois, category: "command" do
       end
     end
 
+    # The target has to be a real ESM::User who simply is not in this community's Discord. An arbitrary Discord ID
+    # never resolves to a user at all, so it fails target resolution long before it reaches the membership check.
     context "when the target is not a member of the discord server" do
-      it "raises an exception" do
-        # Exile Server Manager Bot ID
-        expect { execute!(arguments: {target: "417847994197737482"}) }.to raise_error(ESM::Exception::CheckFailure)
+      let(:outsider) { create(:user) }
+
+      # Asserting on the key rather than the copy identifies which failure this is (several render the caller's
+      # mention, so matching the mention alone would accept the wrong one) and survives a rewording. Checking the
+      # description separately is what catches a missing translation.
+      it "denies access" do
+        expect { execute!(arguments: {target: outsider.discord_id}) }
+          .to raise_error(ESM::Exception::CheckFailure) do |error|
+            expect(error.key).to eq("commands.whois.errors.access_denied")
+            expect(error.to_embed.description).to include(user.mention)
+          end
+      end
+    end
+  end
+
+  describe "#on_website_execute" do
+    subject(:result) { execute_sync!(arguments: {target: target}) }
+
+    before do
+      ESM::Test.skip_cooldown = true
+      grant_command_access!(community, "whois")
+    end
+
+    context "when the target is a member of the community's Discord" do
+      let(:target) { second_user.discord_id }
+
+      it "returns both Steam and Discord information" do
+        expect(result[:steam]).to be_present
+        expect(result[:discord][:id]).to eq(second_user.discord_id)
+      end
+    end
+
+    # The caller handed over the identifier, so Steam discloses nothing new and is never gated. Discord is the only
+    # thing the membership check ever protected, and it stays protected.
+    context "when the target is registered but not a member of the community's Discord" do
+      let(:target) { create(:user).discord_id }
+
+      it "returns Steam information and withholds Discord information" do
+        expect(result[:steam]).to be_present
+        expect(result).not_to have_key(:discord)
+      end
+
+      it "still reports that the target has an account" do
+        expect(result).to include(has_account: true, registered: true)
+      end
+    end
+
+    # A bare Steam UID has no ESM account behind it, so there is no Discord identity to withhold in the first place.
+    context "when the target is an unregistered Steam UID" do
+      let(:target) { Faker::Steam.uid }
+
+      it "returns Steam information and withholds Discord information" do
+        expect(result[:steam]).to be_present
+        expect(result).not_to have_key(:discord)
+      end
+
+      it "reports that there is no account behind the UID" do
+        expect(result).to include(has_account: false, registered: false)
+      end
+    end
+
+    # Without the flags this is indistinguishable from the UID above, and the two deserve different answers: one has
+    # never touched ESM, the other is in the caller's Discord and simply never linked Steam.
+    context "when the target has an account but never linked a Steam UID" do
+      let(:target) { second_user.tap { |user| user.update!(steam_uid: nil) }.discord_id }
+
+      it "separates having an account from having registered" do
+        expect(result).to include(has_account: true, registered: false)
       end
     end
   end

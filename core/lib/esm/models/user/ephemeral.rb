@@ -23,7 +23,7 @@ module ESM
       def steam_data
         return unless steam_uid?
 
-        @steam_data ||= ESM::SteamAccount.new(steam_uid)
+        @steam_data ||= ESM::UserSteamData.from_steam_uid(steam_uid)
       end
 
       def valid?

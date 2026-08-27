@@ -21,10 +21,11 @@ describe ESM::Command::Server::Players, category: "command" do
   end
 
   describe "V2", v2: true do
-    # Discord answers "who is on right now" and sizes its own window, so neither of these reaches it.
+    # Discord answers "who is on right now" and sizes its own window, so none of these reach it.
     it "keeps the query arguments off of Discord" do
       expect(command.arguments.templates[:connected_since].available_to?(:discord)).to be(false)
       expect(command.arguments.templates[:limit].available_to?(:discord)).to be(false)
+      expect(command.arguments.templates[:name].available_to?(:discord)).to be(false)
     end
 
     describe "#on_execute", :requires_connection do
@@ -126,6 +127,50 @@ describe ESM::Command::Server::Players, category: "command" do
 
         it "leaves them out" do
           expect(players.map { |player| player[:uid] }).to contain_exactly(online_account.uid)
+        end
+      end
+
+      # Searching by name is the way past the window, not a filter applied inside it. The player being looked up is
+      # usually one who stopped appearing in the listing, which is the reason the admin is searching in the first place.
+      context "when a name is given" do
+        subject(:players) do
+          execute_sync!(
+            arguments: {
+              server_id: server.server_id,
+              connected_since: 1.day.ago,
+              limit: 50,
+              name:
+            }
+          )
+        end
+
+        let(:name) { "Dave" }
+
+        let!(:online_account) { create(:exile_account, uid: Faker::Steam.uid, name: "Angela") }
+
+        let!(:offline_account) do
+          create(:exile_account, uid: Faker::Steam.uid, name: "Dave", last_connect_at: 2.years.ago)
+        end
+
+        it "returns the match from outside the window and nobody else" do
+          expect(players.map { |player| player[:uid] }).to contain_exactly(offline_account.uid)
+        end
+
+        context "when the name is a fragment" do
+          let(:name) { "av" }
+
+          it "matches anywhere in the name" do
+            expect(players.map { |player| player[:uid] }).to contain_exactly(offline_account.uid)
+          end
+        end
+
+        # An empty LIKE pattern matches every row, so a blank name has to fall back rather than pass through.
+        context "when the name is blank" do
+          let(:name) { "   " }
+
+          it "falls back to the window" do
+            expect(players.map { |player| player[:uid] }).to contain_exactly(online_account.uid)
+          end
         end
       end
     end

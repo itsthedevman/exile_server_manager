@@ -1,11 +1,11 @@
 / locals: current_server
-- content_for :title, "Territories on #{current_server.server_name}"
+- content_for :title, "Territories on #{current_server.server_id}"
 
 = render "servers/container", current_server: do
   .d-flex.mb-4.align-items-center.gap-3
     div
       h1.mb-1 Territories
-      p.text-muted.mb-0 Every territory on the server. Search or sort to find one, click through for the full detail, or restore a base marked for deletion.
+      p.text-muted.mb-0 Every territory on the server. Filter or sort to find one, click through for the full detail, or restore a base marked for deletion.
 
   = turbo_frame_tag "territories_list",
     src: list_server_territories_path(current_server.public_id),

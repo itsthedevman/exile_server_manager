@@ -1,7 +1,8 @@
 import ApplicationController from "./application_controller";
 
-// Search, column sorting, and pagination for the admin territories listing. The whole set arrives as one read, so every
-// control here works against rows the page already holds and never costs another trip to the game server.
+// Text filtering, column sorting, and pagination for the admin territories listing. The whole set arrives as one
+// read, so every control here works against rows the page already holds and never costs another trip to the game
+// server. Unlike the players listing there is nothing to escalate to: everything there is to show is already here.
 //
 // Connects to data-controller="territories-table"
 export default class extends ApplicationController {

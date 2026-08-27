@@ -1,0 +1,12 @@
+/ locals: current_server
+.mb-4
+  = form_with url: lookup_server_players_path(current_server.public_id), method: :get do |form|
+    .input-group.input-group-lg
+      span.input-group-text
+        i.bi.bi-person-vcard.text-warning
+      / A raw <@id> mention resolves too, but it stays out of the placeholder: Discord copies a mention as its
+      / rendered @username, so advertising it would teach an input an admin can't actually produce.
+      = form.search_field :q, placeholder: "Steam UID, Discord ID, or player name", class: "form-control", autocomplete: "off", spellcheck: "false", required: true, aria: {label: "Look up a player"}
+      button.btn.btn-primary type="submit"
+        i.bi.bi-search.me-1
+        | Look up

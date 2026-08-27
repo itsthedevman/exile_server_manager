@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe "Servers", type: :request do
   let(:community) { create(:community) }
   let(:server) { create(:server, community:) }
@@ -15,6 +13,46 @@ RSpec.describe "Servers", type: :request do
     sign_in user
     allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
     allow_any_instance_of(ESM::Community).to receive(:modifiable_by?).and_return(manageable)
+  end
+
+  describe "GET show" do
+    # Allowing exactly one command leaves the hub rendering exactly what that command puts on it. Allowing everything
+    # would drag every other card's game-server reads into these examples for no benefit.
+    def allow_only(allowed)
+      allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
+        verdict =
+          if command_name.to_s == allowed
+            ESM::Command::Permission::ALLOWED
+          else
+            ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+          end
+
+        instance_double(ESM::CommandAccess, verdict:)
+      end
+    end
+
+    it "offers the lookup bar to an admin who can view a player" do
+      allow_only("info")
+
+      get "/servers/#{server.public_id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Admin tools")
+      expect(response.body).to include(%(action="/servers/#{server.public_id}/players/lookup"))
+
+      # The field name is the whole contract between this bar and the resolver, and a wrong one would fail silently
+      # as an empty query rather than as an error.
+      expect(response.body).to include(%(name="q"))
+    end
+
+    it "keeps the admin section off the page entirely for a player" do
+      allow_only("me")
+
+      get "/servers/#{server.public_id}"
+
+      expect(response.body).not_to include("Admin tools")
+      expect(response.body).not_to include("players/lookup")
+    end
   end
 
   describe "GET live" do

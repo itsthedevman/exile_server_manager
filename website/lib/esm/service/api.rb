@@ -44,6 +44,16 @@ module ESM
       MAX_ATTEMPTS = 3
       RETRY_BACKOFF = 0.1
 
+      # Retrying is this class's job, not the driver's. Left at its default of 10, nats-pure runs its own loop inside a
+      # single #connect - ten attempts, each a connect timeout plus a two second sleep - so one call against a down bot
+      # blocks for the better part of a minute before this class sees its first error, and the bound above becomes
+      # fiction. Zero makes nats-pure try once and hand the failure up, leaving one retry policy instead of two nested
+      # ones.
+      #
+      # Losing an established connection is unaffected: nats-pure parks a client it won't reconnect at DISCONNECTED
+      # rather than CLOSED, and dials again on the next request.
+      MAX_DRIVER_RECONNECTS = 0
+
       # The website drives this connection purely as a request/reply client. Its only subscription is nats-pure's internal
       # response mux, whose callback merely signals the waiting request thread - it touches no app code or Rails-managed
       # resource. nats-pure's Rails engine otherwise wraps every reply delivery in Rails.application.reloader.wrap; once a
@@ -221,7 +231,10 @@ module ESM
 
         # NATS.connect builds the client with no options and only sets the reloader from initialize, so the reloader must
         # be passed to Client.new directly - handed to NATS.connect it is silently dropped.
-        @mutex.synchronize { @endpoint ||= NATS::Client.new(@url, reloader: NO_OP_RELOADER).tap { |client| client.connect(@url) } }
+        @mutex.synchronize do
+          @endpoint ||= NATS::Client.new(@url, reloader: NO_OP_RELOADER)
+            .tap { |client| client.connect(@url, max_reconnect_attempts: MAX_DRIVER_RECONNECTS) }
+        end
       end
 
       def build_envelope(action:, payload:)

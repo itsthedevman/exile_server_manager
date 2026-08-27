@@ -27,6 +27,10 @@ module ESM
 
         argument :limit, :integer, origins: [:website], required: true
 
+        # Searching by name ignores connected_since entirely. The player being looked up is usually one who
+        # stopped appearing in the listing, so the window is the thing standing in the way.
+        argument :name, :string, origins: [:website], required: false
+
         #################################
         #
         # Configuration
@@ -58,11 +62,14 @@ module ESM
         def on_website_execute
           check_for_owned_server!
 
-          results = query_exile_database!(
-            "players_list",
+          # A nil argument arrives at the extension as the string "null", so the key has to be dropped instead
+          query_arguments = {
             connected_since: arguments.connected_since,
-            limit: arguments.limit
-          )
+            limit: arguments.limit,
+            name: arguments.name.presence
+          }.compact
+
+          results = query_exile_database!("players_list", **query_arguments)
 
           reply(results)
         end

@@ -29,3 +29,5 @@ en:
         vac_banned: VAC banned?
         number_of_vac_bans: Number of VAC bans
         days_since_vac_ban: Days since last VAC ban
+      errors:
+        access_denied: I'm sorry %{user}, I can only share account information about members of this Discord server.

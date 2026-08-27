@@ -77,11 +77,11 @@ module Servers
       when :unregistered
         "Link your Steam account on your account page before you can run SQF."
       when :disabled
-        "The SQF tool is not enabled on #{current_server.server_name}."
+        "The SQF tool is not enabled on #{current_server.server_id}."
       when :not_allowlisted
-        "You do not have permission to run SQF on #{current_server.server_name}."
+        "You do not have permission to run SQF on #{current_server.server_id}."
       when :server_offline
-        "#{current_server.server_name} is offline. SQF can't run right now."
+        "#{current_server.server_id} is offline. SQF can't run right now."
       else
         "You can't run SQF right now."
       end

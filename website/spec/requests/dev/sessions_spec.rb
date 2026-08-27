@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 # The local-only impersonation route: GET /dev/login/:discord_id. It exists so local browsing and
 # browser-driven tests can reach authenticated pages without the Discord OAuth round trip. The route
 # itself is gated on `Rails.env.local?`, which is true under test, so these specs can exercise it.

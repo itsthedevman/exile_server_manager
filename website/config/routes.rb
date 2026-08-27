@@ -203,6 +203,9 @@ Rails.application.routes.draw do
           # /servers/:server_id/players/list — lazy listing frame on the admin players page
           get :list
 
+          # /servers/:server_id/players/lookup — resolves the hub's lookup bar to whichever page can answer
+          get :lookup
+
           # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
           post :reset_me
 

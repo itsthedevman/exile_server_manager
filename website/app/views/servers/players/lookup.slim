@@ -1,0 +1,31 @@
+/ locals: current_server, result
+- content_for :title, "Player lookup"
+
+= render "servers/container", current_server: do
+  .mb-4
+    h1.mb-0 Player lookup
+
+  = render "servers/players/lookup", current_server:
+
+  .card.border-secondary
+    .card-body.text-center.py-5
+      i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
+
+      / Two different findings, not two flavours of failure. Which one it is tells an admin whether the player is
+      / someone ESM has never met or someone it knows by Discord alone.
+      - if result.unregistered?
+        h5.text-light.mb-2 No Steam account linked
+        p.text-muted.mb-2.mx-auto style="max-width: 34rem;"
+          | ESM knows that Discord account, but nobody has ever linked a Steam account to it. Without one there's no Steam UID to look up, and no character on #{current_server.server_id} to find.
+      - else
+        h5.text-light.mb-2 No ESM account
+        p.text-muted.mb-2.mx-auto style="max-width: 34rem;"
+          | Nothing in ESM is using that Discord ID. They may still play on #{current_server.server_id}: ESM only learns who someone is once they've linked their Discord and Steam accounts.
+
+      p.text-muted.small.mb-4
+        | Looked up
+        span.font-monospace.ms-1 = result.query
+
+      = link_to server_players_path(current_server.public_id), class: "btn btn-sm btn-outline-secondary"
+        i.bi.bi-people.me-1
+        | Search #{current_server.server_id} by name instead

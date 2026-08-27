@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe ServersHelper, type: :helper do
   let(:server) { create(:server, server_ip: "203.0.113.10", server_port: "2302") }
 

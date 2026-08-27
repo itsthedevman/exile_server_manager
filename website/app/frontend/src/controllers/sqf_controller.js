@@ -52,6 +52,14 @@ export default class extends ApplicationController {
     this.view?.destroy();
   }
 
+  // The layout refreshes by morphing, so a visit to the URL already on screen diffs the live DOM against the server's
+  // rather than replacing it. CodeMirror's markup only exists client-side and the server renders this div empty, so the
+  // morph would delete the whole editor - and because the card's controller element survives that morph, Stimulus never
+  // reconnects and nothing rebuilds it. Skipping the element leaves the editor, and whatever is typed in it, intact.
+  preserveEditor(event) {
+    event.preventDefault();
+  }
+
   fillFormData({ formData }) {
     // The command runs its own sanitization; just strip the surrounding whitespace so an empty submit is truly empty.
     formData.set("code_to_execute", this.view ? this.view.state.doc.toString().trim() : "");

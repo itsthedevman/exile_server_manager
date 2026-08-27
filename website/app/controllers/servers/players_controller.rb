@@ -24,13 +24,21 @@ module Servers
     # burst is the only load the cache has to absorb.
     CACHE_TTL = 5.seconds
 
+    # Identity barely moves - a Steam profile and a Discord account are not going to change while an admin reads the
+    # page - so this only has to collapse reloads and the re-renders a player action triggers.
+    IDENTITY_CACHE_TTL = 30.seconds
+
+    # Exile's account.name is a varchar(64), so anything past that could never match a row. Capping here keeps a
+    # hand-edited query string from turning into an unbounded cache key.
+    NAME_SEARCH_LIMIT = 64
+
     PLAYER_ACTIONS = %w[money locker respect heal kill].freeze
     BALANCE_ACTIONS = %w[money locker respect].freeze
 
     def index
       return unless check_for_command_access("players")
 
-      render locals: {current_server:, lookback:}
+      render locals: {current_server:, lookback:, search_name:}
     end
 
     # The listing itself, loaded lazily into a turbo frame so a slow read never holds up the page around it.
@@ -43,10 +51,31 @@ module Servers
         current_server:,
         lookback:,
         lookback_options: LOOKBACK_WINDOWS,
+        search_name:,
         players: snapshot&.dig(:players),
         fetched_at: snapshot&.dig(:fetched_at),
         row_limit: ROW_LIMIT
       }
+    end
+
+    # The server hub's lookup bar, where an admin arrives holding whichever identifier they happen to have. Everything
+    # but a name resolves to a Steam UID, so those hand off to the pages already built to answer for one. What is left
+    # is the two ways a Discord ID dead-ends, and those are answers in their own right rather than a failed lookup.
+    def lookup
+      return unless check_for_command_access("info")
+
+      result = ESM::PlayerLookup.call(params[:q])
+
+      case result.kind
+      when :steam_uid
+        redirect_to server_player_path(current_server.public_id, result.steam_uid)
+      when :name
+        redirect_to server_players_path(current_server.public_id, name: result.query)
+      when :blank
+        redirect_to server_path(current_server.public_id)
+      else
+        render locals: {current_server:, result:}
+      end
     end
 
     # One player's full on-server snapshot - the admin counterpart to /me, reached from the listing's row button or a
@@ -66,6 +95,7 @@ module Servers
         current_server:,
         target_uid:,
         target_player: player_from(snapshot),
+        identity: target_identity,
         fetched_at: snapshot&.dig(:fetched_at)
       }
     end
@@ -222,17 +252,30 @@ module Servers
       @lookback ||= LOOKBACK_WINDOWS.key?(params[:window]) ? params[:window] : DEFAULT_LOOKBACK
     end
 
+    # The name being searched for, or nil when the page is showing its usual recency listing. Present, it puts the page
+    # in name mode: the query drops the window entirely and matches on the name instead, which is the whole point.
+    # Someone being looked up by name has usually stopped appearing in the window.
+    def search_name
+      @search_name ||= params[:name].to_s.strip.slice(0, NAME_SEARCH_LIMIT).presence
+    end
+
     # Keyed on the server and window rather than the viewer, so a page full of admins costs the game server one read
     # instead of one each. The rows are the same for all of them, and access is checked before this ever runs.
     #
     # The read is stamped rather than timed at render, or every cache hit would claim to be current.
     def players_snapshot
-      ESM.cache.fetch("players_#{current_server.id}_#{lookback}", expires_in: CACHE_TTL) do
+      ESM.cache.fetch(players_cache_key, expires_in: CACHE_TTL) do
         connected_since = LOOKBACK_WINDOWS.fetch(lookback)[:duration].ago
 
+        # connected_since rides along in name mode and the query ignores it, so the command keeps one required
+        # argument rather than one that is required only sometimes.
         players = call_sync_command(
           "players",
-          arguments: {connected_since: connected_since.utc.iso8601, limit: ROW_LIMIT}
+          arguments: {
+            connected_since: connected_since.utc.iso8601,
+            limit: ROW_LIMIT,
+            name: search_name
+          }.compact
         )
 
         {fetched_at: Time.current, players:}
@@ -242,6 +285,37 @@ module Servers
         Rails.logger.warn("[players#list] player list unavailable: #{e.message}")
         nil
       end
+    end
+
+    # Who this UID belongs to: Steam always, Discord only when whois is willing to say. Identity is not character
+    # data, so it does not ride on info's verdict - a community can hand info to its moderators while keeping whois
+    # to its admins, and gating separately is what lets them.
+    #
+    # Degrades to nil rather than taking the page down with it. The character overview below is the reason the admin
+    # came, and it is still worth showing when the identity lookup can't answer.
+    def target_identity
+      return unless command_accessible?("whois")
+
+      ESM.cache.fetch(identity_cache_key, expires_in: IDENTITY_CACHE_TTL) do
+        call_sync_command("whois", arguments: {target: target_uid})
+      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+        Rails.logger.warn("[players#show] identity unavailable: #{e.message}")
+        nil
+      end
+    end
+
+    # Scoped to the community, not just the UID. Whether Discord comes back at all depends on the caller's community
+    # membership check, so one community's answer must never be served to another's admin.
+    def identity_cache_key
+      "whois_#{current_server.community_id}_#{target_uid}"
+    end
+
+    # A name search answers a different question than the recency listing, so it gets its own entry rather than
+    # overwriting the listing every admin shares.
+    def players_cache_key
+      return "players_#{current_server.id}_name_#{search_name.downcase}" if search_name
+
+      "players_#{current_server.id}_#{lookback}"
     end
   end
 end

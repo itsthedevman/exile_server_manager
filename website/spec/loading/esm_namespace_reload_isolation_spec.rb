@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 ##
 # Guards the ESM-namespace loading strategy set up in config/application.rb and
 # config/initializers/esm.rb: the whole ESM namespace (core, the app/models/esm re-opens, and the

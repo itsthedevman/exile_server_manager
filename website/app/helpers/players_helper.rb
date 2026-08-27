@@ -113,6 +113,50 @@ module PlayersHelper
     row.values_at(:name, :uid).join(" ").downcase
   end
 
+  ##
+  # Which of the four things an identity lookup actually found.
+  #
+  # An absent Discord block means three different things depending on the flags beside it, and collapsing them into
+  # one "not found" is the shrug this page exists to replace. Each maps to its own sentence in the header.
+  #
+  # @param identity [Hash] the whois reply
+  #
+  # @return [Symbol] :linked, :not_in_discord, :unlinked, or :no_account
+  #
+  def player_identity_status(identity)
+    return :linked if identity[:discord].present?
+    return :not_in_discord if identity[:registered]
+    return :unlinked if identity[:has_account]
+
+    :no_account
+  end
+
+  # What to call this player, in the order the admin is most likely to recognize: the name they use in-game, then the
+  # Steam handle behind it, and only "Unknown player" when neither the server nor Steam has anything to offer.
+  def player_identity_title(target_player, identity)
+    target_player&.name.presence || identity.dig(:steam, :username).presence || "Unknown player"
+  end
+
+  # Steam's own avatar, or the stand-in when Steam has nothing to give: a private profile, an outage, or a UID Steam
+  # doesn't recognize.
+  def player_identity_avatar_url(identity)
+    identity.dig(:steam, :avatar).presence || image_url("default_steam_avatar.png")
+  end
+
+  # Discord leaves avatar_url nil for an account still on a default avatar, and image_tag raises on nil rather than
+  # rendering nothing.
+  def player_identity_discord_avatar_url(identity)
+    identity.dig(:discord, :avatar_url).presence || image_url("default_discord_avatar.png")
+  end
+
+  # Scoped per view so a name search and the recency listing don't inherit each other's sort, page, and filters. They
+  # hold different rows, and a page number from one means nothing in the other.
+  def players_table_storage_key(current_server, lookback:, search_name:)
+    view = search_name ? "name:#{search_name.downcase}" : lookback
+
+    "players-table:#{current_server.public_id}:#{view}"
+  end
+
   # The avatar for a player overview: the current user's on the self view, the viewed player's on the admin view. Falls
   # back to the default when there's no linked Steam avatar, which an unregistered UID always lacks.
   def player_avatar_url(player, viewing_self:)
@@ -247,7 +291,7 @@ module PlayersHelper
   def reset_success_message(command)
     case reset_kind(command)
     when :self then "Your player has been reset - hop back in."
-    when :all then "Stuck players on #{command.server.server_name} have been reset."
+    when :all then "Stuck players on #{command.server.server_id} have been reset."
     else "The player has been reset."
     end
   end

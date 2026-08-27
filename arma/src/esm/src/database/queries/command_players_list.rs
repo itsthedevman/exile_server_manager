@@ -26,11 +26,6 @@ pub async fn command_players_list(
     connection: &mut Conn,
     arguments: &HashMap<String, String>,
 ) -> QueryResult {
-    let connected_since =
-        arguments.get("connected_since").ok_or(QueryError::User(
-            "Missing key `connected_since` in provided query arguments".into(),
-        ))?;
-
     let row_limit = match arguments.get("limit") {
         Some(limit) => limit.parse::<u32>().map_err(|e| {
             QueryError::User(format!("Invalid `limit` in query arguments - {e}"))
@@ -38,11 +33,30 @@ pub async fn command_players_list(
         None => DEFAULT_ROW_LIMIT,
     };
 
+    // A blank name is treated as absent. Left as-is it becomes LIKE '%%', which quietly returns the
+    // whole account table dressed up as a search result.
+    let name = arguments.get("name").filter(|name| !name.trim().is_empty());
+
+    let (statement, parameters) = match name {
+        Some(name) => (
+            &context.sql.command_players_matching_name,
+            params! { name, row_limit },
+        ),
+        None => {
+            let connected_since =
+                arguments.get("connected_since").ok_or(QueryError::User(
+                    "Missing key `connected_since` in provided query arguments".into(),
+                ))?;
+
+            (
+                &context.sql.command_players_recently_connected,
+                params! { connected_since, row_limit },
+            )
+        }
+    };
+
     let rows: Vec<Row> = connection
-        .exec(
-            &context.sql.command_players_list,
-            params! { connected_since, row_limit },
-        )
+        .exec(statement, parameters)
         .await
         .map_err(|e| QueryError::System(format!("Query failed - {}", e)))?;
 

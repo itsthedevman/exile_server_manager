@@ -1,24 +1,24 @@
 / locals: current_server, current_player, viewing_self, fetched_at
-.card.mb-4
-  .card-body
-    .d-flex.align-items-center.gap-3.flex-wrap
-      = render "servers/players/status_avatar", player: current_player, viewing_self:, size: 64
-      div
-        .d-flex.align-items-center.gap-2.flex-wrap
+- if viewing_self
+  .card.mb-4
+    .card-body
+      .d-flex.align-items-center.gap-3.flex-wrap
+        = render "servers/players/status_avatar", player: current_player, viewing_self:, size: 64
+        div
           h2.mb-0 = current_player.name
-          = player_status_pill(player_status(current_player))
-        small.text-muted.font-monospace = current_player.uid
-      .ms-auto
-        = render "shared/data_freshness", at: fetched_at
+          small.text-muted.font-monospace = current_player.uid
 
 .row.g-4.mb-4
   / Player status
   .col-12.col-xl-6
     .card.h-100
-      .card-header
+      .card-header.d-flex.align-items-center.gap-2.flex-wrap
         h5.mb-0
           i.bi.bi-heart-pulse.text-danger.me-2
           | Status
+        = player_status_pill(player_status(current_player))
+        .ms-auto
+          = render "shared/data_freshness", at: fetched_at
 
       .card-body
         - if current_player.alive?

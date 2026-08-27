@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 # The Discord-embed landing pages: GET /requests/:uuid/accept|decline. These links live in
 # Discord DMs and render full success/not-found pages. The bot round-trip is stubbed at the
 # ESM::Service::API boundary. Regression guard: accept/decline return the handler's result
