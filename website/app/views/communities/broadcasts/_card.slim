@@ -1,0 +1,14 @@
+/ locals: current_community
+.col-12.col-md-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-megaphone.text-warning.me-2
+        | Broadcast
+
+    .card-body.d-flex.flex-column
+      p.text-muted.small
+        | Sends a Discord DM to every player who has used ESM on your servers. Worth it for a restart, a wipe, or an event; not for routine news.
+      button.btn.btn-warning.w-100.mt-auto[type="button" data-bs-toggle="modal" data-bs-target="#broadcast-modal"]
+        i.bi.bi-pencil-square.me-1
+        | Compose a broadcast

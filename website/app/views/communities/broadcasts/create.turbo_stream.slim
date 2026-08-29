@@ -1,0 +1,6 @@
+/ locals: command, result
+= turbo_stream.replace "broadcast_result" do
+  - if command.settled?
+    = render "communities/broadcasts/result", result:
+  - else
+    = render "communities/broadcasts/processing", command:

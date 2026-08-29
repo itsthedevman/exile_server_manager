@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class CommunitiesController < AuthenticatedController
+  include Commands
+
   before_action :check_for_community_access!, except: [:index]
 
   def index
@@ -15,8 +17,18 @@ class CommunitiesController < AuthenticatedController
     }
   end
 
+  # The landing page for community-wide tools - the commands that act on a whole community rather than one server, and
+  # so have nowhere to live on the server-scoped dashboard. Still gated while it fills out; until then a community
+  # opens on its settings the way it always has.
   def show
-    redirect_to edit_community_path(current_community)
+    return redirect_to edit_community_path(current_community) unless Rails.env.local?
+
+    can_broadcast = command_accessible?("broadcast")
+
+    render locals: {
+      can_broadcast:,
+      audiences: can_broadcast ? helpers.broadcast_audiences(current_community) : []
+    }
   end
 
   def edit

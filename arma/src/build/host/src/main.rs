@@ -121,9 +121,12 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
             ext_build::build_extension(ctx)?;
         }
 
+        // Packaging only checks that the staging tree is there, so falling through costs nothing: whether the run
+        // ends here is the next block's call, the same as for any other build. bin/package never asks for a
+        // server and stops there. bin/staging does ask, and a release build nothing has ever booted is not one
+        // anybody has tested.
         if ctx.args.release {
             run_step(ctx, "Packaging release", deploy::package_release)?;
-            return Ok(());
         }
 
         if !ctx.args.start_server() && !ctx.args.update_arma() {

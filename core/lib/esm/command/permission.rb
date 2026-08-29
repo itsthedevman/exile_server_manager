@@ -40,15 +40,19 @@ module ESM
       #
       # @param role_ids [Array<Integer, String>] the user's Discord role ids in the community
       # @param administrator [Boolean] whether the user holds Discord's administrator permission in the community
-      # @param server_online [Boolean] whether the command's target server is currently connected
+      # @param server_online [Boolean, nil] whether the command's target server is currently connected, or nil when the
+      #   command targets no server and so has nothing that could be offline
       #
       # @return [Result]
       #
-      def resolve(role_ids: [], administrator: false, server_online: true)
+      def resolve(role_ids: [], administrator: false, server_online: nil)
         return denied(:unregistered) if registration_required? && !user.registered?
         return denied(:disabled) unless enabled?
         return denied(:not_allowlisted) unless allowlisted?(role_ids:, administrator:)
-        return denied(:server_offline) unless server_online
+
+        # Only an answered "no" closes this gate. A community-scoped command has no server to ask about, and nil says
+        # that rather than claiming a server that doesn't exist is up.
+        return denied(:server_offline) if server_online == false
         return denied(:on_cooldown, time_left: cooldown.to_s) if on_cooldown?
 
         ALLOWED

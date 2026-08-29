@@ -3,6 +3,8 @@
 describe ESM::Command::Server::Sqf, category: "command" do
   include_context "command"
   include_examples "validate_command"
+  include_examples "preserves_argument_case",
+    code_to_execute: 'private _isAlive = alive (player getVariable ["ESM_Target", objNull]);'
 
   describe "V1" do
     describe "#execute" do

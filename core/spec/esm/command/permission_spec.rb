@@ -66,6 +66,12 @@ RSpec.describe ESM::Command::Permission do
       end
     end
 
+    context "when the command targets no server" do
+      it "skips the connectivity gate rather than reading nil as offline" do
+        expect(permission.resolve(server_online: nil)).to be_allowed
+      end
+    end
+
     context "when the user is on cooldown" do
       let(:cooldown) do
         create(:cooldown, user:, community:, command_name: "gamble", cooldown_type: "seconds",

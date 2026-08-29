@@ -101,7 +101,7 @@ module ESM
 
               ESM.discord_bot.log_error(
                 uuid:,
-                user: @command.current_user.attributes_for_logging,
+                user: @command&.current_user&.attributes_for_logging,
                 message: error.inspect,
                 backtrace: @backtrace_cleaner.clean(error.backtrace)
               )

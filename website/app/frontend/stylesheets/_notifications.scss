@@ -4,6 +4,31 @@
 
     border-left: 3px solid $esm-toast-red;
 
+    // A broadcast's embed is built with :orange, so its preview has to be too - the stripe is the first thing that
+    // says which kind of message this is.
+    &--broadcast {
+        border-left-color: $esm-toast-orange;
+    }
+
+    // A broadcast runs to 2000 characters, which is taller than the modal it previews in. Scrolling the description in
+    // place keeps the message field reachable instead of letting the preview push it off screen, and a message is free
+    // to carry a URL or some other unbroken run longer than the column is wide.
+    &__description {
+        max-height: 18rem;
+        overflow-y: auto;
+        overflow-wrap: anywhere;
+    }
+
+    // Discord draws inline code as a grey chip, not Bootstrap's pink text. Only the title and description get here:
+    // Discord leaves an embed footer as plain text, so the preview's footer keeps its backticks visible.
+    code {
+        background: $esm-warm-gray-700;
+        color: $white;
+        padding: 0.1em 0.3em;
+        border-radius: 0.2rem;
+        font-size: 0.875em;
+    }
+
     &.random {
         animation: border-random 60s infinite;
 

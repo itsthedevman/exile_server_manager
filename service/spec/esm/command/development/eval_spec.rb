@@ -8,6 +8,7 @@ describe ESM::Command::Development::Eval, category: "command" do
   let!(:user) { create(:developer) }
 
   include_examples "validate_command", requires_registration: false
+  include_examples "preserves_argument_case", code: "ESM::Community.where(player_mode_enabled: true).pluck(:community_name)"
 
   describe "#execute" do
     context "when the input is a boolean" do

@@ -1,0 +1,20 @@
+- content_for :title, current_community.community_id
+
+- if can_broadcast && audiences.any?
+  = render "communities/broadcasts/modal", current_community:, audiences:
+
+= render "communities/container", **local_assigns do
+  .mb-4
+    h1.mb-1 = current_community.community_name
+    p.lead.text-muted.mb-0 = "Community-wide tools for #{current_community.community_id}"
+
+  - if can_broadcast && audiences.any?
+    .row.g-4
+      = render "communities/broadcasts/card", current_community:
+  - else
+    .card
+      .card-body.text-center.py-5
+        i.bi.bi-megaphone.display-4.text-secondary.mb-3.d-block
+        h4.mb-2 Nothing to run here yet
+        p.text-muted.mx-auto.mb-0 style="max-width: 34rem;"
+          | Commands that act on your whole community, rather than on one of its servers, run from this page. Anything that belongs to a single server lives on that server's page instead.

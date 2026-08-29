@@ -96,6 +96,7 @@ arma/src/updater/lib/keys/*
 !arma/src/updater/lib/keys/updater.pub
 arma/bin/upload
 arma/bin/release
+arma/bin/staging
 arma/tools/server/@exile/addons/*.pbo
 arma/tools/server/@exile/addons/*.bisign
 arma/tools/server/@exile/addons/*.txt

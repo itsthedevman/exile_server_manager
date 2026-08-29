@@ -10,7 +10,7 @@ module ESM
         #
 
         # Required: Needed by command
-        argument :code_to_execute, display_name: :execute, required: true, preserve: true
+        argument :code_to_execute, display_name: :execute, required: true, preserve_case: true
 
         # See Argument::TEMPLATES[:server_id]
         argument :server_id, display_name: :on

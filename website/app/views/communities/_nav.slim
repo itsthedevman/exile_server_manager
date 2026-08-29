@@ -48,6 +48,16 @@
         | Community
 
     .list-group.list-group-flush
+      - if Rails.env.local?
+        = link_to community_path(current_community),
+          class: class_names( \
+            "list-group-item list-group-item-action d-flex align-items-center py-3",
+            "bg-primary bg-opacity-25": controller_name == "communities" && action_name == "show" \
+          )
+
+          i.bi.bi-broadcast.me-3
+          span.fw-medium Tools
+
       - if current_community.server_mode_enabled?
         = link_to community_commands_path(current_community),
           class: class_names( \

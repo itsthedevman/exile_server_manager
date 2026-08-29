@@ -4,13 +4,17 @@ module ESM
   module Command
     module Server
       class Broadcast < ApplicationCommand
+        # Discord truncates an embed description at 2048 rather than refusing it, so a message is capped below that here
+        # and rejected outright - a broadcast that silently loses its last paragraph is worse than one that won't send.
+        MESSAGE_LENGTH_MAX = 2000
+
         #################################
         #
         # Arguments (required first, then order matters)
         #
 
         # Required: All variants require a message
-        argument :message, required: true, preserve: true
+        argument :message, required: true, preserve_case: true
 
         # Optional: Omitting defaults to "preview"
         argument(
@@ -72,7 +76,7 @@ module ESM
           end
 
           # Get all of the users to broadcast to
-          users = load_users
+          users = Audience.for(@servers)
           users.each { |user| ESM.discord_bot.deliver(broadcast_embed(server_ids: @server_id_sentence), to: user.discord_id) }
 
           # Send the success message back
@@ -82,6 +86,20 @@ module ESM
               description: I18n.t("commands.broadcast.success_message", user: current_user.mention)
             )
           )
+        end
+
+        # The web surface has already shown the admin the rendered embed and made them confirm it, so this drops both
+        # the preview and the yes/no await that carry that job on Discord. What is left is the send.
+        def on_website_execute
+          check_for_message_length!
+          load_servers
+
+          recipients = Audience.for(@servers)
+          embed = broadcast_embed(server_ids: @server_id_sentence)
+
+          recipients.each { |user| ESM.discord_bot.deliver(embed, to: user.discord_id) }
+
+          reply(recipients: recipients.size)
         end
 
         private
@@ -119,33 +137,8 @@ module ESM
           @server_id_sentence = @servers.map { |server| "`#{server.server_id}`" }.to_sentence
         end
 
-        def load_users
-          users =
-            @servers.map do |server|
-              denied_user_ids = ESM::UserNotificationPreference.where(server_id: server.id, custom: false).pluck(:user_id)
-              denied_steam_uids = ESM::User.where(id: denied_user_ids).pluck(:steam_uid).reject(&:nil?)
-
-              # Get every user that has used a command for this server, but has not explicitly denied custom
-              # This code will also inherently find users who have set the preference to true since that creates a cooldown
-              # This query is complex to avoid querying and loading a lot of data.
-              user_data = ESM::Cooldown
-                .where(server_id: server.id)
-                .where.not(user_id: denied_user_ids, steam_uid: denied_steam_uids)
-                .uniq { |cooldown| [cooldown.user_id, cooldown.steam_uid] }
-                .map { |cooldown| [cooldown.user_id, cooldown.steam_uid] }
-
-              user_ids = user_data.map(&:first).reject(&:nil?).uniq
-              steam_uids = user_data.map(&:second).reject(&:nil?).uniq
-
-              ESM::User.where(id: user_ids).or(ESM::User.where(steam_uid: steam_uids))
-            end
-
-          # Flatten and make sure we are only sending to each user once
-          users.flatten.reject(&:nil?).uniq(&:discord_id)
-        end
-
         def check_for_message_length!
-          raise_error!(:message_length, user: current_user) if arguments.message.size > 2000
+          raise_error!(:message_length, user: current_user) if arguments.message.size > MESSAGE_LENGTH_MAX
         end
 
         def raise_no_server_access!

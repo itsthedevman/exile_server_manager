@@ -52,9 +52,11 @@ module ESM
         socket = @server.accept
         return unless socket.is_a?(TCPSocket)
 
+        _family, port, _hostname, address = socket.peeraddr(false)
+
         info!(
           state: :accepted,
-          peer: socket.peeraddr(false)[2..3].join(":")
+          peer: "#{address}:#{port}"
         )
 
         @connection_manager.on_connect(socket)

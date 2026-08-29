@@ -107,6 +107,16 @@ Rails.application.routes.draw do
         delete :destroy_many
       end
     end
+
+    if Rails.env.local?
+      # /communities/:community_id/broadcast — admin tool: DM every player of one server, or of all of them
+      resource :broadcast, only: [:create], controller: "communities/broadcasts" do
+        collection do
+          # /communities/:community_id/broadcast/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
+    end
   end
 
   if Rails.env.local?

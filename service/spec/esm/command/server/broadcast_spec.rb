@@ -3,6 +3,7 @@
 describe ESM::Command::Server::Broadcast, category: "command" do
   include_context "command"
   include_examples "validate_command"
+  include_examples "preserves_argument_case", message: "Servers are Restarting in 15 Minutes for the Summer Wipe"
 
   describe "#execute" do
     include_context "connection_v1"
@@ -107,6 +108,98 @@ describe ESM::Command::Server::Broadcast, category: "command" do
           ESM::Exception::CheckFailure,
           /this command can only be used in a discord server's \*\*text channel/i
         )
+      end
+    end
+  end
+
+  describe "#on_website_execute" do
+    subject(:service_command) { execute_website!(arguments: {broadcast_to:, message:}) }
+
+    let!(:second_server) { create(:server, community_id: community.id) }
+    let(:message) { "Hello world!" }
+
+    before do
+      ESM::Test.skip_cooldown = true
+      grant_command_access!(community, "broadcast")
+    end
+
+    context "when a single server is the target" do
+      let(:broadcast_to) { server.server_id }
+
+      before do
+        create(:cooldown, command_name: "preferences", user:, community:, server:)
+        create(:cooldown, command_name: "preferences", user: second_user, community:, server: second_server)
+      end
+
+      it "is expected to complete the row with the number of people it reached" do
+        expect(service_command.status).to eq("completed")
+        expect(service_command.result).to eq({recipients: 1})
+      end
+
+      # await_size only waits for a floor, so the exact size is what actually rules out the preview embed, the spacer
+      # and the confirmation prompt that the Discord path sends alongside the delivery.
+      it "is expected to message only that server's players, with no preview or confirmation" do
+        service_command
+
+        outbox = ESM.discord_bot.test_outbox
+        outbox.await_size(1)
+
+        expect(outbox.size).to eq(1)
+        expect(outbox.destinations.map(&:name)).to contain_exactly(user.discord_username)
+      end
+    end
+
+    context "when every server is the target" do
+      let(:broadcast_to) { "all" }
+
+      before do
+        create(:cooldown, command_name: "preferences", user:, community:, server:)
+        create(:cooldown, command_name: "preferences", user: second_user, community:, server: second_server)
+      end
+
+      it "is expected to reach the players of every server" do
+        expect(service_command.result).to eq({recipients: 2})
+      end
+    end
+
+    # The count the admin is shown has to be the count that gets messaged, and a player on several of a community's
+    # servers is one Discord account either way.
+    context "when a player has played on more than one of the targeted servers" do
+      let(:broadcast_to) { "all" }
+
+      before do
+        create(:cooldown, command_name: "preferences", user:, community:, server:)
+        create(:cooldown, command_name: "preferences", user:, community:, server: second_server)
+      end
+
+      it "is expected to count and message them once" do
+        expect(service_command.result).to eq({recipients: 1})
+
+        outbox = ESM.discord_bot.test_outbox
+        outbox.await_size(1)
+
+        expect(outbox.size).to eq(1)
+      end
+    end
+
+    context "when the message is longer than Discord will render" do
+      let(:broadcast_to) { "all" }
+      let(:message) { "a" * 2001 }
+
+      it "is expected to fail the row without messaging anyone" do
+        expect(service_command.status).to eq("failed")
+        expect(service_command.error_message).to be_present
+        expect(ESM.discord_bot.test_outbox).to be_empty
+      end
+    end
+
+    context "when the target server belongs to another community" do
+      let(:other_community) { create(:community) }
+      let(:broadcast_to) { create(:server, community: other_community).server_id }
+
+      it "is expected to fail the row without messaging anyone" do
+        expect(service_command.status).to eq("failed")
+        expect(ESM.discord_bot.test_outbox).to be_empty
       end
     end
   end

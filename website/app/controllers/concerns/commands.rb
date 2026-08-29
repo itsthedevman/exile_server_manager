@@ -10,7 +10,18 @@ module Commands
   private
 
   ##
-  # Builds a CommandAccess check for command_name against the current user and server, returning its permission verdict.
+  # The server a command runs against, for the surfaces that have one. A community-scoped surface leaves this nil and
+  # gates on its community alone; a server controller defines its own and overrides this.
+  #
+  # @return [ESM::Server, nil]
+  #
+  def current_server
+    nil
+  end
+
+  ##
+  # Builds a CommandAccess check for command_name against the current user and whichever context this surface carries -
+  # a server for the commands that target one, otherwise the community - and returns its permission verdict.
   #
   # @param command_name [String, Symbol] The name of the command
   #
@@ -20,12 +31,13 @@ module Commands
     ESM::CommandAccess.new(
       command_name:,
       user: current_user,
+      community: current_community,
       server: current_server
     ).verdict
   end
 
   ##
-  # Whether the current user is allowed to run command_name against the current server.
+  # Whether the current user is allowed to run command_name here.
   #
   # @param command_name [String, Symbol] The name of the command
   #
@@ -36,7 +48,7 @@ module Commands
   end
 
   ##
-  # Runs the CommandAccess verdict for command_name against the current user and server. On a denial, renders the
+  # Runs the CommandAccess verdict for command_name against the current user. On a denial, renders the
   # player-facing reason into the command's result slot and returns false so the caller can bail.
   #
   # @param command_name [String, Symbol] The name of the command
@@ -116,14 +128,33 @@ module Commands
       idempotency_key: params.require(:idempotency_key)
     ) do |new_command|
       new_command.server = current_server
-      new_command.community = current_server.community
+      new_command.community = command_community
       new_command.command_name = command_name
-
-      new_command.arguments = {
-        server_id: current_server.server_id,
-        community_id: current_server.community.community_id
-      }.merge(arguments)
+      new_command.arguments = command_context.merge(arguments)
     end
+  end
+
+  ##
+  # The community a command runs against. Only one of the two sources is ever present: a community-scoped page has no
+  # server in its URL, and a server-scoped page has no community in its URL.
+  #
+  # @return [ESM::Community, nil]
+  #
+  def command_community
+    current_community || current_server&.community
+  end
+
+  ##
+  # The identifiers handed to every command regardless of what the caller passes, so a command can always name where
+  # it is running. A community-scoped command carries no server_id, which is also how it reaches Discord.
+  #
+  # @return [Hash]
+  #
+  def command_context
+    context = {community_id: command_community.community_id}
+    context[:server_id] = current_server.server_id if current_server
+
+    context
   end
 
   ##
@@ -135,20 +166,30 @@ module Commands
   # @return [String] The message to show the player
   #
   def command_denied_message(reason)
-    server = current_server.server_id
-
     case reason
     when :unregistered
       "Link your Steam account on your account page first."
     when :disabled
-      "This command isn't enabled on #{server}."
+      "This command isn't enabled on #{command_context_id}."
     when :not_allowlisted
-      "You don't have permission to run this command on #{server}."
+      "You don't have permission to run this command on #{command_context_id}."
     when :server_offline
-      "#{server} is offline. Try again once it's back up."
+      "#{current_server.server_id} is offline. Try again once it's back up."
     else
       "You can't run that command right now."
     end
+  end
+
+  ##
+  # What a denial names as the thing the command was refused on: the server when it targets one, otherwise the
+  # community. Ids rather than display names, matching how the rest of the error copy identifies things.
+  #
+  # @return [String]
+  #
+  def command_context_id
+    return current_server.server_id if current_server
+
+    current_community.community_id
   end
 
   ##

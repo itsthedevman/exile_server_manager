@@ -14,7 +14,7 @@ module ESM
         argument :server_id
         argument :target
         argument :_integer, regex: /1/, description: "test_base._integer", type: :integer
-        argument :_preserve, regex: /preserve/, description: "test_base._preserve", preserve: true
+        argument :_preserve, regex: /preserve/, description: "test_base._preserve", preserve_case: true
         argument :_display_as, regex: /display_name/, description: "test_base._display_as", display_name: "sa_yalpsid"
 
         # Leave these at the end

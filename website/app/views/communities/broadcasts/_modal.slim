@@ -1,0 +1,89 @@
+/ locals: current_community, audiences
+#broadcast-modal.modal.fade[tabindex="-1" aria-labelledby="broadcast-modal-title" aria-hidden="true"]
+  .modal-dialog.modal-xl.modal-dialog-centered.modal-dialog-scrollable
+    .modal-content data-controller="broadcast"
+      .modal-header.border-warning.bg-warning.bg-opacity-10
+        h4#broadcast-modal-title.modal-title.text-warning.mb-0
+          i.bi.bi-megaphone.text-warning.me-2
+          | Broadcast
+        button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+      / modal-dialog-scrollable expects the body to be a direct child of .modal-content so it can be the flex item that
+      / shrinks. The form sits in between, so it has to carry that role itself, and overflow-hidden is what lets it
+      / shrink past its content instead of running off the clipped edge with the footer.
+      = form_with url: community_broadcast_path(current_community), method: :post, class: "d-flex flex-column overflow-hidden", data: {action: "turbo:submit-end->broadcast#submitEnded"} do |form|
+        = form.hidden_field :idempotency_key, value: SecureRandom.uuid, data: {broadcast_target: "idempotencyKey"}
+        = form.hidden_field :dom_id, value: "broadcast_result"
+
+        .modal-body
+          / Row 1: Audience + Live Preview
+          .row.g-4.mb-4
+            .col-md-6
+              h5.text-warning.mb-3
+                i.bi.bi-people.me-2
+                | Audience
+
+              .mb-0
+                = form.label :broadcast_to, class: "form-label fw-medium"
+                  span.text-danger.me-1 *
+                  | Send to
+                = form.select :broadcast_to,
+                  audiences.map { |audience| [audience.label, audience.value, {data: {summary: audience.summary, preview_title: audience.preview_title}}] },
+                  {},
+                  class: "form-select", data: {broadcast_target: "audience", action: "input->broadcast#audienceChanged"}
+                .mt-1
+                  small.text-muted data-broadcast-target="recipients" = audiences.first.summary
+
+            .col-md-6
+              .card.bg-dark.border-secondary.mt-4
+                .card-header.py-2
+                  h6.mb-0.text-light
+                    i.bi.bi-eye.me-2
+                    | Live Preview
+                .card-body.p-3
+                  .discord-embed.discord-embed--broadcast.p-3.rounded
+                    .text-light.fw-medium.mb-1.fs-6 data-broadcast-target="previewTitle" = audiences.first.preview_title
+                    .discord-embed__description.mb-1.text-muted data-broadcast-target="preview" Your message will appear here
+                    .small.text-muted = t("commands.broadcast.broadcast_embed.footer")
+
+          / Row 2: Message Content
+          .row
+            .col-12
+              h5.text-warning.mb-3
+                i.bi.bi-type.me-2
+                | Message Content
+
+              = form.label :message, class: "form-label fw-medium"
+                span.text-danger.me-1 *
+                | Message
+              = form.text_area :message,
+                class: "form-control",
+                rows: 6,
+                maxlength: ESM::Command::Server::Broadcast::MESSAGE_LENGTH_MAX,
+                required: true,
+                placeholder: "Servers are restarting in 15 minutes for the summer wipe.",
+                data: {broadcast_target: "message", action: "input->broadcast#messageChanged"}
+              .d-flex.justify-content-between.mt-1
+                = link_to_tab discord_markdown_docs_url, class: "text-decoration-none" do
+                  small.text-info
+                    i.bi.bi-markdown.me-1
+                    | Discord markdown supported
+                small.text-muted
+                  span data-broadcast-target="counter" 0
+                  | /#{ESM::Command::Server::Broadcast::MESSAGE_LENGTH_MAX}
+
+              #broadcast_result.mt-2
+
+        .modal-footer
+          / Mobile
+          .d-block.d-lg-none.w-100
+            .row.g-2
+              .col-6
+                button.btn.btn-outline-secondary.w-100[type="button" data-bs-dismiss="modal"] Cancel
+              .col-6
+                = form.submit "Send", name: nil, class: "btn btn-warning w-100", disabled: true, data: {broadcast_target: "submit"}
+
+          / Desktop
+          .d-none.d-lg-flex.gap-2.justify-content-end
+            button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
+            = form.submit "Send Broadcast", name: nil, class: "btn btn-warning", disabled: true, data: {broadcast_target: "submit"}

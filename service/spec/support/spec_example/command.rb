@@ -35,6 +35,32 @@ RSpec.shared_examples("validate_command") do |**args|
   end
 end
 
+##
+# Asserts an argument declared with `preserve_case: true` actually hands its input back untouched.
+#
+# Every other argument is downcased on the way in, so the declaration is the only thing keeping a variable name or a
+# sentence intact - and it is a keyword, which means a typo in it downcases silently and the argument keeps working
+# for every input that happened to already be lowercase.
+#
+# The sample runs through the real argument rather than reading the flag back, so this survives a rename of either the
+# keyword or the method behind it.
+#
+# @param samples [Hash{Symbol => String}] argument name to a mixed-case sample the command would realistically receive
+#
+# @example
+#   include_examples "preserves_argument_case", message: "Servers are Restarting in 15 Minutes"
+#
+RSpec.shared_examples("preserves_argument_case") do |**samples|
+  samples.each do |argument_name, sample|
+    it "preserves the case of :#{argument_name}" do
+      template = command.arguments.template(argument_name)
+      expect(template).not_to be_nil, "#{command.class} has no argument named #{argument_name.inspect}"
+
+      expect(template.transform_and_validate!(sample, command)).to eq(sample)
+    end
+  end
+end
+
 RSpec.shared_examples("raises_exception") do |it_message = nil|
   let(:exception_class) {}
   let(:matcher) {}

@@ -29,7 +29,7 @@
             .row.g-3
               - server_communities.each do |community|
                 .col-12
-                  = link_to edit_community_path(community.public_id), class: "text-decoration-none d-block"
+                  = link_to community_path(community.public_id), class: "text-decoration-none d-block"
                     .card.bg-dark.border-secondary.community-nav-card
                       .card-body.d-flex.align-items-center.py-3
                         / Discord server icon
