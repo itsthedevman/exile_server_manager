@@ -39,6 +39,29 @@ ESM::BotAttribute.create!(
 puts " done"
 
 # =============================================================================
+# USERS
+# =============================================================================
+
+print "Creating users..."
+users = [
+  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: "76561198037177305"},
+  {
+    discord_id: "477847544521687040",
+    discord_username: "Bryan V2",
+    steam_uid: mock_steam_uids.sample
+  },
+  {
+    discord_id: "683476391664156700",
+    discord_username: "Bryan V3",
+    steam_uid: mock_steam_uids.sample
+  }
+].map do |user_info|
+  ESM::User.create!(**user_info)
+end
+
+puts " done"
+
+# =============================================================================
 # COMMUNITIES
 # =============================================================================
 
@@ -49,19 +72,22 @@ communities = [
     community_name: "ESM Test Server 1",
     guild_id: "452568470765305866",
     logging_channel_id: "901965726305382400",
-    player_mode_enabled: false
+    player_mode_enabled: false,
+    owner_user_id: users.first.id
   },
   {
     community_id: "esm2",
     community_name: "ESM Test Server 2",
     guild_id: "901967248653189180",
-    player_mode_enabled: true
+    player_mode_enabled: true,
+    owner_user_id: users.first.id
   },
   {
     community_id: "esm3",
     community_name: "ESM Test Server 3",
     guild_id: "1203080566417784842",
-    player_mode_enabled: false
+    player_mode_enabled: false,
+    owner_user_id: users.second.id
   }
 ].map do |community_data|
   print "  Creating community for #{community_data[:community_id]}..."
@@ -177,33 +203,20 @@ server_1.server_rewards.create!(
 puts " done"
 
 # =============================================================================
-# USERS
+# USERS EXTRA
 # =============================================================================
 
-print "Creating users..."
-users = [
-  {discord_id: "137709767954137088", discord_username: "Bryan", steam_uid: "76561198037177305"},
-  {
-    discord_id: "477847544521687040",
-    discord_username: "Bryan V2",
-    steam_uid: mock_steam_uids.sample
-  },
-  {
-    discord_id: "683476391664156700",
-    discord_username: "Bryan V3",
-    steam_uid: mock_steam_uids.sample
-  }
-].map do |user_info|
-  user = ESM::User.create!(**user_info)
+users.each do |user|
   ESM::UserNotificationPreference.create!(user_id: user.id, server_id: server_1.id)
-  user
 end
 
 # Set defaults and aliases for main user
-ESM::UserDefault.where(user_id: 1).update(server_id: server_1.id, community_id: community.id)
-ESM::UserAlias.create!(user_id: 1, server_id: server_1.id, value: "s")
-ESM::UserAlias.create!(user_id: 1, community_id: community.id, value: "c")
-puts " done"
+ESM::UserDefault.where(user_id: users.first.id).update(server_id: server_1.id, community_id: community.id)
+ESM::UserAlias.create!(user_id: users.first.id, server_id: server_1.id, value: "s")
+ESM::UserAlias.create!(user_id: users.first.id, community_id: community.id, value: "c")
+
+ESM::UserServerFavorite.create!(user_id: users.first.id, server_id: server_1.id)
+ESM::UserServerFavorite.create!(user_id: users.first.id, server_id: server_2.id)
 
 # =============================================================================
 # GAMBLE STATS
