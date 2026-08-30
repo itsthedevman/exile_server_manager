@@ -55,6 +55,13 @@ impl FileWatcher {
         self
     }
 
+    /// Read the previous run's snapshot and take a fresh one, without committing anything.
+    ///
+    /// Taking a snapshot is not the same as having acted on it, so nothing is written here. Every invocation of
+    /// this binary builds a watcher, and only some of them go on to build: one that stages a test position or
+    /// merely starts a server would otherwise record every pending edit as seen, and the next real build would
+    /// find nothing to do and deploy the previous artifact while reporting success. [`FileWatcher::record`] is
+    /// what says a build happened.
     pub fn load(mut self) -> Result<Self, String> {
         if let Ok(c) = std::fs::read(&self.cache_path) {
             if let Ok(cache) = serde_json::from_slice(&c) {
@@ -88,13 +95,18 @@ impl FileWatcher {
                 .insert(path, metadata.modified().unwrap());
         }
 
-        if let Ok(content) = serde_json::to_string(&self.latest_file_cache) {
-            if let Err(e) = std::fs::write(&self.cache_path, content) {
-                return Err(format!("{e}"));
-            }
-        }
-
         Ok(self)
+    }
+
+    /// Commit the snapshot taken at load time, marking everything in it as built.
+    ///
+    /// The load-time snapshot is written rather than a fresh scan on purpose. A source file edited while the
+    /// build was running is not in the artifact that build produced, and re-scanning here would record it as
+    /// though it were. Keeping the older timestamps leaves it looking modified, so the next run rebuilds it.
+    pub fn record(&self) -> Result<(), String> {
+        let content = serde_json::to_string(&self.latest_file_cache).map_err(|e| e.to_string())?;
+
+        std::fs::write(&self.cache_path, content).map_err(|e| format!("{e}"))
     }
 
     pub fn was_modified(&self, path: &Path) -> bool {

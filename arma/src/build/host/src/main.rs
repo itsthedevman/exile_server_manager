@@ -129,6 +129,11 @@ fn run_pipeline(ctx: &mut BuildContext) -> BuildResult {
             run_step(ctx, "Packaging release", deploy::package_release)?;
         }
 
+        // Only once every build above has succeeded. Recording earlier would tell the next run that a build it
+        // never finished is already done, and the failure it should have retried would come back as "nothing to
+        // build" with the previous artifact still sitting in the tree.
+        steps::detect::record_build(ctx)?;
+
         if !ctx.args.start_server() && !ctx.args.update_arma() {
             if !ctx.rebuild_mod() && !ctx.rebuild_extension() {
                 let dim = display::color::DIM;
