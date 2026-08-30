@@ -37,6 +37,7 @@ version contract and are anchored by date. Year format is Holocene.
 - **(website)** Admin SQF console: a syntax-highlighted editor for running SQF against the server, all players, or one player by Steam UID
 - **(website)** Players can favorite servers, available on the Discover page and the community dashboard
 - **(core)** Website actions run through the same command engine as Discord, so per-community permissions, cooldowns, and argument validation apply identically on both surfaces. A command can also declare arguments and help text for one origin only
+- **(website)** New community tools page lets admins compose a broadcast message to send to players on one server or all of them, with a live Discord-style preview and a count of how many players will actually receive it.
 
 ### Fixed
 
@@ -96,6 +97,23 @@ version contract and are anchored by date. Year format is Holocene.
 - Fixed client reconnection interval calculation
 
 ---
+
+## 12026-08-30
+
+### Added
+
+- **(website)** Community owners can switch their community between player mode and server mode from the community settings page, with a confirmation dialog explaining the change. A server community must remove its registered servers first, and only the owner sees the option.
+- **(website)** The server setup guide now includes a step-by-step section for updating an existing ESM installation, including which files to back up beforehand.
+- **(service, dev)** Added a `preserves_argument_case` shared spec example that verifies `preserve_case: true` actually leaves command arguments untouched, guarding against future lowercasing regressions.
+- **(core, dev)** The dev DB seed script now populates `owner_user_id` and creates sample favorite records for seeded communities, keeping local seed data in sync with the schema.
+
+### Fixed
+
+- **(core)** Messages sent with `/server broadcast` and code submitted to `/server sqf` are no longer forced to lowercase, so capitalization, acronyms, and case-sensitive names now work correctly.
+- **(core)** Removed stray extra backticks around server names in the `/server broadcast` confirmation and delivered message that were causing malformed formatting.
+- **(arma, dev)** The build host no longer stops the pipeline after packaging a `--release` build; it now continues on to start or update the server when combined with `--start-server`/`--update-arma`, matching non-release behavior.
+- **(service, dev)** Fixed the accepted-connection log line, which logged duplicate host info instead of the actual address and port.
+- **(service, dev)** Error logging for a failed Discord application command no longer raises a secondary error when the failure occurs before the command is set, which had obscured the original error in the logs.
 
 ## 12026-08-22
 
