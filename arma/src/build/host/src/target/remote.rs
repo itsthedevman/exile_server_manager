@@ -382,6 +382,45 @@ impl Target for RemoteTarget {
         Ok(())
     }
 
+    /// Nothing beyond the write. Windows takes runnability from the file extension, so an `.exe` is already one.
+    fn write_executable(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError> {
+        self.write_file(path, contents)
+    }
+
+    fn arma_running(&self) -> bool {
+        let names = ARMA_PROCESS_NAMES
+            .iter()
+            .map(|name| ps_literal(name))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        self.run(&format!(
+            "if (Get-Process -Name {names} -ErrorAction SilentlyContinue) {{ '1' }} else {{ '0' }}"
+        ))
+        .map(|output| output.trim() == "1")
+        .unwrap_or(false)
+    }
+
+    fn remove_paths(&self, paths: &[&Path]) -> Result<(), BuildError> {
+        if paths.is_empty() {
+            return Ok(());
+        }
+
+        let quoted = paths
+            .iter()
+            .map(|path| ps_literal(&path.display().to_string()))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        // SilentlyContinue rather than a Test-Path guard per entry: the paths here are the ones a wipe is
+        // removing, and most of them are legitimately absent on an install that has never been updated.
+        self.run(&format!(
+            "Remove-Item -LiteralPath {quoted} -Recurse -Force -ErrorAction SilentlyContinue"
+        ))?;
+
+        Ok(())
+    }
+
     fn clean_logs(&self) -> Result<(), BuildError> {
         let profile = self.server_path.join("server_profile");
 

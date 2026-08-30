@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Puts one dev server's @esm into a known starting position for an updater test.
+#
+# The other half of the round is bin/updater_tester serve, which stands up the signed manifest this is staged
+# against. They are separate tools because they touch different machines: serve builds and signs on this one,
+# staging writes into a container or the Windows guest, and only the second needs to speak both shells.
+#
+#   bin/updater_tester serve --key ~/test.key                      # build, sign, and serve
+#   bin/stage --esm 2.0.0                                          # record the extension a version behind
+#   bin/build --updater-url http://host.docker.internal:54321/versions.json --start-server
+#
+# Add --target=windows to stage the Windows guest instead of the container. Every flag is passed through to
+# `bin/build stage`; run `bin/build stage --help` for the full list.
+
+set -euo pipefail
+
+exec "./bin/build" stage "$@"

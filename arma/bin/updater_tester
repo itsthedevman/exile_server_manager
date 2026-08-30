@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
-# Local test bed for the auto-updater.
+# Stands up a signed manifest on localhost, standing in for the host a release is normally fetched from.
 #
-# Two jobs, deliberately kept apart. `serve` stands up a signed manifest on localhost, standing in for the host a
-# release is normally fetched from. `state` puts one dev instance into a known starting position. Neither starts a
-# server: bin/dev already does that, and a second boot path would only drift from the one being tested.
+# The other half of the round is `bin/stage`, which puts one server's install into a known starting position. That
+# half moved into the build tool because it writes to a container or to the Windows guest, and only the tool knows
+# both shells. This half stays here: building and signing happen on this machine and nowhere else.
+#
+# Neither starts a server. bin/dev already does that, and a second boot path would only drift from the one being
+# tested.
 #
 #   bin/updater_tester serve --key ~/test.key      # build, sign, and serve
-#   bin/updater_tester state --esm 2.0.0           # record the extension as a version behind
-#   bin/dev                                        # watch the boot check swap it in
+#   bin/stage --esm 2.0.0                          # record the extension as a version behind
+#   bin/build --updater-url <url> --start-server   # watch the boot check swap it in
 #
 # The key is the private half of whatever this build verifies against, which locally means whatever
 # ESM_UPDATER_PUBKEY_PATH points at. bin/manifest compares the two and refuses a mismatch, so the wrong key fails
@@ -24,10 +27,6 @@ readonly root_dir
 readonly release_dir=$root_dir/target/build_release
 readonly manifest=$release_dir/versions.json
 readonly testbed_root=$root_dir/target/updater_testbed
-readonly config_path=$root_dir/config.yml
-
-# Where each instance's @esm is mounted inside its container.
-readonly container_esm_dir=/arma3server/@esm
 
 # A container reaches the host through the firewall like anything else, so the port has to be one the host already
 # allows or every fetch times out rather than failing. 54321 belongs to the distributed build receiver, which is
@@ -41,52 +40,14 @@ function usage() {
     echo "Usage:"
     echo "  bin/updater_tester serve --key <path> [--port <n>] [--bind <addr>] [--base-url <url>]"
     echo "                           [--skip-build]"
-    echo "  bin/updater_tester state [--instance <id>] [--esm <version>] [--mod <version>]"
-    echo "                           [--updater-ext <version>] [--updater-mod <version>]"
-    echo "                           [--wipe] [--cli] [--url <url>]"
     echo
-    echo "A version may be 'none', which removes that component's entry so it reads as 0.0.0."
-    echo "Anything not named keeps the current crate version, so one flag changes one thing."
+    echo "Staging a server against the manifest this serves is bin/stage; see bin/build stage --help."
 }
 
 function crate_version() {
     cargo pkgid -p esm |
         cut -d# -f2 |
         cut -d@ -f2
-}
-
-# Resolve an instance id to the container holding it, and refuse anything that would edit files under a live server.
-function resolve_container() {
-    local instance=$1
-
-    if ! grep -qE "^[[:space:]]*- server_id: +${instance}[[:space:]]*$" "$config_path"; then
-        echo "Fatal - no instance '$instance' in $config_path" >&2
-        echo "  Configured: $(awk '$2 == "server_id:" { printf "%s ", $3 }' "$config_path")" >&2
-        exit 1
-    fi
-
-    local container="ESM_ARMA_${instance^^}"
-
-    local status
-    status=$(docker container inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
-
-    if [[ $status != running ]]; then
-        echo "Fatal - container $container is not running (status: ${status:-absent})" >&2
-        echo "  Run bin/dev once to bring it up. Ctrl-C leaves the container up with the server stopped," >&2
-        echo "  which is the state this command wants." >&2
-        exit 1
-    fi
-
-    # -x rather than -f, so this matches the process rather than the docker exec asking about it.
-    if docker exec "$container" pgrep -x arma3server_x64 >/dev/null 2>&1 ||
-        docker exec "$container" pgrep -x arma3server >/dev/null 2>&1; then
-        echo "Fatal - the Arma server is running in $container" >&2
-        echo "  Stop it first. Rewriting @esm under a live server produces a half-swapped install and a" >&2
-        echo "  test result that describes neither the before nor the after." >&2
-        exit 1
-    fi
-
-    echo "$container"
 }
 
 ##################################
@@ -200,8 +161,9 @@ function run_serve() {
     echo "  manifest: $base_url/versions.json"
     echo "  artifacts: ${#wanted[@]} under v$version"
     echo
-    echo "Point an instance at it with:"
-    echo "  bin/updater_tester state --url $base_url/versions.json"
+    echo "Stage a server behind it, then point its boot check here:"
+    echo "  bin/stage --esm <version>"
+    echo "  bin/build --updater-url $base_url/versions.json --start-server"
     echo
     echo "A container that cannot reach this is being stopped by the host firewall, not by anything here:"
     echo "the fetch times out rather than refusing. Serve on a port the host already allows."
@@ -236,178 +198,6 @@ Server((bind, port), partial(SimpleHTTPRequestHandler, directory=".")).serve_for
 }
 
 ##################################
-# state - put one instance into a known starting position
-
-function run_state() {
-    local instance=""
-    local esm_version="" mod_version="" updater_ext_version="" updater_mod_version=""
-    local manifest_url=""
-    local wipe=false
-    local install_cli=false
-
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-        --instance)
-            instance="$2"
-            shift 2
-            ;;
-        --esm)
-            esm_version="$2"
-            shift 2
-            ;;
-        --mod)
-            mod_version="$2"
-            shift 2
-            ;;
-        --updater-ext)
-            updater_ext_version="$2"
-            shift 2
-            ;;
-        --updater-mod)
-            updater_mod_version="$2"
-            shift 2
-            ;;
-        --url)
-            manifest_url="$2"
-            shift 2
-            ;;
-        --wipe)
-            wipe=true
-            shift
-            ;;
-        --cli)
-            install_cli=true
-            shift
-            ;;
-        *)
-            echo "Unknown argument: $1"
-            exit 1
-            ;;
-        esac
-    done
-
-    if [[ -z $instance ]]; then
-        instance=$(awk '/^instances:/ { found = 1; next } found && $2 == "server_id:" { print $3; exit }' "$config_path")
-    fi
-
-    local container
-    container=$(resolve_container "$instance")
-
-    # A component nobody named keeps the version the package would install, so one flag moves one thing. After a
-    # wipe the default flips: a first-time install has no record of anything.
-    local default_version
-    default_version=$(crate_version)
-
-    if [[ $wipe == true ]]; then
-        default_version=none
-    fi
-
-    esm_version=${esm_version:-$default_version}
-    mod_version=${mod_version:-$default_version}
-    updater_ext_version=${updater_ext_version:-$default_version}
-    updater_mod_version=${updater_mod_version:-$default_version}
-
-    # Written unconditionally. Left alone it points at the release host, which on a dev box answers every check with
-    # a 404 and turns a test into a study of the fail-open path.
-    manifest_url=${manifest_url:-http://host.docker.internal:$default_port/versions.json}
-
-    ##################################
-    # Strip @esm back to what a first-time install actually starts from
-    if [[ $wipe == true ]]; then
-        # esm.key and config.yml survive: the updater neither installs nor owns them, and without the key the
-        # server comes back up unable to authenticate, which reads as a broken update rather than a missing key.
-        docker exec "$container" bash -c "
-            set -e
-            cd '$container_esm_dir'
-            rm -rf addons installed_versions.yml esm_x64.so esm.so
-        "
-    fi
-
-    ##################################
-    # The version record
-    local lines=()
-    lines+=("# Written by bin/updater_tester, not by the updater. This is a test starting position, not a record of")
-    lines+=("# what is actually on disk.")
-    lines+=("")
-
-    if [[ $esm_version != none ]]; then
-        lines+=("esm: $esm_version")
-    fi
-
-    if [[ $mod_version != none ]]; then
-        lines+=("\"@esm\": $mod_version")
-    fi
-
-    if [[ $updater_ext_version != none ]]; then
-        lines+=("extension_updater: $updater_ext_version")
-    fi
-
-    if [[ $updater_mod_version != none ]]; then
-        lines+=("mod_updater: $updater_mod_version")
-    fi
-
-    # Every entry may legitimately be absent, and an empty file is not the same as a missing one: the updater reads
-    # the first as a record of nothing and the second as no record at all. Only one of those is a fresh install.
-    if [[ ${#lines[@]} -eq 3 ]]; then
-        docker exec "$container" rm -f "$container_esm_dir/installed_versions.yml"
-    else
-        printf '%s\n' "${lines[@]}" |
-            docker exec -i "$container" tee "$container_esm_dir/installed_versions.yml" >/dev/null
-    fi
-
-    ##################################
-    # The manifest URL
-    docker exec "$container" bash -c "
-        set -e
-        cd '$container_esm_dir'
-        touch config.yml
-        grep -v '^updater_url:' config.yml > config.yml.tmp || true
-        mv config.yml.tmp config.yml
-        echo 'updater_url: $manifest_url' >> config.yml
-    "
-
-    ##################################
-    # The CLI, which bin/build never deploys
-    if [[ $install_cli == true ]]; then
-        local packaged_cli=$release_dir/@esm/bin/esm_updater
-
-        if [[ ! -x $packaged_cli ]]; then
-            echo "Fatal - no CLI at $packaged_cli"
-            echo "  bin/build does not produce one. Run bin/updater_tester serve, or bin/package."
-            exit 1
-        fi
-
-        docker exec "$container" mkdir -p "$container_esm_dir/bin"
-        docker cp "$packaged_cli" "$container:$container_esm_dir/bin/esm_updater"
-    fi
-
-    ##################################
-    # Woohoo!
-    echo
-    echo "$instance is staged in $container"
-    echo "  esm:               $esm_version"
-    echo "  @esm:              $mod_version"
-    echo "  extension_updater: $updater_ext_version"
-    echo "  mod_updater:       $updater_mod_version"
-    echo "  updater_url:       $manifest_url"
-
-    if [[ $wipe == true ]]; then
-        echo "  @esm stripped to a first-install state (esm.key and config.yml kept)"
-    fi
-
-    if [[ $install_cli == true ]]; then
-        echo "  CLI installed at $container_esm_dir/bin/esm_updater"
-    fi
-
-    echo
-    echo "Run the CLI against it with:"
-    echo "  docker exec -it $container bash -c 'cd /arma3server && @esm/bin/esm_updater check'"
-    echo
-    echo "Or boot it with bin/dev --server-id $instance. Note bin/build redeploys @esm and overwrites"
-    echo "config.yml, so staging has to happen after a build rather than before one."
-}
-
-##################################
 # Dispatch
 if [[ $# -eq 0 ]]; then
     usage
@@ -420,9 +210,6 @@ shift
 case $subcommand in
 serve)
     run_serve "$@"
-    ;;
-state)
-    run_state "$@"
     ;;
 --help | -h | help)
     usage

@@ -52,12 +52,18 @@ pub fn git_sha_short() -> String {
 #[command(bin_name = "bin/build")]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    #[command(subcommand)]
+    command: Option<Command>,
+
     /// Build the extension as 32-bit instead of 64-bit
     #[arg(short, long)]
     x32: bool,
 
     /// Set the target build platform for the extension
-    #[arg(short, long, value_enum, default_value_t = BuildOS::Linux)]
+    ///
+    /// Global so that it reads the same before or after a subcommand: staging a Windows guest and building for
+    /// one are the same `--target=windows`, and a flag that only worked in one position would be a trap.
+    #[arg(short, long, value_enum, default_value_t = BuildOS::Linux, global = true)]
     target: BuildOS,
 
     /// Sets the logging level for the extension and the mod
@@ -67,6 +73,15 @@ pub struct Args {
     /// The URI of the server hosting esm_bot. Defaults per target; see `InstanceContext::bot_host`.
     #[arg(long)]
     bot_host: Option<String>,
+
+    /// Manifest the updater checks on boot, written into the deployed `@esm/config.yml` as `updater_url`.
+    ///
+    /// A deploy renders that file from scratch, so a URL staged into the previous one is gone by the time the
+    /// server next boots. Naming it here is what points the boot-time check at a local manifest server for the
+    /// length of a test, rather than at the release host, whose answer on a dev box is a 404 and a study of the
+    /// fail-open path.
+    #[arg(long)]
+    updater_url: Option<String>,
 
     /// Forces a full rebuild of everything
     #[arg(short, long)]
@@ -93,7 +108,7 @@ pub struct Args {
     start_only: bool,
 
     /// Which server to run, by its ESM server_id (see `instances` in config.yml). Defaults to the first entry.
-    #[arg(long)]
+    #[arg(long, global = true)]
     server_id: Option<String>,
 
     /// Run every server declared under `instances` in config.yml
@@ -113,6 +128,47 @@ pub struct Args {
     /// already-notified, so a routine dev start stays quiet)
     #[arg(long)]
     pub seed_xm8_notify: bool,
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum Command {
+    /// Put one server's @esm into a known starting position for an updater test
+    Stage(StageArgs),
+}
+
+/// Where a server's installed-version record should be left before an updater run.
+///
+/// Every component defaults to the version the current source would install, so naming one flag moves one thing
+/// and leaves the rest reading as already up to date. A version of `none` drops that component's entry entirely,
+/// which the updater reads as 0.0.0 rather than as a missing record.
+#[derive(clap::Args, Debug)]
+pub struct StageArgs {
+    /// Version to record for the extension
+    #[arg(long)]
+    pub esm: Option<String>,
+
+    /// Version to record for the mod
+    #[arg(long = "mod")]
+    pub server_mod: Option<String>,
+
+    /// Version to record for the updater extension
+    #[arg(long)]
+    pub updater_ext: Option<String>,
+
+    /// Version to record for the updater mod
+    #[arg(long)]
+    pub updater_mod: Option<String>,
+
+    /// Strip @esm back to what a first-time install starts from, keeping esm.key and config.yml
+    ///
+    /// Flips the default for every unnamed component to `none`, since an install that has never run the updater
+    /// has no record of anything.
+    #[arg(long)]
+    pub wipe: bool,
+
+    /// Install the updater CLI into @esm/bin, which a build never deploys
+    #[arg(long)]
+    pub cli: bool,
 }
 
 impl Args {
@@ -139,9 +195,20 @@ impl Args {
         self.log_level
     }
 
+    /// The subcommand this run is, or `None` for a build.
+    pub fn command(&self) -> Option<&Command> {
+        self.command.as_ref()
+    }
+
     /// `--bot-host` as given, or `None` to let the target decide.
     pub fn bot_host(&self) -> Option<&str> {
         self.bot_host.as_deref()
+    }
+
+    /// `--updater-url` as given, or `None` to leave the key out of the deployed config and let the updater fall
+    /// back to the release host it was built against.
+    pub fn updater_url(&self) -> Option<&str> {
+        self.updater_url.as_deref()
     }
 
     pub fn full_rebuild(&self) -> bool {
@@ -416,7 +483,7 @@ fn game_address(os: BuildOS, windows: Option<&WindowsConfig>, port: u16) -> Stri
 }
 
 /// Resolve `--server-id` / `--all` against the configured servers.
-fn select_instances(args: &Args, config: &Config) -> Result<Vec<Instance>, BuildError> {
+pub fn select_instances(args: &Args, config: &Config) -> Result<Vec<Instance>, BuildError> {
     if args.all_instances() {
         if args.has_key_file() {
             return Err(BuildError::Config(
@@ -453,7 +520,7 @@ fn select_instances(args: &Args, config: &Config) -> Result<Vec<Instance>, Build
         })
 }
 
-fn find_git_root() -> Result<PathBuf, BuildError> {
+pub fn find_git_root() -> Result<PathBuf, BuildError> {
     let mut dir =
         std::env::current_dir().map_err(|e| BuildError::General(e.to_string()))?;
 

@@ -181,6 +181,13 @@ impl super::Target for DockerTarget {
         write_file(&self.container, path, contents)
     }
 
+    fn write_executable(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError> {
+        write_file(&self.container, path, contents)?;
+        self.run(&format!("chmod +x '{}'", path.display()))?;
+
+        Ok(())
+    }
+
     fn clear_directory(&self, path: &Path) -> Result<(), BuildError> {
         self.run(&format!(
             "mkdir -p '{dir}' && find '{dir}' -mindepth 1 -delete",
@@ -281,6 +288,36 @@ impl super::Target for DockerTarget {
             spid = SERVER_PID_FILE,
         ))
         .ok(); // no process to kill is the expected case, not a failure
+
+        Ok(())
+    }
+
+    fn arma_running(&self) -> bool {
+        // -x rather than -f, so this matches the server process rather than the shell being asked about it.
+        let names = crate::LINUX_EXES
+            .iter()
+            .map(|exe| exe.rsplit('/').next().unwrap_or(exe))
+            .map(|name| format!("pgrep -x '{name}'"))
+            .collect::<Vec<_>>()
+            .join(" || ");
+
+        self.run(&format!("{names} >/dev/null 2>&1 && echo 1 || echo 0"))
+            .map(|output| output.trim() == "1")
+            .unwrap_or(false)
+    }
+
+    fn remove_paths(&self, paths: &[&Path]) -> Result<(), BuildError> {
+        if paths.is_empty() {
+            return Ok(());
+        }
+
+        let quoted = paths
+            .iter()
+            .map(|path| format!("'{}'", path.display()))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        self.run(&format!("rm -rf {quoted}"))?;
 
         Ok(())
     }

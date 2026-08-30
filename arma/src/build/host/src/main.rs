@@ -62,6 +62,17 @@ fn main() {
 
     let args = Args::parse();
 
+    // Handled before a BuildContext exists, because building one takes a file-watcher snapshot and that is a
+    // claim about what has been built. A subcommand that never builds must not make it.
+    if let Some(context::Command::Stage(stage_args)) = args.command() {
+        if let Err(e) = steps::stage::stage(&args, stage_args) {
+            eprintln!("{} {}", "error:".truecolor(198, 37, 81).bold(), e);
+            exit(1);
+        }
+
+        return;
+    }
+
     let mut ctx = match BuildContext::new(args) {
         Ok(c) => c,
         Err(e) => {

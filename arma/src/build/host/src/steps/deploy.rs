@@ -73,22 +73,37 @@ fn write_test_logs(ictx: &InstanceContext) -> Result<Vec<String>, BuildError> {
     Ok(vec![relative.to_string(), absolute.display().to_string()])
 }
 
+/// The `@esm/config.yml` a deploy writes.
+#[derive(Serialize, Deserialize)]
+struct RuntimeConfig {
+    connection_uri: String,
+    log_level: String,
+    additional_logs: Vec<String>,
+
+    /// Omitted entirely when unset rather than written as null. The updater types this as a `String` with a serde
+    /// default, and a default fills in a missing key, not a null one: writing the key with no value fails the
+    /// parse and takes the whole config down with it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    updater_url: Option<String>,
+}
+
+/// Render `@esm/config.yml` from what this build knows, rather than editing whatever the last one left behind.
+///
+/// Unlike [`stage_server_key`], nothing here is carried forward off the target. A key is issued elsewhere and the
+/// build would destroy it; every field below is a build input, and preserving a stale one would mean a server
+/// quietly keeping a setting nobody named this time round. `updater_url` is the field that makes the distinction
+/// visible: it is only ever pointed somewhere other than the release host for the length of a test, so it belongs
+/// to the run that asked for it.
 fn write_runtime_config(
     ictx: &InstanceContext,
     staging: &Path,
     additional_logs: Vec<String>,
 ) -> BuildResult {
-    #[derive(Serialize, Deserialize)]
-    struct RuntimeConfig {
-        connection_uri: String,
-        log_level: String,
-        additional_logs: Vec<String>,
-    }
-
     let config = RuntimeConfig {
         connection_uri: ictx.bot_host().to_string(),
         log_level: ictx.args().log_level().to_string(),
         additional_logs,
+        updater_url: ictx.args().updater_url().map(str::to_string),
     };
 
     let yaml = serde_yaml::to_string(&config)?;
@@ -131,4 +146,35 @@ fn stage_server_key(ictx: &InstanceContext, staging: &Path, server_esm: &Path) -
     ictx.target.download(&deployed, &staged)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RuntimeConfig;
+
+    fn render(updater_url: Option<&str>) -> String {
+        serde_yaml::to_string(&RuntimeConfig {
+            connection_uri: "127.0.0.1:3001".into(),
+            log_level: "debug".into(),
+            additional_logs: vec!["test.log".into()],
+            updater_url: updater_url.map(str::to_string),
+        })
+        .expect("serialize")
+    }
+
+    /// The updater reads this key as a `String` behind a serde default, and a default only covers a key that is
+    /// absent. Writing `updater_url: null` fails the parse, which takes down the whole config and not just the
+    /// updater, so "no URL" has to mean no key at all.
+    #[test]
+    fn leaves_the_key_out_entirely_when_no_url_was_named() {
+        assert!(!render(None).contains("updater_url"));
+    }
+
+    #[test]
+    fn writes_the_url_a_run_asked_for() {
+        assert!(
+            render(Some("http://10.100.0.1:54321/versions.json"))
+                .contains("updater_url: http://10.100.0.1:54321/versions.json")
+        );
+    }
 }

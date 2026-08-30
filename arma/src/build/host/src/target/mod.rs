@@ -47,6 +47,13 @@ pub trait Target: Send + Sync {
     /// hold quotes, backslashes and newlines that no amount of escaping survives on both shells.
     fn write_file(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError>;
 
+    /// Write `contents` to `path` and make it runnable.
+    ///
+    /// Separate from [`Target::write_file`] because only one target has anything to do: Windows decides what is
+    /// runnable from the extension, while a file arriving in a container without its execute bit is a binary
+    /// nobody can start, reported as "not found".
+    fn write_executable(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError>;
+
     /// Empty `path` of its contents, creating it if absent, without removing the directory itself.
     ///
     /// The directory has to survive on Linux, where it is a bind mount whose mount point cannot be unlinked from
@@ -76,6 +83,21 @@ pub trait Target: Send + Sync {
     ///
     /// Nothing running is a success. Every caller either just asked for a clean slate or is on the way out.
     fn kill_arma(&self) -> Result<(), BuildError>;
+
+    /// Whether an Arma 3 server is running right now.
+    ///
+    /// The question [`Target::kill_arma`] does not answer: it stops a server and reports success either way,
+    /// which is right for a caller on its way to starting one and useless to a caller that must refuse to touch
+    /// a live install.
+    fn arma_running(&self) -> bool;
+
+    /// Delete each path, file or directory, treating an absent one as already done.
+    ///
+    /// Distinct from [`Target::clear_directory`], which empties a directory it is required to leave standing.
+    /// This removes the paths themselves, which is what putting an install back to a known state needs: a
+    /// directory that survives empty is not the same as one that was never there, and the updater reads the
+    /// difference as a record of nothing versus no record at all.
+    fn remove_paths(&self, paths: &[&Path]) -> Result<(), BuildError>;
 
     /// Remove the logs, RPTs and crash dumps left by the previous run.
     fn clean_logs(&self) -> Result<(), BuildError>;
