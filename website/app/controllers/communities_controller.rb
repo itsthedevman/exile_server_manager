@@ -47,11 +47,11 @@ class CommunitiesController < AuthenticatedController
       role_to_hash(role, selected:)
     end
 
-    Rails.logger.info("DEBUG: #{current_community.logging_channel_id}")
     render locals: {
       territory_admin_roles:,
       access_roles:,
-      logging_channel_select_data: load_logging_channel_select_data
+      logging_channel_select_data: load_logging_channel_select_data,
+      change_mode_lock_reason: helpers.change_mode_lock_reason(current_community, current_user)
     }
   end
 

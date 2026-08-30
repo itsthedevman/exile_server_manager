@@ -135,6 +135,31 @@ module ESM
       "community:#{id}:territory_admin_users"
     end
 
+    ##
+    # Whether this user owns the community, which is a stricter gate than being able to modify it. Changing what kind
+    # of community this is, or handing it over, belongs to the owner rather than to anyone with dashboard access.
+    #
+    # Both ids have to be concrete. `nil == nil` is true, so a community whose owner was never backfilled would
+    # otherwise hand ownership to any caller that is itself id-less.
+    #
+    # @param user [ESM::User, nil]
+    #
+    # @return [Boolean]
+    #
+    def owned_by?(user)
+      owner_user_id.present? && user&.id.present? && owner_user_id == user.id
+    end
+
+    ##
+    # Whether player mode may be turned on right now. Player mode gives up server management, so it is only offered
+    # while there is nothing to give up. Turning it back off is always allowed.
+    #
+    # @return [Boolean]
+    #
+    def can_enable_player_mode?
+      servers.empty?
+    end
+
     private
 
     def generate_community_id

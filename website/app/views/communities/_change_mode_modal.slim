@@ -1,0 +1,48 @@
+= render "shared/modal", id: "change-mode-modal", **local_assigns do
+  .modal-header.border-info.bg-info.bg-opacity-10
+    h4.modal-title.text-info.mb-0
+      i.bi.bi-toggles2.me-2
+      = "#{change_mode_switch(current_community).action_label}?"
+    button.btn-close[
+      type="button"
+      data-bs-dismiss="modal"
+      aria-label="Close"
+    ]
+
+  .modal-body
+    p.mb-0
+      = change_mode_switch(current_community).consequence
+
+  .modal-footer.border-top
+    / turbo: false because this changes what the rest of the page renders and what the nav shows. A Turbo visit back to
+    / this same URL morphs instead of replacing, which would strand the role selectors mounted on this page.
+    / Mobile
+    .row.g-2.w-100.d-flex.d-lg-none
+      .col-6
+        button.btn.btn-outline-secondary.w-100[
+          type="button"
+          data-bs-dismiss="modal"
+        ] Cancel
+      .col-6
+        = button_to community_change_mode_path(current_community),
+            method: :patch,
+            params: {player_mode_enabled: change_mode_switch(current_community).target_enabled},
+            class: "btn btn-info w-100",
+            form: {class: "d-inline w-100"},
+            data: {turbo: false}
+          = change_mode_switch(current_community).action_label
+
+    / Desktop
+    .d-none.d-lg-block
+      button.btn.btn-outline-secondary.me-3[
+        type="button"
+        data-bs-dismiss="modal"
+      ] Cancel
+
+      = button_to community_change_mode_path(current_community),
+          method: :patch,
+          params: {player_mode_enabled: change_mode_switch(current_community).target_enabled},
+          class: "btn btn-info",
+          form: {class: "d-inline"},
+          data: {turbo: false}
+        = change_mode_switch(current_community).action_label

@@ -24,12 +24,7 @@ module ESM
 
         # TODO: Docs
         def check_for_owner!
-          # Both sides must be a concrete id. `nil == nil` is true in Ruby and
-          # would grant owner to anyone if owner_user_id is unset (unbackfilled
-          # community) and the caller is somehow id-less (Ephemeral/unsaved).
-          owner_id = target_community.owner_user_id
-          caller_id = current_user&.id
-          return if owner_id.present? && caller_id.present? && owner_id == caller_id
+          return if target_community.owned_by?(current_user)
 
           check_failed!(:no_permissions, user: current_user)
         end

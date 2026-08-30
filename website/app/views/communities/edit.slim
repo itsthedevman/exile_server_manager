@@ -1,6 +1,9 @@
 = render "communities/role_styles"
 = render "communities/destroy_modal"
 
+- if change_mode_lock_reason.blank?
+  = render "communities/change_mode_modal"
+
 = render "communities/container", **local_assigns do
   div[
     data-controller="community-edit"
@@ -18,22 +21,24 @@
           method: :patch,
           data: {community_edit_target: "form"} do |f|
 
-        / Community ID Section
-        .card.mb-4
-          .card-header
-            h4.mb-0
-              i.bi.bi-tag.me-2.text-info
-              | Community ID
-          .card-body
-            p.text-muted.small
-              | Your community's unique identifier for ESM commands. Players use this when referencing your community or servers.
+        / Identity
+        .row.g-4.mb-4
+          .col-12.col-md-6
+            .card.h-100
+              .card-header
+                h4.mb-0
+                  i.bi.bi-tag.me-2.text-info
+                  | Community ID
+              .card-body
+                p.text-muted.small
+                  | Your community's unique identifier for ESM commands. Players use this when referencing your community or servers.
 
-            .row
-              .col-md-6
                 = f.hidden_field :current_community_id, value: current_community.community_id
                 = f.text_field :community_id,
                     value: current_community.community_id,
                     class: "form-control"
+
+          = render "communities/change_mode", current_community:, change_mode_lock_reason:
 
         / Logging Configuration Section
         - if current_community.server_mode_enabled?

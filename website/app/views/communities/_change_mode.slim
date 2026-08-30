@@ -1,0 +1,24 @@
+/ locals: current_community, change_mode_lock_reason
+.col-12.col-md-6
+  .card.h-100
+    .card-header
+      h4.mb-0
+        i.bi.bi-toggles2.me-2.text-info
+        | Community Type
+
+    .card-body.d-flex.flex-column
+      p.text-muted.small
+        = change_mode_switch(current_community).current_summary
+
+      - if change_mode_lock_reason.present?
+        .alert.alert-secondary.border-secondary.bg-secondary.bg-opacity-10.py-2.small.mb-0.mt-auto
+          i.bi.bi-lock.me-1
+          = change_mode_lock_reason
+      - else
+        button.btn.btn-outline-info.w-100.mt-auto[
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#change-mode-modal"
+        ]
+          i.bi.bi-arrow-left-right.me-2
+          = change_mode_switch(current_community).action_label

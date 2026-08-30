@@ -66,6 +66,9 @@ Rails.application.routes.draw do
       get :available
     end
 
+    # /communities/:community_id/change_mode
+    resource :change_mode, only: [:update], controller: "communities/modes"
+
     # /communities/:community_id/channels
     resources :channels, only: %i[index], param: :channel_id
 
@@ -109,7 +112,7 @@ Rails.application.routes.draw do
     end
 
     if Rails.env.local?
-      # /communities/:community_id/broadcast — admin tool: DM every player of one server, or of all of them
+      # /communities/:community_id/broadcast
       resource :broadcast, only: [:create], controller: "communities/broadcasts" do
         collection do
           # /communities/:community_id/broadcast/commands/:command_id/status
@@ -146,7 +149,7 @@ Rails.application.routes.draw do
     "downloads/latest",
     as: :latest_download,
     to: redirect(
-      # https://github.com/itsthedevman/exile_server_manager/releases/download/arma/v2.0.1/@esm-201.zip
+      # https://github.com/itsthedevman/exile_server_manager/releases/download/arma/vX.Y.Z/@esm-201.zip
       [
         "https://github.com/itsthedevman/exile_server_manager/releases/download",
         "/arma/v#{Settings.mod_version}",
@@ -193,10 +196,9 @@ Rails.application.routes.draw do
   end
 
   if Rails.env.local?
-    # /servers/:id (the server hub — role-adaptive dashboard)
+    # /servers/:id
     resources :servers, only: [:show] do
-      # /servers/:id/live — lazy sidebar frame for the Steam query (map, players, version). Its own request because
-      # the query is a UDP round trip to the owner's box, and a server that has gone dark must not stall every page.
+      # /servers/:id/live
       member do
         get :live
       end
@@ -207,37 +209,37 @@ Rails.application.routes.draw do
           # /servers/:server_id/players/me
           get :me
 
-          # /servers/:server_id/players/summary — lazy My Player card on the hub
+          # /servers/:server_id/players/summary
           get :summary
 
-          # /servers/:server_id/players/list — lazy listing frame on the admin players page
+          # /servers/:server_id/players/list
           get :list
 
-          # /servers/:server_id/players/lookup — resolves the hub's lookup bar to whichever page can answer
+          # /servers/:server_id/players/lookup
           get :lookup
 
-          # /servers/:server_id/players/reset_me — self-service "I'm stuck" character reset
+          # /servers/:server_id/players/reset_me
           post :reset_me
 
-          # /servers/:server_id/players/reset_all — admin reset of every character on the server (typed-confirm guarded)
+          # /servers/:server_id/players/reset_all
           post :reset_all
 
-          # /servers/:server_id/players/commands/:command_id/status — poller target for an async reset
+          # /servers/:server_id/players/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
         end
 
         member do
-          # /servers/:server_id/players/:uid/reset — admin character reset for the viewed player
+          # /servers/:server_id/players/:uid/reset
           post :reset
 
-          # /servers/:server_id/players/:uid/modify — admin player action (heal/kill/money/locker/respect)
+          # /servers/:server_id/players/:uid/modify
           post :modify
         end
       end
 
       # /servers/:server_id/territories
       resources :territories, controller: "servers/territories", only: [:index, :show], param: :territory_id do
-        # /servers/:server_id/territories/:territory_id/restore — admin restore of a territory marked for deletion
+        # /servers/:server_id/territories/:territory_id/restore
         post :restore
 
         # /servers/:server_id/territories/:territory_id/pay
@@ -262,7 +264,7 @@ Rails.application.routes.draw do
         post :set_id
 
         collection do
-          # /servers/:server_id/territories/list — lazy listing frame on the admin territories page
+          # /servers/:server_id/territories/list
           get :list
 
           # /servers/:server_id/territories/commands/:command_id/status
@@ -281,7 +283,7 @@ Rails.application.routes.draw do
         end
       end
 
-      # /servers/:server_id/sqf — admin tool: run arbitrary SQF against the server or a player
+      # /servers/:server_id/sqf
       resource :sqf, only: [:create], controller: "servers/sqf" do
         collection do
           # /servers/:server_id/sqf/commands/:command_id/status

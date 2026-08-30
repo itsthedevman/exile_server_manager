@@ -56,7 +56,7 @@ module ESM
         private
 
         def check_for_active_servers!
-          raise_error!(:servers_exist, user: current_user) if target_community.servers.any?
+          raise_error!(:servers_exist, user: current_user) unless target_community.can_enable_player_mode?
         end
       end
     end

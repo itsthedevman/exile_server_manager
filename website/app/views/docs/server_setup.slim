@@ -102,7 +102,7 @@
             h6.text-info.mb-2 What happens next?
             ul.small.mb-0
               li ESM will send a welcome message with your <strong>Community ID</strong>
-              li Disable Player Mode: #{command_usage(:mode, arguments: {community_id: "YOUR_ID", player_mode_enabled: false})}
+              li Disable Player Mode: #{command_usage(:mode, arguments: {community_id: "YOUR_ID"})}
               li You can always get the registration link with #{command_usage(:register, show_arguments: false)}
 
       / Step 2: Dashboard Configuration
@@ -253,77 +253,6 @@
               = link_to "Discord support", join_path, class: "text-warning"
               |  for help.
 
-      / Automatic Updates
-      / Hidden outside local until the updater ships, matching the toggle on the server configuration page.
-      - if Rails.env.local?
-        .card.mb-5.border-info#automatic_updates
-          .card-header.bg-info.bg-opacity-10
-            h3.mb-0.text-info
-              i.bi.bi-arrow-repeat.me-2
-              | Automatic Updates
-
-          .card-body
-            p.mb-4
-              | Your server can install new ESM versions on its own. It checks once while it boots, and if a newer
-                version is available, it updates before it finishes starting.
-
-            .row.g-3.mb-4
-              .col-md-6
-                .card.bg-dark.border-secondary.h-100
-                  .card-body
-                    h6.text-light.mb-3
-                      i.bi.bi-shield-check.text-success.me-2
-                      | Safe by default
-                    ul.small.text-muted.mb-0
-                      li The check runs for under a second, then gives up
-                      li Anything that goes wrong is skipped, and your server starts as normal
-                      li Updates are signed, so only genuine ESM releases are installed
-
-              .col-md-6
-                .card.bg-dark.border-secondary.h-100
-                  .card-body
-                    h6.text-light.mb-3
-                      i.bi.bi-toggle-on.text-info.me-2
-                      | Turning it off
-                    ul.small.text-muted.mb-0
-                      li Open your server's settings on the #{link_to "web dashboard", communities_path, target: "_blank"}
-                      li Untick <strong>Check for updates on startup</strong>
-                      li Your server stays on its current version until you update it yourself
-
-            p.small.text-muted.mb-4
-              | How long the check runs and where it writes its log can both be adjusted on the same settings page,
-                under the toggle. The defaults suit most servers.
-
-            .card.bg-dark.border-secondary.mb-4
-              .card-body
-                h6.text-light.mb-2
-                  i.bi.bi-terminal.me-2
-                  | Updating by hand
-                p.small.text-muted.mb-3
-                  | The startup check only ever replaces the ESM extension. Mod files are updated with the
-                    <code>esm_updater.exe</code> tool in your <code>@esm\bin</code> folder, with your server stopped.
-                p.small.text-muted.mb-2
-                  | Open a command prompt in your server folder, the one containing <code>@esm</code>, and run:
-                pre.bg-body.p-2.rounded.mb-3
-                  | @esm\bin\esm_updater.exe check
-                    @esm\bin\esm_updater.exe update all
-                p.small.text-muted.mb-0
-                  | <code>check</code> only reports what is available. <code>update all</code> is what installs it.
-
-                hr.border-secondary.my-3
-
-                p.small.text-muted.mb-0
-                  i.bi.bi-info-circle.me-2
-                  strong.text-light Linux servers:
-                  |< the tool is <code>@esm/bin/esm_updater</code>. The commands are
-                    otherwise identical.
-
-            .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
-              p.small.mb-0
-                |> Update activity is recorded in <code>@esm\log\updater.log</code>, or wherever you pointed
-                  <strong>Updater Log File Path</strong>. If your server is not picking up new versions, that log
-                  will say why.
-
       / Success Section
       .card.border-success.bg-success.bg-opacity-10
         .card-body.text-center.py-5
@@ -341,6 +270,119 @@
               = link_to communities_path, class: "btn btn-outline-success", target: "_blank"
                 i.bi.bi-speedometer2.me-2
                 | Web Dashboard
+
+      hr.pb-4.mt-5
+
+      .card.mb-5.border-warning#updating
+        .card-header.bg-warning.bg-opacity-10
+          h3.mb-0.text-warning
+            i.bi.bi-box-arrow-down.me-2
+            | Updating ESM
+
+        .card-body
+          p.mb-4
+            | Replace your <code>@esm</code> folder rather than extracting over it.
+
+          .alert.alert-danger.border-danger.bg-danger.bg-opacity-10.mb-4
+            h6.text-danger.mb-2
+              i.bi.bi-exclamation-octagon.me-2
+              | Copy these two files out first
+            p.small.mb-2
+              | They are yours rather than ESM's, and no release contains them. Replace the folder without
+                saving them and they are gone with it.
+            ul.small.mb-0
+              li
+                | <code>esm.key</code> is your server's key. Without it your server cannot connect, and you
+                  would have to download it again from the #{link_to "web dashboard", communities_path, target: "_blank", class: "text-danger"}.
+              li
+                | <code>config.yml</code> holds your settings, if you added one. Losing it puts every option
+                  back to its default without telling you.
+
+          .card.bg-dark.border-secondary.mb-0
+            .card-body
+              h6.text-light.mb-3
+                i.bi.bi-list-ol.me-2
+                | Updating an existing install
+              ol.small.text-muted.mb-0
+                li Stop your Arma 3 server. The extension is in use while the server runs and cannot be replaced.
+                li Copy <code>esm.key</code> and <code>config.yml</code> out of <code>@esm</code> to somewhere safe.
+                li
+                  | Download the zip from #{link_to "esmbot.com/downloads/latest", latest_download_path, class: "text-info"}, which always points at the current release. 
+                  br
+                  | Every version is on the #{link_to "releases page", "https://github.com/itsthedevman/exile_server_manager/releases", target: "_blank", class: "text-info"} if you need an older one.
+                li Delete your <code>@esm</code> folder and extract the new one in its place.
+                li Put <code>esm.key</code> and <code>config.yml</code> back into <code>@esm</code>.
+                li Start your server, then check <code>@esm/log/esm.log</code> to confirm it connected.
+
+      / Hidden outside local until the updater ships, matching the toggle on the server configuration page.
+      - if Rails.env.local?
+        .card.border-info#automatic_updates
+          .card-header.bg-info.bg-opacity-10
+            h3.mb-0.text-info
+              i.bi.bi-arrow-repeat.me-2
+              | Automatic Updates
+
+          .card-body
+            p.mb-4
+              | Your server can install new ESM versions on its own. It checks once while it boots, and if a newer
+                version is available, it updates before it finishes starting.
+
+            .row.g-3.mb-4
+              .col-md-6
+                .card.bg-dark.border-secondary.h-100
+                  .card-body
+                    h6.text-light.mb-3
+                      i.bi.bi-shield-check.text-success.me-2
+                      | Safe by default
+                    ul.text-muted.mb-0
+                      li The check runs for under a second, then gives up
+                      li Anything that goes wrong is skipped, and your server starts as normal
+                      li Updates are signed, so only genuine ESM releases are installed
+
+              .col-md-6
+                .card.bg-dark.border-secondary.h-100
+                  .card-body
+                    h6.text-light.mb-3
+                      i.bi.bi-toggle-on.text-info.me-2
+                      | Turning it off
+                    ul.text-muted.mb-0
+                      li Open your server's settings on the #{link_to "web dashboard", communities_path, target: "_blank"}
+                      li Untick <strong>Check for updates on startup</strong>
+                      li Your server stays on its current version until you update it yourself
+
+            p.text-muted.mb-4
+              | How long the check runs and where it writes its log can both be adjusted on the same settings page,
+                under the toggle. The defaults suit most servers.
+
+            .card.bg-dark.border-secondary.mb-4
+              .card-body
+                h6.text-light.mb-2
+                  i.bi.bi-terminal.me-2
+                  | Updating by hand
+                p.text-muted.mb-3
+                  | The startup check only ever replaces the ESM extension. Mod files are updated with the
+                    <code>esm_updater.exe</code> tool in your <code>@esm\bin</code> folder, with your server stopped.
+                p.text-muted.mb-2
+                  | Open a command prompt in your server folder, the one containing <code>@esm</code>, and run:
+                pre.bg-body.p-2.rounded.mb-3
+                  | @esm\bin\esm_updater.exe check
+                    @esm\bin\esm_updater.exe update all
+                p.text-muted.mb-0
+                  | <code>check</code> only reports what is available. <code>update all</code> is what installs it.
+
+                hr.border-secondary.my-3
+
+                p.small.text-muted.mb-0
+                  i.bi.bi-info-circle.me-2
+                  strong.text-light Linux servers:
+                  |< the tool is <code>@esm/bin/esm_updater</code>. The commands are
+                    otherwise identical.
+
+            .alert.alert-info.border-info.bg-info.bg-opacity-10.mb-0
+              p.small.mb-0
+                |> Update activity is recorded in <code>@esm\log\updater.log</code>, or wherever you pointed
+                  <strong>Updater Log File Path</strong>. If your server is not picking up new versions, that log
+                  will say why.
 
     / Sidebar
     .col-lg-4.order-1.order-lg-2

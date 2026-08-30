@@ -92,4 +92,38 @@ RSpec.describe "Communities", type: :request do
       end
     end
   end
+
+  describe "GET edit" do
+    subject(:body) do
+      get "/communities/#{community.public_id}/edit"
+      response.body
+    end
+
+    context "when the owner may change the community's type" do
+      let(:community) { create(:community, owner_user_id: user.id, player_mode_enabled: false) }
+      let!(:server) { nil }
+
+      it "offers the switch and the modal to confirm it in" do
+        expect(body).to include("Switch to a player community")
+        expect(body).to include('id="change-mode-modal"')
+      end
+    end
+
+    context "when the community still has servers" do
+      let(:community) { create(:community, owner_user_id: user.id, player_mode_enabled: false) }
+
+      # The modal is what performs the change, so a locked card must not ship one for a stray anchor to open.
+      it "explains why instead of offering the switch" do
+        expect(body).to include("Remove this community&#39;s servers first")
+        expect(body).not_to include('id="change-mode-modal"')
+      end
+    end
+
+    context "when the user can edit the community but does not own it" do
+      it "names ownership as the reason" do
+        expect(body).to include("Only the community owner can change this")
+        expect(body).not_to include('id="change-mode-modal"')
+      end
+    end
+  end
 end
