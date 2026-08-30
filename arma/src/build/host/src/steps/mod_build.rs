@@ -276,9 +276,9 @@ fn copy_extras(
 
     // Seeding the updater's installed-version record, parked until the updater is tested and shipped. The updater is
     // its only consumer and we build with --skip-updater for now, so writing it just ships a file nothing reads.
-    // Re-enable with the updater: uncomment, rename _ctx -> ctx in the signature above, and drop the
-    // allow(dead_code) on esm_crate_version. Note the updater owns the whole file, so a build that writes it must
-    // write the `@esm` key rather than the bare version this used to emit.
+    // Re-enable with the updater: uncomment and rename _ctx -> ctx in the signature above. Note the updater owns
+    // the whole file, so a build that writes it must write the `@esm` key rather than the bare version this used
+    // to emit. `bin/stage` writes the same file today, which is a test position rather than a build product.
     // let version = esm_crate_version(&ctx.git_path);
     // fs::write(build_path.join("installed_versions.yml"), format!("\"@esm\": {version}\n"))?;
 
@@ -300,21 +300,66 @@ fn copy_dir(src: &Path, dst: &Path) -> BuildResult {
     Ok(())
 }
 
-#[allow(dead_code)] // Re-enable alongside the auto-updater; only the version sidecar reads this.
-fn esm_crate_version(git_path: &Path) -> String {
+/// The version `esm` currently builds as, which is what an unnamed component stages at.
+///
+/// Errors rather than falling back to a placeholder. The old default of `0.0.0` is a version the updater will
+/// happily act on, so a parse that quietly failed read as "this install is ancient" and staged a test against a
+/// number nothing had ever built.
+///
+/// `[package]` is the first table in the file, so the first `version = "` is the package's own rather than a
+/// dependency's.
+pub fn esm_crate_version(git_path: &Path) -> Result<String, BuildError> {
     let cargo_toml = git_path.join("src").join("esm").join("Cargo.toml");
-    let Ok(contents) = fs::read_to_string(&cargo_toml) else {
-        return "0.0.0".into();
-    };
+    let contents = fs::read_to_string(&cargo_toml)?;
 
-    for line in contents.lines() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix("version = \"") {
-            if let Some(version) = rest.strip_suffix('"') {
-                return version.to_string();
-            }
-        }
+    parse_crate_version(&contents).ok_or_else(|| {
+        BuildError::General(format!(
+            "No `version = \"...\"` found in {}. Staging needs the version the current source would install.",
+            cargo_toml.display()
+        ))
+    })
+}
+
+/// Read the version out of a Cargo.toml body.
+///
+/// Split out so the value can be found mid-line. `esm`'s version carries a trailing comment reminding whoever
+/// bumps it to update the website's `mod_version`, and anchoring on the closing quote at end of line missed it
+/// entirely.
+fn parse_crate_version(contents: &str) -> Option<String> {
+    contents.lines().find_map(|line| {
+        let rest = line.trim().strip_prefix("version = \"")?;
+        let end = rest.find('"')?;
+
+        Some(rest[..end].to_string())
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_crate_version;
+
+    /// Exactly how `src/esm/Cargo.toml` spells it. Anchoring on a closing quote at end of line found nothing
+    /// here and fell through to a `0.0.0` default, which staged every unnamed component at a version that has
+    /// never existed.
+    #[test]
+    fn reads_a_version_that_carries_a_trailing_comment() {
+        let contents = "[package]\nname = \"esm\"\nversion = \"2.0.4\" # also bump mod_version\n";
+
+        assert_eq!(parse_crate_version(contents).as_deref(), Some("2.0.4"));
     }
 
-    "0.0.0".into()
+    #[test]
+    fn reads_a_bare_version() {
+        assert_eq!(
+            parse_crate_version("[package]\nversion = \"1.2.3\"\n").as_deref(),
+            Some("1.2.3")
+        );
+    }
+
+    /// Nothing found is `None` rather than a stand-in, so the caller reports it instead of staging a number
+    /// nobody chose.
+    #[test]
+    fn finds_nothing_when_there_is_no_version() {
+        assert_eq!(parse_crate_version("[package]\nname = \"esm\"\n"), None);
+    }
 }
