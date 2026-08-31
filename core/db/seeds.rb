@@ -257,6 +257,91 @@ end
 puts " done"
 
 # =============================================================================
+# COOLDOWNS
+# =============================================================================
+
+print "Creating cooldowns..."
+# Everything the cooldowns page has to be able to draw: both cooldown types, both ways a row is keyed to its owner, a
+# row with no server, and rows that have to stay out of the running list. The configurations go first, because
+# changing one reconciles the community's existing rows to match it and would rewrite these on the way past.
+community.command_configurations
+  .where(command_name: "reward")
+  .update(cooldown_type: "times", cooldown_quantity: 2)
+
+community.command_configurations
+  .where(command_name: "gamble")
+  .update(cooldown_type: "hours", cooldown_quantity: 6)
+
+cooldowns = [
+  # The case the page exists for: an allowance spent, on the command communities actually put a limit on.
+  {
+    command_name: "reward", steam_uid: users.first.steam_uid, server: server_1,
+    cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 2
+  },
+
+  # The same allowance, half used. Not running, so it only appears once finished rows are asked for.
+  {
+    command_name: "reward", steam_uid: users.second.steam_uid, server: server_1,
+    cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 1
+  },
+
+  # Clocks at two distances from expiring, both far enough out to still be running whenever the seeds are next
+  # looked at. Minutes read nicely in the table and are gone before anyone opens the page.
+  {
+    command_name: "gamble", steam_uid: users.second.steam_uid, server: server_1,
+    cooldown_type: "hours", cooldown_quantity: 6, expires_at: 4.hours.from_now
+  },
+  {
+    command_name: "gamble", steam_uid: users.third.steam_uid, server: server_1,
+    cooldown_type: "hours", cooldown_quantity: 6, expires_at: 70.minutes.from_now
+  },
+
+  # A second server, so the server filter has something to separate.
+  {
+    command_name: "reward", steam_uid: users.third.steam_uid, server: server_2,
+    cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 2
+  },
+
+  # Keyed by user_id rather than steam_uid, which is how a command that needs no registration stores its cooldown.
+  {
+    command_name: "id", user_id: users.first.id, server: nil,
+    cooldown_type: "days", cooldown_quantity: 2, expires_at: 2.days.from_now
+  },
+
+  # No server at all, the shape every community-scoped command's cooldown takes. Deliberately not reset_cooldown:
+  # running that leaves a row of its own, and seeding a long one alongside makes the page look like clearing
+  # cooldowns blocks you from clearing again, when the real throttle is a couple of seconds.
+  {
+    command_name: "whois", steam_uid: users.first.steam_uid, server: nil,
+    cooldown_type: "hours", cooldown_quantity: 12, expires_at: 8.hours.from_now
+  },
+
+  # Long run out. Only appears under "Include finished".
+  {
+    command_name: "me", steam_uid: users.first.steam_uid, server: server_1,
+    cooldown_type: "minutes", cooldown_quantity: 5, expires_at: 2.hours.ago
+  }
+]
+
+cooldowns.each do |cooldown_data|
+  cooldown_server = cooldown_data.delete(:server)
+
+  ESM::Cooldown.create!(community_id: community.id, server_id: cooldown_server&.id, **cooldown_data)
+end
+
+# Belongs to somebody else. Nothing on this community's page should ever reach it.
+ESM::Cooldown.create!(
+  community_id: other_community.id,
+  server_id: nil,
+  command_name: "reward",
+  steam_uid: users.first.steam_uid,
+  cooldown_type: "times",
+  cooldown_quantity: 2,
+  cooldown_amount: 2
+)
+puts " done"
+
+# =============================================================================
 # NOTIFICATION ROUTES
 # =============================================================================
 
