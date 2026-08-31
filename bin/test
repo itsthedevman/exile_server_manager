@@ -21,12 +21,84 @@ else
   bold=''; green=''; red=''; reset=''
 fi
 
+# The website suite talks to the bot over NATS - communities#edit builds its logging-channel select that way - so
+# those specs fail with NoRespondersError unless one is running. Booted here for the length of that suite only.
+bot_pgid=""
+readonly bot_log="$(mktemp -t esm-test-bot.XXXXXX.log)"
+
+# Waits for the subscription rather than for the process: the bot is up long before it is listening. Any reply at all
+# settles it, so this asks for the one handler that does no work.
+readonly bot_ready_script='
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 90
+
+  begin
+    ESM::Service::API.call(:ping)
+  rescue ESM::Service::API::Unreachable
+    raise if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+
+    sleep 1
+    retry
+  end
+'
+
+start_bot() {
+  printf '    booting the bot (log: %s)\n' "$bot_log"
+
+  # Job control gives the background job its own process group, so the whole tree can be signalled by group id later.
+  # Killing the launcher alone leaves bin/esm.rb orphaned, and an orphaned bot answers every Discord message twice.
+  set -m
+  (cd "$repo_root/service" && exec direnv exec . bin/dev) >"$bot_log" 2>&1 &
+  bot_pgid=$!
+  set +m
+
+  # env inside direnv exec, so the .envrc cannot put these back to development.
+  if (cd "$repo_root/website" &&
+    direnv exec . env ESM_ENV=test RAILS_ENV=test bin/rails runner "$bot_ready_script") >/dev/null 2>&1; then
+    return 0
+  fi
+
+  printf '%s    the bot never answered; see %s%s\n' "$red" "$bot_log" "$reset"
+  return 1
+}
+
+# TERM first so the bot closes its Discord connection properly, then KILL whatever is left.
+#
+# The wait is not a courtesy. SignalHandler traps TERM and hands the shutdown to a dispatcher thread, and that can
+# outlive the signal by several seconds or not finish at all, so signalling once and moving on reliably leaves
+# bin/esm.rb running with its parent gone. An orphan answers every Discord message a second time.
+stop_bot() {
+  [[ -n "$bot_pgid" ]] || return 0
+
+  kill -TERM -- "-$bot_pgid" 2>/dev/null || true
+
+  for _ in $(seq 20); do
+    kill -0 -- "-$bot_pgid" 2>/dev/null || break
+    sleep 0.5
+  done
+
+  kill -KILL -- "-$bot_pgid" 2>/dev/null || true
+  wait "$bot_pgid" 2>/dev/null || true
+  bot_pgid=""
+}
+
+# Runs however this script ends, so an interrupt mid-suite does not leave a second bot answering Discord.
+trap stop_bot EXIT INT TERM
+
 declare -a results=()
 overall=0
 
 for spec in "${suites[@]}"; do
   read -r dir cmd <<<"$spec"
   printf '\n%s==> %s%s\n' "$bold" "$dir" "$reset"
+
+  if [[ "$dir" == "website" ]]; then
+    if ! start_bot; then
+      stop_bot
+      results+=("${red}FAIL${reset}  $dir (bot never came up)")
+      overall=1
+      continue
+    fi
+  fi
 
   # Intentional word-split: cmd is a controlled, glob-free string.
   # shellcheck disable=SC2206
@@ -38,6 +110,10 @@ for spec in "${suites[@]}"; do
     rc=$?
     results+=("${red}FAIL${reset}  $dir (exit $rc)")
     overall=1
+  fi
+
+  if [[ "$dir" == "website" ]]; then
+    stop_bot
   fi
 done
 

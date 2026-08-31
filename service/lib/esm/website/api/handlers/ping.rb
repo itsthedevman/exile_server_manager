@@ -5,12 +5,15 @@ module ESM
     class API
       module Handlers
         ##
-        # Echoes the request payload back with the bot's wall-clock. Used as a liveness
-        # probe across the NATS transport.
+        # Answers that the bot is up and subscribed.
+        #
+        # Touches nothing, so it is safe to call repeatedly and says only what a caller waiting on a boot needs to
+        # know: a reply means the subscription is live, where a NoRespondersError means it is not. Every other handler
+        # would answer the same question by doing work, and would fail for reasons of its own.
         #
         class Ping
           def self.call(**payload)
-            {echo: payload, server_time: Time.now.utc.iso8601}
+            {echo: payload, server_time: ::Time.current.iso8601}
           end
         end
       end
