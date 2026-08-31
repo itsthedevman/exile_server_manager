@@ -2,7 +2,8 @@
 
 = render "servers/container", current_server: do
   .mb-4
-    h1.mb-0 = current_server.server_name
+    h1.mb-1 Dashboard
+    p.text-muted.mb-0 = "Everything you can see and do on #{current_server.server_id}"
 
   - if current_user.registered?
     - if cards_available || admin_tools_available

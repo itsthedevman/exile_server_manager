@@ -3,7 +3,8 @@
 
 = render "servers/container", current_server: do
   .mb-4
-    h1.mb-0 Player lookup
+    h1.mb-1 Player lookup
+    p.text-muted.mb-0 Find a player by Steam UID, Discord ID, or name.
 
   = render "servers/players/lookup", current_server:
 

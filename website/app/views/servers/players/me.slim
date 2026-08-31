@@ -2,8 +2,10 @@
 
 = render "servers/container", current_server: do
   / Page header
-  .d-flex.mb-4.align-items-center
-    h1.mb-1 My Player
+  .d-flex.mb-4.align-items-center.gap-3
+    div
+      h1.mb-1 My Player
+      p.text-muted.mb-0 = "Your character on #{current_server.server_id}: stats, locker, and territories."
     - if current_server.connected? && command_accessible?("stuck")
       .ms-auto.d-flex.flex-column.align-items-end.gap-2
         = button_to reset_me_server_players_path(current_server), params: {idempotency_key: SecureRandom.uuid, dom_id: "player_action_result"}, class: "btn btn-outline-danger btn-sm", form: {data: {turbo_confirm: "Reset your player on #{current_server.server_id}?\nThis wipes your current player - you'll lose all of your items, respawn fresh, and it can't be undone."}} do
