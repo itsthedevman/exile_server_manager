@@ -408,4 +408,47 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
       end
     end
   end
+
+  describe "#on_website_execute" do
+    let!(:cooldown) do
+      create(
+        :cooldown,
+        community_id: community.id,
+        server_id: server.id,
+        command_name: "me",
+        steam_uid: second_user.steam_uid,
+        expires_at: 5.minutes.from_now,
+        cooldown_type: "minutes",
+        cooldown_quantity: 5
+      )
+    end
+
+    before { grant_command_access!(community, "reset_cooldown") }
+
+    it "clears the scope and answers with how many it cleared" do
+      service_command = execute_website!(arguments: {target: second_user.mention, command: "me"})
+
+      expect(service_command).to be_completed
+      expect(service_command.result[:cleared]).to eq(1)
+      expect(cooldown.reload.active?).to be(false)
+    end
+
+    # Discord never reaches check_for_owned_server!, because a text channel is refused a foreign community during the
+    # lifecycle and long before on_execute. from_website! runs no equivalent, so over HTTP this check is the whole of
+    # the boundary between two communities rather than a restatement of one already enforced.
+    it "refuses a server belonging to another community" do
+      second_community = create(:community)
+      second_server = create(:server, community_id: second_community.id)
+
+      # Granted there too, so the refusal cannot be credited to the allowlist. Permissions resolve against the named
+      # server's community, and an admin of both would otherwise sail through to the reset.
+      grant_command_access!(second_community, "reset_cooldown")
+
+      service_command = execute_website!(arguments: {server_id: second_server.server_id})
+
+      expect(service_command).to be_failed
+      expect(service_command.error_message).to match(/you can only access servers belonging to/i)
+      expect(cooldown.reload.active?).to be(true)
+    end
+  end
 end

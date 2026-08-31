@@ -38,23 +38,46 @@ module ESM
         #################################
 
         def on_execute
-          check_for_owned_server! if arguments.server_id
-          check_for_valid_command!
-          check_for_registered_target_user! # Don't allow User::Ephemeral
+          check_arguments!
 
           # Send the confirmation request
           reply(confirmation_embed)
           response = ESM.discord_bot.await_response(current_user, expected: [I18n.t("yes"), I18n.t("no")], timeout: 120)
           return reply(I18n.t("commands.reset_cooldown.cancellation_reply")) if response.nil? || response.downcase == I18n.t("no").downcase
 
-          # Reset all cooldowns for that user.
-          cooldown_query.each(&:reset!)
+          reset_cooldowns!
 
           # Send the success message
           reply(success_embed)
         end
 
+        # No confirmation prompt to answer here. The page has already shown the caller the exact rows this scope
+        # selects and taken their confirmation against that, which is a better answer than a yes/no in a channel.
+        def on_website_execute
+          check_arguments!
+
+          reply(cleared: reset_cooldowns!)
+        end
+
         private
+
+        # check_for_owned_server! is the whole of the tenant boundary on the website path. Discord refuses a foreign
+        # server_id long before this, during the lifecycle, because a text channel only ever acts on its own
+        # community; a request arriving over HTTP has no such lifecycle behind it.
+        def check_arguments!
+          check_for_owned_server! if arguments.server_id
+          check_for_valid_command!
+          check_for_registered_target_user! # Don't allow User::Ephemeral
+        end
+
+        # Answers with the number of rows cleared, which is what the website reports back. Discord says the same thing
+        # in prose, so it takes the count and drops it.
+        def reset_cooldowns!
+          cooldowns = cooldown_query.to_a
+          cooldowns.each(&:reset!)
+
+          cooldowns.size
+        end
 
         def check_for_valid_command!
           return if arguments.command.blank?
