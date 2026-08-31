@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class AuthenticatedController < ApplicationController
+  # The community and server navigation gate their entries on whether a command is reachable, and those partials are
+  # rendered by pages that never dispatch anything, so the gate lives here rather than with the dispatch concern.
+  include CommandGating
+
   before_action :authenticate_user!
 
   protected
