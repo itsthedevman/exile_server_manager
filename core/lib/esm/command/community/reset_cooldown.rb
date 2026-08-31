@@ -99,15 +99,23 @@ module ESM
           end
         end
 
+        # Every argument narrows. The community pin is what keeps a reset inside the community that asked for it, and
+        # each filter after it can only remove rows, so no combination of arguments reaches further than the bare
+        # command already does.
         def cooldown_query
           query = ESM::Cooldown.where(community_id: current_community.id)
-          query = query.or(ESM::Cooldown.where(user_id: target_user.id, steam_uid: target_user.steam_uid)) if target_user
-
-          # Check for command_name and/or server_id if we've been given one
+          query = query.merge(cooldowns_owned_by(target_user)) if target_user
           query = query.where(command_name: arguments.command) if arguments.command.present?
           query = query.where(server_id: target_server.id) if arguments.server_id.present?
 
           query
+        end
+
+        # A row carries only one of the two owner columns: cooldowns are keyed on steam_uid for a registration-gated
+        # command and on user_id for everything else, with the other left nil. Matching either is what makes "this
+        # player's cooldowns" mean all of them rather than half.
+        def cooldowns_owned_by(user)
+          ESM::Cooldown.where(user_id: user.id).or(ESM::Cooldown.where(steam_uid: user.steam_uid))
         end
 
         def success_embed
