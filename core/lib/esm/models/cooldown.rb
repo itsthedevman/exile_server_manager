@@ -28,8 +28,11 @@ module ESM
     # ASSOCIATIONS
     # =============================================================================
 
-    belongs_to :user
-    belongs_to :server
+    # A row carries only one of user_id or steam_uid, and a community-scoped command has no server to pin its
+    # cooldown to, so both of these are legitimately null on rows the handler writes every day. Only the community
+    # is always present.
+    belongs_to :user, optional: true
+    belongs_to :server, optional: true
     belongs_to :community
 
     # =============================================================================
@@ -43,6 +46,22 @@ module ESM
     # =============================================================================
     # SCOPES
     # =============================================================================
+
+    ##
+    # The rows a player is actually being held back by right now, asked as SQL rather than as a predicate over rows
+    # already loaded.
+    #
+    # A community accumulates one row per command per player per server and never deletes any, so a surface that
+    # lists cooldowns has to narrow before it loads rather than after. Reads as the SQL half of {#active?} and has to
+    # keep agreeing with it; the pair is covered by a spec that runs both over the same rows.
+    #
+    scope :active, -> {
+      where(
+        "(cooldown_type = 'times' AND cooldown_amount >= cooldown_quantity) " \
+        "OR (cooldown_type != 'times' AND expires_at >= ?)",
+        ::Time.current
+      )
+    }
 
     # =============================================================================
     # CLASS METHODS

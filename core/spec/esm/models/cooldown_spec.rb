@@ -302,4 +302,23 @@ RSpec.describe ESM::Cooldown do
       expect(scope).to be_empty
     end
   end
+
+  describe ".active" do
+    # The scope asks in SQL what #active? answers in Ruby, and the two have to keep agreeing. Both cooldown types in
+    # both states go through both paths here, so a change to one that is not made to the other fails rather than
+    # quietly listing the wrong rows on any surface that reads the scope.
+    it "selects exactly the rows #active? calls active" do
+      running_clock = create(:cooldown, expires_at: 1.hour.from_now, cooldown_type: "minutes", cooldown_quantity: 5)
+      expired_clock = create(:cooldown, expires_at: 1.hour.ago, cooldown_type: "minutes", cooldown_quantity: 5)
+      spent_allowance = create(:cooldown, cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 2)
+      unspent_allowance = create(:cooldown, cooldown_type: "times", cooldown_quantity: 2, cooldown_amount: 1)
+
+      expect(running_clock.active?).to be(true)
+      expect(expired_clock.active?).to be(false)
+      expect(spent_allowance.active?).to be(true)
+      expect(unspent_allowance.active?).to be(false)
+
+      expect(described_class.active).to contain_exactly(running_clock, spent_allowance)
+    end
+  end
 end
