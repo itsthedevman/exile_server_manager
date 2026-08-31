@@ -23,11 +23,14 @@ class CommunitiesController < AuthenticatedController
   def show
     return redirect_to edit_community_path(current_community) unless Rails.env.local?
 
-    can_broadcast = command_accessible?("broadcast")
+    # An audience-less broadcast has nothing to send to, so having the permission is not the same as the card being
+    # worth rendering. Folded together here rather than asked twice in the template.
+    audiences = command_accessible?("broadcast") ? helpers.broadcast_audiences(current_community) : []
 
     render locals: {
-      can_broadcast:,
-      audiences: can_broadcast ? helpers.broadcast_audiences(current_community) : []
+      can_broadcast: audiences.any?,
+      audiences:,
+      can_clear_cooldowns: command_accessible?("reset_cooldown")
     }
   end
 

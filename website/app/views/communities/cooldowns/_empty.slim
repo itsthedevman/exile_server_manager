@@ -1,0 +1,11 @@
+/ locals: showing_inactive
+.card-body.text-center.py-5
+  i.bi.bi-hourglass.text-muted.fs-1.d-block.mb-3
+
+  - if showing_inactive
+    h5.text-light.mb-2 No cooldowns on record
+    p.text-muted.mb-0 Nobody has run a command here yet, so there is nothing to clear.
+  - else
+    h5.text-light.mb-2 Nobody is on cooldown
+    p.text-muted.mx-auto.mb-0 style="max-width: 36rem;"
+      | This is the normal state. Most commands are set to a couple of seconds, so their cooldowns expire faster than anyone can complain about them. What shows up here is whatever you have deliberately made long, like a usage limit on rewards.

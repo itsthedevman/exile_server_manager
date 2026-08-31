@@ -1,0 +1,19 @@
+/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, server_options
+- content_for :title, "Cooldowns on #{current_community.community_id}"
+
+= render "communities/container", **local_assigns do
+  .text-center.mb-4
+    h1.mb-2 Active Cooldowns
+    p.lead.text-muted = "Every cooldown currently holding a player back on #{current_community.community_id}"
+
+  / The inactive switch is drawn in the card below, inside the clear form. Forms cannot nest, so it points back here
+  / by id. It navigates where the selects beside it do not, because it changes what the page loads rather than which
+  / of the loaded rows are shown.
+  = form_with url: community_cooldowns_path(current_community), method: :get, id: "cooldown_inactive_form", class: "d-none" do
+
+  / The controller sits on the card rather than here: the card is what a clear replaces, and a controller outside
+  / the replaced region never reconnects, so nothing would refill the counts or bring the button back.
+  = form_with url: clear_community_cooldowns_path(current_community), method: :post do
+    = render "communities/cooldowns/listing", cooldowns:, players:, showing_inactive:, capped:, row_limit:, player_options:, command_options:, server_options:
+
+    #cooldown_result.mt-3

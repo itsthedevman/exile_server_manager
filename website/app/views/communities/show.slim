@@ -1,16 +1,20 @@
+/ locals: can_broadcast, audiences, can_clear_cooldowns
 - content_for :title, current_community.community_id
 
-- if can_broadcast && audiences.any?
+- if can_broadcast
   = render "communities/broadcasts/modal", current_community:, audiences:
 
 = render "communities/container", **local_assigns do
-  .mb-4
-    h1.mb-1 = current_community.community_name
-    p.lead.text-muted.mb-0 = "Community-wide tools for #{current_community.community_id}"
+  .text-center.mb-4
+    h1.mb-2 Community Tools
+    p.lead.text-muted.mb-0 = "Commands that act on #{current_community.community_name} as a whole, rather than on one of its servers"
 
-  - if can_broadcast && audiences.any?
+  - if can_broadcast || can_clear_cooldowns
     .row.g-4
-      = render "communities/broadcasts/card", current_community:
+      - if can_broadcast
+        = render "communities/broadcasts/card", current_community:
+      - if can_clear_cooldowns
+        = render "communities/cooldowns/card", current_community:
   - else
     .card
       .card-body.text-center.py-5

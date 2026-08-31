@@ -119,6 +119,17 @@ Rails.application.routes.draw do
           get "commands/:command_id/status", action: :status, as: :command_status
         end
       end
+
+      # /communities/:community_id/cooldowns
+      resources :cooldowns, only: [:index], controller: "communities/cooldowns" do
+        collection do
+          # /communities/:community_id/cooldowns/clear
+          post :clear
+
+          # /communities/:community_id/cooldowns/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
     end
   end
 

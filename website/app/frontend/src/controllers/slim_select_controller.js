@@ -10,6 +10,7 @@ export default class extends ApplicationController {
     allowDeselect: Boolean,
     closeOnSelect: Boolean,
     disabled: Boolean,
+    showSearch: Boolean,
   };
 
   connect() {
@@ -26,7 +27,9 @@ export default class extends ApplicationController {
         closeOnSelect: this.closeOnSelectValue,
         allowDeselect: this.allowDeselectValue,
         placeholderText: this.placeholderValue || "Select value",
-        showSearch: true,
+        // A Boolean value defaults to false when absent, which would silently turn search off everywhere. Only an
+        // explicit false disables it; a list short enough to read at a glance is the case for passing one.
+        showSearch: this.hasShowSearchValue ? this.showSearchValue : true,
         disabled: this.disabledValue || selectElement.disabled,
       },
       events: {

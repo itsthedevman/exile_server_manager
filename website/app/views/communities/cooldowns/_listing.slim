@@ -1,0 +1,84 @@
+/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, server_options
+.card#cooldowns_card data-controller="cooldown-filters"
+  / The key lives inside the card because the card is what a clear replaces. Left outside, a second clear would
+  / reuse the first one's key, find_or_create_by would hand back the command already run, and nothing would happen.
+  = hidden_field_tag :idempotency_key, SecureRandom.uuid
+
+  .card-header
+    .row.g-2.align-items-center
+      .col-12.col-md
+        = select_tag :player, nil, class: "form-select form-select-sm",
+          aria: {label: "Filter by player"},
+          data: { \
+            controller: "slim-select",
+            slim_select_data_value: cooldown_player_select_data(player_options),
+            slim_select_placeholder_value: "Any player",
+            action: [slim_select_stimulus_actions("cooldown-filters"), "change->cooldown-filters#filter"].join(" ") \
+          }
+
+      .col-12.col-md
+        = select_tag :command, nil, class: "form-select form-select-sm",
+          aria: {label: "Filter by command"},
+          data: { \
+            controller: "slim-select",
+            slim_select_data_value: cooldown_command_select_data(command_options),
+            slim_select_placeholder_value: "Any command",
+            action: [slim_select_stimulus_actions("cooldown-filters"), "change->cooldown-filters#filter"].join(" ") \
+          }
+
+      .col-12.col-md
+        = select_tag :server, nil, class: "form-select form-select-sm",
+          aria: {label: "Filter by server"},
+          data: { \
+            controller: "slim-select",
+            slim_select_data_value: cooldown_server_select_data(server_options),
+            slim_select_placeholder_value: "Any server",
+            slim_select_show_search_value: false,
+            action: [slim_select_stimulus_actions("cooldown-filters"), "change->cooldown-filters#filter"].join(" ") \
+          }
+
+      .col-auto
+        button.btn.btn-sm.btn-link.p-0.text-decoration-none.text-nowrap type="button" data-cooldown-filters-target="reset" data-action="click->cooldown-filters#reset" hidden=true
+          i.bi.bi-x-circle.me-1
+          | Clear filters
+
+      .col-12.col-md-auto
+        .form-check.form-switch.mb-0
+          = check_box_tag :inactive, "1", showing_inactive,
+            class: "form-check-input",
+            id: "cooldowns_show_inactive",
+            form: "cooldown_inactive_form",
+            data: {controller: "auto-submit", action: "change->auto-submit#submitOwner"}
+          label.form-check-label.small.text-nowrap[for="cooldowns_show_inactive"] Include inactive
+
+  - if cooldowns.empty?
+    = render "communities/cooldowns/empty", showing_inactive:
+  - else
+    = render "communities/cooldowns/table", cooldowns:, players:, servers: server_options
+
+    .card-body.text-center.py-5 data-cooldown-filters-target="empty" hidden=true
+      i.bi.bi-funnel.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Nothing matches those filters
+      p.text-muted.mb-3 No cooldown on this page fits that combination.
+      button.btn.btn-sm.btn-outline-secondary type="button" data-action="click->cooldown-filters#reset" Clear filters
+
+    .card-footer.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2 data-cooldown-filters-target="summary"
+      .small.text-muted
+        - if capped
+          | Showing the #{row_limit} most recent. Older cooldowns aren't listed.
+        - else
+          ' Clearing removes the
+          span data-cooldown-filters-target="count"
+          |  listed above.
+
+      button.btn.btn-danger.btn-sm type="submit" data-cooldown-filters-target="clear" hidden=true
+        i.bi.bi-hourglass-split.me-1
+        ' Clear
+        span data-cooldown-filters-target="count"
+
+      button.btn.btn-danger.btn-sm type="button" data-cooldown-filters-target="confirm" data-bs-toggle="modal" data-bs-target="#clear_cooldowns_modal" hidden=true
+        i.bi.bi-hourglass-split.me-1
+        | Clear every cooldown
+
+  / Inside the card so its live count stays in the controller's scope, and so a replaced card brings a fresh one.
+  = render "communities/cooldowns/clear_modal", current_community:

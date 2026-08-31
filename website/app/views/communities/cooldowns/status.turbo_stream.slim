@@ -1,0 +1,10 @@
+/ locals: command, result, cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, server_options
+- if command.settled?
+  = turbo_stream.replace "cooldown_result" do
+    #cooldown_result.mt-3
+
+  = cooldown_outcome_toast(result)
+
+  - if result.error.blank?
+    = turbo_stream.replace "cooldowns_card" do
+      = render "communities/cooldowns/listing", cooldowns:, players:, showing_inactive:, capped:, row_limit:, player_options:, command_options:, server_options:

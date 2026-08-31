@@ -1,0 +1,14 @@
+/ locals: current_community
+.col-12.col-md-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-hourglass-split.text-info.me-2
+        | Cooldowns
+
+    .card-body.d-flex.flex-column
+      p.text-muted.small
+        | Lists the cooldowns holding your players back, and clears the ones you pick. Mostly for reward limits; the rest expire on their own.
+      = link_to community_cooldowns_path(current_community), class: "btn btn-info w-100 mt-auto" do
+        i.bi.bi-list-ul.me-1
+        | View active cooldowns

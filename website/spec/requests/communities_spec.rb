@@ -29,7 +29,8 @@ RSpec.describe "Communities", type: :request do
       get "/communities/#{community.public_id}"
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Community-wide tools for #{community.community_id}")
+      expect(response.body).to include("Community Tools")
+      expect(response.body).to include("act on #{community.community_name} as a whole")
     end
 
     # Matched with the closing quote because every other sidebar entry is this path plus a segment, so a bare

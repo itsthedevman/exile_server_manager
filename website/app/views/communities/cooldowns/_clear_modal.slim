@@ -1,0 +1,22 @@
+/ locals: current_community
+= render "shared/modal",
+  id: "clear_cooldowns_modal",
+  data: {bs_backdrop: "static", controller: "reset-confirm"} do
+  .modal-header.border-danger.bg-danger.bg-opacity-10
+    h5.modal-title.text-danger-emphasis
+      i.bi.bi-exclamation-triangle-fill.me-2
+      | Clear every cooldown on #{current_community.community_id}
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  .modal-body
+    p.text-light
+      ' This clears the
+      span data-cooldown-filters-target="count"
+      |  running for every player, every command and every server you have registered. Anyone sitting behind a usage limit gets their allowance back.
+    p.text-muted.small.mb-0 Filter the table first if you meant something narrower. Anything you can see is something you can clear on its own.
+
+  .modal-footer
+    button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
+    button.btn.btn-danger type="submit" data-action="click->reset-confirm#close"
+      i.bi.bi-hourglass-split.me-1
+      | Clear every cooldown
