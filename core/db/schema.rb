@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_181035) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_02_043056) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -104,12 +104,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_181035) do
     t.string "cooldown_type"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "expires_at", precision: nil
+    t.string "scope_key"
     t.integer "server_id"
     t.string "steam_uid"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
-    t.index ["command_name", "steam_uid", "community_id", "server_id"], name: "index_cooldowns_on_steam_uid_key", unique: true
-    t.index ["command_name", "user_id", "community_id", "server_id"], name: "index_cooldowns_on_user_id_key", unique: true
+    t.index ["command_name", "steam_uid", "community_id", "server_id", "scope_key"], name: "index_cooldowns_on_steam_uid_key", unique: true, where: "(steam_uid IS NOT NULL)", nulls_not_distinct: true
+    t.index ["command_name", "user_id", "community_id", "server_id", "scope_key"], name: "index_cooldowns_on_user_id_key", unique: true, where: "(user_id IS NOT NULL)", nulls_not_distinct: true
   end
 
   create_table "downloads", force: :cascade do |t|
@@ -192,11 +193,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_181035) do
     t.index ["server_id"], name: "index_server_mods_on_server_id"
   end
 
+  create_table "server_reward_claims", force: :cascade do |t|
+    t.integer "attempt_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.json "items", default: {}
+    t.datetime "last_attempt_at"
+    t.bigint "locker_poptabs", default: 0, null: false
+    t.bigint "player_poptabs", default: 0, null: false
+    t.bigint "respect", default: 0, null: false
+    t.integer "server_id", null: false
+    t.string "state", default: "waiting", null: false
+    t.json "state_details", default: {}
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.json "vehicles", default: []
+    t.index ["server_id", "user_id"], name: "index_server_reward_claims_on_server_id_and_user_id", unique: true
+  end
+
   create_table "server_rewards", force: :cascade do |t|
     t.integer "cooldown_quantity"
     t.string "cooldown_type"
     t.datetime "deleted_at", precision: nil
+    t.boolean "enabled", default: true, null: false
     t.bigint "locker_poptabs", default: 0
+    t.string "name"
     t.bigint "player_poptabs", default: 0
     t.bigint "respect", default: 0
     t.string "reward_id"
