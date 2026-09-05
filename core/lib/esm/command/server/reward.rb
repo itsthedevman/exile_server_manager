@@ -101,12 +101,19 @@ module ESM
 
         private
 
+        #
+        # The package being claimed. Deliberately not gated on the server's version: which package a player picked is
+        # settled entirely here, and the extension is only ever handed the contents. Gating it meant a named package
+        # silently became the default one on an older server, which then answered with the default's cooldown.
+        #
+        # @return [ESM::ServerReward, nil] nil when no package has that ID, or the one that does has been disabled
+        #
         def server_reward
           @server_reward ||=
-            if arguments.reward_id.present? && target_server.version?(MINIMUM_SERVER_VERSION)
-              target_server.server_rewards.find_by(reward_id: arguments.reward_id)
+            if arguments.reward_id.present?
+              target_server.server_rewards.enabled.find_by(reward_id: arguments.reward_id)
             else
-              target_server.server_rewards.default.first
+              target_server.server_rewards.enabled.default.first
             end
         end
 
@@ -233,13 +240,21 @@ module ESM
             respect: claim.respect
           }
 
-          # Only this version and greater can handle vehicles
-          data[:vehicles] = vehicles if target_server.version?(MINIMUM_SERVER_VERSION)
+          # Only this version and greater can handle vehicles. An older server is not told about them at all, so it
+          # cannot report them back either, and they would settle as delivered having never left the claim. They ride
+          # around the attempt instead and land on the claim as undelivered.
+          withheld_vehicles = []
+
+          if target_server.version?(MINIMUM_SERVER_VERSION)
+            data[:vehicles] = vehicles
+          else
+            withheld_vehicles = vehicles
+          end
 
           claim.update!(state: :in_flight)
 
           response = call_sqf_function!("ESMs_command_reward", **data).data
-          settle_claim!(claim, response)
+          settle_claim!(claim, response, withheld_vehicles:)
 
           response
         end
@@ -319,12 +334,13 @@ module ESM
         #
         # @param claim [ESM::ServerRewardClaim] the claim that was just attempted
         # @param result [ESM::Message::Data] the extension's response data
+        # @param withheld_vehicles [Array<Hash>] vehicles the server was never sent, so it could not answer for them
         #
         # @return [void]
         #
-        def settle_claim!(claim, result)
+        def settle_claim!(claim, result, withheld_vehicles: [])
           undelivered_items = result.undelivered_items.presence || {}
-          undelivered_vehicles = result.undelivered_vehicles.presence || []
+          undelivered_vehicles = (result.undelivered_vehicles.presence || []) + withheld_vehicles
 
           if undelivered_items.blank? && undelivered_vehicles.blank?
             start_package_cooldown(claim)
@@ -343,10 +359,31 @@ module ESM
             items: undelivered_items,
             vehicles: undelivered_vehicles,
             state: (attempt_count >= MAX_DELIVERY_ATTEMPTS) ? :failed : :waiting,
-            state_details: {failures: failure_details(result)},
+            state_details: {failures: failure_details(result) + withheld_failures(withheld_vehicles)},
             attempt_count:,
             last_attempt_at: Time.current
           )
+        end
+
+        #
+        # Reasons for the vehicles the server was never asked about, so a claim never settles quietly having dropped
+        # something the player is owed.
+        #
+        # @param vehicles [Array<Hash>] the withheld entries
+        #
+        # @return [Array<Hash>]
+        #
+        def withheld_failures(vehicles)
+          vehicles.map do |vehicle|
+            class_name = vehicle[:class_name]
+            name = ESM::Arma::ClassLookup.find(class_name).try(:display_name) || class_name
+
+            {
+              bucket: "vehicles",
+              name:,
+              reason: I18n.t("commands.reward.failures.server_too_old", version: MINIMUM_SERVER_VERSION)
+            }
+          end
         end
 
         #

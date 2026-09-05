@@ -24,6 +24,8 @@ en:
 
           Nothing is lost. Head to the website to finish claiming it, or reach out to your server's admins.
         stale_delivery: "Sorry %{user}, what you're owed changed while this page was open. Refresh it and try again"
+      failures:
+        server_too_old: "This server is running an older version of ESM and can't hand over vehicles yet. It needs %{version} or newer"
         invalid_pin_code: "Sorry %{user}, a vehicle's pin has to be exactly four digits"
       request_descriptions:
         reward_base: |-

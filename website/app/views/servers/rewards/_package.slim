@@ -1,26 +1,31 @@
 / locals: current_server, package, blocked
-.d-flex.align-items-start.justify-content-between.gap-3
-  .flex-grow-1.min-w-0
-    .fw-medium.text-truncate = reward_package_name(package)
-    .text-muted.small = reward_contents_summary(package.contents)
+/ What is in a package is an offer, so it is only spelled out while the offer stands. On cooldown it collapses to the
+/ one thing still worth knowing, which is when it comes back.
+- if !reward_package_available?(current_server, package)
+  .d-flex.align-items-center.justify-content-between.gap-3.text-muted.small
+    = reward_package_name(package)
+    span.badge.text-bg-secondary = reward_availability_label(current_server, package)
+- else
+  .d-flex.align-items-start.justify-content-between.gap-3
+    .flex-grow-1.min-w-0
+      .fw-medium.text-truncate = reward_package_name(package)
+      .text-muted.small = reward_contents_summary(package.contents)
 
-    - if package.contents.vehicles.present?
-      .mt-1
-        - package.contents.vehicles.each do |vehicle|
-          .small.text-muted
-            i.bi.bi-truck.me-1
-            = vehicle.display_name
-            span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
+      - if package.contents.vehicles.present?
+        .mt-1
+          - package.contents.vehicles.each do |vehicle|
+            .small.text-muted
+              i.bi.bi-truck.me-1
+              = vehicle.display_name
+              span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
 
-  .flex-shrink-0.text-end
-    - if blocked
-      span.badge.text-bg-secondary Finish your claim first
-    - elsif !current_server.connected?
-      span.badge.text-bg-secondary Server offline
-    - elsif reward_package_available?(current_server, package)
-      = form_with url: server_reward_path(current_server.public_id), method: :post
-        = hidden_field_tag :idempotency_key, SecureRandom.uuid
-        = hidden_field_tag :reward_id, package.reward_id
-        = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"
-    - else
-      span.badge.text-bg-secondary = reward_availability_label(current_server, package)
+    .flex-shrink-0.text-end
+      - if blocked
+        span.badge.text-bg-secondary Finish your claim first
+      - elsif !current_server.connected?
+        span.badge.text-bg-secondary Server offline
+      - else
+        = form_with url: server_reward_path(current_server.public_id), method: :post
+          = hidden_field_tag :idempotency_key, SecureRandom.uuid
+          = hidden_field_tag :reward_id, package.reward_id
+          = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"

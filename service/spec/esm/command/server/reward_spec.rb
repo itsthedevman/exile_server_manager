@@ -305,9 +305,6 @@ describe ESM::Command::Server::Reward, category: "command" do
         end
 
         before do
-          # The reward_id argument is only honored on servers new enough to know about packages
-          server.update!(server_version: ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)
-
           server.server_rewards.default.first.update!(
             reward_items: {},
             reward_vehicles: [],
@@ -315,6 +312,20 @@ describe ESM::Command::Server::Reward, category: "command" do
             locker_poptabs: 0,
             respect: 0
           )
+        end
+
+        # Which package a player picked is settled entirely bot-side; the extension only ever receives the contents.
+        # Gating it on the version meant a named package silently became the default one, and the player was then told
+        # the default's cooldown stood in their way.
+        it "honors the package on a server too old for vehicles" do
+          expect(server.version?(ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)).to be(false)
+
+          execute!(arguments: {server_id: server.server_id, reward_id: "daily"})
+          ESM.discord_bot.test_outbox.await_size(2)
+
+          accept_request
+
+          expect(ESM::Cooldown.where(command_name: "reward").pluck(:scope_key)).to eq(["daily"])
         end
 
         it "delivers that package instead of the default" do
@@ -452,6 +463,33 @@ describe ESM::Command::Server::Reward, category: "command" do
             expect(reward_cooldown).to be_present
             expect(reward_cooldown.cooldown_type).to eq("hours")
             expect(reward_cooldown.cooldown_quantity).to eq(2)
+          end
+        end
+
+        # A server below MINIMUM_SERVER_VERSION is never sent the vehicles, so it cannot report them back either. Left
+        # to the response alone the claim would settle as complete, and the player would lose them without a word.
+        context "when the server is too old to hand over a vehicle" do
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "nearby"}]
+          end
+
+          before { server.update!(server_version: "2.0.0") }
+
+          it "keeps the vehicle on the claim and says why" do
+            execute_command
+
+            expect(claim).to be_present
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
+
+            # The poptabs still landed, so they are not owed a second time
+            expect(claim.player_poptabs).to eq(0)
+
+            failure = claim.state_details[:failures].first
+
+            expect(failure[:bucket]).to eq("vehicles")
+            expect(failure[:reason]).to match(/older version/)
+
+            expect(reward_cooldown).to be_nil
           end
         end
 

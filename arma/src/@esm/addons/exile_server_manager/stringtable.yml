@@ -80,6 +80,12 @@ General:
     - "Server ID"
     english: "Hey %1, you are dead. You must be alive on `%2` in order to use this command"
 
+  PlayerNotInGame:
+    arguments:
+    - "Player mention"
+    - "Server ID"
+    english: "Hey %1, I can't find you on `%2` right now. Join the server and spawn in, then try again"
+
   NullFlag:
     arguments:
     - "Player mention"

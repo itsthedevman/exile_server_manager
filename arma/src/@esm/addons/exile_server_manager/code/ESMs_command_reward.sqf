@@ -67,9 +67,18 @@ try
 		];
 	};
 
-	// Player must be alive in order to receive rewards
+	// Rewards are handed to a player object, so the player has to be in game right now. Separate from the alive check
+	// below on purpose: "you are not here" and "you are dead" are different problems with different fixes.
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
-	if (isNull _playerObject || { !(alive _playerObject) }) then
+	if (isNull _playerObject) then
+	{
+		throw [
+			["player", localize!("PlayerNotInGame", _playerMention, ESM_ServerID)]
+		];
+	};
+
+	// Player must be alive in order to receive rewards
+	if !(alive _playerObject) then
 	{
 		throw [
 			["player", localize!("AlivePlayer", _playerMention, ESM_ServerID)]
