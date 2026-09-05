@@ -87,6 +87,18 @@ RSpec.describe "Servers::Rewards", type: :request do
       expect(ESM::ServiceCommand.last.arguments[:vehicles]).to eq([{pin_code: "1111"}])
     end
 
+    # A POST never passes through the dashboard, so the page explaining the problem is not what stops this
+    it "refuses outright when the server is too old to answer" do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
+      allow_access(denied: false)
+      server.update!(server_version: "2.0.4")
+
+      expect { post_reward }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("older version of ESM")
+    end
+
     it "rejects a denied claim with a 422 and never creates a command" do
       allow_access(denied: true, reason: :disabled)
 

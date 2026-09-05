@@ -3,6 +3,9 @@
 module Servers
   class GamblingController < RegisteredController
     include Commands
+    include ServerVersion
+
+    before_action :require_supported_server!
 
     def create
       return unless check_for_command_access("gamble")

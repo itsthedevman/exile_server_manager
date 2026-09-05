@@ -2,6 +2,7 @@
 
 class ServersController < AuthenticatedController
   include Commands
+  include ServerVersion
 
   COMMAND_CARDS = %w[me gamble reward]
 

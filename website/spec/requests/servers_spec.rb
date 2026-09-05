@@ -45,6 +45,34 @@ RSpec.describe "Servers", type: :request do
       expect(response.body).to include(%(name="q"))
     end
 
+    # Every player surface runs through SQF that shipped with 2.1.0. An older server passes the connection check and
+    # then fails somewhere further in, which reads as a broken website rather than a server that needs updating.
+    context "when the server is running an older version of ESM" do
+      before do
+        # The check is skipped locally, and local? covers the test environment too
+        allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
+
+        allow_only("me")
+        server.update!(server_version: "2.0.4")
+      end
+
+      it "explains what is wrong instead of rendering the cards" do
+        get "/servers/#{server.public_id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("This server needs updating")
+        expect(response.body).not_to include("My Player")
+      end
+
+      it "still renders the cards once the server is new enough" do
+        server.update!(server_version: ServerVersion::MINIMUM_SERVER_VERSION)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("This server needs updating")
+      end
+    end
+
     it "keeps the admin section off the page entirely for a player" do
       allow_only("me")
 

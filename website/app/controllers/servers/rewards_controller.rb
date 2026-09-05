@@ -3,6 +3,9 @@
 module Servers
   class RewardsController < RegisteredController
     include Commands
+    include ServerVersion
+
+    before_action :require_supported_server!
 
     ##
     # Redeeming a package and finishing a waiting claim are the same request. Which one it is depends on what the
