@@ -464,18 +464,18 @@ describe ESM::Command::Server::Reward, category: "command" do
             execute_command
 
             expect(claim).to be_present
-            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
 
             # The poptabs landed, so they must not be owed a second time
             expect(claim.player_poptabs).to eq(0)
 
             expect(claim.attempt_count).to eq(1)
             expect(claim.last_attempt_at).to be_present
-            failure = claim.state_details["failures"].first
+            failure = claim.state_details[:failures].first
 
-            expect(failure["bucket"]).to eq("vehicles")
-            expect(failure["name"]).to eq("Hatchback")
-            expect(failure["reason"]).to match("website")
+            expect(failure[:bucket]).to eq("vehicles")
+            expect(failure[:name]).to eq("Hatchback")
+            expect(failure[:reason]).to match("website")
 
             # They still have an unfinished claim, so nothing should be gating a retry
             expect(reward_cooldown).to be_nil
@@ -535,7 +535,7 @@ describe ESM::Command::Server::Reward, category: "command" do
             claim.reload
 
             expect(claim.attempt_count).to eq(2)
-            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
             expect(claim.player_poptabs).to eq(0)
             expect(claim).to be_waiting
           end
@@ -600,13 +600,13 @@ describe ESM::Command::Server::Reward, category: "command" do
           it "records each failure against its own bucket" do
             execute_command
 
-            failures = claim.state_details["failures"]
+            failures = claim.state_details[:failures]
 
-            expect(failures.map { |failure| failure["bucket"] }).to contain_exactly("items", "vehicles")
+            expect(failures.map { |failure| failure[:bucket] }).to contain_exactly("items", "vehicles")
 
             # The item cannot be retried into existence, so only the vehicle is still owed
             expect(claim.items).to eq({})
-            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
           end
         end
 
@@ -643,7 +643,7 @@ describe ESM::Command::Server::Reward, category: "command" do
 
             expect(claim).to be_present
             expect(claim.attempt_count).to eq(1)
-            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
           end
         end
 
@@ -674,7 +674,7 @@ describe ESM::Command::Server::Reward, category: "command" do
 
             expect(claim).to be_failed
             expect(claim.attempt_count).to eq(ESM::Command::Server::Reward::MAX_DELIVERY_ATTEMPTS)
-            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
           end
 
           it "sends them somewhere that can finish it" do
@@ -808,6 +808,122 @@ describe ESM::Command::Server::Reward, category: "command" do
             expect(claim).to be_nil
             expect(reward_cooldown).to be_present
           end
+        end
+      end
+    end
+
+    # The #on_execute block already covers delivery and settlement. This only proves the website-specific wiring: the
+    # choices a form can collect reaching the extension, and what the row records for the page to read back.
+    describe "#on_website_execute", requires_connection: true do
+      include_context "connection"
+
+      let(:vehicle_class) { "Exile_Car_Hatchback_Rusty1" }
+      let(:reward_vehicles) { [] }
+      let(:vehicles) { nil }
+
+      let(:claim) { ESM::ServerRewardClaim.find_by(user_id: user.id, server_id: server.id) }
+
+      subject(:service_command) do
+        execute_website!(
+          arguments: {server_id: server.server_id, community_id: community.community_id, vehicles:}
+        )
+      end
+
+      before do
+        # Delivery needs the player in game regardless of which surface asked for it
+        spawn_player_for(user)
+
+        # Vehicles are only sent to servers on MINIMUM_SERVER_VERSION or newer, and the dev server reports 2.0.0
+        server.update!(server_version: ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)
+
+        server.server_rewards.default.first.update!(
+          reward_items: {},
+          reward_vehicles:,
+          player_poptabs: 10,
+          locker_poptabs: 0,
+          respect: 0,
+          cooldown_quantity: 2,
+          cooldown_type: "hours"
+        )
+      end
+
+      # Test players spawn at [0, 0, 0] because exile_player's position columns default to zero, and that corner is
+      # ocean. A nearby spawn searches 250m for somewhere to put the vehicle, so it needs the player on land.
+      def move_player_to_land!
+        execute_sqf!(
+          <<~SQF
+            private _playerObject = objectFromNetId "#{user.net_id}";
+            private _position = [getPosATL _playerObject, 0, 5000, 15, 0, 0.3, 0] call BIS_fnc_findSafePos;
+
+            _playerObject setPosATL [_position select 0, _position select 1, 0];
+            true
+          SQF
+        )
+      end
+
+      context "when the package asks nothing of the player" do
+        it "delivers it and completes the row" do
+          expect(service_command.status).to eq("completed")
+          expect(service_command.result[:state]).to eq("success")
+          expect(service_command.result[:failures]).to be_empty
+
+          expect(claim).to be_nil
+        end
+      end
+
+      context "when the player decides where a vehicle goes" do
+        let(:reward_vehicles) { [{class_name: vehicle_class, spawn_location: "player_decides"}] }
+        let(:vehicles) { [{"spawn_location" => "nearby", "pin_code" => "4821"}] }
+
+        before { move_player_to_land! }
+
+        # Discord cannot ask this question, so the same package left as a partial claim there. Here it just lands.
+        it "spawns it where they asked and settles the claim" do
+          expect(service_command.status).to eq("completed")
+          expect(service_command.result[:state]).to eq("success")
+
+          expect(claim).to be_nil
+        end
+      end
+
+      context "when the admin already picked the spawn location" do
+        let(:reward_vehicles) { [{class_name: vehicle_class, spawn_location: "nearby"}] }
+
+        # Honouring this would send the vehicle to a garage it has no territory for and fail, rather than spawning it
+        # next to the player, which is what makes the override observable
+        let(:vehicles) { [{"spawn_location" => "virtual_garage"}] }
+
+        before { move_player_to_land! }
+
+        it "ignores the player's attempt to change it" do
+          expect(service_command.status).to eq("completed")
+          expect(service_command.result[:state]).to eq("success")
+
+          expect(claim).to be_nil
+        end
+      end
+
+      context "when a pin is not four digits" do
+        let(:reward_vehicles) { [{class_name: vehicle_class, spawn_location: "player_decides"}] }
+        let(:vehicles) { [{"spawn_location" => "nearby", "pin_code" => "12"}] }
+
+        it "fails the row rather than quietly generating one they will never see" do
+          expect(service_command.status).to eq("failed")
+          expect(service_command.error_message).to match(/four digits/)
+
+          expect(claim).to be_nil
+        end
+      end
+
+      context "when the choices no longer line up with the claim" do
+        let(:reward_vehicles) { [{class_name: vehicle_class, spawn_location: "player_decides"}] }
+        let(:vehicles) do
+          [{"spawn_location" => "nearby"}, {"spawn_location" => "nearby"}]
+        end
+
+        it "fails the row instead of guessing which vehicle each choice belongs to" do
+          expect(service_command.status).to eq("failed")
+          expect(service_command.error_message).to match(/Refresh/)
         end
       end
     end

@@ -10,6 +10,10 @@ module ESM
         # means they have hit the same wall five times, which is no longer a transient one they can wait out.
         MAX_DELIVERY_ATTEMPTS = 5
 
+        # What a delivery form may decide about a vehicle. Everything else on a claim's entry belongs to the admin who
+        # configured the package.
+        DELIVERY_CHOICE_KEYS = %i[spawn_location territory_id pin_code].freeze
+
         #################################
         #
         # Arguments (required first, then order matters)
@@ -19,6 +23,15 @@ module ESM
         argument :server_id, display_name: :on
 
         argument :reward_id, :string, required: false
+
+        #
+        # Website arguments (order does not matter)
+        #
+
+        # The choices only the player can make and only a form can ask for, one entry per vehicle on the claim, in the
+        # claim's own order. Never stored: a pin sitting in the claims table for as long as a claim goes undelivered
+        # is a door code with no owner, and a territory picked weeks ago may not be theirs any more.
+        argument :vehicles, :string, origins: [:website], required: false
 
         #
         # Configuration
@@ -51,33 +64,17 @@ module ESM
         end
 
         def on_request_accepted
-          reward = load_and_check_claim!
+          response = deliver_reward!
 
-          # A claim row is where a partial delivery lives, so the package becomes one before it is attempted
-          claim = reward.is_a?(ESM::ServerReward) ? create_claim(reward) : reward
-
-          # The extension resolves display names off its own config, so it only needs the raw stored shapes
-          data = {
-            items: claim.items,
-            locker: claim.locker_poptabs,
-            money: claim.player_poptabs,
-            respect: claim.respect
-          }
-
-          # Only this version and greater can handle vehicles
-          if target_server.version?(MINIMUM_SERVER_VERSION)
-            data[:vehicles] = claim.vehicles
-          end
-
-          claim.update!(state: :in_flight)
-
-          response = call_sqf_function!("ESMs_command_reward", **data)
-          settle_claim!(claim, response.data)
-
-          reply(embed_from_message!(response.data.embed))
+          reply(embed_from_message!(response.embed))
         end
 
+        # The page reads the claim back out of the database itself, so the reply carries only what the row cannot say
+        # afterwards: how the attempt went, and any failure that was dropped rather than kept for a retry.
         def on_website_execute
+          response = deliver_reward!
+
+          reply(state: response.state, failures: failure_details(response))
         end
 
         module V1
@@ -208,6 +205,92 @@ module ESM
           return unless claim.failed?
 
           raise_error!(:claim_exhausted, user: current_user, attempts: MAX_DELIVERY_ATTEMPTS)
+        end
+
+        #
+        # Hands the player whatever they are owed and records what came back. Both surfaces run this; they differ only
+        # in how they report it, since Discord answers with an embed the extension built and the website answers with
+        # something its own page can render.
+        #
+        # @return [ESM::Message::Data] the extension's response data
+        #
+        def deliver_reward!
+          reward = load_and_check_claim!
+          is_package = reward.is_a?(ESM::ServerReward)
+
+          # Resolved before the package becomes a claim. A form that no longer lines up should not leave the player
+          # holding a mailbox they have to work through in place of a package they could simply redeem again.
+          vehicles = delivery_vehicles(is_package ? reward.reward_vehicles : reward.vehicles)
+
+          # A claim row is where a partial delivery lives, so the package becomes one before it is attempted
+          claim = is_package ? create_claim(reward) : reward
+
+          # The extension resolves display names off its own config, so it only needs the raw stored shapes
+          data = {
+            items: claim.items,
+            locker: claim.locker_poptabs,
+            money: claim.player_poptabs,
+            respect: claim.respect
+          }
+
+          # Only this version and greater can handle vehicles
+          data[:vehicles] = vehicles if target_server.version?(MINIMUM_SERVER_VERSION)
+
+          claim.update!(state: :in_flight)
+
+          response = call_sqf_function!("ESMs_command_reward", **data).data
+          settle_claim!(claim, response)
+
+          response
+        end
+
+        #
+        # The claim's vehicles with the player's delivery choices folded in. Discord never sends any, so the claim's
+        # own entries are what goes out; a `player_decides` vehicle then fails and waits for the website, which is the
+        # only surface that can ask.
+        #
+        # @param stored_vehicles [Array<Hash>] the vehicle entries the package or claim holds
+        #
+        # @return [Array<Hash>]
+        #
+        def delivery_vehicles(stored_vehicles)
+          choices = arguments.vehicles
+          return stored_vehicles if choices.blank?
+
+          # The form is built from what it was rendered against, so a different count means that moved out from under
+          # it and the choices no longer line up with the vehicles they were made for
+          if choices.size != stored_vehicles.size
+            raise_error!(:stale_delivery, user: current_user)
+          end
+
+          stored_vehicles.map.with_index do |vehicle, index|
+            vehicle.merge(delivery_choice_for(vehicle, choices[index]))
+          end
+        end
+
+        #
+        # One vehicle's choices, narrowed to what a player is allowed to decide. Sliced rather than merged wholesale:
+        # everything else on the entry is the admin's configuration, and a class name arriving from a form would let a
+        # player pick their own vehicle.
+        #
+        # @param vehicle [Hash] the claim's stored entry
+        # @param choice [Hash, nil] what the form sent for it
+        #
+        # @return [Hash]
+        #
+        def delivery_choice_for(vehicle, choice)
+          choice = (choice || {}).slice(*DELIVERY_CHOICE_KEYS).compact_blank
+
+          pin_code = choice[:pin_code]
+
+          # Exile only ever compares a pin against a four character string, and spawnReward silently generates one
+          # when what it is handed is not that. A player would never learn the code to their own vehicle.
+          raise_error!(:invalid_pin_code, user: current_user) if pin_code && !pin_code.match?(/\A\d{4}\z/)
+
+          # The admin picked a spawn location unless they explicitly handed that choice to the player
+          choice.delete(:spawn_location) unless vehicle[:spawn_location] == "player_decides"
+
+          choice
         end
 
         def create_claim(reward)

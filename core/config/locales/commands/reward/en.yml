@@ -11,6 +11,8 @@ en:
       arguments:
         reward_id:
           description: The ID of the reward you would like to receive. If omitted, the default reward will be given
+        vehicles:
+          description: What you decided about each vehicle you are owed - where it should go, and the pin to lock it with
       errors:
         check_pm: "Hey %{user}. Before I can process your request, I need to confirm a few things. Please reply to the message in your Direct Messages to continue."
         no_reply: "Hey %{user}, I haven't heard from you in awhile so I cancelled your request. Please re-run the previous command when you're ready to continue"
@@ -21,6 +23,8 @@ en:
           I'm sorry %{user}, this reward still hasn't gone through after %{attempts} attempts.
 
           Nothing is lost. Head to the website to finish claiming it, or reach out to your server's admins.
+        stale_delivery: "Sorry %{user}, what you're owed changed while this page was open. Refresh it and try again"
+        invalid_pin_code: "Sorry %{user}, a vehicle's pin has to be exactly four digits"
       request_descriptions:
         reward_base: |-
           Hey there, %{user}!
