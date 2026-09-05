@@ -151,10 +151,10 @@ fn replace_arma_characters(input: &str) -> String {
                         quote_series_counter.saturating_sub(1);
                 }
 
-                char_to_add = format!(
-                    "{}\"",
-                    "\\".repeat(quote_series_counter.saturating_sub(1))
-                );
+                // Arma doubles every quote inside a string, so a series of N stands for N / 2 literal quotes and each
+                // one needs its own escape. An empty string arrives as a series of four and used to collapse into a
+                // single `\"`, which is not valid JSON.
+                char_to_add = "\\\"".repeat(quote_series_counter / 2);
             }
         }
 
@@ -288,6 +288,20 @@ mod tests {
                     })
                 )
             ])
+        )
+    }
+
+    #[test]
+    fn it_handles_an_empty_string_inside_an_escaped_string() {
+        // An SQF function returning ["a", ""] reaches us as a string inside the outer array, so every inner quote is
+        // doubled and the empty string arrives as a four quote series.
+        let input = "[[\"result\",\"[\"\"a\"\",\"\"\"\"]\"]]";
+
+        let result: Result<Data, String> = Parser::from_arma(input);
+
+        assert_eq!(
+            result.unwrap(),
+            HashMap::from([(String::from("result"), json!("[\"a\",\"\"]"))])
         )
     }
 
