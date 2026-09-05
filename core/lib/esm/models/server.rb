@@ -103,11 +103,6 @@ module ESM
       @token ||= {access: public_id, secret: server_key}
     end
 
-    # V1
-    def server_reward
-      server_rewards.default
-    end
-
     def version
       Semantic::Version.new(server_version || "1.0.0")
     end
@@ -191,9 +186,9 @@ module ESM
     end
 
     def create_default_reward
-      return if server_rewards.default.exists?
+      return if server_rewards.default.size > 0
 
-      server_rewards.create!(server_id: id)
+      server_rewards.create!(server_id: id, reward_id: "default")
     end
   end
 end

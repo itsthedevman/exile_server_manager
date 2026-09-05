@@ -24,9 +24,9 @@ module Communities
             .transform_keys { |k| k.to_s.split("_").second } # Remove "mod_"
         end
 
-      existing_reward_items = server.server_rewards
-        .select(:reward_items)
-        .default
+      default_reward = server.server_rewards.default.first
+
+      existing_reward_items = default_reward
         .reward_items
         .each_with_object({}) do |(classname, quantity), hash|
           hash[SecureRandom.uuid] = {classname:, quantity:}
@@ -34,6 +34,7 @@ module Communities
 
       render locals: {
         server:,
+        default_reward:,
         existing_server_mods:,
         existing_reward_items:,
         existing_server_ids: existing_server_ids - [server.local_id]
@@ -72,7 +73,7 @@ module Communities
         mod_params.each { |mod| server.server_mods.create!(mod) }
 
         # Update the server reward for this server (Since we don't have reward packages yet)
-        server.server_rewards.default.update!(reward_params)
+        server.server_rewards.default.first.update!(reward_params)
 
         # Create the settings
         server.server_setting.update!(setting_params)

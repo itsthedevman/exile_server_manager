@@ -62,10 +62,12 @@ module ESM
         end
 
         # TODO: Docs
-        def check_for_cooldown!
-          return unless on_cooldown?
+        def check_for_cooldown!(scope_key: nil)
+          return unless on_cooldown?(scope_key:)
 
-          if current_cooldown.cooldown_type == "times"
+          cooldown = current_cooldown(scope_key:)
+
+          if cooldown.cooldown_type == "times"
             check_failed!(:on_cooldown_useage, user: current_user)
 
             return
@@ -74,7 +76,7 @@ module ESM
           check_failed!(
             :on_cooldown_time_left,
             user: current_user,
-            time_left: current_cooldown.to_s
+            time_left: cooldown.to_s
           )
         end
 

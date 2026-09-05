@@ -20,6 +20,7 @@ module ESM
     attribute :cooldown_quantity, :integer, default: 1
     attribute :cooldown_type, :string, default: "seconds"
     attribute :cooldown_amount, :integer, default: 0
+    attribute :scope_key, :string
     attribute :expires_at, :datetime, default: -> { 1.second.ago }
     attribute :created_at, :datetime
     attribute :updated_at, :datetime
@@ -78,11 +79,15 @@ module ESM
     # @param registered [Boolean] whether the command requires registration (steam_uid key)
     # @param community [ESM::Community, nil] the target community, when the command has one
     # @param server [ESM::Server, nil] the target server, when the command has one
+    # @param scope_key [String, Symbol, nil] the slice of the command the cooldown governs, such as a reward package's
+    #   ID. nil means the command's own cooldown, and it matches only rows that are themselves unscoped
     #
     # @return [ActiveRecord::Relation] the scoped cooldowns
     #
-    def self.scope_for(command_name:, user:, registered:, community: nil, server: nil)
-      query = where(command_name:)
+    def self.scope_for(command_name:, user:, registered:, community: nil, server: nil, scope_key: nil)
+      # Always filtered, including on nil. Skipping it for nil would let a command's own lookup pull back one of its
+      # scoped rows, which the unique indexes already treat as a separate cooldown.
+      query = where(command_name:, scope_key:)
       query = registered ? query.where(steam_uid: user.steam_uid) : query.where(user_id: user.id)
       query = query.where(community_id: community.id) if community
       query = query.where(server_id: server.id) if server
@@ -99,7 +104,9 @@ module ESM
     # @return [void]
     #
     def self.reconcile_to(configuration)
-      where(command_name: configuration.command_name, community_id: configuration.community_id)
+      # Scoped rows answer to a per-scope configuration the server owner controls, such as a reward package's own
+      # cooldown, so a community editing the command's cooldown must not overwrite them.
+      where(command_name: configuration.command_name, community_id: configuration.community_id, scope_key: nil)
         .find_each { |cooldown| cooldown.reconcile_to!(configuration) }
     end
 

@@ -67,12 +67,27 @@ module ESM
         end
 
         #
-        # The cooldown for this command
+        # The cooldown for this command, or for one scoped slice of it
         #
-        # @return [ESM::Cooldown]
+        # @param scope_key [String, Symbol, nil] the slice to look up, such as a reward package's ID. Omit it for the
+        #   command-wide cooldown.
         #
-        def current_cooldown
-          @current_cooldown ||= current_cooldown_query.first
+        # @return [ESM::Cooldown, nil] nil when this command has never been run under that scope
+        #
+        def current_cooldown(scope_key: nil)
+          cooldown_cache[scope_key]
+        end
+
+        #
+        # Every cooldown row this execution has looked up, keyed by scope. A command may consult more than one, so a
+        # single memo slot would hand back another scope's row.
+        #
+        # @return [Hash]
+        #
+        def cooldown_cache
+          @cooldown_cache ||= Hash.new do |cache, scope_key|
+            cache[scope_key] = current_cooldown_query(scope_key:).first
+          end
         end
 
         #
@@ -240,13 +255,17 @@ module ESM
         #
         # Is this command on cooldown?
         #
+        # @param scope_key [String, Symbol, nil] the slice to check, such as a reward package's ID
+        #
         # @return [Boolean]
         #
-        def on_cooldown?
-          # We've never used this command with these arguments before
-          return false if current_cooldown.nil?
+        def on_cooldown?(scope_key: nil)
+          cooldown = current_cooldown(scope_key:)
 
-          current_cooldown.active?
+          # We've never used this command with these arguments before
+          return false if cooldown.nil?
+
+          cooldown.active?
         end
 
         #
@@ -516,14 +535,21 @@ module ESM
           ESM.discord_bot.deliver(embed, to: target)
         end
 
-        def create_or_update_cooldown
-          @current_cooldown = current_cooldown_query.first_or_create
-          current_cooldown.update_expiry!(timers.on_execute.started_at, cooldown_time)
+        def create_or_update_cooldown(scope_key: nil, duration: cooldown_time)
+          # A reward package the owner never gave a cooldown has nothing to decompose into an expiry, and a row without
+          # one blows up every later #active? call against it
+          return if duration.nil?
+
+          cooldown = current_cooldown_query(scope_key:).first_or_create
+          cooldown.update_expiry!(timers.on_execute.started_at, duration)
+
+          cooldown_cache[scope_key] = cooldown
         end
 
-        def current_cooldown_query
+        def current_cooldown_query(scope_key: nil)
           ESM::Cooldown.scope_for(
             command_name:,
+            scope_key:,
             user: current_user,
             registered: registration_required?,
             community: target_community || current_community,

@@ -43,7 +43,6 @@ ESM.loader.tap do |loader|
   loader.ignore(ESM.root.join("lib", "esm", "model", "community.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "notification.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "request.rb"))
-  loader.ignore(ESM.root.join("lib", "esm", "model", "server_reward.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "server.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "model", "user.rb"))
   loader.ignore(ESM.root.join("lib", "esm", "version.rb"))

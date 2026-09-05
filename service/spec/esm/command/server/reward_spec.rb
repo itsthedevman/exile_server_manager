@@ -37,7 +37,7 @@ describe ESM::Command::Server::Reward, category: "command" do
           ESM.discord_bot.test_outbox.await_size(1)
 
           embed = ESM.discord_bot.test_outbox.first.content
-          reward = server.server_reward
+          reward = server.server_rewards.default.first
 
           expect(embed.description).to include("#{reward.player_poptabs}x Poptabs (Player)") if reward.player_poptabs.positive?
           expect(embed.description).to include("#{reward.locker_poptabs}x Poptabs (Locker)") if reward.locker_poptabs.positive?
@@ -74,7 +74,7 @@ describe ESM::Command::Server::Reward, category: "command" do
       context "when there are no rewards configured" do
         it "raises an exception" do
           # Remove the default reward and create a blank one
-          server.server_reward.delete
+          server.server_rewards.default.first.delete
           server.send(:create_default_reward)
 
           execution_args = {arguments: {server_id: server.server_id}}
@@ -142,7 +142,7 @@ describe ESM::Command::Server::Reward, category: "command" do
         end
 
         before do
-          server.server_reward.update!(
+          server.server_rewards.default.first.update!(
             reward_items:,
             player_poptabs:,
             locker_poptabs:,
@@ -198,7 +198,7 @@ describe ESM::Command::Server::Reward, category: "command" do
         let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 1} }
 
         before do
-          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+          server.server_rewards.default.first.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
         end
 
         it "puts the items on the player and drops nothing" do
@@ -214,7 +214,7 @@ describe ESM::Command::Server::Reward, category: "command" do
         let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 3} }
 
         before do
-          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+          server.server_rewards.default.first.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
         end
 
         it "spawns a holder at their feet and fills it with the items" do
@@ -234,7 +234,7 @@ describe ESM::Command::Server::Reward, category: "command" do
         let!(:reward_items) { {Exile_Magazine_30Rnd_762x39_AK: 2, NotAThingAnyoneOwns: 1} }
 
         before do
-          server.server_reward.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
+          server.server_rewards.default.first.update!(reward_items:, player_poptabs: 0, locker_poptabs: 0, respect: 0)
         end
 
         it "logs the invalid item and still delivers the rest" do
@@ -253,7 +253,7 @@ describe ESM::Command::Server::Reward, category: "command" do
 
       context "when there are no rewards" do
         before do
-          server.server_reward.update!(
+          server.server_rewards.default.first.update!(
             reward_items: [],
             player_poptabs: 0,
             locker_poptabs: 0,

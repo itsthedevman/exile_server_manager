@@ -212,7 +212,7 @@ RSpec.describe ESM::Server do
       it "creates a default reward automatically" do
         server = create(:server, :with_callbacks, community: community)
 
-        expect(server.server_rewards.default).to be_present
+        expect(server.server_rewards.default.first).to be_present
       end
     end
   end

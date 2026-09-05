@@ -35,7 +35,7 @@ FactoryBot.define do
 
     trait :with_reward do
       after(:create) do |server|
-        create(:server_reward, server: server)
+        create(:server_reward, server:) if server.server_rewards.default.first.nil?
       end
     end
 

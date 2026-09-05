@@ -542,6 +542,79 @@ describe ESM::Command::Base do
         expect(previous_command.current_cooldown.id).to eq(cooldown.id)
       end
     end
+
+    context "when a scope key and duration are given" do
+      it "writes a row for that scope alone" do
+        execute!(channel_type: :dm)
+
+        previous_command.create_or_update_cooldown(scope_key: "daily", duration: 30.minutes)
+
+        scoped = ESM::Cooldown.find_by(command_name: previous_command.command_name, scope_key: "daily")
+        unscoped = ESM::Cooldown.find_by(command_name: previous_command.command_name, scope_key: nil)
+
+        expect(scoped.cooldown_type).to eq("minutes")
+        expect(scoped.cooldown_quantity).to eq(30)
+
+        # The command's own cooldown keeps the 10.seconds CooldownCommand declares
+        expect(unscoped.cooldown_type).to eq("seconds")
+        expect(unscoped.cooldown_quantity).to eq(10)
+      end
+    end
+
+    context "when the duration is nil" do
+      it "writes nothing" do
+        execute!(channel_type: :dm)
+
+        expect {
+          previous_command.create_or_update_cooldown(scope_key: "daily", duration: nil)
+        }.not_to change(ESM::Cooldown, :count)
+      end
+    end
+  end
+
+  describe "#current_cooldown" do
+    include_context "command" do
+      let!(:command_class) { ESM::Command::Test::CooldownCommand }
+    end
+
+    before do
+      command.requirements.unset(:registration)
+      command.origin = ESM::Discord::Command::Origin.new(user: user)
+    end
+
+    it "reads the row belonging to the requested scope" do
+      # Created first so a lookup that ignored scope_key would hand this row back for the unscoped call
+      scoped = create(:cooldown, user: user, command_name: command.command_name, scope_key: "daily")
+      unscoped = create(:cooldown, user: user, command_name: command.command_name)
+
+      expect(command.current_cooldown).to eq(unscoped)
+      expect(command.current_cooldown(scope_key: "daily")).to eq(scoped)
+    end
+
+    it "caches each scope separately" do
+      create(:cooldown, user: user, command_name: command.command_name, scope_key: "daily")
+
+      expect(command.current_cooldown).to be_nil
+      expect(command.current_cooldown(scope_key: "daily")).to be_present
+    end
+  end
+
+  describe "#check_for_cooldown!" do
+    include_context "command" do
+      let!(:command_class) { ESM::Command::Test::CooldownCommand }
+    end
+
+    before do
+      command.requirements.unset(:registration)
+      command.origin = ESM::Discord::Command::Origin.new(user: user)
+    end
+
+    it "raises only for the scope that is on cooldown" do
+      create(:cooldown, :active, user: user, command_name: command.command_name, scope_key: "daily")
+
+      expect { command.check_for_cooldown!(scope_key: "daily") }.to raise_error(ESM::Exception::CheckFailure)
+      expect { command.check_for_cooldown! }.not_to raise_error
+    end
   end
 
   describe "#current_cooldown_query" do
@@ -641,7 +714,7 @@ describe ESM::Command::Base do
           command_name: command.command_name
         )
 
-        command.instance_variable_set(:@current_cooldown, cooldown)
+        command.instance_variable_set(:@cooldown_cache, {nil => cooldown})
 
         expect(command.current_cooldown).to eq(cooldown)
         expect(command.on_cooldown?).to be(true)
@@ -655,10 +728,25 @@ describe ESM::Command::Base do
           command_name: command.command_name
         )
 
-        command.instance_variable_set(:@current_cooldown, cooldown)
+        command.instance_variable_set(:@cooldown_cache, {nil => cooldown})
 
         expect(command.current_cooldown).to eq(cooldown)
         expect(command.on_cooldown?).to be(false)
+      end
+    end
+
+    context "when only one scope is on cooldown" do
+      before do
+        command.requirements.unset(:registration)
+        command.origin = ESM::Discord::Command::Origin.new(user: user)
+      end
+
+      it "answers per scope" do
+        create(:cooldown, :active, user: user, command_name: command.command_name, scope_key: "daily")
+        create(:cooldown, :inactive, user: user, command_name: command.command_name)
+
+        expect(command.on_cooldown?).to be(false)
+        expect(command.on_cooldown?(scope_key: "daily")).to be(true)
       end
     end
   end
