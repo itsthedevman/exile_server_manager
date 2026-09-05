@@ -31,7 +31,8 @@ private _id = get!(_this, "id");
   vehicles: Array<HashMap>
     class_name: String,
     spawn_location: String,
-    territory_id: Scalar (optional),
+    territory_id: String (optional, encoded - the extension decodes it into territory_database_id),
+    territory_database_id: Scalar (optional),
     pin_code: String (optional)
 */
 private _data = get!(_this, "data");

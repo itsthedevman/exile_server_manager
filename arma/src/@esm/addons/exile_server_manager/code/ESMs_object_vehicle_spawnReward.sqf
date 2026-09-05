@@ -13,7 +13,8 @@ Parameters:
 	_vehicle		- The vehicle to deliver. [HashMap]
 						class_name		- The vehicle's class name. [String]
 						spawn_location	- "nearby" or "virtual_garage". [String]
-						territory_id	- Territory database ID, required for "virtual_garage". [Scalar, nil]
+						territory_database_id	- Territory database ID, required for "virtual_garage". The extension
+							decodes it out of the entry's territory_id. [Scalar, nil]
 						pin_code		- A four character pin. Generated when omitted. [String, nil]
 
 Returns:
@@ -52,7 +53,7 @@ private _vehicle = _this select 2;
 
 private _className = get!(_vehicle, "class_name", "");
 private _spawnLocation = get!(_vehicle, "spawn_location", "nearby");
-private _territoryID = get!(_vehicle, "territory_id", -1);
+private _territoryID = get!(_vehicle, "territory_database_id", -1);
 private _pinCode = get!(_vehicle, "pin_code", "");
 
 // Declared out here so the catch can still name the vehicle in the failure it hands back

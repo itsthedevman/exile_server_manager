@@ -34,7 +34,7 @@ describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true do
         private _vehicle = createHashMapFromArray [
           ["class_name", "#{vehicle_class}"],
           ["spawn_location", "#{spawn_location}"],
-          ["territory_id", #{territory_id}]
+          ["territory_database_id", #{territory_id}]
         ];
 
         [_playerObject, "#{user.steam_uid}", _vehicle] call ESMs_object_vehicle_spawnReward
