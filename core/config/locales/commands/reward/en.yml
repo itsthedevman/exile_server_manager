@@ -17,10 +17,8 @@ en:
         waiting_for_reply: 'Hey %{user}, I am already processing a reward request for you. If you would like to start over, just reply back with "cancel" and then you may use this command'
         incorrect_reward_id: "I'm sorry %{user}, I was unable to find a reward with the ID of `%{reward_id}`"
         no_reward_items: "I'm sorry %{user}, the selected reward package is not available at this time"
-        territory_query: "I'm sorry %{user}, I ran into an issue syncing territory data. Please wait a moment before trying again"
-        no_territories: "Before you confirm, you should know that this reward package also contains vehicles for you, but you have no territories. If you would like to receive these vehicles as well, please "
-      information_embed:
-        description: |-
+      request_descriptions:
+        reward_base: |-
           Hey there, %{user}!
 
           Before we get to the good stuff, I need you to do the following:
@@ -30,24 +28,23 @@ en:
           - Remember, items that don't fit in your inventory **will be dropped on the ground at your feet**
 
           Reward `%{reward_id}` contains the following:
-        fields:
-          player_poptabs:
-            name: Poptabs given to you
-            value: "```%{poptabs}```"
-          locker_poptabs:
-            name: Poptabs added to locker
-            value: "```%{poptabs}```"
-          respect:
-            name: Respect given to you
-            value: "```%{respect}```"
-          items:
-            name: Items given to you
-            value: "%{items}"
-          vehicles:
-            name: Vehicles given to you
-            value: "%{vehicles}"
-          accept: Once you are ready to receive the reward, just reply with `accept`
-        footer: You can cancel this request by replying with `cancel` at any time
+        claim_base: |-
+          Hey there, %{user}!
+
+          **It looks like you have pending rewards that you must claim first**
+
+          Before we get to the good stuff, I need you to do the following:
+
+          - Join `%{server_id}` and spawn in. Make sure you're in a safe place!
+          - Confirm you have enough space on or around you to spawn in the following items/vehicles
+          - Remember, items that don't fit in your inventory **will be dropped on the ground at your feet**
+
+          Pending claims include the following:
+        player_poptabs: "**Poptabs (player):** `%{value}`"
+        locker_poptabs: "**Poptabs (locker):** `%{value}`"
+        respect: "**Respect:** `%{value}`"
+        items: "**Items:** %{value}"
+        vehicles: "**Vehicles:** %{value}"
       receipt_embed:
         title: Reward get!
         description: You may now return to your game and enjoy your gifts!

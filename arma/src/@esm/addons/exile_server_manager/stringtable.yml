@@ -545,6 +545,41 @@ ESMs_command_reward:
     english: |-
       Hey %1, here's what you just received:
       %2
+  Reward_Response_Partial_Title:
+    english: "**Reward Package Partially Delivered**"
+  Reward_Response_Partial_Description:
+    arguments:
+    - "Player mention"
+    - "Receipt"
+    - "Failures"
+    english: |-
+      Hey %1, here's what you just received:
+      %2
+
+      The rest could not be delivered and is still waiting for you:
+      %3
+  Reward_Vehicle_PinCode:
+    arguments:
+    - "Pin code"
+    english: "pin `%1`"
+  Reward_Failure_InvalidClassName:
+    english: "not found in this server's config"
+  Reward_Failure_NoRoom:
+    arguments:
+    - "Quantity remaining"
+    english: "no room for %1 more"
+  Reward_Failure_UnsupportedLocation:
+    english: "this vehicle needs a spawn location you can only pick on the website"
+  Reward_Failure_NoSafePosition:
+    english: "no clear space nearby to spawn it, try moving somewhere more open"
+  Reward_Failure_TerritoryNotFound:
+    english: "that territory could not be found on this server"
+  Reward_Failure_NoGarage:
+    english: "that territory's level has no virtual garage"
+  Reward_Failure_GarageFull:
+    english: "that territory's virtual garage is full"
+  Reward_Failure_Unknown:
+    english: "it could not be delivered"
   Reward_Log_Title:
     english: "`ESMs_command_reward` executed successfully"
   Reward_Log_Description:
