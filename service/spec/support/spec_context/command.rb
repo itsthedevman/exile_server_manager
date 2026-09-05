@@ -213,7 +213,8 @@ RSpec.shared_context("command") do
   end
 
   def wait_for_completion!(event = :on_execute)
-    wait_for { previous_command.timers.public_send(event.to_sym).finished? }.to be(true)
+    # A phase that has not started yet has no timer, and nil keeps the poll going rather than blowing up mid-wait
+    wait_for { previous_command.timers[event.to_sym]&.finished? }.to be(true)
   end
 
   def respond_to_prompt(response, user: discord_user, channel: default_text_channel)

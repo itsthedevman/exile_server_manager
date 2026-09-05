@@ -540,8 +540,13 @@ module ESM
           # one blows up every later #active? call against it
           return if duration.nil?
 
+          # A command reached through #from_request never ran :on_execute, so there is no timer to read. Indexed rather
+          # than called because Timers defines its readers on the class, so the accessor outlives the run that made it.
+          # The cooldown has to count from something, and the moment it is written is the honest answer.
+          executed_at = timers[:on_execute]&.started_at || ::Time.current
+
           cooldown = current_cooldown_query(scope_key:).first_or_create
-          cooldown.update_expiry!(timers.on_execute.started_at, duration)
+          cooldown.update_expiry!(executed_at, duration)
 
           cooldown_cache[scope_key] = cooldown
         end

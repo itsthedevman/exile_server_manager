@@ -8,7 +8,9 @@ module ESM
 
         def initialize(command_name)
           @command_name = command_name
-          super
+
+          # Parens matter. A bare `super` forwards command_name to Hash.new, making it the default value
+          super()
         end
 
         def reset_all!
@@ -60,13 +62,9 @@ module ESM
         private
 
         def create_timer(name)
-          name = name.to_sym
-
           timer = Timer.new
 
-          self[name] = timer
-          self.class.define_method(name) { self[name] }
-
+          self[name.to_sym] = timer
           timer
         end
       end
