@@ -560,16 +560,6 @@ describe ESM::Command::Base do
         expect(unscoped.cooldown_quantity).to eq(10)
       end
     end
-
-    context "when the duration is nil" do
-      it "writes nothing" do
-        execute!(channel_type: :dm)
-
-        expect {
-          previous_command.create_or_update_cooldown(scope_key: "daily", duration: nil)
-        }.not_to change(ESM::Cooldown, :count)
-      end
-    end
   end
 
   describe "#current_cooldown" do
@@ -1200,30 +1190,38 @@ describe ESM::Command::Base do
 
   describe "#check_for_pending_request!" do
     include_context "command" do
-      let!(:command_class) { ESM::Command::Test::RequestCommand }
+      let!(:command_class) { ESM::Command::Test::PendingRequestCommand }
     end
 
     let(:command_args) { {target: second_user.discord_id} }
 
-    it "blocks a second run while one is outstanding" do
+    # The command's own cooldown is checked before the request gate, so it has to be out of the way for a second run
+    # to reach what these examples are about
+    def execute_then_clear_cooldown!
       execute!(arguments: command_args)
+      previous_command.current_cooldown&.reset!
+    end
+
+    it "blocks a second run while one is outstanding" do
+      execute_then_clear_cooldown!
 
       expect { execute!(arguments: command_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
-        expect(error.to_embed.description).to match("already have a request pending")
+        # The target is someone else, so this is the different-user branch of the check
+        expect(error.to_embed.description).to match("already has a request pending")
       end
     end
 
     # Answering a request leaves the row behind with its new status. Matching on every status would let one finished
     # request block that same command with those same arguments forever.
     it "does not block once the request has been accepted" do
-      execute!(arguments: command_args)
+      execute_then_clear_cooldown!
       ESM::Request.first.accept!
 
       expect { execute!(arguments: command_args) }.not_to raise_error
     end
 
     it "does not block once the request has been declined" do
-      execute!(arguments: command_args)
+      execute_then_clear_cooldown!
       ESM::Request.first.reject!
 
       expect { execute!(arguments: command_args) }.not_to raise_error

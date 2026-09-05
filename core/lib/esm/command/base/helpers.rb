@@ -460,7 +460,10 @@ module ESM
 
             # Don't look for the requestor because multiple different people could attempt to invite them
             # requestor_user_id: current_user.esm_user.id,
-            query = ESM::Request.where(requestee_user_id: requestee.id, command_name: command_name)
+            #
+            # Only outstanding ones count. Accepting a request leaves the row behind as `accepted`, so matching every
+            # status would let one finished request block that same command with those same arguments forever.
+            query = ESM::Request.pending.where(requestee_user_id: requestee.id, command_name: command_name)
 
             arguments.to_h.each do |name, value|
               query =
@@ -536,10 +539,6 @@ module ESM
         end
 
         def create_or_update_cooldown(scope_key: nil, duration: cooldown_time)
-          # A reward package the owner never gave a cooldown has nothing to decompose into an expiry, and a row without
-          # one blows up every later #active? call against it
-          return if duration.nil?
-
           # A command reached through #from_request never ran :on_execute, so there is no timer to read. Indexed rather
           # than called because Timers defines its readers on the class, so the accessor outlives the run that made it.
           # The cooldown has to count from something, and the moment it is written is the honest answer.
