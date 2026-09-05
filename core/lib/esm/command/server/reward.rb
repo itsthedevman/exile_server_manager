@@ -214,6 +214,7 @@ module ESM
           ESM::ServerRewardClaim.create!(
             server_id: target_server.id,
             user_id: current_user.id,
+            reward_id: reward.reward_id,
             player_poptabs: reward.player_poptabs,
             locker_poptabs: reward.locker_poptabs,
             respect: reward.respect,
@@ -243,11 +244,7 @@ module ESM
           undelivered_vehicles = result.undelivered_vehicles.presence || []
 
           if undelivered_items.blank? && undelivered_vehicles.blank?
-            # A package sets its own cooldown; one that doesn't falls back to whatever the community configured for
-            # the command itself
-            duration = server_reward.cooldown_time || cooldown_time
-
-            create_or_update_cooldown(scope_key: server_reward.reward_id, duration:)
+            start_package_cooldown(claim)
 
             return claim.destroy!
           end
@@ -267,6 +264,32 @@ module ESM
             attempt_count:,
             last_attempt_at: Time.current
           )
+        end
+
+        #
+        # Puts the package this claim came from on cooldown, now that the player has actually received it.
+        #
+        # The claim carries the package's id rather than a copy of its cooldown. Contents are copied because they are
+        # a promise to the player; a cooldown is a rule the community sets, so shortening one is meant to apply to
+        # everyone rather than draining through the outstanding claims first.
+        #
+        # @param claim [ESM::ServerRewardClaim] the claim that just finished
+        #
+        # @return [void]
+        #
+        def start_package_cooldown(claim)
+          # An admin built this claim by hand, so no package was redeemed and nothing goes on cooldown. Passing the
+          # nil through would not be a no-op: nil is the command's own unscoped cooldown, which gates every package.
+          return if claim.reward_id.blank?
+
+          # Deliberately not #server_reward, which falls back to the default package. The claim names its own.
+          package = target_server.server_rewards.find_by(reward_id: claim.reward_id)
+
+          # A package sets its own cooldown; one that doesn't falls back to whatever the community configured for the
+          # command itself
+          duration = package&.cooldown_time || cooldown_time
+
+          create_or_update_cooldown(scope_key: claim.reward_id, duration:)
         end
 
         # The bucket is what makes these actionable later: an admin granting vehicles onto a claim clears the vehicle

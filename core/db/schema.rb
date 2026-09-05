@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_02_043056) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_05_212800) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
@@ -201,6 +201,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_043056) do
     t.bigint "locker_poptabs", default: 0, null: false
     t.bigint "player_poptabs", default: 0, null: false
     t.bigint "respect", default: 0, null: false
+    t.string "reward_id"
     t.integer "server_id", null: false
     t.string "state", default: "waiting", null: false
     t.json "state_details", default: {}

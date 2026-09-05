@@ -541,6 +541,50 @@ describe ESM::Command::Server::Reward, category: "command" do
           end
         end
 
+        # A claim does not remember the package it came from, so settling one falls back to the default package for the
+        # cooldown's scope key. The retry that finishes a named package therefore leaves that package uncooled and
+        # writes a cooldown against "default" instead, which the player never redeemed.
+        context "when a claim from a named package is finished on a retry" do
+          let!(:named_reward) do
+            create(
+              :server_reward,
+              server_id: server.id,
+              reward_id: "daily",
+              reward_items: {},
+              reward_vehicles: [{class_name: vehicle_class, spawn_location: "player_decides"}],
+              player_poptabs: 55,
+              locker_poptabs: 0,
+              respect: 0,
+              cooldown_quantity: 1,
+              cooldown_type: "days"
+            )
+          end
+
+          it "scopes the cooldown to the package the claim came from" do
+            execute!(arguments: {server_id: server.server_id, reward_id: "daily"})
+            ESM.discord_bot.test_outbox.await_size(2)
+
+            accept_request
+
+            expect(claim).to be_present
+            expect(ESM::Cooldown.where(command_name: "reward")).to be_empty
+
+            # Stands in for the website settling the vehicle the player had to decide on, leaving poptabs still owed
+            claim.update!(vehicles: [], player_poptabs: 25)
+
+            # The retry names no package. A waiting claim is the thing being delivered, and the player has nothing to
+            # name it with - the website's Deliver button knows only that a claim exists.
+            execute!(arguments: {server_id: server.server_id})
+            ESM.discord_bot.test_outbox.await_size(2)
+
+            accept_request
+
+            expect(ESM::ServerRewardClaim.find_by(user_id: user.id, server_id: server.id)).to be_nil
+
+            expect(ESM::Cooldown.where(command_name: "reward").pluck(:scope_key)).to eq(["daily"])
+          end
+        end
+
         context "when different buckets fail for different reasons" do
           # The invalid item adds the extra "Invalid Reward Item" admin log
           let!(:number_of_messages) { 5 }
@@ -672,6 +716,15 @@ describe ESM::Command::Server::Reward, category: "command" do
             expect(embed.description).not_to match("10x")
 
             expect(claim).to be_nil
+          end
+
+          # This claim names no package, which is the shape an admin building one by hand leaves behind. The player
+          # redeemed nothing, so finishing it must not spend a cooldown they never started.
+          it "puts nothing on cooldown" do
+            execute_command
+
+            expect(claim).to be_nil
+            expect(ESM::Cooldown.where(command_name: "reward")).to be_empty
           end
 
           it "says the pending claim is what they are confirming" do

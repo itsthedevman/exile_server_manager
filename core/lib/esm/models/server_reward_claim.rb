@@ -13,6 +13,11 @@ module ESM
 
     attribute :server_id, :integer
     attribute :user_id, :integer
+
+    # The package this claim came from, kept for the cooldown's scope key rather than as a link back to the package.
+    # Nil for a claim an admin built by hand, which puts nothing on cooldown when it settles.
+    attribute :reward_id, :string
+
     attribute :player_poptabs, :integer, limit: 8, default: 0
     attribute :locker_poptabs, :integer, limit: 8, default: 0
     attribute :respect, :integer, limit: 8, default: 0
