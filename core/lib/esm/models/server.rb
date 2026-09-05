@@ -46,6 +46,7 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
     has_many :user_server_favorites, dependent: :destroy
+    has_many :server_reward_claims, dependent: :destroy
 
     # =============================================================================
     # VALIDATIONS
