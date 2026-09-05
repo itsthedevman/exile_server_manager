@@ -53,6 +53,8 @@ pub fn bind_replacements(compiler: &mut Compiler, git_path: &Path) {
     // The order of these matter.
     // Macros without arguments are first.
     // Macros that could end up with another macro as an argument come last.
+    // A negated form always precedes its plain form: the plain regex matches inside the negated one, so running it
+    // first consumes the body and strands the `!` on whatever the expansion starts with.
     compiler
         .replace(REGEX_CURRENT_YEAR, current_year)
         .replace(REGEX_FILE_NAME, file_name)
@@ -68,8 +70,8 @@ pub fn bind_replacements(compiler: &mut Compiler, git_path: &Path) {
         .replace(REGEX_LOG_WITH_ARGS, log)
         .replace(REGEX_LOG, log)
         .replace(REGEX_RETURNS_NIL, returns_nil)
-        .replace(REGEX_EMPTY, empty)
         .replace(REGEX_EMPTY_NEGATED, not_empty)
+        .replace(REGEX_EMPTY, empty)
         .replace(REGEX_NIL_NEGATED, not_nil)
         .replace(REGEX_NIL, nil)
         .replace(REGEX_NULL, null)
@@ -887,5 +889,70 @@ mod tests {
 
         let regex = Regex::new(r"\d{4}").unwrap();
         assert!(regex.is_match(&output))
+    }
+
+    // Every other test above drives a single regex, which can never observe the ordering in bind_replacements: the
+    // plain form never gets first crack at a negated input. This one runs a real file through the full pipeline.
+    // `!empty?(x)` once compiled to `!count(x) isEqualTo 0`, which Arma rejects with "!: Type Number, expected Bool".
+    #[test]
+    fn it_expands_negated_macros_before_their_plain_form() {
+        let source_code = r#"
+            private _failures = [];
+            private _rewards = [];
+            private _items = [];
+            private _vehicles = [];
+
+            if (!empty?(_failures)) then {};
+            if (empty?(_rewards)) then {};
+            if (!nil?(_reward)) then {};
+            if (nil?(_package)) then {};
+            if (!type?(_items, ARRAY)) then {};
+            if (type?(_vehicles, ARRAY)) then {};
+        "#;
+
+        let expected = r#"
+            private _failures = [];
+            private _rewards = [];
+            private _items = [];
+            private _vehicles = [];
+
+            if (count(_failures) isNotEqualTo 0) then {};
+            if (count(_rewards) isEqualTo 0) then {};
+            if (!(isNil "_reward")) then {};
+            if (isNil "_package") then {};
+            if (!(_items isEqualType [])) then {};
+            if (_vehicles isEqualType []) then {};
+        "#;
+
+        // bind_replacements loads constants.jsonc off disk, so it needs the arma repo root, not the crate root.
+        let arma_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+
+        let workspace = std::env::temp_dir().join("esm_compile_ordering_test");
+        let source = workspace.join("source");
+        let destination = workspace.join("destination");
+
+        std::fs::remove_dir_all(&workspace).ok();
+        std::fs::create_dir_all(&source).expect("failed to create the test source directory");
+        std::fs::write(source.join("ESMs_compiler_ordering_test.sqf"), source_code)
+            .expect("failed to write the test source file");
+
+        let mut compiler = Compiler::new();
+        compiler
+            .source(&source.to_string_lossy())
+            .destination(&destination.to_string_lossy())
+            .target("linux");
+
+        bind_replacements(&mut compiler, &arma_path);
+        compiler.compile().expect("the test source file failed to compile");
+
+        let output = std::fs::read_to_string(destination.join("ESMs_compiler_ordering_test.sqf"))
+            .expect("the compiler did not write the test source file to its destination");
+
+        std::fs::remove_dir_all(&workspace).ok();
+
+        assert_eq!(output, expected);
+
+        // The exact shape the bug produced: the plain regex consumed the body and stranded the `!` on the expansion.
+        assert!(!output.contains("!count("));
     }
 }
