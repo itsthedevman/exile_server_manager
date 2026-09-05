@@ -44,6 +44,35 @@ module ESM
           end
         end
 
+        # Answers with the rows themselves rather than embeds, and with the lean query rather than the one Discord
+        # uses. The website's only consumer is a picker that needs an ID, a name, a level and how full the garage is;
+        # player_territories would ship every member and moderator of every territory to render a dropdown.
+        def on_website_execute
+          territories = query_exile_database!("reward_territories", uid: current_user.steam_uid)
+
+          reply(territories.map { |territory| territory.to_h.merge(garage_capacity: garage_capacity_for(territory)) })
+        end
+
+        #
+        # How many vehicles a territory's garage holds, or nil when its level has none.
+        #
+        # The sizes live on the connection rather than in the database, and the website has no connection of its own,
+        # so the question is answered here while there is still something to ask.
+        #
+        # @param territory [ESM::Message::Data] one row from the reward_territories query
+        #
+        # @return [Integer, nil]
+        #
+        def garage_capacity_for(territory)
+          sizes = Array(target_server.connection&.metadata&.vg_max_sizes)
+          return if sizes.empty?
+
+          # Exile reads this list at (level - 1) max 0, and -1 is how it says a level has no garage at all
+          capacity = sizes[(territory.level.to_i - 1).clamp(0, sizes.size - 1)].to_i
+
+          capacity if capacity >= 0
+        end
+
         ########################################################################
 
         module V1
