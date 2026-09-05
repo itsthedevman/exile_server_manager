@@ -21,7 +21,7 @@
           / Rewards
           - if command_accessible?("reward")
             = render "servers/rewards/card", current_server:, \
-              reward_packages: reward_packages_for(current_server), \
+              reward_package: reward_default_package_for(current_server), \
               reward_claim: reward_claim_for(current_server)
 
       - if admin_tools_available

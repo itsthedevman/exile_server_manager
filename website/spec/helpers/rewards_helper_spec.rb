@@ -7,27 +7,35 @@ RSpec.describe RewardsHelper, type: :helper do
 
   before { allow(helper).to receive(:current_user).and_return(user) }
 
-  describe "#reward_packages_for" do
+  describe "#reward_default_package_for" do
     before do
       package.update!(player_poptabs: 500, reward_items: {}, reward_vehicles: [])
     end
 
-    it "offers the packages that have something in them" do
-      expect(helper.reward_packages_for(server)).to eq([package])
+    it "offers the default package" do
+      expect(helper.reward_default_package_for(server)).to eq(package)
+    end
+
+    # Every other package is claimed by typing its ID. Putting them all on the page would defeat an owner running one
+    # as a coupon, since nothing else stops a player taking a package the moment they can see its ID.
+    it "never offers a named package" do
+      ESM::ServerReward.create!(server_id: server.id, reward_id: "secret", player_poptabs: 100)
+
+      expect(helper.reward_default_package_for(server)).to eq(package)
     end
 
     # An empty package is an admin midway through configuring one. The command refuses it, so offering it would only
     # promise something that cannot be delivered.
-    it "leaves out a package with nothing configured" do
+    it "offers nothing when the default has nothing configured" do
       package.update!(player_poptabs: 0, locker_poptabs: 0, respect: 0, reward_items: {}, reward_vehicles: [])
 
-      expect(helper.reward_packages_for(server)).to be_empty
+      expect(helper.reward_default_package_for(server)).to be_nil
     end
 
-    it "leaves out a disabled package" do
+    it "offers nothing when the default is disabled" do
       package.update!(enabled: false)
 
-      expect(helper.reward_packages_for(server)).to be_empty
+      expect(helper.reward_default_package_for(server)).to be_nil
     end
   end
 

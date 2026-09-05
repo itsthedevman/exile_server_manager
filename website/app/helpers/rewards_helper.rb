@@ -2,17 +2,23 @@
 
 module RewardsHelper
   ##
-  # The packages a player can be offered on this server.
+  # The one package the page shows outright.
   #
-  # A package with nothing in it is an admin's half-finished edit rather than an offer, and the command refuses it
-  # anyway, so it never reaches the list.
+  # Only the default is ever listed. Every other package is claimed by typing its ID, which is what lets an owner run
+  # one as a coupon: something handed out for joining their Discord, say. A dropdown of every package would put all of
+  # them on the page and there is nothing else stopping a player from taking one the moment they can see it.
+  #
+  # Nil when the default has nothing in it, which is an admin's half-finished edit rather than an offer. The command
+  # refuses that package anyway, so a Redeem button for it could only fail.
   #
   # @param server [ESM::Server]
   #
-  # @return [Array<ESM::ServerReward>]
+  # @return [ESM::ServerReward, nil]
   #
-  def reward_packages_for(server)
-    server.server_rewards.enabled.select(&:rewards?)
+  def reward_default_package_for(server)
+    package = server.server_rewards.enabled.default.first
+
+    package if package&.rewards?
   end
 
   ##

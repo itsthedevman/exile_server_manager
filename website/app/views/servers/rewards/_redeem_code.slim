@@ -1,0 +1,17 @@
+/ locals: current_server, blocked
+.small.text-muted.mb-2 Been given a reward code?
+
+- if blocked
+  .text-muted.small
+    i.bi.bi-inbox.me-1
+    | Finish what's waiting for you first.
+- elsif !current_server.connected?
+  .text-muted.small
+    i.bi.bi-plug.me-1
+    | #{current_server.server_id} is offline. Rewards are handed over in game, so this has to wait until it is back.
+- else
+  = form_with url: server_reward_path(current_server.public_id), method: :post
+    = hidden_field_tag :idempotency_key, SecureRandom.uuid
+    .input-group.input-group-sm
+      = text_field_tag :reward_id, nil, class: "form-control", placeholder: "Reward code", autocomplete: "off", required: true, aria: {label: "Reward code"}
+      = submit_tag "Redeem", name: nil, class: "btn btn-outline-success"

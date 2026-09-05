@@ -61,12 +61,23 @@ RSpec.describe "Servers", type: :request do
         server.server_rewards.default.first.update!(name: "Daily Drop", player_poptabs: 5_000, respect: 100)
       end
 
-      it "lists what is on offer" do
+      it "shows the default package" do
         get "/servers/#{server.public_id}"
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Daily Drop")
         expect(response.body).to include("5,000 poptabs · 100 respect")
+      end
+
+      # Only the default is ever on the page. Naming the others would put every coupon an owner runs in plain sight,
+      # and nothing else stops a player claiming a package the moment they can see its ID.
+      it "keeps every other package off the page" do
+        ESM::ServerReward.create!(server_id: server.id, reward_id: "secret_sauce", player_poptabs: 100)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("secret_sauce")
+        expect(response.body).to include("Been given a reward code?")
       end
 
       # Rewards are handed over in game, so a package cannot be taken while the server is down. Saying so beats a
@@ -88,6 +99,15 @@ RSpec.describe "Servers", type: :request do
           expect(response.body).to include(%(action="/servers/#{server.public_id}/reward"))
         end
 
+        # The way any package other than the default is taken. Owners hand the ID out however they like, which is what
+        # makes a coupon possible.
+        it "takes a typed code for anything else" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include(%(name="reward_id"))
+          expect(response.body).to include("Reward code")
+        end
+
         it "counts down instead while the package's cooldown runs" do
           create(
             :cooldown, :active,
@@ -101,7 +121,10 @@ RSpec.describe "Servers", type: :request do
           get "/servers/#{server.public_id}"
 
           expect(response.body).to include("Available in")
-          expect(response.body).not_to include("Redeem")
+
+          # The code box below it still offers a Redeem of its own, so what has to be gone is the default's own
+          # form, which is the only thing carrying the package's ID
+          expect(response.body).not_to include(%(value="default"))
         end
       end
 

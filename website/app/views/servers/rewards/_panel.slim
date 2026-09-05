@@ -1,4 +1,4 @@
-/ locals: current_server, reward_packages, reward_claim, outcome
+/ locals: current_server, reward_package, reward_claim, outcome
 #reward_panel
   - if outcome
     .alert.py-2.px-3.small class=outcome.css_class role="alert"
@@ -8,11 +8,8 @@
     = render "servers/rewards/claim", current_server:, reward_claim:
     hr.my-3
 
-  - if reward_packages.any?
-    .d-flex.flex-column.gap-3
-      - reward_packages.each do |package|
-        = render "servers/rewards/package", current_server:, package:, blocked: reward_claim.present?
-  - else
-    .text-center.text-muted.py-4
-      i.bi.bi-box.display-6.d-block.mb-2
-      | Nothing is on offer here yet.
+  - if reward_package
+    = render "servers/rewards/package", current_server:, package: reward_package, blocked: reward_claim.present?
+    hr.my-3
+
+  = render "servers/rewards/redeem_code", current_server:, blocked: reward_claim.present?
