@@ -61,13 +61,48 @@ RSpec.describe "Servers", type: :request do
         server.server_rewards.default.first.update!(name: "Daily Drop", player_poptabs: 5_000, respect: 100)
       end
 
-      it "lists what is on offer and whether it can be taken" do
+      it "lists what is on offer" do
         get "/servers/#{server.public_id}"
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Daily Drop")
         expect(response.body).to include("5,000 poptabs · 100 respect")
-        expect(response.body).to include("Available")
+      end
+
+      # Rewards are handed over in game, so a package cannot be taken while the server is down. Saying so beats a
+      # button whose only outcome is a refusal.
+      it "offers no way to take one while the server is down" do
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Server offline")
+        expect(response.body).not_to include("Redeem")
+      end
+
+      context "and the server is up" do
+        before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
+
+        it "offers to redeem the package" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Redeem")
+          expect(response.body).to include(%(action="/servers/#{server.public_id}/reward"))
+        end
+
+        it "counts down instead while the package's cooldown runs" do
+          create(
+            :cooldown, :active,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Available in")
+          expect(response.body).not_to include("Redeem")
+        end
       end
 
       # The cap is one claim per player per server, so a package cannot be taken until the last one is finished. The

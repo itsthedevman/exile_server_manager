@@ -144,6 +144,74 @@ module RewardsHelper
     failures.map { |failure| "#{failure[:name]}: #{failure[:reason]}" }
   end
 
+  ##
+  # Whether this vehicle's delivery form needs a territory picked for it.
+  #
+  # A vehicle already bound for a garage needs one, and so does one whose destination the player has yet to choose,
+  # since choosing the garage is one of the two answers.
+  #
+  # @param vehicle [Datum] one entry from #contents
+  #
+  # @return [Boolean]
+  #
+  def reward_vehicle_needs_territory?(vehicle)
+    ["virtual_garage", "player_decides"].include?(vehicle.spawn_location)
+  end
+
+  ##
+  # The destinations a player may choose between when the admin left it to them.
+  #
+  # @return [Array<Array(String, String)>]
+  #
+  def reward_spawn_location_options
+    [["Spawn it next to me", "nearby"], ["Store it in a virtual garage", "virtual_garage"]]
+  end
+
+  ##
+  # The territory dropdown's options, labelled with how much garage room is left.
+  #
+  # Territories whose garage is already full are left out rather than shown greyed: the game refuses them, so
+  # offering one would only trade a clear absence for a failed delivery.
+  #
+  # @param territories [Array<Datum>] rows from the reward_territories query
+  #
+  # @return [Array<Array(String, String)>]
+  #
+  def reward_territory_options(territories)
+    territories.filter_map do |territory|
+      capacity = territory[:garage_capacity]
+      free = capacity.to_i - territory[:vehicle_count].to_i
+      next if capacity.nil? || free < 1
+
+      name = territory[:esm_custom_id].presence || territory[:territory_name]
+      ["#{name} (#{free} of #{capacity} free)", territory[:id]]
+    end
+  end
+
+  ##
+  # What the panel says about the attempt that just finished.
+  #
+  # @param command [ESM::ServiceCommand] the settled command
+  #
+  # @return [Datum, nil]
+  #
+  def reward_outcome(command)
+    return if command.nil? || !command.settled?
+
+    if command.error_message.present?
+      return {message: command.error_message, css_class: "alert-danger"}.to_datum
+    end
+
+    case command.result&.dig(:state)
+    when "success"
+      {message: "Delivered. Head in game and enjoy.", css_class: "alert-success"}.to_datum
+    when "partial"
+      {message: "Some of it landed. What's left is still waiting for you below.", css_class: "alert-warning"}.to_datum
+    else
+      {message: "None of it could be delivered. It's all still yours, below.", css_class: "alert-danger"}.to_datum
+    end
+  end
+
   private
 
   def reward_cooldown_cache

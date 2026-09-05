@@ -16,14 +16,6 @@
         - reward_claim.contents.items.each do |item|
           .small = "#{item.quantity}x #{item.display_name}"
 
-  - if reward_claim.contents.vehicles.present?
-    .mt-2
-      - reward_claim.contents.vehicles.each do |vehicle|
-        .small
-          i.bi.bi-truck.me-1
-          = vehicle.display_name
-          span.text-muted.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
-
   - if reward_claim_failures(reward_claim).any?
     .mt-2
       - reward_claim_failures(reward_claim).each do |failure|
@@ -34,3 +26,9 @@
   - if reward_claim.failed?
     .small.text-muted.mt-2
       | Nothing is lost. Your server's admins can release this so you can try again.
+  - elsif !current_server.connected?
+    .small.text-muted.mt-2
+      i.bi.bi-plug.me-1
+      | #{current_server.server_id} is offline. Rewards are handed over in game, so this has to wait until it is back.
+  - else
+    = render "servers/rewards/deliver_form", current_server:, reward_claim:

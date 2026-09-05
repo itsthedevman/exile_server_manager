@@ -1,0 +1,7 @@
+/ locals: current_server, command
+- if command.settled?
+  = turbo_stream.replace "reward_panel" do
+    = render "servers/rewards/panel", current_server:, \
+      reward_packages: reward_packages_for(current_server), \
+      reward_claim: reward_claim_for(current_server), \
+      outcome: reward_outcome(command)

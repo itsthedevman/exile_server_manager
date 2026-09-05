@@ -1,0 +1,10 @@
+/ locals: current_server, index, territories
+= turbo_frame_tag "reward_territory_#{index}"
+  - if territories.any?
+    = select_tag "vehicles[#{index}][territory_id]", \
+      options_for_select(reward_territory_options(territories)), \
+      class: "form-select form-select-sm", \
+      id: "vehicles_#{index}_territory_id"
+  - else
+    select.form-select.form-select-sm disabled=true
+      option No territory with room in its garage

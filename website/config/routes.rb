@@ -301,6 +301,17 @@ Rails.application.routes.draw do
           get "commands/:command_id/status", action: :status, as: :command_status
         end
       end
+
+      # /servers/:server_id/reward
+      resource :reward, only: [:create], controller: "servers/rewards" do
+        collection do
+          # /servers/:server_id/reward/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+
+          # /servers/:server_id/reward/territories
+          get :territories
+        end
+      end
     end
   end
 

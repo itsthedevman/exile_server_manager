@@ -7,15 +7,4 @@
         | Rewards
 
     .card-body.d-flex.flex-column
-      - if reward_claim
-        = render "servers/rewards/claim", current_server:, reward_claim:
-        hr.my-3
-
-      - if reward_packages.any?
-        .d-flex.flex-column.gap-3
-          - reward_packages.each do |package|
-            = render "servers/rewards/package", current_server:, package:, blocked: reward_claim.present?
-      - else
-        .text-center.text-muted.py-4
-          i.bi.bi-box.display-6.d-block.mb-2
-          | Nothing is on offer here yet.
+      = render "servers/rewards/panel", current_server:, reward_packages:, reward_claim:, outcome: nil

@@ -15,7 +15,12 @@
   .flex-shrink-0.text-end
     - if blocked
       span.badge.text-bg-secondary Finish your claim first
+    - elsif !current_server.connected?
+      span.badge.text-bg-secondary Server offline
     - elsif reward_package_available?(current_server, package)
-      span.badge.text-bg-success = reward_availability_label(current_server, package)
+      = form_with url: server_reward_path(current_server.public_id), method: :post
+        = hidden_field_tag :idempotency_key, SecureRandom.uuid
+        = hidden_field_tag :reward_id, package.reward_id
+        = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"
     - else
       span.badge.text-bg-secondary = reward_availability_label(current_server, package)
