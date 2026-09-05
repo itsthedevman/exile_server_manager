@@ -21,15 +21,14 @@ module ESM
     attribute :locker_poptabs, :integer, limit: 8, default: 0
     attribute :respect, :integer, limit: 8, default: 0
 
-    # Valid attributes:
-    #   class_name <String>
-    #   quantity <Integer>
-    attribute :reward_items, :json, default: {}
+    # Keyed by class name, valued by quantity. The keys are data rather than structure, so they come back as symbols
+    # the same as everything else :hash deserializes; ESM::Arma::ClassLookup.find calls to_s for exactly that reason.
+    attribute :reward_items, :hash, default: {}
 
     # Valid attributes:
     #   class_name <String>
     #   spawn_location <String> Valid options: See VEHICLE_SPAWN_LOCATIONS
-    attribute :reward_vehicles, :json, default: []
+    attribute :reward_vehicles, :hash, default: []
     attribute :cooldown_quantity, :integer
     attribute :cooldown_type, :string
 

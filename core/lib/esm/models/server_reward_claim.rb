@@ -22,20 +22,21 @@ module ESM
     attribute :locker_poptabs, :integer, limit: 8, default: 0
     attribute :respect, :integer, limit: 8, default: 0
 
-    # Valid attributes:
-    #   class_name <String>
-    #   quantity <Integer>
-    attribute :items, :json, default: {}
+    # Keyed by class name, valued by quantity. The keys are data rather than structure, so they come back as symbols
+    # the same as everything else :hash deserializes; ESM::Arma::ClassLookup.find calls to_s for exactly that reason.
+    attribute :items, :hash, default: {}
 
     # Valid attributes:
     #   class_name <String>
     #   spawn_location <String> Valid options: "nearby", "virtual_garage", "player_decides"
-    attribute :vehicles, :json, default: []
+    #   territory_id <String> Encoded, supplied at delivery. Only for "virtual_garage"
+    #   pin_code <String> Four digits, supplied at delivery
+    attribute :vehicles, :hash, default: []
 
     # failed is a stop, not a loss. The claim still owes the player; they have just tried enough times that the next
     # move belongs to someone who can see why. Admins clear it back to waiting from the website.
     enum :state, {waiting: "waiting", in_flight: "in_flight", failed: "failed"}
-    attribute :state_details, :json, default: {}
+    attribute :state_details, :hash, default: {}
     attribute :attempt_count, :integer, default: 0
     attribute :last_attempt_at, :datetime
     attribute :created_at, :datetime

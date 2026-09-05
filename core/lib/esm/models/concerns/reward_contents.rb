@@ -5,8 +5,6 @@ module RewardContents
 
   def describe_vehicles(vehicle_array)
     vehicle_array.map do |vehicle_data|
-      vehicle_data = vehicle_data.with_indifferent_access
-
       class_name = vehicle_data[:class_name]
       spawn_location = vehicle_data[:spawn_location]
       display_name = display_name_for(class_name)

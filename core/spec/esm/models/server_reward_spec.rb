@@ -40,29 +40,39 @@ RSpec.describe ESM::ServerReward do
     end
   end
 
-  describe "JSON attributes" do
+  # These columns use the :hash attribute type, which deserializes with symbolize_names. Whatever key style goes in
+  # comes back symbolized, which is what lets a stored vehicle merge cleanly with the choices a website form sends.
+  describe "hash attributes" do
     let(:reward) { create(:server_reward, server: server, reward_id: "foo") }
 
     describe "reward_items" do
-      it "stores item data as JSON" do
-        items = {"Exile_Item_Knife" => 1, "Exile_Item_PlasticBottleFreshWater" => 5}
-        reward.update!(reward_items: items)
+      # Class names are the keys here, so they get symbolized along with everything else. Nothing looks them up by
+      # key, and ESM::Arma::ClassLookup.find calls to_s.
+      it "reads back keyed by symbol" do
+        reward.update!(reward_items: {"Exile_Item_Knife" => 1, "Exile_Item_PlasticBottleFreshWater" => 5})
         reward.reload
 
-        expect(reward.reward_items).to eq(items)
+        expect(reward.reward_items).to eq(Exile_Item_Knife: 1, Exile_Item_PlasticBottleFreshWater: 5)
       end
     end
 
     describe "reward_vehicles" do
-      it "stores vehicle data as JSON array" do
-        vehicles = [
-          {"class_name" => "Exile_Car_Offroad_Red", "spawn_location" => "nearby"},
-          {"class_name" => "Exile_Chopper_Huey_Green", "spawn_location" => "virtual_garage"}
-        ]
-        reward.update!(reward_vehicles: vehicles)
+      it "reads back keyed by symbol" do
+        reward.update!(
+          reward_vehicles: [
+            {"class_name" => "Exile_Car_Offroad_Red", "spawn_location" => "nearby"},
+            {"class_name" => "Exile_Chopper_Huey_Green", "spawn_location" => "virtual_garage"}
+          ]
+        )
+
         reward.reload
 
-        expect(reward.reward_vehicles).to eq(vehicles)
+        expect(reward.reward_vehicles).to eq(
+          [
+            {class_name: "Exile_Car_Offroad_Red", spawn_location: "nearby"},
+            {class_name: "Exile_Chopper_Huey_Green", spawn_location: "virtual_garage"}
+          ]
+        )
       end
     end
   end
