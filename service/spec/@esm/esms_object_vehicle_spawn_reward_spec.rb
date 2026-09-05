@@ -218,8 +218,7 @@ describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true do
       it "adds it to the flag's stored vehicles and leaves nothing in the world" do
         expect(result.first).to be(true)
 
-        # Exile stores [class, nickname] pairs, which execute_sqf! reads back as a hashmap
-        expect(stored_vehicles).to eq(vehicle_class => "Hatchback")
+        expect(stored_vehicles).to eq([[vehicle_class, "Hatchback"]])
 
         remaining = execute_sqf!(
           <<~SQF

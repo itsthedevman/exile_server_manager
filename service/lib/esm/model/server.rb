@@ -79,15 +79,7 @@ module ESM
       result = ESM::JSON.parse(response.to_s)
       return response if result.nil?
 
-      # An empty hashmap and an empty array are the same bytes on the wire, and HashMap.from resolves that ambiguity
-      # toward a hashmap. Leave it as the array
-      return result if result.blank?
-
-      # Check to see if its a hashmap
-      possible_hashmap = ESM::Arma::HashMap.from(result)
-      return result if possible_hashmap.nil?
-
-      possible_hashmap
+      result
     end
 
     #
