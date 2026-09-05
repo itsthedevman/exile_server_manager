@@ -558,6 +558,17 @@ ESMs_command_reward:
 
       The rest could not be delivered and is still waiting for you:
       %3
+  Reward_Response_Failed_Title:
+    english: "**Reward Not Delivered**"
+  Reward_Response_Failed_Description:
+    arguments:
+    - "Player mention"
+    - "Failures"
+    english: |-
+      Hey %1, none of this reward could be delivered:
+      %2
+
+      Nothing has been lost. It's still waiting for you.
   Reward_Vehicle_PinCode:
     arguments:
     - "Pin code"

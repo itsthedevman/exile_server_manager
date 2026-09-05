@@ -1198,6 +1198,38 @@ describe ESM::Command::Base do
     end
   end
 
+  describe "#check_for_pending_request!" do
+    include_context "command" do
+      let!(:command_class) { ESM::Command::Test::RequestCommand }
+    end
+
+    let(:command_args) { {target: second_user.discord_id} }
+
+    it "blocks a second run while one is outstanding" do
+      execute!(arguments: command_args)
+
+      expect { execute!(arguments: command_args) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+        expect(error.to_embed.description).to match("already have a request pending")
+      end
+    end
+
+    # Answering a request leaves the row behind with its new status. Matching on every status would let one finished
+    # request block that same command with those same arguments forever.
+    it "does not block once the request has been accepted" do
+      execute!(arguments: command_args)
+      ESM::Request.first.accept!
+
+      expect { execute!(arguments: command_args) }.not_to raise_error
+    end
+
+    it "does not block once the request has been declined" do
+      execute!(arguments: command_args)
+      ESM::Request.first.reject!
+
+      expect { execute!(arguments: command_args) }.not_to raise_error
+    end
+  end
+
   describe "#from_request" do
     include_context "command" do
       let!(:command_class) { ESM::Command::Test::RequestCommand }

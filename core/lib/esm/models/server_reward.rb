@@ -75,7 +75,8 @@ module ESM
     # This package's cooldown as a duration, recomposed from the two columns that store it. Mirrors
     # ESM::Command::Permission#cooldown_time so both sources of a cooldown length answer in the same shape.
     #
-    # @return [ActiveSupport::Duration, nil] nil when the server owner never configured a cooldown for this package
+    # @return [ActiveSupport::Duration, nil] nil when this package sets no cooldown of its own, in which case the
+    #   community's configuration for the command decides
     #
     def cooldown_time
       return if cooldown_quantity.blank? || cooldown_type.blank?

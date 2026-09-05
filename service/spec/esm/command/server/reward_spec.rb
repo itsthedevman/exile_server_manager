@@ -253,8 +253,10 @@ describe ESM::Command::Server::Reward, category: "command" do
 
       context "when there are no rewards" do
         before do
+          # The server factory seeds a reward with faker vehicles, so an empty package has to clear those too
           server.server_rewards.default.first.update!(
             reward_items: [],
+            reward_vehicles: [],
             player_poptabs: 0,
             locker_poptabs: 0,
             respect: 0
@@ -266,11 +268,100 @@ describe ESM::Command::Server::Reward, category: "command" do
         end
       end
 
+      context "when the package is on cooldown" do
+        before do
+          # Reward requires registration, so its cooldowns key on steam_uid rather than user_id
+          create(
+            :cooldown, :active,
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            command_name: "reward",
+            scope_key: "default"
+          )
+        end
+
+        include_examples "raises_check_failure" do
+          let!(:matcher) { "you're on cooldown" }
+        end
+      end
+
+      context "when choosing a reward package by id" do
+        let!(:number_of_messages) { 4 }
+
+        let!(:named_reward) do
+          create(
+            :server_reward,
+            server_id: server.id,
+            reward_id: "daily",
+            reward_items: {},
+            reward_vehicles: [],
+            player_poptabs: 55,
+            locker_poptabs: 0,
+            respect: 0,
+            cooldown_quantity: 1,
+            cooldown_type: "days"
+          )
+        end
+
+        before do
+          # The reward_id argument is only honored on servers new enough to know about packages
+          server.update!(server_version: ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)
+
+          server.server_rewards.default.first.update!(
+            reward_items: {},
+            reward_vehicles: [],
+            player_poptabs: 10,
+            locker_poptabs: 0,
+            respect: 0
+          )
+        end
+
+        it "delivers that package instead of the default" do
+          execute!(arguments: {server_id: server.server_id, reward_id: "daily"})
+          ESM.discord_bot.test_outbox.await_size(2)
+
+          accept_request
+          ESM.discord_bot.test_outbox.await_size(number_of_messages)
+
+          embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
+
+          expect(embed).not_to be(nil)
+          expect(embed.description).to match("55x")
+          expect(embed.description).not_to match("10x")
+        end
+
+        it "scopes the cooldown to that package, leaving the default claimable" do
+          execute!(arguments: {server_id: server.server_id, reward_id: "daily"})
+          ESM.discord_bot.test_outbox.await_size(2)
+
+          accept_request
+          ESM.discord_bot.test_outbox.await_size(number_of_messages)
+
+          expect(ESM::Cooldown.find_by(scope_key: "daily")).to be_present
+          expect(ESM::Cooldown.find_by(scope_key: "default")).to be_nil
+        end
+
+        # execute_command hardcodes its arguments, so this one drives execute! directly
+        context "and no package has that id" do
+          it "is expected to raise CheckFailure" do
+            expect {
+              execute!(arguments: {server_id: server.server_id, reward_id: "does_not_exist"})
+            }.to raise_error(ESM::Exception::CheckFailure) do |error|
+              expect(error.to_embed.description).to match("unable to find a reward with the ID")
+            end
+          end
+        end
+      end
+
       context "when there is an existing request" do
         before do
           # Executing the command but not handling the request will cause the request to be pending
           execute!(arguments: {server_id: server.server_id})
-          previous_command.current_cooldown.reset!
+
+          # Reward skips the lifecycle cooldown and only writes a reward-scoped one once a request is accepted, so
+          # there is usually nothing here to reset
+          previous_command.current_cooldown&.reset!
         end
 
         include_examples "raises_check_failure" do
@@ -324,6 +415,346 @@ describe ESM::Command::Server::Reward, category: "command" do
 
         include_examples "arma_discord_logging_disabled" do
           let(:message) { "`ESMs_command_reward` executed successfully" }
+        end
+      end
+
+      # Delivery is not all-or-nothing. Whatever the extension could not hand over comes back and is written onto the
+      # claim so the player can try again, and the cooldown only starts once nothing is left owing.
+      describe "settling the claim" do
+        let!(:number_of_messages) { 4 }
+        let(:vehicle_class) { "Exile_Car_Hatchback_Rusty1" }
+        let(:reward_vehicles) { [] }
+
+        let(:claim) { ESM::ServerRewardClaim.find_by(user_id: user.id, server_id: server.id) }
+        let(:reward_cooldown) { ESM::Cooldown.find_by(scope_key: "default") }
+
+        before do
+          # Vehicles are only sent to servers on MINIMUM_SERVER_VERSION or newer, and the dev server reports 2.0.0
+          server.update!(server_version: ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)
+
+          server.server_rewards.default.first.update!(
+            reward_items: [],
+            reward_vehicles:,
+            player_poptabs: 10,
+            locker_poptabs: 0,
+            respect: 0,
+            cooldown_quantity: 2,
+            cooldown_type: "hours"
+          )
+        end
+
+        context "when everything is delivered" do
+          it "drops the claim and starts the cooldown" do
+            execute_command
+
+            expect(claim).to be_nil
+
+            expect(reward_cooldown).to be_present
+            expect(reward_cooldown.cooldown_type).to eq("hours")
+            expect(reward_cooldown.cooldown_quantity).to eq(2)
+          end
+        end
+
+        context "when a vehicle needs a spawn location only the website can ask for" do
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          end
+
+          it "keeps the vehicle on the claim and does not start the cooldown" do
+            execute_command
+
+            expect(claim).to be_present
+            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+
+            # The poptabs landed, so they must not be owed a second time
+            expect(claim.player_poptabs).to eq(0)
+
+            expect(claim.attempt_count).to eq(1)
+            expect(claim.last_attempt_at).to be_present
+            failure = claim.state_details["failures"].first
+
+            expect(failure["bucket"]).to eq("vehicles")
+            expect(failure["name"]).to eq("Hatchback")
+            expect(failure["reason"]).to match("website")
+
+            # They still have an unfinished claim, so nothing should be gating a retry
+            expect(reward_cooldown).to be_nil
+          end
+
+          it "tells the player what is still owed" do
+            execute_command
+
+            embed = ESM.discord_bot.test_outbox.retrieve("Partially Delivered")&.content
+
+            expect(embed).not_to be(nil)
+            expect(embed.description).to match("Hatchback")
+          end
+        end
+
+        context "when the package sets no cooldown of its own" do
+          before do
+            create(
+              :command_configuration,
+              community: community,
+              command_name: "reward",
+              cooldown_quantity: 12,
+              cooldown_type: "hours"
+            )
+
+            server.server_rewards.default.first.update!(cooldown_quantity: nil, cooldown_type: nil)
+          end
+
+          it "falls back to the community's configuration for the command" do
+            execute_command
+
+            expect(claim).to be_nil
+
+            expect(reward_cooldown).to be_present
+            expect(reward_cooldown.cooldown_type).to eq("hours")
+            expect(reward_cooldown.cooldown_quantity).to eq(12)
+          end
+        end
+
+        context "when a claim fails a second time" do
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          end
+
+          it "counts the attempt and keeps what is still owed" do
+            execute_command
+
+            expect(claim.attempt_count).to eq(1)
+
+            # A second run finds the waiting claim rather than reissuing the package
+            execute!(arguments: {server_id: server.server_id})
+            ESM.discord_bot.test_outbox.await_size(2)
+
+            accept_request
+            ESM.discord_bot.test_outbox.await_size(number_of_messages)
+
+            claim.reload
+
+            expect(claim.attempt_count).to eq(2)
+            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+            expect(claim.player_poptabs).to eq(0)
+            expect(claim).to be_waiting
+          end
+        end
+
+        context "when different buckets fail for different reasons" do
+          # The invalid item adds the extra "Invalid Reward Item" admin log
+          let!(:number_of_messages) { 5 }
+
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          end
+
+          before do
+            server.server_rewards.default.first.update!(reward_items: {NotAThingAnyoneOwns: 1})
+          end
+
+          it "records each failure against its own bucket" do
+            execute_command
+
+            failures = claim.state_details["failures"]
+
+            expect(failures.map { |failure| failure["bucket"] }).to contain_exactly("items", "vehicles")
+
+            # The item cannot be retried into existence, so only the vehicle is still owed
+            expect(claim.items).to eq({})
+            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+          end
+        end
+
+        # A package can be nothing but items and vehicles, and both of those fail on their own, so "some of it landed"
+        # and "none of it landed" are different answers to the player
+        context "when nothing at all can be delivered" do
+          # The invalid item adds the extra "Invalid Reward Item" admin log
+          let!(:number_of_messages) { 5 }
+
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          end
+
+          before do
+            server.server_rewards.default.first.update!(
+              reward_items: {NotAThingAnyoneOwns: 1},
+              player_poptabs: 0
+            )
+          end
+
+          it "does not read back an empty receipt" do
+            execute_command
+
+            embed = ESM.discord_bot.test_outbox.retrieve("none of this reward")&.content
+
+            expect(embed).not_to be(nil)
+            expect(embed.description).not_to match("here's what you just received")
+            expect(embed.description).to match("Hatchback")
+            expect(embed.color).to eq(ESM::Color::Toast::RED)
+          end
+
+          it "keeps the claim and counts the attempt" do
+            execute_command
+
+            expect(claim).to be_present
+            expect(claim.attempt_count).to eq(1)
+            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+          end
+        end
+
+        context "when a claim runs out of attempts" do
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          end
+
+          # One short of the cap, standing in for a player who has already tried and failed that many times
+          let!(:pending_claim) do
+            ESM::ServerRewardClaim.create!(
+              server_id: server.id,
+              user_id: user.id,
+              player_poptabs: 0,
+              locker_poptabs: 0,
+              respect: 0,
+              items: {},
+              vehicles: reward_vehicles,
+              state: :waiting,
+              attempt_count: ESM::Command::Server::Reward::MAX_DELIVERY_ATTEMPTS - 1
+            )
+          end
+
+          it "stops accepting attempts but keeps what is owed" do
+            execute_command
+
+            claim = pending_claim.reload
+
+            expect(claim).to be_failed
+            expect(claim.attempt_count).to eq(ESM::Command::Server::Reward::MAX_DELIVERY_ATTEMPTS)
+            expect(claim.vehicles.first["class_name"]).to eq(vehicle_class)
+          end
+
+          it "sends them somewhere that can finish it" do
+            execute_command
+
+            expect {
+              execute!(arguments: {server_id: server.server_id})
+            }.to raise_error(ESM::Exception::CheckFailure) do |error|
+              expect(error.to_embed.description).to match("hasn't gone through after 5 attempts")
+            end
+          end
+        end
+
+        context "when the player already has a claim waiting" do
+          let(:claim_server) { server }
+
+          let!(:pending_claim) do
+            ESM::ServerRewardClaim.create!(
+              server_id: claim_server.id,
+              user_id: user.id,
+              player_poptabs: 25,
+              locker_poptabs: 0,
+              respect: 0,
+              items: {},
+              vehicles: [],
+              state: :waiting
+            )
+          end
+
+          it "delivers what is owed rather than issuing the package again" do
+            execute_command
+
+            embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
+
+            expect(embed).not_to be(nil)
+            expect(embed.description).to match("25x")
+
+            # The package's own 10 poptabs must not ride along with the claim
+            expect(embed.description).not_to match("10x")
+
+            expect(claim).to be_nil
+          end
+
+          it "says the pending claim is what they are confirming" do
+            execute!(arguments: {server_id: server.server_id})
+            ESM.discord_bot.test_outbox.await_size(2)
+
+            embed = ESM.discord_bot.test_outbox.retrieve("pending rewards")&.content
+
+            expect(embed).not_to be(nil)
+            expect(embed.description).to match("25")
+          end
+
+          context "and the reward package is on cooldown" do
+            before do
+              create(
+                :cooldown, :active,
+                steam_uid: user.steam_uid,
+                community_id: community.id,
+                server_id: server.id,
+                command_name: "reward",
+                scope_key: "default"
+              )
+            end
+
+            # The cooldown gates issuing a new package. Finishing one the player is already owed is not issuing.
+            it "still delivers it" do
+              execute_command
+
+              embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
+
+              expect(embed).not_to be(nil)
+              expect(claim).to be_nil
+            end
+          end
+
+          context "and the claim belongs to a different server" do
+            let(:claim_server) { create(:server, community_id: community.id) }
+
+            it "is ignored and the package is issued for this server" do
+              execute_command
+
+              embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
+
+              expect(embed).not_to be(nil)
+              expect(embed.description).to match("10x")
+              expect(embed.description).not_to match("25x")
+
+              # The other server still owes them
+              expect(pending_claim.reload).to be_present
+            end
+          end
+        end
+
+        context "when a vehicle spawns nearby" do
+          let(:reward_vehicles) do
+            [{class_name: vehicle_class, spawn_location: "nearby"}]
+          end
+
+          # Test players spawn at [0, 0, 0] because exile_player's position columns default to zero, and that corner is
+          # ocean. A nearby spawn searches 250m for somewhere to put the vehicle, so it needs the player on land.
+          before do
+            execute_sqf!(
+              <<~SQF
+                private _playerObject = objectFromNetId "#{user.net_id}";
+                private _position = [getPosATL _playerObject, 0, 5000, 15, 0, 0.3, 0] call BIS_fnc_findSafePos;
+
+                _playerObject setPosATL [_position select 0, _position select 1, 0];
+                true
+              SQF
+            )
+          end
+
+          it "delivers it with a pin and settles the claim" do
+            execute_command
+
+            embed = ESM.discord_bot.test_outbox.retrieve("here's what you just received")&.content
+
+            expect(embed).not_to be(nil)
+            expect(embed.description).to match(/Hatchback \(pin `\d{4}`\)/)
+
+            expect(claim).to be_nil
+            expect(reward_cooldown).to be_present
+          end
         end
       end
     end

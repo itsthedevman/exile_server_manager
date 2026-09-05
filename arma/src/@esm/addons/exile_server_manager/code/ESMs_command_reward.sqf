@@ -161,7 +161,7 @@ try
 				] call ESMs_system_network_discord_log;
 
 				// A misconfigured classname cannot be retried into existence, so it is dropped rather than held.
-				_failures pushBack [_classname, localize!("Reward_Failure_InvalidClassName")];
+				_failures pushBack ["items", _classname, localize!("Reward_Failure_InvalidClassName")];
 
 				continue;
 			};
@@ -247,7 +247,7 @@ try
 				private _remaining = _quantity - _quantityAdded;
 
 				_undeliveredItems set [_classname, _remaining];
-				_failures pushBack [_displayName, localize!("Reward_Failure_NoRoom", _remaining)];
+				_failures pushBack ["items", _displayName, localize!("Reward_Failure_NoRoom", _remaining)];
 			};
 		}
 		forEach _rewardItems;
@@ -293,7 +293,7 @@ try
 				default { localize!("Reward_Failure_Unknown") };
 			};
 
-			_failures pushBack [_displayName, _reasonText];
+			_failures pushBack ["vehicles", _displayName, _reasonText];
 		}
 		forEach _rewardVehicles;
 	};
@@ -309,31 +309,47 @@ try
 
 	_receiptText = _receiptText joinString "<br/>";
 
+	// The bucket rides along for the bot to store against the claim, but the player only needs the name and the reason
 	private _failureText = [
 		_failures,
-		{ format["- %1: %2", _this select 0, _this select 1] }
+		{ format["- %1: %2", _this select 1, _this select 2] }
 	] call ESMs_util_array_map;
 
 	_failureText = _failureText joinString "<br/>";
 
-	private _partial = !empty?(_failures);
-
-	private _description = if (_partial) then
+	// A package can be entirely items and vehicles, and both of those can fail on their own, so "something failed" and
+	// "nothing arrived" are different answers. Reading a receipt of nothing back to the player is the one to avoid.
+	private _state = "success";
+	if !(empty?(_failures)) then
 	{
-		localize!("Reward_Response_Partial_Description", _playerMention, _receiptText, _failureText)
-	}
-	else
-	{
-		localize!("Reward_Response_Description", _playerMention, _receiptText)
+		_state = if (empty?(_receipt)) then { "failure" } else { "partial" };
 	};
 
-	private _title = if (_partial) then
+	private _title = "";
+	private _description = "";
+	private _color = "green";
+
+	switch (_state) do
 	{
-		localize!("Reward_Response_Partial_Title")
-	}
-	else
-	{
-		localize!("Reward_Response_Title")
+		case "partial":
+		{
+			_title = localize!("Reward_Response_Partial_Title");
+			_description = localize!("Reward_Response_Partial_Description", _playerMention, _receiptText, _failureText);
+			_color = "yellow";
+		};
+
+		case "failure":
+		{
+			_title = localize!("Reward_Response_Failed_Title");
+			_description = localize!("Reward_Response_Failed_Description", _playerMention, _failureText);
+			_color = "red";
+		};
+
+		default
+		{
+			_title = localize!("Reward_Response_Title");
+			_description = localize!("Reward_Response_Description", _playerMention, _receiptText);
+		};
 	};
 
 	[
@@ -341,14 +357,14 @@ try
 		[
 			_id,
 			[
-				["state", if (_partial) then { "partial" } else { "success" }],
+				["state", _state],
 				[
 					"embed",
 					[
 						["author", localize!("ResponseAuthor", ESM_ServerID)],
 						["title", _title],
 						["description", _description],
-						["color", if (_partial) then { "yellow" } else { "green" }]
+						["color", _color]
 					]
 				],
 				["undelivered_items", _undeliveredItems],
@@ -363,7 +379,7 @@ try
 			[
 				["title", localize!("Reward_Log_Title")],
 				["description", localize!("Reward_Log_Description", _receiptText)],
-				["color", if (_partial) then { "yellow" } else { "green" }],
+				["color", _color],
 				["fields", [
 					[localize!("Player"), _playerMetadata, true]
 				]]

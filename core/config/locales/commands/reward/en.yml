@@ -17,6 +17,10 @@ en:
         waiting_for_reply: 'Hey %{user}, I am already processing a reward request for you. If you would like to start over, just reply back with "cancel" and then you may use this command'
         incorrect_reward_id: "I'm sorry %{user}, I was unable to find a reward with the ID of `%{reward_id}`"
         no_reward_items: "I'm sorry %{user}, the selected reward package is not available at this time"
+        claim_exhausted: |-
+          I'm sorry %{user}, this reward still hasn't gone through after %{attempts} attempts.
+
+          Nothing is lost. Head to the website to finish claiming it, or reach out to your server's admins.
       request_descriptions:
         reward_base: |-
           Hey there, %{user}!

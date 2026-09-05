@@ -6,6 +6,10 @@ module ESM
       class Reward < ApplicationCommand
         MINIMUM_SERVER_VERSION = "2.1.0"
 
+        # Nothing retries on its own, so every attempt is the player running the command again. Reaching this many
+        # means they have hit the same wall five times, which is no longer a transient one they can wait out.
+        MAX_DELIVERY_ATTEMPTS = 5
+
         #################################
         #
         # Arguments (required first, then order matters)
@@ -103,7 +107,7 @@ module ESM
         def server_reward
           @server_reward ||=
             if arguments.reward_id.present? && target_server.version?(MINIMUM_SERVER_VERSION)
-              target_server.server_rewards.find_by(reward_id:)
+              target_server.server_rewards.find_by(reward_id: arguments.reward_id)
             else
               target_server.server_rewards.default.first
             end
@@ -193,9 +197,17 @@ module ESM
             # Ensure they didn't claim their reward via the website
             check_for_cooldown!(scope_key: claim.reward_id)
             check_for_reward_items!(claim)
+          else
+            check_for_exhausted_claim!(claim)
           end
 
           claim
+        end
+
+        def check_for_exhausted_claim!(claim)
+          return unless claim.failed?
+
+          raise_error!(:claim_exhausted, user: current_user, attempts: MAX_DELIVERY_ATTEMPTS)
         end
 
         def create_claim(reward)
@@ -231,10 +243,16 @@ module ESM
           undelivered_vehicles = result.undelivered_vehicles.presence || []
 
           if undelivered_items.blank? && undelivered_vehicles.blank?
-            create_or_update_cooldown(scope_key: server_reward.reward_id, duration: server_reward.cooldown_time)
+            # A package sets its own cooldown; one that doesn't falls back to whatever the community configured for
+            # the command itself
+            duration = server_reward.cooldown_time || cooldown_time
+
+            create_or_update_cooldown(scope_key: server_reward.reward_id, duration:)
 
             return claim.destroy!
           end
+
+          attempt_count = claim.attempt_count + 1
 
           # No cooldown on a partial. The player still has an unfinished claim, and the cooldown gates issuing a new
           # package, not finishing this one.
@@ -244,15 +262,17 @@ module ESM
             respect: 0,
             items: undelivered_items,
             vehicles: undelivered_vehicles,
-            state: :waiting,
+            state: (attempt_count >= MAX_DELIVERY_ATTEMPTS) ? :failed : :waiting,
             state_details: {failures: failure_details(result)},
-            attempt_count: claim.attempt_count + 1,
+            attempt_count:,
             last_attempt_at: Time.current
           )
         end
 
+        # The bucket is what makes these actionable later: an admin granting vehicles onto a claim clears the vehicle
+        # reasons and leaves the item ones alone, which needs to know which is which.
         def failure_details(result)
-          (result.failures || []).map { |name, reason| {name:, reason:} }
+          (result.failures || []).map { |bucket, name, reason| {bucket:, name:, reason:} }
         end
       end
     end

@@ -27,7 +27,9 @@ module ESM
     #   spawn_location <String> Valid options: "nearby", "virtual_garage", "player_decides"
     attribute :vehicles, :json, default: []
 
-    enum :state, {waiting: "waiting", in_flight: "in_flight"}
+    # failed is a stop, not a loss. The claim still owes the player; they have just tried enough times that the next
+    # move belongs to someone who can see why. Admins clear it back to waiting from the website.
+    enum :state, {waiting: "waiting", in_flight: "in_flight", failed: "failed"}
     attribute :state_details, :json, default: {}
     attribute :attempt_count, :integer, default: 0
     attribute :last_attempt_at, :datetime
