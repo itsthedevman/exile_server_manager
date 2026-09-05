@@ -61,7 +61,7 @@ module ESM
     has_many :user_steam_uid_history, dependent: :nullify
     has_one :user_steam_data, -> { order(:user_id) }, dependent: :destroy
 
-    has_one :server_reward_claim, dependent: :destroy
+    has_many :server_reward_claims, dependent: :destroy
 
     # =============================================================================
     # VALIDATIONS
