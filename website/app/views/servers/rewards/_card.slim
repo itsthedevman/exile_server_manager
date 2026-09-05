@@ -1,0 +1,21 @@
+/ locals: current_server, reward_packages, reward_claim
+.col-12.col-xl-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-gift.text-success.me-2
+        | Rewards
+
+    .card-body.d-flex.flex-column
+      - if reward_claim
+        = render "servers/rewards/claim", current_server:, reward_claim:
+        hr.my-3
+
+      - if reward_packages.any?
+        .d-flex.flex-column.gap-3
+          - reward_packages.each do |package|
+            = render "servers/rewards/package", current_server:, package:, blocked: reward_claim.present?
+      - else
+        .text-center.text-muted.py-4
+          i.bi.bi-box.display-6.d-block.mb-2
+          | Nothing is on offer here yet.

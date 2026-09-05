@@ -3,7 +3,7 @@
 class ServersController < AuthenticatedController
   include Commands
 
-  COMMAND_CARDS = %w[me gamble]
+  COMMAND_CARDS = %w[me gamble reward]
 
   # Not all cards - info is the player lookup bar. What these share is that each one puts something in the Admin
   # tools section, so any of them is reason enough to render the section at all.

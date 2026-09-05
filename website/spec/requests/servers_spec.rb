@@ -53,6 +53,49 @@ RSpec.describe "Servers", type: :request do
       expect(response.body).not_to include("Admin tools")
       expect(response.body).not_to include("players/lookup")
     end
+
+    context "when the player can be rewarded" do
+      before do
+        allow_only("reward")
+
+        server.server_rewards.default.first.update!(name: "Daily Drop", player_poptabs: 5_000, respect: 100)
+      end
+
+      it "lists what is on offer and whether it can be taken" do
+        get "/servers/#{server.public_id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Daily Drop")
+        expect(response.body).to include("5,000 poptabs · 100 respect")
+        expect(response.body).to include("Available")
+      end
+
+      # The cap is one claim per player per server, so a package cannot be taken until the last one is finished. The
+      # page has to say why rather than leaving a button that would be refused.
+      it "shows what is still owed and closes the packages until it is finished" do
+        ESM::ServerRewardClaim.create!(server_id: server.id, user_id: user.id, player_poptabs: 25)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Rewards waiting for you")
+        expect(response.body).to include("Finish your claim first")
+      end
+
+      it "names what stopped the last attempt" do
+        ESM::ServerRewardClaim.create!(
+          server_id: server.id,
+          user_id: user.id,
+          player_poptabs: 25,
+          state: :failed,
+          state_details: {failures: [{bucket: "vehicles", name: "Hatchback", reason: "No room to spawn here"}]}
+        )
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Hatchback: No room to spawn here")
+        expect(response.body).to include("Needs an admin")
+      end
+    end
   end
 
   describe "GET live" do

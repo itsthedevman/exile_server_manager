@@ -18,6 +18,12 @@
           - if command_accessible?("gamble")
             = render "servers/gambling/card", current_server:, gamble_stat: gamble_stat_for(current_server)
 
+          / Rewards
+          - if command_accessible?("reward")
+            = render "servers/rewards/card", current_server:, \
+              reward_packages: reward_packages_for(current_server), \
+              reward_claim: reward_claim_for(current_server)
+
       - if admin_tools_available
         / Admin tools — each gates on its command being enabled and the user's allowlist
         .mt-4

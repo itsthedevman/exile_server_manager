@@ -1,0 +1,21 @@
+/ locals: current_server, package, blocked
+.d-flex.align-items-start.justify-content-between.gap-3
+  .flex-grow-1.min-w-0
+    .fw-medium.text-truncate = reward_package_name(package)
+    .text-muted.small = reward_contents_summary(package.contents)
+
+    - if package.contents.vehicles.present?
+      .mt-1
+        - package.contents.vehicles.each do |vehicle|
+          .small.text-muted
+            i.bi.bi-truck.me-1
+            = vehicle.display_name
+            span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
+
+  .flex-shrink-0.text-end
+    - if blocked
+      span.badge.text-bg-secondary Finish your claim first
+    - elsif reward_package_available?(current_server, package)
+      span.badge.text-bg-success = reward_availability_label(current_server, package)
+    - else
+      span.badge.text-bg-secondary = reward_availability_label(current_server, package)

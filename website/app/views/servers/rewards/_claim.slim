@@ -1,0 +1,36 @@
+/ locals: current_server, reward_claim
+.border.rounded.p-3.bg-body-tertiary
+  .d-flex.align-items-center.justify-content-between.gap-2.mb-2
+    .fw-medium
+      i.bi.bi-inbox.text-warning.me-2
+      | Rewards waiting for you
+    - if reward_claim.failed?
+      span.badge.text-bg-danger Needs an admin
+
+  .text-muted.small = reward_contents_summary(reward_claim.contents)
+
+  - if reward_claim.contents.items.present?
+    details.mt-2
+      summary.small.text-muted = pluralize(reward_claim.contents.items.size, "item")
+      .mt-1
+        - reward_claim.contents.items.each do |item|
+          .small = "#{item.quantity}x #{item.display_name}"
+
+  - if reward_claim.contents.vehicles.present?
+    .mt-2
+      - reward_claim.contents.vehicles.each do |vehicle|
+        .small
+          i.bi.bi-truck.me-1
+          = vehicle.display_name
+          span.text-muted.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
+
+  - if reward_claim_failures(reward_claim).any?
+    .mt-2
+      - reward_claim_failures(reward_claim).each do |failure|
+        .small.text-danger
+          i.bi.bi-exclamation-triangle.me-1
+          = failure
+
+  - if reward_claim.failed?
+    .small.text-muted.mt-2
+      | Nothing is lost. Your server's admins can release this so you can try again.
