@@ -263,7 +263,7 @@ try
 			// worth skipping rather than aborting the whole package over.
 			if !(type?(_vehicle, HASH)) then { continue; };
 
-			([_playerObject, _vehicle] call ESMs_object_vehicle_spawnReward) params [
+			([_playerObject, _playerUID, _vehicle] call ESMs_object_vehicle_spawnReward) params [
 				"_delivered",
 				"_reason",
 				"_displayName",

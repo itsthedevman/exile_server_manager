@@ -9,6 +9,7 @@ Description:
 
 Parameters:
 	_playerObject	- The player receiving the vehicle. [Object]
+	_playerUID		- The player's steam UID. [String]
 	_vehicle		- The vehicle to deliver. [HashMap]
 						class_name		- The vehicle's class name. [String]
 						spawn_location	- "nearby" or "virtual_garage". [String]
@@ -27,8 +28,12 @@ Returns:
 Examples:
 	(begin example)
 
-	[_playerObject, createHashMapFromArray [["class_name", "Exile_Car_Hatchback_Rusty1"], ["spawn_location", "nearby"]]]
-		call ESMs_object_vehicle_spawnReward;
+	[
+		_playerObject,
+		getPlayerUID _playerObject,
+		createHashMapFromArray [["class_name", "Exile_Car_Hatchback_Rusty1"], ["spawn_location", "nearby"]]
+	]
+	call ESMs_object_vehicle_spawnReward;
 
 	(end)
 
@@ -42,7 +47,8 @@ Author:
 ---------------------------------------------------------------------------- */
 
 private _playerObject = _this select 0;
-private _vehicle = _this select 1;
+private _playerUID = _this select 1;
+private _vehicle = _this select 2;
 
 private _className = get!(_vehicle, "class_name", "");
 private _spawnLocation = get!(_vehicle, "spawn_location", "nearby");
@@ -125,7 +131,7 @@ try
 	private _vehicleObject = [_className, _spawnPosition, random 360, _usePositionATL, _pinCode]
 		call ExileServer_object_vehicle_createPersistentVehicle;
 
-	_vehicleObject setVariable ["ExileOwnerUID", getPlayerUID _playerObject];
+	_vehicleObject setVariable ["ExileOwnerUID", _playerUID];
 	_vehicleObject setVariable ["ExileIsLocked", 0];
 	_vehicleObject lock 0;
 
