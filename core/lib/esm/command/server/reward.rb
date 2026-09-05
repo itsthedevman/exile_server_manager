@@ -110,7 +110,7 @@ module ESM
         end
 
         def reward_claim
-          current_user.server_reward_claim
+          current_user.server_reward_claims.find_by(server_id: target_server.id)
         end
 
         def check_for_reward!(reward)
@@ -133,32 +133,36 @@ module ESM
               "reward_base"
             end
 
+          contents = claim.contents
+
           base = [
             I18n.t(
               "commands.reward.request_descriptions.#{base_key}",
               user: current_user.mention,
-              server: target_server.server_id
+              server_id: target_server.server_id,
+              # Only reward_base names the package. A claim has no reward_id and its copy does not ask for one.
+              reward_id: claim.try(:reward_id)
             )
           ]
 
-          if (value = claim.player_poptabs)
+          if (value = contents.player_poptabs).positive?
             base << I18n.t("commands.reward.request_descriptions.player_poptabs", value:)
           end
 
-          if (value = claim.locker_poptabs)
+          if (value = contents.locker_poptabs).positive?
             base << I18n.t("commands.reward.request_descriptions.locker_poptabs", value:)
           end
 
-          if (value = claim.respect)
+          if (value = contents.respect).positive?
             base << I18n.t("commands.reward.request_descriptions.respect", value:)
           end
 
-          if (value = claim.items)
+          if (value = contents.items).present?
             value = value.join_map("\n") { |item| "#{item.quantity}x - #{item.display_name}" }
             base << I18n.t("commands.reward.request_descriptions.items", value:)
           end
 
-          if (value = claim.vehicles)
+          if (value = contents.vehicles).present?
             value = value.join_map("\n") do |vehicle|
               location =
                 case vehicle.spawn_location
@@ -173,7 +177,7 @@ module ESM
               "#{vehicle.display_name} - #{location}"
             end
 
-            base << I18n.t("commands.reward.request_description.vehicles", value:)
+            base << I18n.t("commands.reward.request_descriptions.vehicles", value:)
           end
 
           base.join("\n")
