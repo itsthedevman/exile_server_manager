@@ -185,22 +185,49 @@ module RewardsHelper
   end
 
   ##
-  # The one-line summary of what a package or claim holds, as "5,000 poptabs · 100 respect · 3 items".
+  # What a package or claim holds, one line per thing, the way a receipt lists them.
+  #
+  # Replaces a one-line summary that named counts and then repeated itself. "3 items" sat above a list of the same
+  # three, so the half that actually answers "what am I getting" was the half folded away.
   #
   # @param contents [Datum] a package's or claim's #contents
+  # @param include_vehicles [Boolean] false when the delivery form below is about to name them anyway, since it has
+  #   to say which vehicle each pin belongs to
   #
-  # @return [String]
+  # @return [Array<Datum>] each carrying #label and #value
   #
-  def reward_contents_summary(contents)
-    parts = []
+  def reward_receipt_lines(contents, include_vehicles: true)
+    currencies = {
+      "Poptabs" => contents.player_poptabs,
+      "Locker" => contents.locker_poptabs,
+      "Respect" => contents.respect
+    }
 
-    parts << "#{number_with_delimiter(contents.player_poptabs)} poptabs" if contents.player_poptabs.positive?
-    parts << "#{number_with_delimiter(contents.locker_poptabs)} locker" if contents.locker_poptabs.positive?
-    parts << "#{number_with_delimiter(contents.respect)} respect" if contents.respect.positive?
-    parts << pluralize(contents.items.size, "item") if contents.items.present?
-    parts << pluralize(contents.vehicles.size, "vehicle") if contents.vehicles.present?
+    lines = currencies.filter_map do |label, amount|
+      {label:, value: number_with_delimiter(amount)} if amount.positive?
+    end
 
-    parts.join(" · ")
+    lines += contents.items.map { |item| {label: item.display_name, value: "x#{item.quantity}"} }
+
+    if include_vehicles
+      lines += contents.vehicles.map do |vehicle|
+        {label: vehicle.display_name, value: reward_vehicle_destination(vehicle)}
+      end
+    end
+
+    lines.map(&:to_datum)
+  end
+
+  ##
+  # Whether this claim can be handed over right now, as opposed to waiting on an admin or on the server coming back.
+  #
+  # @param server [ESM::Server]
+  # @param claim [ESM::ServerRewardClaim]
+  #
+  # @return [Boolean]
+  #
+  def reward_claim_deliverable?(server, claim)
+    !claim.failed? && server.connected?
   end
 
   ##
@@ -236,6 +263,21 @@ module RewardsHelper
   end
 
   ##
+  # Where a vehicle is going, when that is not the player's to decide.
+  #
+  # Nil for one they are about to be asked about, since the control directly underneath is the answer.
+  #
+  # @param vehicle [Datum] one entry from #contents
+  #
+  # @return [String, nil]
+  #
+  def reward_vehicle_fixed_destination(vehicle)
+    return if vehicle.spawn_location == "player_decides"
+
+    reward_vehicle_destination(vehicle)
+  end
+
+  ##
   # Whether this vehicle's delivery form needs a territory picked for it.
   #
   # A vehicle already bound for a garage needs one, and so does one whose destination the player has yet to choose,
@@ -247,23 +289,6 @@ module RewardsHelper
   #
   def reward_vehicle_needs_territory?(vehicle)
     ["virtual_garage", "player_decides"].include?(vehicle.spawn_location)
-  end
-
-  ##
-  # The block holding a set of vehicle fields.
-  #
-  # Under a package it is set in and given its own ground, so the questions read as belonging to the offer above them
-  # rather than as another entry in the list. Inside a claim it gets neither: the claim box is already a panel, and
-  # there is nothing above the fields there for them to belong to.
-  #
-  # @param grouped [Boolean] whether these fields sit under something they answer for
-  #
-  # @return [String]
-  #
-  def reward_vehicle_group_classes(grouped)
-    return "mt-2 ms-3 p-2 rounded bg-body-secondary" if grouped
-
-    "mt-2"
   end
 
   ##

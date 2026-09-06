@@ -2,10 +2,7 @@
 = form_with url: server_reward_path(current_server.public_id), method: :post, class: "mt-3"
   = hidden_field_tag :idempotency_key, SecureRandom.uuid
 
-  / Not set in like a package's is. The claim box is already its own panel, and there is nothing above these fields
-  / here for them to belong to.
-  = render "servers/rewards/vehicle_fields", current_server:, \
-    vehicles: reward_claim.contents.vehicles, scope: "claim", grouped: false
+  = render "servers/rewards/vehicle_fields", current_server:, vehicles: reward_claim.contents.vehicles, scope: "claim"
 
   .d-grid.mt-3
     = submit_tag "Deliver", name: nil, class: "btn btn-success btn-sm"

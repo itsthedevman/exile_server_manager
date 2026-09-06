@@ -116,7 +116,12 @@ RSpec.describe "Servers", type: :request do
       before do
         allow_only("reward")
 
-        server.server_rewards.default.first.update!(name: "Daily Drop", player_poptabs: 5_000, respect: 100)
+        server.server_rewards.default.first.update!(
+          name: "Daily Drop",
+          player_poptabs: 5_000,
+          respect: 100,
+          reward_items: {Exile_Item_EMRE: 2}
+        )
       end
 
       it "shows the default package" do
@@ -124,7 +129,15 @@ RSpec.describe "Servers", type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Daily Drop")
-        expect(response.body).to include("5,000 poptabs · 100 respect")
+        expect(response.body).to include("Poptabs")
+        expect(response.body).to include("5,000")
+      end
+
+      # A count is not an answer to "what am I getting". The package reads as a receipt now, one line per thing.
+      it "names the items a package holds" do
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("x2")
       end
 
       # Only the default is ever on the page. Naming the others would put every coupon an owner runs in plain sight,

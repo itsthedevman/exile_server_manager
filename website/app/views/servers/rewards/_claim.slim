@@ -1,20 +1,14 @@
 / locals: current_server, reward_claim
 .border.rounded.p-3.bg-body-tertiary
-  .d-flex.align-items-center.justify-content-between.gap-2.mb-2
+  .d-flex.align-items-center.justify-content-between.gap-2
     .fw-medium
       i.bi.bi-inbox.text-warning.me-2
       | Rewards waiting for you
     - if reward_claim.failed?
       span.badge.text-bg-danger Needs an admin
 
-  .text-muted.small = reward_contents_summary(reward_claim.contents)
-
-  - if reward_claim.contents.items.present?
-    details.mt-2
-      summary.small.text-muted = pluralize(reward_claim.contents.items.size, "item")
-      .mt-1
-        - reward_claim.contents.items.each do |item|
-          .small = "#{item.quantity}x #{item.display_name}"
+  = render "servers/rewards/receipt", contents: reward_claim.contents, \
+    include_vehicles: !reward_claim_deliverable?(current_server, reward_claim)
 
   - if reward_claim_failures(reward_claim).any?
     .mt-2
@@ -36,4 +30,3 @@
 / The packages and the code box are gone off the page while this is here, so something has to say where they went
 .small.text-muted.mt-2
   | You can only redeem a new reward once this one is delivered.
-

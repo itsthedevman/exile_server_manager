@@ -107,24 +107,35 @@ RSpec.describe RewardsHelper, type: :helper do
     end
   end
 
-  describe "#reward_contents_summary" do
-    it "reads as one line of what is in the package" do
+  describe "#reward_receipt_lines" do
+    before do
       package.update!(
         player_poptabs: 5_000,
         locker_poptabs: 0,
         respect: 100,
-        reward_items: {Exile_Item_Knife: 1, Exile_Item_PlasticBottleFreshWater: 5},
+        reward_items: {Exile_Item_Knife: 1},
         reward_vehicles: [{class_name: "Exile_Car_Hatchback_Rusty1", spawn_location: "nearby"}]
       )
-
-      expect(helper.reward_contents_summary(package.contents))
-        .to eq("5,000 poptabs · 100 respect · 2 items · 1 vehicle")
     end
 
-    it "leaves out what the package does not give" do
-      package.update!(player_poptabs: 10, locker_poptabs: 0, respect: 0, reward_items: {}, reward_vehicles: [])
+    it "itemises everything the package holds, and nothing it does not" do
+      lines = helper.reward_receipt_lines(package.contents).map { |line| [line.label, line.value] }
 
-      expect(helper.reward_contents_summary(package.contents)).to eq("10 poptabs")
+      expect(lines).to eq(
+        [
+          ["Poptabs", "5,000"],
+          ["Respect", "100"],
+          ["Knife", "x1"],
+          ["Hatchback", "spawns next to you"]
+        ]
+      )
+    end
+
+    # The delivery form under it names every vehicle already, since it has to say which pin belongs to which
+    it "leaves the vehicles out when asked to" do
+      lines = helper.reward_receipt_lines(package.contents, include_vehicles: false)
+
+      expect(lines.map(&:label)).to eq(["Poptabs", "Respect", "Knife"])
     end
   end
 

@@ -1,14 +1,18 @@
-/ locals: current_server, vehicles, scope, grouped
-div class=reward_vehicle_group_classes(grouped)
+/ locals: current_server, vehicles, scope
+.mt-2
   - vehicles.each_with_index do |vehicle, index|
     div class=reward_vehicle_row_classes(index) data-controller="reward-vehicle"
       / Every vehicle has to reach the command, including one whose fields are all switched off. The command pairs
       / choices with vehicles by position and refuses the whole delivery when the two counts disagree.
       = hidden_field_tag "vehicles[#{index}][position]", index, id: "vehicles_#{scope}_#{index}_position"
 
-      .small.fw-medium
-        i.bi.bi-truck.me-1
-        = vehicle.display_name
+      .d-flex.justify-content-between.gap-3.small
+        span.text-truncate
+          i.bi.bi-truck.me-1
+          = vehicle.display_name
+
+        - if reward_vehicle_fixed_destination(vehicle)
+          span.flex-shrink-0.text-muted = reward_vehicle_fixed_destination(vehicle)
 
       - if reward_vehicle_needs_territory?(vehicle)
         .row.g-2.mt-1

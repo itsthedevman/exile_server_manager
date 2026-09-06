@@ -1,6 +1,4 @@
 / locals: current_server, package
-/ What is in a package is an offer, so it is only spelled out while the offer stands. On cooldown it collapses to the
-/ one thing still worth knowing, which is when it comes back.
 div id=reward_package_dom_id(package)
   - if !reward_package_available?(current_server, package)
     .d-flex.align-items-center.justify-content-between.gap-3.text-muted.small
@@ -11,12 +9,12 @@ div id=reward_package_dom_id(package)
       = hidden_field_tag :idempotency_key, SecureRandom.uuid
       = hidden_field_tag :reward_id, package.reward_id
 
-      .d-flex.align-items-start.justify-content-between.gap-3
-        .flex-grow-1.min-w-0
-          .fw-medium.text-truncate = reward_package_name(package)
-          .text-muted.small = reward_contents_summary(package.contents)
+      / The button sits on the name's line rather than beside the whole block, so the receipt below it gets the full
+      / width instead of wrapping around a button.
+      .d-flex.align-items-center.justify-content-between.gap-3
+        .fw-medium.text-truncate.flex-grow-1.min-w-0 = reward_package_name(package)
 
-        .flex-shrink-0.text-end.d-flex.align-items-center.gap-2
+        .flex-shrink-0.d-flex.align-items-center.gap-2
           - if reward_uses_remaining_label(current_server, package)
             span.badge.text-bg-secondary = reward_uses_remaining_label(current_server, package)
 
@@ -25,16 +23,11 @@ div id=reward_package_dom_id(package)
           - else
             span.badge.text-bg-secondary Server offline
 
+      = render "servers/rewards/receipt", contents: package.contents, \
+        include_vehicles: !current_server.connected?
+
       / Asked before the claim exists, so a redemption with vehicles in it gets one clean delivery rather than losing
       / them to a first attempt that had nowhere to put them.
-      - if package.contents.vehicles.present?
-        - if current_server.connected?
-          = render "servers/rewards/vehicle_fields", current_server:, \
-            vehicles: package.contents.vehicles, scope: reward_package_key(package), grouped: true
-        - else
-          .mt-1
-            - package.contents.vehicles.each do |vehicle|
-              .small.text-muted
-                i.bi.bi-truck.me-1
-                = vehicle.display_name
-                span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
+      - if package.contents.vehicles.present? && current_server.connected?
+        = render "servers/rewards/vehicle_fields", current_server:, \
+          vehicles: package.contents.vehicles, scope: reward_package_key(package)
