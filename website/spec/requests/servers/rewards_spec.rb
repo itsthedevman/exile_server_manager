@@ -111,6 +111,73 @@ RSpec.describe "Servers::Rewards", type: :request do
     end
   end
 
+  describe "POST /reward/lookup" do
+    def lookup(reward_id)
+      post "/servers/#{server.public_id}/reward/lookup", params: {reward_id:}, as: :turbo_stream
+    end
+
+    def create_package(reward_id, **attributes)
+      ESM::ServerReward.create!(
+        {server:, reward_id:, enabled: true, name: reward_id.titleize, player_poptabs: 5_000}.merge(attributes)
+      )
+    end
+
+    it "puts the package on the page without claiming anything" do
+      create_package("vip")
+
+      expect { lookup("vip") }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("reward_package_vip")
+      expect(response.body).to include("Vip")
+    end
+
+    # A code that names nothing and a code that names something switched off answer the same way. Telling a player
+    # which codes exist but are disabled is the one thing a code is meant to prevent.
+    it "says nothing matches, for a code that names nothing" do
+      lookup("nope")
+
+      expect(response.body).to include("No reward matches that code")
+    end
+
+    it "says nothing matches, for a package the owner has switched off" do
+      create_package("vip", enabled: false)
+
+      lookup("vip")
+
+      expect(response.body).to include("No reward matches that code")
+    end
+
+    # The row never reaches the page, so there is nothing to hang a badge on. The reason goes under the input instead.
+    it "refuses a package the player is still on cooldown for" do
+      create_package("vip")
+
+      create(
+        :cooldown, :active,
+        community:, server:, command_name: "reward", scope_key: "vip", steam_uid: user.steam_uid
+      )
+
+      lookup("vip")
+
+      expect(response.body).not_to include("reward_package_vip")
+      expect(response.body).to include("That code is on cooldown")
+    end
+
+    it "says a usage-count package is spent rather than counting down to nothing" do
+      create_package("vip")
+
+      create(
+        :cooldown, :active,
+        community:, server:, command_name: "reward", scope_key: "vip", steam_uid: user.steam_uid,
+        cooldown_type: "times", cooldown_quantity: 1, cooldown_amount: 1
+      )
+
+      lookup("vip")
+
+      expect(response.body).to include("This reward is no longer available")
+    end
+  end
+
   describe "GET status" do
     it "serves the caller's own command by its public id" do
       command = create(:service_command, user:, server:, command_name: "reward")
@@ -131,12 +198,13 @@ RSpec.describe "Servers::Rewards", type: :request do
 
   describe "GET territories" do
     def get_territories
-      get "/servers/#{server.public_id}/reward/territories", params: {index: "0"}
+      get "/servers/#{server.public_id}/reward/territories", params: {index: "0", scope: "claim"}
     end
 
-    it "offers the garages that still have room" do
+    it "offers the garages that still have room, by name" do
       allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return(
         [
+          {id: "c8p1x", esm_custom_id: nil, territory_name: "Zulu", level: 3, vehicle_count: 0, garage_capacity: 8},
           {id: "a3f9k", esm_custom_id: "base", territory_name: "Base", level: 3, vehicle_count: 2, garage_capacity: 8},
           {id: "b7c2m", esm_custom_id: nil, territory_name: "Outpost", level: 2, vehicle_count: 5, garage_capacity: 5}
         ]
@@ -148,6 +216,9 @@ RSpec.describe "Servers::Rewards", type: :request do
 
       # Full, so it is left out rather than offered and then refused in game
       expect(response.body).not_to include("Outpost")
+
+      # Owners name their own territories, so a case-sensitive sort would file every capitalised one first
+      expect(response.body.index("base (")).to be < response.body.index("Zulu (")
     end
 
     # A picker that cannot be filled is not a reason to fail the page. The player can still take a vehicle that

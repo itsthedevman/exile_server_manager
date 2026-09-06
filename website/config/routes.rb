@@ -310,6 +310,9 @@ Rails.application.routes.draw do
 
           # /servers/:server_id/reward/territories
           get :territories
+
+          # /servers/:server_id/reward/lookup
+          post :lookup
         end
       end
     end

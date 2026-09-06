@@ -1,0 +1,41 @@
+/ locals: current_server, vehicles, scope, grouped
+div class=reward_vehicle_group_classes(grouped)
+  - vehicles.each_with_index do |vehicle, index|
+    div class=reward_vehicle_row_classes(index) data-controller="reward-vehicle"
+      / Every vehicle has to reach the command, including one whose fields are all switched off. The command pairs
+      / choices with vehicles by position and refuses the whole delivery when the two counts disagree.
+      = hidden_field_tag "vehicles[#{index}][position]", index, id: "vehicles_#{scope}_#{index}_position"
+
+      .small.fw-medium
+        i.bi.bi-truck.me-1
+        = vehicle.display_name
+
+      - if reward_vehicle_needs_territory?(vehicle)
+        .row.g-2.mt-1
+          - if vehicle.spawn_location == "player_decides"
+            .col-12.col-sm-6
+              = label_tag "vehicles_#{scope}_#{index}_spawn_location", "Where should it go?", class: "form-label small mb-1"
+              = select_tag "vehicles[#{index}][spawn_location]", \
+                options_for_select(reward_spawn_location_options), \
+                class: "form-select form-select-sm", \
+                id: "vehicles_#{scope}_#{index}_spawn_location", \
+                data: {reward_vehicle_target: "spawnLocation", action: "change->reward-vehicle#refresh"}
+
+          div class=reward_territory_field_classes(vehicle) data-reward-vehicle-target="territoryField"
+            = label_tag "vehicles_#{scope}_#{index}_territory_id", "Which territory?", class: "form-label small mb-1"
+            / Lazy on purpose. Filling this is a round trip to the game server, and a vehicle the player has decided
+            / to have spawned next to them never needs it filled at all.
+            = turbo_frame_tag "reward_territory_#{scope}_#{index}", \
+              src: territories_server_reward_path(current_server.public_id, index:, scope:), loading: :lazy
+              select.form-select.form-select-sm disabled=true
+                option Loading your territories…
+
+      .row.g-2.mt-1
+        .col-12.col-sm-4
+          = label_tag "vehicles_#{scope}_#{index}_pin_code", "Pin to lock it with", class: "form-label small mb-1"
+          = text_field_tag "vehicles[#{index}][pin_code]", nil, \
+            class: "form-control form-control-sm", \
+            id: "vehicles_#{scope}_#{index}_pin_code", \
+            inputmode: "numeric", pattern: "[0-9]{4}", maxlength: 4, \
+            placeholder: "1234", autocomplete: "off", required: true, \
+            data: {reward_vehicle_target: "pinCode"}

@@ -1,31 +1,40 @@
-/ locals: current_server, package, blocked
+/ locals: current_server, package
 / What is in a package is an offer, so it is only spelled out while the offer stands. On cooldown it collapses to the
 / one thing still worth knowing, which is when it comes back.
-- if !reward_package_available?(current_server, package)
-  .d-flex.align-items-center.justify-content-between.gap-3.text-muted.small
-    = reward_package_name(package)
-    span.badge.text-bg-secondary = reward_availability_label(current_server, package)
-- else
-  .d-flex.align-items-start.justify-content-between.gap-3
-    .flex-grow-1.min-w-0
-      .fw-medium.text-truncate = reward_package_name(package)
-      .text-muted.small = reward_contents_summary(package.contents)
+div id=reward_package_dom_id(package)
+  - if !reward_package_available?(current_server, package)
+    .d-flex.align-items-center.justify-content-between.gap-3.text-muted.small
+      = reward_package_name(package)
+      span.badge.text-bg-secondary = reward_availability_label(current_server, package)
+  - else
+    = form_with url: server_reward_path(current_server.public_id), method: :post
+      = hidden_field_tag :idempotency_key, SecureRandom.uuid
+      = hidden_field_tag :reward_id, package.reward_id
 
+      .d-flex.align-items-start.justify-content-between.gap-3
+        .flex-grow-1.min-w-0
+          .fw-medium.text-truncate = reward_package_name(package)
+          .text-muted.small = reward_contents_summary(package.contents)
+
+        .flex-shrink-0.text-end.d-flex.align-items-center.gap-2
+          - if reward_uses_remaining_label(current_server, package)
+            span.badge.text-bg-secondary = reward_uses_remaining_label(current_server, package)
+
+          - if current_server.connected?
+            = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"
+          - else
+            span.badge.text-bg-secondary Server offline
+
+      / Asked before the claim exists, so a redemption with vehicles in it gets one clean delivery rather than losing
+      / them to a first attempt that had nowhere to put them.
       - if package.contents.vehicles.present?
-        .mt-1
-          - package.contents.vehicles.each do |vehicle|
-            .small.text-muted
-              i.bi.bi-truck.me-1
-              = vehicle.display_name
-              span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"
-
-    .flex-shrink-0.text-end
-      - if blocked
-        span.badge.text-bg-secondary Finish your claim first
-      - elsif !current_server.connected?
-        span.badge.text-bg-secondary Server offline
-      - else
-        = form_with url: server_reward_path(current_server.public_id), method: :post
-          = hidden_field_tag :idempotency_key, SecureRandom.uuid
-          = hidden_field_tag :reward_id, package.reward_id
-          = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"
+        - if current_server.connected?
+          = render "servers/rewards/vehicle_fields", current_server:, \
+            vehicles: package.contents.vehicles, scope: reward_package_key(package), grouped: true
+        - else
+          .mt-1
+            - package.contents.vehicles.each do |vehicle|
+              .small.text-muted
+                i.bi.bi-truck.me-1
+                = vehicle.display_name
+                span.ms-1 = "(#{reward_vehicle_destination(vehicle)})"

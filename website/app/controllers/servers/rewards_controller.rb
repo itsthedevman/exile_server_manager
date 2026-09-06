@@ -27,6 +27,30 @@ module Servers
     end
 
     ##
+    # Puts a package the player was handed a code for on the page, next to the default.
+    #
+    # Nothing is claimed and nothing is stored. The row lives until the next render, which is what keeps a code out of
+    # the page for everyone who was not given it. Looking the package up first is also what lets its vehicles be
+    # configured before the claim exists, so delivery gets one clean attempt instead of failing its vehicles and then
+    # asking the same questions over again.
+    #
+    def lookup
+      # The code box is not on the page while a claim is waiting. A request that gets here anyway is a page that has
+      # gone stale, and adding a package it could not take would only be a button that refuses itself.
+      if helpers.reward_claim_for(current_server)
+        return render_lookup_message("Deliver what is already waiting for you first.")
+      end
+
+      package = looked_up_package
+      return render_lookup_message("No reward matches that code.") if package.nil?
+
+      unavailable = helpers.reward_unavailable_message(current_server, package)
+      return render_lookup_message(unavailable) if unavailable
+
+      render locals: {current_server:, package:}
+    end
+
+    ##
     # The garages a vehicle can be parked in. A round trip to the game server, so the picker loads it after the page
     # rather than making every dashboard wait on it.
     #
@@ -34,6 +58,7 @@ module Servers
       render partial: "servers/rewards/territory_select", locals: {
         current_server:,
         index: params.require(:index),
+        scope: params.require(:scope),
         territories: player_territories
       }
     end
@@ -73,15 +98,45 @@ module Servers
     end
 
     ##
+    # The package behind a code the player typed, or nothing when the code names no offer.
+    #
+    # A disabled or empty package is not found rather than refused. Both are an admin's own business, and telling a
+    # player which codes exist but are switched off is the one thing a code is supposed to prevent.
+    #
+    # @return [ESM::ServerReward, nil]
+    #
+    def looked_up_package
+      code = params[:reward_id].to_s.strip
+      return if code.blank?
+
+      package = current_server.server_rewards.enabled.find_by(reward_id: code)
+      package if package&.rewards?
+    end
+
+    def render_lookup_message(message)
+      render turbo_stream: turbo_stream.replace(
+        "reward_code_message",
+        partial: "servers/rewards/code_message",
+        locals: {message:}
+      )
+    end
+
+    ##
     # Territories this player can store a vehicle in, or an empty list when the server cannot answer.
     #
     # A picker that cannot be filled is not a reason to fail the page: the player can still take a vehicle that
     # spawns next to them, and the empty state says why.
     #
+    # Cached for the moment it takes the page's pickers to load. Every vehicle on the page asks for the same list in a
+    # request of its own, and the answer is a round trip to the game server, so a package with three vehicles would
+    # otherwise ask three times for one player's territories.
+    #
     # @return [Array]
     #
     def player_territories
-      call_sync_command("territories") || []
+      ESM.cache.fetch("rewards/territories/#{current_server.id}/#{current_user.id}", expires_in: 15.seconds) do
+        call_sync_command("territories") || []
+      end
     rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
       Rails.logger.warn("[rewards#territories] #{current_server.server_id}: #{e.message}")
       []

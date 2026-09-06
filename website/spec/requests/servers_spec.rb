@@ -135,7 +135,6 @@ RSpec.describe "Servers", type: :request do
         get "/servers/#{server.public_id}"
 
         expect(response.body).not_to include("secret_sauce")
-        expect(response.body).to include("Been given a reward code?")
       end
 
       # Rewards are handed over in game, so a package cannot be taken while the server is down. Saying so beats a
@@ -166,6 +165,58 @@ RSpec.describe "Servers", type: :request do
           expect(response.body).to include("Reward code")
         end
 
+        # Asked before the claim exists, so a package with a vehicle in it gets one clean delivery instead of losing
+        # the vehicle to a first attempt that had nowhere to put it and then asking the same questions over again.
+        it "asks where a vehicle should go before it is redeemed" do
+          server.server_rewards.default.first.update!(
+            reward_vehicles: [{class_name: "Exile_Chopper_Hummingbird", spawn_location: "player_decides"}]
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Where should it go?")
+          expect(response.body).to include(%(name="vehicles[0][pin_code]"))
+          expect(response.body).to include("/reward/territories?index=0")
+        end
+
+        # The only thing that explains why a package the player just took is still sitting there offering itself
+        it "says how many goes are left on a package limited by count" do
+          create(
+            :cooldown,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            cooldown_type: "times",
+            cooldown_quantity: 3,
+            cooldown_amount: 1
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("2 uses left")
+        end
+
+        # A count that has run out never comes back, so the row would sit there explaining itself forever
+        it "drops the package once it is spent for good" do
+          create(
+            :cooldown,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            cooldown_type: "times",
+            cooldown_quantity: 1,
+            cooldown_amount: 1
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).not_to include("Daily Drop")
+        end
+
         it "counts down instead while the package's cooldown runs" do
           create(
             :cooldown, :active,
@@ -186,15 +237,18 @@ RSpec.describe "Servers", type: :request do
         end
       end
 
-      # The cap is one claim per player per server, so a package cannot be taken until the last one is finished. The
-      # page has to say why rather than leaving a button that would be refused.
-      it "shows what is still owed and closes the packages until it is finished" do
+      # The cap is one claim per player per server, so nothing else can be taken until this one is finished. The whole
+      # block becomes the claim rather than a list of packages each carrying its own refusal.
+      it "shows what is still owed and takes the packages off the page until it is finished" do
         ESM::ServerRewardClaim.create!(server_id: server.id, user_id: user.id, player_poptabs: 25)
 
         get "/servers/#{server.public_id}"
 
         expect(response.body).to include("Rewards waiting for you")
-        expect(response.body).to include("Finish your claim first")
+        expect(response.body).to include("only redeem a new reward once this one is delivered")
+
+        expect(response.body).not_to include("Daily Drop")
+        expect(response.body).not_to include("Been given a reward code?")
       end
 
       it "names what stopped the last attempt" do

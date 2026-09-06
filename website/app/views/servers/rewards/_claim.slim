@@ -32,3 +32,8 @@
       | #{current_server.server_id} is offline. Rewards are handed over in game, so this has to wait until it is back.
   - else
     = render "servers/rewards/deliver_form", current_server:, reward_claim:
+
+/ The packages and the code box are gone off the page while this is here, so something has to say where they went
+.small.text-muted.mt-2
+  | You can only redeem a new reward once this one is delivered.
+

@@ -1,10 +1,13 @@
-/ locals: current_server, index, territories
-= turbo_frame_tag "reward_territory_#{index}"
-  - if territories.any?
+/ locals: current_server, index, scope, territories
+= turbo_frame_tag "reward_territory_#{scope}_#{index}"
+  - if reward_territory_options(territories).any?
     = select_tag "vehicles[#{index}][territory_id]", \
       options_for_select(reward_territory_options(territories)), \
       class: "form-select form-select-sm", \
-      id: "vehicles_#{index}_territory_id"
+      id: "vehicles_#{scope}_#{index}_territory_id", \
+      data: {reward_vehicle_target: "territory"}
   - else
-    select.form-select.form-select-sm disabled=true
+    / Marked rather than merely disabled: the placeholder this replaces is disabled too, and the two mean opposite
+    / things to the pin field sitting under them.
+    select.form-select.form-select-sm disabled=true data-reward-vehicle-target="territory" data-empty="true"
       option No territory with room in its garage
