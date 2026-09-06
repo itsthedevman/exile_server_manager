@@ -1,17 +1,21 @@
 / locals: current_server
 .card
   .card-body.text-center.py-5
-    i.bi.bi-arrow-up-circle.display-4.text-warning.mb-3.d-block
-    h4.mb-2 This server needs updating
-    p.text-muted.mx-auto style="max-width: 34rem;"
-      | #{current_server.server_id} is running an older version of ESM than these pages are built for. Everything here
-        talks to the server in ways it doesn't understand yet, so there's nothing it can do until it's on
-        #{ServerVersion::MINIMUM_SERVER_VERSION} or newer.
-
     - if server_manageable?(current_server)
+      i.bi.bi-arrow-up-circle.display-4.text-warning.mb-3.d-block
+      h4.mb-2 This server needs updating
+      p.text-muted.mx-auto style="max-width: 34rem;"
+        | #{current_server.server_id} is running an older version of ESM than these pages are built for. Everything
+          here talks to the server in ways it doesn't understand yet, so none of it works until the server is on
+          #{ServerVersion::MINIMUM_SERVER_VERSION} or newer.
+
       .d-flex.gap-2.justify-content-center.flex-wrap
         = link_to "/docs/server_setup", class: "btn btn-primary"
           i.bi.bi-book.me-1
           | How to update
     - else
-      p.text-muted.small.mb-0 Let the server's admins know.
+      i.bi.bi-hourglass.display-4.text-secondary.mb-3.d-block
+      h4.mb-2 Nothing here yet
+      p.text-muted.mx-auto.mb-0 style="max-width: 34rem;"
+        | #{current_server.server_id} needs an update from its admins before any of this works. Nothing is wrong on
+          your end - check back once they've done it.

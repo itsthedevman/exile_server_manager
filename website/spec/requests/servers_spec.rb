@@ -56,12 +56,28 @@ RSpec.describe "Servers", type: :request do
         server.update!(server_version: "2.0.4")
       end
 
-      it "explains what is wrong instead of rendering the cards" do
+      # A player cannot act on a version number and did not cause the problem, so they are told the one thing that is
+      # true for them: there is nothing here yet, and it is not their doing.
+      it "tells a player to wait, without the version talk" do
         get "/servers/#{server.public_id}"
 
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("This server needs updating")
+        expect(response.body).to include("Nothing here yet")
+        expect(response.body).not_to include("How to update")
+        expect(response.body).not_to include(ServerVersion::MINIMUM_SERVER_VERSION)
         expect(response.body).not_to include("My Player")
+      end
+
+      context "and the viewer can manage the server" do
+        let(:manageable) { true }
+
+        it "names the version and points at the docs" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("This server needs updating")
+          expect(response.body).to include(ServerVersion::MINIMUM_SERVER_VERSION)
+          expect(response.body).to include("How to update")
+        end
       end
 
       it "still renders the cards once the server is new enough" do
