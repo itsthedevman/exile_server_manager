@@ -174,12 +174,18 @@ puts " done"
 print "Creating server rewards..."
 # Default reward
 server_1.server_rewards.default.first.update!(
+  name: "Welcome package",
   reward_items: {
     Exile_Item_WoodDoorKit: 1,
     Exile_Item_WoodWallKit: 3,
     Exile_Item_WoodFloorKit: 2
   },
-  reward_vehicles: [],
+  reward_vehicles: [
+    {
+      class_name: "Exile_Car_Hatchback_Beige",
+      spawn_location: "nearby"
+    }
+  ],
   player_poptabs: 12_345,
   locker_poptabs: 98_765,
   respect: 1
@@ -187,6 +193,7 @@ server_1.server_rewards.default.first.update!(
 
 # Vehicle reward
 server_1.server_rewards.create!(
+  name: "Awesome Vehicles",
   reward_id: "vehicles",
   reward_items: {
     Exile_Item_JunkMetal: 2
@@ -207,6 +214,16 @@ server_1.server_rewards.create!(
   ],
   player_poptabs: 0,
   locker_poptabs: 0,
+  respect: 0
+)
+
+server_1.server_rewards.create!(
+  name: "Get Rich Quick",
+  reward_id: "getrichquick",
+  reward_items: {},
+  reward_vehicles: [],
+  player_poptabs: 15_000,
+  locker_poptabs: 100_000,
   respect: 0
 )
 puts " done"
