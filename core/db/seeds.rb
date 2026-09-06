@@ -188,7 +188,9 @@ server_1.server_rewards.default.first.update!(
 # Vehicle reward
 server_1.server_rewards.create!(
   reward_id: "vehicles",
-  reward_items: {},
+  reward_items: {
+    Exile_Item_JunkMetal: 2
+  },
   reward_vehicles: [
     {
       class_name: "Exile_Car_Hatchback_Beige",
