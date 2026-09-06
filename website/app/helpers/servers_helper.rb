@@ -13,6 +13,36 @@ module ServersHelper
   end
 
   ##
+  # What to say about a server whose pages a player cannot use yet.
+  #
+  # There are two ways to get here and they want different advice. A server with no version has never connected at
+  # all - it was registered here and never came back - so it has no version gap to close and pointing at the update
+  # docs would send its owner to fix the wrong thing.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [Datum] #heading, #admin_message, #player_message and #action_label
+  #
+  def server_unsupported_notice(server)
+    if server.server_version.blank?
+      return {
+        heading: "This server isn't connected yet",
+        admin_message: "#{server.server_id} has never connected to ESM.",
+        player_message: "#{server.server_id}'s admins haven't finished setting it up.",
+        action_label: "Set up your server"
+      }.to_datum
+    end
+
+    {
+      heading: "This server needs updating",
+      admin_message: "#{server.server_id} is on #{server.server_version}. " \
+        "These pages need #{ServerVersion::MINIMUM_SERVER_VERSION} or newer.",
+      player_message: "#{server.server_id}'s admins need to update ESM before you can use these pages.",
+      action_label: "How to update"
+    }.to_datum
+  end
+
+  ##
   # Whether the current user has favorited the given server.
   #
   # @param server [ESM::Server]

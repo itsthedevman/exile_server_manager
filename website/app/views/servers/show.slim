@@ -6,7 +6,7 @@
     p.text-muted.mb-0 = "Everything you can see and do on #{current_server.server_id}"
 
   - if !server_supported?
-    = render "servers/outdated", current_server:
+    = render "servers/outdated", current_server:, notice: server_unsupported_notice(current_server)
 
   - elsif current_user.registered?
     - if cards_available || admin_tools_available

@@ -62,7 +62,7 @@ RSpec.describe "Servers", type: :request do
         get "/servers/#{server.public_id}"
 
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Nothing here yet")
+        expect(response.body).to include("admins need to update ESM")
         expect(response.body).not_to include("How to update")
         expect(response.body).not_to include(ServerVersion::MINIMUM_SERVER_VERSION)
         expect(response.body).not_to include("My Player")
@@ -71,12 +71,26 @@ RSpec.describe "Servers", type: :request do
       context "and the viewer can manage the server" do
         let(:manageable) { true }
 
-        it "names the version and points at the docs" do
+        it "names both versions and points at the docs" do
           get "/servers/#{server.public_id}"
 
-          expect(response.body).to include("This server needs updating")
+          expect(response.body).to include("is on 2.0.4")
           expect(response.body).to include(ServerVersion::MINIMUM_SERVER_VERSION)
           expect(response.body).to include("How to update")
+        end
+
+        # No version means the server was registered here and never came back. It has no version gap to close, so
+        # naming one would send its owner to fix the wrong thing.
+        it "talks about connecting, not updating, for a server that has never checked in" do
+          server.update!(server_version: nil)
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("has never connected to ESM")
+          expect(response.body).to include("Set up your server")
+
+          expect(response.body).not_to include("needs updating")
+          expect(response.body).not_to include("1.0.0")
         end
       end
 
