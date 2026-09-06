@@ -35,7 +35,7 @@ module ServersHelper
 
     {
       heading: "This server needs updating",
-      admin_message: "#{server.server_id} is on #{server.server_version}. " \
+      admin_message: "#{server.server_id} is on #{server.display_version}. " \
         "These pages need #{ServerVersion::MINIMUM_SERVER_VERSION} or newer.",
       player_message: "#{server.server_id}'s admins need to update ESM before you can use these pages.",
       action_label: "How to update"

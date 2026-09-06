@@ -226,9 +226,7 @@ module ESM
             :server_version_too_old,
             user: current_user,
             server_id: target_server.server_id,
-            # The extension reports its build commit as semver build metadata. It carries no weight in the
-            # comparison above and is noise to whoever reads this.
-            current_version: target_server.version.to_s.split("+").first,
+            current_version: target_server.display_version,
             required_version: minimum_version
           )
         end

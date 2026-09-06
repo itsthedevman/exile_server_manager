@@ -111,6 +111,22 @@ module ESM
       version >= Semantic::Version.new(expected_version)
     end
 
+    ##
+    # The version as a person should read it, without the build metadata the extension appends.
+    #
+    # The extension reports its build commit that way (`2.0.4+754da3bb`). It carries no weight in a comparison, since
+    # semver ignores build metadata when ordering, and it is noise to anyone being told which version they are on.
+    # Rebuilt from the parsed parts rather than split off the string, so a pre-release tag survives.
+    #
+    # @return [String]
+    #
+    def display_version
+      parsed = version
+      release = [parsed.major, parsed.minor, parsed.patch].join(".")
+
+      parsed.pre ? "#{release}-#{parsed.pre}" : release
+    end
+
     def v2?
       version?("2.0.0")
     end

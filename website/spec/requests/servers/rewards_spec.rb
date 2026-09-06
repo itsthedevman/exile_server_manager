@@ -96,7 +96,9 @@ RSpec.describe "Servers::Rewards", type: :request do
       expect { post_reward }.not_to change(ESM::ServiceCommand, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("older version of ESM")
+
+      # The same sentence the dashboard shows, so acting anyway is not answered with a different story
+      expect(response.body).to include("admins need to update ESM")
     end
 
     it "rejects a denied claim with a 422 and never creates a command" do
