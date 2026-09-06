@@ -106,6 +106,9 @@ arma/tools/server/@exileserver/logs
 arma/.direnv/
 arma/tools/wrappers/
 arma/.docker-volumes/
+arma/tools/server/@*/
+!arma/tools/server/@exile
+!arma/tools/server/@exileserver
 
 # overmind (bin/dev) runtime socket
 .overmind.sock
