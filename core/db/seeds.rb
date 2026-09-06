@@ -163,9 +163,7 @@ puts " done"
 
 print "Creating server rewards..."
 # Default reward
-server_1.server_rewards.where(reward_id: nil).first.update!(
-  server_id: server_1.id,
-  reward_id: nil,
+server_1.server_rewards.default.first.update!(
   reward_items: {
     Exile_Item_WoodDoorKit: 1,
     Exile_Item_WoodWallKit: 3,
@@ -179,7 +177,6 @@ server_1.server_rewards.where(reward_id: nil).first.update!(
 
 # Vehicle reward
 server_1.server_rewards.create!(
-  server_id: server_1.id,
   reward_id: "vehicles",
   reward_items: {},
   reward_vehicles: [
