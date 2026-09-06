@@ -46,10 +46,14 @@ module ServerVersion
   end
 
   ##
+  # The same copy the dashboard shows, so a player who acts anyway is told the same thing the page told them, and an
+  # admin still gets the version numbers rather than being talked to like someone who cannot fix it.
+  #
   # @return [String]
   #
   def outdated_server_message
-    "#{current_server.server_id} is running an older version of ESM and can't do this yet. " \
-      "It needs #{MINIMUM_SERVER_VERSION} or newer - let the server's admins know."
+    notice = helpers.server_unsupported_notice(current_server)
+
+    helpers.server_manageable?(current_server) ? notice.admin_message : notice.player_message
   end
 end
