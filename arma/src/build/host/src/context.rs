@@ -7,6 +7,7 @@ use std::{
 use crate::{
     config::{parse, Config, Instance, WindowsConfig},
     error::BuildError,
+    extra_mods::{self, ExtraMods},
     file_watcher::FileWatcher,
     target::{build_target, Target},
 };
@@ -277,6 +278,9 @@ pub struct BuildContext {
     pub rebuild_extension: bool,
     /// Servers this run targets, resolved from `--server-id` / `--all`. Never empty.
     pub instances: Vec<Instance>,
+    /// Mods found in `tools/server` that config.yml does not name. Read once: the launch line names them and
+    /// the sync step delivers them, and the two disagreeing would be a server loading a mod it does not have.
+    pub extra_mods: ExtraMods,
 }
 
 impl BuildContext {
@@ -285,6 +289,7 @@ impl BuildContext {
         let local_build_path = git_path.join("target");
         let config = parse(&git_path.join("config.yml"))?;
         let instances = select_instances(&args, &config)?;
+        let extra_mods = extra_mods::discover(&git_path);
 
         let file_watcher = FileWatcher::new(&git_path, &local_build_path)
             .watch(&git_path.join("src").join("@esm"))
@@ -307,6 +312,7 @@ impl BuildContext {
             rebuild_mod,
             rebuild_extension,
             instances,
+            extra_mods,
         })
     }
 
@@ -371,7 +377,7 @@ pub struct InstanceContext<'a> {
 
 impl<'a> InstanceContext<'a> {
     pub fn new(build: &'a BuildContext, instance: &'a Instance) -> Result<Self, BuildError> {
-        let target = build_target(&build.args, &build.config, instance)?;
+        let target = build_target(&build.args, &build.config, &build.extra_mods, instance)?;
         Ok(InstanceContext {
             build,
             instance,

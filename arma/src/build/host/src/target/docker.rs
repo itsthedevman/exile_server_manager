@@ -7,7 +7,14 @@ use crate::{
     config::{Config, Instance},
     context::BuildArch,
     error::BuildError,
+    extra_mods::{self, ExtraMods},
 };
+
+/// What separates one mod from the next in `-mod=`, as the container's shell needs it written.
+///
+/// bash eats a bare semicolon as a command separator, so config.yml escapes every one of them and anything
+/// appended to those arguments has to be escaped the same way.
+const MOD_SEPARATOR: &str = "\\;";
 
 // Heartbeat reaper. The build process refreshes HEARTBEAT_FILE every few seconds; a watchdog inside the
 // container kills the server once those touches go stale. This couples the server's life to the build no matter
@@ -28,7 +35,14 @@ pub fn write_file(
     path: &Path,
     contents: &[u8],
 ) -> Result<(), BuildError> {
-    let cmd = format!("cat > '{}'", path.display());
+    // The parent is created here rather than by the caller, matching the Windows target: writing the first file
+    // into a directory that does not exist yet is the same operation on both, and a caller having to know which
+    // one it is talking to is the difference this trait exists to hide. Redirection alone reports the miss as the
+    // file itself not existing, which reads like a permissions problem rather than a missing directory.
+    let cmd = match path.parent() {
+        Some(parent) => format!("mkdir -p '{}' && cat > '{}'", parent.display(), path.display()),
+        None => format!("cat > '{}'", path.display()),
+    };
 
     let mut child = Cmd::new("docker")
         .args(["exec", "-i", container, "/bin/bash", "-c", &cmd])
@@ -66,12 +80,11 @@ pub struct DockerTarget {
 }
 
 impl DockerTarget {
-    pub fn new(config: &Config, instance: &Instance) -> Self {
+    pub fn new(config: &Config, extra_mods: &ExtraMods, instance: &Instance) -> Self {
         // The game port is the one launch argument that has to differ per server; config.yml carries the rest
         // verbatim because every other path resolves the same way inside every container.
-        let server_args = config
-            .server
-            .server_args
+        let server_args =
+            extra_mods::merge_into_args(&config.server.server_args, extra_mods, MOD_SEPARATOR)
             .iter()
             .map(|arg| format!("-{arg}"))
             .chain(std::iter::once(format!("-port={}", instance.port)))
@@ -500,7 +513,7 @@ mod tests {
         let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
         let config = parse(std::path::Path::new(config_path)).expect("config.yml");
         let instance = config.instances[0].clone();
-        let target = super::DockerTarget::new(&config, &instance);
+        let target = super::DockerTarget::new(&config, &Default::default(), &instance);
 
         assert_eq!(target.run("echo hello").expect("run"), "hello");
 
@@ -540,7 +553,7 @@ mod tests {
         let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
         let config = parse(std::path::Path::new(config_path)).expect("config.yml");
         let instance = config.instances[0].clone();
-        let target = super::DockerTarget::new(&config, &instance);
+        let target = super::DockerTarget::new(&config, &Default::default(), &instance);
 
         let log = PathBuf::from("/tmp/esm-log-test.log");
         target.write_file(&log, b"alpha\nbeta\n").expect("write log");

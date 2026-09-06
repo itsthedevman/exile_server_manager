@@ -10,6 +10,7 @@ use crate::{
     config::{Config, Instance},
     context::{Args, BuildArch, BuildOS},
     error::BuildError,
+    extra_mods::ExtraMods,
 };
 
 /// Frames [`Target::read_appended`]: one `<separator>:<path>:<size>` line, then that file's new bytes.
@@ -144,11 +145,12 @@ pub trait Target: Send + Sync {
 pub fn build_target(
     args: &Args,
     config: &Config,
+    extra_mods: &ExtraMods,
     instance: &Instance,
 ) -> Result<Arc<dyn Target>, BuildError> {
     match args.build_os() {
-        BuildOS::Linux => Ok(Arc::new(DockerTarget::new(config, instance))),
-        BuildOS::Windows => RemoteTarget::new(config, instance),
+        BuildOS::Linux => Ok(Arc::new(DockerTarget::new(config, extra_mods, instance))),
+        BuildOS::Windows => RemoteTarget::new(config, extra_mods, instance),
     }
 }
 

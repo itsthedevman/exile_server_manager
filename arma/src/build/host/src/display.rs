@@ -67,7 +67,7 @@ pub fn print_header(ctx: &BuildContext) {
         .collect::<Vec<_>>()
         .join(", ");
 
-    let rows: Vec<(&str, String)> = vec![
+    let mut rows: Vec<(&str, String)> = vec![
         ("queue",      queue_str),
         ("env",        if ctx.args.release { "production".into() } else { "development".into() }),
         ("log level",  ctx.args.log_level().to_string()),
@@ -75,6 +75,13 @@ pub fn print_header(ctx: &BuildContext) {
         ("build dir",  shorten_path(&ctx.local_build_path.join("@esm").to_string_lossy())),
         ("servers",    servers),
     ];
+
+    // Nothing else says a mod was picked up. It reaches the launch line by being in a directory rather than by
+    // being configured, so a run that found one has to say which, and a run that found none says nothing at all.
+    if !ctx.extra_mods.is_empty() {
+        let names: Vec<&str> = ctx.extra_mods.all().map(String::as_str).collect();
+        rows.push(("extra mods", names.join(", ")));
+    }
 
     // Compute box width to fit the longest value row.
     let max_val = rows.iter().map(|(_, v)| v.chars().count()).max().unwrap_or(0);
