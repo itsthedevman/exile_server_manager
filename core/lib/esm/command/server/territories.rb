@@ -50,25 +50,30 @@ module ESM
         def on_website_execute
           territories = query_exile_database!("reward_territories", uid: current_user.steam_uid)
 
-          reply(territories.map { |territory| territory.to_h.merge(garage_capacity: garage_capacity_for(territory)) })
+          reply(
+            territories.map do |territory|
+              row = territory.to_h
+              row.merge(garage_capacity: garage_capacity_for(row[:level]))
+            end
+          )
         end
 
         #
-        # How many vehicles a territory's garage holds, or nil when its level has none.
+        # How many vehicles a territory's garage holds at the given level, or nil when that level has none.
         #
         # The sizes live on the connection rather than in the database, and the website has no connection of its own,
         # so the question is answered here while there is still something to ask.
         #
-        # @param territory [ESM::Message::Data] one row from the reward_territories query
+        # @param level [Integer] the territory's level
         #
         # @return [Integer, nil]
         #
-        def garage_capacity_for(territory)
+        def garage_capacity_for(level)
           sizes = Array(target_server.connection&.metadata&.vg_max_sizes)
           return if sizes.empty?
 
           # Exile reads this list at (level - 1) max 0, and -1 is how it says a level has no garage at all
-          capacity = sizes[(territory.level.to_i - 1).clamp(0, sizes.size - 1)].to_i
+          capacity = sizes[(level.to_i - 1).clamp(0, sizes.size - 1)].to_i
 
           capacity if capacity >= 0
         end
