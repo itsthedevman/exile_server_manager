@@ -132,36 +132,44 @@ fn render_server_cfg(
     Ok(rendered)
 }
 
-/// Put the content a Linux container gets from a bind mount onto a target that has none.
+/// Put the content a target has no bind mount for into its server root.
 ///
 /// docker-compose mounts `@exile` and `mpmissions` straight out of the repo, so a container never needs its own
-/// copy and nothing in the build ever uploaded one. A remote host has no such trick: without this it starts with
-/// `-mod=@exile;` naming a directory that does not exist, and Arma reports that as a missing addon rather than as
-/// missing setup, which sends you looking in the wrong place.
+/// copy and copying them in would shadow the mount with a stale duplicate. A remote host has no such trick:
+/// without this it starts with `-mod=@exile;` naming a directory that does not exist, and Arma reports that as a
+/// missing addon rather than as missing setup, which sends you looking in the wrong place.
+///
+/// Discovered mods go to every target, container included. They are named on the launch line the moment they
+/// appear in `tools/server`, and giving each one a mount of its own would mean editing docker-compose.yml for
+/// every mod, which is the hand step this exists to remove.
 ///
 /// Sent only when the target does not already have this exact content, because `@exile` is well over a gigabyte
 /// and changes about as often as Exile releases. `--full` forces it.
 pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
-    // Docker already mounted it. Nothing to do, and copying it in would shadow the mount with a stale duplicate.
-    if matches!(ictx.args().build_os(), BuildOS::Linux) {
-        return Ok(());
+    let source_root = ictx.build.git_path.join("tools").join("server");
+    let mut names: Vec<String> = Vec::new();
+
+    if matches!(ictx.args().build_os(), BuildOS::Windows) {
+        for name in SHARED_CONTENT {
+            if !source_root.join(name).exists() {
+                return Err(BuildError::General(format!(
+                    "Missing {} in {}.\n\
+                     A Windows server needs its own copy of this, since it has no bind mount to read it through.",
+                    name,
+                    source_root.display()
+                )));
+            }
+
+            names.push((*name).to_string());
+        }
     }
 
-    let source_root = ictx.build.git_path.join("tools").join("server");
+    names.extend(ictx.build.extra_mods.all().cloned());
+
     let mut pending = Vec::new();
 
-    for name in SHARED_CONTENT {
-        let source = source_root.join(name);
-
-        if !source.exists() {
-            return Err(BuildError::General(format!(
-                "Missing {} in {}.\n\
-                 A Windows server needs its own copy of this, since it has no bind mount to read it through.",
-                name,
-                source_root.display()
-            )));
-        }
-
+    for name in names {
+        let source = source_root.join(&name);
         let (files, bytes) = measure(&source);
 
         // Keyed on what the source holds, not on whether the destination exists. Arma's own install creates
@@ -175,7 +183,8 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
             .join(format!("{name}-{files}-{bytes}.stamp"));
 
         if ictx.args().full_rebuild() || !ictx.target.exists(&stamp)? {
-            pending.push((*name, source, ictx.server_path().join(name), stamp, bytes));
+            let dest = ictx.server_path().join(&name);
+            pending.push((name, source, dest, stamp, bytes));
         }
     }
 
@@ -192,14 +201,14 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
         sub_lines.print(&format!("{name} ({}) -> {}", human_size(bytes), dest.display()));
 
         if let Err(e) = ictx.target.upload(&source, &dest) {
-            spinner.sub_fail(name, true);
+            spinner.sub_fail(&name, true);
             return Err(e);
         }
 
         // Written only after the upload returns, so an interrupted transfer is retried rather than remembered
         // as done.
         if let Err(e) = ictx.target.write_file(&stamp, b"") {
-            spinner.sub_fail(name, true);
+            spinner.sub_fail(&name, true);
             return Err(e);
         }
     }

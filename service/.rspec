@@ -1,3 +1,4 @@
 --color
---require spec_helper
+--require mock_helper
 --format documentation
+--exclude-pattern "live/**/*_spec.rb"

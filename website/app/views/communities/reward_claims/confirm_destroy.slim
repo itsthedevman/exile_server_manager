@@ -1,0 +1,35 @@
+/ locals: claim
+= update_turbo_modal "reward_claim_modal"
+  .modal-header.border-danger.bg-danger.bg-opacity-10
+    h5.modal-title.text-danger-emphasis
+      i.bi.bi-exclamation-triangle-fill.me-2
+      = "Delete #{reward_claim_label(claim)}"
+
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  .modal-body
+    p.text-light.mb-0
+      = "#{reward_claim_player_name(claim)} will not receive any of this. Deleting a claim cannot be undone."
+
+    = render "servers/rewards/receipt", contents: claim.contents, include_vehicles: true
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.mt-4.mb-0
+      .d-flex.align-items-start
+        i.bi.bi-info-circle.text-info.fs-5.me-3.mt-1
+        div
+          h6.text-info.mb-2 They are not losing the reward for good
+          p.small.text-muted.mb-0
+            = reward_claim_delete_consequence(claim)
+
+    - if reward_claim_retryable?(claim)
+      p.text-muted.small.mt-3.mb-0
+        | Allow a retry instead if the delivery only needs another attempt. The reward stays where it is.
+
+  .modal-footer
+    button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
+
+    = button_to community_server_reward_claim_path(current_community, claim.server, claim.user),
+      method: :delete,
+      class: "btn btn-danger"
+      i.bi.bi-trash.me-1
+      | Delete this claim

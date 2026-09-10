@@ -80,7 +80,7 @@ module ESM
 
       def build_settings_packet
         settings = @server.server_setting
-        rewards = @server.server_reward
+        rewards = @server.server_rewards.default.first
 
         @packet = OpenStruct.new(
           function_name: "postServerInitialization",

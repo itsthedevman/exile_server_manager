@@ -104,13 +104,16 @@ module ESM
 
       # Checks if the array is set up to be able to be converted to a hash
       # The input must be an array and in the format of [[key, value], [key, value]]
+      #
+      # Shape alone cannot prove an array is a hashmap. Arma flattens a hashmap and a list of pairs to the same bytes,
+      # so `[[uid_a, uid_b]]` reads as either one. A repeated key does prove it is not a hashmap though, and
+      # converting one anyway silently keeps only the last entry.
       def valid_hash_structure?(input)
-        input.is_a?(Array) &&
-          input.all? do |i|
-            i.is_a?(Array) &&
-              i.size == 2 &&
-              i.first.is_a?(String)
-          end
+        return false unless input.is_a?(Array)
+        return false unless input.all? { |pair| pair.is_a?(Array) && pair.size == 2 && pair.first.is_a?(String) }
+
+        keys = input.map(&:first)
+        keys.size == keys.uniq.size
       end
     end
   end

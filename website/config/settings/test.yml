@@ -10,3 +10,9 @@ discord:
 
 steam:
   token: "test_steam_api_key"
+
+nats:
+  # Off the production prefix so the suite reaches the bot booted for it rather than whichever other bot happens to be
+  # on the broker. Subscriptions carry no queue group, so a shared prefix means both answer and the first reply wins.
+  # The matching half is ESM_NATS_SUBJECT_PREFIX in start_bot (bin/test); change one and change the other.
+  subject_prefix: "esm.test.rpc."

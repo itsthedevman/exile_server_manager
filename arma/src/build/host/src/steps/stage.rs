@@ -6,6 +6,7 @@ use crate::{
     config::parse,
     context::{find_git_root, select_instances, Args, BuildOS, StageArgs},
     error::{BuildError, BuildResult},
+    extra_mods,
     steps::mod_build::esm_crate_version,
     target::{build_target, Target},
 };
@@ -48,7 +49,7 @@ pub fn stage(args: &Args, stage_args: &StageArgs) -> BuildResult {
     // `select_instances` errors on an unknown id and `parse` rejects an empty instance list, so there is always
     // exactly one here.
     let instance = &instances[0];
-    let target = build_target(args, &config, instance)?;
+    let target = build_target(args, &config, &extra_mods::discover(&git_path), instance)?;
 
     // Rewriting @esm under a live server produces a half-swapped install, and a test result that describes
     // neither the before nor the after.

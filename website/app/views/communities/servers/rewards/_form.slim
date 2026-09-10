@@ -1,0 +1,150 @@
+/ locals: current_server, package
+= form_with model: package,
+  scope: :reward_package,
+  url: reward_package_form_url(current_server, package),
+  data: {controller: "reward-contents-editor"} do |f|
+
+  .modal-body
+    - if package.errors.any?
+      .alert.alert-danger.border-danger.bg-danger.bg-opacity-10.py-2.px-3
+        ul.mb-0.small.ps-3
+          - package.errors.full_messages.each do |message|
+            li = message
+
+    .row.g-3
+      .col-12.col-lg-7
+        = f.label :name, "Name", class: "form-label"
+        = f.text_field :name, class: "form-control", placeholder: "Welcome package", maxlength: 255
+        .form-text Shown to players. Leave it blank and they see the code instead.
+
+      .col-12.col-lg-5
+        = f.label :reward_id, "Code", class: "form-label"
+        - if package.default?
+          = f.text_field :reward_id, class: "form-control font-monospace", disabled: true
+          .form-text This one cannot be changed.
+        - else
+          = f.text_field :reward_id, class: "form-control font-monospace", \
+            placeholder: "welcome", required: true, autocomplete: "off", \
+            maxlength: ESM::ServerReward::REWARD_ID_MAX_LENGTH
+          .form-text Lowercase letters, numbers, dashes and underscores.
+
+    .form-check.form-switch.mt-3
+      = f.check_box :enabled, class: "form-check-input", role: "switch"
+      = f.label :enabled, "Players can claim this package", class: "form-check-label"
+
+    hr.my-4
+
+    h6.mb-3 Currency
+    .row.g-3
+      .col-12.col-lg-4
+        = f.label :player_poptabs, "Player Poptabs", class: "form-label"
+        = f.number_field :player_poptabs, class: "form-control", min: 0, value: package.player_poptabs, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+      .col-12.col-lg-4
+        = f.label :locker_poptabs, "Locker Poptabs", class: "form-label"
+        = f.number_field :locker_poptabs, class: "form-control", min: 0, value: package.locker_poptabs, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+      .col-12.col-lg-4
+        = f.label :respect, "Respect", class: "form-label"
+        = f.number_field :respect, class: "form-control", min: 0, value: package.respect, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+
+    hr.my-4
+
+    h6.mb-3 Cooldown
+    .form-check.form-switch
+      = check_box_tag "reward_package[custom_cooldown]", "1", package.cooldown_time.present?, \
+        id: "reward_package_custom_cooldown", class: "form-check-input", role: "switch", \
+        data: {reward_contents_editor_target: "cooldownToggle", action: "change->reward-contents-editor#refresh"}
+      label.form-check-label for="reward_package_custom_cooldown"
+        | Give this package its own cooldown
+
+    .form-text data-reward-contents-editor-target="cooldownDefaultHint"
+      = reward_package_command_cooldown_hint
+
+    div data-reward-contents-editor-target="cooldownFields"
+      .row.g-3.mt-1
+        .col-6.col-lg-3
+          = f.label :cooldown_quantity, "How many", class: "form-label"
+          = f.number_field :cooldown_quantity, class: "form-control", min: 1, placeholder: "1", \
+            data: {reward_contents_editor_target: "cooldownQuantity"}
+        .col-6.col-lg-4
+          = f.label :cooldown_type, "Per", class: "form-label"
+          = f.select :cooldown_type, \
+            options_for_select(reward_package_cooldown_type_options, package.cooldown_type), \
+            {}, \
+            class: "form-select"
+
+      .form-text.mt-2 Pick Total uses to cap how many times a player can ever claim this package.
+
+    hr.my-4
+
+    .d-flex.align-items-center.justify-content-between.mb-3
+      h6.mb-0 Items
+      button.btn.btn-outline-primary.btn-sm type="button" data-action="click->reward-contents-editor#addItem"
+        i.bi.bi-plus.me-1
+        | Add item
+
+    .text-center.py-3 data-reward-contents-editor-target="itemEmpty"
+      i.bi.bi-box-seam.fs-3.text-muted.d-block.mb-2
+      .text-muted.small No items yet
+      button.btn.btn-primary.btn-sm.mt-3 type="button" data-action="click->reward-contents-editor#addItem"
+        i.bi.bi-plus.me-1
+        | Add your first item
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.small data-reward-contents-editor-target="itemNote"
+      i.bi.bi-info-circle.me-1
+      | Items go into the player's inventory. Anything that does not fit will be dropped at their feet.
+
+    .table-responsive
+      table.table.table-sm.align-middle.mb-0
+        tbody data-reward-contents-editor-target="itemRows"
+          - reward_package_item_rows(package).each do |item|
+            = render "communities/servers/rewards/item_row", item:, prefix: "reward_package[reward_items][]"
+
+    template data-reward-contents-editor-target="itemTemplate"
+      = render "communities/servers/rewards/item_row", item: nil, prefix: "reward_package[reward_items][]"
+
+    hr.my-4
+
+    - if reward_packages_vehicles_supported?(current_server)
+      .d-flex.align-items-center.justify-content-between.mb-3
+        h6.mb-0 Vehicles
+        button.btn.btn-outline-primary.btn-sm type="button" data-action="click->reward-contents-editor#addVehicle"
+          i.bi.bi-plus.me-1
+          | Add vehicle
+
+      .text-center.py-3 data-reward-contents-editor-target="vehicleEmpty"
+        i.bi.bi-truck.fs-3.text-muted.d-block.mb-2
+        .text-muted.small No vehicles yet
+        button.btn.btn-primary.btn-sm.mt-3 type="button" data-action="click->reward-contents-editor#addVehicle"
+          i.bi.bi-plus.me-1
+          | Add your first vehicle
+
+      .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.small data-reward-contents-editor-target="vehicleNote"
+        i.bi.bi-info-circle.me-1
+        | Vehicles are handed over from this website, where the player picks the four digit code that locks it.
+
+      div data-reward-contents-editor-target="vehicleRows"
+        - reward_package_vehicle_rows(package).each do |vehicle|
+          = render "communities/servers/rewards/vehicle_row", vehicle:, prefix: "reward_package[reward_vehicles][]"
+
+      template data-reward-contents-editor-target="vehicleTemplate"
+        = render "communities/servers/rewards/vehicle_row", vehicle: nil, prefix: "reward_package[reward_vehicles][]"
+
+    - else
+      h6.mb-3 Vehicles
+
+      .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.mb-0.small
+        i.bi.bi-info-circle.me-1
+        = reward_packages_vehicles_unsupported_message(current_server)
+
+  .modal-footer.border-top
+    / Saving is still allowed. A half built package is a normal thing to come back to, it just cannot be handed out
+    / while it holds nothing.
+    .small.text-warning.me-auto data-reward-contents-editor-target="emptyWarning"
+      i.bi.bi-exclamation-triangle.me-1
+      | Empty packages are never handed out. Add currency, an item or a vehicle.
+
+    button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
+    = f.submit "Save package", class: "btn btn-success"

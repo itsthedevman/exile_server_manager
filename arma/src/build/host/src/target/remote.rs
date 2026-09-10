@@ -9,7 +9,14 @@ use crate::{
     config::{Config, Instance, WindowsConfig},
     context::BuildArch,
     error::BuildError,
+    extra_mods::{self, ExtraMods},
 };
+
+/// What separates one mod from the next in `-mod=`, as `cmd.exe` needs it written.
+///
+/// Unescaped, unlike the container's: an escaped semicolon arrives here as a literal backslash and names a mod
+/// that does not exist. Same reason `windows.server_args` is its own key in config.yml.
+const MOD_SEPARATOR: &str = ";";
 
 /// Told to every ssh invocation.
 ///
@@ -71,7 +78,11 @@ pub struct RemoteTarget {
 }
 
 impl RemoteTarget {
-    pub fn new(config: &Config, instance: &Instance) -> Result<Arc<dyn Target>, BuildError> {
+    pub fn new(
+        config: &Config,
+        extra_mods: &ExtraMods,
+        instance: &Instance,
+    ) -> Result<Arc<dyn Target>, BuildError> {
         let Some(windows) = config.windows.as_ref() else {
             return Err(BuildError::Config(
                 "--target=windows needs a `windows:` section in config.yml naming the host to run on. Add:\n\
@@ -88,7 +99,7 @@ impl RemoteTarget {
         Ok(Arc::new(RemoteTarget {
             build_path: PathBuf::from("C:\\temp\\esm"),
             server_path: PathBuf::from(&windows.server_path),
-            server_args: launch_args(windows, instance),
+            server_args: launch_args(windows, extra_mods, instance),
             destination: format!("{}@{}", windows.user, windows.host),
             steamcmd_path: PathBuf::from(&windows.steamcmd_path),
             server_id: instance.server_id.clone(),
@@ -666,9 +677,8 @@ fn ps_literal(value: &str) -> String {
 /// and sits in the lobby forever, because the config it never read is what names the mission. No mission means
 /// no `preInit`, which means none of ESM runs, and the only sign of it is an absence. Exile's own
 /// `start server.bat` has always spelled these with backslashes.
-fn launch_args(windows: &WindowsConfig, instance: &Instance) -> String {
-    windows
-        .server_args
+fn launch_args(windows: &WindowsConfig, extra_mods: &ExtraMods, instance: &Instance) -> String {
+    extra_mods::merge_into_args(&windows.server_args, extra_mods, MOD_SEPARATOR)
         .iter()
         .map(|arg| format!("-{}", arg.replace('/', "\\")))
         .chain(std::iter::once(format!("-port={}", instance.port)))
@@ -741,7 +751,7 @@ mod tests {
         let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
         let config = parse(std::path::Path::new(config_path)).expect("config.yml");
         let instance = config.instances[0].clone();
-        let target = super::RemoteTarget::new(&config, &instance).expect("windows: section");
+        let target = super::RemoteTarget::new(&config, &Default::default(), &instance).expect("windows: section");
 
         assert_eq!(target.run("'hello'").expect("run"), "hello");
 
@@ -773,7 +783,7 @@ mod tests {
         let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
         let config = parse(std::path::Path::new(config_path)).expect("config.yml");
         let instance = config.instances[0].clone();
-        let target = super::RemoteTarget::new(&config, &instance).expect("windows: section");
+        let target = super::RemoteTarget::new(&config, &Default::default(), &instance).expect("windows: section");
 
         let local = std::env::temp_dir().join("esm-upload-test");
         let nested = local.join("addons");
@@ -820,7 +830,7 @@ mod tests {
         let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
         let config = parse(std::path::Path::new(config_path)).expect("config.yml");
         let instance = config.instances[0].clone();
-        let target = super::RemoteTarget::new(&config, &instance).expect("windows: section");
+        let target = super::RemoteTarget::new(&config, &Default::default(), &instance).expect("windows: section");
 
         let log = std::path::PathBuf::from("C:\\temp\\esm-held-open.log");
         let holder_script = "C:\\temp\\esm-holder.ps1";

@@ -1,0 +1,7 @@
+/ locals: current_server
+#reward_packages_list
+  = render "communities/servers/rewards/default_package", current_server:, \
+    package: reward_packages_default_for(current_server)
+
+  = render "communities/servers/rewards/coded_packages", current_server:, \
+    packages: reward_packages_coded_for(current_server)

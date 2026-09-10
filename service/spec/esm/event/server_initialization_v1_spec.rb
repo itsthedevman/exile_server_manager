@@ -5,7 +5,7 @@ describe ESM::Event::ServerInitializationV1 do
   let!(:community) { create(:esm_community, territory_admin_ids: ["440254072780488714", "440296219726708747"]) }
   let!(:server) { create(:server, community_id: community.id) }
   let!(:user) { create(:user) }
-  let(:reward) { server.server_reward }
+  let(:reward) { server.server_rewards.default.first }
   let(:setting) { server.server_setting }
   let!(:packet) do
     OpenStruct.new(

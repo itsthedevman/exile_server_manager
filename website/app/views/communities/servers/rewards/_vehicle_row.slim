@@ -1,0 +1,19 @@
+/ locals: vehicle, prefix
+.row.g-2.mb-2 data-reward-package-row=""
+  .col-12.col-lg-7
+    = text_field_tag "#{prefix}[class_name]", vehicle&.class_name, \
+      id: nil, class: "form-control form-control-sm font-monospace", \
+      placeholder: "Exile_Car_Hatchback", required: true, autocomplete: "off"
+
+  .col-9.col-lg-4
+    = select_tag "#{prefix}[spawn_location]", \
+      options_for_select(reward_package_spawn_location_options, vehicle&.spawn_location), \
+      id: nil, class: "form-select form-select-sm"
+
+  .col-3.col-lg-1.text-end
+    button.btn.btn-outline-danger.btn-sm[
+      type="button"
+      title="Remove vehicle"
+      data-action="click->reward-contents-editor#remove"
+    ]
+      i.bi.bi-trash

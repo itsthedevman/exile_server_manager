@@ -23,19 +23,19 @@
             = f.number_field :player_poptabs,
                 class: "form-control",
                 min: 0,
-                value: server.server_reward&.player_poptabs || 0
+                value: default_reward&.player_poptabs || 0
           .col-12.col-lg-4
             label.form-label Locker Poptabs
             = f.number_field :locker_poptabs,
                 class: "form-control",
                 min: 0,
-                value: server.server_reward&.locker_poptabs || 0
+                value: default_reward&.locker_poptabs || 0
           .col-12.col-lg-4
             label.form-label Respect
             = f.number_field :respect,
                 class: "form-control",
                 min: 0,
-                value: server.server_reward&.respect || 0
+                value: default_reward&.respect || 0
 
       / Reward Items
       .mb-0

@@ -22,7 +22,7 @@
 
         .row.g-4
           - commands.each do |command|
-            .col-xl-6 data-commands-filter-target="card" data-usage=command.usage
+            .col-xl-6 data-commands-filter-target="card" data-search=command_filter_text(command)
               = render "commands/command_card", command:, **local_assigns
 
     .text-center.text-muted.py-5.d-none data-commands-filter-target="empty"

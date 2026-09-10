@@ -1,0 +1,13 @@
+/ locals: current_server
+.card.mb-4
+  .card-header
+    h4.mb-0
+      i.bi.bi-gift.text-warning.me-2
+      | Player Rewards
+      span.badge.bg-info.ms-2 NEW
+
+  .card-body
+    p.text-muted.small.mb-4
+      | What players receive from #{command_usage(:reward, show_arguments: false)}. Packages save as you go.
+
+    = render "communities/servers/rewards/list", current_server:

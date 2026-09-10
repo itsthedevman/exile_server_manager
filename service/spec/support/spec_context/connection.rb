@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.shared_context("connection") do
+  # The Arma server these specs expect to answer. It has to be named rather than discovered: the suite's own server
+  # comes from a factory, so its server_id is random and no Arma config could name a slot for it in advance. This is
+  # the other half of the port allocation in service/config/settings/test.yml, since that server has to dial the
+  # listener this suite binds rather than the one a bot started by hand does.
+  let(:arma_server_id) { ARMA_SPEC_SERVER_ID }
+  let(:arma_key_slot) { "server_key:#{arma_server_id}" }
+  let(:arma_key_confirm_slot) { "server_key_set:#{arma_server_id}" }
+
   # When nested inside "command", inherit its community/user so the
   # channel/discord_server/community/member lineage stays consistent. Without
   # this, `Community.from_discord` first_or_initializes a fresh community with
@@ -230,12 +238,12 @@ RSpec.shared_context("connection") do
   end
 
   before do |example|
-    ESM.redis.del("server_key_set")
+    ESM.redis.del(arma_key_confirm_slot)
 
     next unless example.metadata[:requires_connection]
 
     # Store the server key so the build tool can pick it up and write it
-    ESM.redis.set("server_key", server.token.to_json)
+    ESM.redis.set(arma_key_slot, server.token.to_json)
 
     # In order to properly bind territory_admin_uids, the UIDs must be available by
     # server initialization. However, I haven't figured out an elegant way to make this
@@ -252,13 +260,13 @@ RSpec.shared_context("connection") do
       attempts += 1
       connection_server.resume
 
-      wait_for { ESM.redis.exists?("server_key_set") }.to be(true)
+      wait_for { ESM.redis.exists?(arma_key_confirm_slot) }.to be(true)
       wait(timeout: 5).for { server.reload.connected? }.to be(true)
     rescue RSpec::Expectations::ExpectationNotMetError
       if attempts >= max_attempts
-        raise "esm_arma never connected after #{max_attempts} attempts. Run `bin/dev` from arma/ to start it. " \
-              "Specs only reach the first server in arma/config.yml, so a --server-id run of any other one " \
-              "will not answer."
+        raise "#{arma_server_id} never connected after #{max_attempts} attempts. Start it with `bin/spec_server` " \
+              "from arma/. Only that server answers here: it is the one this suite issues a key to, and the only " \
+              "one pointed at port #{ESM.config.ports.connection_server} rather than at a bot started by hand."
       end
 
       connection_server.pause

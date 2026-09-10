@@ -4,6 +4,9 @@ module Servers
   class PlayersController < RegisteredController
     include PlayerLoading
     include Commands
+    include ServerVersion
+
+    before_action :require_supported_server!
 
     # The listing answers "who has been around lately", so the look-back is the axis an admin steers. Anyone holding a
     # uid for a long-inactive player reaches that player directly rather than widening this until they appear.

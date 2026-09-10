@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Starts the Arma server that answers the service spec suite.
+#
+# It has to be a second server rather than the one bin/dev starts. Each server watches a Redis slot
+# named for itself and dials a bot address baked in at build time, and the suite issues to
+# `server_key:esm_test` on a listener of its own. A server pointed at a hand-started bot cannot also
+# answer the suite, so running both at once means running both servers.
+#
+# ESM_PORT_CONNECTION_SERVER overrides the port. It is the same variable that moves the suite's
+# listener, so setting it once moves both ends and they cannot drift apart. ESM_SPEC_BOT_HOST covers
+# a bot that is not reachable at Docker's own name for the host, a Windows guest being the usual
+# reason.
+#
+# Extra arguments are passed to bin/build. Leave --server-id and --bot-host out of them: this script
+# names both, and clap rejects a repeated argument rather than taking the last one.
+
+set -euo pipefail
+
+readonly args=("$@")
+readonly server_id="esm_test"
+readonly bot_host="${ESM_SPEC_BOT_HOST:-host.docker.internal}:${ESM_PORT_CONNECTION_SERVER:-3203}"
+
+config_path="$(pwd)/config.yml"
+readonly config_path
+
+if ! grep -qE "^[[:space:]]*- server_id: +${server_id}[[:space:]]*$" "$config_path"; then
+    echo "Fatal - no instance '${server_id}' in ${config_path}"
+    echo "  Configured: $(awk '$2 == "server_id:" { printf "%s ", $3 }' "$config_path")"
+    echo "  Add one with its own game port and database, then run this again."
+    exit 1
+fi
+
+echo "Starting ${server_id}, pointed at the bot on ${bot_host}"
+
+exec "./bin/build" --start-server --server-id "$server_id" --bot-host "$bot_host" "${args[@]}"

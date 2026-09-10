@@ -1,4 +1,4 @@
-/ locals: can_broadcast, audiences, can_clear_cooldowns
+/ locals: can_broadcast, audiences, can_clear_cooldowns, can_manage_reward_claims
 - content_for :title, current_community.community_id
 
 - if can_broadcast
@@ -9,12 +9,14 @@
     h1.mb-2 Community Tools
     p.lead.text-muted.mb-0 = "Commands that act on #{current_community.community_name} as a whole, rather than on one of its servers"
 
-  - if can_broadcast || can_clear_cooldowns
+  - if can_broadcast || can_clear_cooldowns || can_manage_reward_claims
     .row.g-4
       - if can_broadcast
         = render "communities/broadcasts/card", current_community:
       - if can_clear_cooldowns
         = render "communities/cooldowns/card", current_community:
+      - if can_manage_reward_claims
+        = render "communities/reward_claims/card", current_community:
   - else
     .card
       .card-body.text-center.py-5

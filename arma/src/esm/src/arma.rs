@@ -172,10 +172,7 @@ async fn post_initialization(mut message: Message) -> MessageResult {
 }
 
 async fn call_arma_function(mut message: Message) -> MessageResult {
-    // If the data has a territory_id, check it against the database
-    if message.data.contains_key("territory_id") {
-        decode_territory_id(&mut message).await?;
-    }
+    decode_territory_ids(&mut message.data).await?;
 
     // Now process the message
     send_to_arma(message).await?;
@@ -183,28 +180,121 @@ async fn call_arma_function(mut message: Message) -> MessageResult {
     Ok(None)
 }
 
-async fn decode_territory_id(message: &mut Message) -> ESMResult {
-    let Some(territory_id) = message.data.get_mut("territory_id") else {
-        return Err("[decode_territory_id] Failed to gain mut access to data object on Message. This is a bug".into());
-    };
+// Territory IDs leave the extension encoded, so one coming back has to be resolved before SQF can match it against an
+// ExileDatabaseID. They do not always sit at the top of the payload either: a reward package carries one per vehicle,
+// nested inside an array. Each decoded ID is written beside its encoded one as `territory_database_id`, which is the
+// key every command's SQF already reads.
+async fn decode_territory_ids(data: &mut Data) -> ESMResult {
+    let mut encoded_ids: HashSet<String> = HashSet::new();
+    collect_territory_ids(data, &mut encoded_ids)?;
 
-    let Some(id) = territory_id.as_str() else {
-        return Err(format!(
-            "[decode_territory_id] Invalid territory ID: {:?}",
-            territory_id
-        )
-        .into());
-    };
+    if encoded_ids.is_empty() {
+        return Ok(());
+    }
 
-    let decoded_id = DATABASE.decode_territory_id(id).await?;
-    debug!("[decode_territory_id] Resolved {territory_id} into {decoded_id}");
+    // Decoding costs a database round trip, so an ID is resolved once no matter how many times it appears. Several
+    // vehicles bound for the same virtual garage is the normal case, not the exception.
+    let mut decoded_ids: HashMap<String, u64> = HashMap::new();
+    for encoded_id in encoded_ids {
+        let database_id = DATABASE.decode_territory_id(&encoded_id).await?;
+        debug!("[decode_territory_ids] Resolved {encoded_id} into {database_id}");
 
-    // Add the decoded database ID to the data object
-    message
-        .data
-        .insert("territory_database_id".to_owned(), json!(decoded_id));
+        decoded_ids.insert(encoded_id, database_id);
+    }
+
+    insert_database_ids(data, &decoded_ids);
 
     Ok(())
+}
+
+// A `territory_id` is always the encoded string the extension handed out. Anything else means the bot built a bad
+// payload, and saying so here beats SQF reporting a territory that does not exist.
+fn encoded_territory_id(value: Option<&JSONValue>) -> Result<Option<String>, Error> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+
+    let Some(id) = value.as_str() else {
+        return Err(format!("[decode_territory_ids] Invalid territory ID: {value:?}").into());
+    };
+
+    Ok(Some(id.to_owned()))
+}
+
+fn collect_territory_ids(data: &Data, encoded_ids: &mut HashSet<String>) -> ESMResult {
+    if let Some(id) = encoded_territory_id(data.get("territory_id"))? {
+        encoded_ids.insert(id);
+    }
+
+    for value in data.values() {
+        collect_nested_territory_ids(value, encoded_ids)?;
+    }
+
+    Ok(())
+}
+
+fn collect_nested_territory_ids(value: &JSONValue, encoded_ids: &mut HashSet<String>) -> ESMResult {
+    match value {
+        JSONValue::Object(object) => {
+            if let Some(id) = encoded_territory_id(object.get("territory_id"))? {
+                encoded_ids.insert(id);
+            }
+
+            for nested in object.values() {
+                collect_nested_territory_ids(nested, encoded_ids)?;
+            }
+        }
+        JSONValue::Array(entries) => {
+            for entry in entries {
+                collect_nested_territory_ids(entry, encoded_ids)?;
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+fn insert_database_ids(data: &mut Data, decoded_ids: &HashMap<String, u64>) {
+    let database_id = data
+        .get("territory_id")
+        .and_then(|value| value.as_str())
+        .and_then(|id| decoded_ids.get(id))
+        .copied();
+
+    if let Some(database_id) = database_id {
+        data.insert("territory_database_id".to_owned(), json!(database_id));
+    }
+
+    for value in data.values_mut() {
+        insert_nested_database_ids(value, decoded_ids);
+    }
+}
+
+fn insert_nested_database_ids(value: &mut JSONValue, decoded_ids: &HashMap<String, u64>) {
+    match value {
+        JSONValue::Object(object) => {
+            let database_id = object
+                .get("territory_id")
+                .and_then(|value| value.as_str())
+                .and_then(|id| decoded_ids.get(id))
+                .copied();
+
+            if let Some(database_id) = database_id {
+                object.insert("territory_database_id".to_owned(), json!(database_id));
+            }
+
+            for nested in object.values_mut() {
+                insert_nested_database_ids(nested, decoded_ids);
+            }
+        }
+        JSONValue::Array(entries) => {
+            for entry in entries {
+                insert_nested_database_ids(entry, decoded_ids);
+            }
+        }
+        _ => {}
+    }
 }
 
 async fn file_search(message: Message) -> MessageResult {
@@ -339,4 +429,107 @@ async fn check_payment_counter(message: &Message) -> ESMResult {
     }
 
     Err(Error::code("max_payment_count"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The shape a reward package arrives in: one territory per vehicle, nested two levels down
+    fn reward_payload() -> Data {
+        HashMap::from([
+            ("items".to_owned(), json!({"Exile_Item_Cheathas": 2})),
+            (
+                "vehicles".to_owned(),
+                json!([
+                    {"class_name": "Exile_Car_Hatchback_Rusty1", "spawn_location": "nearby"},
+                    {"class_name": "Exile_Car_Hunter", "spawn_location": "virtual_garage", "territory_id": "a3f9k"},
+                    {"class_name": "Exile_Car_Ifrit", "spawn_location": "virtual_garage", "territory_id": "b7c2m"},
+                ]),
+            ),
+        ])
+    }
+
+    fn collect(data: &Data) -> Result<HashSet<String>, Error> {
+        let mut encoded_ids = HashSet::new();
+        collect_territory_ids(data, &mut encoded_ids)?;
+
+        Ok(encoded_ids)
+    }
+
+    #[test]
+    fn it_collects_a_top_level_territory_id() {
+        let data = HashMap::from([("territory_id".to_owned(), json!("a3f9k"))]);
+
+        assert_eq!(collect(&data).unwrap(), HashSet::from(["a3f9k".to_owned()]));
+    }
+
+    #[test]
+    fn it_collects_territory_ids_nested_in_an_array() {
+        assert_eq!(
+            collect(&reward_payload()).unwrap(),
+            HashSet::from(["a3f9k".to_owned(), "b7c2m".to_owned()])
+        );
+    }
+
+    #[test]
+    fn it_collects_a_repeated_territory_id_once() {
+        let data = HashMap::from([
+            ("territory_id".to_owned(), json!("a3f9k")),
+            ("vehicles".to_owned(), json!([{"territory_id": "a3f9k"}, {"territory_id": "a3f9k"}])),
+        ]);
+
+        assert_eq!(collect(&data).unwrap(), HashSet::from(["a3f9k".to_owned()]));
+    }
+
+    #[test]
+    fn it_collects_nothing_when_the_payload_has_no_territory() {
+        let data = HashMap::from([("locker".to_owned(), json!(5_000))]);
+
+        assert!(collect(&data).unwrap().is_empty());
+    }
+
+    #[test]
+    fn it_rejects_a_territory_id_that_is_not_a_string() {
+        let data = HashMap::from([("vehicles".to_owned(), json!([{"territory_id": 12}]))]);
+
+        assert!(collect(&data).is_err());
+    }
+
+    #[test]
+    fn it_inserts_a_database_id_beside_every_encoded_one() {
+        let mut data = reward_payload();
+        let decoded_ids = HashMap::from([("a3f9k".to_owned(), 42), ("b7c2m".to_owned(), 7)]);
+
+        insert_database_ids(&mut data, &decoded_ids);
+
+        let vehicles = data["vehicles"].as_array().unwrap();
+
+        // The vehicle spawning nearby was never given a territory and must not gain one
+        assert!(vehicles[0].get("territory_database_id").is_none());
+
+        assert_eq!(vehicles[1]["territory_database_id"], json!(42));
+        assert_eq!(vehicles[2]["territory_database_id"], json!(7));
+
+        // The encoded ID stays put. Only SQF cares which one it reads
+        assert_eq!(vehicles[1]["territory_id"], json!("a3f9k"));
+    }
+
+    #[test]
+    fn it_inserts_a_database_id_at_the_top_level() {
+        let mut data = HashMap::from([("territory_id".to_owned(), json!("a3f9k"))]);
+
+        insert_database_ids(&mut data, &HashMap::from([("a3f9k".to_owned(), 42)]));
+
+        assert_eq!(data["territory_database_id"], json!(42));
+    }
+
+    #[test]
+    fn it_leaves_an_undecoded_territory_id_alone() {
+        let mut data = HashMap::from([("territory_id".to_owned(), json!("a3f9k"))]);
+
+        insert_database_ids(&mut data, &HashMap::new());
+
+        assert!(data.get("territory_database_id").is_none());
+    }
 }

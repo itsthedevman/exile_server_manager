@@ -51,16 +51,14 @@ module ESM
       #
       # @param async [Boolean] when true, the Discord connection runs in a
       #   background thread and this method returns immediately. Defaults to false.
-      # @param bare [Boolean] when true, loads commands and connects to Discord, but skips binding any events or
-      #   starting extra servers/services
       #
       # @return [void]
       #
-      def run(async: false, bare: false)
+      def run(async: false)
         @timer.start!
 
         # Binds the Discord Events
-        bind_events! unless bare
+        bind_events!
 
         # Start the bot
         super(async)
@@ -71,12 +69,14 @@ module ESM
 
         @esm_status = :stopping
 
-        ESM::Website::API::Server.stop
-        ESM::Arma::Server.stop
+        ESM::Website::API::Server.stop if ESM.features.nats?
+        ESM::Arma::Server.stop if ESM.features.arma_listener?
 
         # V1
-        ESM::Websocket::Server.stop
-        ESM::Request::Overseer.die
+        if ESM.features.websocket_v1?
+          ESM::Websocket::Server.stop
+          ESM::Request::Overseer.die
+        end
 
         super
       end
@@ -86,8 +86,13 @@ module ESM
       # These all have to have unique-to-ESM names since we are inheriting
       ###########################
       def bind_events!
+        # `ready` carries the rest of startup, so it binds no matter which features are on. What it does once it
+        # fires is gated inside #esm_ready.
         mention(&method(:esm_mention))
         ready(&method(:esm_ready))
+
+        return unless ESM.features.discord_events?
+
         server_create(&method(:esm_server_create))
         server_update(&method(:esm_server_update))
         user_ban(&method(:esm_user_ban))
@@ -100,21 +105,7 @@ module ESM
       end
 
       def esm_ready(_event)
-        @metadata = ESM::BotAttribute.first_or_create
-
-        if metadata.present?
-          update_status(
-            # status
-            "online",
-            # activity
-            metadata.status_message,
-            # url
-            nil,
-            # since: 0
-            # afk: 0
-            activity_type: STATUS_TYPES[metadata.status_type]
-          )
-        end
+        update_bot_status if ESM.features.status?
 
         # Sometimes the bot loses connection with Discord. Upon reconnect, the ready event will be triggered again.
         # Don't restart the websocket server again.
@@ -124,7 +115,7 @@ module ESM
         end
 
         # Once everything is set up, the commands can be hooked
-        ESM::Command.setup_event_hooks!
+        ESM::Command.setup_event_hooks! if ESM.features.command_hooks?
 
         @esm_status = :ready
 
@@ -135,12 +126,14 @@ module ESM
         )
 
         # V1
-        ESM::Websocket.start!
-        ESM::Request::Overseer.watch
+        if ESM.features.websocket_v1?
+          ESM::Websocket.start!
+          ESM::Request::Overseer.watch
+        end
         # V1
 
         # Wait until after the bot is connected before allowing servers to connect
-        ESM::Arma::Server.start
+        ESM::Arma::Server.start if ESM.features.arma_listener?
       end
 
       def esm_server_create(event)
@@ -393,6 +386,23 @@ module ESM
       end
 
       private
+
+      def update_bot_status
+        @metadata = ESM::BotAttribute.first_or_create
+        return if metadata.blank?
+
+        update_status(
+          # status
+          "online",
+          # activity
+          metadata.status_message,
+          # url
+          nil,
+          # since: 0
+          # afk: 0
+          activity_type: STATUS_TYPES[metadata.status_type]
+        )
+      end
 
       def format_invalid_response(expected)
         expected_string = expected.map { |value| "`#{value}`" }.join(" or ")

@@ -73,8 +73,19 @@ module ESM
       def store_metadata
         @tcp_client.set_metadata(
           vg_enabled: @message.data.vg_enabled,
-          vg_max_sizes: @message.data.vg_max_sizes
+          vg_max_sizes: garage_sizes
         )
+      end
+
+      # How many vehicles the virtual garage holds at each territory level, as numbers.
+      #
+      # Arma hands the array over as a string of strings, which reads fine in a log and then quietly compares wrong
+      # against a vehicle count. -1 is Exile's way of saying a level has no garage at all, so it survives the parse.
+      def garage_sizes
+        sizes = @message.data.vg_max_sizes
+        sizes = sizes.parse_json || [] if sizes.is_a?(String)
+
+        Array(sizes).map(&:to_i)
       end
 
       def build_setting_data

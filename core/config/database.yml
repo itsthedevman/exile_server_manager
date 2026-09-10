@@ -8,15 +8,24 @@ default: &default
   username: <%= ENV.fetch("POSTGRES_USERNAME", "esm") %>
   password: <%= ENV.fetch("POSTGRES_PASSWORD", "password12345") %>
 
+# POSTGRES_DATABASE is repeated per environment rather than left to the default above, because each environment needs
+# its own fallback. A second bot pointed at the website suite's fixtures runs as `development` and names its database
+# here; running it as `test` instead would trip every ESM.env.test? branch in the V1 transport, which swallows errors
+# and skips marking a server disconnected.
 development:
   !!merge <<: *default
-  database: esm_development
+  database: <%= ENV.fetch("POSTGRES_DATABASE", "esm_development") %>
 
 test:
   !!merge <<: *default
   adapter: postgresql
-  database: esm_test
+  database: <%= ENV.fetch("POSTGRES_DATABASE", "esm_test") %>
 
+# The Exile game database, reached only by the service spec suite through ArmaRecord. It has to name the same
+# database as the Arma server that suite drives, and that is esm_test, so this is exile_esm_test rather than
+# esm_malden's exile_esm. Pointing it at the wrong one does not fail loudly: the suite writes a player the server
+# cannot see, and Arma reports an undefined _data in ExileServer_object_player_database_load rather than a missing
+# row. Not to be confused with Postgres `test` above; these are different servers that both answer to "esm test".
 arma_test:
   !!merge <<: *default
   adapter: mysql2
@@ -24,7 +33,7 @@ arma_test:
   host: "127.0.0.1"
   port: "3306"
   username: root
-  database: exile_esm
+  database: <%= ENV.fetch("EXILE_DATABASE", "exile_esm_test") %>
   password: "password12345"
   database_tasks: false
 

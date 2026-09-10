@@ -1,0 +1,51 @@
+/ locals: claims, player_options, server_options
+.card#reward_claims_card data-controller="reward-claim-filters"
+  - if claims.empty?
+    = render "communities/reward_claims/empty"
+  - else
+    .card-header
+      .row.g-2.align-items-center
+        .col-12.col-md
+          = select_tag :player, nil, class: "form-select form-select-sm",
+            aria: {label: "Filter by player"},
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: reward_claim_player_select_data(player_options),
+              slim_select_placeholder_value: "Any player",
+              action: [slim_select_stimulus_actions("reward-claim-filters"), "change->reward-claim-filters#filter"].join(" ") \
+            }
+
+        .col-12.col-md
+          = select_tag :server, nil, class: "form-select form-select-sm",
+            aria: {label: "Filter by server"},
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: reward_claim_server_select_data(server_options),
+              slim_select_placeholder_value: "Any server",
+              slim_select_show_search_value: false,
+              action: [slim_select_stimulus_actions("reward-claim-filters"), "change->reward-claim-filters#filter"].join(" ") \
+            }
+
+        .col-12.col-md
+          = select_tag :state, nil, class: "form-select form-select-sm",
+            aria: {label: "Filter by state"},
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: reward_claim_state_select_data,
+              slim_select_placeholder_value: "Any state",
+              slim_select_show_search_value: false,
+              action: [slim_select_stimulus_actions("reward-claim-filters"), "change->reward-claim-filters#filter"].join(" ") \
+            }
+
+        .col-auto
+          button.btn.btn-sm.btn-link.p-0.text-decoration-none.text-nowrap type="button" data-reward-claim-filters-target="reset" data-action="click->reward-claim-filters#reset" hidden=true
+            i.bi.bi-x-circle.me-1
+            | Clear filters
+
+    = render "communities/reward_claims/table", claims:
+
+    .card-body.text-center.py-5 data-reward-claim-filters-target="empty" hidden=true
+      i.bi.bi-funnel.text-muted.fs-1.d-block.mb-3
+      h5.text-light.mb-2 Nothing matches those filters
+      p.text-muted.mb-3 No claim on this page fits that combination.
+      button.btn.btn-sm.btn-outline-secondary type="button" data-action="click->reward-claim-filters#reset" Clear filters

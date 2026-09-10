@@ -1,4 +1,4 @@
-.container.window
+.container.window data-controller="commands-filter"
   .row.g-5
     / Clean Navigation Sidebar
     .col-lg-3
@@ -16,14 +16,19 @@
               data-bs-smooth-scroll="true"
             ]
               - commands_by_domain.each do |(domain, category), commands|
-                a.list-group-item.list-group-item-action.text-light.border-0.bg-transparent.py-3 href="##{category.parameterize}"
-                  .d-flex.align-items-center.justify-content-between
-                    strong.text-primary.fs-5 = "/#{domain}"
-                    span.badge.bg-secondary.small = commands.size
-                / Individual commands
-                - commands.each do |command|
-                  a.list-group-item.list-group-item-action.text-muted.ps-5.border-0.bg-transparent.py-2 href="##{command.usage.parameterize}"
-                    = command.operation
+                div data-commands-filter-target="section"
+                  a.list-group-item.list-group-item-action.text-light.border-0.bg-transparent.py-3 href="##{category.parameterize}"
+                    .d-flex.align-items-center.justify-content-between
+                      strong.text-primary.fs-5 = "/#{domain}"
+                      span.badge.bg-secondary.small data-commands-filter-target="count" = commands.size
+                  / Individual commands
+                  - commands.each do |command|
+                    a.list-group-item.list-group-item-action.text-muted.ps-5.border-0.bg-transparent.py-2[
+                      href="##{command.usage.parameterize}"
+                      data-commands-filter-target="card"
+                      data-search=command_filter_text(command)
+                    ]
+                      = command.operation
 
     / Main Content with Info Cards
     .col-lg-9
@@ -31,6 +36,15 @@
       .text-center.mb-5
         h1.mb-3.text-primary Commands
         p.lead Command documentation can be found, at any time, by using the #{command_usage(:help, show_arguments: false)} command in Discord.
+
+      .mb-5
+        input.form-control.form-control-lg[
+          type="text"
+          placeholder="Filter commands by name..."
+          autocomplete="off"
+          data-commands-filter-target="input"
+          data-action="input->commands-filter#filter"
+        ]
 
       / Info Cards at Top
       .row.g-4.mb-5
@@ -80,7 +94,7 @@
       / Commands by category
       #commands
         - commands_by_domain.each_with_index do |((domain, category), commands), category_index|
-          .mb-5 id=category.to_s.parameterize
+          .mb-5 id=category.to_s.parameterize data-commands-filter-target="section"
             / Category Header
             .d-flex.align-items-center.justify-content-between.mb-4.pb-3.border-bottom.border-secondary
               h2.mb-0.text-primary
@@ -88,11 +102,19 @@
                 |< Commands
               .d-flex.gap-2
                 span.badge.bg-primary.fs-6 = "/#{domain}"
-                span.badge.bg-secondary.fs-6 = "#{commands.size} #{'command'.pluralize(commands.size)}"
+                span.badge.bg-secondary.fs-6[
+                  data-commands-filter-target="count"
+                  data-count-noun="command"
+                ]
+                  = "#{commands.size} #{'command'.pluralize(commands.size)}"
 
             / Commands in this category
             - commands.each_with_index do |command, index|
-              .card.bg-dark.border-secondary.mb-4 id=command.usage.parameterize
+              .card.bg-dark.border-secondary.mb-4[
+                id=command.usage.parameterize
+                data-commands-filter-target="card"
+                data-search=command_filter_text(command)
+              ]
                 .card-body
                   / Command Header
                   .d-flex.align-items-start.justify-content-between.mb-4
@@ -138,6 +160,10 @@
                         | Examples
                       .bg-body-secondary.bg-opacity-10.rounded.p-lg-3
                         = render_component(CommandExampleDocsComponent, command:)
+
+      .text-center.text-muted.py-5.d-none data-commands-filter-target="empty"
+        i.bi.bi-search.me-2
+        | No commands match your filter.
 
       / Footer
       .card.bg-primary.bg-opacity-10.border-primary.mt-5

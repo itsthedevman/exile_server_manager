@@ -159,13 +159,15 @@ RSpec.shared_context("command") do
     target_server = opts.delete(:server) || server
     arguments = opts.delete(:arguments) || {}
 
-    # The website delivers every argument as a String (form params), so mirror that on the way in.
+    # The website delivers scalar arguments as Strings (form params), so mirror that on the way in. Structured ones
+    # ride the JSON column as themselves and must not be flattened into a Ruby inspect string.
     arguments =
       arguments.transform_values do |value|
         case value
         when ESM::Server then value.server_id
         when ESM::Community then value.community_id
         when ESM::User then value.mention
+        when Array, Hash then value.as_json
         else value.to_s
         end
       end
@@ -213,7 +215,8 @@ RSpec.shared_context("command") do
   end
 
   def wait_for_completion!(event = :on_execute)
-    wait_for { previous_command.timers.public_send(event.to_sym).finished? }.to be(true)
+    # A phase that has not started yet has no timer, and nil keeps the poll going rather than blowing up mid-wait
+    wait_for { previous_command.timers[event.to_sym]&.finished? }.to be(true)
   end
 
   def respond_to_prompt(response, user: discord_user, channel: default_text_channel)

@@ -57,6 +57,13 @@
   = render "communities/servers/version_picker", **local_assigns
   = render "communities/servers/destroy_modal", **local_assigns
 
+  - if reward_packages_manageable?(server)
+    = render "shared/turbo_modal",
+      id: "reward_package_modal",
+      class: "modal-lg",
+      data: {bs_backdrop: "static", bs_keyboard: "false"},
+      **local_assigns
+
   = content_tag :div, data: { controller: "server-edit",
     server_edit_server_id_check_path_value: \
       available_community_server_path(current_community, server, format: :json),
@@ -70,7 +77,10 @@
 
       = render "communities/servers/server_info", f:, **local_assigns
       = render "communities/servers/server_mods", f:, **local_assigns
-      = render "communities/servers/server_rewards", f:, **local_assigns
+      - if reward_packages_manageable?(server)
+        = render "communities/servers/reward_packages", current_server: server
+      - else
+        = render "communities/servers/server_rewards", f:, **local_assigns
 
       = f.fields_for :server_settings, server.server_setting do |f|
         = render "communities/servers/server_settings", f:, **local_assigns

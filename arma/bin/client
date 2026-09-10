@@ -6,8 +6,9 @@
 # different machines, put the server's address in config.yml under `client.host` rather than passing --host every
 # time; config.yml is gitignored, so a machine name stays on the machine it belongs to.
 #
-# The client only needs @ExileMod. @esm and @exileserver are server mods, so nothing built out of this repo has
-# to reach the client, and a client launch never has to wait on a build.
+# The client needs @ExileMod, plus any mod dropped into tools/server that is not a server-only one. @esm and
+# @exileserver are server mods, so nothing built out of this repo has to reach the client, and a client launch
+# never has to wait on a build.
 
 set -euo pipefail
 
@@ -147,14 +148,52 @@ if [[ ! -d "${workshop_mod}" ]]; then
   exit 1
 fi
 
+# Give the game a mod directory of its own named `name`, pointing at content that lives elsewhere.
+#
 # Arma resolves a relative -mod against its own directory, and a relative path is the one form that survives the
 # Linux-to-Windows path translation Proton does. Hence a symlink next to the game rather than an absolute path.
-readonly mod_link="${arma_directory}/@ExileMod"
+#
+# Repointed whenever it does not already lead where it should, which is what picks up a mod moving between Steam
+# libraries or a workshop copy being replaced by a locally built one.
+link_mod() {
+  local name="$1" source="$2"
+  local link="${arma_directory}/${name}"
 
-if [[ ! -e "${mod_link}" ]]; then
-  ln -s "${workshop_mod}" "${mod_link}"
-  echo "Linked @ExileMod -> ${workshop_mod}"
-fi
+  [[ "$(readlink "${link}" 2>/dev/null)" == "${source}" ]] && return
+
+  # A copy put there by hand already resolves, and Arma cannot tell one from a link, so it is left alone: `ln`
+  # would drop the link inside it rather than replace it. Worth a line all the same, since a copy is content of
+  # its own and stays at whatever the last build left there.
+  if [[ -d "${link}" && ! -L "${link}" ]]; then
+    echo "Using the ${name} directory already in the Arma install; it will not follow rebuilds."
+    echo "  Delete it to have this link ${source} instead."
+    return
+  fi
+
+  ln -sfn "${source}" "${link}"
+  echo "Linked ${name} -> ${source}"
+}
+
+mods=(@ExileMod)
+link_mod @ExileMod "${workshop_mod}"
+
+# Every @ directory under tools/server that this repository does not ship itself is a mod someone dropped in, and
+# a client launch should carry it without anything here being told its name. The `_server` halves stay behind:
+# those exist so a server can run its half without the client half loading for every player.
+for mod_path in "${repo_root}"/tools/server/@*/; do
+  [[ -d "${mod_path}" ]] || continue
+
+  mod_name="$(basename "${mod_path}")"
+
+  case "${mod_name}" in
+    @exile | @exileserver | *_server) continue ;;
+  esac
+
+  link_mod "${mod_name}" "${mod_path%/}"
+  mods+=("${mod_name}")
+done
+
+readonly mod_list="$(IFS=';'; echo "${mods[*]}")"
 
 if [[ -z "${host}" ]]; then
   host="$(lookup_client_host)" || true
@@ -191,7 +230,7 @@ fi
 
 launch_args=(
   -noLauncher
-  -mod=@ExileMod
+  "-mod=${mod_list}"
   "-name=${profile}"
   -nosplash
   -skipIntro
@@ -213,7 +252,7 @@ fi
 if [[ ${connect} -eq 1 ]]; then
   echo "Connecting to ${host}:${port} as ${profile}"
 else
-  echo "Launching with @ExileMod, no server"
+  echo "Launching with ${mod_list}, no server"
 fi
 
 # Launched through Steam rather than Proton directly: Steam owns the compatibility tool, the prefix and the

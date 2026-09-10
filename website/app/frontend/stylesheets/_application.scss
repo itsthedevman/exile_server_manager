@@ -30,6 +30,31 @@ footer {
     min-width: 0;
 }
 
+// One table style for the whole site, so a page that grows a table doesn't have to remember four utility classes to
+// look like the page next to it. A header labels its column rather than titling it, which is why it sits small and
+// muted: the rows are what someone came to read, and a row of bold white nouns above them competes for that.
+.table {
+    // Bootstrap rules every row in the same color it draws a card's edge in, which reads as a grid rather than as a
+    // list. Quiet enough to separate two rows, not enough to box them in.
+    --bs-table-border-color: #{rgba($esm-warm-gray-600, 0.4)};
+
+    > thead > tr > th {
+        padding-bottom: map-get($spacers, 2);
+
+        color: $esm-warm-gray-400;
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    // The last one lands on whatever edge the table sits inside and doubles it
+    > tbody > tr:last-child > td {
+        border-bottom-width: 0;
+    }
+}
+
 // Sortable table headers: click to sort the rows the page already holds. The caret sits muted until the column is
 // active or hovered, so the whole header row doesn't read as a wall of arrows.
 .sortable-header {

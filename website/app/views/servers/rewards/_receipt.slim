@@ -1,0 +1,6 @@
+/ locals: contents, include_vehicles
+.small.mt-2.pt-2.border-top
+  - reward_receipt_lines(contents, include_vehicles:).each do |line|
+    .d-flex.justify-content-between.gap-3
+      span.text-truncate = line.label
+      span.flex-shrink-0.text-muted = line.value

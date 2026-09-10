@@ -96,17 +96,9 @@ RSpec.configure do |config|
   config.display_try_failure_messages = true
   config.clear_lets_on_failure = true
 
-  # Drop the AR connection pool between attempts. The dominant residual flake
-  # (`undefined method 'cmd_tuples' for nil` inside DatabaseCleaner) comes from
-  # a stray background thread leaving a PG connection in a half-reset state.
-  # disconnect! evicts every connection so the retry gets a fresh one. Also
-  # clear the in-memory message stores so the retry's assertions don't see
-  # leftovers from the failed attempt.
-  config.retry_callback = proc do |_example|
-    ActiveRecord::Base.connection_pool.disconnect!
-    ESM.discord_bot.test_outbox.clear
-    ESM.discord_bot.test_inbox.clear
-  end
+  # retry_callback is set by mock_helper / live_helper rather than here. RSpec takes one callback rather than a
+  # list, so it cannot be set here and extended there, and the mock run has message stores to clear that the live
+  # run does not have at all.
 
   # Append a row to .rspec_flakes.log every time a spec fails-then-passes on
   # retry. Use this to find the worst offenders and fix root causes; retries

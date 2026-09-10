@@ -77,6 +77,7 @@ forEach
     define_fn!("ESMs_command_sqf"),
     define_fn!("ESMs_command_upgrade"),
     define_fn!("ESMs_object_player_updateRespect"),
+    define_fn!("ESMs_object_vehicle_spawnReward"),
     define_fn!("ESMs_system_account_isKnown"),
     define_fn!("ESMs_system_extension_call"),
     define_fn!("ESMs_system_extension_callback"),

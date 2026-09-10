@@ -56,6 +56,14 @@
           });
         };
 
+        # playwright-ruby-client drives the Playwright Node driver over a pipe and expects to invoke it as a
+        # command. nixpkgs ships that driver's cli.js at the store root with no bin/ of its own, so it needs a
+        # launcher to be callable at all. The gem's version has to track this one: keep website/Gemfile's
+        # playwright-ruby-client on the same minor as playwright-driver, and move both together.
+        playwrightCli = pkgs.writeShellScriptBin "playwright" ''
+          exec ${pkgs.nodejs_22}/bin/node ${pkgs.playwright-driver}/cli.js "$@"
+        '';
+
         db_user = "esm";
         db_pass = "password12345";
       in
@@ -75,6 +83,10 @@
             yarn
             dart-sass
             overmind
+
+            # Website system specs
+            playwrightCli
+            playwright-driver.browsers
 
             # Databases
             postgresql_15
@@ -145,6 +157,12 @@
             if [ -d website/node_modules ]; then
               export PATH=$PWD/website/node_modules/.bin:$PATH
             fi
+
+            # Website system specs: drive the Nix-built browsers rather than the ones Playwright downloads on
+            # first run, which are dynamically linked against a library layout this machine does not have. The
+            # host-requirement probe expects that same layout, so it is skipped rather than failed.
+            export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
+            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
 
             # Website: postgres data dir (per-project to avoid conflicts)
             export PGDATA=''${PGDATA:-$PWD/tmp/postgres}

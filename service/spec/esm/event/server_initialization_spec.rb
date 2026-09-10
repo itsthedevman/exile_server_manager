@@ -16,7 +16,7 @@ describe ESM::Event::ServerInitialization, :requires_connection, v2: true do
     user_record
   end
   let(:setting) { server.server_setting }
-  let(:reward) { server.server_reward }
+  let(:reward) { server.server_rewards.default.first }
 
   let!(:message) do
     ESM::Message.new

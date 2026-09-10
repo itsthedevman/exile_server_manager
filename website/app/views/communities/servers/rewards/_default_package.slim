@@ -1,0 +1,35 @@
+/ locals: current_server, package
+.border.rounded.p-3.mb-4
+  - if package.nil? || !package.rewards?
+    .text-center.py-3
+      i.bi.bi-gift.fs-2.text-muted.d-block.mb-2
+      .fw-medium.text-muted No default package
+      .small.text-muted.mt-1 = reward_package_default_empty_explanation
+
+      - if package
+        = link_to edit_community_server_reward_path(current_community, current_server, package.reward_id),
+          class: "btn btn-primary btn-sm mt-3",
+          data: {"turbo-prefetch": false, "turbo-frame": "reward_package_modal_frame"}
+          i.bi.bi-plus.me-1
+          | Update default package
+
+  - else
+    .d-flex.align-items-center.justify-content-between.gap-3
+      .fw-medium.text-truncate = reward_package_name(package)
+
+      .flex-shrink-0.d-flex.align-items-center.gap-3
+        = render "communities/servers/rewards/enabled_toggle", current_server:, package:
+
+        = link_to edit_community_server_reward_path(current_community, current_server, package.reward_id),
+          class: "btn btn-outline-primary btn-sm",
+          title: "Edit the default package",
+          data: {"turbo-prefetch": false, "turbo-frame": "reward_package_modal_frame"}
+          i.bi.bi-pencil
+
+    .small.text-muted.mt-1 = reward_package_default_explanation
+
+    .d-flex.flex-wrap.align-items-center.gap-2.mt-3
+      - reward_content_badges(package).each do |badge|
+        span.badge.text-bg-secondary title=badge.detail = badge.label
+
+      span.small.text-muted = reward_package_cooldown_summary(package)

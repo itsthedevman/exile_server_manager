@@ -131,11 +131,21 @@ server_2 = ESM::Server.create!(
 
 ESM::Server.create!(
   community_id: other_community.id,
-  server_id: "esm3_other",
-  server_name: "Exile Server Manager (Other)",
+  server_id: "esm3_never_connected",
+  server_name: "Exile Server Manager (Never connected)",
   server_key: "dM34fkvl7FIcL63HGquV8ANXYWyXZs1epBvNDm0E30SnkvibqpwvhgtVHKlI8XMr9uUhhNXsR2kkkqRj19q5QfcCWsJv5AiChU7KsFdaXb4ommnADOVIWXa8kBzckadUrpQ1Yjdf0VzlIpazF3823DQBEBhMdFj7Ym5y8vERioyUuMV8KJo6h0OmTsXDc20Ndhi6oDnMOxN4YHrIHepcpAQIFFBoP9l7Myi3vt03IW9WBwnG",
   server_ip: "127.0.0.1",
   server_port: "2902"
+)
+
+ESM::Server.create!(
+  community_id: other_community.id,
+  server_id: "esm3_offline",
+  server_name: "Exile Server Manager (Offline)",
+  server_key: "RazAmngvDJd7gIn0E1LRJ5BDSISrmVT2FqxylXYO4eqgRqtuJTl4zDeClZws05Pq8Ej0OxC09LomYPrtfNN2cWu52IDv1QNvliJKibfSVbGuGJlW0juQ251jr4cqLJtbotM6Rgh5QrQLz2lA0fWw10uwKlOcF8hDcCzVOjHLTOMvCs8DvZJRs8u7K5RGb3duK9aZgeeqUJBwwiUTbD9U7J9aStryaLLJOVgd94knAq3Bvpgq",
+  server_ip: "127.0.0.1",
+  server_port: "2902",
+  server_version: "2.0.0"
 )
 puts " done"
 
@@ -163,15 +173,19 @@ puts " done"
 
 print "Creating server rewards..."
 # Default reward
-server_1.server_rewards.where(reward_id: nil).first.update!(
-  server_id: server_1.id,
-  reward_id: nil,
+server_1.server_rewards.default.first.update!(
+  name: "Welcome package",
   reward_items: {
     Exile_Item_WoodDoorKit: 1,
     Exile_Item_WoodWallKit: 3,
     Exile_Item_WoodFloorKit: 2
   },
-  reward_vehicles: [],
+  reward_vehicles: [
+    {
+      class_name: "Exile_Car_Hatchback_Beige",
+      spawn_location: "nearby"
+    }
+  ],
   player_poptabs: 12_345,
   locker_poptabs: 98_765,
   respect: 1
@@ -179,9 +193,11 @@ server_1.server_rewards.where(reward_id: nil).first.update!(
 
 # Vehicle reward
 server_1.server_rewards.create!(
-  server_id: server_1.id,
+  name: "Awesome Vehicles",
   reward_id: "vehicles",
-  reward_items: {},
+  reward_items: {
+    Exile_Item_JunkMetal: 2
+  },
   reward_vehicles: [
     {
       class_name: "Exile_Car_Hatchback_Beige",
@@ -198,6 +214,16 @@ server_1.server_rewards.create!(
   ],
   player_poptabs: 0,
   locker_poptabs: 0,
+  respect: 0
+)
+
+server_1.server_rewards.create!(
+  name: "Get Rich Quick",
+  reward_id: "getrichquick",
+  reward_items: {},
+  reward_vehicles: [],
+  player_poptabs: 15_000,
+  locker_poptabs: 100_000,
   respect: 0
 )
 puts " done"
@@ -501,7 +527,6 @@ puts " done"
 
 redis = Redis.new
 ESM::Server.all.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
-redis.set("server_key", server_1.token.to_json)
 
 puts ""
 puts "Seeds completed successfully!"

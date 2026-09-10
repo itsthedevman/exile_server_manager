@@ -212,7 +212,7 @@ RSpec.describe ESM::Server do
       it "creates a default reward automatically" do
         server = create(:server, :with_callbacks, community: community)
 
-        expect(server.server_rewards.default).to be_present
+        expect(server.server_rewards.default.first).to be_present
       end
     end
   end
@@ -247,6 +247,31 @@ RSpec.describe ESM::Server do
     it "defaults to 1.0.0 when server_version is nil" do
       server.update_column(:server_version, nil)
       expect(server.version.to_s).to eq("1.0.0")
+    end
+  end
+
+  describe "#display_version" do
+    let(:server) { create(:server, community: community) }
+
+    # The extension reports its build commit as semver build metadata. Semver ignores it when ordering, and nobody
+    # being told which version they are on needs the commit.
+    it "drops the build metadata the extension appends" do
+      server.update_column(:server_version, "2.0.4+754da3bb")
+
+      expect(server.display_version).to eq("2.0.4")
+    end
+
+    it "leaves a plain version alone" do
+      server.update_column(:server_version, "2.1.0")
+
+      expect(server.display_version).to eq("2.1.0")
+    end
+
+    # A pre-release tag is part of which version you are on, unlike the commit it was built from
+    it "keeps a pre-release tag" do
+      server.update_column(:server_version, "2.1.0-rc1+754da3bb")
+
+      expect(server.display_version).to eq("2.1.0-rc1")
     end
   end
 

@@ -23,18 +23,17 @@ module ESM
       # expiration behavior should drive it manually.
       #
       # @param async [Boolean] kept for signature compatibility; ignored
-      # @param bare [Boolean] kept for signature compatibility; ignored
       #
       # @return [true] when ready (or already ready)
       #
-      def run(async: false, bare: false)
+      def run(async: false)
         return if @esm_status == :ready
 
-        ESM::Command.setup_event_hooks!
+        ESM::Command.setup_event_hooks! if ESM.features.command_hooks?
         @esm_status = :ready
 
-        ESM::Websocket.start!
-        ESM::Arma::Server.start
+        ESM::Websocket.start! if ESM.features.websocket_v1?
+        ESM::Arma::Server.start if ESM.features.arma_listener?
         true
       end
 

@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# The bot the website spec suite talks to. Boots alongside a developer's own bot rather than in place of it, so it
+# runs the smallest set of subsystems that still answers RPC:
+#
+#   * no command hooks, so it receives Discord interactions and has nothing to fire. Both sessions share one token
+#     and both see every interaction; only the bot that registered a handler responds.
+#   * no presence, so the two do not overwrite each other's status.
+#   * no jobs and no redis seeding. Both write where the other bot reads, and the seeding writes unnamespaced keys
+#     that a cache namespace cannot separate.
+#   * the Arma listener stays on, since the port it binds is overridable and a test game server needs somewhere to
+#     connect.
+#
+# The signal handler is on because the suite stops this process with TERM and relies on the Discord connection
+# closing before the next suite starts.
+#
+
+require "bundler/setup"
+
+# Everything that keeps this bot off a hand-started one's toes. They are defaults rather than requirements, so
+# running this script on its own does the right thing and a caller can still move any one of them.
+#
+# The database is the load-bearing one. This bot answers RPC by doing real lookups, so pointed anywhere but the
+# suite's own fixtures it answers "not found" for every record the specs just created, and a page that renders an
+# empty list is a page whose assertions still pass.
+#
+# It stays in the development environment on purpose. ESM.env.test? is read as behavior all through the V1
+# transport, where it swallows errors and skips marking a server disconnected, which is wrong for a bot that is
+# actually running. The environment picks values; this names the values it needs instead.
+#
+# The subject prefix has to match website/config/settings/test.yml. Set before the require below, because that is
+# when settings.yml and database.yml are read.
+ENV["POSTGRES_DATABASE"] ||= "esm_test"
+ENV["ESM_REDIS_NAMESPACE"] ||= "esm_bot_spec"
+ENV["ESM_NATS_SUBJECT_PREFIX"] ||= "esm.test.rpc."
+ENV["ESM_PORT_WEBSOCKET"] ||= "3101"
+ENV["ESM_PORT_CONNECTION_SERVER"] ||= "3103"
+
+require_relative "../lib/esm"
+
+ESM.run!(features: %i[nats arma_listener signal_handler])

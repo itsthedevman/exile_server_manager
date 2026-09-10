@@ -1,3 +1,9 @@
+# The suite binds both listeners for real, so it needs its own numbers or it cannot run while a bot is up on this
+# machine. Allocation is in settings.yml; the fetches keep the overrides working here as they do everywhere else.
+ports:
+  websocket: <%= ENV.fetch("ESM_PORT_WEBSOCKET", 3201) %>
+  connection_server: <%= ENV.fetch("ESM_PORT_CONNECTION_SERVER", 3203) %>
+
 websocket_request_overseer:
   check_every: 0.1
 

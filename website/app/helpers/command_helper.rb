@@ -22,6 +22,21 @@ module CommandHelper
     end
   end
 
+  ##
+  # The haystack the command filter box matches a query against.
+  #
+  # A command's canonical name and the namespace it is registered under in Discord often disagree
+  # (`me` is registered as `/server my player`), so both have to be searchable or the command is
+  # unreachable by one of the two names people know it by.
+  #
+  # @param command [Command] The command to build the haystack for
+  #
+  # @return [String] The command's name followed by its slash-less namespace
+  #
+  def command_filter_text(command)
+    "#{command.name} #{command.usage.delete_prefix("/")}"
+  end
+
   def allowlist_roles(command)
     current_community.roles.map do |role|
       {

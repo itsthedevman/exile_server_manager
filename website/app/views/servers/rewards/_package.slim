@@ -1,0 +1,33 @@
+/ locals: current_server, package
+div id=reward_package_dom_id(package)
+  - if !reward_package_available?(current_server, package)
+    .d-flex.align-items-center.justify-content-between.gap-3.text-muted.small
+      = reward_package_name(package)
+      span.badge.text-bg-secondary = reward_availability_label(current_server, package)
+  - else
+    = form_with url: server_reward_path(current_server.public_id), method: :post
+      = hidden_field_tag :idempotency_key, SecureRandom.uuid
+      = hidden_field_tag :reward_id, package.reward_id
+
+      / The button sits on the name's line rather than beside the whole block, so the receipt below it gets the full
+      / width instead of wrapping around a button.
+      .d-flex.align-items-center.justify-content-between.gap-3
+        .fw-medium.text-truncate.flex-grow-1.min-w-0 = reward_package_name(package)
+
+        .flex-shrink-0.d-flex.align-items-center.gap-2
+          - if reward_uses_remaining_label(current_server, package)
+            span.badge.text-bg-secondary = reward_uses_remaining_label(current_server, package)
+
+          - if current_server.connected?
+            = submit_tag "Redeem", name: nil, class: "btn btn-sm btn-success"
+          - else
+            span.badge.text-bg-secondary Server offline
+
+      = render "servers/rewards/receipt", contents: package.contents, \
+        include_vehicles: !current_server.connected?
+
+      / Asked before the claim exists, so a redemption with vehicles in it gets one clean delivery rather than losing
+      / them to a first attempt that had nowhere to put them.
+      - if package.contents.vehicles.present? && current_server.connected?
+        = render "servers/rewards/vehicle_fields", current_server:, \
+          vehicles: package.contents.vehicles, scope: reward_package_key(package)

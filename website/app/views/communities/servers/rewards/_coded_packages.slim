@@ -1,0 +1,75 @@
+/ locals: current_server, packages
+.d-flex.align-items-center.justify-content-between.gap-3.mb-2
+  h6.mb-0 Code packages
+
+  = link_to new_community_server_reward_path(current_community, current_server),
+    class: "btn btn-outline-primary btn-sm",
+    data: {"turbo-prefetch": false, "turbo-frame": "reward_package_modal_frame"}
+    i.bi.bi-plus.me-1
+    | New package
+
+.small.text-muted.mb-3 = reward_package_coded_explanation
+
+- if packages.empty?
+  .text-center.py-4
+    i.bi.bi-ticket-perforated.fs-2.text-muted.d-block.mb-2
+    .fw-medium.text-muted No code packages yet
+    .small.text-muted.mt-1
+      | Hand a code out for joining your Discord, winning an event, or backing the server.
+
+    = link_to new_community_server_reward_path(current_community, current_server),
+      class: "btn btn-primary btn-sm mt-3",
+      data: {"turbo-prefetch": false, "turbo-frame": "reward_package_modal_frame"}
+      i.bi.bi-plus.me-1
+      | Create your first package
+
+- else
+  .table-responsive
+    table.table.table-hover.align-middle.mb-0
+      thead
+        tr
+          th Enabled
+          th Package
+          th Code
+          th Contains
+          th Cooldown
+          th
+
+      tbody
+        - packages.each do |package|
+          tr
+            td
+              = render "communities/servers/rewards/enabled_toggle", current_server:, package:
+
+            td.text-truncate = reward_package_name(package)
+
+            td
+              code.small = package.reward_id
+
+            td
+              - if reward_content_badges(package).empty?
+                span.text-muted.small Empty
+              - else
+                .d-flex.flex-wrap.gap-1
+                  - reward_content_badges(package).each do |badge|
+                    span.badge.text-bg-secondary title=badge.detail = badge.label
+
+            td.small.text-muted = reward_package_cooldown_summary(package)
+
+            td.text-end.text-nowrap
+              = link_to edit_community_server_reward_path(current_community, current_server, package.reward_id),
+                class: "btn btn-outline-primary btn-sm",
+                title: "Edit package",
+                data: {"turbo-prefetch": false, "turbo-frame": "reward_package_modal_frame"}
+                i.bi.bi-pencil
+
+              / A link rather than a button because this table sits inside the server form, and a form cannot hold
+              / another one. Turbo turns it into a DELETE the same way it does on the notifications page.
+              = link_to community_server_reward_path(current_community, current_server, package.reward_id),
+                class: "btn btn-outline-danger btn-sm ms-1",
+                title: "Delete package",
+                data: { \
+                  turbo_method: :delete,
+                  turbo_confirm: reward_package_delete_confirmation(package) \
+                }
+                i.bi.bi-trash

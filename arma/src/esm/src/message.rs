@@ -262,8 +262,9 @@ mod tests {
                 ("discord_id".to_owned(), json!(null)),
                 (
                     "discord_name".to_owned(),
-                    // This is never the case, but a great place to test some weird text
-                    json!("\"testing\" \\(* \\\\\" *)/ - \"nested\""),
+                    // This is never the case, but a great place to test some weird text.
+                    // The `""""""` in the input is six doubled quotes, so it decodes to three literal ones.
+                    json!("\"testing\" \\(* \"\"\" *)/ - \"nested\""),
                 ),
             ]))
             .add_error(ErrorType::Message, "This is a message")

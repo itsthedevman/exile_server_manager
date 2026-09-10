@@ -1,0 +1,18 @@
+/ locals: current_server, package
+= content_tag :div,
+  class: "form-check form-switch mb-0 ms-3",
+  data: { \
+    controller: "reward-package-toggle",
+    reward_package_toggle_url_value: toggle_enabled_community_server_reward_path( \
+      current_community, current_server, package.reward_id \
+    ) \
+  }
+  / No name on purpose. This sits inside the server form and would otherwise be submitted along with it.
+  input.form-check-input[
+    type="checkbox"
+    role="switch"
+    checked=package.enabled?
+    title=reward_package_enabled_title(package)
+    aria-label=reward_package_enabled_title(package)
+    data-action="change->reward-package-toggle#toggle"
+  ]

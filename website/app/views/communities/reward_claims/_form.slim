@@ -1,0 +1,107 @@
+/ locals: servers, submitted, claim
+= form_with url: reward_claim_form_url(claim),
+  scope: :reward_claim,
+  method: reward_claim_form_method(claim),
+  data: {controller: "reward-contents-editor"} do |f|
+
+  .modal-body
+    / The URL names an existing claim by its server and player, so the fields that would choose them are the two
+    / things an edit cannot change.
+    - if claim.nil?
+      .row.g-3
+        .col-12.col-lg-6
+          = f.label :server_id, "Server", class: "form-label"
+          = f.select :server_id, [], {}, class: "form-select", \
+            data: { \
+              controller: "slim-select", \
+              slim_select_data_value: reward_claim_form_server_data(servers, submitted.server_id), \
+              slim_select_placeholder_value: "Pick a server", \
+              slim_select_show_search_value: false \
+            }
+
+        .col-12.col-lg-6
+          = f.label :player, "Player", class: "form-label"
+          = f.text_field :player, value: submitted.player, class: "form-control font-monospace", \
+            placeholder: "Steam UID or Discord ID", required: true, autocomplete: "off"
+
+      hr.my-4
+
+    h6.mb-3 Currency
+    .row.g-3
+      .col-12.col-lg-4
+        = f.label :player_poptabs, "Player Poptabs", class: "form-label"
+        = f.number_field :player_poptabs, class: "form-control", min: 0, value: submitted.player_poptabs || 0, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+      .col-12.col-lg-4
+        = f.label :locker_poptabs, "Locker Poptabs", class: "form-label"
+        = f.number_field :locker_poptabs, class: "form-control", min: 0, value: submitted.locker_poptabs || 0, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+      .col-12.col-lg-4
+        = f.label :respect, "Respect", class: "form-label"
+        = f.number_field :respect, class: "form-control", min: 0, value: submitted.respect || 0, \
+          data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
+
+    hr.my-4
+
+    .d-flex.align-items-center.justify-content-between.mb-3
+      h6.mb-0 Items
+      button.btn.btn-outline-primary.btn-sm type="button" data-action="click->reward-contents-editor#addItem"
+        i.bi.bi-plus.me-1
+        | Add item
+
+    .text-center.py-3 data-reward-contents-editor-target="itemEmpty"
+      i.bi.bi-box-seam.fs-3.text-muted.d-block.mb-2
+      .text-muted.small No items yet
+      button.btn.btn-primary.btn-sm.mt-3 type="button" data-action="click->reward-contents-editor#addItem"
+        i.bi.bi-plus.me-1
+        | Add your first item
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.small data-reward-contents-editor-target="itemNote"
+      i.bi.bi-info-circle.me-1
+      | Items go into the player's inventory. Anything that does not fit will be dropped at their feet.
+
+    .table-responsive
+      table.table.table-sm.align-middle.mb-0
+        tbody data-reward-contents-editor-target="itemRows"
+          - submitted.items.each do |item|
+            = render "communities/servers/rewards/item_row", item:, prefix: "reward_claim[items][]"
+
+    template data-reward-contents-editor-target="itemTemplate"
+      = render "communities/servers/rewards/item_row", item: nil, prefix: "reward_claim[items][]"
+
+    hr.my-4
+
+    .d-flex.align-items-center.justify-content-between.mb-3
+      h6.mb-0 Vehicles
+      button.btn.btn-outline-primary.btn-sm type="button" data-action="click->reward-contents-editor#addVehicle"
+        i.bi.bi-plus.me-1
+        | Add vehicle
+
+    .text-center.py-3 data-reward-contents-editor-target="vehicleEmpty"
+      i.bi.bi-truck.fs-3.text-muted.d-block.mb-2
+      .text-muted.small No vehicles yet
+      button.btn.btn-primary.btn-sm.mt-3 type="button" data-action="click->reward-contents-editor#addVehicle"
+        i.bi.bi-plus.me-1
+        | Add your first vehicle
+
+    .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.small data-reward-contents-editor-target="vehicleNote"
+      i.bi.bi-info-circle.me-1
+      | Vehicles are handed over from this website, where the player picks the four digit code that locks it.
+
+    div data-reward-contents-editor-target="vehicleRows"
+      - submitted.vehicles.each do |vehicle|
+        = render "communities/servers/rewards/vehicle_row", vehicle:, prefix: "reward_claim[vehicles][]"
+
+    template data-reward-contents-editor-target="vehicleTemplate"
+      = render "communities/servers/rewards/vehicle_row", vehicle: nil, prefix: "reward_claim[vehicles][]"
+
+    - if reward_claim_form_vehicle_note(claim, servers)
+      .form-text.mt-2 = reward_claim_form_vehicle_note(claim, servers)
+
+  .modal-footer.border-top
+    .small.text-warning.me-auto data-reward-contents-editor-target="emptyWarning"
+      i.bi.bi-exclamation-triangle.me-1
+      | A reward has to hold something. Add currency, an item or a vehicle.
+
+    button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
+    = f.submit reward_claim_form_submit(claim), class: "btn btn-success"

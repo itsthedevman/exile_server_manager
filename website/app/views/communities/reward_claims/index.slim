@@ -1,0 +1,18 @@
+/ locals: claims, player_options, server_options
+- content_for :title, "Reward claims on #{current_community.community_id}"
+
+= render "communities/container", **local_assigns do
+  .text-center.mb-4
+    h1.mb-2 Reward Claims
+    p.lead.text-muted Rewards your players have redeemed but not received yet
+
+  .d-flex.justify-content-end.mb-3
+    = link_to new_community_reward_claim_path(current_community),
+      class: "btn btn-outline-primary btn-sm",
+      data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
+      i.bi.bi-plus.me-1
+      | Add rewards
+
+  = render "communities/reward_claims/listing", claims:, player_options:, server_options:
+
+  = render "shared/turbo_modal", id: "reward_claim_modal", class: "modal-lg"

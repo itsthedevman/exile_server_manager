@@ -10,8 +10,8 @@
 # signal name into a pipe. A dedicated thread reads the other end of the
 # pipe and runs the real shutdown logic in a normal Ruby context.
 #
-# Started from {ESM.run!}; the test environment skips the install so
-# RSpec can exit normally.
+# Installed by {ESM.run!} when the `signal_handler` feature is on. The trap exits the process, so
+# anything that wants Ruby's own Ctrl-C back (a console, a rake task, RSpec) leaves it off.
 #
 class SignalHandler
   include Singleton

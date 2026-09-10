@@ -1,0 +1,18 @@
+/ locals: current_server, notice
+.card
+  .card-body.text-center.py-5
+    - if server_manageable?(current_server)
+      i.bi.bi-arrow-up-circle.display-4.text-warning.mb-3.d-block
+      h4.mb-2 = notice.heading
+      p.text-muted.mx-auto style="max-width: 34rem;"
+        = notice.admin_message
+
+      .d-flex.gap-2.justify-content-center.flex-wrap
+        = link_to "/docs/server_setup", class: "btn btn-primary"
+          i.bi.bi-book.me-1
+          = notice.action_label
+    - else
+      i.bi.bi-arrow-up-circle.display-4.text-secondary.mb-3.d-block
+      h4.mb-2 = notice.heading
+      p.text-muted.mx-auto.mb-0 style="max-width: 34rem;"
+        = notice.player_message

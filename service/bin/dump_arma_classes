@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# Rebuilds core/config/arma_classes/*.yml from a running Arma server, into service/tmp/arma_classes.
+#
+#   bin/dump_arma_classes esm_malden
+#
+# Opens the Arma listener itself, so the bot you are already running has to be stopped first: both
+# want the same port and the server only dials one address. To dump without stopping anything, run
+# the same class from the session that already holds the connection:
+#
+#   ESM::Arma::ClassDump.new("esm_malden").call
+#
+
+require "bundler/setup"
+require_relative "../lib/esm"
+
+server_id = ARGV[0]
+
+if server_id.nil?
+  puts "Usage: bin/dump_arma_classes <server_id>"
+  exit 1
+end
+
+server = ESM::Server.find_by(server_id:)
+
+if server.nil?
+  puts "No server configured with server_id #{server_id.inspect}"
+  exit 1
+end
+
+#
+# Turn off command logging for the run, and put it back however it was found.
+#
+# Every dump sends a whole config walk down as one block of code, which the logger then tries to
+# post to Discord and is refused for being some thirty times the length a message may be. The
+# setting is read when the server connects rather than when it runs anything, and the server
+# connects as soon as the listener below opens, so this has to happen first or it happens too late.
+#
+setting = server.server_setting
+was_logging = setting.logging_exec
+
+setting.update!(logging_exec: false) if was_logging
+
+begin
+  # arma_listener is the port the server dials, and redis_seed is what puts its token where the
+  # listener can check it. Everything else this process would start is another bot's job.
+  ESM.run!(async: true, features: %i[arma_listener redis_seed])
+
+  ESM::Arma::ClassDump.new(server_id).call
+ensure
+  setting.update!(logging_exec: was_logging) if was_logging
+end

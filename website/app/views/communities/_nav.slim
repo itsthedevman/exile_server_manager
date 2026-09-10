@@ -70,6 +70,16 @@
             i.bi.bi-hourglass-split.me-3
             span.fw-medium Active Cooldowns
 
+        - if reward_claims_manageable?(current_community)
+          = link_to community_reward_claims_path(current_community),
+            class: class_names( \
+              "list-group-item list-group-item-action d-flex align-items-center py-3",
+              "bg-primary bg-opacity-25": controller_name == "reward_claims" \
+            )
+
+            i.bi.bi-inbox.me-3
+            span.fw-medium Reward Claims
+
   / Community Management Section
   .card
     .card-header.py-3

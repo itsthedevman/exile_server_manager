@@ -1,0 +1,64 @@
+/ locals: claims
+.table-responsive
+  table.table.table-hover.align-middle.mb-0
+    thead
+      tr
+        th Player
+        th Server
+        th Code
+        th Contains
+        th Status
+        th
+          span.visually-hidden Actions
+
+    tbody
+      - claims.each do |claim|
+        tr data-reward-claim-filters-target="row" *reward_claim_row_attributes(claim)
+          td.text-truncate = reward_claim_player_name(claim)
+
+          td.small = reward_claim_server_label(claim)
+
+          td
+            - if reward_claim_package_code(claim)
+              code.small = reward_claim_package_code(claim)
+            - else
+              span.text-muted.small None
+
+          td
+            .d-flex.flex-wrap.gap-1
+              - reward_content_badges(claim).each do |badge|
+                span.badge.text-bg-secondary title=badge.detail = badge.label
+
+          td style="max-width: 22rem;"
+            span.badge class=reward_claim_state_badge_class(claim) title=reward_claim_state_summary(claim)
+              = reward_claim_state_label(claim)
+
+            - if reward_claim_attempts_summary(claim)
+              span.small.text-muted.ms-2 = reward_claim_attempts_summary(claim)
+
+            - reward_claim_failures(claim).each do |failure|
+              .small.text-muted.mt-1 = failure
+
+          td.text-end.text-nowrap
+            - if reward_claim_retryable?(claim)
+              = button_to release_community_server_reward_claim_path(current_community, claim.server, claim.user),
+                method: :patch,
+                class: "btn btn-outline-primary btn-sm",
+                form_class: "d-inline-block",
+                title: "Let the player try to receive this reward again"
+                i.bi.bi-arrow-counterclockwise.me-1
+                | Allow retry
+
+            = link_to edit_community_server_reward_claim_path(current_community, claim.server, claim.user),
+              class: "btn btn-outline-primary btn-sm ms-1",
+              title: "Edit what this player is owed",
+              data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
+              i.bi.bi-pencil
+
+            / Deleting takes a reward the player has not received yet, so the button opens the claim rather than
+            / doing it. What they lose is itemized there.
+            = link_to confirm_destroy_community_server_reward_claim_path(current_community, claim.server, claim.user),
+              class: "btn btn-outline-danger btn-sm ms-1",
+              title: "Delete claim",
+              data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
+              i.bi.bi-trash

@@ -156,5 +156,12 @@ RSpec.describe ESM::Arma::HashMap, v2: true do
       input = [[["key_1", "value_1"], ["key_2", 2], ["key_3", "value_3"]], [["key_1", "value_1"], ["key_2", 2], ["key_3", "value_3"]]]
       expect(hash.send(:valid_hash_structure?, input)).to be(false)
     end
+
+    # Two territory variables read in one call, both holding the same member list. A hashmap cannot repeat a key, so
+    # this is a list of pairs, and converting it would keep one entry and throw the other away.
+    it "is not valid (Repeated keys)" do
+      input = [["76561192616721041", "76561194129100787"], ["76561192616721041", "76561194129100787"]]
+      expect(hash.send(:valid_hash_structure?, input)).to be(false)
+    end
   end
 end

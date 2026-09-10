@@ -97,6 +97,18 @@ Rails.application.routes.draw do
         patch :enable_v2
         get :available
       end
+
+      # /communities/:community_id/servers/:server_id/rewards/:reward_id
+      resources :rewards,
+        controller: "communities/servers/rewards",
+        param: :reward_id,
+        only: %i[new create edit update destroy],
+        constraints: {reward_id: /[a-z0-9_-]+/} do
+        member do
+          # /communities/:community_id/servers/:server_id/rewards/:reward_id/toggle_enabled
+          patch :toggle_enabled
+        end
+      end
     end
 
     # /communities/:community_id/notification_routes
@@ -128,6 +140,27 @@ Rails.application.routes.draw do
 
           # /communities/:community_id/cooldowns/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
+
+      # /communities/:community_id/reward_claims
+      resources :reward_claims, only: %i[index new create], controller: "communities/reward_claims"
+
+      # A claim carries no id of its own, so it is addressed by the pair its unique index is built on. The listing is
+      # community wide because a stuck claim is worth finding without knowing which server it is on.
+      resources :servers, only: [], param: :server_id do
+        # /communities/:community_id/servers/:server_id/reward_claims/:user_id
+        resources :reward_claims,
+          controller: "communities/reward_claims",
+          param: :user_id,
+          only: %i[edit update destroy] do
+          member do
+            # /communities/:community_id/servers/:server_id/reward_claims/:user_id/confirm_destroy
+            get :confirm_destroy
+
+            # /communities/:community_id/servers/:server_id/reward_claims/:user_id/release
+            patch :release
+          end
         end
       end
     end
@@ -299,6 +332,20 @@ Rails.application.routes.draw do
         collection do
           # /servers/:server_id/sqf/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status
+        end
+      end
+
+      # /servers/:server_id/reward
+      resource :reward, only: [:create], controller: "servers/rewards" do
+        collection do
+          # /servers/:server_id/reward/commands/:command_id/status
+          get "commands/:command_id/status", action: :status, as: :command_status
+
+          # /servers/:server_id/reward/territories
+          get :territories
+
+          # /servers/:server_id/reward/lookup
+          post :lookup
         end
       end
     end

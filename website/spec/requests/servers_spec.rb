@@ -45,6 +45,64 @@ RSpec.describe "Servers", type: :request do
       expect(response.body).to include(%(name="q"))
     end
 
+    # Every player surface runs through SQF that shipped with 2.1.0. An older server passes the connection check and
+    # then fails somewhere further in, which reads as a broken website rather than a server that needs updating.
+    context "when the server is running an older version of ESM" do
+      before do
+        # The check is skipped locally, and local? covers the test environment too
+        allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
+
+        allow_only("me")
+        server.update!(server_version: "2.0.4")
+      end
+
+      # A player cannot act on a version number and did not cause the problem, so they are told the one thing that is
+      # true for them: there is nothing here yet, and it is not their doing.
+      it "tells a player to wait, without the version talk" do
+        get "/servers/#{server.public_id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("admins need to update ESM")
+        expect(response.body).not_to include("How to update")
+        expect(response.body).not_to include(ServerVersion::MINIMUM_SERVER_VERSION)
+        expect(response.body).not_to include("My Player")
+      end
+
+      context "and the viewer can manage the server" do
+        let(:manageable) { true }
+
+        it "names both versions and points at the docs" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("is on 2.0.4")
+          expect(response.body).to include(ServerVersion::MINIMUM_SERVER_VERSION)
+          expect(response.body).to include("How to update")
+        end
+
+        # No version means the server was registered here and never came back. It has no version gap to close, so
+        # naming one would send its owner to fix the wrong thing.
+        it "talks about connecting, not updating, for a server that has never checked in" do
+          server.update!(server_version: nil)
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("has never connected to ESM")
+          expect(response.body).to include("Set up your server")
+
+          expect(response.body).not_to include("needs updating")
+          expect(response.body).not_to include("1.0.0")
+        end
+      end
+
+      it "still renders the cards once the server is new enough" do
+        server.update!(server_version: ServerVersion::MINIMUM_SERVER_VERSION)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("This server needs updating")
+      end
+    end
+
     it "keeps the admin section off the page entirely for a player" do
       allow_only("me")
 
@@ -52,6 +110,174 @@ RSpec.describe "Servers", type: :request do
 
       expect(response.body).not_to include("Admin tools")
       expect(response.body).not_to include("players/lookup")
+    end
+
+    context "when the player can be rewarded" do
+      before do
+        allow_only("reward")
+
+        server.server_rewards.default.first.update!(
+          name: "Daily Drop",
+          player_poptabs: 5_000,
+          respect: 100,
+          reward_items: {Exile_Item_EMRE: 2}
+        )
+      end
+
+      it "shows the default package" do
+        get "/servers/#{server.public_id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Daily Drop")
+        expect(response.body).to include("Poptabs")
+        expect(response.body).to include("5,000")
+      end
+
+      # A count is not an answer to "what am I getting". The package reads as a receipt now, one line per thing.
+      it "names the items a package holds" do
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("x2")
+      end
+
+      # Only the default is ever on the page. Naming the others would put every coupon an owner runs in plain sight,
+      # and nothing else stops a player claiming a package the moment they can see its ID.
+      it "keeps every other package off the page" do
+        ESM::ServerReward.create!(server_id: server.id, reward_id: "secret_sauce", player_poptabs: 100)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("secret_sauce")
+      end
+
+      # Rewards are handed over in game, so a package cannot be taken while the server is down. Saying so beats a
+      # button whose only outcome is a refusal.
+      it "offers no way to take one while the server is down" do
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Server offline")
+        expect(response.body).not_to include("Redeem")
+      end
+
+      context "and the server is up" do
+        before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
+
+        it "offers to redeem the package" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Redeem")
+          expect(response.body).to include(%(action="/servers/#{server.public_id}/reward"))
+        end
+
+        # The way any package other than the default is taken. Owners hand the ID out however they like, which is what
+        # makes a coupon possible.
+        it "takes a typed code for anything else" do
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include(%(name="reward_id"))
+          expect(response.body).to include("Reward code")
+        end
+
+        # Asked before the claim exists, so a package with a vehicle in it gets one clean delivery instead of losing
+        # the vehicle to a first attempt that had nowhere to put it and then asking the same questions over again.
+        it "asks where a vehicle should go before it is redeemed" do
+          server.server_rewards.default.first.update!(
+            reward_vehicles: [{class_name: "Exile_Chopper_Hummingbird", spawn_location: "player_decides"}]
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Where should it go?")
+          expect(response.body).to include(%(name="vehicles[0][pin_code]"))
+          expect(response.body).to include("/reward/territories?index=0")
+        end
+
+        # The only thing that explains why a package the player just took is still sitting there offering itself
+        it "says how many goes are left on a package limited by count" do
+          create(
+            :cooldown,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            cooldown_type: "times",
+            cooldown_quantity: 3,
+            cooldown_amount: 1
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("2 uses left")
+        end
+
+        # A count that has run out never comes back, so the row would sit there explaining itself forever
+        it "drops the package once it is spent for good" do
+          create(
+            :cooldown,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            cooldown_type: "times",
+            cooldown_quantity: 1,
+            cooldown_amount: 1
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).not_to include("Daily Drop")
+        end
+
+        it "counts down instead while the package's cooldown runs" do
+          create(
+            :cooldown, :active,
+            command_name: "reward",
+            scope_key: "default",
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id
+          )
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("Available in")
+
+          # The code box below it still offers a Redeem of its own, so what has to be gone is the default's own
+          # form, which is the only thing carrying the package's ID
+          expect(response.body).not_to include(%(value="default"))
+        end
+      end
+
+      # The cap is one claim per player per server, so nothing else can be taken until this one is finished. The whole
+      # block becomes the claim rather than a list of packages each carrying its own refusal.
+      it "shows what is still owed and takes the packages off the page until it is finished" do
+        ESM::ServerRewardClaim.create!(server_id: server.id, user_id: user.id, player_poptabs: 25)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Rewards waiting for you")
+        expect(response.body).to include("only redeem a new reward once this one is delivered")
+
+        expect(response.body).not_to include("Daily Drop")
+        expect(response.body).not_to include("Been given a reward code?")
+      end
+
+      it "names what stopped the last attempt" do
+        ESM::ServerRewardClaim.create!(
+          server_id: server.id,
+          user_id: user.id,
+          player_poptabs: 25,
+          state: :failed,
+          state_details: {failures: [{bucket: "vehicles", name: "Hatchback", reason: "No room to spawn here"}]}
+        )
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).to include("Hatchback: No room to spawn here")
+        expect(response.body).to include("Needs an admin")
+      end
     end
   end
 

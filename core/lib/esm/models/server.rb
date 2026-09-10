@@ -46,6 +46,7 @@ module ESM
     has_many :user_notification_preferences, dependent: :destroy
     has_many :user_notification_routes, dependent: :destroy, foreign_key: :source_server_id
     has_many :user_server_favorites, dependent: :destroy
+    has_many :server_reward_claims, dependent: :destroy
 
     # =============================================================================
     # VALIDATIONS
@@ -102,17 +103,28 @@ module ESM
       @token ||= {access: public_id, secret: server_key}
     end
 
-    # V1
-    def server_reward
-      server_rewards.default
-    end
-
     def version
       Semantic::Version.new(server_version || "1.0.0")
     end
 
     def version?(expected_version)
       version >= Semantic::Version.new(expected_version)
+    end
+
+    ##
+    # The version as a person should read it, without the build metadata the extension appends.
+    #
+    # The extension reports its build commit that way (`2.0.4+754da3bb`). It carries no weight in a comparison, since
+    # semver ignores build metadata when ordering, and it is noise to anyone being told which version they are on.
+    # Rebuilt from the parsed parts rather than split off the string, so a pre-release tag survives.
+    #
+    # @return [String]
+    #
+    def display_version
+      parsed = version
+      release = [parsed.major, parsed.minor, parsed.patch].join(".")
+
+      parsed.pre ? "#{release}-#{parsed.pre}" : release
     end
 
     def v2?
@@ -190,9 +202,9 @@ module ESM
     end
 
     def create_default_reward
-      return if server_rewards.default.exists?
+      return if server_rewards.default.size > 0
 
-      server_rewards.create!(server_id: id)
+      server_rewards.create!(server_id: id, reward_id: "default")
     end
   end
 end

@@ -79,10 +79,6 @@ module ESM
       result = ESM::JSON.parse(response.to_s)
       return response if result.nil?
 
-      # Check to see if its a hashmap
-      possible_hashmap = ESM::Arma::HashMap.from(result)
-      return result if possible_hashmap.nil?
-
       result
     end
 

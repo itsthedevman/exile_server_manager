@@ -1,0 +1,8 @@
+/ locals: current_server, reward_claim
+= form_with url: server_reward_path(current_server.public_id), method: :post, class: "mt-3"
+  = hidden_field_tag :idempotency_key, SecureRandom.uuid
+
+  = render "servers/rewards/vehicle_fields", current_server:, vehicles: reward_claim.contents.vehicles, scope: "claim"
+
+  .d-grid.mt-3
+    = submit_tag "Deliver", name: nil, class: "btn btn-success btn-sm"

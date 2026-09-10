@@ -1,0 +1,12 @@
+/ locals: servers, submitted, claim
+= update_turbo_modal "reward_claim_modal"
+  .modal-header.border-warning.bg-warning.bg-opacity-10
+    div
+      h4.modal-title.mb-0
+        i.bi.bi-gift.text-warning.me-2
+        = reward_claim_form_title(claim)
+      .small.text-muted.mt-1 = reward_claim_form_subtitle(claim)
+
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  = render "communities/reward_claims/form", servers:, submitted:, claim:

@@ -3,6 +3,7 @@ mod config;
 mod context;
 mod display;
 mod error;
+mod extra_mods;
 mod file_watcher;
 mod locks;
 mod spinner;

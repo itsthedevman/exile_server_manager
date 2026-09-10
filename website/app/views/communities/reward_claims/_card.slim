@@ -1,0 +1,15 @@
+/ locals: current_community
+.col-12.col-md-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-inbox.text-warning.me-2
+        | Reward Claims
+
+    .card-body.d-flex.flex-column
+      p.text-muted.small
+        | Shows the rewards your players have redeemed but not received yet.
+
+      = link_to community_reward_claims_path(current_community), class: "btn btn-warning w-100 mt-auto" do
+        i.bi.bi-list-ul.me-1
+        | View reward claims

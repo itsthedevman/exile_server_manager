@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# The live run: no mocks, a real Discord gateway, real Steam. See spec/live_helper.rb.
+#
+# --options replaces .rspec rather than adding to it, which is what keeps mock_helper out of this process.
+
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+  set -- spec/live
+fi
+
+ESM_ENV=test bundle exec rspec --options .rspec-live "$@"

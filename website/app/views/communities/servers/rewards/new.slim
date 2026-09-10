@@ -1,0 +1,11 @@
+= update_turbo_modal "reward_package_modal"
+  .modal-header.border-warning.bg-warning.bg-opacity-10
+    div
+      h4.modal-title.mb-0
+        i.bi.bi-gift.text-warning.me-2
+        | New reward package
+      .small.text-muted.mt-1 = reward_package_editor_subtitle(package)
+
+    button.btn-close[type="button" data-bs-dismiss="modal" aria-label="Close"]
+
+  = render "communities/servers/rewards/form", current_server:, package:

@@ -31,15 +31,20 @@ base_url: "http://localhost:3000"
 # Mirror log output to stdout in addition to log files.
 print_to_stdout: true
 
+# The two listeners are overridable so instances can run side by side. Who gets what, lowest first:
+#
+#   3001 / 3003   a bot started by hand: bin/dev, bin/prod
+#   3101 / 3103   the bot the website suite boots (start_bot, in the repository's bin/test)
+#   3201 / 3203   the service suite's own listeners (config/settings/test.yml)
 ports:
   # WebSocket server (V1 Arma clients).
-  websocket: 3001
+  websocket: <%= ENV.fetch("ESM_PORT_WEBSOCKET", 3001) %>
 
   # HTTP API consumed by the website.
   api: 3002
 
   # TCP server for V2 Arma extension connections.
-  connection_server: 3003
+  connection_server: <%= ENV.fetch("ESM_PORT_CONNECTION_SERVER", 3003) %>
 
 # NATS request/reply transport for website ↔ bot RPC. Both sides must agree on
 # url, subject_prefix, and shared_secret.
@@ -49,7 +54,11 @@ nats:
 
   # Prefix every RPC subject is published under. Handlers register as
   # "<subject_prefix><action>" (e.g. esm.bot.rpc.community_roles).
-  subject_prefix: "esm.bot.rpc."
+  #
+  # Overridable because the subscriptions carry no queue group: two bots on one broker sharing a prefix both answer
+  # every request and the caller keeps whichever reply lands first, which is how a spec reads the wrong database
+  # without failing. Whatever sets this has to set the website's half to match.
+  subject_prefix: "<%= ENV.fetch('ESM_NATS_SUBJECT_PREFIX', 'esm.bot.rpc.') %>"
 
   # HMAC-SHA256 key used to sign and verify the wire envelope on every RPC.
   # The website signs; the bot verifies. The value below is a committed dev

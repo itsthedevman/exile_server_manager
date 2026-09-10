@@ -13,6 +13,9 @@ require "rspec/rails"
 require "webmock/rspec"
 # Add additional requires below this line. Rails is not loaded until this point!
 
+# The one support file loaded for the whole suite rather than per spec. See Spec::ServiceAPI.install! for why.
+require_relative "support/spec/service_api"
+
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
 # run as spec files by default. This means that files in spec/support that end
@@ -61,6 +64,9 @@ RSpec.configure do |config|
 
   # `sign_in`/`sign_out` in request specs (Devise + Warden).
   config.include Devise::Test::IntegrationHelpers, type: :request
+
+  # Nothing that renders a page may reach the bot.
+  Spec::ServiceAPI.install!(config)
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false

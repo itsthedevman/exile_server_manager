@@ -13,16 +13,19 @@
 # UDP query. Depending on it would let an unrelated harness problem report itself as a protocol failure.
 #
 describe ESM::Steam::ServerQuery, requires_connection: true do
-  # Where the dev server actually is. Every other spec reaches Arma through the connection the extension opened
-  # to the bot, so none of them need to know; a Steam query goes over UDP straight at the game port and has to
-  # name a host. That host is decided by whichever target the last `bin/build --start-server` was aimed at, so
-  # the build writes it down rather than leaving the two to be kept in step by hand.
+  # Where this suite's Arma server actually is. Every other spec reaches Arma through the connection the extension
+  # opened to the bot, so none of them need to know; a Steam query goes over UDP straight at the game port and has
+  # to name a host. That host depends on which target the server was started against, so the build writes it down
+  # rather than leaving the two to be kept in step by hand.
+  #
+  # Named for the server, because the one being developed against is a different server on different ports and it
+  # is usually the one started most recently. A single shared file would answer with whichever that was.
   let(:game_address) do
-    path = Loader.arma_path.join("target", "dev-server-address")
+    path = Loader.arma_path.join("target", "dev-server-address-#{ARMA_SPEC_SERVER_ID}")
 
     unless path.exist?
-      raise "No dev server address at #{path}. Start one with `bin/dev` from arma/ (add `--target windows` " \
-            "for the Windows host), which writes the address of the server it starts."
+      raise "No address recorded for #{ARMA_SPEC_SERVER_ID} at #{path}. Start it with `bin/spec_server` from " \
+            "arma/ (add `--target windows` for the Windows host), which writes the address of the server it starts."
     end
 
     path.read.strip
@@ -37,9 +40,9 @@ describe ESM::Steam::ServerQuery, requires_connection: true do
   before do
     described_class.info(host: query_host, port: query_port, timeout: 2)
   rescue described_class::Error => e
-    raise "Arma isn't answering A2S on #{query_host}:#{query_port} (#{e.message}). " \
-          "That address came from the last `bin/build --start-server`, so a server that has since stopped or " \
-          "moved needs another one. ESM_ARMA_QUERY_HOST and ESM_ARMA_QUERY_PORT override it."
+    raise "Arma isn't answering A2S on #{query_host}:#{query_port} (#{e.message}). That address is where " \
+          "#{ARMA_SPEC_SERVER_ID} was last started, so a server that has since stopped needs `bin/spec_server` " \
+          "run again. ESM_ARMA_QUERY_HOST and ESM_ARMA_QUERY_PORT override it."
   end
 
   describe ".info" do

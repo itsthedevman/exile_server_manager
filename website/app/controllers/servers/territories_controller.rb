@@ -5,6 +5,9 @@ module Servers
     include TerritoryLoading
     include PlayerLoading
     include Commands
+    include ServerVersion
+
+    before_action :require_supported_server!
 
     # Same window the player and territory reads use: long enough to collapse a burst of admins landing at once, short
     # enough that the list never argues with a restore that just happened. Nothing here polls, so a burst is the only

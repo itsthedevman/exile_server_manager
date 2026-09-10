@@ -32,8 +32,14 @@ group :development do
 end
 
 group :test do
+  gem "capybara"
+  gem "capybara-playwright-driver"
   gem "database_cleaner-active_record"
   gem "factory_bot_rails"
+  # Pinned against its habit because this one is not free to float: the gem speaks a protocol version to the
+  # Playwright driver, and the driver comes from the monorepo flake. Bumping either alone breaks the pair, so
+  # move this and flake.nix's playwright-driver together.
+  gem "playwright-ruby-client", "~> 1.58.0"
   gem "rspec-rails"
   gem "webmock"
 end

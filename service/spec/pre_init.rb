@@ -20,9 +20,6 @@ require "rspec/rebound"
 require "rspec/wait"
 require "timecop"
 
-# Load the spec related files
-require_relative "methods"
-
 # Files that have to be loaded before ESM
 Dir["#{__dir__}/support/pre_load/**/*.rb"]
   .sort
@@ -39,6 +36,10 @@ ESM.loader.tap do |loader|
   # Loaded below
   loader.ignore(ESM.root.join("spec", "support", "spec_*"))
   loader.ignore(ESM.root.join("spec", "support", "extensions"))
+
+  # Replaces Steam and Discord with canned answers, so it is something a run asks for rather than something every
+  # run gets. mock_helper loads it; live_helper reaches the real services by not loading it.
+  loader.ignore(ESM.root.join("spec", "support", "mocks"))
 end
 
 ESM.load!

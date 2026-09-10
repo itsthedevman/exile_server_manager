@@ -1,0 +1,10 @@
+/ locals: current_server, reward_package, reward_claim
+.col-12.col-xl-6
+  .card.h-100
+    .card-header.d-flex.align-items-center.justify-content-between
+      h5.mb-0
+        i.bi.bi-gift.text-success.me-2
+        | Rewards
+
+    .card-body.d-flex.flex-column
+      = render "servers/rewards/panel", current_server:, reward_package:, reward_claim:, outcome: nil

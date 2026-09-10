@@ -24,7 +24,6 @@
 .text-center.pt-5
   h3.mb-3
     | Advanced Configuration
-    span.badge.bg-info.ms-2 NEW
 
   .alert.alert-warning.border-warning.bg-warning.bg-opacity-10
     .d-flex.align-items-center
@@ -242,6 +241,7 @@
     h4.mb-0
       i.bi.bi-arrow-repeat.text-info.me-2
       | Auto-Updater
+      span.badge.bg-info.ms-2 NEW
 
   .card-body
     .mb-4
@@ -256,7 +256,6 @@
                 checked: server.server_setting&.updater_enabled != false
             = f.label :updater_enabled, class: "form-check-label fw-medium" do
               | Check for updates on startup
-              span.badge.bg-info.ms-2 NEW
           small.form-text.text-muted.mt-1
             |> Turning this off keeps your server on its current version until you update it yourself.
             = link_to "How updates work", "#{server_setup_docs_path}#automatic_updates", target: "_blank"

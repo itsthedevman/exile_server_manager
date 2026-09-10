@@ -1,0 +1,18 @@
+/ locals: item, prefix
+tr data-reward-package-row=""
+  td width="110"
+    = number_field_tag "#{prefix}[quantity]", item&.quantity || 1, \
+      id: nil, class: "form-control form-control-sm", min: 1, required: true
+
+  td
+    = text_field_tag "#{prefix}[classname]", item&.classname, \
+      id: nil, class: "form-control form-control-sm font-monospace", \
+      placeholder: "Exile_Item_PowerDrink", required: true, autocomplete: "off"
+
+  td.text-end width="60"
+    button.btn.btn-outline-danger.btn-sm[
+      type="button"
+      title="Remove item"
+      data-action="click->reward-contents-editor#remove"
+    ]
+      i.bi.bi-trash

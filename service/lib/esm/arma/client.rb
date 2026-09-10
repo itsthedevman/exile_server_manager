@@ -9,7 +9,7 @@ module ESM
 
       Metadata = Data.define(:vg_enabled, :vg_max_sizes)
 
-      attr_reader :public_id, :server_id, :session_id, :connected_at
+      attr_reader :public_id, :server_id, :session_id, :connected_at, :metadata
 
       delegate :address, to: :@socket
 
@@ -23,7 +23,7 @@ module ESM
         @session_id = nil
 
         @thread_pool = Concurrent::CachedThreadPool.new
-        set_metadata(vg_enabled: false, vg_max_sizes: 0)
+        set_metadata(vg_enabled: false, vg_max_sizes: [])
 
         execution_interval = @config.request_check
         @task = TimerTask.execute(execution_interval:) { on_message }

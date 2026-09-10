@@ -273,6 +273,23 @@ RSpec.describe ESM::Cooldown do
       configuration.update!(cooldown_quantity: 2)
       expect(other.reload.expires_at.to_s).to eq(expires_at.to_s)
     end
+
+    it "does not touch scoped cooldowns" do
+      scoped = create(
+        :cooldown,
+        user_id: user.id,
+        community_id: community.id,
+        server_id: server.id,
+        command_name: "player_command",
+        scope_key: "daily",
+        cooldown_type: "seconds",
+        cooldown_quantity: 5,
+        expires_at: expires_at
+      )
+
+      configuration.update!(cooldown_quantity: 2)
+      expect(scoped.reload.expires_at.to_s).to eq(expires_at.to_s)
+    end
   end
 
   describe ".scope_for" do
@@ -300,6 +317,22 @@ RSpec.describe ESM::Cooldown do
 
       scope = described_class.scope_for(command_name: "gamble", user: other_user, registered: true, community: community, server: server)
       expect(scope).to be_empty
+    end
+
+    it "matches only the requested scope" do
+      daily = create(:cooldown, command_name: "reward", scope_key: "daily", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+      create(:cooldown, command_name: "reward", scope_key: "weekly", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+
+      scope = described_class.scope_for(command_name: "reward", user: user, registered: true, community: community, server: server, scope_key: "daily")
+      expect(scope).to contain_exactly(daily)
+    end
+
+    it "excludes scoped rows when no scope key is given" do
+      create(:cooldown, command_name: "reward", scope_key: "daily", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+      unscoped = create(:cooldown, command_name: "reward", steam_uid: user.steam_uid, community_id: community.id, server_id: server.id)
+
+      scope = described_class.scope_for(command_name: "reward", user: user, registered: true, community: community, server: server)
+      expect(scope).to contain_exactly(unscoped)
     end
   end
 

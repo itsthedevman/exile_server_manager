@@ -30,7 +30,8 @@ class CommunitiesController < AuthenticatedController
     render locals: {
       can_broadcast: audiences.any?,
       audiences:,
-      can_clear_cooldowns: command_accessible?("reset_cooldown")
+      can_clear_cooldowns: command_accessible?("reset_cooldown"),
+      can_manage_reward_claims: helpers.reward_claims_manageable?(current_community)
     }
   end
 

@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :server_reward, class: "ESM::ServerReward" do
     association :server
 
-    reward_id { nil } # nil = default reward
+    reward_id { "default" }
     reward_items { {} }
     reward_vehicles { [] }
     player_poptabs { 0 }

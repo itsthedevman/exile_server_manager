@@ -10,30 +10,19 @@ use crate::{
 const REDIS_KEY: &str = "server_key";
 const REDIS_KEY_CONFIRM: &str = "server_key_set";
 
-/// The Redis slots this server watches for its key, most specific first.
+/// The Redis slot this server watches for its key.
 ///
-/// Each server has its own slot so that several build processes can't steal each other's keys. The first
-/// server configured also watches the unnamespaced slot, which is the one the spec suite writes to: its
-/// server is built by a factory, so its server_id is random and no config could name the slot in advance.
-fn key_slots(ictx: &InstanceContext) -> Vec<String> {
-    let mut slots = vec![format!("{REDIS_KEY}:{}", ictx.instance.server_id)];
-
-    if ictx.is_default_instance() {
-        slots.push(REDIS_KEY.to_string());
-    }
-
-    slots
+/// Named for the server so that several build processes can't steal each other's keys. Whoever issues a key
+/// names the server it is for, the spec suite included: it used to publish to an unnamespaced slot, which the
+/// first configured server also watched, so running the suite took whichever server that was off its own
+/// connection.
+fn key_slot(ictx: &InstanceContext) -> String {
+    format!("{REDIS_KEY}:{}", ictx.instance.server_id)
 }
 
-/// Confirmation flags to set once a key has been written, mirroring [`key_slots`].
-fn confirm_slots(ictx: &InstanceContext) -> Vec<String> {
-    let mut slots = vec![format!("{REDIS_KEY_CONFIRM}:{}", ictx.instance.server_id)];
-
-    if ictx.is_default_instance() {
-        slots.push(REDIS_KEY_CONFIRM.to_string());
-    }
-
-    slots
+/// Confirmation flag to set once a key has been written, mirroring [`key_slot`].
+fn confirm_slot(ictx: &InstanceContext) -> String {
+    format!("{REDIS_KEY_CONFIRM}:{}", ictx.instance.server_id)
 }
 
 /// Spawn a background thread that watches Redis for new server keys and writes
@@ -49,8 +38,8 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
     // Cloned rather than borrowed: this thread outlives the step that starts it, so it needs its own handle on
     // wherever the server lives.
     let target = ictx.target.clone();
-    let read_slots = key_slots(ictx);
-    let write_slots = confirm_slots(ictx);
+    let read_slot = key_slot(ictx);
+    let write_slot = confirm_slot(ictx);
 
     thread::spawn(move || {
         let mut conn = match redis.get_connection() {
@@ -64,11 +53,9 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
         let mut last_key = String::new();
 
         loop {
-            // Reading destructively is what keeps the two slots from fighting: a key is claimed once, so the
-            // namespaced slot can't re-assert a stale value over one the spec suite just published.
-            let key = read_slots.iter().find_map(|slot| {
-                conn.get_del::<_, Option<String>>(slot).ok().flatten()
-            });
+            // Read destructively so a key is claimed exactly once, rather than being re-applied on every pass
+            // until something else overwrites it.
+            let key = conn.get_del::<_, Option<String>>(&read_slot).ok().flatten();
 
             let Some(key) = key else {
                 thread::sleep(Duration::from_millis(100));
@@ -105,9 +92,7 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
 
             last_key = key;
 
-            for slot in &write_slots {
-                let _: Result<(), _> = conn.set(slot, "true");
-            }
+            let _: Result<(), _> = conn.set(&write_slot, "true");
 
             thread::sleep(Duration::from_millis(100));
         }

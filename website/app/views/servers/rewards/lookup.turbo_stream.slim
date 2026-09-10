@@ -1,0 +1,8 @@
+/ locals: current_server, package
+= turbo_stream.remove reward_package_dom_id(package)
+
+= turbo_stream.append "reward_packages" do
+  = render "servers/rewards/package", current_server:, package:
+
+/ Rendered fresh rather than only cleared, so the box that just took a code is empty for the next one
+= turbo_stream.replace "reward_code_section", partial: "servers/rewards/redeem_code", locals: {current_server:}

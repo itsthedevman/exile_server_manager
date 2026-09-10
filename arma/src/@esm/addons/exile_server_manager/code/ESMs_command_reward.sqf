@@ -3,7 +3,11 @@ Function:
 	ESMs_command_reward
 
 Description:
-	Rewards the player with money, respect, and/or items
+	Rewards the player with money, respect, items and/or vehicles.
+
+	Delivery is not all-or-nothing. Poptabs and respect always land once the player passes the guards, but individual
+	items and vehicles can fail on their own, so the response reports exactly what did not make it and why. The bot
+	writes those leftovers back onto the claim for another attempt rather than losing them.
 
 Parameters:
 	_this - [HashMap]
@@ -20,10 +24,16 @@ Author:
 private _id = get!(_this, "id");
 
 /*
-  poptabs: Scalar,
+  money: Scalar,
   locker: Scalar,
   respect: Scalar,
-  items: HashMap<String, Scalar>
+  items: HashMap<String, Scalar>,
+  vehicles: Array<HashMap>
+    class_name: String,
+    spawn_location: String,
+    territory_id: String (optional, encoded - the extension decodes it into territory_database_id),
+    territory_database_id: Scalar (optional),
+    pin_code: String (optional)
 */
 private _data = get!(_this, "data");
 
@@ -57,7 +67,9 @@ try
 		];
 	};
 
-	// Player must be alive in order to receive rewards
+	// Rewards are handed to a player object, so the player has to be in game and alive right now. One check for both:
+	// Exile's lookup only walks the living, so a corpse and an empty seat come back the same way and there is nothing
+	// left to tell them apart with.
 	private _playerObject = _playerUID call ExileClient_util_player_objectFromPlayerUID;
 	if (isNull _playerObject || { !(alive _playerObject) }) then
 	{
@@ -71,10 +83,15 @@ try
 	//////////////////////
 
 	private _receipt = [];
+	private _undeliveredItems = createHashMap;
+	private _undeliveredVehicles = [];
+	private _failures = [];
+	
 	private _rewardMoney = get!(_data, "money", 0);
 	private _rewardLocker = get!(_data, "locker", 0);
 	private _rewardRespect = get!(_data, "respect", 0);
-	private _rewardItems = get!(_data, "items", []);
+	private _rewardItems = get!(_data, "items", createHashMap);
+	private _rewardVehicles = get!(_data, "vehicles", []);
 
 	// Player money
 	if (_rewardMoney > 0) then
@@ -130,7 +147,7 @@ try
 	};
 
 	// Items
-	if !(_rewardItems isEqualTo []) then
+	if !(empty?(_rewardItems)) then
 	{
 		{
 			private _classname = _x;
@@ -145,6 +162,9 @@ try
 					["description", localize!("Reward_InvalidClassName_Description", _classname)],
 					["color", "yellow"]
 				] call ESMs_system_network_discord_log;
+
+				// A misconfigured classname cannot be retried into existence, so it is dropped rather than held.
+				_failures pushBack ["items", _classname, localize!("Reward_Failure_InvalidClassName")];
 
 				continue;
 			};
@@ -216,40 +236,143 @@ try
 				};
 			};
 
+			private _displayName = getText(configFile >> _configName >> _classname >> "displayName");
+
 			if (_quantityAdded > 0) then
 			{
 				// We successfully added it, get the displayName so we can tell the player
-				_receipt pushBack [
-					getText(configFile >> _configName >> _classname >> "displayName"),
-					_quantityAdded
-				];
+				_receipt pushBack [_displayName, _quantityAdded];
+			};
+
+			// Hold back whatever would not fit so the player can claim the rest later
+			if (_quantityAdded < _quantity) then
+			{
+				private _remaining = _quantity - _quantityAdded;
+
+				_undeliveredItems set [_classname, _remaining];
+				_failures pushBack ["items", _displayName, localize!("Reward_Failure_NoRoom", _remaining)];
 			};
 		}
 		forEach _rewardItems;
 	};
 
+	// Vehicles
+	if !(empty?(_rewardVehicles)) then
+	{
+		{
+			private _vehicle = _x;
+
+			// The vehicle system arrived in 2.1.0. Anything sending vehicles knows that, so a malformed entry is a bug
+			// worth skipping rather than aborting the whole package over.
+			if !(type?(_vehicle, HASH)) then { continue; };
+
+			([_playerObject, _playerUID, _vehicle] call ESMs_object_vehicle_spawnReward) params [
+				"_delivered",
+				"_reason",
+				"_displayName",
+				"_pinCode"
+			];
+
+			if (_delivered) then
+			{
+				_receipt pushBack [
+					format["%1 (%2)", _displayName, localize!("Reward_Vehicle_PinCode", _pinCode)],
+					1
+				];
+
+				continue;
+			};
+
+			_undeliveredVehicles pushBack _vehicle;
+
+			private _reasonText = switch (_reason) do
+			{
+				case "invalid_class": { localize!("Reward_Failure_InvalidClassName") };
+				case "unsupported_location": { localize!("Reward_Failure_UnsupportedLocation") };
+				case "no_safe_position": { localize!("Reward_Failure_NoSafePosition") };
+				case "territory_not_found": { localize!("Reward_Failure_TerritoryNotFound") };
+				case "no_garage": { localize!("Reward_Failure_NoGarage") };
+				case "garage_full": { localize!("Reward_Failure_GarageFull") };
+				default { localize!("Reward_Failure_Unknown") };
+			};
+
+			_failures pushBack ["vehicles", _displayName, _reasonText];
+		}
+		forEach _rewardVehicles;
+	};
+
 	//////////////////////
 	// Completion
 	//////////////////////
-	_receipt = [
+	private _receiptText = [
 		_receipt,
 		// Creates "50x Player Poptabs", "15x Respect", "1x Trollinator", etc.
 		{ format["- %1x %2", _this select 1, _this select 0] }
 	] call ESMs_util_array_map;
 
-	_receipt = _receipt joinString "<br/>";
+	_receiptText = _receiptText joinString "<br/>";
+
+	// The bucket rides along for the bot to store against the claim, but the player only needs the name and the reason
+	private _failureText = [
+		_failures,
+		{ format["- %1: %2", _this select 1, _this select 2] }
+	] call ESMs_util_array_map;
+
+	_failureText = _failureText joinString "<br/>";
+
+	// A package can be entirely items and vehicles, and both of those can fail on their own, so "something failed" and
+	// "nothing arrived" are different answers. Reading a receipt of nothing back to the player is the one to avoid.
+	private _state = "success";
+	if !(empty?(_failures)) then
+	{
+		_state = if (empty?(_receipt)) then { "failure" } else { "partial" };
+	};
+
+	private _title = "";
+	private _description = "";
+	private _color = "green";
+
+	switch (_state) do
+	{
+		case "partial":
+		{
+			_title = localize!("Reward_Response_Partial_Title");
+			_description = localize!("Reward_Response_Partial_Description", _playerMention, _receiptText, _failureText);
+			_color = "yellow";
+		};
+
+		case "failure":
+		{
+			_title = localize!("Reward_Response_Failed_Title");
+			_description = localize!("Reward_Response_Failed_Description", _playerMention, _failureText);
+			_color = "red";
+		};
+
+		default
+		{
+			_title = localize!("Reward_Response_Title");
+			_description = localize!("Reward_Response_Description", _playerMention, _receiptText);
+		};
+	};
 
 	[
 		// Response
 		[
 			_id,
 			[
-				["author", localize!("ResponseAuthor", ESM_ServerID)],
-				["title", localize!("Reward_Response_Title")],
+				["state", _state],
 				[
-					"description",
-					localize!("Reward_Response_Description", _playerMention, _receipt)
-				]
+					"embed",
+					[
+						["author", localize!("ResponseAuthor", ESM_ServerID)],
+						["title", _title],
+						["description", _description],
+						["color", _color]
+					]
+				],
+				["undelivered_items", _undeliveredItems],
+				["undelivered_vehicles", _undeliveredVehicles],
+				["failures", _failures]
 			]
 		],
 
@@ -258,8 +381,8 @@ try
 		{
 			[
 				["title", localize!("Reward_Log_Title")],
-				["description", localize!("Reward_Log_Description", _receipt)],
-				["color", "green"],
+				["description", localize!("Reward_Log_Description", _receiptText)],
+				["color", _color],
 				["fields", [
 					[localize!("Player"), _playerMetadata, true]
 				]]

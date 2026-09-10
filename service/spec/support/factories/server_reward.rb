@@ -2,6 +2,8 @@
 
 FactoryBot.define do
   factory :server_reward, class: "ESM::ServerReward" do
+    reward_id { "default" }
+
     reward_vehicles do
       reward_vehicles = []
 

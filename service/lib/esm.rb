@@ -166,6 +166,23 @@ module ESM
     reconnect_attempts: 10
   }.freeze
 
+  # Every subsystem {.run!} can start. All of them run by default; a caller that needs a narrower process (a console, a
+  # rake task, a second bot running alongside the first) names the subset it wants via `ESM.run!(features:)`.
+  #
+  # Defaulting to all-on points zero-config at production. A process that starts one subsystem too many fails loudly
+  # (a port bind error, a duplicate Discord response); one that starts too few fails silently.
+  FEATURES = %i[
+    status
+    discord_events
+    command_hooks
+    websocket_v1
+    arma_listener
+    nats
+    jobs
+    redis_seed
+    signal_handler
+  ].freeze
+
   class << self
     ##
     # The Discord bot instance used to send and receive messages.
@@ -183,13 +200,16 @@ module ESM
     #
     # @param async [Boolean] when true, the Discord connection runs in a
     #   background thread and this method returns immediately. Defaults to false.
-    # @param bare [Boolean] when true, ESM loads its code, connects to Discord, but does not start any extra services
-    #   such as the API, Discord events, Arma connections, and extra services. Used in parallel when ESM is running
-    #   in another process, such as bin/console and rake tasks
+    # @param bare [Boolean] deprecated spelling of `features: []`
+    # @param features [Array<Symbol>, nil] which of {FEATURES} this process should start. Defaults to nil, which leaves
+    #   every feature on.
     #
     # @return [void]
     #
-    def run!(async: false, bare: false)
+    def run!(async: false, bare: false, features: nil)
+      features = [] if bare
+      self.features.set(*features) unless features.nil?
+
       trace!("Trace logging enabled")
       debug!("Debug logging enabled")
 
@@ -206,31 +226,26 @@ module ESM
         .select(&:exist?)
         .each { |path| load path }
 
-      if env.development? && !bare
+      if env.development? && self.features.redis_seed?
         # Seed the server tokens into redis so the dev TCP listener can validate local Arma servers without
         # waiting for a real handshake. Each server gets its own slot, keyed by server_id, so that several
-        # running at once each pick up their own key instead of racing for one. The unnamespaced slot stays
-        # for the first server: the spec suite writes there, since its server comes from a factory and no
-        # config could name that slot ahead of time.
-        servers = Server.all.to_a
-
-        servers.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
-        redis.set("server_key", Server.find_by(server_id: "esm_malden").token.to_json) if servers.any?
+        # running at once each pick up their own key instead of racing for one.
+        Server.all.each { |server| redis.set("server_key:#{server.server_id}", server.token.to_json) }
       end
 
-      SignalHandler.start unless env.test?
-      Website::API::Server.start unless bare || env.test?
+      SignalHandler.start if self.features.signal_handler?
+      Website::API::Server.start if self.features.nats?
 
       # Load commands
       ESM::Command.load
 
-      if !bare
+      if self.features.jobs?
         # Run some jobs for command
         SyncCommandConfigurationsJob.perform_async(nil)
         SyncCommandCountsJob.perform_async(nil)
       end
 
-      discord_bot.run(async:, bare:)
+      discord_bot.run(async:)
     end
 
     ##
@@ -273,11 +288,14 @@ module ESM
     # are recycled from one run to the next, so a shared keyspace lets a stale
     # entry answer for an unrelated record.
     #
+    # Two bots on one Redis need the same separation for the same reason, and a second bot pointed at another database
+    # runs as `development`, so `ESM_REDIS_NAMESPACE` names the keyspace when the environment alone cannot.
+    #
     # @return [ActiveSupport::Cache::RedisCacheStore]
     #
     def cache
       @cache ||= ActiveSupport::Cache::RedisCacheStore.new(
-        namespace: env.test? ? "esm_bot_test" : "esm_bot",
+        namespace: ENV.fetch("ESM_REDIS_NAMESPACE") { env.test? ? "esm_bot_test" : "esm_bot" },
         redis: redis
       )
     end
@@ -295,6 +313,21 @@ module ESM
     #
     def env
       @env ||= Inquirer.new(:production, :staging, :test, :development).set(ENV["ESM_ENV"].presence || :development)
+    end
+
+    ##
+    # Which subsystems this process is running, wrapped in an Inquirer for predicate-style checks:
+    #
+    #   ESM.features.nats?
+    #   ESM.features.arma_listener?
+    #
+    # Set once from {.run!}; everything downstream reads it rather than being handed a flag, because shutdown has no
+    # event to thread an argument through and has to tear down exactly what startup brought up.
+    #
+    # @return [Inquirer] any of {FEATURES}
+    #
+    def features
+      @features ||= Inquirer.new(*FEATURES, default: FEATURES)
     end
 
     ##
