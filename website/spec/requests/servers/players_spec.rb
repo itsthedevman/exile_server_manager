@@ -67,6 +67,12 @@ RSpec.describe "Servers::Players", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it "404s on a server that doesn't exist" do
+      get "/servers/#{SecureRandom.uuid}/players"
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   # README decision 1: a disabled allowlist has no membership check behind it, so a registered user who isn't a

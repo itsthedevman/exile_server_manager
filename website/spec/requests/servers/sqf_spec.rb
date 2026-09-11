@@ -87,12 +87,7 @@ RSpec.describe "Servers::Sqf", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    # Regression test for the crash the audit reproduced: current_server is nil for an unknown server_id and nothing
-    # guards that before CommandAccess builds its gate off it, so this raises ArgumentError instead of 404ing.
-    it "404s (not 500s) an sqf run on a server that doesn't exist" do
-      pending("HOLE (permission audit decision 4): SqfController#create doesn't guard current_server.nil? before " \
-        "checking command access, so this raises ArgumentError instead of 404ing")
-
+    it "404s an sqf run on a server that doesn't exist" do
       post "/servers/#{SecureRandom.uuid}/sqf",
         params: {code_to_execute: "player setDamage 0;", target: "server", idempotency_key: SecureRandom.uuid},
         as: :turbo_stream

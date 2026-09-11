@@ -37,9 +37,15 @@ module ServerVersion
   # Only for the acting controllers. A page that merely renders should say why instead, since the person most likely
   # to be looking at it is the one who can go update the server.
   #
+  # A server that doesn't exist is refused first, and in every environment. Everything past this gate builds command
+  # access off the server, which has nothing to build from, and a local environment skips the version check entirely.
+  #
+  # @raise [NotFoundError] when no server matches the URL
+  #
   # @return [void]
   #
   def require_supported_server!
+    not_found! if current_server.nil?
     return if server_supported?
 
     render_command_denied(outdated_server_message)

@@ -73,12 +73,7 @@ RSpec.describe "Servers::Gambling", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    # Regression test for the crash the audit reproduced: current_server is nil for an unknown server_id and nothing
-    # guards that before CommandAccess builds its gate off it, so this raises ArgumentError instead of 404ing.
-    it "404s (not 500s) a gamble on a server that doesn't exist" do
-      pending("HOLE (permission audit decision 4): GamblingController#create doesn't guard current_server.nil? " \
-        "before checking command access, so this raises ArgumentError instead of 404ing")
-
+    it "404s a gamble on a server that doesn't exist" do
       post "/servers/#{SecureRandom.uuid}/gamble",
         params: {amount: "100", idempotency_key: SecureRandom.uuid},
         as: :turbo_stream
@@ -106,13 +101,9 @@ RSpec.describe "Servers::Gambling", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # Regression test for the crash the audit reproduced: the command lookup is scoped to the caller, not the URL's
-    # server_id, so an owned command reached through a bogus server_id still resolves - and then gamble_stat calls
-    # current_server.id on nil instead of 404ing.
-    it "404s (not 500s) when the URL's server doesn't exist" do
-      pending("HOLE (permission audit decision 4): #status's gamble_stat calls current_server.id without checking " \
-        "current_server.nil? first, so this raises NoMethodError instead of 404ing")
-
+    # The command lookup is scoped to the caller rather than the URL's server, so a command that really is theirs still
+    # resolves through a server that isn't there. The server has to be refused before anything reads it.
+    it "404s the caller's own command reached through a server that doesn't exist" do
       command = create(:service_command, user:, server:, command_name: "gamble")
       get "/servers/#{SecureRandom.uuid}/gamble/commands/#{command.public_id}/status", as: :turbo_stream
 

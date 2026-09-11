@@ -58,6 +58,14 @@ RSpec.describe "Servers::Rewards", type: :request do
       expect(ESM::ServiceCommand.last.arguments).not_to have_key(:reward_id)
     end
 
+    it "404s a redemption on a server that doesn't exist" do
+      post "/servers/#{SecureRandom.uuid}/reward",
+        params: {idempotency_key: SecureRandom.uuid, reward_id: "daily"},
+        as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+    end
+
     # The form indexes its fields so the choices reach the command in the claim's own order, which is the only thing
     # pairing a choice with the vehicle it was made for.
     it "passes the player's per-vehicle choices in order" do

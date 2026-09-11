@@ -45,6 +45,16 @@ RSpec.describe "Servers::Territories", type: :request do
       as: :turbo_stream
   end
 
+  it "404s an action on a server that doesn't exist" do
+    expect {
+      post "/servers/#{SecureRandom.uuid}/territories/#{territory_id}/pay",
+        params: {idempotency_key: SecureRandom.uuid, dom_id: "region"},
+        as: :turbo_stream
+    }.not_to change(ESM::ServiceCommand, :count)
+
+    expect(response).to have_http_status(:not_found)
+  end
+
   describe "the command actions" do
     # route segment => [extra POST params, command_name, action-specific arguments]
     {
