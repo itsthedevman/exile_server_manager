@@ -29,9 +29,20 @@ RSpec.describe "Servers::Players", type: :request do
   # game-server reads than a controller spec should stub. summary (the lazy card)
   # exercises the same load path in isolation; the auth guard is checked on /me.
   it "renders the lazy summary card" do
+    allow_access(denied: false)
+
     get "/servers/#{server.public_id}/players/summary"
 
     expect(response).to have_http_status(:ok)
+  end
+
+  # The card only renders for a viewer who can use me, but the frame it loads from is a URL of its own.
+  it "404s the summary card for a viewer without me access" do
+    allow_access(denied: true, reason: :disabled)
+
+    get "/servers/#{server.public_id}/players/summary"
+
+    expect(response).to have_http_status(:not_found)
   end
 
   it "requires a signed-in user" do
