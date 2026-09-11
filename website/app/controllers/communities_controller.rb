@@ -17,22 +17,9 @@ class CommunitiesController < AuthenticatedController
     }
   end
 
-  # The landing page for community-wide tools - the commands that act on a whole community rather than one server, and
-  # so have nowhere to live on the server-scoped dashboard. Still gated while it fills out; until then a community
-  # opens on its settings the way it always has.
+  # Community-wide tools live in the sidebar, so a community has no page of its own and opens on its settings.
   def show
-    return redirect_to edit_community_path(current_community) unless Rails.env.local?
-
-    # An audience-less broadcast has nothing to send to, so having the permission is not the same as the card being
-    # worth rendering. Folded together here rather than asked twice in the template.
-    audiences = command_accessible?("broadcast") ? helpers.broadcast_audiences(current_community) : []
-
-    render locals: {
-      can_broadcast: audiences.any?,
-      audiences:,
-      can_clear_cooldowns: command_accessible?("reset_cooldown"),
-      can_manage_reward_claims: helpers.reward_claims_manageable?(current_community)
-    }
+    redirect_to edit_community_path(current_community)
   end
 
   def edit

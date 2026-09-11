@@ -6,6 +6,72 @@ module CommunitiesHelper
   # directions.
   ModeSwitch = Data.define(:target_enabled, :action_label, :current_summary, :consequence)
 
+  # One entry in the sidebar's Tools card. `data` carries the Turbo attributes for a tool that opens a modal instead of
+  # navigating.
+  CommunityTool = Data.define(:key, :label, :icon, :path, :active, :data)
+
+  ##
+  # The community-wide tools this user may use, in the order the sidebar lists them.
+  #
+  # Every entry costs a permission check, and the sidebar asks for the list more than once per render, so it is built
+  # once.
+  #
+  # @param community [ESM::Community]
+  #
+  # @return [Array<CommunityTool>]
+  #
+  def community_tools(community)
+    @community_tools ||= begin
+      tools = []
+
+      # Every audience is a server, so a community without one has nobody to broadcast to
+      if command_accessible?("broadcast") && community.servers.any?
+        tools << CommunityTool.new(
+          key: :broadcast,
+          label: "Broadcast",
+          icon: "bi-megaphone",
+          path: new_community_broadcast_path(community),
+          active: false,
+          data: {"turbo-prefetch": false, "turbo-frame": "broadcast_modal_frame"}
+        )
+      end
+
+      if command_accessible?("reset_cooldown")
+        tools << CommunityTool.new(
+          key: :cooldowns,
+          label: "Cooldowns",
+          icon: "bi-hourglass-split",
+          path: community_cooldowns_path(community),
+          active: controller_name == "cooldowns",
+          data: {}
+        )
+      end
+
+      if reward_claims_manageable?(community)
+        tools << CommunityTool.new(
+          key: :reward_claims,
+          label: "Reward Claims",
+          icon: "bi-inbox",
+          path: community_reward_claims_path(community),
+          active: controller_name == "reward_claims",
+          data: {}
+        )
+      end
+
+      tools
+    end
+  end
+
+  ##
+  # @param community [ESM::Community]
+  # @param key [Symbol] one of the CommunityTool keys
+  #
+  # @return [Boolean]
+  #
+  def community_tool?(community, key)
+    community_tools(community).any? { |tool| tool.key == key }
+  end
+
   ##
   # The copy and target state for switching this community's type.
   #

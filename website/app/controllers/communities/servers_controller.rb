@@ -99,7 +99,7 @@ module Communities
       server.destroy!
 
       flash[:success] = "#{server.server_id} has been deleted"
-      redirect_to community_path(current_community)
+      redirect_to edit_community_path(current_community)
     end
 
     def enable_v2

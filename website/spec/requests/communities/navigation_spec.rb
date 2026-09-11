@@ -21,7 +21,6 @@ RSpec.describe "Communities navigation", type: :request do
   end
 
   {
-    "the tools page" => "",
     "the settings page" => "/edit",
     "the commands page" => "/commands",
     "the notifications page" => "/notifications",
@@ -37,6 +36,38 @@ RSpec.describe "Communities navigation", type: :request do
       # The sidebar's own id, asserted because a redirect or an error page would otherwise satisfy a status check
       # while skipping the partial this group exists to render.
       expect(response.body).to include("dashboard-sidebar")
+    end
+  end
+
+  describe "the Tools card" do
+    # Broadcast opens over whichever page is showing, so its entry targets the modal's frame and the modal ships with
+    # the sidebar rather than with any one page.
+    it "offers broadcast as a modal" do
+      get "/communities/#{community.public_id}/edit"
+
+      expect(response.body).to include("bi-lightning-charge")
+      expect(response.body).to include(%(href="#{new_community_broadcast_path(community.public_id)}"))
+      expect(response.body).to include(%(id="broadcast_modal_frame"))
+    end
+
+    context "when the viewer can use none of the tools" do
+      before do
+        server.update!(ui_version: "1.0.0")
+
+        allow(ESM::CommandAccess).to receive(:new).and_return(
+          instance_double(
+            ESM::CommandAccess,
+            verdict: ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+          )
+        )
+      end
+
+      it "leaves the card out" do
+        get "/communities/#{community.public_id}/edit"
+
+        expect(response.body).not_to include("bi-lightning-charge")
+        expect(response.body).not_to include(%(id="broadcast_modal_frame"))
+      end
     end
   end
 end

@@ -125,7 +125,8 @@ Rails.application.routes.draw do
 
     if Rails.env.local?
       # /communities/:community_id/broadcast
-      resource :broadcast, only: [:create], controller: "communities/broadcasts" do
+      # /communities/:community_id/broadcast/new
+      resource :broadcast, only: %i[new create], controller: "communities/broadcasts" do
         collection do
           # /communities/:community_id/broadcast/commands/:command_id/status
           get "commands/:command_id/status", action: :status, as: :command_status

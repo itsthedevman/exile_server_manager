@@ -4,6 +4,17 @@ module Communities
   class BroadcastsController < RegisteredController
     include Commands
 
+    # Loads into the sidebar's modal frame, so the modal opens over whichever community page is showing. Every audience
+    # is a server, so a community without one has nobody to send to.
+    def new
+      return unless check_for_command_access("broadcast")
+
+      audiences = helpers.broadcast_audiences(current_community)
+      not_found! if audiences.empty?
+
+      render locals: {audiences:}
+    end
+
     def create
       return unless check_for_command_access("broadcast")
 

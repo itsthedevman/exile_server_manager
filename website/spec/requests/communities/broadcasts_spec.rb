@@ -7,7 +7,10 @@ RSpec.describe "Communities::Broadcasts", type: :request do
 
   before do
     sign_in user
-    allow_any_instance_of(ESM::Community).to receive(:modifiable_by?).and_return(true)
+
+    # No modifiable_by? stub here on purpose: this controller has no check_for_community_access! anywhere in its
+    # ancestry (RegisteredController only adds registration), so stubbing manager status would read as asserting a
+    # gate this suite never actually exercises.
 
     # Boundary stubs - never touch NATS, don't wait on a settle.
     allow(ESM::Service::API).to receive(:call)
@@ -29,6 +32,54 @@ RSpec.describe "Communities::Broadcasts", type: :request do
     post "/communities/#{community.public_id}/broadcast",
       params: {message:, broadcast_to:, idempotency_key:, dom_id: "broadcast_result"},
       as: :turbo_stream
+  end
+
+  describe "GET /broadcast/new" do
+    it "offers the community's servers as audiences" do
+      allow_access(denied: false)
+
+      get "/communities/#{community.public_id}/broadcast/new"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(id="broadcast_modal_frame"))
+      expect(response.body).to include(server.public_id)
+    end
+
+    it "is not found when the viewer cannot broadcast" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/communities/#{community.public_id}/broadcast/new"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    context "when the community has no servers" do
+      let!(:server) { nil }
+
+      it "is not found" do
+        allow_access(denied: false)
+
+        get "/communities/#{community.public_id}/broadcast/new"
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    # README decision 1 / audit HOLE, same as POST /broadcast below: no community-membership boundary, only the
+    # command allowlist. Runs the real CommandAccess against the fake bot (no allow_access stub).
+    it "refuses a registered stranger to this community once its allowlist is off" do
+      pending("HOLE: broadcast has no community-membership boundary once its allowlist is disabled (README decision 1)")
+
+      # Community#create_command_configurations seeds a row per command on creation, already carrying the
+      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
+      # ambiguous one for the same community/command pair.
+      community.command_configurations.find_by!(command_name: "broadcast").update!(allowlist_enabled: false)
+      service_api.answer(:community_membership, nil)
+
+      get "/communities/#{community.public_id}/broadcast/new"
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "POST /broadcast" do
@@ -97,6 +148,24 @@ RSpec.describe "Communities::Broadcasts", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("You do not have permission to broadcast")
+    end
+
+    # README decision 1 / audit HOLE: there is no community-membership boundary here, only broadcast's own command
+    # allowlist. The moment a manager disables that allowlist, ESM::Command::Permission#allowlisted? admits anyone
+    # registered, guild member or not. Runs the real CommandAccess against the fake bot (no allow_access stub) so
+    # the verdict comes from the actual resolver rather than an assertion about it.
+    it "refuses a registered stranger to this community once its allowlist is off" do
+      pending("HOLE: broadcast has no community-membership boundary once its allowlist is disabled (README decision 1)")
+
+      # Community#create_command_configurations seeds a row per command on creation, already carrying the
+      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
+      # ambiguous one for the same community/command pair.
+      community.command_configurations.find_by!(command_name: "broadcast").update!(allowlist_enabled: false)
+      service_api.answer(:community_membership, nil)
+
+      expect { post_broadcast }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

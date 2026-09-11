@@ -167,7 +167,7 @@
           .d-block.d-lg-none
             .row.g-2
               .col-6
-                = link_to community_path(current_community),
+                = link_to edit_community_path(current_community),
                     class: "btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
                   i.bi.bi-arrow-left.me-2
                   | Cancel
@@ -178,7 +178,7 @@
 
           / Desktop
           .d-none.d-lg-flex.gap-3.justify-content-end
-            = link_to community_path(current_community),
+            = link_to edit_community_path(current_community),
                 class: "btn btn-outline-secondary d-flex align-items-center"
               i.bi.bi-arrow-left.me-2
               | Cancel
