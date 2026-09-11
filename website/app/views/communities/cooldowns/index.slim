@@ -4,7 +4,7 @@
 = render "communities/container", **local_assigns do
   .text-center.mb-4
     h1.mb-2 Active Cooldowns
-    p.lead.text-muted = "Every cooldown currently holding a player back on #{current_community.community_id}"
+    p.lead.text-muted = "Command cooldowns for your players"
 
   / The inactive switch is drawn in the card below, inside the clear form. Forms cannot nest, so it points back here
   / by id. It navigates where the selects beside it do not, because it changes what the page loads rather than which
