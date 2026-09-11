@@ -23,7 +23,7 @@
   - elsif !current_server.connected?
     .small.text-muted.mt-2
       i.bi.bi-plug.me-1
-      | #{current_server.server_id} is offline. Rewards are handed over in game, so this has to wait until it is back.
+      | #{current_server.server_id} is offline. You can deliver this reward once the server is back online.
   - else
     = render "servers/rewards/deliver_form", current_server:, reward_claim:
 
