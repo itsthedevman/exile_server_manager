@@ -42,11 +42,17 @@ module CommandGating
   ##
   # Whether the current user is allowed to run command_name here.
   #
+  # Memoized for the request, because a list asks the same question once per row and every verdict reads the server's
+  # connectivity.
+  #
   # @param command_name [String, Symbol] The name of the command
   #
   # @return [Boolean] true when the verdict allows the command
   #
   def command_accessible?(command_name)
-    command_verdict(command_name).allowed?
+    @command_accessible ||= {}
+    return @command_accessible[command_name.to_s] if @command_accessible.key?(command_name.to_s)
+
+    @command_accessible[command_name.to_s] = command_verdict(command_name).allowed?
   end
 end

@@ -1,6 +1,6 @@
-/ locals: server_public_id, territory_id, surface
+/ locals: server_public_id, territory_id, surface, editable
 / optional: replace_id, open, value
-- if command_accessible?("set_id") && (viewing_self? || territory_admin?)
+- if editable
   div id=command_action_id("set_id", territory_id, surface) data-controller="inline-edit" data-inline-edit-open-value=(local_assigns[:open] ? "true" : "false") data-inline-edit-current-value=territory_id
     span.d-inline-flex.align-items-center.gap-2 data-inline-edit-target="display"
       code.small.text-secondary-emphasis = territory_id

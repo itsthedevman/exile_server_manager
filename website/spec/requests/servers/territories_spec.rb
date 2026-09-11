@@ -178,6 +178,57 @@ RSpec.describe "Servers::Territories", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    context "with a territory marked for deletion" do
+      let(:marked_row) do
+        {
+          id: "doomed",
+          esm_custom_id: nil,
+          name: "Doomed",
+          level: 1,
+          object_count: 3,
+          radius: 25.0,
+          flag_texture: "",
+          flag_stolen: false,
+          last_paid_at: nil,
+          deleted_at: 1.day.ago.iso8601,
+          owner_uid: "76561198000000099",
+          owner_name: "Owner",
+          moderators: [],
+          build_rights: []
+        }
+      end
+
+      let(:restore_path) { "/servers/#{server.public_id}/territories/doomed/restore" }
+
+      before { allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return([marked_row]) }
+
+      it "offers a restore to a viewer who can run restore" do
+        get "/servers/#{server.public_id}/territories/list"
+
+        expect(response.body).to include(restore_path)
+      end
+
+      # Listing territories and restoring one are separate grants, so seeing the row is not the same as being offered
+      # the button on it.
+      it "leaves the restore off for a viewer who can list territories but not restore them" do
+        allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
+          verdict =
+            if command_name.to_s == "restore"
+              ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+            else
+              ESM::Command::Permission::ALLOWED
+            end
+
+          instance_double(ESM::CommandAccess, verdict:)
+        end
+
+        get "/servers/#{server.public_id}/territories/list"
+
+        expect(response.body).to include("Doomed")
+        expect(response.body).not_to include(restore_path)
+      end
+    end
   end
 
   describe "GET show" do
@@ -255,6 +306,30 @@ RSpec.describe "Servers::Territories", type: :request do
       expect(requested_command_name).to eq("territory")
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('alt="Territory flag"')
+    end
+
+    it "offers the owner the controls that belong to an owner" do
+      stub_info_access(allowed: false)
+      stub_territory_read(territory_payload)
+
+      get_show
+
+      expect(response.body).to include(%(id="set_id_modal_#{territory_id}"))
+      expect(response.body).to include(%(id="add_modal_#{territory_id}"))
+    end
+
+    # The controls follow the viewer's own stake in the territory, not how the territory was reached. info lets someone
+    # read any territory, and reading it is all that grants.
+    it "hides every action control from a viewer who reads the territory through info but holds no stake in it" do
+      stub_info_access(allowed: true)
+      stub_territory_read(territory_payload.merge(owner_uid: "76561198000000099"))
+
+      get_show
+
+      expect(response.body).to include('alt="Territory flag"')
+      expect(response.body).not_to include(%(id="set_id_modal_#{territory_id}"))
+      expect(response.body).not_to include(%(id="upgrade_modal_#{territory_id}"))
+      expect(response.body).not_to include(%(id="add_modal_#{territory_id}"))
     end
 
     it "shows nothing and hides every action control for a non-member the territory command refuses" do

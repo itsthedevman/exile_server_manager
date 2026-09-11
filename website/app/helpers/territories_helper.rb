@@ -119,6 +119,21 @@ module TerritoriesHelper
     builder: %i[promote remove]
   }.freeze
 
+  # The least a viewer has to hold in a territory to be offered each action. Mirrors what arma checks before running it:
+  # ESMs_system_territory_checkAccess for payment and the member actions, and the extension's owner check for a rename.
+  # Territory admins clear every one of them, there and here.
+  TERRITORY_ACTION_ROLES = {
+    "pay" => :builder,
+    "upgrade" => :moderator,
+    "add" => :moderator,
+    "promote" => :moderator,
+    "demote" => :moderator,
+    "remove" => :moderator,
+    "set_id" => :owner
+  }.freeze
+
+  TERRITORY_ROLE_RANKS = {builder: 1, moderator: 2, owner: 3}.freeze
+
   # A titled section panel inside the territory detail modal body. The header icon
   # carries an accent color so the panels aren't monochrome.
   def territory_section(title, icon:, color: "text-info", wrapper_class: "p-3 mb-3", &block)
@@ -174,24 +189,36 @@ module TerritoriesHelper
     time.strftime("%b %-d, %Y")
   end
 
-  # Whether the viewer sees the add-member form. Only the owner and moderators can add (arma enforces the
-  # same "moderator" access in ESMs_command_add); builders and non-members don't. A visibility guard only -
-  # arma remains the authority, so a bypassed request still gets rejected.
+  # Whether the viewer is offered a territory action: the command has to be open to them, and they have to hold the role
+  # arma checks for it. A visibility guard only - arma remains the authority, so a bypassed request is still refused.
+  def territory_action_offered?(command_name, territory)
+    return false unless command_accessible?(command_name)
+
+    territory_role_at_least?(
+      territory, current_user.steam_uid, TERRITORY_ACTION_ROLES.fetch(command_name), admin: territory_admin?
+    )
+  end
+
+  # Whether steam_uid holds at least role in the territory.
   #
   # Territory-admin rights are a request-level fact, so they arrive as an argument rather than being asked for here.
-  def territory_addable_by?(territory, steam_uid, admin: false)
+  def territory_role_at_least?(territory, steam_uid, role, admin: false)
     return false if steam_uid.blank?
     return true if admin
 
-    [territory.owner, *territory.moderators].compact.any? { |member| member.steam_uid == steam_uid }
+    members = [territory.owner, *territory.moderators, *territory.builders].compact
+    member = members.find { |candidate| candidate.steam_uid == steam_uid }
+    return false if member.nil?
+
+    TERRITORY_ROLE_RANKS.fetch(member.role) >= TERRITORY_ROLE_RANKS.fetch(role)
   end
 
   # A labeled group of territory members (an array of Territory::Member). Renders
   # nothing when the group is empty, so an owner-only territory shows just the
-  # owner. territory_id + server_public_id thread down so each row can post its
+  # owner. territory + server_public_id thread down so each row can post its
   # promote/demote/remove action; the member list only lives in the modal, so
   # surface defaults there.
-  def territory_member_group(label, members, icon:, territory_id:, server_public_id:, color: "text-info", wrapper_class: "mb-3", surface: "modal")
+  def territory_member_group(label, members, icon:, territory:, server_public_id:, color: "text-info", wrapper_class: "mb-3", surface: "modal")
     return if members.blank?
 
     tag.div(class: wrapper_class) do
@@ -200,7 +227,7 @@ module TerritoriesHelper
           safe_join([tag.i(class: "bi bi-#{icon} #{color}"), tag.span(label)])
         end,
         tag.div(class: "d-flex flex-column gap-1") do
-          safe_join(members.map { |member| territory_member_row(member, territory_id:, server_public_id:, surface:) })
+          safe_join(members.map { |member| territory_member_row(member, territory:, server_public_id:, surface:) })
         end
       ])
     end
@@ -495,6 +522,7 @@ module TerritoriesHelper
         server_public_id: command.server.public_id,
         territory_id: command.arguments[:old_territory_id],
         surface: "retry",
+        editable: command_accessible?("set_id"),
         open: true,
         value: command.arguments[:new_territory_id],
         replace_id: service_command_id(command)
@@ -503,7 +531,7 @@ module TerritoriesHelper
 
   # A member row: a prominent name and a muted, monospace steam uid, trailed by
   # the role's action icons (none for the owner).
-  def territory_member_row(member, territory_id:, server_public_id:, surface:)
+  def territory_member_row(member, territory:, server_public_id:, surface:)
     tag.div(class: "d-flex align-items-center justify-content-between gap-2") do
       safe_join([
         tag.div(class: "d-flex align-items-baseline gap-2 flex-wrap") do
@@ -512,15 +540,15 @@ module TerritoriesHelper
             tag.span(member.steam_uid, class: "small text-secondary-emphasis font-monospace")
           ])
         end,
-        territory_member_action_cluster(member, territory_id:, server_public_id:, surface:)
+        territory_member_action_cluster(member, territory:, server_public_id:, surface:)
       ])
     end
   end
 
   # The trailing action icons for a member row, or an empty string when the role
   # has no actions (the owner).
-  def territory_member_action_cluster(member, territory_id:, server_public_id:, surface:)
-    actions = territory_member_actions(member)
+  def territory_member_action_cluster(member, territory:, server_public_id:, surface:)
+    actions = territory_member_actions(member, territory:)
     return "".html_safe if actions.blank?
 
     tag.div(class: "d-flex align-items-center gap-1 flex-shrink-0") do
@@ -528,7 +556,7 @@ module TerritoriesHelper
         actions.map do |action|
           render "servers/territories/member_action_button",
             server_public_id:,
-            territory_id:,
+            territory_id: territory.id,
             surface:,
             command_name: action[:command_name],
             target_uid: member.steam_uid,
@@ -541,11 +569,10 @@ module TerritoriesHelper
     end
   end
 
-  # The action specs available for a member, resolved from its role.
-  def territory_member_actions(member)
+  # The action specs a member row offers the viewer, resolved from the member's role and the viewer's own stake.
+  def territory_member_actions(member, territory:)
     MEMBER_ROLE_ACTIONS.fetch(member.role, []).filter_map do |action|
-      next unless command_accessible?(action)
-      next unless viewing_self? || territory_admin?
+      next unless territory_action_offered?(action.to_s, territory)
 
       MEMBER_ACTIONS.fetch(action)
     end

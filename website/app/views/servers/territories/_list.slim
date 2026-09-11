@@ -85,8 +85,9 @@
                     span.text-muted.small Secure
                 td.text-end
                   - if territory.marked_for_deletion?
-                    = button_to server_territory_restore_path(current_server.public_id, territory.id), params: {idempotency_key: SecureRandom.uuid}, class: "btn btn-sm btn-outline-warning", form: {data: {turbo_confirm: "Restore territory #{territory.id}? It will be spared on the next restart."}}, title: "Restore territory" do
-                      i.bi.bi-arrow-counterclockwise
+                    - if command_accessible?("restore")
+                      = button_to server_territory_restore_path(current_server.public_id, territory.id), params: {idempotency_key: SecureRandom.uuid}, class: "btn btn-sm btn-outline-warning", form: {data: {turbo_confirm: "Restore territory #{territory.id}? It will be spared on the next restart."}}, title: "Restore territory" do
+                        i.bi.bi-arrow-counterclockwise
                   - else
                     = link_to server_territory_path(current_server.public_id, territory.id), class: "btn btn-sm btn-outline-primary", title: "View territory", data: {turbo_frame: "territory_detail_frame"}
                       i.bi.bi-box-arrow-in-right

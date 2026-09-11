@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe TerritoriesHelper, type: :helper do
-  def member(role)
-    ESM::Exile::Territory::Member.new(name: "Someone", steam_uid: "76561198000000000", role:)
-  end
-
   describe "#pay_confirm_message" do
     it "names the price when the caller knows it" do
       expect(helper.pay_confirm_message("1,000 poptabs"))
@@ -53,43 +49,66 @@ RSpec.describe TerritoriesHelper, type: :helper do
   end
 
   describe "#territory_member_actions" do
-    # Which actions a member row offers depends on who is asking: the command has to be enabled for the community and
-    # the viewer has to own the territory or hold territory-admin rights. Both answers come from the request, so a
-    # helper spec has to supply them the way it would current_user. They reach a view as controller helper_methods
-    # rather than as methods on the view itself, so verification has to stand down to stub them.
+    # Which actions a member row offers depends on who is asking: the command has to be open to the viewer, and the
+    # viewer has to hold the role arma checks for it or territory-admin rights. Those answers come from the request, so
+    # a helper spec supplies them the way a controller would. They reach a view as controller helper_methods rather than
+    # as methods on the view itself, so verification has to stand down to stub them.
+    let(:owner) { ESM::Exile::Territory::Member.new(name: "Owner", steam_uid: "76561198000000001", role: :owner) }
+    let(:moderator) { ESM::Exile::Territory::Member.new(name: "Mod", steam_uid: "76561198000000002", role: :moderator) }
+    let(:builder) { ESM::Exile::Territory::Member.new(name: "Builder", steam_uid: "76561198000000003", role: :builder) }
+    let(:territory) { instance_double(ESM::Exile::Territory, id: "77", owner:, moderators: [moderator], builders: [builder]) }
+    let(:viewer_uid) { moderator.steam_uid }
+    let(:territory_admin) { false }
+
     before do
       without_partial_double_verification do
-        allow(helper).to receive_messages(command_accessible?: true, viewing_self?: true, territory_admin?: false)
+        allow(helper).to receive_messages(
+          command_accessible?: true,
+          territory_admin?: territory_admin,
+          current_user: build(:user, steam_uid: viewer_uid)
+        )
       end
+    end
+
+    def commands_for(member)
+      helper.territory_member_actions(member, territory:).map { |action| action[:command_name] }
     end
 
     it "gives the owner no actions" do
-      expect(helper.territory_member_actions(member(:owner))).to be_empty
+      expect(commands_for(owner)).to be_empty
     end
 
     it "lets a moderator be demoted or removed" do
-      commands = helper.territory_member_actions(member(:moderator)).map { |action| action[:command_name] }
-      expect(commands).to eq(%w[demote remove])
+      expect(commands_for(moderator)).to eq(%w[demote remove])
     end
 
     it "lets a builder be promoted or removed" do
-      commands = helper.territory_member_actions(member(:builder)).map { |action| action[:command_name] }
-      expect(commands).to eq(%w[promote remove])
+      expect(commands_for(builder)).to eq(%w[promote remove])
     end
 
-    # viewing_self? answers "not on the admin player page", not territory membership - it defaults true for the
-    # common case of arriving at a territory straight from the admin list, so a moderator or admin with no stake in
-    # this specific territory must fall through to territory_admin? alone rather than riding the default.
-    context "when the viewer is neither on their own page nor a territory admin" do
-      before do
-        without_partial_double_verification do
-          allow(helper).to receive_messages(viewing_self?: false, territory_admin?: false)
-        end
+    context "when the viewer only has build rights" do
+      let(:viewer_uid) { builder.steam_uid }
+
+      it "offers nothing, since arma wants a moderator for every member action" do
+        expect(commands_for(moderator)).to be_empty
+        expect(commands_for(builder)).to be_empty
+      end
+    end
+
+    context "when the viewer holds no stake in the territory" do
+      let(:viewer_uid) { "76561198000000009" }
+
+      it "offers nothing" do
+        expect(commands_for(moderator)).to be_empty
+        expect(commands_for(builder)).to be_empty
       end
 
-      it "offers no actions for any role" do
-        expect(helper.territory_member_actions(member(:moderator))).to be_empty
-        expect(helper.territory_member_actions(member(:builder))).to be_empty
+      context "and is a territory admin" do
+        let(:territory_admin) { true }
+
+        it "offers what a moderator would get" do
+          expect(commands_for(builder)).to eq(%w[promote remove])
+        end
       end
     end
   end
@@ -143,33 +162,30 @@ RSpec.describe TerritoriesHelper, type: :helper do
     end
   end
 
-  describe "#territory_addable_by?" do
+  describe "#territory_role_at_least?" do
     let(:owner) { ESM::Exile::Territory::Member.new(name: "Owner", steam_uid: "76561198000000001", role: :owner) }
     let(:moderator) { ESM::Exile::Territory::Member.new(name: "Mod", steam_uid: "76561198000000002", role: :moderator) }
-    let(:territory) { instance_double(ESM::Exile::Territory, owner:, moderators: [moderator]) }
+    let(:builder) { ESM::Exile::Territory::Member.new(name: "Builder", steam_uid: "76561198000000003", role: :builder) }
+    let(:territory) { instance_double(ESM::Exile::Territory, owner:, moderators: [moderator], builders: [builder]) }
 
-    it "lets the owner add" do
-      expect(helper.territory_addable_by?(territory, owner.steam_uid)).to be(true)
+    it "ranks the owner above a moderator, and a moderator above build rights" do
+      expect(helper.territory_role_at_least?(territory, owner.steam_uid, :owner)).to be(true)
+      expect(helper.territory_role_at_least?(territory, moderator.steam_uid, :owner)).to be(false)
+      expect(helper.territory_role_at_least?(territory, moderator.steam_uid, :moderator)).to be(true)
+      expect(helper.territory_role_at_least?(territory, builder.steam_uid, :moderator)).to be(false)
+      expect(helper.territory_role_at_least?(territory, builder.steam_uid, :builder)).to be(true)
     end
 
-    it "lets a moderator add" do
-      expect(helper.territory_addable_by?(territory, moderator.steam_uid)).to be(true)
+    it "gives a non-member nothing" do
+      expect(helper.territory_role_at_least?(territory, "76561198000000009", :builder)).to be(false)
     end
 
-    it "does not let a builder or non-member add" do
-      expect(helper.territory_addable_by?(territory, "76561198000000009")).to be(false)
-    end
-
-    it "lets a territory admin add without being a member" do
-      expect(helper.territory_addable_by?(territory, "76561198000000009", admin: true)).to be(true)
-    end
-
-    it "is false when the viewer has no steam uid" do
-      expect(helper.territory_addable_by?(territory, nil)).to be(false)
+    it "lets a territory admin through without being a member" do
+      expect(helper.territory_role_at_least?(territory, "76561198000000009", :owner, admin: true)).to be(true)
     end
 
     it "is false when the viewer has no steam uid, even for a territory admin" do
-      expect(helper.territory_addable_by?(territory, nil, admin: true)).to be(false)
+      expect(helper.territory_role_at_least?(territory, nil, :builder, admin: true)).to be(false)
     end
   end
 

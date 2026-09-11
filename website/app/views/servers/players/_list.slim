@@ -124,10 +124,11 @@
                   .small.text-muted.ms-1 = "#{player[:kills]}/#{player[:deaths]}"
                 td.text-end = number_with_delimiter(player[:total_connections])
                 td.text-end
-                  / Breaks out of the players_list frame this row lives in - otherwise Turbo tries to load the show
-                  / page into the frame and discards it for lacking a matching turbo-frame.
-                  = link_to server_player_path(current_server.public_id, player[:uid]), class: "btn btn-sm btn-outline-primary", title: "View player", data: {turbo_frame: "_top"}
-                    i.bi.bi-box-arrow-in-right
+                  - if command_accessible?("info")
+                    / Breaks out of the players_list frame this row lives in - otherwise Turbo tries to load the show
+                    / page into the frame and discards it for lacking a matching turbo-frame.
+                    = link_to server_player_path(current_server.public_id, player[:uid]), class: "btn btn-sm btn-outline-primary", title: "View player", data: {turbo_frame: "_top"}
+                      i.bi.bi-box-arrow-in-right
 
       .card-body.text-center.py-5[hidden data-players-table-target="empty"]
         i.bi.bi-search.text-muted.fs-1.d-block.mb-3

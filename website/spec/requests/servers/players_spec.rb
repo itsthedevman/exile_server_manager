@@ -209,6 +209,31 @@ RSpec.describe "Servers::Players", type: :request do
 
         expect(response.body).not_to include("Search every player on")
       end
+
+      # Listing who has been around and opening a player's record are separate grants.
+      it "links a row to the player's page only for a viewer who can run info" do
+        player_page = %(href="/servers/#{server.public_id}/players/#{player_row[:uid]}")
+
+        get "/servers/#{server.public_id}/players/list?window=7d"
+
+        expect(response.body).to include(player_page)
+
+        allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
+          verdict =
+            if command_name.to_s == "info"
+              ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+            else
+              ESM::Command::Permission::ALLOWED
+            end
+
+          instance_double(ESM::CommandAccess, verdict:)
+        end
+
+        get "/servers/#{server.public_id}/players/list?window=7d"
+
+        expect(response.body).to include("Dave")
+        expect(response.body).not_to include(player_page)
+      end
     end
 
     # A name search and the recency listing answer different questions. Sharing a cache entry would let whichever ran

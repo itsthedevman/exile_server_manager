@@ -43,6 +43,7 @@ core/spec/examples.txt
 core/tmp/
 core/.direnv
 core/vendor/
+core/db/seeds.rb
 
 # website/
 website/.bundle
