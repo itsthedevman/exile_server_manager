@@ -2,7 +2,7 @@
 
 class LogEntriesController < ApplicationController
   def show
-    log_entry = ESM::LogEntry.includes(:log).find_by(public_id: params[:entry_id])
+    log_entry = ESM::LogEntry.includes(:log).where(log: ESM::Log.active).find_by(public_id: params[:entry_id])
     not_found! if log_entry.nil?
 
     render locals: {

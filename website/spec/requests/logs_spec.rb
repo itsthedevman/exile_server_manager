@@ -67,12 +67,9 @@ RSpec.describe "Logs", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    # HOLE / GAP from the audit (community_dashboard.md, LogEntriesController#show): LogsController#show enforces
-    # the "link expires on <date>" promise via Log.active; this action never applies that filter at all, so an
-    # entry stays reachable forever past the 1-day expiry the product tells the requester to expect.
+    # The requester is told the link expires. An entry is its own link, so it has to honour its log's expiry rather
+    # than outlive it.
     it "is not found once the parent log has expired" do
-      pending("HOLE: log_entries#show never checks the parent log's expiry, unlike logs#show (audit decision 3)")
-
       log = build_log
       entry = build_entry(log)
       log.update!(expires_at: 5.minutes.ago)
