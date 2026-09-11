@@ -8,8 +8,8 @@
     .small.text-muted.mb-2 Been given a reward code?
 
     = form_with url: lookup_server_reward_path(current_server.public_id), method: :post
-      .input-group.input-group-sm
-        = text_field_tag :reward_id, nil, class: "form-control", placeholder: "Reward code", autocomplete: "off", required: true, aria: {label: "Reward code"}
-        = submit_tag "Add", name: nil, class: "btn btn-outline-success"
+      .d-flex.gap-2
+        = text_field_tag :reward_id, nil, class: "form-control form-control-sm", placeholder: "Reward code", autocomplete: "off", required: true, aria: {label: "Reward code"}
+        = submit_tag "Add", name: nil, class: "btn btn-sm btn-outline-success"
 
     = render "servers/rewards/code_message", message: nil
