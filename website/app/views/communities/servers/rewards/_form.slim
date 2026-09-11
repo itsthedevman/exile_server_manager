@@ -14,7 +14,7 @@
     .row.g-3
       .col-12.col-lg-7
         = f.label :name, "Name", class: "form-label"
-        = f.text_field :name, class: "form-control", placeholder: "Welcome package", maxlength: 255
+        = f.text_field :name, class: "form-control", maxlength: 255
         .form-text Shown to players. Leave it blank and they see the code instead.
 
       .col-12.col-lg-5
@@ -24,8 +24,7 @@
           .form-text This one cannot be changed.
         - else
           = f.text_field :reward_id, class: "form-control font-monospace", \
-            placeholder: "welcome", required: true, autocomplete: "off", \
-            maxlength: ESM::ServerReward::REWARD_ID_MAX_LENGTH
+            required: true, autocomplete: "off", maxlength: ESM::ServerReward::REWARD_ID_MAX_LENGTH
           .form-text Lowercase letters, numbers, dashes and underscores.
 
     .form-check.form-switch.mt-3
@@ -74,8 +73,6 @@
             options_for_select(reward_package_cooldown_type_options, package.cooldown_type), \
             {}, \
             class: "form-select"
-
-      .form-text.mt-2 Pick Total uses to cap how many times a player can ever claim this package.
 
     hr.my-4
 
@@ -144,7 +141,7 @@
     / while it holds nothing.
     .small.text-warning.me-auto data-reward-contents-editor-target="emptyWarning"
       i.bi.bi-exclamation-triangle.me-1
-      | Empty packages are never handed out. Add currency, an item or a vehicle.
+      | Empty packages will not be available. Add currency, an item or a vehicle.
 
     button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
     = f.submit "Save package", class: "btn btn-success"
