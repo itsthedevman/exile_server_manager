@@ -55,6 +55,36 @@ RSpec.describe "Servers::Gambling", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
     end
+
+    it "redirects an unregistered user to register" do
+      sign_in create(:user, steam_uid: nil)
+
+      post_gamble
+
+      expect(response).to redirect_to(register_path)
+    end
+
+    it "refuses to gamble on an outdated server" do
+      allow(Rails.env).to receive(:local?).and_return(false)
+      server.update!(server_version: "2.0.0")
+
+      expect { post_gamble }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    # Regression test for the crash the audit reproduced: current_server is nil for an unknown server_id and nothing
+    # guards that before CommandAccess builds its gate off it, so this raises ArgumentError instead of 404ing.
+    it "404s (not 500s) a gamble on a server that doesn't exist" do
+      pending("HOLE (permission audit decision 4): GamblingController#create doesn't guard current_server.nil? " \
+        "before checking command access, so this raises ArgumentError instead of 404ing")
+
+      post "/servers/#{SecureRandom.uuid}/gamble",
+        params: {amount: "100", idempotency_key: SecureRandom.uuid},
+        as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "GET status" do
@@ -72,6 +102,19 @@ RSpec.describe "Servers::Gambling", type: :request do
     it "404s a command that belongs to another user" do
       other = create(:service_command, server:, user: create(:user), command_name: "gamble")
       get_status(other.public_id)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # Regression test for the crash the audit reproduced: the command lookup is scoped to the caller, not the URL's
+    # server_id, so an owned command reached through a bogus server_id still resolves - and then gamble_stat calls
+    # current_server.id on nil instead of 404ing.
+    it "404s (not 500s) when the URL's server doesn't exist" do
+      pending("HOLE (permission audit decision 4): #status's gamble_stat calls current_server.id without checking " \
+        "current_server.nil? first, so this raises NoMethodError instead of 404ing")
+
+      command = create(:service_command, user:, server:, command_name: "gamble")
+      get "/servers/#{SecureRandom.uuid}/gamble/commands/#{command.public_id}/status", as: :turbo_stream
 
       expect(response).to have_http_status(:not_found)
     end

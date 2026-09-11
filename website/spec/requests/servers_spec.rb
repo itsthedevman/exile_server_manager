@@ -31,6 +31,45 @@ RSpec.describe "Servers", type: :request do
       end
     end
 
+    it "404s for a server that doesn't exist" do
+      get "/servers/#{SecureRandom.uuid}"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "requires a signed-in user" do
+      sign_out user
+
+      get "/servers/#{server.public_id}"
+
+      expect(response).to redirect_to("/login")
+    end
+
+    context "when a command is disabled" do
+      # The server_offline gate would hide the same card for an unrelated reason, so connectivity is cleared here to
+      # isolate enabled: false as the thing doing the work.
+      before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
+
+      it "hides its card even though nothing else would have blocked it" do
+        create(:command_configuration, community:, command_name: "me", enabled: false)
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("My Player")
+      end
+
+      # enabled: false is checked before the allowlist, so it has to win even against an administrator, who would
+      # otherwise clear the allowlist outright.
+      it "beats an administrator clearing the command's allowlist" do
+        create(:command_configuration, community:, command_name: "sqf", enabled: false)
+        service_api.administrator = true
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("SQF Console")
+      end
+    end
+
     it "offers the lookup bar to an admin who can view a player" do
       allow_only("info")
 

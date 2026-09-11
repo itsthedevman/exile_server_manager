@@ -66,6 +66,58 @@ RSpec.describe "Servers::Sqf", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
     end
+
+    it "redirects an unregistered user to register" do
+      sign_in create(:user, steam_uid: nil)
+
+      post_sqf
+
+      expect(response).to redirect_to(register_path)
+    end
+
+    it "refuses to run sqf on an outdated server" do
+      # sqf locks its allowlist by default, so access is granted outright here - otherwise a denial could come from
+      # either gate and this wouldn't prove require_supported_server! is the one doing the refusing.
+      allow_access(denied: false)
+      allow(Rails.env).to receive(:local?).and_return(false)
+      server.update!(server_version: "2.0.0")
+
+      expect { post_sqf }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    # Regression test for the crash the audit reproduced: current_server is nil for an unknown server_id and nothing
+    # guards that before CommandAccess builds its gate off it, so this raises ArgumentError instead of 404ing.
+    it "404s (not 500s) an sqf run on a server that doesn't exist" do
+      pending("HOLE (permission audit decision 4): SqfController#create doesn't guard current_server.nil? before " \
+        "checking command access, so this raises ArgumentError instead of 404ing")
+
+      post "/servers/#{SecureRandom.uuid}/sqf",
+        params: {code_to_execute: "player setDamage 0;", target: "server", idempotency_key: SecureRandom.uuid},
+        as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # This runs through the real CommandAccess/Permission#resolve and the fake bot rather than allow_access's stub,
+    # so it has to undo the describe block's blanket ESM::Service::API.call stub first - otherwise community
+    # membership and server connectivity would both resolve from that bare double instead of service_api.
+    it "refuses a registered non-member when the community's sqf allowlist is off" do
+      pending("HOLE (permission audit decision 1): allowlist_enabled: false admits any registered user, not just " \
+        "this community's members - Community#membership_for folds a non-member's nil payload into role_ids: [], " \
+        "administrator: false, and Permission#resolve reads an empty allowlist as open to everyone")
+
+      allow(ESM::Service::API).to receive(:call) { |action, **payload| service_api.call(action, **payload) }
+      service_api.server_connected = true
+      service_api.answer(:community_membership, nil)
+
+      create(:command_configuration, community:, command_name: "sqf", allowlist_enabled: false)
+
+      expect { post_sqf }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
   end
 
   describe "GET status" do

@@ -36,6 +36,22 @@ RSpec.describe "Servers::Favorites", type: :request do
       expect { delete "/servers/#{server.public_id}/favorite", as: :turbo_stream }
         .to change { user.server_favorites.count }.by(-1)
     end
+
+    it "404s an unknown server" do
+      delete "/servers/#{SecureRandom.uuid}/favorite", as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # The lookup goes through current_user.server_favorites, which can't even express another user's row, but the
+    # scoping deserves its own regression rather than resting on reading the implementation.
+    it "cannot remove another user's favorite for the same server" do
+      user_b = create(:user)
+      user_b.server_favorites.create!(server:)
+
+      expect { delete "/servers/#{server.public_id}/favorite", as: :turbo_stream }
+        .not_to change { user_b.server_favorites.count }
+    end
   end
 
   it "requires a signed-in user" do
