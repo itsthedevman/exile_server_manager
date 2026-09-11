@@ -164,7 +164,7 @@ module Communities
         "Link your Steam account on your account page before you can clear cooldowns."
       when :disabled
         "Cooldown resets are not enabled on #{current_community.community_id}."
-      when :not_allowlisted
+      when :not_allowlisted, :not_a_member
         "You do not have permission to clear cooldowns on #{current_community.community_id}."
       else
         "You can't clear cooldowns right now."

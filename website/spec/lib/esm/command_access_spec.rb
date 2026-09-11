@@ -68,5 +68,23 @@ RSpec.describe ESM::CommandAccess do
         end
       end
     end
+
+    context "when the user isn't a member of the community" do
+      let(:membership) { nil }
+
+      it "denies a command Discord only runs in the community's own text channels" do
+        result = described_class.new(command_name: "broadcast", user:, community:).verdict
+
+        expect(result).to be_denied
+        expect(result.reason).to eq(:not_a_member)
+      end
+
+      it "leaves a command that also runs from a DM to its configuration" do
+        server = create(:server, community:)
+        allow(server).to receive(:connected?).and_return(true)
+
+        expect(described_class.new(command_name: "gamble", user:, server:).verdict).to be_allowed
+      end
+    end
   end
 end

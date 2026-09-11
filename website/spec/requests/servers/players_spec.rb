@@ -86,15 +86,10 @@ RSpec.describe "Servers::Players", type: :request do
     end
   end
 
-  # README decision 1: a disabled allowlist has no membership check behind it, so a registered user who isn't a
-  # community member at all clears the gate the same as a member would. Deliberately skips allow_access - it has to
-  # run the real ESM::CommandAccess against the fake bot, not a stubbed verdict, to prove the hole rather than
-  # assume it.
+  # An allowlist turned off opens players to the community's members, not to every registered user. Deliberately skips
+  # allow_access: it has to run the real ESM::CommandAccess against the fake bot rather than a stubbed verdict.
   describe "GET index, against the real CommandAccess resolver" do
     it "refuses a registered non-member once the players command's allowlist is off" do
-      pending("website has no community-membership check; a disabled allowlist admits any registered non-member " \
-        "(README decision 1)")
-
       create(:command_configuration, community:, command_name: "players", allowlist_enabled: false)
       service_api.answer(:community_membership, nil)
 

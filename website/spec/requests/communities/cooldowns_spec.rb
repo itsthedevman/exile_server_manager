@@ -130,15 +130,10 @@ RSpec.describe "Communities::Cooldowns", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # README decision 1 / audit HOLE: same missing community-membership boundary as Broadcasts. Runs the real
-    # CommandAccess against the fake bot (no allow_access stub) so the verdict comes from the actual resolver.
+    # Discord only takes reset_cooldown in the community's own text channels, so an allowlist turned off opens this page
+    # to members rather than to everyone. Runs the real CommandAccess against the fake bot rather than allow_access.
     it "refuses a registered stranger to this community once reset_cooldown's allowlist is off" do
-      pending("HOLE: cooldowns has no community-membership boundary once its allowlist is disabled (README decision 1)")
-
-      # Community#create_command_configurations seeds a row per command on creation, already carrying the
-      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
-      # ambiguous one for the same community/command pair.
-      community.command_configurations.find_by!(command_name: "reset_cooldown").update!(allowlist_enabled: false)
+      create(:command_configuration, community:, command_name: "reset_cooldown", allowlist_enabled: false)
       service_api.answer(:community_membership, nil)
 
       get_index
@@ -217,15 +212,9 @@ RSpec.describe "Communities::Cooldowns", type: :request do
       expect(response.body).to include("You do not have permission to clear cooldowns")
     end
 
-    # README decision 1 / audit HOLE: same missing community-membership boundary as Broadcasts, this time on the
-    # community-wide reset itself. Runs the real CommandAccess against the fake bot (no allow_access stub).
+    # The same line as the page, held on the community-wide reset itself.
     it "refuses a registered stranger to this community once reset_cooldown's allowlist is off" do
-      pending("HOLE: cooldowns has no community-membership boundary once its allowlist is disabled (README decision 1)")
-
-      # Community#create_command_configurations seeds a row per command on creation, already carrying the
-      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
-      # ambiguous one for the same community/command pair.
-      community.command_configurations.find_by!(command_name: "reset_cooldown").update!(allowlist_enabled: false)
+      create(:command_configuration, community:, command_name: "reset_cooldown", allowlist_enabled: false)
       service_api.answer(:community_membership, nil)
 
       expect { post_clear }.not_to change(ESM::ServiceCommand, :count)

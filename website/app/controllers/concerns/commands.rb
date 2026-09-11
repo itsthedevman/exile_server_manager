@@ -131,7 +131,7 @@ module Commands
       "Link your Steam account on your account page first."
     when :disabled
       "This command isn't enabled on #{command_context_id}."
-    when :not_allowlisted
+    when :not_allowlisted, :not_a_member
       "You don't have permission to run this command on #{command_context_id}."
     when :server_offline
       "#{current_server.server_id} is offline. Try again once it's back up."

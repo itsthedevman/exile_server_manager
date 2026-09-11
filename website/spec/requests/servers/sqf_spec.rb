@@ -99,10 +99,6 @@ RSpec.describe "Servers::Sqf", type: :request do
     # so it has to undo the describe block's blanket ESM::Service::API.call stub first - otherwise community
     # membership and server connectivity would both resolve from that bare double instead of service_api.
     it "refuses a registered non-member when the community's sqf allowlist is off" do
-      pending("HOLE (permission audit decision 1): allowlist_enabled: false admits any registered user, not just " \
-        "this community's members - Community#membership_for folds a non-member's nil payload into role_ids: [], " \
-        "administrator: false, and Permission#resolve reads an empty allowlist as open to everyone")
-
       allow(ESM::Service::API).to receive(:call) { |action, **payload| service_api.call(action, **payload) }
       service_api.server_connected = true
       service_api.answer(:community_membership, nil)

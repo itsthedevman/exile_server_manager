@@ -5,6 +5,8 @@ module ESM
   # Website-side adapter over {ESM::Command::Permission}.
   #
   class CommandAccess
+    NOT_A_MEMBER = ESM::Command::Permission::Result.new(reason: :not_a_member, detail: nil).freeze
+
     # @param command_name [String] the canonical command name (e.g. "gamble"), the key both CommandConfiguration and
     #   Cooldown share across surfaces
     # @param user [ESM::User] the player attempting the command
@@ -31,14 +33,20 @@ module ESM
     # Cooldown is not part of the verdict - it's a command cooldown, owned and enforced by the service handler (checked
     # before the work, applied only on success), never by the website.
     #
+    # Membership comes first for a command Discord only accepts in a text channel. Discord pins that channel to the
+    # command's own community, so only a member of the guild can ever run it there, and turning its allowlist off opens
+    # it to members rather than to everyone. A command that also runs from a DM draws no such line on Discord, and draws
+    # none here.
+    #
     # @return [ESM::Command::Permission::Result]
     #
     def verdict
       membership = community.membership_for(user)
+      return NOT_A_MEMBER if membership.nil? && command.limited_to == :text
 
       permission.resolve(
-        role_ids: membership.role_ids,
-        administrator: membership.administrator,
+        role_ids: membership&.role_ids || [],
+        administrator: membership&.administrator || false,
         server_online: server&.connected?
       )
     end

@@ -65,15 +65,10 @@ RSpec.describe "Communities::Broadcasts", type: :request do
       end
     end
 
-    # README decision 1 / audit HOLE, same as POST /broadcast below: no community-membership boundary, only the
-    # command allowlist. Runs the real CommandAccess against the fake bot (no allow_access stub).
+    # Discord only takes broadcast in the community's own text channels, so an allowlist turned off opens it to members
+    # rather than to everyone. Runs the real CommandAccess against the fake bot rather than allow_access's stub.
     it "refuses a registered stranger to this community once its allowlist is off" do
-      pending("HOLE: broadcast has no community-membership boundary once its allowlist is disabled (README decision 1)")
-
-      # Community#create_command_configurations seeds a row per command on creation, already carrying the
-      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
-      # ambiguous one for the same community/command pair.
-      community.command_configurations.find_by!(command_name: "broadcast").update!(allowlist_enabled: false)
+      create(:command_configuration, community:, command_name: "broadcast", allowlist_enabled: false)
       service_api.answer(:community_membership, nil)
 
       get "/communities/#{community.public_id}/broadcast/new"
@@ -150,17 +145,10 @@ RSpec.describe "Communities::Broadcasts", type: :request do
       expect(response.body).to include("You do not have permission to broadcast")
     end
 
-    # README decision 1 / audit HOLE: there is no community-membership boundary here, only broadcast's own command
-    # allowlist. The moment a manager disables that allowlist, ESM::Command::Permission#allowlisted? admits anyone
-    # registered, guild member or not. Runs the real CommandAccess against the fake bot (no allow_access stub) so
-    # the verdict comes from the actual resolver rather than an assertion about it.
+    # The allowlist being off is not the same as the command being open to anyone. Runs the real CommandAccess against
+    # the fake bot rather than allow_access's stub, so the verdict comes from the resolver itself.
     it "refuses a registered stranger to this community once its allowlist is off" do
-      pending("HOLE: broadcast has no community-membership boundary once its allowlist is disabled (README decision 1)")
-
-      # Community#create_command_configurations seeds a row per command on creation, already carrying the
-      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
-      # ambiguous one for the same community/command pair.
-      community.command_configurations.find_by!(command_name: "broadcast").update!(allowlist_enabled: false)
+      create(:command_configuration, community:, command_name: "broadcast", allowlist_enabled: false)
       service_api.answer(:community_membership, nil)
 
       expect { post_broadcast }.not_to change(ESM::ServiceCommand, :count)

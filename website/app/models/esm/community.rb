@@ -69,22 +69,25 @@ module ESM
     #
     # A user's Discord membership in this community: the ids of the roles they hold and whether they hold Discord's
     # administrator permission. This is the allowlist input the website can't read from the database - only the bot can
-    # see Discord role membership - so command permission checks source it here. An unseeable guild or membership
-    # degrades to an empty membership, which reads as "holds no allowlisted role".
+    # see Discord role membership - so command permission checks source it here.
     #
-    # Memoized per user, because a single page resolves several command permissions and each verdict reads this same
-    # membership - without the memo one render fans out into one identical bot call per command checked.
+    # A user who isn't in the guild, or one the bot can't see, answers nil rather than an empty membership. The two read
+    # differently: a member holding no roles may still run a command whose allowlist is off, and a stranger may not run
+    # a command Discord only accepts in the guild's own text channels.
+    #
+    # Memoized per user, nil included, because a single page resolves several command permissions and each verdict reads
+    # this same membership - without the memo one render fans out into one identical bot call per command checked.
     #
     # @param user [ESM::User]
     #
-    # @return [Struct] responds to #role_ids ([String]) and #administrator (Boolean)
+    # @return [Struct, nil] responds to #role_ids ([String]) and #administrator (Boolean); nil for a non-member
     #
     def membership_for(user)
       @memberships ||= {}
-      @memberships[user.id] ||= begin
-        payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id, idempotent: true)
-        (payload || {role_ids: [], administrator: false}).to_struct
-      end
+      return @memberships[user.id] if @memberships.key?(user.id)
+
+      payload = ESM::Service::API.call(:community_membership, user_id: user.id, community_id: id, idempotent: true)
+      @memberships[user.id] = payload&.to_struct
     end
 
     #
