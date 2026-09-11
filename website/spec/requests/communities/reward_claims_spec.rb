@@ -349,6 +349,21 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::ServerRewardClaim.count).to eq(0)
     end
+
+    # The outer before block stubs every CommandAccess check ALLOWED so the rest of this file can test the grant
+    # flow without also standing up info's own permission gate. That stub would swallow this gate too, so it is
+    # restored to the real resolver just for this example. info defaults allowlist_enabled to true with an empty
+    # allowlisted_role_ids, and the fake bot answers no roles and no administrator by default, so an admin who
+    # cannot run info against this community is denied without any further setup.
+    it "refuses to grant when the admin cannot run info against that community" do
+      allow(ESM::CommandAccess).to receive(:new).and_call_original
+
+      expect { post index_path, params: grant_params }.not_to change(ESM::ServerRewardClaim, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(Bot).not_to have_received(:send_message)
+      expect(ESM::Service::API).not_to have_received(:call).with(:sync_command, anything)
+    end
   end
 
   describe "PATCH /reward_claims/:user_id/release" do
@@ -417,6 +432,16 @@ RSpec.describe "Communities::RewardClaims", type: :request do
 
       expect(response.body).not_to include("reward_claim[player]")
       expect(response.body).not_to include("reward_claim[server_id]")
+    end
+
+    it "does not reach a claim on another community's server" do
+      other_server = create(:server, community: create(:community), ui_version: "2.1.0")
+      claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
+
+      get "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
+        "/reward_claims/#{claim.user.discord_id}/edit"
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -489,6 +514,18 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(response.body).to include("A reward has to hold something")
       expect(claim.reload.player_poptabs).to eq(25_000)
     end
+
+    it "does not update a claim on another community's server" do
+      other_server = create(:server, community: create(:community), ui_version: "2.1.0")
+      claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
+
+      patch "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
+        "/reward_claims/#{claim.user.discord_id}",
+        params: {reward_claim: {player_poptabs: "9999", locker_poptabs: "0", respect: "0"}}
+
+      expect(response).to have_http_status(:not_found)
+      expect(claim.reload.player_poptabs).to eq(10)
+    end
   end
 
   describe "GET /reward_claims/:user_id/confirm_destroy" do
@@ -525,6 +562,16 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       get claim_path(claim, "confirm_destroy")
 
       expect(response.body).not_to include("Allow a retry instead")
+    end
+
+    it "does not reach a claim on another community's server" do
+      other_server = create(:server, community: create(:community), ui_version: "2.1.0")
+      claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
+
+      get "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
+        "/reward_claims/#{claim.user.discord_id}/confirm_destroy"
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 

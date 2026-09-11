@@ -273,6 +273,117 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
     end
   end
 
+  describe "when the viewer cannot manage the community" do
+    before { allow_any_instance_of(ESM::Community).to receive(:modifiable_by?).and_return(false) }
+
+    it "404s new" do
+      get "#{base_path}/new"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s create and writes nothing" do
+      expect { post base_path, params: package_params, as: :turbo_stream }
+        .not_to change(server.server_rewards, :count)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s edit" do
+      create_package("welcome")
+
+      get "#{base_path}/welcome/edit"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s update and leaves the package untouched" do
+      create_package("welcome", player_poptabs: 100)
+
+      patch "#{base_path}/welcome", params: package_params(player_poptabs: "9000"), as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+      expect(server.server_rewards.find_by(reward_id: "welcome").player_poptabs).to eq(100)
+    end
+
+    it "404s toggle_enabled and leaves the package's state untouched" do
+      create_package("welcome")
+
+      patch "#{base_path}/welcome/toggle_enabled", as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+      expect(server.server_rewards.find_by(reward_id: "welcome").enabled).to be(true)
+    end
+
+    it "404s destroy" do
+      create_package("welcome")
+
+      expect { delete "#{base_path}/welcome", as: :turbo_stream }
+        .not_to change(server.server_rewards, :count)
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  # find_package is scoped through current_server.server_rewards, so a code naming a package on some other server
+  # never resolves, whatever community owns it. This walks that scoping the same way the controller-wide access
+  # check is walked above: one 404 per action that reads or writes an existing package.
+  describe "cross-server scoping" do
+    let(:other_server) { create(:server, community: create(:community), ui_version: "2.1.0") }
+    let!(:other_package) { other_server.server_rewards.create!(reward_id: "welcome") }
+
+    it "does not open another server's package for edit" do
+      get "#{base_path}/welcome/edit"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "does not update another server's package" do
+      patch "#{base_path}/welcome", params: package_params(player_poptabs: "9000"), as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+      expect(other_package.reload.player_poptabs).to eq(0)
+    end
+
+    it "does not toggle another server's package" do
+      patch "#{base_path}/welcome/toggle_enabled", as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+      expect(other_package.reload.enabled).to be(true)
+    end
+
+    it "does not delete another server's package" do
+      delete "#{base_path}/welcome", as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
+      expect(other_package.reload).to be_present
+    end
+  end
+
+  # current_server itself only resolves through current_community.servers, so a server_id naming a real server that
+  # belongs to a different community reads as no server at all, before require_packaged_rewards! ever gets to ask
+  # about its UI version.
+  describe "when the server in the URL belongs to a different community" do
+    let(:other_server) { create(:server, community: create(:community), ui_version: "2.1.0") }
+
+    def mismatched_base_path
+      "/communities/#{community.public_id}/servers/#{other_server.public_id}/rewards"
+    end
+
+    it "404s new" do
+      get "#{mismatched_base_path}/new"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s create and writes nothing" do
+      expect { post mismatched_base_path, params: package_params, as: :turbo_stream }
+        .not_to change(other_server.server_rewards, :count)
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "the server edit page" do
     # The one package a player reaches without being told anything is the one an owner has to be able to find, so it
     # gets a block of its own rather than a row that reads like every other row

@@ -194,6 +194,17 @@ RSpec.describe "Servers::Rewards", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # By design, not an oversight: the lookup is scoped to the caller's own command and nothing else, so which
+    # server's URL the poll happens to be running under makes no difference to what it can see.
+    it "serves the caller's own command however it is addressed, not only by its own server" do
+      other_server = create(:server, community:, server_id: "#{community.community_id}_other")
+      command = create(:service_command, user:, server:, command_name: "reward")
+
+      get "/servers/#{other_server.public_id}/reward/commands/#{command.public_id}/status", as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+    end
   end
 
   describe "GET territories" do
