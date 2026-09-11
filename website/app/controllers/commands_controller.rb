@@ -16,9 +16,7 @@ class CommandsController < AuthenticatedController
       .each { |command| command.configuration = configurations[command.name] }
       .group_by(&:category)
 
-    cooldown_types = ESM::Cooldown::TYPES.map { |t| [t.humanize, t] }
-
-    render locals: {commands_by_category:, cooldown_types:}
+    render locals: {commands_by_category:}
   end
 
   def update

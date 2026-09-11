@@ -22,6 +22,16 @@ module CooldownsHelper
   end
 
   ##
+  # Every unit a cooldown can count in, for a select. Commands and reward packages both offer this list, so the two
+  # editors read the same.
+  #
+  # @return [Array<Array(String, String)>]
+  #
+  def cooldown_type_options
+    ESM::Cooldown::TYPES.map { |type| [type.humanize, type] }
+  end
+
+  ##
   # The player a cooldown belongs to, named for display.
   #
   # A row can outlive the account it was written for, and it keys on only one of steam_uid or user_id, so a player

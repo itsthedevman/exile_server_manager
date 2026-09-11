@@ -268,18 +268,6 @@ module RewardPackagesHelper
   end
 
   ##
-  # A cooldown's unit. Counting uses is the odd one out, since it is a total rather than a rate, so it sits at the end
-  # rather than at the top of a list an owner reads as "once every ...".
-  #
-  # @return [Array<Array(String, String)>]
-  #
-  def reward_package_cooldown_type_options
-    units = ESM::Cooldown::TYPES - ["times"]
-
-    units.map { |type| [type.humanize, type] } + [["Total uses", "times"]]
-  end
-
-  ##
   # Every destination an admin may set, including handing the choice to the player. The player's own picker offers
   # only the two they may choose between.
   #

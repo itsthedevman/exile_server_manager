@@ -62,17 +62,13 @@
       = reward_package_command_cooldown_hint
 
     div data-reward-contents-editor-target="cooldownFields"
-      .row.g-3.mt-1
-        .col-6.col-lg-3
-          = f.label :cooldown_quantity, "How many", class: "form-label"
+      .row.g-2.mt-1
+        .col-6
           = f.number_field :cooldown_quantity, class: "form-control", min: 1, placeholder: "1", \
-            data: {reward_contents_editor_target: "cooldownQuantity"}
-        .col-6.col-lg-4
-          = f.label :cooldown_type, "Per", class: "form-label"
-          = f.select :cooldown_type, \
-            options_for_select(reward_package_cooldown_type_options, package.cooldown_type), \
-            {}, \
-            class: "form-select"
+            aria: {label: "Cooldown amount"}, data: {reward_contents_editor_target: "cooldownQuantity"}
+        .col-6
+          = f.select :cooldown_type, options_for_select(cooldown_type_options, package.cooldown_type), {}, \
+            class: "form-select", aria: {label: "Cooldown unit"}
 
     hr.my-4
 

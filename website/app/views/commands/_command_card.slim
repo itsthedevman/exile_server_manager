@@ -32,7 +32,7 @@
                 data: {command_configuration_target: "cooldownQuantity"}
             .col-6
               = f.select :cooldown_type,
-                options_for_select(cooldown_types, command.configuration.cooldown_type),
+                options_for_select(cooldown_type_options, command.configuration.cooldown_type),
                 {},
                 class: "form-select",
                 data: {command_configuration_target: "cooldownType"}
