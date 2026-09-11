@@ -50,6 +50,7 @@ RSpec.describe "Servers::Territories", type: :request do
     {
       "pay" => [{}, "pay", {}],
       "upgrade" => [{}, "upgrade", {}],
+      "add_member" => [{target_uid:}, "add", {target: target_uid}],
       "promote_member" => [{target_uid:}, "promote", {target: target_uid}],
       "demote_member" => [{target_uid:}, "demote", {target: target_uid}],
       "remove_member" => [{target_uid:}, "remove", {target: target_uid}],
@@ -69,6 +70,17 @@ RSpec.describe "Servers::Territories", type: :request do
         expect(ESM::Service::API).to have_received(:call).with(:async_command, command_id: command.id)
         expect(response).to have_http_status(:ok)
       end
+    end
+
+    # add_member has its own denial example rather than leaning on pay's below, so a change to how it dispatches can't
+    # leave it ungated without something failing.
+    it "rejects a denied add_member with a 422 and never dispatches one" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      expect { post_action("add_member", target_uid:) }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(ESM::Service::API).not_to have_received(:call)
     end
   end
 
@@ -110,6 +122,145 @@ RSpec.describe "Servers::Territories", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(ESM::Service::API).not_to have_received(:call)
+    end
+  end
+
+  describe "GET index" do
+    # The full page renders the shared servers/container shell, whose nav asks whether the server is connected and
+    # whether the viewer manages it - NATS reads the command-action examples above never reach, since they respond
+    # with a turbo_stream partial only.
+    before do
+      allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
+      allow(ESM::Service::API).to receive(:call).with(:community_modifiable_by, any_args).and_return(false)
+    end
+
+    it "renders the territories shell" do
+      get "/servers/#{server.public_id}/territories"
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "404s a viewer without server_territories access" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/servers/#{server.public_id}/territories"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "GET list" do
+    before do
+      allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
+      allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return(nil)
+    end
+
+    it "renders the territories list frame" do
+      get "/servers/#{server.public_id}/territories/list"
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "404s a viewer without server_territories access" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/servers/#{server.public_id}/territories/list"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "GET show" do
+    # territory_snapshot picks its read command from the real CommandAccess verdict for "info" (admin = any
+    # territory, member = only their own) rather than from the file's blanket allow_access, which answers the same
+    # verdict for every command name and so could never tell "info" apart from "territory". Everything other than
+    # "info" stays allowed so the modal's own buttons render normally around the read being tested.
+    def stub_info_access(allowed:)
+      allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
+        verdict =
+          if command_name.to_s == "info" && !allowed
+            ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+          else
+            ESM::Command::Permission::ALLOWED
+          end
+
+        instance_double(ESM::CommandAccess, verdict:)
+      end
+    end
+
+    # Records which command actually carried the read, so a context can prove it went through info or territory
+    # specifically - a stub that answered every sync_command the same way could pass even if admin routed to the
+    # wrong command name.
+    attr_reader :requested_command_name
+
+    def stub_territory_read(payload)
+      allow(ESM::Service::API).to receive(:call) do |action, **options|
+        next nil unless action == :sync_command
+
+        @requested_command_name = options[:command_name].to_s
+        payload
+      end
+    end
+
+    let(:territory_payload) do
+      {
+        id: territory_id,
+        esm_custom_id: nil,
+        name: "Old Base",
+        level: 1,
+        object_count: 12,
+        radius: 25.0,
+        flag_texture: "",
+        flag_stolen: false,
+        last_paid_at: nil,
+        deleted_at: nil,
+        owner_uid: user.steam_uid,
+        owner_name: "Owner",
+        moderators: [],
+        build_rights: []
+      }
+    end
+
+    def get_show
+      get "/servers/#{server.public_id}/territories/#{territory_id}"
+    end
+
+    it "reads any territory through info for an admin" do
+      stub_info_access(allowed: true)
+      stub_territory_read(territory_payload)
+
+      get_show
+
+      expect(requested_command_name).to eq("info")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('alt="Territory flag"')
+    end
+
+    it "reads only the caller's own territory through the member-scoped territory command" do
+      stub_info_access(allowed: false)
+      stub_territory_read(territory_payload)
+
+      get_show
+
+      expect(requested_command_name).to eq("territory")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('alt="Territory flag"')
+    end
+
+    it "shows nothing and hides every action control for a non-member the territory command refuses" do
+      stub_info_access(allowed: false)
+      stub_territory_read(nil)
+
+      get_show
+
+      expect(requested_command_name).to eq("territory")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('alt="Territory flag"')
+      expect(response.body).not_to include(%(id="pay_modal_#{territory_id}"))
+      expect(response.body).not_to include(%(id="upgrade_modal_#{territory_id}"))
+      expect(response.body).not_to include(%(id="set_id_modal_#{territory_id}"))
+      expect(response.body).not_to include(%(id="add_modal_#{territory_id}"))
     end
   end
 

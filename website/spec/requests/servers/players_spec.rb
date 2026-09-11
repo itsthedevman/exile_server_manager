@@ -51,6 +51,46 @@ RSpec.describe "Servers::Players", type: :request do
     end
   end
 
+  describe "GET index" do
+    it "renders the players shell" do
+      allow_access(denied: false)
+
+      get "/servers/#{server.public_id}/players"
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "404s a viewer without players access" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/servers/#{server.public_id}/players"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  # README decision 1: a disabled allowlist has no membership check behind it, so a registered user who isn't a
+  # community member at all clears the gate the same as a member would. Deliberately skips allow_access - it has to
+  # run the real ESM::CommandAccess against the fake bot, not a stubbed verdict, to prove the hole rather than
+  # assume it.
+  describe "GET index, against the real CommandAccess resolver" do
+    it "refuses a registered non-member once the players command's allowlist is off" do
+      pending("website has no community-membership check; a disabled allowlist admits any registered non-member " \
+        "(README decision 1)")
+
+      create(:command_configuration, community:, command_name: "players", allowlist_enabled: false)
+      service_api.answer(:community_membership, nil)
+
+      # The file-level before pins every server offline so the other examples here render an offline state; override
+      # it so the only gate left standing is community membership, which is what this example is about.
+      allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true)
+
+      get "/servers/#{server.public_id}/players"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "GET list" do
     before { allow_access(denied: false) }
 
@@ -173,6 +213,14 @@ RSpec.describe "Servers::Players", type: :request do
       get "/servers/#{server.public_id}/players/list?name=Dave"
 
       expect(calls).to eq(2)
+    end
+
+    it "404s a viewer without players access" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/servers/#{server.public_id}/players/list"
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -409,6 +457,168 @@ RSpec.describe "Servers::Players", type: :request do
       get "/servers/#{other_server.public_id}/players/#{target_uid}"
 
       expect(seen.uniq.length).to eq(2)
+    end
+
+    it "404s a viewer without info access" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "POST modify" do
+    let(:target_uid) { "76561198000000001" }
+
+    before do
+      allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
+        ESM::ServiceCommand.find(command_id).completed!
+      end
+      allow(Poll).to receive(:until)
+    end
+
+    def post_modify(player_action:, **params)
+      post "/servers/#{server.public_id}/players/#{target_uid}/modify",
+        params: {idempotency_key: SecureRandom.uuid, player_action:, dom_id: "player_action_#{player_action}", **params},
+        as: :turbo_stream
+    end
+
+    context "when access is granted" do
+      before { allow_access(denied: false) }
+
+      %w[money locker respect].each do |action|
+        it "signs #{action} positive on a give and negative on a remove" do
+          post_modify(player_action: action, amount: "250", direction: "give")
+          expect(ESM::ServiceCommand.last.arguments).to include(target: target_uid, action:, amount: 250)
+
+          post_modify(player_action: action, amount: "250", direction: "remove")
+          expect(ESM::ServiceCommand.last.arguments[:amount]).to eq(-250)
+        end
+      end
+
+      %w[heal kill].each do |action|
+        it "carries no amount for #{action}" do
+          post_modify(player_action: action)
+
+          command = ESM::ServiceCommand.last
+          expect(command.arguments).to include(target: target_uid, action:)
+          expect(command.arguments[:amount]).to be_nil
+        end
+      end
+
+      it "rejects a player_action outside the known set without dispatching" do
+        expect { post_modify(player_action: "teleport") }.not_to change(ESM::ServiceCommand, :count)
+
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
+    it "rejects a denied modify with a 422 and never dispatches one" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      expect { post_modify(player_action: "heal") }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(ESM::Service::API).not_to have_received(:call)
+    end
+  end
+
+  describe "POST reset" do
+    let(:target_uid) { "76561198000000001" }
+
+    before do
+      allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
+        ESM::ServiceCommand.find(command_id).completed!
+      end
+      allow(Poll).to receive(:until)
+    end
+
+    def post_reset_target(idempotency_key: SecureRandom.uuid)
+      post "/servers/#{server.public_id}/players/#{target_uid}/reset",
+        params: {idempotency_key:, dom_id: "player_action_result"},
+        as: :turbo_stream
+    end
+
+    it "dispatches a reset command targeting the viewed player" do
+      allow_access(denied: false)
+
+      expect { post_reset_target }.to change(ESM::ServiceCommand, :count).by(1)
+
+      command = ESM::ServiceCommand.last
+      expect(command.command_name).to eq("reset")
+      expect(command.arguments[:target]).to eq(target_uid)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "rejects a denied reset with a 422 and never dispatches one" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      expect { post_reset_target }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(ESM::Service::API).not_to have_received(:call)
+    end
+  end
+
+  describe "POST reset_all" do
+    before do
+      allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
+        ESM::ServiceCommand.find(command_id).completed!
+      end
+      allow(Poll).to receive(:until)
+    end
+
+    def post_reset_all(idempotency_key: SecureRandom.uuid)
+      post "/servers/#{server.public_id}/players/reset_all",
+        params: {idempotency_key:, dom_id: "reset_all_result"},
+        as: :turbo_stream
+    end
+
+    it "dispatches a server-wide reset with no target" do
+      allow_access(denied: false)
+
+      expect { post_reset_all }.to change(ESM::ServiceCommand, :count).by(1)
+
+      command = ESM::ServiceCommand.last
+      expect(command.command_name).to eq("reset")
+      expect(command.arguments).not_to have_key(:target)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "rejects a denied reset_all with a 422 and never dispatches one" do
+      allow_access(denied: true, reason: :not_allowlisted)
+
+      expect { post_reset_all }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(ESM::Service::API).not_to have_received(:call)
+    end
+  end
+
+  describe "GET status" do
+    def get_status(public_id)
+      get "/servers/#{server.public_id}/players/commands/#{public_id}/status", as: :turbo_stream
+    end
+
+    it "serves the caller's own command by its public id" do
+      command = create(:service_command, user:, server:)
+      get_status(command.public_id)
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "404s a command that belongs to another user" do
+      other = create(:service_command, server:, user: create(:user))
+      get_status(other.public_id)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s a nonexistent command id" do
+      get_status(SecureRandom.uuid)
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 

@@ -76,6 +76,22 @@ RSpec.describe TerritoriesHelper, type: :helper do
       commands = helper.territory_member_actions(member(:builder)).map { |action| action[:command_name] }
       expect(commands).to eq(%w[promote remove])
     end
+
+    # viewing_self? answers "not on the admin player page", not territory membership - it defaults true for the
+    # common case of arriving at a territory straight from the admin list, so a moderator or admin with no stake in
+    # this specific territory must fall through to territory_admin? alone rather than riding the default.
+    context "when the viewer is neither on their own page nor a territory admin" do
+      before do
+        without_partial_double_verification do
+          allow(helper).to receive_messages(viewing_self?: false, territory_admin?: false)
+        end
+      end
+
+      it "offers no actions for any role" do
+        expect(helper.territory_member_actions(member(:moderator))).to be_empty
+        expect(helper.territory_member_actions(member(:builder))).to be_empty
+      end
+    end
   end
 
   describe "#territory_flag_status_color" do
