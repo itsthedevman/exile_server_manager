@@ -168,7 +168,7 @@ RSpec.describe "Servers", type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Daily Drop")
-        expect(response.body).to include("Poptabs")
+        expect(response.body).to include("Pocket")
         expect(response.body).to include("5,000")
       end
 

@@ -119,23 +119,24 @@ RSpec.describe RewardsHelper, type: :helper do
     end
 
     it "itemises everything the package holds, and nothing it does not" do
-      lines = helper.reward_receipt_lines(package.contents).map { |line| [line.label, line.value] }
+      lines = helper.reward_receipt_lines(package.contents)
 
-      expect(lines).to eq(
-        [
-          ["Poptabs", "5,000"],
-          ["Respect", "100"],
-          ["Knife", "x1"],
-          ["Hatchback", "spawns nearby"]
-        ]
-      )
+      expect(lines.map(&:label)).to eq(["Pocket", "Respect", "Knife", "Hatchback"])
+      expect(lines.map { |line| helper.strip_tags(line.value.to_s) }).to eq(["5,000", "100", "x1", "spawns nearby"])
+    end
+
+    it "shows poptab amounts with the poptab icon, the way the rest of the dashboard does" do
+      lines = helper.reward_receipt_lines(package.contents)
+
+      expect(lines.first.value).to include("poptab-icon")
+      expect(lines.second.value).not_to include("poptab-icon")
     end
 
     # The delivery form under it names every vehicle already, since it has to say which pin belongs to which
     it "leaves the vehicles out when asked to" do
       lines = helper.reward_receipt_lines(package.contents, include_vehicles: false)
 
-      expect(lines.map(&:label)).to eq(["Poptabs", "Respect", "Knife"])
+      expect(lines.map(&:label)).to eq(["Pocket", "Respect", "Knife"])
     end
   end
 

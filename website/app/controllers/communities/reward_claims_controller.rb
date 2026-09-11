@@ -539,14 +539,8 @@ module Communities
     # @return [Array<Hash>]
     #
     def grant_message_fields(contents)
-      currencies = {
-        "Poptabs" => contents.player_poptabs,
-        "Locker" => contents.locker_poptabs,
-        "Respect" => contents.respect
-      }
-
-      fields = currencies.filter_map do |name, amount|
-        {name:, value: helpers.number_with_delimiter(amount), inline: true} if amount.positive?
+      fields = helpers.reward_currencies(contents).map do |currency|
+        {name: currency.label, value: helpers.reward_currency_text(currency), inline: true}
       end
 
       if contents.items.present?

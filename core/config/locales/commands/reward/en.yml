@@ -50,8 +50,8 @@ en:
           - Remember, items that don't fit in your inventory **will be dropped on the ground at your feet**
 
           Pending claims include the following:
-        player_poptabs: "**Poptabs (player):** `%{value}`"
-        locker_poptabs: "**Poptabs (locker):** `%{value}`"
+        player_poptabs: "**Pocket:** `%{value}`"
+        locker_poptabs: "**Locker:** `%{value}`"
         respect: "**Respect:** `%{value}`"
         items: "**Items:** %{value}"
         vehicles: "**Vehicles:** %{value}"

@@ -55,7 +55,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(response.body).to include(player.username)
       expect(response.body).to include(server.server_id)
       expect(response.body).to include("vip")
-      expect(response.body).to include("Poptabs")
+      expect(response.body).to include("Pocket")
     end
 
     # Every bucket a claim can hold renders through the same badges the package list uses, and a claim's vehicles
@@ -69,7 +69,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       get index_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Poptabs")
+      expect(response.body).to include("Pocket")
       expect(response.body).to include("Item")
       expect(response.body).to include("Vehicle")
     end

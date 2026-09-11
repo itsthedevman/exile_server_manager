@@ -201,11 +201,11 @@ module ESM
           ]
 
           if (value = contents.player_poptabs).positive?
-            base << I18n.t("commands.reward.request_descriptions.player_poptabs", value:)
+            base << I18n.t("commands.reward.request_descriptions.player_poptabs", value: value.to_poptab)
           end
 
           if (value = contents.locker_poptabs).positive?
-            base << I18n.t("commands.reward.request_descriptions.locker_poptabs", value:)
+            base << I18n.t("commands.reward.request_descriptions.locker_poptabs", value: value.to_poptab)
           end
 
           if (value = contents.respect).positive?

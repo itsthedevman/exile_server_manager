@@ -177,14 +177,8 @@ module RewardPackagesHelper
   def reward_content_badges(reward)
     contents = reward.contents
 
-    currencies = {
-      "Poptabs" => contents.player_poptabs,
-      "Locker" => contents.locker_poptabs,
-      "Respect" => contents.respect
-    }
-
-    badges = currencies.filter_map do |label, amount|
-      {label:, detail: number_with_delimiter(amount)} if amount.positive?
+    badges = reward_currencies(contents).map do |currency|
+      {label: currency.label, detail: reward_currency_text(currency)}
     end
 
     if contents.items.present?

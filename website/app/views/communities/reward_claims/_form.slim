@@ -29,7 +29,7 @@
     h6.mb-3 Currency
     .row.g-3
       .col-12.col-lg-4
-        = f.label :player_poptabs, "Player Poptabs", class: "form-label"
+        = f.label :player_poptabs, "Pocket Poptabs", class: "form-label"
         = f.number_field :player_poptabs, class: "form-control", min: 0, value: submitted.player_poptabs || 0, \
           data: {reward_contents_editor_target: "currency", action: "input->reward-contents-editor#refresh"}
       .col-12.col-lg-4

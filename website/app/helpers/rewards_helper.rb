@@ -185,6 +185,37 @@ module RewardsHelper
   end
 
   ##
+  # The currencies a package or claim holds, skipping any it holds none of.
+  #
+  # The receipt, the package badges and the grant DM all list these, so the names live here once. "Pocket" is the
+  # poptabs a player carries, the same word the admin player page uses for that balance.
+  #
+  # @param contents [Datum] a package's or claim's #contents
+  #
+  # @return [Array<Datum>] each carrying #label, #amount and #poptabs
+  #
+  def reward_currencies(contents)
+    [
+      {label: "Pocket", amount: contents.player_poptabs, poptabs: true},
+      {label: "Locker", amount: contents.locker_poptabs, poptabs: true},
+      {label: "Respect", amount: contents.respect, poptabs: false}
+    ].select { |currency| currency[:amount].positive? }.map(&:to_datum)
+  end
+
+  ##
+  # A currency's amount as plain text, for a tooltip or a Discord embed where the poptab icon cannot go.
+  #
+  # @param currency [Datum] one of #reward_currencies
+  #
+  # @return [String]
+  #
+  def reward_currency_text(currency)
+    return currency.amount.to_poptab if currency.poptabs
+
+    number_with_delimiter(currency.amount)
+  end
+
+  ##
   # What a package or claim holds, one line per thing, the way a receipt lists them.
   #
   # Replaces a one-line summary that named counts and then repeated itself. "3 items" sat above a list of the same
@@ -197,14 +228,10 @@ module RewardsHelper
   # @return [Array<Datum>] each carrying #label and #value
   #
   def reward_receipt_lines(contents, include_vehicles: true)
-    currencies = {
-      "Poptabs" => contents.player_poptabs,
-      "Locker" => contents.locker_poptabs,
-      "Respect" => contents.respect
-    }
+    lines = reward_currencies(contents).map do |currency|
+      value = currency.poptabs ? poptabs(currency.amount, inline: true) : number_with_delimiter(currency.amount)
 
-    lines = currencies.filter_map do |label, amount|
-      {label:, value: number_with_delimiter(amount)} if amount.positive?
+      {label: currency.label, value:}
     end
 
     lines += contents.items.map { |item| {label: item.display_name, value: "x#{item.quantity}"} }
