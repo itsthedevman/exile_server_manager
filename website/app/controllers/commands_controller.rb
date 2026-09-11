@@ -13,7 +13,7 @@ class CommandsController < AuthenticatedController
     commands_by_category = Command.all.values
       .sort_by(&:usage)
       .select(&:modifiable?)
-      .each { |command| command.configuration = configurations[command.name] }
+      .map { |command| command.with_configuration(configurations[command.name]) }
       .group_by(&:category)
 
     render locals: {commands_by_category:}

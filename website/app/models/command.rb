@@ -9,13 +9,13 @@ class Command
   def self.all
     @all ||= ESM::Command.all
       .select { |command_class| ESM::Command::TYPES.include?(command_class.type) }
-      .map { |command_class| new(command_class) }
+      .map { |command_class| new(command_class).freeze }
       .index_by(&:name)
       .symbolize_keys!
+      .freeze
   end
 
-  attr_reader :domain, :scope, :action
-  attr_accessor :configuration
+  attr_reader :domain, :scope, :action, :configuration
 
   attr_predicate :admin
 
@@ -45,6 +45,25 @@ class Command
   def modifiable?
     attributes.any? { |_key, attrs| attrs[:modifiable] }
   end
+
+  ##
+  # A copy of this command carrying one community's configuration.
+  #
+  # Command.all is built once and shared by every request the process serves, so its commands are frozen and a
+  # configuration only ever lands on a copy. Set on the shared command, it would be read by whichever request rendered
+  # that command next, including one for a different community.
+  #
+  # @param configuration [ESM::CommandConfiguration, nil] the community's override row for this command
+  #
+  # @return [Command]
+  #
+  def with_configuration(configuration)
+    dup.tap { |command| command.configuration = configuration }
+  end
+
+  protected
+
+  attr_writer :configuration
 
   private
 
