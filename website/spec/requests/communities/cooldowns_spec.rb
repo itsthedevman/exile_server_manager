@@ -10,7 +10,10 @@ RSpec.describe "Communities::Cooldowns", type: :request do
 
   before do
     sign_in user
-    allow_any_instance_of(ESM::Community).to receive(:modifiable_by?).and_return(true)
+
+    # No modifiable_by? stub here on purpose: this controller has no check_for_community_access! anywhere in its
+    # ancestry (RegisteredController only adds registration), so stubbing manager status would read as asserting a
+    # gate this suite never actually exercises.
 
     # Boundary stubs - never touch NATS, don't wait on a settle.
     allow(ESM::Service::API).to receive(:call)
@@ -126,6 +129,22 @@ RSpec.describe "Communities::Cooldowns", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # README decision 1 / audit HOLE: same missing community-membership boundary as Broadcasts. Runs the real
+    # CommandAccess against the fake bot (no allow_access stub) so the verdict comes from the actual resolver.
+    it "refuses a registered stranger to this community once reset_cooldown's allowlist is off" do
+      pending("HOLE: cooldowns has no community-membership boundary once its allowlist is disabled (README decision 1)")
+
+      # Community#create_command_configurations seeds a row per command on creation, already carrying the
+      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
+      # ambiguous one for the same community/command pair.
+      community.command_configurations.find_by!(command_name: "reset_cooldown").update!(allowlist_enabled: false)
+      service_api.answer(:community_membership, nil)
+
+      get_index
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "POST /cooldowns/clear" do
@@ -196,6 +215,54 @@ RSpec.describe "Communities::Cooldowns", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("toast-container")
       expect(response.body).to include("You do not have permission to clear cooldowns")
+    end
+
+    # README decision 1 / audit HOLE: same missing community-membership boundary as Broadcasts, this time on the
+    # community-wide reset itself. Runs the real CommandAccess against the fake bot (no allow_access stub).
+    it "refuses a registered stranger to this community once reset_cooldown's allowlist is off" do
+      pending("HOLE: cooldowns has no community-membership boundary once its allowlist is disabled (README decision 1)")
+
+      # Community#create_command_configurations seeds a row per command on creation, already carrying the
+      # command class's own allowlist_enabled default (true) - flip that seeded row rather than adding a second,
+      # ambiguous one for the same community/command pair.
+      community.command_configurations.find_by!(command_name: "reset_cooldown").update!(allowlist_enabled: false)
+      service_api.answer(:community_membership, nil)
+
+      expect { post_clear }.not_to change(ESM::ServiceCommand, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "GET status" do
+    let(:command) do
+      ESM::ServiceCommand.create!(
+        user:,
+        community:,
+        command_name: "reset_cooldown",
+        idempotency_key: SecureRandom.uuid,
+        status: :completed,
+        result: {cleared: 3}
+      )
+    end
+
+    it "reports how many cooldowns were cleared" do
+      allow_access(denied: false)
+
+      get "/communities/#{community.public_id}/cooldowns/commands/#{command.public_id}/status",
+        as: :turbo_stream
+
+      expect(response.body).to include("3 cooldowns cleared")
+    end
+
+    it "is not found for another user's command" do
+      allow_access(denied: false)
+      command.update!(user: create(:user))
+
+      get "/communities/#{community.public_id}/cooldowns/commands/#{command.public_id}/status",
+        as: :turbo_stream
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 end
