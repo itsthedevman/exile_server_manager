@@ -387,4 +387,55 @@ module PlayersHelper
 
     ESM::User.exists?(steam_uid: player.uid)
   end
+
+  ##
+  # A player as a list names them: their Steam name, with the Steam UID to fall back on. Never their Discord identity,
+  # which this site only shows through whois on the player's own page, so a Steam account is never paired with it.
+  #
+  # Reads the stored Steam row rather than ESM::User#steam_data, which asks Steam again once the row is stale. A list
+  # asks once per row, and a page of them would otherwise be a page of Steam API calls.
+  #
+  # @param steam_uid [String, nil] the UID the row is keyed on, when it carries one
+  # @param user [ESM::User, nil] the account behind the row, when there is one
+  #
+  # @return [Datum] carrying #name, nil when Steam has given none, and #uid
+  #
+  def player_list_identity(steam_uid: nil, user: nil)
+    {
+      name: user&.user_steam_data&.username.presence,
+      uid: steam_uid.presence || user&.steam_uid.presence
+    }.to_datum
+  end
+
+  ##
+  # The line a list reads a player by: the Steam name, else the UID.
+  #
+  # @param identity [Datum] from #player_list_identity
+  #
+  # @return [String]
+  #
+  def player_list_name(identity)
+    identity.name || identity.uid || "Unknown player"
+  end
+
+  # The UID shown under the name, when there is a name for it to sit under
+  def player_list_uid_line(identity)
+    identity.uid if identity.name
+  end
+
+  ##
+  # Where a list row links to open that player's page, or nil when it cannot: the row has no server or no Steam UID to
+  # address the page by, or the viewer cannot run info, which the page itself requires.
+  #
+  # @param server [ESM::Server, nil]
+  # @param steam_uid [String, nil]
+  #
+  # @return [String, nil]
+  #
+  def player_page_path(server, steam_uid)
+    return if server.nil? || steam_uid.blank?
+    return unless command_accessible?("info")
+
+    server_player_path(server.public_id, steam_uid)
+  end
 end

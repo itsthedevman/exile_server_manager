@@ -67,7 +67,7 @@ module Servers
     def lookup
       return unless check_for_command_access("info")
 
-      result = ESM::PlayerLookup.call(params[:q])
+      result = ESM::PlayerLookup.call(params[:q], community: current_server.community)
 
       case result.kind
       when :steam_uid

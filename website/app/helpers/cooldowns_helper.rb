@@ -32,21 +32,62 @@ module CooldownsHelper
   end
 
   ##
-  # The player a cooldown belongs to, named for display.
+  # The player a cooldown belongs to, as a list names them. See PlayersHelper#player_list_identity.
   #
-  # A row can outlive the account it was written for, and it keys on only one of steam_uid or user_id, so a player
-  # that cannot be resolved still has to render as something an admin can act on rather than as a blank cell.
+  # A row can outlive the account it was written for, and it keys on only one of steam_uid or user_id, so either may be
+  # all there is to go on.
   #
   # @param cooldown [ESM::Cooldown]
   # @param player [ESM::User, nil] the resolved owner, when there is one
   #
-  # @return [String]
+  # @return [Datum]
   #
-  def cooldown_player_name(cooldown, player)
-    return player.username if player&.username.present?
-    return cooldown.steam_uid if cooldown.steam_uid.present?
+  def cooldown_player_identity(cooldown, player)
+    player_list_identity(steam_uid: player&.steam_uid || cooldown.steam_uid, user: player)
+  end
 
-    "Unknown player"
+  def cooldown_player_name(cooldown, player)
+    player_list_name(cooldown_player_identity(cooldown, player))
+  end
+
+  def cooldown_player_uid_line(cooldown, player)
+    player_list_uid_line(cooldown_player_identity(cooldown, player))
+  end
+
+  ##
+  # Where the row's View player button goes, or nil when there is no page to open. A community-wide cooldown has no
+  # server for the page to belong to.
+  #
+  # @param cooldown [ESM::Cooldown]
+  # @param player [ESM::User, nil]
+  # @param servers [Array<ESM::Server>]
+  #
+  # @return [String, nil]
+  #
+  def cooldown_player_page_path(cooldown, player, servers)
+    server = servers.find { |candidate| candidate.id == cooldown.server_id }
+
+    player_page_path(server, cooldown_player_identity(cooldown, player).uid)
+  end
+
+  ##
+  # Why the row's View player button is there but switched off, or nil when it works or is not offered at all.
+  #
+  # The button stays in the row rather than going missing, so a row without a player page does not read as a mistake.
+  # A viewer who cannot run info is not offered player pages anywhere, so their rows go without the button entirely.
+  #
+  # @param cooldown [ESM::Cooldown]
+  # @param player [ESM::User, nil]
+  # @param servers [Array<ESM::Server>]
+  #
+  # @return [String, nil]
+  #
+  def cooldown_player_page_unavailable_reason(cooldown, player, servers)
+    return if cooldown_player_page_path(cooldown, player, servers)
+    return unless command_accessible?("info")
+    return "Community-wide cooldowns aren't tied to a server" if cooldown.server_id.nil?
+
+    "No Steam account linked" if cooldown_player_identity(cooldown, player).uid.nil?
   end
 
   ##
@@ -160,7 +201,7 @@ module CooldownsHelper
   #
   def cooldown_player_select_data(players)
     cooldown_any_option("Any player") +
-      players.map { |player| {text: player.username, value: player.steam_uid} }
+      players.map { |player| {text: player_list_name(player_list_identity(user: player)), value: player.steam_uid} }
   end
 
   def cooldown_command_select_data(command_names)

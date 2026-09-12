@@ -147,7 +147,7 @@ module Communities
     def listed_claims
       claims = ESM::ServerRewardClaim
         .where(server_id: current_community.servers.select(:id))
-        .includes(:server, :user)
+        .includes(:server, user: :user_steam_data)
 
       claims.sort_by { |claim| [STATE_ORDER.index(claim.state), claim.created_at] }
     end
@@ -171,9 +171,13 @@ module Communities
     end
 
     # Only the players and servers that actually have a claim. A select offering a name that matches nothing is a
-    # filter that can only empty the table.
+    # filter that can only empty the table, and a player with no Steam UID has nothing for a row to match on.
     def player_options(claims)
-      claims.filter_map(&:user).uniq(&:id).sort_by { |user| user.username.to_s.downcase }
+      claims
+        .filter_map(&:user)
+        .uniq(&:id)
+        .select { |user| user.steam_uid.present? }
+        .sort_by { |user| helpers.player_list_name(helpers.player_list_identity(user:)).downcase }
     end
 
     def server_options(claims)
@@ -181,8 +185,8 @@ module Communities
     end
 
     ##
-    # The claim addressed by the URL, which names it by the pair its unique index is built on rather than by an id
-    # the row does not have.
+    # The claim addressed by the URL, which names it by its server and its owner's Steam UID rather than by an id the
+    # row does not have. The Steam UID rather than the Discord ID, so the page never pairs a Steam account with Discord.
     #
     # @return [ESM::ServerRewardClaim, nil]
     #
@@ -191,7 +195,10 @@ module Communities
       server = current_community.servers.find_by(public_id: params[:server_server_id])
       return if server.nil?
 
-      user = ESM::User.find_by(discord_id: params[:user_id])
+      # A blank UID would find whichever deregistered account comes first
+      return if params[:steam_uid].blank?
+
+      user = ESM::User.find_by(steam_uid: params[:steam_uid])
       return if user.nil?
 
       ESM::ServerRewardClaim.find_by(server_id: server.id, user_id: user.id)
@@ -300,7 +307,7 @@ module Communities
     # @return [ESM::User, nil]
     #
     def grant_player
-      lookup = ESM::PlayerLookup.call(claim_params[:player])
+      lookup = ESM::PlayerLookup.call(claim_params[:player], community: current_community)
 
       if lookup.blank?
         render_claim_error("Enter the player's Steam UID or Discord ID.")
@@ -579,7 +586,8 @@ module Communities
     end
 
     def grant_outcome_message(server, player, messaged)
-      granted = "#{player.username} has been granted a reward on #{server.server_id}"
+      name = helpers.player_list_name(helpers.player_list_identity(user: player))
+      granted = "#{name} has been granted a reward on #{server.server_id}"
       return granted if messaged
 
       "#{granted}, but they could not be messaged about it"

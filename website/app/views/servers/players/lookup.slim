@@ -12,16 +12,16 @@
     .card-body.text-center.py-5
       i.bi.bi-person-x.text-muted.fs-1.d-block.mb-3
 
-      / Two different findings, not two flavours of failure. Which one it is tells an admin whether the player is
-      / someone ESM has never met or someone it knows by Discord alone.
+      / Two different findings, not two flavours of failure. Only a member of the community's Discord reaches the first;
+      / anyone outside it reads the same as an ID ESM has never seen.
       - if result.unregistered?
         h5.text-light.mb-2 No Steam account linked
         p.text-muted.mb-2.mx-auto style="max-width: 34rem;"
           | ESM knows that Discord account, but nobody has ever linked a Steam account to it. Without one there's no Steam UID to look up, and no character on #{current_server.server_id} to find.
       - else
-        h5.text-light.mb-2 No ESM account
+        h5.text-light.mb-2 No player found
         p.text-muted.mb-2.mx-auto style="max-width: 34rem;"
-          | Nothing in ESM is using that Discord ID. They may still play on #{current_server.server_id}: ESM only learns who someone is once they've linked their Discord and Steam accounts.
+          | Nobody in your Discord has linked that Discord ID to ESM. They may still play on #{current_server.server_id}: look them up by Steam UID or name instead.
 
       p.text-muted.small.mb-4
         | Looked up

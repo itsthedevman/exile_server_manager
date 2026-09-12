@@ -4,7 +4,7 @@
     thead
       tr
         th.sortable-header role="button" data-sort-key="player" data-cooldown-filters-target="sortHeader" data-action="click->cooldown-filters#sort"
-          | Player
+          | Name
           i.bi.bi-chevron-expand.text-muted.ms-1.sort-indicator
         th.sortable-header role="button" data-sort-key="command" data-cooldown-filters-target="sortHeader" data-action="click->cooldown-filters#sort"
           | Command
@@ -21,7 +21,10 @@
     tbody
       - cooldowns.each do |cooldown|
         tr data-cooldown-filters-target="row" *cooldown_row_attributes(cooldown, players[cooldown.id], servers)
-          td = cooldown_player_name(cooldown, players[cooldown.id])
+          td
+            .fw-medium.text-truncate = cooldown_player_name(cooldown, players[cooldown.id])
+            - if cooldown_player_uid_line(cooldown, players[cooldown.id])
+              small.text-muted.font-monospace.d-block = cooldown_player_uid_line(cooldown, players[cooldown.id])
           td.font-monospace.small
             = cooldown.command_name
             - if cooldown.scope_key.present?
@@ -32,6 +35,20 @@
               span.badge.text-bg-warning = cooldown_time_left(cooldown)
             - else
               span.badge.text-bg-secondary = cooldown_time_left(cooldown)
-          td.text-end
+          td.text-end.text-nowrap
             button.btn.btn-sm.btn-link.p-0.text-decoration-none type="button" data-action="click->cooldown-filters#only" *cooldown_row_filters(cooldown, players[cooldown.id], servers)
               | Select
+            - if cooldown_player_page_path(cooldown, players[cooldown.id], servers)
+              = link_to cooldown_player_page_path(cooldown, players[cooldown.id], servers),
+                class: "btn btn-sm btn-outline-primary ms-3",
+                title: "View player"
+                i.bi.bi-box-arrow-in-right
+            - elsif cooldown_player_page_unavailable_reason(cooldown, players[cooldown.id], servers)
+              / A disabled button swallows the hover, so the tooltip hangs off a wrapper around it
+              span.d-inline-block.ms-3[
+                tabindex="0"
+                data-bs-toggle="tooltip"
+                title=cooldown_player_page_unavailable_reason(cooldown, players[cooldown.id], servers)
+              ]
+                button.btn.btn-sm.btn-outline-primary type="button" disabled=true aria-label="View player"
+                  i.bi.bi-box-arrow-in-right

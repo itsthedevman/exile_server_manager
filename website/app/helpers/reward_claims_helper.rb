@@ -38,8 +38,35 @@ module RewardClaimsHelper
     "#{reward_claim_player_name(claim)}'s claim on #{reward_claim_server_label(claim)}"
   end
 
+  # The claim's owner as a list names them. See PlayersHelper#player_list_identity.
+  def reward_claim_player_identity(claim)
+    player_list_identity(user: claim.user)
+  end
+
   def reward_claim_player_name(claim)
-    claim.user&.username.presence || "Unknown player"
+    player_list_name(reward_claim_player_identity(claim))
+  end
+
+  def reward_claim_player_uid_line(claim)
+    player_list_uid_line(reward_claim_player_identity(claim))
+  end
+
+  ##
+  # What addresses a claim in its URLs alongside its server: the owner's Steam UID.
+  #
+  # Nil once the owner deregisters, which leaves the row with nothing to act through until they register again. That
+  # strands nothing, since a deregistered player cannot redeem the claim in the meantime either.
+  #
+  # @param claim [ESM::ServerRewardClaim]
+  #
+  # @return [String, nil]
+  #
+  def reward_claim_steam_uid(claim)
+    claim.user&.steam_uid.presence
+  end
+
+  def reward_claim_player_page_path(claim)
+    player_page_path(claim.server, reward_claim_steam_uid(claim))
   end
 
   def reward_claim_server_label(claim)
@@ -168,7 +195,7 @@ module RewardClaimsHelper
   #
   def reward_claim_row_attributes(claim)
     {
-      "data-player" => claim.user&.discord_id.to_s,
+      "data-player" => reward_claim_steam_uid(claim).to_s,
       "data-server" => claim.server&.public_id.to_s,
       "data-state" => claim.state
     }
@@ -184,7 +211,7 @@ module RewardClaimsHelper
   def reward_claim_form_url(claim)
     return community_reward_claims_path(current_community) if claim.nil?
 
-    community_server_reward_claim_path(current_community, claim.server, claim.user)
+    community_server_reward_claim_path(current_community, claim.server, reward_claim_steam_uid(claim))
   end
 
   def reward_claim_form_method(claim)
@@ -249,7 +276,7 @@ module RewardClaimsHelper
 
   def reward_claim_player_select_data(players)
     reward_claim_any_option("Any player") +
-      players.map { |player| {text: player.username, value: player.discord_id} }
+      players.map { |player| {text: player_list_name(player_list_identity(user: player)), value: player.steam_uid} }
   end
 
   def reward_claim_server_select_data(servers)

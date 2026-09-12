@@ -3,7 +3,7 @@
   table.table.table-hover.align-middle.mb-0
     thead
       tr
-        th Player
+        th Name
         th Server
         th Code
         th Contains
@@ -14,7 +14,10 @@
     tbody
       - claims.each do |claim|
         tr data-reward-claim-filters-target="row" *reward_claim_row_attributes(claim)
-          td.text-truncate = reward_claim_player_name(claim)
+          td.text-truncate
+            .fw-medium.text-truncate = reward_claim_player_name(claim)
+            - if reward_claim_player_uid_line(claim)
+              small.text-muted.font-monospace.d-block = reward_claim_player_uid_line(claim)
 
           td.small = reward_claim_server_label(claim)
 
@@ -40,25 +43,32 @@
               .small.text-muted.mt-1 = failure
 
           td.text-end.text-nowrap
-            - if reward_claim_retryable?(claim)
-              = button_to release_community_server_reward_claim_path(current_community, claim.server, claim.user),
-                method: :patch,
-                class: "btn btn-outline-primary btn-sm",
-                form_class: "d-inline-block",
-                title: "Let the player try to receive this reward again"
-                i.bi.bi-arrow-counterclockwise.me-1
-                | Allow retry
+            - if reward_claim_steam_uid(claim)
+              - if reward_claim_retryable?(claim)
+                = button_to release_community_server_reward_claim_path(current_community, claim.server, reward_claim_steam_uid(claim)),
+                  method: :patch,
+                  class: "btn btn-outline-primary btn-sm",
+                  form_class: "d-inline-block",
+                  title: "Let the player try to receive this reward again"
+                  i.bi.bi-arrow-counterclockwise.me-1
+                  | Allow retry
 
-            = link_to edit_community_server_reward_claim_path(current_community, claim.server, claim.user),
-              class: "btn btn-outline-primary btn-sm ms-1",
-              title: "Edit what this player is owed",
-              data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
-              i.bi.bi-pencil
+              = link_to edit_community_server_reward_claim_path(current_community, claim.server, reward_claim_steam_uid(claim)),
+                class: "btn btn-outline-primary btn-sm ms-1",
+                title: "Edit what this player is owed",
+                data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
+                i.bi.bi-pencil
 
-            / Deleting takes a reward the player has not received yet, so the button opens the claim rather than
-            / doing it. What they lose is itemized there.
-            = link_to confirm_destroy_community_server_reward_claim_path(current_community, claim.server, claim.user),
-              class: "btn btn-outline-danger btn-sm ms-1",
-              title: "Delete claim",
-              data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
-              i.bi.bi-trash
+              / Deleting takes a reward the player has not received yet, so the button opens the claim rather than
+              / doing it. What they lose is itemized there.
+              = link_to confirm_destroy_community_server_reward_claim_path(current_community, claim.server, reward_claim_steam_uid(claim)),
+                class: "btn btn-outline-danger btn-sm ms-1",
+                title: "Delete claim",
+                data: {"turbo-prefetch": false, "turbo-frame": "reward_claim_modal_frame"}
+                i.bi.bi-trash
+
+              - if reward_claim_player_page_path(claim)
+                = link_to reward_claim_player_page_path(claim),
+                  class: "btn btn-outline-primary btn-sm ms-1",
+                  title: "View player"
+                  i.bi.bi-box-arrow-in-right

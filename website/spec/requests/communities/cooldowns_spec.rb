@@ -113,6 +113,42 @@ RSpec.describe "Communities::Cooldowns", type: :request do
       )
     end
 
+    # A Steam account is never shown next to Discord information on this site
+    it "names a player by their Steam name over their UID, and nothing about their Discord" do
+      allow_access(denied: false)
+      player.user_steam_data.update!(username: "SteamDave")
+      create_cooldown(steam_uid: player.steam_uid)
+
+      get_index
+
+      card = Nokogiri::HTML(response.body).css("#cooldowns_card").to_html
+
+      expect(card).to include("SteamDave")
+      expect(card).to include(player.steam_uid)
+      expect(card).not_to include(player.discord_username)
+      expect(card).not_to include(player.discord_id)
+    end
+
+    it "links a row to the player's page on the server it is for" do
+      allow_access(denied: false)
+      create_cooldown(steam_uid: player.steam_uid)
+
+      get_index
+
+      expect(response.body).to include("/servers/#{server.public_id}/players/#{player.steam_uid}")
+    end
+
+    # The button stays so a row with no player page does not read as a mistake, and says why it is switched off
+    it "switches off the player button on a community-wide cooldown and says why" do
+      allow_access(denied: false)
+      create_cooldown(steam_uid: player.steam_uid, command_name: "reset_cooldown", target: nil)
+
+      get_index
+
+      expect(table_rows.first.css("button[disabled][aria-label='View player']")).to be_present
+      expect(table_rows.first.css("[data-bs-toggle='tooltip']").first["title"]).to include("aren't tied to a server")
+    end
+
     # Two reward packages are two cooldowns, and the page has to be able to tell them apart to clear only one.
     it "names the package a reward cooldown belongs to and offers it as a filter" do
       allow_access(denied: false)

@@ -150,16 +150,16 @@ Rails.application.routes.draw do
       # A claim carries no id of its own, so it is addressed by the pair its unique index is built on. The listing is
       # community wide because a stuck claim is worth finding without knowing which server it is on.
       resources :servers, only: [], param: :server_id do
-        # /communities/:community_id/servers/:server_id/reward_claims/:user_id
+        # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid
         resources :reward_claims,
           controller: "communities/reward_claims",
-          param: :user_id,
+          param: :steam_uid,
           only: %i[edit update destroy] do
           member do
-            # /communities/:community_id/servers/:server_id/reward_claims/:user_id/confirm_destroy
+            # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/confirm_destroy
             get :confirm_destroy
 
-            # /communities/:community_id/servers/:server_id/reward_claims/:user_id/release
+            # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/release
             patch :release
           end
         end

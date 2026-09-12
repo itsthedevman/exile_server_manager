@@ -12,6 +12,7 @@ $(document).on("turbo:load", function () {
 });
 
 $(document).on("turbo:frame-load", function () {
+  bindToolTips();
   bindDataTriggers();
 });
 
@@ -20,13 +21,16 @@ $(document).on("turbo:before-stream-render", function (event) {
 
   event.detail.render = function (streamElement) {
     originalRender(streamElement);
+    bindToolTips();
     bindDataTriggers();
   };
 });
 
+// Runs again after every frame load and stream render, so markup they bring in gets its tooltips too. getOrCreateInstance
+// keeps an element that already has one from being given a second.
 function bindToolTips() {
   $('[data-bs-toggle="tooltip"]').each(function (i, el) {
-    new bootstrap.Tooltip(el);
+    bootstrap.Tooltip.getOrCreateInstance(el);
   });
 }
 

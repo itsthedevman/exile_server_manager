@@ -19,9 +19,27 @@ module Commands
     verdict = command_verdict(command_name)
     return true if verdict.allowed?
 
-    render_command_denied(command_denied_message(verdict.reason))
+    if verdict.reason == :server_offline && offline_server_visit?
+      redirect_to server_path(current_server.public_id)
+    else
+      render_command_denied(command_denied_message(verdict.reason))
+    end
 
     false
+  end
+
+  ##
+  # Whether a denial for an offline server should send the visitor to that server's own page rather than a 404. An
+  # offline server is not a missing page, and its page already says it is offline.
+  #
+  # Only a plain page visit. A stream answers into the slot it was asked for, a frame would draw the whole server page
+  # inside itself, and an action posted from a page should say what happened to it rather than navigate away. The
+  # format is matched by symbol because Mime::Type#html? is true for anything with "html" in it, turbo streams included.
+  #
+  # @return [Boolean]
+  #
+  def offline_server_visit?
+    current_server.present? && request.get? && request.format.symbol == :html && !turbo_frame_request?
   end
 
   ##

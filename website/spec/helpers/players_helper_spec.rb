@@ -40,6 +40,33 @@ RSpec.describe PlayersHelper, type: :helper do
     end
   end
 
+  # A Steam account is never shown next to Discord information on this site, so a list names players by Steam alone
+  describe "#player_list_identity" do
+    let(:user) { create(:user) }
+
+    it "names a player by their Steam name, with the UID under it" do
+      user.user_steam_data.update!(username: "SteamDave")
+
+      identity = helper.player_list_identity(user:)
+
+      expect(helper.player_list_name(identity)).to eq("SteamDave")
+      expect(helper.player_list_uid_line(identity)).to eq(user.steam_uid)
+    end
+
+    it "falls back to the Steam UID when Steam has given no name" do
+      identity = helper.player_list_identity(user:)
+
+      expect(helper.player_list_name(identity)).to eq(user.steam_uid)
+      expect(helper.player_list_uid_line(identity)).to be_nil
+    end
+
+    it "names a row with no account behind it by the UID it is keyed on" do
+      identity = helper.player_list_identity(steam_uid: "76561198000000009")
+
+      expect(helper.player_list_name(identity)).to eq("76561198000000009")
+    end
+  end
+
   describe "#player_row_stuck?" do
     it "is true only for a row Exile can't spawn" do
       expect(helper.player_row_stuck?({damage: 1})).to be(true)

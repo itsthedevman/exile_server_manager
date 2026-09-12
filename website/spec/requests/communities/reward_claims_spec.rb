@@ -22,11 +22,9 @@ RSpec.describe "Communities::RewardClaims", type: :request do
     "/communities/#{community.public_id}/reward_claims"
   end
 
-  # Version gates are not enforced locally, the same as everywhere else on this site. A spec about what an older
-  # server may do has to leave that bypass behind first.
   def claim_path(claim, suffix = nil)
     base = "/communities/#{community.public_id}/servers/#{claim.server.public_id}" \
-      "/reward_claims/#{claim.user.discord_id}"
+      "/reward_claims/#{claim.user.steam_uid}"
 
     suffix ? "#{base}/#{suffix}" : base
   end
@@ -48,10 +46,45 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       get index_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(player.username)
+      expect(response.body).to include(player.steam_uid)
       expect(response.body).to include(server.server_id)
       expect(response.body).to include("vip")
       expect(response.body).to include("Pocket")
+    end
+
+    # A Steam account is never shown next to Discord information on this site, the claim's URLs included
+    it "names a player by their Steam name over their UID, and nothing about their Discord" do
+      player.user_steam_data.update!(username: "SteamDave")
+      create_claim
+
+      get index_path
+
+      card = Nokogiri::HTML(response.body).css("#reward_claims_card").to_html
+
+      expect(card).to include("SteamDave")
+      expect(card).to include(player.steam_uid)
+      expect(card).not_to include(player.discord_username)
+      expect(card).not_to include(player.discord_id)
+    end
+
+    it "links a claim to its player's page" do
+      create_claim
+
+      get index_path
+
+      expect(response.body).to include("/servers/#{server.public_id}/players/#{player.steam_uid}")
+    end
+
+    # Deregistering takes the Steam UID the row is addressed by, and the player cannot redeem the claim meanwhile either
+    it "lists a deregistered player's claim without anything to act through" do
+      create_claim
+      player.deregister!
+
+      get index_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Unknown player")
+      expect(response.body).not_to include("Delete claim")
     end
 
     # Every bucket a claim can hold renders through the same badges the package list uses, and a claim's vehicles
@@ -298,6 +331,17 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(ESM::ServerRewardClaim.count).to eq(0)
     end
 
+    # A Discord ID only reaches a Steam account for a member of the community's Discord, the same line whois holds
+    it "will not follow a Discord ID from outside the community's Discord to a player" do
+      service_api.answer(:community_membership, nil)
+
+      post index_path, params: grant_params(player: registered_player.discord_id)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("We couldn't find that player")
+      expect(ESM::ServerRewardClaim.count).to eq(0)
+    end
+
     # info raises rather than returning nothing when it has no player to describe, so the command answering at all is
     # the answer. Reading that as a transport failure told owners their connected server was offline.
     it "reads a refusal from the command as a player it does not know" do
@@ -400,7 +444,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       )
 
       patch "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
-        "/reward_claims/#{player.discord_id}/release"
+        "/reward_claims/#{player.steam_uid}/release"
 
       expect(response).to have_http_status(:not_found)
       expect(claim.reload).to be_failed
@@ -434,7 +478,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
 
       get "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
-        "/reward_claims/#{claim.user.discord_id}/edit"
+        "/reward_claims/#{claim.user.steam_uid}/edit"
 
       expect(response).to have_http_status(:not_found)
     end
@@ -515,7 +559,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
 
       patch "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
-        "/reward_claims/#{claim.user.discord_id}",
+        "/reward_claims/#{claim.user.steam_uid}",
         params: {reward_claim: {player_poptabs: "9999", locker_poptabs: "0", respect: "0"}}
 
       expect(response).to have_http_status(:not_found)
@@ -564,7 +608,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       claim = ESM::ServerRewardClaim.create!(server_id: other_server.id, user_id: player.id, player_poptabs: 10)
 
       get "/communities/#{community.public_id}/servers/#{other_server.public_id}" \
-        "/reward_claims/#{claim.user.discord_id}/confirm_destroy"
+        "/reward_claims/#{claim.user.steam_uid}/confirm_destroy"
 
       expect(response).to have_http_status(:not_found)
     end
@@ -584,7 +628,7 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       create_claim
 
       delete "/communities/#{community.public_id}/servers/#{server.public_id}" \
-        "/reward_claims/#{user.discord_id}"
+        "/reward_claims/#{user.steam_uid}"
 
       expect(response).to have_http_status(:not_found)
       expect(ESM::ServerRewardClaim.count).to eq(1)

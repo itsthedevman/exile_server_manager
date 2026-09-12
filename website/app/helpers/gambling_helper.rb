@@ -201,9 +201,29 @@ module GamblingHelper
   end
 
   ##
-  # One leaderboard row as an istruct: its label and icon, the holder's name, and
-  # the record value. Tolerates a nil stat (an unclaimed record) by falling back to
-  # zero and a dash for the holder.
+  # Who holds a leaderboard record: their Steam name, or a dash for an unclaimed record.
+  #
+  # Never the Discord username, which would pair a Steam account with Discord for everyone who can gamble here. The
+  # Steam UID stands in for a missing name only for a viewer who can run info, which already reaches any player by UID;
+  # everyone else gets no identifier at all.
+  #
+  # @param stat [ESM::UserGambleStat, nil] the record-holding stat, if any
+  #
+  # @return [String]
+  #
+  def gamble_leader_holder(stat)
+    return "—" if stat&.user.nil?
+
+    identity = player_list_identity(user: stat.user)
+    return identity.name if identity.name
+    return player_list_name(identity) if command_accessible?("info")
+
+    "Unknown player"
+  end
+
+  ##
+  # One leaderboard row as an istruct: its label and icon, the holder (see #gamble_leader_holder), and the record value.
+  # Tolerates a nil stat (an unclaimed record) by falling back to zero.
   #
   # @param label [String] the record's display name
   # @param stat [ESM::UserGambleStat, nil] the record-holding stat, if any
@@ -219,7 +239,7 @@ module GamblingHelper
     {
       label:,
       icon:,
-      holder: stat&.user&.username || "—",
+      holder: gamble_leader_holder(stat),
       value: as_poptabs ? poptabs(value, inline: true) : value
     }.to_datum
   end

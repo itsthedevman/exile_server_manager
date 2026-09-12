@@ -28,7 +28,7 @@
   .modal-footer
     button.btn.btn-outline-secondary[type="button" data-bs-dismiss="modal"] Cancel
 
-    = button_to community_server_reward_claim_path(current_community, claim.server, claim.user),
+    = button_to community_server_reward_claim_path(current_community, claim.server, reward_claim_steam_uid(claim)),
       method: :delete,
       class: "btn btn-danger"
       i.bi.bi-trash.me-1

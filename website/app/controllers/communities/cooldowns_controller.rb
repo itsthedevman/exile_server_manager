@@ -90,7 +90,7 @@ module Communities
         .filter_map { |cooldown| resolved_players[cooldown.id] }
         .uniq(&:id)
         .select { |player| player.steam_uid.present? }
-        .sort_by { |player| player.username.to_s.downcase }
+        .sort_by { |player| helpers.player_list_name(helpers.player_list_identity(user: player)).downcase }
     end
 
     def command_options(cooldowns)
@@ -103,10 +103,13 @@ module Communities
     end
 
     # Cooldown#user resolves a row at a time, by whichever key that row carries, which is a query per row on a page
-    # whose whole job is to list rows. Both keys are looked up once here instead.
+    # whose whole job is to list rows. Both keys are looked up once here instead, with the Steam row every name is read
+    # from.
     def players_for(cooldowns)
-      by_id = ESM::User.where(id: cooldowns.filter_map(&:user_id).uniq).index_by(&:id)
-      by_steam_uid = ESM::User.where(steam_uid: cooldowns.filter_map { |c| c.steam_uid.presence }.uniq)
+      users = ESM::User.includes(:user_steam_data)
+
+      by_id = users.where(id: cooldowns.filter_map(&:user_id).uniq).index_by(&:id)
+      by_steam_uid = users.where(steam_uid: cooldowns.filter_map { |c| c.steam_uid.presence }.uniq)
         .index_by(&:steam_uid)
 
       @resolved_players =

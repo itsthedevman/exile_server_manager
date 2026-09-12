@@ -322,8 +322,21 @@ RSpec.describe "Servers::Players", type: :request do
     it "separates a Discord ID ESM has never seen from one that simply never registered" do
       lookup("800000000000009999")
 
-      expect(response.body).to include("No ESM account")
+      expect(response.body).to include("No player found")
       expect(response.body).not_to include("No Steam account linked")
+    end
+
+    # Following a Discord ID to a Steam UID is the pairing whois guards, so it stops at the community's Discord. Saying
+    # "not in your Discord" would still tell the admin ESM knows the account, so it reads like an unknown ID instead.
+    it "answers a Discord ID outside the community's Discord like one ESM has never seen" do
+      service_api.answer(:community_membership, nil)
+      target = create(:user)
+
+      lookup(target.discord_id)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("No player found")
+      expect(response.body).not_to include(target.steam_uid)
     end
 
     it "goes back to the hub when nothing was typed" do
@@ -543,6 +556,26 @@ RSpec.describe "Servers::Players", type: :request do
       allow_access(denied: true, reason: :not_allowlisted)
 
       get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "a server page while the server is offline" do
+    let(:target_uid) { "76561198000000001" }
+
+    before { allow_access(denied: true, reason: :server_offline) }
+
+    # An offline server is not a missing page, and the server's own page already says it is offline
+    it "sends a visit to the server's page" do
+      get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to redirect_to("/servers/#{server.public_id}")
+    end
+
+    # Redirected, a frame would draw the whole server page inside itself
+    it "still refuses a frame request outright" do
+      get "/servers/#{server.public_id}/players/#{target_uid}", headers: {"Turbo-Frame" => "player_overview"}
 
       expect(response).to have_http_status(:not_found)
     end
