@@ -56,10 +56,16 @@
   / Account stats
   .col-12.col-xl-6
     .card.h-100
-      .card-header
+      .card-header.d-flex.align-items-center.justify-content-between
         h5.mb-0
           i.bi.bi-bank.text-success.me-2
           | Money
+        - if player_gamble_stats_available?(current_player, viewing_self)
+          = link_to gamble_stats_server_player_path(current_server.public_id, current_player.uid),
+            class: "btn btn-sm btn-outline-secondary",
+            data: {turbo_frame: "gamble_stats_frame", turbo_prefetch: false}
+            | Gamble stats
+            i.bi.bi-bar-chart.ms-1
 
       .card-body
         .mb-3

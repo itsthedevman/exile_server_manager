@@ -370,4 +370,21 @@ module PlayersHelper
 
     "Something went wrong running that action. Please try again."
   end
+
+  ##
+  # Whether a player's overview offers their gamble stats. Not on a player's own page, which already has the Gamble card,
+  # not to a viewer without gamble (the page itself already took info), and not for a UID nobody registered, since
+  # stats are kept against the ESM account rather than the character.
+  #
+  # @param player [Datum] the player the overview describes
+  # @param viewing_self [Boolean]
+  #
+  # @return [Boolean]
+  #
+  def player_gamble_stats_available?(player, viewing_self)
+    return false if viewing_self
+    return false unless command_accessible?("gamble")
+
+    ESM::User.exists?(steam_uid: player.uid)
+  end
 end

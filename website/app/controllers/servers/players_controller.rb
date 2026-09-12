@@ -103,6 +103,19 @@ module Servers
       }
     end
 
+    # One player's gamble record on this server, opened from their page into a lazy modal. Stats are kept against the ESM
+    # account rather than the character, so a UID nobody registered has none to show. Looking at someone else's takes
+    # both commands: info is what reaches another player, gamble is what the stats belong to.
+    def gamble_stats
+      return unless check_for_command_access("info")
+      return unless check_for_command_access("gamble")
+
+      player = ESM::User.find_by(steam_uid: target_uid)
+      not_found! if player.nil?
+
+      render locals: {current_server:, gamble_stat: helpers.gamble_stat_for(current_server, user: player)}
+    end
+
     def me
       return unless check_for_command_access("me")
 

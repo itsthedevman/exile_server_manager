@@ -25,6 +25,20 @@ RSpec.describe "Servers::Players", type: :request do
     allow(ESM::CommandAccess).to receive(:new).and_return(instance_double(ESM::CommandAccess, verdict:))
   end
 
+  # Every command allowed but one, for the pages that ask about more than a single command
+  def allow_access_except(denied_command)
+    allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
+      verdict =
+        if command_name.to_s == denied_command
+          ESM::Command::Permission::Result.new(reason: :not_allowlisted, detail: nil)
+        else
+          ESM::Command::Permission::ALLOWED
+        end
+
+      instance_double(ESM::CommandAccess, verdict:)
+    end
+  end
+
   # The full /me page renders the whole server-hub shell, which fans out into more
   # game-server reads than a controller spec should stub. summary (the lazy card)
   # exercises the same load path in isolation; the auth guard is checked on /me.
@@ -387,6 +401,35 @@ RSpec.describe "Servers::Players", type: :request do
         expect(response.body).to include("Antonia Jacobson")
         expect(response.body).to include("border-success")
       end
+
+      it "offers the player's gamble stats when the UID belongs to an ESM account" do
+        create(:user, steam_uid: target_uid)
+        stub_commands(whois: nil, info: character)
+
+        get "/servers/#{server.public_id}/players/#{target_uid}"
+
+        expect(response.body).to include("/servers/#{server.public_id}/players/#{target_uid}/gamble_stats")
+      end
+
+      it "offers no gamble stats to a viewer who cannot run gamble" do
+        allow_access_except("gamble")
+        create(:user, steam_uid: target_uid)
+        stub_commands(whois: nil, info: character)
+
+        get "/servers/#{server.public_id}/players/#{target_uid}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("/players/#{target_uid}/gamble_stats")
+      end
+
+      # Stats are kept against the ESM account, so a UID nobody registered has none to open
+      it "offers no gamble stats for a UID nobody registered" do
+        stub_commands(whois: nil, info: character)
+
+        get "/servers/#{server.public_id}/players/#{target_uid}"
+
+        expect(response.body).not_to include("/players/#{target_uid}/gamble_stats")
+      end
     end
 
     # A clean record is a finding on a page built to answer "is this player a cheater". Rendering nothing when there
@@ -500,6 +543,55 @@ RSpec.describe "Servers::Players", type: :request do
       allow_access(denied: true, reason: :not_allowlisted)
 
       get "/servers/#{server.public_id}/players/#{target_uid}"
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "GET gamble_stats" do
+    let(:target_uid) { "76561198000000001" }
+
+    def get_gamble_stats
+      get "/servers/#{server.public_id}/players/#{target_uid}/gamble_stats"
+    end
+
+    it "shows the stats of the player the UID belongs to, not the viewer's" do
+      allow_access(denied: false)
+      player = create(:user, steam_uid: target_uid)
+      ESM::UserGambleStat.create!(user_id: player.id, server_id: server.id, total_wins: 7, total_losses: 3)
+      ESM::UserGambleStat.create!(user_id: user.id, server_id: server.id, total_wins: 1, total_losses: 1)
+
+      get_gamble_stats
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Player stats")
+      expect(response.body).to include("70%")
+      expect(response.body).not_to include("50%")
+    end
+
+    it "404s a UID nobody registered" do
+      allow_access(denied: false)
+
+      get_gamble_stats
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s a viewer without info access" do
+      allow_access_except("info")
+      create(:user, steam_uid: target_uid)
+
+      get_gamble_stats
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # info is what reaches another player, but the stats belong to gamble, so a viewer needs both
+    it "404s a viewer who can run info but not gamble" do
+      allow_access_except("gamble")
+      create(:user, steam_uid: target_uid)
+
+      get_gamble_stats
 
       expect(response).to have_http_status(:not_found)
     end

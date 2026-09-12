@@ -279,6 +279,9 @@ Rails.application.routes.draw do
 
           # /servers/:server_id/players/:uid/modify
           post :modify
+
+          # /servers/:server_id/players/:uid/gamble_stats
+          get :gamble_stats
         end
       end
 

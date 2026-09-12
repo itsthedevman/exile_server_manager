@@ -2,15 +2,16 @@
 
 module GamblingHelper
   ##
-  # The current player's gamble stats for a server, initialized to zeros when they
-  # have never bet there so the card and modal render without a nil guard.
+  # A player's gamble stats for a server, initialized to zeros when they have never bet there so the card and modal
+  # render without a nil guard.
   #
   # @param server [ESM::Server] the server whose stats to load
+  # @param user [ESM::User] whose stats to load; the viewer's own unless an admin is looking at another player
   #
   # @return [ESM::UserGambleStat] the persisted or freshly initialized stats
   #
-  def gamble_stat_for(server)
-    ESM::UserGambleStat.find_or_initialize_by(server_id: server.id, user_id: current_user.id)
+  def gamble_stat_for(server, user: current_user)
+    ESM::UserGambleStat.find_or_initialize_by(server_id: server.id, user_id: user.id)
   end
 
   ##
