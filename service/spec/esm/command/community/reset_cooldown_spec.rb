@@ -36,6 +36,16 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
       exhausted_cooldown(steam_uid: second_user.steam_uid, server:, command_name: "reward")
     end
 
+    # Two packages of the same command for the same player. Naming one has to leave the other spent, which is the
+    # whole reason reset_cooldown takes a reward_id.
+    let!(:target_vip_cooldown) do
+      exhausted_cooldown(steam_uid: second_user.steam_uid, server:, command_name: "reward", scope_key: "vip")
+    end
+
+    let!(:target_starter_cooldown) do
+      exhausted_cooldown(steam_uid: second_user.steam_uid, server:, command_name: "reward", scope_key: "starter")
+    end
+
     let!(:bystander_cooldown) { active_cooldown(steam_uid: bystander.steam_uid, server:) }
 
     let!(:foreign_cooldown) do
@@ -50,6 +60,8 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
         target_cooldown_for_other_command:,
         target_cooldown_without_a_server:,
         target_reward_cooldown:,
+        target_vip_cooldown:,
+        target_starter_cooldown:,
         bystander_cooldown:,
         foreign_cooldown:
       }
@@ -103,16 +115,18 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
     #
     # @param server [ESM::Server, nil] the server the cooldown belongs to
     # @param command_name [String] the command the cooldown governs
+    # @param scope_key [String, nil] the reward package the cooldown belongs to, or nil for the command's own
     # @param owner [Hash] either steam_uid: or user_id:, matching how the real row would have been keyed
     #
     # @return [ESM::Cooldown]
     #
-    def exhausted_cooldown(server:, command_name:, **owner)
+    def exhausted_cooldown(server:, command_name:, scope_key: nil, **owner)
       create(
         :cooldown,
         community_id: community.id,
         server_id: server&.id,
         command_name:,
+        scope_key:,
         cooldown_type: "times",
         cooldown_quantity: 1,
         cooldown_amount: 1,
@@ -159,6 +173,8 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           :target_cooldown_for_other_command,
           :target_cooldown_without_a_server,
           :target_reward_cooldown,
+          :target_vip_cooldown,
+          :target_starter_cooldown,
           :bystander_cooldown
         )
       end
@@ -187,7 +203,9 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           :target_cooldown_on_other_server,
           :target_cooldown_for_other_command,
           :target_cooldown_without_a_server,
-          :target_reward_cooldown
+          :target_reward_cooldown,
+          :target_vip_cooldown,
+          :target_starter_cooldown
         )
       end
     end
@@ -203,7 +221,9 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           :target_cooldown_on_other_server,
           :target_cooldown_for_other_command,
           :target_cooldown_without_a_server,
-          :target_reward_cooldown
+          :target_reward_cooldown,
+          :target_vip_cooldown,
+          :target_starter_cooldown
         )
       end
     end
@@ -234,7 +254,44 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
         ESM.discord_bot.test_outbox.await_size(2)
 
         expect(target_reward_cooldown.reload.cooldown_amount).to eq(0)
-        expect_only_reset(:target_reward_cooldown)
+
+        # Naming the command without a package reaches every package it has
+        expect_only_reset(:target_reward_cooldown, :target_vip_cooldown, :target_starter_cooldown)
+      end
+    end
+
+    context "when the target, the reward command, and a reward id are provided" do
+      it "resets that one package and leaves the target's other packages spent" do
+        execute!(
+          arguments: {target: second_user.mention, command: "reward", reward_id: "vip"},
+          prompt_response: "yes"
+        )
+
+        ESM.discord_bot.test_outbox.await_size(2)
+
+        confirmation_embed = ESM.discord_bot.test_outbox.first.content
+        expect(confirmation_embed.description).to match(/just to confirm, i will be resetting #{target_regex}'s cooldowns for the `vip` reward package\. this change will be applied to every server your community has registered with me\./i)
+
+        expect_only_reset(:target_vip_cooldown)
+      end
+    end
+
+    context "when only a reward id is provided" do
+      it "reads it as the reward command" do
+        execute!(arguments: {reward_id: "vip"}, prompt_response: "yes")
+        ESM.discord_bot.test_outbox.await_size(2)
+
+        expect_only_reset(:target_vip_cooldown)
+      end
+    end
+
+    context "when a reward id is paired with another command" do
+      it "refuses before anything is reset" do
+        execution_args = {arguments: {command: "me", reward_id: "vip"}}
+
+        expect { execute!(**execution_args) }.to raise_error(ESM::Exception::CheckFailure, /only works with `\/server reward`/i)
+
+        expect_only_reset
       end
     end
 
@@ -283,7 +340,9 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           :target_cooldown,
           :target_cooldown_by_user_id,
           :target_cooldown_for_other_command,
-          :target_reward_cooldown
+          :target_reward_cooldown,
+          :target_vip_cooldown,
+          :target_starter_cooldown
         )
       end
     end
@@ -307,6 +366,8 @@ describe ESM::Command::Community::ResetCooldown, category: "command" do
           :target_cooldown_by_user_id,
           :target_cooldown_for_other_command,
           :target_reward_cooldown,
+          :target_vip_cooldown,
+          :target_starter_cooldown,
           :bystander_cooldown
         )
       end

@@ -1,4 +1,4 @@
-/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, server_options
+/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, package_options, server_options
 - content_for :title, "Cooldowns on #{current_community.community_id}"
 
 = render "communities/container", **local_assigns do
@@ -14,6 +14,6 @@
   / The controller sits on the card rather than here: the card is what a clear replaces, and a controller outside
   / the replaced region never reconnects, so nothing would refill the counts or bring the button back.
   = form_with url: clear_community_cooldowns_path(current_community), method: :post do
-    = render "communities/cooldowns/listing", cooldowns:, players:, showing_inactive:, capped:, row_limit:, player_options:, command_options:, server_options:
+    = render "communities/cooldowns/listing", cooldowns:, players:, showing_inactive:, capped:, row_limit:, player_options:, command_options:, package_options:, server_options:
 
     #cooldown_result.mt-3

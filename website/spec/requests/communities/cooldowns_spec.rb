@@ -103,12 +103,34 @@ RSpec.describe "Communities::Cooldowns", type: :request do
 
       get_index
 
-      matched = table_rows.map { |row| [row["data-player"], row["data-command"], row["data-server"]] }
+      matched = table_rows.map do |row|
+        [row["data-player"], row["data-command"], row["data-package"], row["data-server"]]
+      end
 
       expect(matched).to contain_exactly(
-        [player.steam_uid, "me", server.public_id],
-        [player.steam_uid, "gamble", other_server.public_id]
+        [player.steam_uid, "me", "", server.public_id],
+        [player.steam_uid, "gamble", "", other_server.public_id]
       )
+    end
+
+    # Two reward packages are two cooldowns, and the page has to be able to tell them apart to clear only one.
+    it "names the package a reward cooldown belongs to and offers it as a filter" do
+      allow_access(denied: false)
+      create_cooldown(steam_uid: player.steam_uid, command_name: "reward", scope_key: "vip")
+
+      get_index
+
+      expect(table_rows.first["data-package"]).to eq("vip")
+      expect(response.body).to include("Any package")
+    end
+
+    it "leaves the package filter out when nothing listed belongs to a package" do
+      allow_access(denied: false)
+      create_cooldown(steam_uid: player.steam_uid)
+
+      get_index
+
+      expect(response.body).not_to include("Any package")
     end
 
     # A community-scoped command has no server to pin its cooldown to, and naming a server has to exclude it. Blank
@@ -171,7 +193,16 @@ RSpec.describe "Communities::Cooldowns", type: :request do
       arguments = ESM::ServiceCommand.last.arguments
       expect(arguments).not_to have_key(:target)
       expect(arguments).not_to have_key(:command)
+      expect(arguments).not_to have_key(:reward_id)
       expect(arguments).not_to have_key(:server_id)
+    end
+
+    it "clears a single reward package by passing it on as reward_id" do
+      allow_access(denied: false)
+
+      post_clear(command: "reward", package: "vip")
+
+      expect(ESM::ServiceCommand.last.arguments).to include(command: "reward", reward_id: "vip")
     end
 
     # The page posts a server's public_id and the command wants its server_id, so the translation happens here rather

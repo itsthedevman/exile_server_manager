@@ -1,4 +1,4 @@
-/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, server_options
+/ locals: cooldowns, players, showing_inactive, capped, row_limit, player_options, command_options, package_options, server_options
 .card#cooldowns_card data-controller="cooldown-filters"
   / The key lives inside the card because the card is what a clear replaces. Left outside, a second clear would
   / reuse the first one's key, find_or_create_by would hand back the command already run, and nothing would happen.
@@ -25,6 +25,18 @@
             slim_select_placeholder_value: "Any command",
             action: [slim_select_stimulus_actions("cooldown-filters"), "change->cooldown-filters#filter"].join(" ") \
           }
+
+      / Only reward cooldowns belong to a package, so the filter is left out until one is listed
+      - if package_options.any?
+        .col-12.col-md
+          = select_tag :package, nil, class: "form-select form-select-sm",
+            aria: {label: "Filter by reward package"},
+            data: { \
+              controller: "slim-select",
+              slim_select_data_value: cooldown_package_select_data(package_options),
+              slim_select_placeholder_value: "Any package",
+              action: [slim_select_stimulus_actions("cooldown-filters"), "change->cooldown-filters#filter"].join(" ") \
+            }
 
       .col-12.col-md
         = select_tag :server, nil, class: "form-select form-select-sm",

@@ -22,7 +22,10 @@
       - cooldowns.each do |cooldown|
         tr data-cooldown-filters-target="row" *cooldown_row_attributes(cooldown, players[cooldown.id], servers)
           td = cooldown_player_name(cooldown, players[cooldown.id])
-          td.font-monospace.small = cooldown.command_name
+          td.font-monospace.small
+            = cooldown.command_name
+            - if cooldown.scope_key.present?
+              span.badge.text-bg-secondary.ms-2 = cooldown.scope_key
           td.small = cooldown_server_label(cooldown, servers)
           td.small
             - if cooldown.active?

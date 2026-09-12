@@ -105,22 +105,26 @@ export default class extends ApplicationController {
 
   // Narrow to exactly the row this was clicked on, which is the filter combination that identifies it.
   only(event) {
-    const { player, command, server } = event.currentTarget.dataset;
+    const { player, command, package: rewardPackage, server } = event.currentTarget.dataset;
 
     this.select(this.playerField(), player);
     this.select(this.commandField(), command);
+    this.select(this.packageField(), rewardPackage);
     this.select(this.serverField(), server);
   }
 
   reset() {
     this.select(this.playerField(), "");
     this.select(this.commandField(), "");
+    this.select(this.packageField(), "");
     this.select(this.serverField(), "");
   }
 
   // Setting select.value alone would filter correctly and leave the visible control still reading "Any player":
   // SlimSelect draws its own markup and only redraws when told, so the change has to go through it.
   select(field, value) {
+    if (!field) return;
+
     this.setSlimSelected(field, value || "", false);
   }
 
@@ -143,6 +147,7 @@ export default class extends ApplicationController {
     return {
       player: this.playerField().value,
       command: this.commandField().value,
+      package: this.packageField()?.value ?? "",
       server: this.serverField().value,
     };
   }
@@ -153,6 +158,11 @@ export default class extends ApplicationController {
 
   commandField() {
     return this.element.querySelector("[name='command']");
+  }
+
+  // Only drawn while a listed cooldown belongs to a reward package, so this can come back empty
+  packageField() {
+    return this.element.querySelector("[name='package']");
   }
 
   serverField() {

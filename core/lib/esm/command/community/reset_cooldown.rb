@@ -19,6 +19,9 @@ module ESM
         # See Argument::TEMPLATES[:server_id]
         argument :server_id, required: false, display_name: :on
 
+        # Optional: Narrows a reward reset to one package
+        argument :reward_id, :string, required: false
+
         #
         # Configuration
         #
@@ -67,6 +70,7 @@ module ESM
         def check_arguments!
           check_for_owned_server! if arguments.server_id
           check_for_valid_command!
+          check_for_reward_command!
           check_for_registered_target_user! # Don't allow User::Ephemeral
         end
 
@@ -86,6 +90,16 @@ module ESM
           raise_error!(:invalid_command, user: current_user, command_name: arguments.command)
         end
 
+        # A package code is a slice of the reward command's cooldown, so naming one alongside any other command asks for
+        # a scope that cannot exist rather than a narrower one.
+        def check_for_reward_command!
+          return if arguments.reward_id.blank?
+          return if arguments.command.blank?
+          return if ESM::Command[arguments.command] == ESM::Command::Server::Reward
+
+          raise_error!(:reward_id_without_reward, user: current_user, command_name: arguments.command)
+        end
+
         def confirmation_embed
           namespace_prefix = "commands.reset_cooldown.confirmation_embed"
           ESM::Embed.build do |e|
@@ -103,7 +117,9 @@ module ESM
 
             # Command
             description +=
-              if arguments.command
+              if arguments.reward_id
+                I18n.t("#{namespace_prefix}.description.one_package", reward_id: arguments.reward_id)
+              elsif arguments.command
                 I18n.t("#{namespace_prefix}.description.one_command", command_name: arguments.command)
               else
                 I18n.t("#{namespace_prefix}.description.all_commands")
@@ -130,6 +146,11 @@ module ESM
           query = query.merge(cooldowns_owned_by(target_user)) if target_user
           query = query.where(command_name: arguments.command) if arguments.command.present?
           query = query.where(server_id: target_server.id) if arguments.server_id.present?
+
+          # A package code only means something to the reward command, which is why naming one implies it
+          if arguments.reward_id.present?
+            query = query.where(command_name: ESM::Command::Server::Reward.command_name, scope_key: arguments.reward_id)
+          end
 
           query
         end
@@ -158,7 +179,9 @@ module ESM
 
             # Command
             description +=
-              if arguments.command
+              if arguments.reward_id
+                I18n.t("#{namespace_prefix}.description.one_package", reward_id: arguments.reward_id)
+              elsif arguments.command
                 I18n.t("#{namespace_prefix}.description.one_command", command_name: arguments.command)
               else
                 I18n.t("#{namespace_prefix}.description.all_commands")

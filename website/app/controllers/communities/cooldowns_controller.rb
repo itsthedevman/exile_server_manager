@@ -53,6 +53,7 @@ module Communities
         row_limit: INACTIVE_LIMIT,
         player_options: player_options(cooldowns),
         command_options: command_options(cooldowns),
+        package_options: package_options(cooldowns),
         server_options: current_community.servers.sort_by(&:server_id)
       }
     end
@@ -79,6 +80,7 @@ module Communities
       {
         player: params[:player].presence,
         command: params[:command].presence,
+        package: params[:package].presence,
         server: params[:server].presence
       }
     end
@@ -93,6 +95,11 @@ module Communities
 
     def command_options(cooldowns)
       cooldowns.map(&:command_name).uniq.sort
+    end
+
+    # Only a reward cooldown carries a scope_key, and it is the package's code
+    def package_options(cooldowns)
+      cooldowns.filter_map { |cooldown| cooldown.scope_key.presence }.uniq.sort
     end
 
     # Cooldown#user resolves a row at a time, by whichever key that row carries, which is a query per row on a page
@@ -122,6 +129,7 @@ module Communities
 
       arguments[:target] = filters[:player] if filters[:player]
       arguments[:command] = filters[:command] if filters[:command]
+      arguments[:reward_id] = filters[:package] if filters[:package]
 
       if filters[:server]
         server = server_for(filters[:server])

@@ -67,7 +67,7 @@ module CooldownsHelper
   end
 
   ##
-  # Everything a row is matched and ordered on: the three filter values plus a sort key per column.
+  # Everything a row is matched and ordered on: the filter values plus a sort key per column.
   #
   # @param cooldown [ESM::Cooldown]
   # @param player [ESM::User, nil] the row's resolved owner
@@ -78,7 +78,7 @@ module CooldownsHelper
   def cooldown_row_attributes(cooldown, player, servers)
     cooldown_row_filters(cooldown, player, servers).merge(
       "data-sort-player" => cooldown_player_name(cooldown, player).downcase,
-      "data-sort-command" => cooldown.command_name.to_s,
+      "data-sort-command" => "#{cooldown.command_name} #{cooldown.scope_key}".strip,
       "data-sort-server" => cooldown_server_label(cooldown, servers).downcase,
       "data-sort-remaining" => cooldown_remaining_seconds(cooldown).to_s
     )
@@ -105,9 +105,9 @@ module CooldownsHelper
   ##
   # The values a row is matched on, as data attributes.
   #
-  # The same three the filters carry and the clear form submits, so a row hides for exactly the selection that would
-  # have excluded it from the reset. A row with no resolvable player, or no server, answers blank and is therefore
-  # narrowed out by naming either, which is what the command does with it too.
+  # The same ones the filters carry and the clear form submits, so a row hides for exactly the selection that would
+  # have excluded it from the reset. A row with no resolvable player, no server, or no package answers blank and is
+  # therefore narrowed out by naming one, which is what the command does with it too.
   #
   # @param cooldown [ESM::Cooldown]
   # @param player [ESM::User, nil] the row's resolved owner
@@ -119,6 +119,7 @@ module CooldownsHelper
     {
       "data-player" => player&.steam_uid.to_s,
       "data-command" => cooldown.command_name.to_s,
+      "data-package" => cooldown.scope_key.to_s,
       "data-server" => servers.find { |server| server.id == cooldown.server_id }&.public_id.to_s
     }
   end
@@ -164,6 +165,10 @@ module CooldownsHelper
 
   def cooldown_command_select_data(command_names)
     cooldown_any_option("Any command") + command_names.map { |name| {text: name, value: name} }
+  end
+
+  def cooldown_package_select_data(reward_ids)
+    cooldown_any_option("Any package") + reward_ids.map { |reward_id| {text: reward_id, value: reward_id} }
   end
 
   def cooldown_server_select_data(servers)

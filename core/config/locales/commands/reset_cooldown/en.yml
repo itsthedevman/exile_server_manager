@@ -13,6 +13,7 @@ en:
         **-** Reset a single command cooldown for every server in their community.
         **-** Reset a single command cooldown for a user on every server in their community.
         **-** Or, reset a single command cooldown for a user on one server in their community.
+        **-** Any reward reset can be narrowed to one package by passing its code as `reward_id`.
 
         **Important:** Due to the destructive nature of this command, the `on:` argument does not support autofill or aliases. Omitting this argument will result in the behavior described in the examples.
 
@@ -40,6 +41,14 @@ en:
           *Note: The "slash" in a slash command can be omitted*
         arguments:
           command: server reward
+      - description: Resets the `vip` reward package's cooldown for @discord_mention on `esm_malden` only.
+        arguments:
+          for: "@discord_mention"
+          "on": esm_malden
+          reward_id: vip
+      arguments:
+        reward_id:
+          description: Only reset the cooldown for this reward package
       confirmation_embed:
         title: Reset Confirmation
         description:
@@ -47,6 +56,7 @@ en:
           one_user: "%{target_user}'s cooldowns for "
           all_users: "everyone's cooldowns for "
           one_command: "`%{command_name}`. "
+          one_package: "the `%{reward_id}` reward package. "
           all_commands: "all commands. "
           one_server: This change will only be applied to `%{server_id}`.
           all_servers: This change will be applied to every server your community has registered with me.
@@ -59,8 +69,10 @@ en:
           one_user: "%{target_user}'s cooldowns for "
           all_users: "everyone's cooldowns for "
           one_command: "`%{command_name}` on "
+          one_package: "the `%{reward_id}` reward package on "
           all_commands: "all commands on "
           one_server: "`%{server_id}`."
           all_servers: every server your community has registered with me.
       errors:
         invalid_command: I'm sorry %{user}, `%{command_name}` is not one of my commands.
+        reward_id_without_reward: "I'm sorry %{user}, `reward_id` only works with `/server reward`, not `%{command_name}`."
