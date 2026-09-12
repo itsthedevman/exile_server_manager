@@ -19,6 +19,9 @@ export default class extends ApplicationController {
     "emptyWarning",
   ];
 
+  // False on a server too old to spawn a vehicle, where the command leaves them out of the reward
+  static values = { vehiclesDeliverable: { type: Boolean, default: true } };
+
   connect() {
     this.refresh();
   }
@@ -40,7 +43,10 @@ export default class extends ApplicationController {
     this.#showList(this.itemRowsTarget, this.itemNoteTarget, this.itemEmptyTarget);
 
     if (this.hasVehicleRowsTarget) {
-      this.#showList(this.vehicleRowsTarget, this.vehicleNoteTarget, this.vehicleEmptyTarget);
+      // No note on a server too old to spawn a vehicle, where telling owners how players receive one would be wrong
+      const note = this.hasVehicleNoteTarget ? this.vehicleNoteTarget : null;
+
+      this.#showList(this.vehicleRowsTarget, note, this.vehicleEmptyTarget);
     }
 
     // Only a package has one. A claim is contents and nothing else, so this half of the form is simply not there.
@@ -61,6 +67,7 @@ export default class extends ApplicationController {
   #holdsSomething() {
     if (this.currencyTargets.some((field) => Number(field.value) > 0)) return true;
     if (this.itemRowsTarget.children.length > 0) return true;
+    if (!this.vehiclesDeliverableValue) return false;
 
     return this.hasVehicleRowsTarget && this.vehicleRowsTarget.children.length > 0;
   }
@@ -79,7 +86,7 @@ export default class extends ApplicationController {
   #showList(rows, note, empty) {
     const filled = rows.children.length > 0;
 
-    note.hidden = !filled;
+    if (note) note.hidden = !filled;
     empty.hidden = filled;
   }
 }

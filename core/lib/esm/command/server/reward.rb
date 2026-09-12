@@ -4,7 +4,7 @@ module ESM
   module Command
     module Server
       class Reward < ApplicationCommand
-        MINIMUM_SERVER_VERSION = "2.1.0"
+        MINIMUM_SERVER_VERSION = ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION
 
         # Nothing retries on its own, so every attempt is the player running the command again. Reaching this many
         # means they have hit the same wall five times, which is no longer a transient one they can wait out.
@@ -217,7 +217,8 @@ module ESM
             base << I18n.t("commands.reward.request_descriptions.items", value:)
           end
 
-          if (value = contents.vehicles).present?
+          # Below the minimum version vehicles are not part of the reward, so the player is not told to expect any
+          if target_server.reward_vehicles_supported? && (value = contents.vehicles).present?
             value = value.join_map("\n") do |vehicle|
               location =
                 case vehicle.spawn_location
@@ -272,12 +273,16 @@ module ESM
           reward = load_and_check_claim!
           is_package = reward.is_a?(ESM::ServerReward)
 
+          # Below the minimum version vehicles are not part of the reward at all. Holding them on a claim until the
+          # server updates would keep the player from every other package on it in the meantime.
+          vehicles_supported = target_server.reward_vehicles_supported?
+
           # Resolved before the package becomes a claim. A form that no longer lines up should not leave the player
           # holding a mailbox they have to work through in place of a package they could simply redeem again.
-          vehicles = delivery_vehicles(is_package ? reward.reward_vehicles : reward.vehicles)
+          vehicles = delivery_vehicles(is_package ? reward.reward_vehicles : reward.vehicles) if vehicles_supported
 
           # A claim row is where a partial delivery lives, so the package becomes one before it is attempted
-          claim = is_package ? create_claim(reward) : reward
+          claim = is_package ? create_claim(reward, vehicles_supported:) : reward
 
           # The extension resolves display names off its own config, so it only needs the raw stored shapes
           data = {
@@ -287,21 +292,14 @@ module ESM
             respect: claim.respect
           }
 
-          # Only this version and greater can handle vehicles. An older server is not told about them at all, so it
-          # cannot report them back either, and they would settle as delivered having never left the claim. They ride
-          # around the attempt instead and land on the claim as undelivered.
-          withheld_vehicles = []
-
-          if target_server.version?(MINIMUM_SERVER_VERSION)
-            data[:vehicles] = vehicles
-          else
-            withheld_vehicles = vehicles
-          end
+          # An older server is never told about vehicles, so it cannot report any back and a claim that somehow holds
+          # some settles without them
+          data[:vehicles] = vehicles if vehicles_supported
 
           claim.update!(state: :in_flight)
 
           response = call_sqf_function!("ESMs_command_reward", **data).data
-          settle_claim!(claim, response, withheld_vehicles:)
+          settle_claim!(claim, response)
 
           response
         end
@@ -355,7 +353,7 @@ module ESM
           choice
         end
 
-        def create_claim(reward)
+        def create_claim(reward, vehicles_supported:)
           ESM::ServerRewardClaim.create!(
             server_id: target_server.id,
             user_id: current_user.id,
@@ -364,7 +362,7 @@ module ESM
             locker_poptabs: reward.locker_poptabs,
             respect: reward.respect,
             items: reward.reward_items,
-            vehicles: reward.reward_vehicles,
+            vehicles: vehicles_supported ? reward.reward_vehicles : [],
             state: :waiting
           )
         end
@@ -377,17 +375,17 @@ module ESM
         # items and vehicles can come back. Anything that did land is gone from the claim for good.
         #
         # Keys off what came back rather than the reported state: an item with a classname the server does not have is
-        # reported as a failure but cannot be retried, so it is dropped and the claim can still settle.
+        # reported as a failure but cannot be retried, so it is dropped and the claim can still settle. The same goes
+        # for vehicles an older server was never sent.
         #
         # @param claim [ESM::ServerRewardClaim] the claim that was just attempted
         # @param result [ESM::Message::Data] the extension's response data
-        # @param withheld_vehicles [Array<Hash>] vehicles the server was never sent, so it could not answer for them
         #
         # @return [void]
         #
-        def settle_claim!(claim, result, withheld_vehicles: [])
+        def settle_claim!(claim, result)
           undelivered_items = result.undelivered_items.presence || {}
-          undelivered_vehicles = (result.undelivered_vehicles.presence || []) + withheld_vehicles
+          undelivered_vehicles = result.undelivered_vehicles.presence || []
 
           if undelivered_items.blank? && undelivered_vehicles.blank?
             start_package_cooldown(claim)
@@ -406,31 +404,10 @@ module ESM
             items: undelivered_items,
             vehicles: undelivered_vehicles,
             state: (attempt_count >= MAX_DELIVERY_ATTEMPTS) ? :failed : :waiting,
-            state_details: {failures: failure_details(result) + withheld_failures(withheld_vehicles)},
+            state_details: {failures: failure_details(result)},
             attempt_count:,
             last_attempt_at: Time.current
           )
-        end
-
-        #
-        # Reasons for the vehicles the server was never asked about, so a claim never settles quietly having dropped
-        # something the player is owed.
-        #
-        # @param vehicles [Array<Hash>] the withheld entries
-        #
-        # @return [Array<Hash>]
-        #
-        def withheld_failures(vehicles)
-          vehicles.map do |vehicle|
-            class_name = vehicle[:class_name]
-            name = ESM::Arma::ClassLookup.find(class_name).try(:display_name) || class_name
-
-            {
-              bucket: "vehicles",
-              name:,
-              reason: I18n.t("commands.reward.failures.server_too_old", version: MINIMUM_SERVER_VERSION)
-            }
-          end
         end
 
         #

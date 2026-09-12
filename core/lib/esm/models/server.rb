@@ -11,6 +11,9 @@ module ESM
       "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"
     ].shuffle.freeze
 
+    # The extension version whose SQF can spawn a reward vehicle
+    MINIMUM_REWARD_VEHICLES_VERSION = "2.1.0"
+
     # =============================================================================
     # DATA STRUCTURE
     # =============================================================================
@@ -129,6 +132,16 @@ module ESM
 
     def v2?
       version?("2.0.0")
+    end
+
+    ##
+    # Whether this server can spawn a reward vehicle. Below MINIMUM_REWARD_VEHICLES_VERSION a package's vehicles are
+    # left out of the reward entirely rather than held until it updates.
+    #
+    # @return [Boolean]
+    #
+    def reward_vehicles_supported?
+      version?(MINIMUM_REWARD_VEHICLES_VERSION)
     end
 
     def uptime

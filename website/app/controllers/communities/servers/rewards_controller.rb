@@ -163,9 +163,8 @@ module Communities
       end
 
       ##
-      # Vehicles are the one part of a package the extension has to be new enough to act on, so an older server's
-      # editor never renders the fields. Its existing entries are left where they are rather than emptied: the server
-      # it belongs to is one update away from being able to hand them out.
+      # Saved whatever version the server reports. An owner can set vehicles up before updating the server that will
+      # spawn them, and the command leaves them out of the reward until it can.
       #
       # @param permitted_params [ActionController::Parameters]
       #
@@ -173,7 +172,6 @@ module Communities
       #
       def sanitize_reward_vehicles(permitted_params)
         rows = permitted_params.delete(:reward_vehicles)
-        return unless helpers.reward_packages_vehicles_supported?(current_server)
 
         permitted_params[:reward_vehicles] = Array(rows).filter_map do |vehicle|
           class_name = vehicle[:class_name].to_s.strip

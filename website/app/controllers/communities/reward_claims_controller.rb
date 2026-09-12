@@ -278,8 +278,8 @@ module Communities
     # @return [String, nil]
     #
     def claim_contents_error(server, contents)
-      if contents[:vehicles].present? && !helpers.reward_packages_vehicles_supported?(server)
-        return helpers.reward_packages_vehicles_unsupported_message(server)
+      if contents[:vehicles].present? && !server.reward_vehicles_supported?
+        return helpers.reward_claim_vehicles_refused_message(server)
       end
 
       return if claim_holds_something?(contents)

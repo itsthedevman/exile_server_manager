@@ -2,7 +2,7 @@
 = form_with model: package,
   scope: :reward_package,
   url: reward_package_form_url(current_server, package),
-  data: {controller: "reward-contents-editor"} do |f|
+  data: reward_package_form_data(current_server) do |f|
 
   .modal-body
     - if package.errors.any?
@@ -100,44 +100,44 @@
 
     hr.my-4
 
-    - if reward_packages_vehicles_supported?(current_server)
-      .d-flex.align-items-center.justify-content-between.mb-3
-        h6.mb-0 Vehicles
-        button.btn.btn-outline-primary.btn-sm type="button" data-action="click->reward-contents-editor#addVehicle"
-          i.bi.bi-plus.me-1
-          | Add vehicle
+    .d-flex.align-items-center.justify-content-between.mb-3
+      h6.mb-0 Vehicles
+      button[type="button" class=reward_package_add_vehicle_button_classes(current_server, outline: true)
+        data-action="click->reward-contents-editor#addVehicle"]
+        i.bi.bi-plus.me-1
+        | Add vehicle
 
-      .text-center.py-3 data-reward-contents-editor-target="vehicleEmpty"
-        i.bi.bi-truck.fs-3.text-muted.d-block.mb-2
-        .text-muted.small No vehicles yet
-        button.btn.btn-primary.btn-sm.mt-3 type="button" data-action="click->reward-contents-editor#addVehicle"
-          i.bi.bi-plus.me-1
-          | Add your first vehicle
+    - if !current_server.reward_vehicles_supported?
+      .alert.alert-warning.border-warning.bg-warning.bg-opacity-10.py-2.px-3.small
+        i.bi.bi-exclamation-triangle.me-1
+        = reward_packages_vehicles_unsupported_message(current_server)
 
+    .text-center.py-3 data-reward-contents-editor-target="vehicleEmpty"
+      i.bi.bi-truck.fs-3.text-muted.d-block.mb-2
+      .text-muted.small No vehicles yet
+      button.mt-3[type="button" class=reward_package_add_vehicle_button_classes(current_server, outline: false)
+        data-action="click->reward-contents-editor#addVehicle"]
+        i.bi.bi-plus.me-1
+        | Add your first vehicle
+
+    - if current_server.reward_vehicles_supported?
       .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.small data-reward-contents-editor-target="vehicleNote"
         i.bi.bi-info-circle.me-1
         | Players receive vehicles through the website. They'll have the option to set the pin there.
 
-      div data-reward-contents-editor-target="vehicleRows"
-        - reward_package_vehicle_rows(package).each do |vehicle|
-          = render "communities/servers/rewards/vehicle_row", vehicle:, prefix: "reward_package[reward_vehicles][]"
+    div data-reward-contents-editor-target="vehicleRows"
+      - reward_package_vehicle_rows(package).each do |vehicle|
+        = render "communities/servers/rewards/vehicle_row", vehicle:, prefix: "reward_package[reward_vehicles][]"
 
-      template data-reward-contents-editor-target="vehicleTemplate"
-        = render "communities/servers/rewards/vehicle_row", vehicle: nil, prefix: "reward_package[reward_vehicles][]"
-
-    - else
-      h6.mb-3 Vehicles
-
-      .alert.alert-info.border-info.bg-info.bg-opacity-10.py-2.px-3.mb-0.small
-        i.bi.bi-info-circle.me-1
-        = reward_packages_vehicles_unsupported_message(current_server)
+    template data-reward-contents-editor-target="vehicleTemplate"
+      = render "communities/servers/rewards/vehicle_row", vehicle: nil, prefix: "reward_package[reward_vehicles][]"
 
   .modal-footer.border-top
     / Saving is still allowed. A half built package is a normal thing to come back to, it just cannot be handed out
     / while it holds nothing.
     .small.text-warning.me-auto data-reward-contents-editor-target="emptyWarning"
       i.bi.bi-exclamation-triangle.me-1
-      | Empty packages will not be available. Add currency, an item or a vehicle.
+      = reward_package_empty_warning(current_server)
 
     button.btn.btn-outline-secondary type="button" data-bs-dismiss="modal" Cancel
     = f.submit "Save package", class: "btn btn-success"

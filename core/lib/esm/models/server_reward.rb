@@ -93,12 +93,20 @@ module ESM
       reward_id == "default"
     end
 
+    ##
+    # Whether a player redeeming this package would receive anything.
+    #
+    # Vehicles only count on a server that can spawn them. Below that they are left out of the reward, so a package
+    # holding nothing else is as empty as one holding nothing at all.
+    #
+    # @return [Boolean]
+    #
     def rewards?
       locker_poptabs.positive? ||
         player_poptabs.positive? ||
         respect.positive? ||
         reward_items.present? ||
-        reward_vehicles.present?
+        (reward_vehicles.present? && server.reward_vehicles_supported?)
     end
 
     ##

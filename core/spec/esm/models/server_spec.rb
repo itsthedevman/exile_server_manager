@@ -310,6 +310,28 @@ RSpec.describe ESM::Server do
     end
   end
 
+  describe "#reward_vehicles_supported?" do
+    let(:server) { create(:server, community: community) }
+
+    it "is true from the reward command's minimum version" do
+      server.update_column(:server_version, described_class::MINIMUM_REWARD_VEHICLES_VERSION)
+
+      expect(server.reward_vehicles_supported?).to be(true)
+    end
+
+    it "is false below it" do
+      server.update_column(:server_version, "2.0.4+754da3bb")
+
+      expect(server.reward_vehicles_supported?).to be(false)
+    end
+
+    it "is false for a server that has never connected" do
+      server.update_column(:server_version, nil)
+
+      expect(server.reward_vehicles_supported?).to be(false)
+    end
+  end
+
   describe "#uptime" do
     let(:server) { create(:server, community: community) }
 

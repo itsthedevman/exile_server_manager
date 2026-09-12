@@ -96,6 +96,39 @@ RSpec.describe ESM::ServerReward do
     end
   end
 
+  describe "#rewards?" do
+    let(:package) { create(:server_reward, server:, reward_id: "welcome") }
+
+    it "is false for a package holding nothing" do
+      expect(package.rewards?).to be(false)
+    end
+
+    it "is true for a package holding currency" do
+      package.player_poptabs = 1
+
+      expect(package.rewards?).to be(true)
+    end
+
+    context "when the package holds nothing but vehicles" do
+      before do
+        package.reward_vehicles = [{class_name: "Exile_Car_Hunter", spawn_location: "nearby"}]
+      end
+
+      it "is true on a server that can spawn them" do
+        server.update_column(:server_version, ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION)
+
+        expect(package.rewards?).to be(true)
+      end
+
+      # Vehicles are left out of the reward below that version, so the package would hand over nothing
+      it "is false on a server too old to spawn them" do
+        server.update_column(:server_version, "2.0.4")
+
+        expect(package.rewards?).to be(false)
+      end
+    end
+  end
+
   describe "default attribute values" do
     let(:reward) { create(:server_reward, server: server, reward_id: "foo") }
 

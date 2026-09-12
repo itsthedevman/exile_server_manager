@@ -282,6 +282,25 @@ describe ESM::Command::Server::Reward, category: "command" do
         end
       end
 
+      # Vehicles are left out of the reward below MINIMUM_SERVER_VERSION, so a package holding nothing else is empty
+      context "when the package only holds vehicles the server is too old to spawn" do
+        before do
+          server.update!(server_version: "2.0.0")
+
+          server.server_rewards.default.first.update!(
+            reward_items: [],
+            reward_vehicles: [{class_name: "Exile_Car_Hatchback_Rusty1", spawn_location: "nearby"}],
+            player_poptabs: 0,
+            locker_poptabs: 0,
+            respect: 0
+          )
+        end
+
+        include_examples "raises_check_failure" do
+          let!(:matcher) { "the selected reward package is not available at this time" }
+        end
+      end
+
       context "when the package is on cooldown" do
         before do
           # Reward requires registration, so its cooldowns key on steam_uid rather than user_id
@@ -484,30 +503,37 @@ describe ESM::Command::Server::Reward, category: "command" do
           end
         end
 
-        # A server below MINIMUM_SERVER_VERSION is never sent the vehicles, so it cannot report them back either. Left
-        # to the response alone the claim would settle as complete, and the player would lose them without a word.
-        context "when the server is too old to hand over a vehicle" do
+        # Below MINIMUM_SERVER_VERSION vehicles are not part of the reward. Kept on the claim, they would hold the player
+        # back from every other package on the server until it updated.
+        context "when the server is too old to spawn a vehicle" do
           let(:reward_vehicles) do
             [{class_name: vehicle_class, spawn_location: "nearby"}]
           end
 
           before { server.update!(server_version: "2.0.0") }
 
-          it "keeps the vehicle on the claim and says why" do
+          it "delivers the rest without the vehicle and starts the cooldown" do
             execute_command
 
-            expect(claim).to be_present
-            expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
+            expect(claim).to be_nil
+            expect(reward_cooldown).to be_present
+          end
 
-            # The poptabs still landed, so they are not owed a second time
-            expect(claim.player_poptabs).to eq(0)
+          it "drops the vehicles a waiting claim was already holding" do
+            ESM::ServerRewardClaim.create!(
+              server_id: server.id,
+              user_id: user.id,
+              player_poptabs: 25,
+              locker_poptabs: 0,
+              respect: 0,
+              items: {},
+              vehicles: reward_vehicles,
+              state: :waiting
+            )
 
-            failure = claim.state_details[:failures].first
+            execute_command
 
-            expect(failure[:bucket]).to eq("vehicles")
-            expect(failure[:reason]).to match(/older version/)
-
-            expect(reward_cooldown).to be_nil
+            expect(claim).to be_nil
           end
         end
 

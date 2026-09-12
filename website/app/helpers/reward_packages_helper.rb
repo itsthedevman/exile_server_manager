@@ -16,35 +16,69 @@ module RewardPackagesHelper
   end
 
   ##
-  # Whether this server can actually deliver a vehicle, which decides whether the editor offers any.
+  # Why the vehicles in this server's packages will not reach anyone yet, said to the person who can go fix it.
   #
-  # This one is keyed on the reported version, because `spawnReward` is SQF that shipped with it. Never enforced
-  # locally, matching ServerVersion: a development extension reports whatever is built rather than what was released.
-  #
-  # @param server [ESM::Server]
-  #
-  # @return [Boolean]
-  #
-  def reward_packages_vehicles_supported?(server)
-    return true if Rails.env.local?
-
-    server.version?(ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION)
-  end
-
-  ##
-  # Why a server's editor is not offering vehicles, said to the person who can go fix it.
+  # Keyed on the reported version rather than the UI version, and enforced in development too, so the editor says
+  # exactly what the command will do with the package.
   #
   # @param server [ESM::Server]
   #
   # @return [String]
   #
   def reward_packages_vehicles_unsupported_message(server)
+    version = ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION
+
     if server.server_version.blank?
-      return "#{server.server_id} has never connected, so ESM cannot tell whether it can spawn vehicles yet."
+      return "#{server.server_id} has never connected. " \
+        "Players won't receive vehicles from this package until it connects on #{version} or newer."
     end
 
-    "#{server.server_id} is on #{server.display_version}. Handing a vehicle over needs " \
-      "#{ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION} or newer."
+    "#{server.server_id} is on #{server.display_version}. " \
+      "Players won't receive vehicles from this package until it's on #{version} or newer."
+  end
+
+  ##
+  # The editor form's Stimulus wiring. The controller mirrors ESM::ServerReward#rewards? to warn about an empty package,
+  # so it has to know whether vehicles count on this server.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [Hash]
+  #
+  def reward_package_form_data(server)
+    {
+      controller: "reward-contents-editor",
+      reward_contents_editor_vehicles_deliverable_value: server.reward_vehicles_supported?
+    }
+  end
+
+  ##
+  # The classes for a button that adds a vehicle to a package. Warning colours on a server that cannot spawn one yet,
+  # so the notice under the heading is not the only thing saying so.
+  #
+  # @param server [ESM::Server]
+  # @param outline [Boolean] true for the heading's button, false for the empty list's
+  #
+  # @return [String]
+  #
+  def reward_package_add_vehicle_button_classes(server, outline:)
+    color = server.reward_vehicles_supported? ? "primary" : "warning"
+
+    outline ? "btn btn-sm btn-outline-#{color}" : "btn btn-sm btn-#{color}"
+  end
+
+  ##
+  # What the editor says while a package would hand over nothing. A vehicle is not offered as the fix on a server that
+  # cannot spawn one, since adding it there leaves the package just as empty.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [String]
+  #
+  def reward_package_empty_warning(server)
+    return "Empty packages will not be available. Add currency or an item." unless server.reward_vehicles_supported?
+
+    "Empty packages will not be available. Add currency, an item or a vehicle."
   end
 
   ##

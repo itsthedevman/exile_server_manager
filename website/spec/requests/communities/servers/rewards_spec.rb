@@ -17,12 +17,6 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
     )
   end
 
-  # The editor is not enforced locally, the same as every other version gate on this site. A spec about what an older
-  # server may do has to leave that bypass behind first.
-  def enforce_versions!
-    allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
-  end
-
   def base_path
     "/communities/#{community.public_id}/servers/#{server.public_id}/rewards"
   end
@@ -93,16 +87,23 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
       expect(response.body).to include("Let the player decide")
     end
 
-    # spawnReward is SQF that shipped with 2.1.0. An owner on 2.0.x can still build the rest of a package.
-    it "offers no vehicles on a server too old to spawn one, and says why" do
-      enforce_versions!
+    # spawnReward is SQF that shipped with 2.1.0. An owner on 2.0.x can set vehicles up ahead of updating, but players
+    # get none of them until then, and the editor has to say so rather than let the section suggest otherwise.
+    it "still offers vehicles on a server too old to spawn one, and warns players will not receive them" do
       server.update!(server_version: "2.0.4")
 
       get "#{base_path}/default/edit"
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("reward_package[reward_vehicles][][class_name]")
-      expect(response.body).to include("Handing a vehicle over needs 2.1.0 or newer")
+      expect(response.body).to include("reward_package[reward_vehicles][][class_name]")
+      expect(response.body).to include("receive vehicles from this package until")
+      expect(response.body).not_to include("Players receive vehicles through the website")
+    end
+
+    it "does not warn about vehicles on a server that can spawn them" do
+      get "#{base_path}/default/edit"
+
+      expect(response.body).not_to include("receive vehicles from this package until")
     end
 
     it "404s on a code that is not there" do
@@ -212,16 +213,14 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
       expect(server.server_rewards.find_by(reward_id: "welcome").cooldown_time).to be_nil
     end
 
-    # An owner on 2.0.x never sees the vehicle fields, so their absence from the form is not them being cleared
-    it "leaves a package's vehicles alone on a server that cannot spawn them" do
-      enforce_versions!
+    # An owner can set vehicles up before updating the server that will spawn them
+    it "saves a package's vehicles on a server that cannot spawn them yet" do
       server.update!(server_version: "2.0.4")
-      create_package(
-        "welcome",
-        reward_vehicles: [{class_name: "Exile_Car_Hunter", spawn_location: "nearby"}]
-      )
+      create_package("welcome")
 
-      patch "#{base_path}/welcome", params: package_params(player_poptabs: "1"), as: :turbo_stream
+      patch "#{base_path}/welcome",
+        params: package_params(reward_vehicles: [{class_name: "Exile_Car_Hunter", spawn_location: "nearby"}]),
+        as: :turbo_stream
 
       expect(server.server_rewards.find_by(reward_id: "welcome").reward_vehicles).to eq(
         [{class_name: "Exile_Car_Hunter", spawn_location: "nearby"}]

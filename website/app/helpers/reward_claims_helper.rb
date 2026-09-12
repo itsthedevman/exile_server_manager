@@ -212,7 +212,7 @@ module RewardClaimsHelper
   end
 
   ##
-  # Which servers in reach of this form cannot hand out a vehicle yet, when any of them cannot.
+  # Which servers in reach of this form cannot spawn a vehicle yet, when any of them cannot.
   #
   # The vehicle fields are drawn whichever server is picked, because the picker sits in the same form and changing it
   # reloads nothing. Naming the servers up front is what keeps a filled in reward from being refused at the end of it.
@@ -225,11 +225,26 @@ module RewardClaimsHelper
   #
   def reward_claim_form_vehicle_note(claim, servers)
     reachable = claim.nil? ? servers : [claim.server].compact
-    too_old = reachable.reject { |server| reward_packages_vehicles_supported?(server) }
+    too_old = reachable.reject(&:reward_vehicles_supported?)
     return if too_old.empty?
 
-    "#{too_old.join_map(", ", &:server_id)} cannot hand out vehicles yet. That needs extension " \
-      "#{ESM::Command::Server::Reward::MINIMUM_SERVER_VERSION}."
+    subject = (too_old.size == 1) ? "it's" : "they're"
+
+    "#{too_old.join_map(", ", &:server_id)} can't spawn vehicles until #{subject} on " \
+      "#{ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION} or newer."
+  end
+
+  ##
+  # Why a grant holding vehicles was refused. A grant goes to one named player, so it is refused outright rather than
+  # written with the vehicles quietly left out the way a package's are.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [String]
+  #
+  def reward_claim_vehicles_refused_message(server)
+    "#{server.server_id} can't spawn vehicles until it's on #{ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION} " \
+      "or newer. Remove the vehicles to grant the rest."
   end
 
   def reward_claim_player_select_data(players)

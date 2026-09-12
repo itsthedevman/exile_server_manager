@@ -24,10 +24,6 @@ RSpec.describe "Communities::RewardClaims", type: :request do
 
   # Version gates are not enforced locally, the same as everywhere else on this site. A spec about what an older
   # server may do has to leave that bypass behind first.
-  def enforce_versions!
-    allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
-  end
-
   def claim_path(claim, suffix = nil)
     base = "/communities/#{community.public_id}/servers/#{claim.server.public_id}" \
       "/reward_claims/#{claim.user.discord_id}"
@@ -148,12 +144,12 @@ RSpec.describe "Communities::RewardClaims", type: :request do
     end
 
     it "names a server that could not take a vehicle" do
-      enforce_versions!
       server.update!(server_version: "2.0.4")
 
       get "#{index_path}/new"
 
-      expect(response.body).to include("cannot hand out vehicles yet")
+      expect(response.body).to include("#{server.server_id} can")
+      expect(response.body).to include("spawn vehicles until")
     end
   end
 
@@ -339,7 +335,6 @@ RSpec.describe "Communities::RewardClaims", type: :request do
     # Vehicles need SQF that shipped with the newer extension, and the picker cannot gate itself on a server the
     # same form is still choosing.
     it "refuses vehicles on a server too old to spawn them" do
-      enforce_versions!
       server.update!(server_version: "2.0.4")
 
       post index_path, params: grant_params(
