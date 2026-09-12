@@ -21,7 +21,7 @@ module ServersHelper
   #
   # @param server [ESM::Server]
   #
-  # @return [Datum] #heading, #admin_message, #player_message and #action_label
+  # @return [Datum] #heading, #admin_message, #player_message, #action_label and #action_path
   #
   def server_unsupported_notice(server)
     if server.server_version.blank?
@@ -29,7 +29,8 @@ module ServersHelper
         heading: "This server isn't connected yet",
         admin_message: "#{server.server_id} has never connected to ESM.",
         player_message: "#{server.server_id}'s admins haven't finished setting it up.",
-        action_label: "Set up your server"
+        action_label: "Set up your server",
+        action_path: "/docs/server_setup"
       }.to_datum
     end
 
@@ -38,7 +39,41 @@ module ServersHelper
       admin_message: "#{server.server_id} is on #{server.display_version}. " \
         "These pages need #{ServerVersion::MINIMUM_SERVER_VERSION} or newer.",
       player_message: "#{server.server_id}'s admins need to update ESM before you can use these pages.",
-      action_label: "How to update"
+      action_label: "How to update",
+      action_path: "/docs/server_setup"
+    }.to_datum
+  end
+
+  ##
+  # What to say about a server ESM cannot reach right now.
+  #
+  # A server that has never connected is not offline so much as unfinished, and it already has copy that says so. It
+  # has no connection to come back to, and pointing its owner at troubleshooting would send them to fix the wrong thing.
+  #
+  # @param server [ESM::Server]
+  #
+  # @return [Datum] #heading, #admin_message, #player_message, #action_label and #action_path
+  #
+  def server_offline_notice(server)
+    return server_unsupported_notice(server) if server.server_version.blank?
+
+    comes_back = "Everything here comes back on its own once the server is running and its extension reconnects."
+
+    admin_message =
+      if server.disconnected_at
+        lost = ESM::Time.distance_of_time_in_words(server.disconnected_at, precise: false)
+
+        "ESM lost contact with #{server.server_id} #{lost} ago. #{comes_back}"
+      else
+        "ESM isn't connected to #{server.server_id} right now. #{comes_back}"
+      end
+
+    {
+      heading: "#{server.server_id} is offline",
+      admin_message:,
+      player_message: "#{server.server_id} is offline right now. Check back once it's up.",
+      action_label: "Troubleshooting",
+      action_path: "/docs/server_setup#troubleshooting"
     }.to_datum
   end
 

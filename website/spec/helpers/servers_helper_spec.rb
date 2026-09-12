@@ -9,6 +9,37 @@ RSpec.describe ServersHelper, type: :helper do
     end
   end
 
+  describe "#server_offline_notice" do
+    it "tells a player to check back, without the detail an admin gets" do
+      server.update!(server_version: "2.1.0", disconnected_at: 2.hours.ago)
+
+      notice = helper.server_offline_notice(server)
+
+      expect(notice.heading).to eq("#{server.server_id} is offline")
+      expect(notice.player_message).to eq("#{server.server_id} is offline right now. Check back once it's up.")
+    end
+
+    it "tells an admin when ESM lost contact" do
+      server.update!(server_version: "2.1.0", disconnected_at: 2.hours.ago)
+
+      expect(helper.server_offline_notice(server).admin_message).to include("ESM lost contact with #{server.server_id}")
+    end
+
+    # A server that went down before disconnected_at was recorded has no time to give, rather than one counted from nil
+    it "leaves the time out when none was recorded" do
+      server.update!(server_version: "2.1.0", disconnected_at: nil)
+
+      expect(helper.server_offline_notice(server).admin_message).to start_with("ESM isn't connected to")
+    end
+
+    # A server that never connected has nothing to come back to, so it gets the setup copy rather than "offline"
+    it "talks about setting up a server that has never connected" do
+      server.update!(server_version: nil)
+
+      expect(helper.server_offline_notice(server).heading).to eq("This server isn't connected yet")
+    end
+  end
+
   describe "#server_restart_at" do
     it "is one restart interval on from when the server last started" do
       started_at = 1.hour.ago

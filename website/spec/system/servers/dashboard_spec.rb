@@ -147,9 +147,10 @@ RSpec.describe "The server dashboard", type: :system do
 
       expect(sidebar).to have_content("Offline")
 
-      # Connectivity is checked after the allowlist, so this viewer clears every permission gate on the page and
-      # still gets nothing. That ordering is what the empty state has to prove it respects.
-      expect(page).to have_content("Nothing enabled here yet")
+      # This viewer clears every permission gate on the page and still gets nothing, because an offline server
+      # replaces the cards outright rather than leaving each one to be refused on its own.
+      expect(page).to have_content("#{server.server_id} is offline right now")
+      expect(page).to have_no_content("Nothing enabled here yet")
       expect(page).to have_no_content("SQF Console")
       expect(page).to have_no_content("Gamble")
     end

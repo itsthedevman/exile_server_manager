@@ -11,11 +11,13 @@ RSpec.describe "Servers", type: :request do
 
   before do
     sign_in user
-    allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
     allow_any_instance_of(ESM::Community).to receive(:modifiable_by?).and_return(manageable)
   end
 
   describe "GET show" do
+    # The cards only render for a server that is up, so that is the baseline and offline gets its own examples
+    before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
+
     # Allowing exactly one command leaves the hub rendering exactly what that command puts on it. Allowing everything
     # would drag every other card's game-server reads into these examples for no benefit.
     def allow_only(allowed)
@@ -46,10 +48,6 @@ RSpec.describe "Servers", type: :request do
     end
 
     context "when a command is disabled" do
-      # The server_offline gate would hide the same card for an unrelated reason, so connectivity is cleared here to
-      # isolate enabled: false as the thing doing the work.
-      before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
-
       it "hides its card even though nothing else would have blocked it" do
         create(:command_configuration, community:, command_name: "me", enabled: false)
 
@@ -142,6 +140,38 @@ RSpec.describe "Servers", type: :request do
       end
     end
 
+    # Every card runs a command against the server, so none of them is worth drawing while it cannot answer
+    context "when the server is offline" do
+      before do
+        allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false)
+        allow_only("me")
+      end
+
+      it "tells a player to check back, in place of the cards" do
+        get "/servers/#{server.public_id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("#{server.server_id} is offline right now")
+        expect(response.body).not_to include("Troubleshooting")
+
+        # The sidebar still links My Player, so the card is told apart by the frame only it lazy-loads
+        expect(response.body).not_to include("player_summary")
+      end
+
+      context "and the viewer can manage the server" do
+        let(:manageable) { true }
+
+        it "says when ESM lost contact and points at troubleshooting" do
+          server.update!(disconnected_at: 2.hours.ago)
+
+          get "/servers/#{server.public_id}"
+
+          expect(response.body).to include("ESM lost contact with #{server.server_id}")
+          expect(response.body).to include("Troubleshooting")
+        end
+      end
+    end
+
     it "keeps the admin section off the page entirely for a player" do
       allow_only("me")
 
@@ -189,18 +219,7 @@ RSpec.describe "Servers", type: :request do
         expect(response.body).not_to include("secret_sauce")
       end
 
-      # Rewards are handed over in game, so a package cannot be taken while the server is down. Saying so beats a
-      # button whose only outcome is a refusal.
-      it "offers no way to take one while the server is down" do
-        get "/servers/#{server.public_id}"
-
-        expect(response.body).to include("Server offline")
-        expect(response.body).not_to include("Redeem")
-      end
-
       context "and the server is up" do
-        before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
-
         it "offers to redeem the package" do
           get "/servers/#{server.public_id}"
 
@@ -321,6 +340,8 @@ RSpec.describe "Servers", type: :request do
   end
 
   describe "GET live" do
+    before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(false) }
+
     let(:info) do
       ESM::Steam::ServerQuery::Info.new(
         protocol: 17, name: "exilemod.com", map: "tanoa", folder: "Arma3", game: "exile",
