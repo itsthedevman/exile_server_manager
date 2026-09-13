@@ -7,15 +7,21 @@ module CooldownsHelper
   ##
   # How much of a cooldown is left, in whichever unit that cooldown counts in.
   #
-  # A usage-count cooldown has no clock to read, so it reports the tally instead. Reading expires_at for one of those
-  # would render a date the player is not actually waiting on.
+  # A usage-count cooldown has no clock to read, so it reports the uses left instead. Reading expires_at for one of
+  # those would render a date the player is not actually waiting on. The row stores uses spent, which read as uses left
+  # under a Remaining column, so the count is turned around here.
   #
   # @param cooldown [ESM::Cooldown]
   #
   # @return [String]
   #
   def cooldown_time_left(cooldown)
-    return "#{cooldown.cooldown_amount} of #{cooldown.cooldown_quantity} uses" if cooldown.cooldown_type == "times"
+    if cooldown.cooldown_type == "times"
+      uses_left = (cooldown.cooldown_quantity - cooldown.cooldown_amount).clamp(0..)
+
+      return "#{uses_left} of #{cooldown.cooldown_quantity} uses left"
+    end
+
     return "Expired" unless cooldown.active?
 
     "#{ESM::Time.distance_of_time_in_words(cooldown.expires_at)} left"
