@@ -98,6 +98,100 @@ describe ESM::Command::Server::Reward, category: "command" do
           end
         end
       end
+
+      # A v1 server has no packages, so the command's own unscoped cooldown is both the one checked and the one written
+      describe "cooldowns" do
+        let(:cooldown_quantity) { 1 }
+        let(:cooldown_type) { "days" }
+        let(:reward_cooldown) { ESM::Cooldown.find_by(command_name: "reward", scope_key: nil) }
+
+        before do
+          create(:command_configuration, community:, command_name: "reward", cooldown_quantity:, cooldown_type:)
+        end
+
+        def redeem!
+          ESM.discord_bot.test_outbox.clear
+
+          execute!(arguments: {server_id: server.server_id})
+          ESM.discord_bot.test_outbox.await_size(2)
+
+          ESM.discord_bot.test_outbox.clear
+          previous_command.request.accept!
+
+          # The receipt is sent after the cooldown is written, so it arriving means the row is there to read
+          wait_for { connection.requests }.to be_blank
+          ESM.discord_bot.test_outbox.await_size(1)
+        end
+
+        def expect_refusal(message)
+          expect { execute!(arguments: {server_id: server.server_id}) }.to raise_error(ESM::Exception::CheckFailure) do |error|
+            expect(error.to_embed.description).to match(message)
+          end
+        end
+
+        it "starts the command's cooldown once the server has delivered" do
+          redeem!
+
+          expect(reward_cooldown).to be_present
+          expect(reward_cooldown.cooldown_type).to eq("days")
+          expect(reward_cooldown.cooldown_quantity).to eq(1)
+          expect(reward_cooldown.expires_at).to be_within(1.minute).of(1.day.from_now)
+          expect(reward_cooldown).to be_active
+        end
+
+        it "refuses another redemption while the cooldown is running" do
+          redeem!
+
+          expect_refusal("you're on cooldown")
+        end
+
+        it "lets them redeem again once the cooldown is reset" do
+          redeem!
+
+          # What reset_cooldown does to every row it selects
+          reward_cooldown.reset!
+
+          expect { redeem! }.not_to raise_error
+          expect(reward_cooldown.reload).to be_active
+        end
+
+        it "is not held back by a package's cooldown" do
+          create(
+            :cooldown, :active,
+            steam_uid: user.steam_uid,
+            community_id: community.id,
+            server_id: server.id,
+            command_name: "reward",
+            scope_key: "default"
+          )
+
+          expect { redeem! }.not_to raise_error
+        end
+
+        context "when the cooldown counts uses" do
+          let(:cooldown_quantity) { 2 }
+          let(:cooldown_type) { "times" }
+
+          it "allows as many redemptions as the allowance and then refuses" do
+            redeem!
+            expect(reward_cooldown.cooldown_amount).to eq(1)
+
+            redeem!
+            expect(reward_cooldown.reload.cooldown_amount).to eq(2)
+
+            expect_refusal("exceeded the amount of times")
+          end
+
+          it "counts again from zero after a reset" do
+            2.times { redeem! }
+
+            reward_cooldown.reset!
+            redeem!
+
+            expect(reward_cooldown.reload.cooldown_amount).to eq(1)
+          end
+        end
+      end
     end
   end
 
@@ -463,6 +557,141 @@ describe ESM::Command::Server::Reward, category: "command" do
 
         include_examples "arma_discord_logging_disabled" do
           let(:message) { "`ESMs_command_reward` executed successfully" }
+        end
+      end
+
+      # Driven end to end rather than from seeded rows: a package is redeemed, and the next attempt meets whatever that
+      # redemption wrote
+      describe "cooldowns" do
+        let!(:number_of_messages) { 4 }
+        let(:package_cooldown_quantity) { 2 }
+        let(:package_cooldown_type) { "hours" }
+        let(:reward_cooldown) { ESM::Cooldown.find_by(command_name: "reward", scope_key: "default") }
+
+        before do
+          server.server_rewards.default.first.update!(
+            reward_items: {},
+            reward_vehicles: [],
+            player_poptabs: 10,
+            locker_poptabs: 0,
+            respect: 0,
+            cooldown_quantity: package_cooldown_quantity,
+            cooldown_type: package_cooldown_type
+          )
+        end
+
+        def redeem!(**arguments)
+          ESM.discord_bot.test_outbox.clear
+
+          execute!(arguments: {server_id: server.server_id, **arguments})
+          ESM.discord_bot.test_outbox.await_size(2)
+
+          accept_request
+          ESM.discord_bot.test_outbox.await_size(number_of_messages)
+        end
+
+        def expect_refusal(message, channel_type: :text)
+          expect {
+            execute!(channel_type:, arguments: {server_id: server.server_id})
+          }.to raise_error(ESM::Exception::CheckFailure) do |error|
+            expect(error.to_embed.description).to match(message)
+          end
+        end
+
+        it "starts the package's cooldown once it is delivered" do
+          redeem!
+
+          expect(reward_cooldown).to be_present
+          expect(reward_cooldown.cooldown_type).to eq("hours")
+          expect(reward_cooldown.cooldown_quantity).to eq(2)
+          expect(reward_cooldown.expires_at).to be_within(1.minute).of(2.hours.from_now)
+          expect(reward_cooldown).to be_active
+        end
+
+        it "refuses the same package while its cooldown is running" do
+          redeem!
+
+          expect_refusal("you're on cooldown")
+        end
+
+        # A DM has no community of its own, so the cooldown has to be found through the server's
+        it "refuses it from a DM as well" do
+          redeem!
+
+          expect_refusal("you're on cooldown", channel_type: :pm)
+        end
+
+        it "leaves a different package claimable" do
+          create(
+            :server_reward,
+            server_id: server.id,
+            reward_id: "daily",
+            reward_items: {},
+            reward_vehicles: [],
+            player_poptabs: 55,
+            locker_poptabs: 0,
+            respect: 0
+          )
+
+          redeem!
+
+          expect { redeem!(reward_id: "daily") }.not_to raise_error
+          expect(ESM::Cooldown.where(command_name: "reward").pluck(:scope_key)).to contain_exactly("default", "daily")
+        end
+
+        it "lets them claim again once the cooldown is reset" do
+          redeem!
+
+          # What reset_cooldown does to every row it selects
+          reward_cooldown.reset!
+
+          expect { redeem! }.not_to raise_error
+          expect(reward_cooldown.reload).to be_active
+        end
+
+        it "lets them claim again once the cooldown has expired" do
+          redeem!
+
+          reward_cooldown.update!(expires_at: 1.minute.ago)
+
+          expect { redeem! }.not_to raise_error
+        end
+
+        it "refuses on Discord after the package was redeemed on the website" do
+          execute_website!(arguments: {server_id: server.server_id, community_id: community.community_id})
+
+          expect(reward_cooldown).to be_active
+          expect_refusal("you're on cooldown")
+        end
+
+        # The shape a community is most likely to have: no cooldown on the package, and a use allowance on the command
+        context "when the package falls back to a cooldown that counts uses" do
+          let(:package_cooldown_quantity) { nil }
+          let(:package_cooldown_type) { nil }
+
+          before do
+            create(:command_configuration, community:, command_name: "reward", cooldown_quantity: 2, cooldown_type: "times")
+          end
+
+          it "allows as many redemptions as the allowance and then refuses" do
+            redeem!
+            expect(reward_cooldown.cooldown_amount).to eq(1)
+            expect(reward_cooldown).not_to be_active
+
+            redeem!
+            expect(reward_cooldown.reload.cooldown_amount).to eq(2)
+
+            expect_refusal("exceeded the amount of times")
+          end
+
+          it "counts again from zero after a reset" do
+            2.times { redeem! }
+
+            reward_cooldown.reset!
+            redeem!
+
+            expect(reward_cooldown.reload.cooldown_amount).to eq(1)
+          end
         end
       end
 
