@@ -387,4 +387,7 @@ Rails.application.routes.draw do
     get :server_xm8_notification_routing, to: redirect("/docs/getting_started")
     get :tos, to: redirect("/legal/terms_of_service")
   end
+
+  # /404, /500, etc. Where config.exceptions_app sends a failed request, rewritten to a GET for its status.
+  get ":status", to: "errors#show", constraints: {status: /[45]\d{2}/}
 end

@@ -31,7 +31,7 @@ module RescueHandlers
 
   def render_not_found(exception = nil)
     respond_to do |format|
-      format.html { render template: "errors/not_found_404", status: :not_found }
+      format.html { render template: "errors/show", status: :not_found, locals: {status: 404} }
       format.json { render json: {error: "Not found"}, status: :not_found }
       format.turbo_stream do
         render turbo_stream: create_error_toast("The requested item was not found"),

@@ -56,5 +56,9 @@ module EsmWebsiteV2
       host: Rails.env.production? ? "esmbot.com" : "localhost:3000",
       protocol: Rails.env.production? ? "https" : "http"
     }
+
+    # Failed requests render through ErrorsController inside the site's layout, not the static pages in public/. Only
+    # where full error reports are off, so development keeps its debug page; visit /404 or /500 there to see one.
+    config.exceptions_app = routes
   end
 end

@@ -1,14 +1,14 @@
+/ locals: status
+- content_for :title, error_page_title(status)
 .container.window
   .row.justify-content-center
     .col-lg-8.text-center
       .mb-4
-        i.bi.bi-search.display-1.text-muted
+        i.bi.display-1.text-muted class=error_page_icon(status)
 
-      h1.mb-3.text-primary 404 - Not Found
+      h1.mb-3.text-primary = error_page_title(status)
 
-      p.lead.mb-4
-        | The page you're looking for doesn't exist or has been moved.
-
+      p.lead.mb-4 = error_page_message(status)
 
       .d-flex.gap-3.justify-content-center.flex-wrap
         = link_to root_path, class: "btn btn-primary"
@@ -27,6 +27,7 @@
         .alert.alert-info.border-info.bg-info.bg-opacity-10
           h6.text-info.mb-2 Need Help?
           p.mb-0.small
-            | If you believe this is an error, please
+            = error_page_help_prompt(status)
+            | , please
             =< link_to "join our Discord", join_path, class: "text-info"
             |  and let us know.
