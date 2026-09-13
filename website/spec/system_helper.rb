@@ -4,7 +4,10 @@ require "rails_helper"
 require "capybara/rspec"
 require "capybara/playwright"
 
-Capybara.server = :puma, {Silent: true}
+# `config_files: ["-"]` keeps Puma from loading config/puma.rb, which is written for the deployed server: cluster
+# workers and their fork hooks, a unix socket, and stdout redirected under /opt. Capybara runs Puma single-mode in
+# this process, so none of it applies, and the fork hooks warn on every run that they never will.
+Capybara.server = :puma, {Silent: true, config_files: ["-"]}
 
 # rails_helper's `webmock/rspec` blocks every real connection, and Capybara's own boot check is one: it polls
 # /__identify__ on the server it just started. Allowing localhost gives that back without giving back the
