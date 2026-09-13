@@ -1,8 +1,10 @@
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command as Cmd, Stdio};
+use std::process::{Child, Command as Cmd, ExitStatus, Stdio};
 use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use super::Target;
 use crate::{
@@ -31,9 +33,15 @@ const SSH_OPTIONS: &[&str] = &[
     "ConnectTimeout=10",
     "-o",
     "LogLevel=ERROR",
-    // One connection, reused. A build makes hundreds of round trips and the heartbeat adds one every few
-    // seconds for as long as the server runs; without multiplexing each is a full key exchange, which costs
-    // more than everything it carries. The socket is dropped shortly after the last user goes away.
+];
+
+/// One connection, reused. A build makes hundreds of round trips and the heartbeat adds one every few seconds for as
+/// long as the server runs; without multiplexing each is a full key exchange, which costs more than everything it
+/// carries. The socket is dropped shortly after the last user goes away.
+///
+/// Kept apart from [`SSH_OPTIONS`] so a command can leave it out. ssh takes the first value it sees for an option,
+/// so a later `ControlPath=none` would not undo these.
+const MULTIPLEX_OPTIONS: &[&str] = &[
     "-o",
     "ControlMaster=auto",
     "-o",
@@ -59,6 +67,13 @@ const HEARTBEAT_POLL_SECS: u64 = 3;
 /// failure. Log streaming hit exactly that, going silent for the rest of the run once a server had been started
 /// often enough to leave a dozen log files behind.
 const MAX_SCRIPT_CHARS: usize = 2000;
+
+/// The least time a write gets before it is given up on, before one second per megabyte is added on top.
+///
+/// A healthy write of a server key takes well under a second. The floor exists for the key watcher, which is the
+/// only thing that can hand a running server its next key, so a write that is never going to finish has to hand
+/// control back soon enough for a retry to still be useful to whoever is waiting on it.
+const WRITE_TIMEOUT_SECS: u64 = 10;
 
 /// Target implementation for a Windows host reached over SSH.
 ///
@@ -149,6 +164,13 @@ impl RemoteTarget {
 
     fn ssh(&self) -> Cmd {
         let mut command = Cmd::new("ssh");
+        command.args(SSH_OPTIONS).args(MULTIPLEX_OPTIONS).arg(&self.destination);
+        command
+    }
+
+    /// An ssh command on a connection of its own, for when killing it has to end the session. See `write_file`.
+    fn ssh_unshared(&self) -> Cmd {
+        let mut command = Cmd::new("ssh");
         command.args(SSH_OPTIONS).arg(&self.destination);
         command
     }
@@ -223,10 +245,16 @@ impl Target for RemoteTarget {
     }
 
     fn download(&self, remote: &Path, local: &Path) -> Result<(), BuildError> {
+        // Forward slashes, which Windows accepts as readily as its own. scp's SFTP transfer, the default since
+        // OpenSSH 9, escapes a backslash before asking for the path, so `C:\arma3server` arrives as `C:\\arma3server`
+        // and a file Test-Path just found comes back as "No such file or directory".
+        let remote = remote.display().to_string().replace('\\', "/");
+
         let output = Cmd::new("scp")
             .args(SSH_OPTIONS)
+            .args(MULTIPLEX_OPTIONS)
             .arg("-r")
-            .arg(format!("{}:{}", self.destination, remote.display()))
+            .arg(format!("{}:{}", self.destination, remote))
             .arg(local.display().to_string())
             .output()
             .map_err(|e| BuildError::Remote(e.to_string()))?;
@@ -234,7 +262,7 @@ impl Target for RemoteTarget {
         if !output.status.success() {
             return Err(BuildError::Remote(format!(
                 "Download of {} failed: {}",
-                remote.display(),
+                remote,
                 String::from_utf8_lossy(&output.stderr).trim()
             )));
         }
@@ -255,41 +283,94 @@ impl Target for RemoteTarget {
         // Piped in over stdin and written by the shell on the far side, so the bytes never appear in a command
         // line. Server keys are the reason: they hold whatever the bot generated, and a build that only works
         // for keys without quotes in them is a build that fails once a month for no visible reason.
+        //
+        // Every so often a write stops partway, its bytes stuck somewhere between here and the far side. Why is not
+        // known yet. What is known is what it cost: the spec suite's key watcher waited on one for minutes, with
+        // esm.key already truncated to nothing, and no key reached the server again. So the write runs against a
+        // deadline, and everything below is arranged so that giving up actually lets go.
+        //
+        // Its own connection rather than the shared one. A multiplexed session hands its stdin to the connection's
+        // master process, so killing the local ssh leaves the master holding the pipe and the stuck write never
+        // comes loose.
+        //
+        // The script reads exactly as many bytes as were sent rather than reading to the end of input, so a
+        // connection dropped partway fails the write instead of passing a truncated file off as a whole one. It
+        // writes beside the target and moves the result over it, so nothing reads a half-written file, and a writer
+        // abandoned on the far side is left holding its own temp file rather than the path a retry needs.
         let script = format!(
             "$ProgressPreference = 'SilentlyContinue'\n\
-             New-Item -ItemType Directory -Force -Path (Split-Path -Parent '{path}') | Out-Null\n\
+             $path = {path}\n\
+             $directory = Split-Path -Parent $path\n\
+             New-Item -ItemType Directory -Force -Path $directory | Out-Null\n\
+             $temp = Join-Path $directory ('.' + [IO.Path]::GetRandomFileName())\n\
              $stdin = [Console]::OpenStandardInput()\n\
-             $file = [IO.File]::Create('{path}')\n\
-             $stdin.CopyTo($file)\n\
-             $file.Close()",
-            path = path.display()
+             $file = [IO.File]::Create($temp)\n\
+             $buffer = New-Object byte[] 65536\n\
+             $remaining = {length}\n\
+             while ($remaining -gt 0) {{\n\
+             \x20 $read = $stdin.Read($buffer, 0, [Math]::Min($buffer.Length, $remaining))\n\
+             \x20 if ($read -eq 0) {{\n\
+             \x20\x20 $file.Close()\n\
+             \x20\x20 Remove-Item -LiteralPath $temp\n\
+             \x20\x20 throw \"Input ended $remaining bytes short of {length}\"\n\
+             \x20 }}\n\
+             \x20 $file.Write($buffer, 0, $read)\n\
+             \x20 $remaining -= $read\n\
+             }}\n\
+             $file.Close()\n\
+             Move-Item -LiteralPath $temp -Destination $path -Force",
+            path = ps_literal(&path.display().to_string()),
+            length = contents.len(),
         );
 
         let mut child = self
-            .ssh()
+            .ssh_unshared()
             .args(["powershell", "-NoProfile", "-EncodedCommand", &Self::encode(&script)])
             .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
+            .stdout(Stdio::null())
             .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| BuildError::Remote(e.to_string()))?;
 
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin
-                .write_all(contents)
-                .map_err(|e| BuildError::Remote(e.to_string()))?;
+        // Fed and drained on threads of their own so the deadline covers them too. A far side that has stopped
+        // reading would otherwise block the write itself, and the wait below would never start.
+        let feeder = child.stdin.take().map(|mut stdin| {
+            let bytes = contents.to_vec();
+            thread::spawn(move || stdin.write_all(&bytes))
+        });
+
+        let drain = child.stderr.take().map(|mut stderr| {
+            thread::spawn(move || {
+                let mut output = String::new();
+                let _ = stderr.read_to_string(&mut output);
+                output
+            })
+        });
+
+        let timeout = write_timeout(contents.len());
+
+        // Returned without joining the threads, which would wait on the very pipes that stopped moving
+        let Some(status) = wait_until(&mut child, Instant::now() + timeout)? else {
+            return Err(BuildError::Remote(format!(
+                "Gave up writing {} on {} after {}s without it finishing",
+                path.display(),
+                self.destination,
+                timeout.as_secs()
+            )));
+        };
+
+        if let Some(feeder) = feeder {
+            let _ = feeder.join();
         }
 
-        let output = child
-            .wait_with_output()
-            .map_err(|e| BuildError::Remote(e.to_string()))?;
+        let stderr = drain.and_then(|drain| drain.join().ok()).unwrap_or_default();
 
-        if !output.status.success() {
+        if !status.success() {
             return Err(BuildError::Remote(format!(
                 "Failed to write {} on {}: {}",
                 path.display(),
                 self.destination,
-                String::from_utf8_lossy(&output.stderr).trim()
+                stderr.trim()
             )));
         }
 
@@ -661,6 +742,29 @@ fn batch_scripts(blocks: &[String]) -> Vec<String> {
 /// Single quotes because PowerShell expands `$` and backticks inside double-quoted ones, and paths and launch
 /// arguments hold both. Doubling is how a literal single quote is written inside one, which is the only escape
 /// the form has and the only one needed.
+/// How long a write of `length` bytes gets. Scaled by size because the same call carries a four-byte `.RELOAD` and
+/// the updater CLI.
+fn write_timeout(length: usize) -> Duration {
+    Duration::from_secs(WRITE_TIMEOUT_SECS + (length / 1_000_000) as u64)
+}
+
+/// Wait for `child` to exit, killing it if it has not by `deadline`. `None` means it was killed.
+fn wait_until(child: &mut Child, deadline: Instant) -> Result<Option<ExitStatus>, BuildError> {
+    loop {
+        if let Some(status) = child.try_wait().map_err(|e| BuildError::Remote(e.to_string()))? {
+            return Ok(Some(status));
+        }
+
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Ok(None);
+        }
+
+        thread::sleep(Duration::from_millis(20));
+    }
+}
+
 fn ps_literal(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
@@ -771,6 +875,36 @@ mod tests {
             .run(&format!("Remove-Item -LiteralPath '{}' -Force", remote.display()))
             .expect("cleanup");
         assert!(!target.exists(remote).expect("exists after delete"));
+    }
+
+    /// A write longer than the far side's read buffer has to arrive whole, and has to replace a file already there.
+    ///
+    /// The script counts bytes rather than reading to the end of input, so an off by one in that count truncates a
+    /// file without raising anything. Replacing is its own case because the write lands as a temp file moved over
+    /// the target, which fails differently from writing in place.
+    #[test]
+    #[ignore = "needs the Windows host from config.yml to be reachable"]
+    fn write_file_lands_a_multi_buffer_payload_over_an_existing_file() {
+        let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
+        let config = parse(std::path::Path::new(config_path)).expect("config.yml");
+        let instance = config.instances[0].clone();
+        let target = super::RemoteTarget::new(&config, &Default::default(), &instance).expect("windows: section");
+
+        let remote = std::path::Path::new("C:\\temp\\esm-transport-large.bin");
+        target.write_file(remote, b"stale").expect("first write");
+
+        // A prime-length pattern across three 64KB reads, so a dropped or repeated chunk changes the contents
+        let payload: Vec<u8> = (0..200_000).map(|index| (index % 251) as u8).collect();
+        target.write_file(remote, &payload).expect("second write");
+
+        let read_back = target
+            .run(&format!("[Convert]::ToBase64String([IO.File]::ReadAllBytes('{}'))", remote.display()))
+            .expect("read back");
+        assert_eq!(read_back, base64_encode(&payload));
+
+        target
+            .run(&format!("Remove-Item -LiteralPath '{}' -Force", remote.display()))
+            .expect("cleanup");
     }
 
     /// Uploading must land the directory's *contents* at the destination, not the directory itself.
