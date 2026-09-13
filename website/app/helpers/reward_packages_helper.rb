@@ -108,9 +108,9 @@ module RewardPackagesHelper
   #
   def reward_package_default_explanation
     safe_join([
-      "Handed to anyone who runs ",
+      "Given to anyone who runs ",
       command_usage(:reward, show_arguments: false),
-      " without naming a package."
+      " without providing a package code."
     ])
   end
 
@@ -126,7 +126,7 @@ module RewardPackagesHelper
     safe_join([
       "Players who run ",
       command_usage(:reward, show_arguments: false),
-      " without a code get nothing"
+      " without a code will receive nothing"
     ])
   end
 
