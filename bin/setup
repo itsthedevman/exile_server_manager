@@ -25,4 +25,9 @@ fi
 bundle exec rake db:create
 bundle exec rake db:migrate
 bundle exec rake db:migrate RAILS_ENV=test
-bundle exec ruby ../core/db/seeds.rb
+
+if [[ -f "../core/db/seeds.rb" ]]; then
+  bundle exec ruby ../core/db/seeds.rb
+else
+  echo "Skipped seeding - core/db/seeds.rb is not present. The databases are migrated but empty. Add a Ruby script there that populates development data and rerun to seed them."
+fi
