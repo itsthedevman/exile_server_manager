@@ -76,13 +76,11 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
 
             let esm_dir = server_path.join("@esm");
 
-            if let Err(e) = target
-                .write_file(&esm_dir.join("esm.key"), key.as_bytes())
-                .and_then(|_| {
-                    // The sentinel is what makes the extension re-read the key without a restart.
-                    target.write_file(&esm_dir.join(".RELOAD"), b"true")
-                })
-            {
+            // The sentinel is what makes the extension re-read the key without a restart, so it goes second
+            let key_path = esm_dir.join("esm.key");
+            let reload_path = esm_dir.join(".RELOAD");
+
+            if let Err(e) = target.write_files(&[(&key_path, key.as_bytes()), (&reload_path, b"true")]) {
                 eprintln!("[keys] Failed to write server key, trying again: {e}");
                 thread::sleep(Duration::from_secs(1));
                 continue;

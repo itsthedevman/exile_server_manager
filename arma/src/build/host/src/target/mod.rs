@@ -44,9 +44,18 @@ pub trait Target: Send + Sync {
 
     /// Write `contents` to `path` on the target, creating or truncating it.
     ///
-    /// The bytes travel out of band rather than inside a command string, because server keys and rendered config
-    /// hold quotes, backslashes and newlines that no amount of escaping survives on both shells.
+    /// The bytes never pass through a shell's quoting: a target streams them or carries them encoded, because server
+    /// keys and rendered config hold quotes, backslashes and newlines that no amount of escaping survives on both
+    /// shells.
     fn write_file(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError>;
+
+    /// Write each file in order, as a single round trip where the target can manage one.
+    ///
+    /// The key exchange is the reason. A server key and its `.RELOAD` trigger go out together for every spec
+    /// example, and against a remote host each separate write is a trip across the network the suite waits on.
+    fn write_files(&self, files: &[(&Path, &[u8])]) -> Result<(), BuildError> {
+        files.iter().try_for_each(|(path, contents)| self.write_file(path, contents))
+    }
 
     /// Write `contents` to `path` and make it runnable.
     ///

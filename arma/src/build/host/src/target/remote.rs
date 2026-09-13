@@ -75,6 +75,18 @@ const MAX_SCRIPT_CHARS: usize = 2000;
 /// control back soon enough for a retry to still be useful to whoever is waiting on it.
 const WRITE_TIMEOUT_SECS: u64 = 10;
 
+/// The longest a plain command gets before it is abandoned.
+///
+/// Generous, because nothing sent through `run` should take more than a few seconds and a false alarm costs a failed
+/// step. SteamCMD's install is the one long operation, and it has its own path for the sake of streaming its output.
+/// What the limit buys is a stalled command failing loudly instead of freezing the build, which from the outside
+/// looks exactly like a slow one.
+const RUN_TIMEOUT_SECS: u64 = 60;
+
+/// Opens every script. PowerShell writes progress records to the error stream, and over a non-interactive session
+/// they arrive as CLIXML that would otherwise be read as failure output.
+const QUIET_PROGRESS: &str = "$ProgressPreference = 'SilentlyContinue'\n";
+
 /// Target implementation for a Windows host reached over SSH.
 ///
 /// Commands go out as PowerShell rather than `cmd`, encoded rather than quoted. Windows' sshd hands a bare
@@ -174,33 +186,144 @@ impl RemoteTarget {
         command.args(SSH_OPTIONS).arg(&self.destination);
         command
     }
-}
 
-impl Target for RemoteTarget {
-    fn run(&self, cmd: &str) -> Result<String, BuildError> {
-        // Progress records are silenced at the top of every script. PowerShell writes them to the error stream,
-        // and over a non-interactive session they arrive as CLIXML that would otherwise be read as failure output.
-        let script = format!("$ProgressPreference = 'SilentlyContinue'\n{cmd}");
+    /// Run a PowerShell script, abandoning it as failed once `timeout` passes.
+    ///
+    /// Output is read on threads of their own and left behind when the deadline hits. Over the shared connection
+    /// the pipes are held by the connection's master as well as by this ssh, so a stalled command keeps them open
+    /// after the ssh is killed, and reading them to the end here would wait for good.
+    fn run_within(&self, cmd: &str, timeout: Duration) -> Result<String, BuildError> {
+        let script = format!("{QUIET_PROGRESS}{cmd}");
 
-        let output = self
+        let mut child = self
             .ssh()
             .args(["powershell", "-NoProfile", "-EncodedCommand", &Self::encode(&script)])
-            .output()
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
             .map_err(|e| BuildError::Remote(e.to_string()))?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
+        let stdout = child.stdout.take().map(read_on_thread);
+        let stderr = child.stderr.take().map(read_on_thread);
+
+        let Some(status) = wait_until(&mut child, Instant::now() + timeout)? else {
+            return Err(BuildError::Remote(format!(
+                "ssh {} did not finish within {}s and was abandoned",
+                self.destination,
+                timeout.as_secs()
+            )));
+        };
+
+        let stdout = stdout.and_then(|reader| reader.join().ok()).unwrap_or_default();
+        let stderr = stderr.and_then(|reader| reader.join().ok()).unwrap_or_default();
+
+        if !status.success() {
             return Err(BuildError::Remote(format!(
                 "ssh {} failed (exit {}):\n{}\n{}",
                 self.destination,
-                output.status.code().unwrap_or(-1),
+                status.code().unwrap_or(-1),
                 stdout.trim(),
                 stderr.trim()
             )));
         }
 
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+        Ok(stdout.trim().to_string())
+    }
+
+    /// Stream `contents` to `path` over stdin, for a file too large to carry inside a command. See `write_files`.
+    fn write_file_streamed(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError> {
+        // Every so often a write with bytes piped in stops partway, its bytes stuck somewhere between here and the
+        // far side. Why is not known yet. What is known is what it cost: the spec suite's key watcher waited on one
+        // for minutes, with esm.key already truncated to nothing, and no key reached the server again. So the write
+        // runs against a deadline, and everything below is arranged so that giving up actually lets go.
+        //
+        // Its own connection rather than the shared one. A multiplexed session hands its stdin to the connection's
+        // master process, so killing the local ssh leaves the master holding the pipe and the stuck write never
+        // comes loose.
+        //
+        // The script reads exactly as many bytes as were sent rather than reading to the end of input, so a
+        // connection dropped partway fails the write instead of passing a truncated file off as a whole one. It
+        // writes beside the target and moves the result over it, so nothing reads a half-written file, and a writer
+        // abandoned on the far side is left holding its own temp file rather than the path a retry needs.
+        let script = format!(
+            "{QUIET_PROGRESS}\
+             $path = {path}\n\
+             $directory = Split-Path -Parent $path\n\
+             New-Item -ItemType Directory -Force -Path $directory | Out-Null\n\
+             $temp = Join-Path $directory ('.' + [IO.Path]::GetRandomFileName())\n\
+             $stdin = [Console]::OpenStandardInput()\n\
+             $file = [IO.File]::Create($temp)\n\
+             $buffer = New-Object byte[] 65536\n\
+             $remaining = {length}\n\
+             while ($remaining -gt 0) {{\n\
+             \x20 $read = $stdin.Read($buffer, 0, [Math]::Min($buffer.Length, $remaining))\n\
+             \x20 if ($read -eq 0) {{\n\
+             \x20\x20 $file.Close()\n\
+             \x20\x20 Remove-Item -LiteralPath $temp\n\
+             \x20\x20 throw \"Input ended $remaining bytes short of {length}\"\n\
+             \x20 }}\n\
+             \x20 $file.Write($buffer, 0, $read)\n\
+             \x20 $remaining -= $read\n\
+             }}\n\
+             $file.Close()\n\
+             Move-Item -LiteralPath $temp -Destination $path -Force",
+            path = ps_literal(&path.display().to_string()),
+            length = contents.len(),
+        );
+
+        let mut child = self
+            .ssh_unshared()
+            .args(["powershell", "-NoProfile", "-EncodedCommand", &Self::encode(&script)])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| BuildError::Remote(e.to_string()))?;
+
+        // Fed and drained on threads of their own so the deadline covers them too. A far side that has stopped
+        // reading would otherwise block the write itself, and the wait below would never start.
+        let feeder = child.stdin.take().map(|mut stdin| {
+            let bytes = contents.to_vec();
+            thread::spawn(move || stdin.write_all(&bytes))
+        });
+
+        let drain = child.stderr.take().map(read_on_thread);
+
+        let timeout = write_timeout(contents.len());
+
+        // Returned without joining the threads, which would wait on the very pipes that stopped moving
+        let Some(status) = wait_until(&mut child, Instant::now() + timeout)? else {
+            return Err(BuildError::Remote(format!(
+                "Gave up writing {} on {} after {}s without it finishing",
+                path.display(),
+                self.destination,
+                timeout.as_secs()
+            )));
+        };
+
+        if let Some(feeder) = feeder {
+            let _ = feeder.join();
+        }
+
+        let stderr = drain.and_then(|drain| drain.join().ok()).unwrap_or_default();
+
+        if !status.success() {
+            return Err(BuildError::Remote(format!(
+                "Failed to write {} on {}: {}",
+                path.display(),
+                self.destination,
+                stderr.trim()
+            )));
+        }
+
+        Ok(())
+    }
+}
+
+impl Target for RemoteTarget {
+    fn run(&self, cmd: &str) -> Result<String, BuildError> {
+        self.run_within(cmd, Duration::from_secs(RUN_TIMEOUT_SECS))
     }
 
     fn upload(&self, local: &Path, dest: &Path) -> Result<(), BuildError> {
@@ -280,99 +403,34 @@ impl Target for RemoteTarget {
     }
 
     fn write_file(&self, path: &Path, contents: &[u8]) -> Result<(), BuildError> {
-        // Piped in over stdin and written by the shell on the far side, so the bytes never appear in a command
-        // line. Server keys are the reason: they hold whatever the bot generated, and a build that only works
-        // for keys without quotes in them is a build that fails once a month for no visible reason.
-        //
-        // Every so often a write stops partway, its bytes stuck somewhere between here and the far side. Why is not
-        // known yet. What is known is what it cost: the spec suite's key watcher waited on one for minutes, with
-        // esm.key already truncated to nothing, and no key reached the server again. So the write runs against a
-        // deadline, and everything below is arranged so that giving up actually lets go.
-        //
-        // Its own connection rather than the shared one. A multiplexed session hands its stdin to the connection's
-        // master process, so killing the local ssh leaves the master holding the pipe and the stuck write never
-        // comes loose.
-        //
-        // The script reads exactly as many bytes as were sent rather than reading to the end of input, so a
-        // connection dropped partway fails the write instead of passing a truncated file off as a whole one. It
-        // writes beside the target and moves the result over it, so nothing reads a half-written file, and a writer
-        // abandoned on the far side is left holding its own temp file rather than the path a retry needs.
-        let script = format!(
-            "$ProgressPreference = 'SilentlyContinue'\n\
-             $path = {path}\n\
-             $directory = Split-Path -Parent $path\n\
-             New-Item -ItemType Directory -Force -Path $directory | Out-Null\n\
-             $temp = Join-Path $directory ('.' + [IO.Path]::GetRandomFileName())\n\
-             $stdin = [Console]::OpenStandardInput()\n\
-             $file = [IO.File]::Create($temp)\n\
-             $buffer = New-Object byte[] 65536\n\
-             $remaining = {length}\n\
-             while ($remaining -gt 0) {{\n\
-             \x20 $read = $stdin.Read($buffer, 0, [Math]::Min($buffer.Length, $remaining))\n\
-             \x20 if ($read -eq 0) {{\n\
-             \x20\x20 $file.Close()\n\
-             \x20\x20 Remove-Item -LiteralPath $temp\n\
-             \x20\x20 throw \"Input ended $remaining bytes short of {length}\"\n\
-             \x20 }}\n\
-             \x20 $file.Write($buffer, 0, $read)\n\
-             \x20 $remaining -= $read\n\
-             }}\n\
-             $file.Close()\n\
-             Move-Item -LiteralPath $temp -Destination $path -Force",
-            path = ps_literal(&path.display().to_string()),
-            length = contents.len(),
-        );
+        self.write_files(&[(path, contents)])
+    }
 
-        let mut child = self
-            .ssh_unshared()
-            .args(["powershell", "-NoProfile", "-EncodedCommand", &Self::encode(&script)])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| BuildError::Remote(e.to_string()))?;
+    fn write_files(&self, files: &[(&Path, &[u8])]) -> Result<(), BuildError> {
+        // Small writes travel inside one command, base64 encoded, over the shared connection. Base64 is the one
+        // shape every quoting layer leaves alone, so server keys cross intact whatever the bot put in them. Every
+        // stall seen so far was a write with bytes piped in, while plain commands on the shared connection have run
+        // thousands of times without one, and a single round trip on an open connection is what keeps delivering
+        // a spec example's key close to what the container manages. Anything too large for a command streams.
+        let script = inline_write_script(files);
 
-        // Fed and drained on threads of their own so the deadline covers them too. A far side that has stopped
-        // reading would otherwise block the write itself, and the wait below would never start.
-        let feeder = child.stdin.take().map(|mut stdin| {
-            let bytes = contents.to_vec();
-            thread::spawn(move || stdin.write_all(&bytes))
-        });
-
-        let drain = child.stderr.take().map(|mut stderr| {
-            thread::spawn(move || {
-                let mut output = String::new();
-                let _ = stderr.read_to_string(&mut output);
-                output
-            })
-        });
-
-        let timeout = write_timeout(contents.len());
-
-        // Returned without joining the threads, which would wait on the very pipes that stopped moving
-        let Some(status) = wait_until(&mut child, Instant::now() + timeout)? else {
-            return Err(BuildError::Remote(format!(
-                "Gave up writing {} on {} after {}s without it finishing",
-                path.display(),
-                self.destination,
-                timeout.as_secs()
-            )));
-        };
-
-        if let Some(feeder) = feeder {
-            let _ = feeder.join();
+        if QUIET_PROGRESS.len() + script.len() > MAX_SCRIPT_CHARS {
+            return files
+                .iter()
+                .try_for_each(|(path, contents)| self.write_file_streamed(path, contents));
         }
 
-        let stderr = drain.and_then(|drain| drain.join().ok()).unwrap_or_default();
+        let length = files.iter().map(|(_, contents)| contents.len()).sum();
 
-        if !status.success() {
-            return Err(BuildError::Remote(format!(
-                "Failed to write {} on {}: {}",
-                path.display(),
-                self.destination,
-                stderr.trim()
-            )));
-        }
+        self.run_within(&script, write_timeout(length)).map_err(|e| {
+            let paths = files
+                .iter()
+                .map(|(path, _)| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            BuildError::Remote(format!("Failed to write {paths}: {e}"))
+        })?;
 
         Ok(())
     }
@@ -600,10 +658,12 @@ impl Target for RemoteTarget {
     }
 
     fn heartbeat(&self) -> Result<(), BuildError> {
-        self.run(&format!(
-            "Set-Content -LiteralPath {hb} -Value ''",
-            hb = ps_literal(HEARTBEAT_FILE)
-        ))?;
+        // Held to the watchdog's own window. A heartbeat still going once that has passed arrives too late to
+        // count, so waiting on it any longer only delays the next one.
+        self.run_within(
+            &format!("Set-Content -LiteralPath {hb} -Value ''", hb = ps_literal(HEARTBEAT_FILE)),
+            Duration::from_secs(HEARTBEAT_STALE_SECS),
+        )?;
 
         Ok(())
     }
@@ -748,6 +808,39 @@ fn write_timeout(length: usize) -> Duration {
     Duration::from_secs(WRITE_TIMEOUT_SECS + (length / 1_000_000) as u64)
 }
 
+/// One PowerShell script writing every file in `files`, in order, with the contents carried as base64.
+///
+/// Stops at the first failure. A script's exit code only reflects its last statement, so without that a key that
+/// failed to write followed by a `.RELOAD` that succeeded would report the pair as written.
+fn inline_write_script(files: &[(&Path, &[u8])]) -> String {
+    let writes: String = files
+        .iter()
+        .map(|(path, contents)| {
+            format!(
+                "$path = {path}\n\
+                 $directory = Split-Path -Parent $path\n\
+                 New-Item -ItemType Directory -Force -Path $directory | Out-Null\n\
+                 $temp = Join-Path $directory ('.' + [IO.Path]::GetRandomFileName())\n\
+                 [IO.File]::WriteAllBytes($temp, [Convert]::FromBase64String('{contents}'))\n\
+                 Move-Item -LiteralPath $temp -Destination $path -Force\n",
+                path = ps_literal(&path.display().to_string()),
+                contents = base64_encode(contents),
+            )
+        })
+        .collect();
+
+    format!("$ErrorActionPreference = 'Stop'\n{writes}")
+}
+
+/// Read `reader` to the end on a thread of its own, so a caller can give up on it without waiting.
+fn read_on_thread<R: Read + Send + 'static>(mut reader: R) -> thread::JoinHandle<String> {
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let _ = reader.read_to_end(&mut bytes);
+        String::from_utf8_lossy(&bytes).into_owned()
+    })
+}
+
 /// Wait for `child` to exit, killing it if it has not by `deadline`. `None` means it was killed.
 fn wait_until(child: &mut Child, deadline: Instant) -> Result<Option<ExitStatus>, BuildError> {
     loop {
@@ -841,6 +934,20 @@ mod tests {
         assert_eq!(super::RemoteTarget::encode("dir"), "ZABpAHIA");
     }
 
+    /// A spec example's key and its `.RELOAD` have to fit in one command. Past the budget they quietly fall back
+    /// to two streamed writes on fresh connections, which works and roughly quadruples key delivery time.
+    #[test]
+    fn a_server_key_and_its_reload_trigger_fit_in_one_command() {
+        let key = format!("{{\"access\":\"{}\",\"secret\":\"{}\"}}", "a".repeat(36), "s".repeat(64));
+        let esm_dir = std::path::Path::new("C:\\arma3server\\@esm");
+        let key_path = esm_dir.join("esm.key");
+        let reload_path = esm_dir.join(".RELOAD");
+
+        let script = super::inline_write_script(&[(&key_path, key.as_bytes()), (&reload_path, b"true")]);
+
+        assert!(super::QUIET_PROGRESS.len() + script.len() <= super::MAX_SCRIPT_CHARS);
+    }
+
     /// Smoke test for the transport against the host named in `config.yml`.
     ///
     /// Ignored by default because it needs that host up and reachable. Run it after changing anything in this
@@ -875,6 +982,37 @@ mod tests {
             .run(&format!("Remove-Item -LiteralPath '{}' -Force", remote.display()))
             .expect("cleanup");
         assert!(!target.exists(remote).expect("exists after delete"));
+    }
+
+    /// Several files in one call land together and in order, over the inline path a server key takes.
+    #[test]
+    #[ignore = "needs the Windows host from config.yml to be reachable"]
+    fn write_files_lands_each_file_in_one_call() {
+        let config_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../config.yml");
+        let config = parse(std::path::Path::new(config_path)).expect("config.yml");
+        let instance = config.instances[0].clone();
+        let target = super::RemoteTarget::new(&config, &Default::default(), &instance).expect("windows: section");
+
+        let first = std::path::Path::new("C:\\temp\\esm-transport-pair\\first.key");
+        let second = std::path::Path::new("C:\\temp\\esm-transport-pair\\.RELOAD");
+        let awkward = "quote \" apostrophe ' backslash \\ dollar $ semi ; newline\n";
+
+        target
+            .write_files(&[(first, awkward.as_bytes()), (second, b"true")])
+            .expect("write_files");
+
+        let read_back = target
+            .run(&format!(
+                "[IO.File]::ReadAllText('{}') + '|' + [IO.File]::ReadAllText('{}')",
+                first.display(),
+                second.display()
+            ))
+            .expect("read back");
+        assert_eq!(read_back, format!("{awkward}|true"));
+
+        target
+            .run("Remove-Item -LiteralPath 'C:\\temp\\esm-transport-pair' -Recurse -Force")
+            .expect("cleanup");
     }
 
     /// A write longer than the far side's read buffer has to arrive whole, and has to replace a file already there.
