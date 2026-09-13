@@ -52,17 +52,24 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
 
         let mut last_key = String::new();
 
+        // A key claimed from Redis but not yet written. Kept across a failed write, since claiming it took it out of
+        // Redis and whoever issued it is waiting for the confirmation rather than issuing it again.
+        let mut pending: Option<String> = None;
+
         loop {
             // Read destructively so a key is claimed exactly once, rather than being re-applied on every pass
-            // until something else overwrites it.
-            let key = conn.get_del::<_, Option<String>>(&read_slot).ok().flatten();
+            // until something else overwrites it. A newer key replaces one still waiting to be written.
+            if let Some(issued) = conn.get_del::<_, Option<String>>(&read_slot).ok().flatten() {
+                pending = Some(issued);
+            }
 
-            let Some(key) = key else {
+            let Some(key) = pending.clone() else {
                 thread::sleep(Duration::from_millis(100));
                 continue;
             };
 
             if key == last_key {
+                pending = None;
                 thread::sleep(Duration::from_millis(100));
                 continue;
             }
@@ -76,8 +83,8 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
                     target.write_file(&esm_dir.join(".RELOAD"), b"true")
                 })
             {
-                eprintln!("[keys] Failed to write server key: {e}");
-                thread::sleep(Duration::from_millis(100));
+                eprintln!("[keys] Failed to write server key, trying again: {e}");
+                thread::sleep(Duration::from_secs(1));
                 continue;
             }
 
@@ -90,6 +97,7 @@ pub fn start_key_exchange(ictx: &InstanceContext) -> BuildResult {
                 eprintln!("[keys] Failed to write local key: {e}");
             }
 
+            pending = None;
             last_key = key;
 
             let _: Result<(), _> = conn.set(&write_slot, "true");
