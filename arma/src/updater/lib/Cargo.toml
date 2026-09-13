@@ -1,6 +1,7 @@
 [package]
 name = "updater_lib"
-version = "0.1.0"
+version = "1.0.0"
+authors = ["Bryan <WolfkillArcadia@gmail.com>"]
 edition = "2024"
 
 [features]
