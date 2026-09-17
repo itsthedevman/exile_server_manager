@@ -28,9 +28,6 @@ module ESM
         # Website arguments (order does not matter)
         #
 
-        # The choices only the player can make and only a form can ask for, one entry per vehicle on the claim, in the
-        # claim's own order. Never stored: a pin sitting in the claims table for as long as a claim goes undelivered
-        # is a door code with no owner, and a territory picked weeks ago may not be theirs any more.
         argument :vehicles, :string, origins: [:website], required: false
 
         #
@@ -66,7 +63,14 @@ module ESM
         def on_request_accepted
           response = deliver_reward!
 
-          reply(embed_from_message!(response.embed))
+          embed =
+            if target_server.reward_vehicles_supported?
+              response.embed
+            else
+              response.to_h
+            end
+
+          reply(embed_from_message!(embed))
         end
 
         # The page reads the claim back out of the database itself, so the reply carries only what the row cannot say
