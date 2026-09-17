@@ -273,6 +273,10 @@ RSpec.shared_context("connection") do
       retry
     end
 
+    if (version = example.metadata[:server_version]).present?
+      skip "Server version does not match #{version}" unless server.version.satisfies?(version)
+    end
+
     server.reset!
   rescue ActiveRecord::ConnectionNotEstablished
     raise "Unable to connect to the Exile MySQL server. Please ensure it is running before trying again"
