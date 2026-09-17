@@ -132,7 +132,26 @@ describe ESM::Command::Server::Players, category: "command" do
 
       # Searching by name is the way past the window, not a filter applied inside it. The player being looked up is
       # usually one who stopped appearing in the listing, which is the reason the admin is searching in the first place.
-      context "when a name is given" do
+      context "when a name is given on a 2.0 server", server_version: "2.0" do
+        subject(:players) do
+          execute_sync!(
+            arguments: {
+              server_id: server.server_id,
+              connected_since: 1.day.ago,
+              limit: 50,
+              name: "Dave"
+            }
+          )
+        end
+
+        it "refuses rather than answering with the window" do
+          expect { players }.to raise_error(ESM::Exception::CheckFailure) do |error|
+            expect(error.to_embed.description).to match("requires ESM `v2.1.0` or newer")
+          end
+        end
+      end
+
+      context "when a name is given", server_version: ">= 2.1" do
         subject(:players) do
           execute_sync!(
             arguments: {
