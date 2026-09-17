@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     context::{BuildContext, InstanceContext},
     error::{BuildError, BuildResult},
+    steps::server_mod,
 };
 
 /// Where the fixture logs the `logs` command's specs search live locally.
@@ -29,6 +30,9 @@ pub fn deploy(ictx: &InstanceContext) -> BuildResult {
     // mount point itself cannot be unlinked from inside the container.
     ictx.target.clear_directory(&server_esm)?;
     ictx.target.upload(&staging, &server_esm)?;
+
+    // Sync content AFTER the @esm directory has been built
+    server_mod::sync_shared_content(ictx)?;
 
     Ok(())
 }
@@ -64,8 +68,10 @@ fn write_test_logs(ictx: &InstanceContext) -> Result<Vec<String>, BuildError> {
     let relative = "test.log";
     let absolute = server_root.join("test.rpt");
 
-    ictx.target
-        .write_file(&server_root.join(relative), &fs::read(fixtures.join(relative))?)?;
+    ictx.target.write_file(
+        &server_root.join(relative),
+        &fs::read(fixtures.join(relative))?,
+    )?;
 
     ictx.target
         .write_file(&absolute, &fs::read(fixtures.join("test.rpt"))?)?;
