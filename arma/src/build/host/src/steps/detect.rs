@@ -85,12 +85,13 @@ pub fn record_build(ctx: &BuildContext) -> BuildResult {
 /// `--release` earns a place here alongside the target because it changes what lands in the tree, not just how it
 /// was compiled: the extension is built without the `development` feature, and the mod drops its test addon. An
 /// artifact from the other profile is the wrong artifact, and it is the same filename either way, so the name
-/// cannot be what tells them apart.
+/// cannot be what tells them apart. `--features` is there for the same reason: a release carrying `development` is
+/// not the release a later plain `--release` run is asking for.
 fn build_profile(ctx: &BuildContext) -> String {
-    profile_name(ctx.args.build_os(), ctx.args.build_arch(), ctx.args.release)
+    profile_name(ctx.args.build_os(), ctx.args.build_arch(), ctx.args.release, &ctx.args.extension_features())
 }
 
-fn profile_name(os: BuildOS, arch: BuildArch, release: bool) -> String {
+fn profile_name(os: BuildOS, arch: BuildArch, release: bool, features: &[String]) -> String {
     let arch = match arch {
         BuildArch::X32 => "x32",
         BuildArch::X64 => "x64",
@@ -98,7 +99,19 @@ fn profile_name(os: BuildOS, arch: BuildArch, release: bool) -> String {
 
     let profile = if release { "release" } else { "development" };
 
-    format!("{os}-{arch}-{profile}")
+    // Only what the profile does not already imply, so an ordinary development build keeps the stamp it has always
+    // had and is not rebuilt for nothing
+    let extra_features: Vec<&str> = features
+        .iter()
+        .map(String::as_str)
+        .filter(|feature| release || *feature != "development")
+        .collect();
+
+    if extra_features.is_empty() {
+        format!("{os}-{arch}-{profile}")
+    } else {
+        format!("{os}-{arch}-{profile}+{}", extra_features.join(","))
+    }
 }
 
 /// What produced the tree that is there now, or `None` when nothing has recorded one.
@@ -138,6 +151,10 @@ mod tests {
     use super::profile_name;
     use crate::context::{BuildArch, BuildOS};
 
+    fn development() -> Vec<String> {
+        vec!["development".to_owned()]
+    }
+
     /// The bug this exists to stop. `bin/staging` builds `--release` and `bin/dev` does not, both write
     /// `esm_x64.so`, and the old detection only asked whether that file was present. So a dev run after a staging
     /// run found the release extension sitting there, decided there was nothing to do, and deployed a build with
@@ -146,16 +163,35 @@ mod tests {
     #[test]
     fn release_and_development_are_different_profiles_despite_the_shared_filename() {
         assert_ne!(
-            profile_name(BuildOS::Linux, BuildArch::X64, false),
-            profile_name(BuildOS::Linux, BuildArch::X64, true)
+            profile_name(BuildOS::Linux, BuildArch::X64, false, &development()),
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &[])
         );
     }
 
     #[test]
     fn target_and_architecture_each_stand_on_their_own() {
-        let baseline = profile_name(BuildOS::Linux, BuildArch::X64, false);
+        let baseline = profile_name(BuildOS::Linux, BuildArch::X64, false, &development());
 
-        assert_ne!(baseline, profile_name(BuildOS::Windows, BuildArch::X64, false));
-        assert_ne!(baseline, profile_name(BuildOS::Linux, BuildArch::X32, false));
+        assert_ne!(baseline, profile_name(BuildOS::Windows, BuildArch::X64, false, &development()));
+        assert_ne!(baseline, profile_name(BuildOS::Linux, BuildArch::X32, false, &development()));
+    }
+
+    /// A development build already names its feature through the profile, so the stamp it carries today still matches
+    #[test]
+    fn development_does_not_repeat_the_feature_its_profile_implies() {
+        assert_eq!(
+            profile_name(BuildOS::Linux, BuildArch::X64, false, &development()),
+            "linux-x64-development"
+        );
+    }
+
+    /// What `--release --features development` depends on. Sharing a stamp with a plain release would let the next
+    /// `--release` run find the development extension staged and ship it as though it were the release one.
+    #[test]
+    fn a_release_carrying_extra_features_is_not_a_plain_release() {
+        assert_ne!(
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &[]),
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &development())
+        );
     }
 }

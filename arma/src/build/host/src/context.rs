@@ -120,6 +120,13 @@ pub struct Args {
     #[arg(short, long)]
     pub release: bool,
 
+    /// Extra cargo features for the extension, on top of the ones the environment turns on. Comma separated.
+    ///
+    /// Pairs with --release to build an optimized extension that still carries `development`, e.g. for a spec server
+    /// that has to ride out the reconnects a test run puts it through: `--release --features development`
+    #[arg(long, value_delimiter = ',')]
+    features: Vec<String>,
+
     /// Path to the esm.key file to use (useful with --release --start-server)
     #[arg(short, long, default_value_t = String::new())]
     key_file: String,
@@ -190,6 +197,26 @@ impl Args {
             Some(v) => v,
             None => "",
         }
+    }
+
+    /// Every cargo feature the extension is built with: `development` outside a release, plus whatever `--features`
+    /// asked for. Sorted and deduplicated, since the list also names the build profile and has to compare equal
+    /// however it was typed.
+    pub fn extension_features(&self) -> Vec<String> {
+        let mut features: Vec<String> = self
+            .features
+            .iter()
+            .map(|feature| feature.trim().to_owned())
+            .filter(|feature| !feature.is_empty())
+            .collect();
+
+        if !self.release {
+            features.push("development".to_owned());
+        }
+
+        features.sort();
+        features.dedup();
+        features
     }
 
     pub fn log_level(&self) -> LogLevel {

@@ -69,7 +69,7 @@ pub fn print_header(ctx: &BuildContext) {
 
     let mut rows: Vec<(&str, String)> = vec![
         ("queue",      queue_str),
-        ("env",        if ctx.args.release { "production".into() } else { "development".into() }),
+        ("env",        env_label(ctx)),
         ("log level",  ctx.args.log_level().to_string()),
         ("git dir",    shorten_path(&ctx.git_path.to_string_lossy())),
         ("build dir",  shorten_path(&ctx.local_build_path.join("@esm").to_string_lossy())),
@@ -118,6 +118,22 @@ pub fn print_header(ctx: &BuildContext) {
 }
 
 /// Replace the user's home directory prefix with `~`.
+/// The environment, plus any feature `--features` layered onto a release. Otherwise a release built with
+/// `development` reads exactly like the one that would ship.
+fn env_label(ctx: &BuildContext) -> String {
+    if !ctx.args.release {
+        return "development".into();
+    }
+
+    let features = ctx.args.extension_features();
+
+    if features.is_empty() {
+        "production".into()
+    } else {
+        format!("production (+{})", features.join(", "))
+    }
+}
+
 fn shorten_path(path: &str) -> String {
     if let Ok(home) = std::env::var("HOME") {
         if path.starts_with(&home) {

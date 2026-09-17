@@ -44,17 +44,16 @@ fn build_esm(ctx: &BuildContext, sub_lines: &SubLines) -> BuildResult {
     let target = ctx.extension_build_target();
     let mut args = vec!["build", "--target", target];
 
-    let features_flag;
-    let release_flags: Vec<&str>;
+    let features = ctx.args.extension_features();
+    let features_flag = format!("--features={}", features.join(","));
+
+    if !features.is_empty() {
+        args.push(&features_flag);
+    }
 
     if ctx.args.release {
-        release_flags = vec!["--release"];
-    } else {
-        features_flag = "--features=development";
-        args.push(&features_flag);
-        release_flags = vec![];
+        args.push("--release");
     }
-    args.extend_from_slice(&release_flags);
 
     run_cargo(&args, &extension_path.to_string_lossy(), sub_lines, &windows_rustflags(ctx))?;
 
