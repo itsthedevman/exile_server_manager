@@ -49,9 +49,6 @@
 ###
 <%= render_setting("server_mod_name", settings) %>
 
-<%# The auto-updater has not shipped, so its keys stay out of generated configs until it does. Omitting them is
-    safe: every one of them has a default the updater falls back to when the key is absent. %>
-<% if Rails.env.local? %>
 #########################
 ## Updater Settings
 #########################
@@ -91,8 +88,6 @@
 ## Default: "@esm/log/updater.log"
 ###
 <%= render_setting("updater_log_path", settings) %>
-
-<% end %>
 
 #########################
 ## ExtDB Settings
