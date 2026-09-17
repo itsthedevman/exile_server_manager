@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true do
+describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true, server_version: ">= 2.1" do
   include_context "connection"
 
   let(:vehicle_class) { "Exile_Car_Hatchback_Rusty1" }
@@ -162,6 +162,7 @@ describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true do
   context "when storing into a virtual garage" do
     let(:spawn_location) { "virtual_garage" }
     let(:territory_id) { territory.id }
+    let(:territory_owner) { user.steam_uid }
 
     # Level 2 is the first with a garage in Exile's shipped config, but the capacity is read back rather than assumed
     let(:level_with_garage) { 2 }
@@ -176,6 +177,21 @@ describe "ESMs_object_vehicle_spawnReward", :requires_connection, v2: true do
 
         expect(delivered).to be(false)
         expect(reason).to eq("territory_not_found")
+      end
+    end
+
+    # Answered as a missing flag so a guessed ID cannot confirm the territory exists
+    context "when the player has no rights on the territory" do
+      let(:territory_owner) { Faker::Steam.uid }
+
+      before { configure_garage!(level: level_with_garage) }
+
+      it "reports territory_not_found and stores nothing" do
+        delivered, reason = result
+
+        expect(delivered).to be(false)
+        expect(reason).to eq("territory_not_found")
+        expect(stored_vehicles).to be_empty
       end
     end
 

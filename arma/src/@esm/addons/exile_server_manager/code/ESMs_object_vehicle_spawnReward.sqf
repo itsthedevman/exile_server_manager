@@ -14,7 +14,8 @@ Parameters:
 						class_name		- The vehicle's class name. [String]
 						spawn_location	- "nearby" or "virtual_garage". [String]
 						territory_database_id	- Territory database ID, required for "virtual_garage". The extension
-							decodes it out of the entry's territory_id. [Scalar, nil]
+							decodes it out of the entry's territory_id. The player must have build rights on it.
+							[Scalar, nil]
 						pin_code		- A four character pin. Generated when omitted. [String, nil]
 
 Returns:
@@ -58,7 +59,10 @@ private _pinCode = get!(_vehicle, "pin_code", "");
 
 // Declared out here so the catch can still name the vehicle in the failure it hands back
 private _displayName = getText(configFile >> "CfgVehicles" >> _className >> "displayName");
-if (empty?(_displayName)) then { _displayName = _className; };
+if (empty?(_displayName)) then 
+{ 
+	_displayName = _className; 
+};
 
 private _result = [];
 
@@ -80,7 +84,10 @@ try
 	if !((count _pinCode) isEqualTo 4) then
 	{
 		_pinCode = "";
-		for "_i" from 1 to 4 do { _pinCode = _pinCode + str(floor(random 10)); };
+		for "_i" from 1 to 4 do 
+		{ 
+			_pinCode = _pinCode + str(floor(random 10)); 
+		};
 	};
 
 	private _isShip = _className isKindOf "Ship";
@@ -94,23 +101,40 @@ try
 	if (_storingInGarage) then
 	{
 		_flagObject = _territoryID call ESMs_system_territory_get;
-		if (isNull _flagObject) then { throw "territory_not_found"; };
+		if (isNull _flagObject) then 
+		{ 
+			throw "territory_not_found"; 
+		};
+
+		if !([_flagObject, _playerUID] call ESMs_system_territory_checkAccess) then 
+		{ 
+			throw "territory_not_found"; 
+		};
 
 		private _level = _flagObject getVariable ["ExileTerritoryLevel", 1];
 		private _maxVehicles = (getArray(missionConfigFile >> "CfgVirtualGarage" >> "numberOfVehicles"))
 			select ((_level - 1) max 0);
 
-		if (_maxVehicles isEqualTo -1) then { throw "no_garage"; };
+		if (_maxVehicles isEqualTo -1) then 
+		{ 
+			throw "no_garage"; 
+		};
 
 		// Counted the way Exile counts it. Its own cleanup soft-deletes stored vehicles without clearing territory_id,
 		// so this list is the only number that agrees with what the garage will actually accept.
 		_storedVehicles = _flagObject getVariable ["ExileTerritoryStoredVehicles", []];
-		if ((count _storedVehicles) >= _maxVehicles) then { throw "garage_full"; };
+		if ((count _storedVehicles) >= _maxVehicles) then 
+		{ 
+			throw "garage_full"; 
+		};
 
 		// A stored vehicle is still a row in the vehicle table, so it has to exist as an object long enough to be
 		// inserted. Anywhere around the flag will do since it is deleted again a few lines later.
 		_spawnPosition = (getPosATL _flagObject) findEmptyPosition [5, 100, _className];
-		if (empty?(_spawnPosition)) then { _spawnPosition = getPosATL _flagObject; };
+		if (empty?(_spawnPosition)) then 
+		{ 
+			_spawnPosition = getPosATL _flagObject; 
+		};
 	}
 	else
 	{
@@ -126,7 +150,10 @@ try
 		};
 
 		// Arma gives up rather than overlapping something. Same limit the vehicle trader lives with.
-		if (empty?(_spawnPosition)) then { throw "no_safe_position"; };
+		if (empty?(_spawnPosition)) then 
+		{ 
+			throw "no_safe_position"; 
+		};
 	};
 
 	private _vehicleObject = [_className, _spawnPosition, random 360, _usePositionATL, _pinCode]
