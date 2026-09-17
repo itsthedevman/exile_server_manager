@@ -226,9 +226,9 @@ RSpec.shared_context("command") do
 
   def accept_request
     previous_command.request.accept!
-  rescue => e
-    return if e.is_a?(ESM::Exception::CheckFailureNoMessage)
-
+  rescue ESM::Exception::CheckFailureNoMessage
+    # noop
+  rescue ESM::Exception::ApplicationError => e
     message =
       if e.respond_to?(:to_embed)
         e.to_embed
