@@ -83,6 +83,11 @@ pub fn print_header(ctx: &BuildContext) {
         rows.push(("extra mods", names.join(", ")));
     }
 
+    // The build still runs and looks like any other, so without this nothing says the server is getting something else
+    if let Some(version) = ctx.args.esm_version() {
+        rows.push(("@esm", format!("v{version} (previous version)")));
+    }
+
     // Compute box width to fit the longest value row.
     let max_val = rows.iter().map(|(_, v)| v.chars().count()).max().unwrap_or(0);
     let box_width = (ROW_PREFIX + max_val + 1).max(MIN_BOX_WIDTH);

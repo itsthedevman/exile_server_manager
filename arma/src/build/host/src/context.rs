@@ -9,6 +9,7 @@ use crate::{
     error::BuildError,
     extra_mods::{self, ExtraMods},
     file_watcher::FileWatcher,
+    previous_version,
     target::{build_target, Target},
 };
 
@@ -83,6 +84,13 @@ pub struct Args {
     /// fail-open path.
     #[arg(long)]
     updater_url: Option<String>,
+
+    /// Deploy a released @esm from tools/previous_versions instead of the one this tree builds, e.g. `2.0.4`
+    ///
+    /// For testing the bot against a version servers are still running. The build still happens, so the staging tree
+    /// stays in step with the sources, but nothing from it reaches the server.
+    #[arg(long)]
+    esm_version: Option<String>,
 
     /// Forces a full rebuild of everything
     #[arg(short, long)]
@@ -239,6 +247,11 @@ impl Args {
         self.updater_url.as_deref()
     }
 
+    /// `--esm-version` as given, or `None` to deploy what this tree builds.
+    pub fn esm_version(&self) -> Option<&str> {
+        self.esm_version.as_deref()
+    }
+
     pub fn full_rebuild(&self) -> bool {
         self.full
     }
@@ -308,6 +321,8 @@ pub struct BuildContext {
     /// Mods found in `tools/server` that config.yml does not name. Read once: the launch line names them and
     /// the sync step delivers them, and the two disagreeing would be a server loading a mod it does not have.
     pub extra_mods: ExtraMods,
+    /// The stored release `--esm-version` named. Resolved up front so a typo fails before a build it would have wasted.
+    pub previous_esm: Option<PathBuf>,
 }
 
 impl BuildContext {
@@ -317,6 +332,11 @@ impl BuildContext {
         let config = parse(&git_path.join("config.yml"))?;
         let instances = select_instances(&args, &config)?;
         let extra_mods = extra_mods::discover(&git_path);
+
+        let previous_esm = args
+            .esm_version()
+            .map(|version| previous_version::resolve(&git_path, version))
+            .transpose()?;
 
         let file_watcher = FileWatcher::new(&git_path, &local_build_path)
             .watch(&git_path.join("src").join("@esm"))
@@ -340,6 +360,7 @@ impl BuildContext {
             rebuild_extension,
             instances,
             extra_mods,
+            previous_esm,
         })
     }
 

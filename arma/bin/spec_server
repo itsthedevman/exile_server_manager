@@ -12,11 +12,22 @@
 # a bot that is not reachable at Docker's own name for the host, a Windows guest being the usual
 # reason.
 #
+# A leading version (bin/spec_server 2.0.4) deploys that release from tools/previous_versions in place
+# of the tree's own build, for testing the bot against servers that have not updated.
+#
 # Extra arguments are passed to bin/build. Leave --server-id and --bot-host out of them: this script
 # names both, and clap rejects a repeated argument rather than taking the last one.
 
 set -euo pipefail
 
+version_args=()
+
+if [[ "${1:-}" =~ ^[0-9] ]]; then
+    version_args=(--esm-version "$1")
+    shift
+fi
+
+readonly version_args
 readonly args=("$@")
 readonly server_id="esm_test"
 readonly bot_host="${ESM_SPEC_BOT_HOST:-host.docker.internal}:${ESM_PORT_CONNECTION_SERVER:-3203}"
@@ -33,4 +44,4 @@ fi
 
 echo "Starting ${server_id}, pointed at the bot on ${bot_host}"
 
-exec "./bin/build" --start-server --server-id "$server_id" --bot-host "$bot_host" "${args[@]}"
+exec "./bin/build" --start-server --server-id "$server_id" --bot-host "$bot_host" "${version_args[@]}" "${args[@]}"

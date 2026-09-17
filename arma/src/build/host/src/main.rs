@@ -6,6 +6,7 @@ mod error;
 mod extra_mods;
 mod file_watcher;
 mod locks;
+mod previous_version;
 mod spinner;
 mod string_table;
 mod steps;

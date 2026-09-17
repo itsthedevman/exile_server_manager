@@ -285,7 +285,7 @@ fn copy_extras(
     Ok(())
 }
 
-fn copy_dir(src: &Path, dst: &Path) -> BuildResult {
+pub fn copy_dir(src: &Path, dst: &Path) -> BuildResult {
     fs::create_dir_all(dst)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;

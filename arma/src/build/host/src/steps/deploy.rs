@@ -1,11 +1,14 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     context::{BuildContext, InstanceContext},
     error::{BuildError, BuildResult},
-    steps::server_mod,
+    steps::{mod_build::copy_dir, server_mod},
 };
 
 /// Where the fixture logs the `logs` command's specs search live locally.
@@ -15,26 +18,48 @@ const TEST_LOG_DIR: &str = "tools/server";
 const SERVER_KEY_FILE: &str = "esm.key";
 
 pub fn deploy(ictx: &InstanceContext) -> BuildResult {
-    let staging = ictx.build.local_build_path.join("@esm");
+    let source = deploy_source(ictx)?;
     let server_esm = ictx.server_path().join("@esm");
 
     // Placed before the config is written, because the config is what claims they are there.
     let additional_logs = write_test_logs(ictx)?;
 
-    // Write runtime config.yml into staging before uploading
-    write_runtime_config(ictx, &staging, additional_logs)?;
+    // Write runtime config.yml into the tree before uploading it
+    write_runtime_config(ictx, &source, additional_logs)?;
 
-    stage_server_key(ictx, &staging, &server_esm)?;
+    stage_server_key(ictx, &source, &server_esm)?;
 
     // Empty the old deploy out rather than removing the directory: @esm is this server's bind mount, so the
     // mount point itself cannot be unlinked from inside the container.
     ictx.target.clear_directory(&server_esm)?;
-    ictx.target.upload(&staging, &server_esm)?;
+    ictx.target.upload(&source, &server_esm)?;
 
     // Sync content AFTER the @esm directory has been built
     server_mod::sync_shared_content(ictx)?;
 
     Ok(())
+}
+
+/// The tree this deploy uploads: the staging tree, or a fresh copy of the stored release `--esm-version` named.
+///
+/// A copy rather than the stored directory itself, since the config and the server key are written into whatever
+/// goes up and that directory is tracked. A key has no business sitting one `git add` away from a commit.
+fn deploy_source(ictx: &InstanceContext) -> Result<PathBuf, BuildError> {
+    let build_path = &ictx.build.local_build_path;
+
+    let Some(previous) = &ictx.build.previous_esm else {
+        return Ok(build_path.join("@esm"));
+    };
+
+    let source = build_path.join("previous_esm").join("@esm");
+
+    if source.exists() {
+        fs::remove_dir_all(&source)?;
+    }
+
+    copy_dir(previous, &source)?;
+
+    Ok(source)
 }
 
 pub fn package_release(ctx: &mut BuildContext) -> BuildResult {
