@@ -4,8 +4,8 @@ module ESM
   module Command
     module Server
       class Players < ApplicationCommand
-        # Unreleased until the new server dashboard is available
-        unreleased!
+        # An older server's query has no name to match on, so it ignores one and answers with the window instead
+        MINIMUM_NAME_SEARCH_VERSION = "2.1.0"
 
         #################################
         #
@@ -61,6 +61,7 @@ module ESM
 
         def on_website_execute
           check_for_owned_server!
+          check_for_server_version!(MINIMUM_NAME_SEARCH_VERSION) if arguments.name.present?
 
           # A nil argument arrives at the extension as the string "null", so the key has to be dropped instead
           query_arguments = {
