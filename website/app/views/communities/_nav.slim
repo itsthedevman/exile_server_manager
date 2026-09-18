@@ -86,7 +86,7 @@
         i.bi.bi-arrow-left-right.me-3
         span.fw-medium XM8 Routing
 
-  - if Rails.env.local? && community_tools(current_community).any?
+  - if community_tools(current_community).any?
     / Things that act on the community, kept apart from the settings that describe it.
     .card
       .card-header.py-3

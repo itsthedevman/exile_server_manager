@@ -123,45 +123,43 @@ Rails.application.routes.draw do
       end
     end
 
-    if Rails.env.local?
-      # /communities/:community_id/broadcast
-      # /communities/:community_id/broadcast/new
-      resource :broadcast, only: %i[new create], controller: "communities/broadcasts" do
-        collection do
-          # /communities/:community_id/broadcast/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
+    # /communities/:community_id/broadcast
+    # /communities/:community_id/broadcast/new
+    resource :broadcast, only: %i[new create], controller: "communities/broadcasts" do
+      collection do
+        # /communities/:community_id/broadcast/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
       end
+    end
 
-      # /communities/:community_id/cooldowns
-      resources :cooldowns, only: [:index], controller: "communities/cooldowns" do
-        collection do
-          # /communities/:community_id/cooldowns/clear
-          post :clear
+    # /communities/:community_id/cooldowns
+    resources :cooldowns, only: [:index], controller: "communities/cooldowns" do
+      collection do
+        # /communities/:community_id/cooldowns/clear
+        post :clear
 
-          # /communities/:community_id/cooldowns/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
+        # /communities/:community_id/cooldowns/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
       end
+    end
 
-      # /communities/:community_id/reward_claims
-      resources :reward_claims, only: %i[index new create], controller: "communities/reward_claims"
+    # /communities/:community_id/reward_claims
+    resources :reward_claims, only: %i[index new create], controller: "communities/reward_claims"
 
-      # A claim carries no id of its own, so it is addressed by the pair its unique index is built on. The listing is
-      # community wide because a stuck claim is worth finding without knowing which server it is on.
-      resources :servers, only: [], param: :server_id do
-        # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid
-        resources :reward_claims,
-          controller: "communities/reward_claims",
-          param: :steam_uid,
-          only: %i[edit update destroy] do
-          member do
-            # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/confirm_destroy
-            get :confirm_destroy
+    # A claim carries no id of its own, so it is addressed by the pair its unique index is built on. The listing is
+    # community wide because a stuck claim is worth finding without knowing which server it is on.
+    resources :servers, only: [], param: :server_id do
+      # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid
+      resources :reward_claims,
+        controller: "communities/reward_claims",
+        param: :steam_uid,
+        only: %i[edit update destroy] do
+        member do
+          # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/confirm_destroy
+          get :confirm_destroy
 
-            # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/release
-            patch :release
-          end
+          # /communities/:community_id/servers/:server_id/reward_claims/:steam_uid/release
+          patch :release
         end
       end
     end
@@ -240,117 +238,115 @@ Rails.application.routes.draw do
     end
   end
 
-  if Rails.env.local?
-    # /servers/:id
-    resources :servers, only: [:show] do
-      # /servers/:id/live
+  # /servers/:id
+  resources :servers, only: [:show] do
+    # /servers/:id/live
+    member do
+      get :live
+    end
+
+    # /servers/:server_id/players
+    resources :players, controller: "servers/players", only: [:index, :show], param: :uid do
+      collection do
+        # /servers/:server_id/players/me
+        get :me
+
+        # /servers/:server_id/players/summary
+        get :summary
+
+        # /servers/:server_id/players/list
+        get :list
+
+        # /servers/:server_id/players/lookup
+        get :lookup
+
+        # /servers/:server_id/players/reset_me
+        post :reset_me
+
+        # /servers/:server_id/players/reset_all
+        post :reset_all
+
+        # /servers/:server_id/players/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
+      end
+
       member do
-        get :live
+        # /servers/:server_id/players/:uid/reset
+        post :reset
+
+        # /servers/:server_id/players/:uid/modify
+        post :modify
+
+        # /servers/:server_id/players/:uid/gamble_stats
+        get :gamble_stats
       end
+    end
 
-      # /servers/:server_id/players
-      resources :players, controller: "servers/players", only: [:index, :show], param: :uid do
-        collection do
-          # /servers/:server_id/players/me
-          get :me
+    # /servers/:server_id/territories
+    resources :territories, controller: "servers/territories", only: [:index, :show], param: :territory_id do
+      # /servers/:server_id/territories/:territory_id/restore
+      post :restore
 
-          # /servers/:server_id/players/summary
-          get :summary
+      # /servers/:server_id/territories/:territory_id/pay
+      post :pay
 
-          # /servers/:server_id/players/list
-          get :list
+      # /servers/:server_id/territories/:territory_id/upgrade
+      post :upgrade
 
-          # /servers/:server_id/players/lookup
-          get :lookup
+      # /servers/:server_id/territories/:territory_id/add_member
+      post :add_member
 
-          # /servers/:server_id/players/reset_me
-          post :reset_me
+      # /servers/:server_id/territories/:territory_id/promote_member
+      post :promote_member
 
-          # /servers/:server_id/players/reset_all
-          post :reset_all
+      # /servers/:server_id/territories/:territory_id/remove_member
+      post :remove_member
 
-          # /servers/:server_id/players/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
+      # /servers/:server_id/territories/:territory_id/demote_member
+      post :demote_member
 
-        member do
-          # /servers/:server_id/players/:uid/reset
-          post :reset
+      # /servers/:server_id/territories/:territory_id/set_id
+      post :set_id
 
-          # /servers/:server_id/players/:uid/modify
-          post :modify
+      collection do
+        # /servers/:server_id/territories/list
+        get :list
 
-          # /servers/:server_id/players/:uid/gamble_stats
-          get :gamble_stats
-        end
+        # /servers/:server_id/territories/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
       end
+    end
 
-      # /servers/:server_id/territories
-      resources :territories, controller: "servers/territories", only: [:index, :show], param: :territory_id do
-        # /servers/:server_id/territories/:territory_id/restore
-        post :restore
+    # /servers/:server_id/favorite
+    resource :favorite, only: [:create, :destroy], controller: "servers/favorites"
 
-        # /servers/:server_id/territories/:territory_id/pay
-        post :pay
-
-        # /servers/:server_id/territories/:territory_id/upgrade
-        post :upgrade
-
-        # /servers/:server_id/territories/:territory_id/add_member
-        post :add_member
-
-        # /servers/:server_id/territories/:territory_id/promote_member
-        post :promote_member
-
-        # /servers/:server_id/territories/:territory_id/remove_member
-        post :remove_member
-
-        # /servers/:server_id/territories/:territory_id/demote_member
-        post :demote_member
-
-        # /servers/:server_id/territories/:territory_id/set_id
-        post :set_id
-
-        collection do
-          # /servers/:server_id/territories/list
-          get :list
-
-          # /servers/:server_id/territories/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
+    # /servers/:server_id/gamble
+    resource :gamble, only: [:create], controller: "servers/gambling" do
+      collection do
+        # /servers/:server_id/gamble/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
       end
+    end
 
-      # /servers/:server_id/favorite
-      resource :favorite, only: [:create, :destroy], controller: "servers/favorites"
-
-      # /servers/:server_id/gamble
-      resource :gamble, only: [:create], controller: "servers/gambling" do
-        collection do
-          # /servers/:server_id/gamble/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
+    # /servers/:server_id/sqf
+    resource :sqf, only: [:create], controller: "servers/sqf" do
+      collection do
+        # /servers/:server_id/sqf/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
       end
+    end
 
-      # /servers/:server_id/sqf
-      resource :sqf, only: [:create], controller: "servers/sqf" do
-        collection do
-          # /servers/:server_id/sqf/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
-        end
-      end
+    # /servers/:server_id/reward
+    resource :reward, only: [:create], controller: "servers/rewards" do
+      collection do
+        # /servers/:server_id/reward/commands/:command_id/status
+        get "commands/:command_id/status", action: :status, as: :command_status
 
-      # /servers/:server_id/reward
-      resource :reward, only: [:create], controller: "servers/rewards" do
-        collection do
-          # /servers/:server_id/reward/commands/:command_id/status
-          get "commands/:command_id/status", action: :status, as: :command_status
+        # /servers/:server_id/reward/territories
+        get :territories
 
-          # /servers/:server_id/reward/territories
-          get :territories
-
-          # /servers/:server_id/reward/lookup
-          post :lookup
-        end
+        # /servers/:server_id/reward/lookup
+        post :lookup
       end
     end
   end

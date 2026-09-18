@@ -26,8 +26,6 @@ module ServerVersion
   # @return [Boolean]
   #
   def server_supported?
-    return true if Rails.env.local?
-
     !!current_server&.version?(MINIMUM_SERVER_VERSION)
   end
 
