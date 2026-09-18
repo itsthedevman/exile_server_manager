@@ -44,30 +44,7 @@ version contract and are anchored by date. Year format is Holocene.
 
 ---
 
-## @esm v2.0.4 — 12026-08-23
-
-### Changed
-
-- `ESM_LogOutput` now defaults to `rpt`, so ESM's logging lands in the server's RPT without being switched on
-
-### Fixed
-
-- The Windows 32-bit extension never loaded. Arma looks for decorated export names on x86 and the DLL exported undecorated ones, so `callExtension` returned an empty string with both status codes zero: no error, no log line, and a server running with ESM silently absent
-- Windows 32-bit servers crashed a few seconds after connecting to the bot. Arma's extension callback is `__cdecl` and was being called as `__stdcall`, leaving 12 bytes of arguments on the stack on every callback
-- Poptab, respect, and locker values past 2,147,483,647 failed on Windows 32-bit servers, and took the whole query down rather than the one field. The same values worked on 64-bit
-- `ESMs_util_number_toString` returned nothing on Windows 32-bit for values past 4,294,967,295, which pop tabs and respect totals reach routinely
-
----
-
-## @esm v2.0.3 — 12026-08-18
-
-### Fixed
-
-- Adjusting an online player's poptabs with `/server admin modify_player` stopped that player from saving for the rest of their session. The poptabs adjustment itself never saved either
-
----
-
-## @esm v2.0.2 — 12026-07-28
+## @esm v2.0.5 — 12026-09-17
 
 ### Removed
 
@@ -76,6 +53,7 @@ version contract and are anchored by date. Year format is Holocene.
 
 ### Changed
 
+- `ESM_LogOutput` now defaults to `rpt`, so ESM's logging lands in the server's RPT without being switched on
 - Message encryption moved from OpenSSL bindings to the pure-Rust `aes-gcm` crate (same AES-256-GCM and wire format, so no bot/extension protocol change)
 - `command_me` query consolidated into `player_info`
 - Admin SQF execution now returns the result's type alongside the value, so a boolean or number arrives as its real type rather than a string
@@ -83,6 +61,12 @@ version contract and are anchored by date. Year format is Holocene.
 
 ### Fixed
 
+- Windows servers hung on startup. ESM required an updater addon that was never included, and the Windows server stops at the missing-addon warning where Linux logs it and carries on
+- The Windows 32-bit extension never loaded. Arma looks for decorated export names on x86 and the DLL exported undecorated ones, so `callExtension` returned an empty string with both status codes zero: no error, no log line, and a server running with ESM silently absent
+- Windows 32-bit servers crashed a few seconds after connecting to the bot. Arma's extension callback is `__cdecl` and was being called as `__stdcall`, leaving 12 bytes of arguments on the stack on every callback
+- Poptab, respect, and locker values past 2,147,483,647 failed on Windows 32-bit servers, and took the whole query down rather than the one field. The same values worked on 64-bit
+- `ESMs_util_number_toString` returned nothing on Windows 32-bit for values past 4,294,967,295, which pop tabs and respect totals reach routinely
+- Adjusting an online player's poptabs with `/server admin modify_player` stopped that player from saving for the rest of their session. The poptabs adjustment itself never saved either
 - Stale endpoints during reconnect tearing down fresh connections; old endpoints are now tracked and removed before a new dial
 - Territory access checks treated territory admins as members in `/territory add`, `promote`, and `remove`
 - Remote territory payment limit under-enforced because the payment counter reset to 0 on every server restart (it lived on the in-game territory object, never read back from the database); the counter is now stored in MySQL as the source of truth, with atomic increment and reset

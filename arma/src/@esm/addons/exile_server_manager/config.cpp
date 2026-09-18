@@ -4,7 +4,6 @@ class CfgPatches
 	{
 		requiredVersion = 0.1;
 		requiredAddons[] = {
-			"esm_updater",
 			"exile_server",
 			"exile_client"
 		};
