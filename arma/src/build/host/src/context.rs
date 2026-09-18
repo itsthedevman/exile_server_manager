@@ -57,7 +57,7 @@ pub struct Args {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// Build the extension as 32-bit instead of 64-bit
+    /// Build the Windows extension as 32-bit instead of 64-bit. Linux is 64-bit only.
     #[arg(short, long)]
     x32: bool,
 
@@ -327,6 +327,14 @@ pub struct BuildContext {
 
 impl BuildContext {
     pub fn new(args: Args) -> Result<Self, BuildError> {
+        if matches!((args.build_os(), args.build_arch()), (BuildOS::Linux, BuildArch::X32)) {
+            return Err(BuildError::General(
+                "--x32 is Windows only. Arma 3's 32-bit Linux server is deprecated, so the Linux extension is \
+                 built 64-bit and nothing else. Drop --x32, or add --target=windows"
+                    .into(),
+            ));
+        }
+
         let git_path = find_git_root()?;
         let local_build_path = git_path.join("target");
         let config = parse(&git_path.join("config.yml"))?;
@@ -402,7 +410,7 @@ impl BuildContext {
 
     pub fn extension_build_target(&self) -> &'static str {
         match (self.args.build_os(), self.args.build_arch()) {
-            (BuildOS::Linux, BuildArch::X32) => "i686-unknown-linux-gnu",
+            (BuildOS::Linux, BuildArch::X32) => unreachable!("BuildContext::new refuses a 32-bit Linux build"),
             (BuildOS::Linux, BuildArch::X64) => "x86_64-unknown-linux-gnu",
             (BuildOS::Windows, BuildArch::X32) => "i686-pc-windows-gnu",
             (BuildOS::Windows, BuildArch::X64) => "x86_64-pc-windows-gnu",

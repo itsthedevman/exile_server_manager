@@ -26,6 +26,10 @@ const WATCHDOG_PID_FILE: &str = "/tmp/esm_watchdog.pid";
 const HEARTBEAT_STALE_SECS: u64 = 15;
 const HEARTBEAT_POLL_SECS: u64 = 3;
 
+/// The only server a container runs. The arch parameters on the target methods are for Windows, which still has a
+/// 32-bit server; Linux's is deprecated and `BuildContext::new` refuses to build for it.
+const ARMA_EXECUTABLE: &str = "arma3server_x64";
+
 /// Write a file inside a container, piping the contents over stdin.
 ///
 /// Going through stdin rather than the command line keeps shell quoting out of the picture, which matters for
@@ -279,8 +283,8 @@ impl super::Target for DockerTarget {
         Ok(())
     }
 
-    fn arma_installed(&self, arch: BuildArch) -> bool {
-        let exe = self.server_path.join(arma_executable(arch));
+    fn arma_installed(&self, _arch: BuildArch) -> bool {
+        let exe = self.server_path.join(ARMA_EXECUTABLE);
         self.exists(&exe).unwrap_or(false)
     }
 
@@ -354,13 +358,13 @@ impl super::Target for DockerTarget {
         Ok(())
     }
 
-    fn start_arma(&self, arch: BuildArch) -> Result<(), BuildError> {
+    fn start_arma(&self, _arch: BuildArch) -> Result<(), BuildError> {
         // The watchdog reaps the server by its recorded PID once the heartbeat stops being refreshed, then
         // clears its own bookkeeping. Single-quoted so its `$(...)` expand when the watchdog runs, not here.
         self.run(&format!(
             "mkdir -p '{server}/server_profile'; \
              touch {hb}; \
-             {env}nohup '{server}/{exe}' {args} \
+             nohup '{server}/{exe}' {args} \
                >'{server}/server_profile/server.log' 2>&1 </dev/null & \
              echo $! > {spid}; \
              nohup bash -c '\
@@ -375,8 +379,7 @@ impl super::Target for DockerTarget {
                done' >/dev/null 2>&1 </dev/null & \
              echo $! > {wpid}",
             server = self.server_path.display(),
-            env = arma_environment(&self.server_path, arch),
-            exe = arma_executable(arch),
+            exe = ARMA_EXECUTABLE,
             args = self.server_args,
             hb = HEARTBEAT_FILE,
             spid = SERVER_PID_FILE,
@@ -466,32 +469,6 @@ impl super::Target for DockerTarget {
 
     fn server_args(&self) -> &str {
         &self.server_args
-    }
-}
-
-fn arma_executable(arch: BuildArch) -> &'static str {
-    match arch {
-        BuildArch::X32 => "arma3server",
-        BuildArch::X64 => "arma3server_x64",
-    }
-}
-
-/// Environment the server is launched with, as a shell prefix.
-///
-/// extDB3's 32-bit build needs `libtbbmalloc.so.2`, which Ubuntu has no i386 package for. Arma ships one in the
-/// Steam runtime it carries, so that directory goes on the search path for a 32-bit server. Without it the
-/// extension fails to load and Arma reports it as "could not be loaded", which reads like a missing file rather
-/// than a missing dependency.
-///
-/// A 64-bit server resolves everything from the system and gets nothing, since an i386 directory on its path
-/// would only be entries the loader skips.
-fn arma_environment(server_path: &Path, arch: BuildArch) -> String {
-    match arch {
-        BuildArch::X32 => format!(
-            "LD_LIBRARY_PATH='{}/steam-runtime/usr/lib/i386-linux-gnu':\"${{LD_LIBRARY_PATH:-}}\" ",
-            server_path.display()
-        ),
-        BuildArch::X64 => String::new(),
     }
 }
 

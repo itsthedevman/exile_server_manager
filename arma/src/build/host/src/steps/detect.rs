@@ -173,7 +173,10 @@ mod tests {
         let baseline = profile_name(BuildOS::Linux, BuildArch::X64, false, &development());
 
         assert_ne!(baseline, profile_name(BuildOS::Windows, BuildArch::X64, false, &development()));
-        assert_ne!(baseline, profile_name(BuildOS::Linux, BuildArch::X32, false, &development()));
+        assert_ne!(
+            profile_name(BuildOS::Windows, BuildArch::X64, false, &development()),
+            profile_name(BuildOS::Windows, BuildArch::X32, false, &development())
+        );
     }
 
     /// A development build already names its feature through the profile, so the stamp it carries today still matches

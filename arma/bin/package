@@ -6,9 +6,9 @@
 # --skip-updater leaves the auto-updater out of the package: no esm_updater.pbo, no updater
 # extensions, no CLI, and no @esm-install.zip. Use it when the updater isn't ready to ship.
 #
-# --local builds only what a Linux x64 test server can run, skipping the other three targets, the Windows CLI, the
+# --local builds only what a Linux x64 test server can run, skipping the two Windows targets, the Windows CLI, the
 # tests, and both zips. It exists so bin/updater_tester can rebuild in under a minute instead of cross-compiling
-# four platforms nobody is about to run. The result is not distributable and marks itself as such.
+# platforms nobody is about to run. The result is not distributable and marks itself as such.
 
 set -ueo pipefail
 trap "exit" INT
@@ -142,16 +142,6 @@ if [[ "$local_build" == false ]]; then
     if [[ "$skip_updater" == false ]]; then
         run_command cp $build_dir/esm_updater_x64.dll $release_dir/@esm
     fi
-
-    ##################################
-    # Extension - Linux (x32)
-    echo_step "Building esm.so"
-    run_command ./bin/build --only=extension --release --target=linux --x32
-    run_command cp $build_dir/esm.so $release_dir/@esm
-
-    if [[ "$skip_updater" == false ]]; then
-        run_command cp $build_dir/esm_updater.so $release_dir/@esm
-    fi
 fi
 
 ##################################
@@ -240,7 +230,7 @@ fi
 
 ##################################
 # Zipping
-# A local build is missing three of the four platforms, so a zip of it would be a download waiting to disappoint
+# A local build is missing two of the three platforms, so a zip of it would be a download waiting to disappoint
 # whoever found it. The directory is still there for anything that wants to read the files directly.
 if [[ "$local_build" == false ]]; then
     echo_step "Zipping $zip_filename"
@@ -253,7 +243,6 @@ if [[ "$local_build" == false ]]; then
         cd $release_dir && zip @esm-install.zip \
             @esm/esm_updater.dll \
             @esm/esm_updater_x64.dll \
-            @esm/esm_updater.so \
             @esm/esm_updater_x64.so \
             @esm/bin/esm_updater \
             @esm/bin/esm_updater.exe

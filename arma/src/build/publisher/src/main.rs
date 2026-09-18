@@ -70,15 +70,13 @@ struct Mapping {
 /// The extension, one native binary per Arma server build.
 const ESM: &[Mapping] = &[
     Mapping { platform: "linux-x64", relative_path: "@esm/esm_x64.so" },
-    Mapping { platform: "linux-x86", relative_path: "@esm/esm.so" },
     Mapping { platform: "windows-x64", relative_path: "@esm/esm_x64.dll" },
     Mapping { platform: "windows-x86", relative_path: "@esm/esm.dll" },
 ];
 
-/// The updater's own extension, same four builds.
+/// The updater's own extension, same three builds.
 const EXTENSION_UPDATER: &[Mapping] = &[
     Mapping { platform: "linux-x64", relative_path: "@esm/esm_updater_x64.so" },
-    Mapping { platform: "linux-x86", relative_path: "@esm/esm_updater.so" },
     Mapping { platform: "windows-x64", relative_path: "@esm/esm_updater_x64.dll" },
     Mapping { platform: "windows-x86", relative_path: "@esm/esm_updater.dll" },
 ];
