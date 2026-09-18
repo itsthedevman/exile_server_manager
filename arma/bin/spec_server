@@ -15,10 +15,17 @@
 # A leading version (bin/spec_server 2.0.4) deploys that release from tools/previous_versions in place
 # of the tree's own build, for testing the bot against servers that have not updated.
 #
-# Extra arguments are passed to bin/build. Leave --server-id and --bot-host out of them: this script
-# names both, and clap rejects a repeated argument rather than taking the last one.
+# --windows runs the server on the Windows host from config.yml instead. The guest reaches the bot at
+# the address `windows.bot_host` names, so that host is kept and only the port is swapped for the
+# suite's listener.
+#
+# Extra arguments are passed to bin/build. Leave --server-id, --bot-host and --target out of them: this
+# script names all three, and clap rejects a repeated argument rather than taking the last one.
 
 set -euo pipefail
+
+config_path="$(pwd)/config.yml"
+readonly config_path
 
 version_args=()
 
@@ -27,13 +34,45 @@ if [[ "${1:-}" =~ ^[0-9] ]]; then
     shift
 fi
 
-readonly version_args
-readonly args=("$@")
-readonly server_id="esm_test"
-readonly bot_host="${ESM_SPEC_BOT_HOST:-host.docker.internal}:${ESM_PORT_CONNECTION_SERVER:-3203}"
+windows=false
+passthrough_args=()
 
-config_path="$(pwd)/config.yml"
-readonly config_path
+for arg in "$@"; do
+    if [[ "$arg" == "--windows" ]]; then
+        windows=true
+    else
+        passthrough_args+=("$arg")
+    fi
+done
+
+readonly version_args windows
+readonly args=("${passthrough_args[@]}")
+readonly server_id="esm_test"
+readonly bot_port="${ESM_PORT_CONNECTION_SERVER:-3203}"
+
+target_args=()
+default_bot_address="host.docker.internal"
+
+if [[ "$windows" == true ]]; then
+    target_args=(--target=windows)
+
+    # The host half of `bot_host:` inside the `windows:` section, port and quotes stripped
+    default_bot_address="$(
+        awk '/^windows:/ { inside = 1; next }
+             /^[^[:space:]#]/ { inside = 0 }
+             inside && $1 == "bot_host:" { gsub(/["'\'']/, "", $2); sub(/:[0-9]+$/, "", $2); print $2; exit }' \
+            "$config_path"
+    )"
+
+    if [[ -z "$default_bot_address" && -z "${ESM_SPEC_BOT_HOST:-}" ]]; then
+        echo "Fatal - --windows needs to know where the guest reaches the bot"
+        echo "  Set windows.bot_host in ${config_path}, or ESM_SPEC_BOT_HOST for this run."
+        exit 1
+    fi
+fi
+
+readonly target_args
+readonly bot_host="${ESM_SPEC_BOT_HOST:-$default_bot_address}:${bot_port}"
 
 if ! grep -qE "^[[:space:]]*- server_id: +${server_id}[[:space:]]*$" "$config_path"; then
     echo "Fatal - no instance '${server_id}' in ${config_path}"
@@ -44,4 +83,5 @@ fi
 
 echo "Starting ${server_id}, pointed at the bot on ${bot_host}"
 
-exec "./bin/build" --start-server --server-id "$server_id" --bot-host "$bot_host" "${version_args[@]}" "${args[@]}"
+exec "./bin/build" --start-server --server-id "$server_id" --bot-host "$bot_host" \
+    "${target_args[@]}" "${version_args[@]}" "${args[@]}"
