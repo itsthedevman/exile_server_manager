@@ -52,10 +52,17 @@
                   .card-body
                     h6.text-warning.mb-3 Migration Steps
                     ol.mb-0.text-muted
-                      li Remove your existing <code>@ESM</code> directory completely
-                      li Update dashboard settings to v2 and download new <code>esm.key</code>
-                      li Execute <code>02.sql</code> on your MySQL server
-                      li Follow the fresh installation steps below
+                      li
+                        | Open the #{link_to "dashboard", communities_path, target: "_blank", class: "text-warning"} and pick your community, then pick your server from the <strong>Servers</strong> list <small>(it'll be marked as <code>classic</code>)</small>. Click <strong>Upgrade to v2</strong> at the top of its page
+                      li
+                        | Download the new <code>esm.key</code> from the <strong>Download Files</strong> menu. Your v1 key will not work with v2
+                      li Stop your server and delete your existing <code>@ESM</code> directory completely
+                      li
+                        | Download #{link_to "@esm v2", latest_download_path, class: "text-warning"}, extract it into your server directory, and put the new <code>esm.key</code> inside <code>@esm</code>
+                      li
+                        | Execute <code>02.sql</code> on your MySQL database. Skip <code>01.sql</code>, since v1 already applied it
+                      li
+                        | Check <code>@esm</code> is in your startup parameters, start your server, and run the tests in <strong>Test Everything</strong>
 
               button.btn.btn-outline-warning.btn-sm[
                 data-controller="collapse-toggle"
