@@ -200,7 +200,12 @@ pub fn sync_shared_content(ictx: &InstanceContext) -> BuildResult {
     for (name, source, dest, stamp, bytes) in pending {
         sub_lines.print(&format!("{name} ({}) -> {}", human_size(bytes), dest.display()));
 
-        if let Err(e) = ictx.target.upload(&source, &dest) {
+        // Uploading only adds and overwrites, so a file dropped from the source would otherwise stay on the
+        // server and keep loading. Emptied rather than removed for the same reason `@esm` is: a container's mod
+        // directory can be a mount point.
+        let upload = ictx.target.clear_directory(&dest).and_then(|_| ictx.target.upload(&source, &dest));
+
+        if let Err(e) = upload {
             spinner.sub_fail(&name, true);
             return Err(e);
         }
