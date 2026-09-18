@@ -75,7 +75,7 @@ RSpec.describe ESM::Website::API::Server, :integration do
         end
       end
 
-      it "replies with a redacted error once the promise rejects" do
+      it "replies with a redacted error once the promise rejects", :silence_error_logs do
         envelope = build_envelope.call(action: "ping", payload: {})
 
         response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
@@ -128,7 +128,7 @@ RSpec.describe ESM::Website::API::Server, :integration do
 
     before { allow(handler).to receive(:call).and_raise(StandardError, "secret internal detail with table=communities sql=...") }
 
-    it "returns a generic detail string for :unknown errors, not the exception message" do
+    it "returns a generic detail string for :unknown errors, not the exception message", :silence_error_logs do
       envelope = build_envelope.call(action: "ping", payload: {})
       response = client.request("#{subject_prefix}ping", envelope.to_json, timeout: 5)
       parsed = JSON.parse(response.data, symbolize_names: true)

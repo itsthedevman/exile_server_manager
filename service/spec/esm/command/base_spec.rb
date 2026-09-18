@@ -365,7 +365,7 @@ describe ESM::Command::Base do
         end
       end
 
-      it "send error (StandardError)" do
+      it "send error (StandardError)", :silence_error_logs do
         execute!(command_class: ESM::Command::Test::ErrorCommand, handle_error: true)
         ESM.discord_bot.test_outbox.await_size(1)
 

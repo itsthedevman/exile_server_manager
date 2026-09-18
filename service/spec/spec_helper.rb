@@ -33,4 +33,10 @@ RSpec.configure do |config|
     # alone, and a reloaded schema restarts them, so yesterday's entry can answer for today's unrelated record.
     ESM.cache.clear
   end
+
+  # For an example whose error is the point of it. Printed, it is red output in a passing run and reads as something
+  # having broken.
+  config.before(:each, :silence_error_logs) do
+    allow(ESM.logger).to receive(:error)
+  end
 end
