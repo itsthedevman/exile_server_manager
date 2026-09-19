@@ -254,6 +254,7 @@ module ESM
             check_for_cooldown!(scope_key: claim.reward_id)
             check_for_reward_items!(claim)
           else
+            check_for_delivery_in_progress!(claim)
             check_for_exhausted_claim!(claim)
           end
 
@@ -264,6 +265,23 @@ module ESM
           return unless claim.failed?
 
           raise_error!(:claim_exhausted, user: current_user, attempts: MAX_DELIVERY_ATTEMPTS)
+        end
+
+        #
+        # Refuses a claim that is already on its way. A second attempt against a live delivery would hand the same
+        # package over twice, and both surfaces can start one.
+        #
+        # Every delivery settles this state before it returns, whether the server answered, refused, or never replied,
+        # so a claim is only ever found here while one is genuinely running.
+        #
+        # @param claim [ESM::ServerRewardClaim]
+        #
+        # @return [void]
+        #
+        def check_for_delivery_in_progress!(claim)
+          return unless claim.in_flight?
+
+          raise_error!(:delivery_in_progress, user: current_user)
         end
 
         #
@@ -302,10 +320,44 @@ module ESM
 
           claim.update!(state: :in_flight)
 
-          response = call_sqf_function!("ESMs_command_reward", **data).data
+          begin
+            response = call_sqf_function!("ESMs_command_reward", **data).data
+          rescue ESM::Exception::ExtensionError, ESM::Exception::ServerNotConnected
+            # Nothing was given. The server's only two refusals - an account it has never seen, and a player who
+            # is not in game and alive - are both checked before it delivers anything, and a call that never left never
+            # reached them at all. A package that only became a claim to be attempted leaves nothing behind; otherwise
+            # a player could stock every server they have never joined with a claim nobody can deliver.
+            rollback_claim!(claim, created: is_package)
+
+            raise
+          rescue ESM::Exception::RequestTimeout
+            # The one outcome nobody knows. Retrying could redeem the package twice, so the claim stops here and
+            # waits for an admin, who can see the attempt and decide.
+            claim.update!(state: :failed)
+
+            raise_error!(:delivery_stalled, user: current_user)
+          end
+
           settle_claim!(claim, response)
 
           response
+        end
+
+        #
+        # Undoes an attempt that delivered nothing, leaving the player exactly where they started.
+        #
+        # Only a refusal means this much. An attempt that timed out may well have landed, so that one is settled as
+        # failed instead and an admin decides what it was.
+        #
+        # @param claim [ESM::ServerRewardClaim] the claim that was just attempted
+        # @param created [Boolean] whether this attempt is what created it
+        #
+        # @return [void]
+        #
+        def rollback_claim!(claim, created:)
+          return claim.destroy! if created
+
+          claim.update!(state: :waiting)
         end
 
         #
@@ -357,7 +409,15 @@ module ESM
           choice
         end
 
+        # Two redemptions started together both will find no claim and both try to create one. The unique index on the
+        # server and player is what settles it, and the one that loses is a player whose reward is already on its way.
         def create_claim(reward, vehicles_supported:)
+          build_claim(reward, vehicles_supported:)
+        rescue ActiveRecord::RecordNotUnique
+          raise_error!(:delivery_in_progress, user: current_user)
+        end
+
+        def build_claim(reward, vehicles_supported:)
           ESM::ServerRewardClaim.create!(
             server_id: target_server.id,
             user_id: current_user.id,

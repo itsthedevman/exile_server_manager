@@ -611,6 +611,63 @@ describe ESM::Command::Server::Reward, category: "command" do
             embed = latest_message
             expect(embed.description).to match("need to join")
           end
+
+          # Nothing was handed over, so nothing is owed. A claim left behind here is one the player can never deliver,
+          # on every server they have never joined.
+          it "leaves no claim behind" do
+            execute_command
+
+            expect(claim).to be_nil
+          end
+
+          context "and they already had a claim waiting" do
+            let!(:pending_claim) do
+              ESM::ServerRewardClaim.create!(
+                server_id: server.id,
+                user_id: user.id,
+                player_poptabs: 25,
+                locker_poptabs: 0,
+                respect: 0,
+                items: {},
+                vehicles: [],
+                state: :waiting
+              )
+            end
+
+            it "keeps what they are owed and leaves it deliverable" do
+              execute_command
+
+              expect(claim).to be_present
+              expect(claim.player_poptabs).to eq(25)
+              expect(claim).to be_waiting
+            end
+          end
+        end
+
+        context "when a delivery is already running" do
+          let!(:pending_claim) do
+            ESM::ServerRewardClaim.create!(
+              server_id: server.id,
+              user_id: user.id,
+              player_poptabs: 25,
+              locker_poptabs: 0,
+              respect: 0,
+              items: {},
+              vehicles: [],
+              state: :in_flight
+            )
+          end
+
+          it "refuses a second one rather than delivering twice" do
+            expect {
+              execute!(arguments: {server_id: server.server_id})
+            }.to raise_error(ESM::Exception::CheckFailure) do |error|
+              expect(error.to_embed.description).to match("being delivered right now")
+            end
+
+            expect(claim.reload).to be_in_flight
+            expect(claim.player_poptabs).to eq(25)
+          end
         end
 
         context "when logging is enabled" do
