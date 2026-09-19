@@ -206,7 +206,7 @@ bin/dev          # rails server
 
 The Rust extension is loaded by the dedicated server and handles TCP communication with the service plus Exile database operations. The SQF mod provides the in-game functions and event hooks the extension dispatches to.
 
-Builds run on Linux. Linux x64/x32 and Windows x64 are supported targets; Windows x32 still needs an actual Windows host (cross-compile from Linux is in flux).
+Builds run on Linux and cross-compile all three targets: Linux x64, Windows x64, and Windows x32. Linux x32 was dropped in 2.1.0.
 
 **Source layout:**
 
