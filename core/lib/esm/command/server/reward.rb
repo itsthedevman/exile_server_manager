@@ -333,7 +333,7 @@ module ESM
           rescue ESM::Exception::RequestTimeout
             # The one outcome nobody knows. Retrying could redeem the package twice, so the claim stops here and
             # waits for an admin, who can see the attempt and decide.
-            claim.update!(state: :failed)
+            claim.interrupt!("the server never answered")
 
             raise_error!(:delivery_stalled, user: current_user)
           end

@@ -65,9 +65,40 @@ module ESM
     # CLASS METHODS
     # =============================================================================
 
+    ##
+    # Stops every delivery that was still running when this process last went down.
+    #
+    # Nothing can be mid-delivery at boot, so a claim found in flight here belongs to one that died with whatever was
+    # carrying it. What it managed to hand over before that is unknown, which is an admin's call rather than something
+    # to quietly attempt again.
+    #
+    # @return [void]
+    #
+    def self.settle_interrupted_deliveries!
+      in_flight.find_each do |claim|
+        claim.interrupt!("the bot restarted before this finished")
+      end
+    end
+
     # =============================================================================
     # INSTANCE METHODS
     # =============================================================================
+
+    ##
+    # Stops this claim on a delivery that never said how it went, recording why.
+    #
+    # The reason joins whatever the last attempt already reported, so a claim that came back holding leftovers still
+    # says why those are here alongside why nobody knows how this attempt ended.
+    #
+    # @param reason [String] what happened, in the words the claim's failures are written in
+    #
+    # @return [void]
+    #
+    def interrupt!(reason)
+      failures = Array(state_details[:failures]) + [{bucket: "delivery", name: "Delivery", reason:}]
+
+      update!(state: :failed, state_details: {failures:})
+    end
 
     def contents
       @contents ||= {

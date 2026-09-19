@@ -245,6 +245,10 @@ module ESM
         SyncCommandCountsJob.perform_async(nil)
       end
 
+      # A reward delivery only lives as long as the process carrying it. Nothing can be mid-delivery this early, so
+      # anything still calling itself one was cut off by however this process last ended.
+      ServerRewardClaim.settle_interrupted_deliveries!
+
       discord_bot.run(async:)
     end
 

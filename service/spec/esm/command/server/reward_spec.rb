@@ -644,6 +644,26 @@ describe ESM::Command::Server::Reward, category: "command" do
           end
         end
 
+        # Nobody knows what a delivery did if it never answered, so the claim stays put and says as much rather than
+        # being handed back for another attempt that could deliver the same package twice.
+        context "when the server never answers" do
+          before do
+            allow_any_instance_of(ESM::Server).to receive(:call_sqf_function!)
+              .and_raise(ESM::Exception::RequestTimeout)
+          end
+
+          it "stops the claim and records why" do
+            execute_command
+
+            expect(claim).to be_present
+            expect(claim).to be_failed
+            expect(claim.state_details[:failures].last[:reason]).to match("never answered")
+
+            embed = latest_message
+            expect(embed.description).to match("never heard back")
+          end
+        end
+
         context "when a delivery is already running" do
           let!(:pending_claim) do
             ESM::ServerRewardClaim.create!(
