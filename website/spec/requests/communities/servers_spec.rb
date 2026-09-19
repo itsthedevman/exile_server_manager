@@ -182,12 +182,12 @@ RSpec.describe "Communities::Servers", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "links a v2 server's settings to its dashboard" do
+    it "links a v2 server to its dashboard from the sidebar" do
       edit_request
       expect(response.body).to include(%(href="/servers/#{server.public_id}"))
     end
 
-    it "leaves the dashboard link off a classic server, whose dashboard only asks it to update" do
+    it "leaves the dashboard link off a classic server's sidebar row, since its dashboard only asks it to update" do
       server.update!(ui_version: "1.0.0")
 
       edit_request
