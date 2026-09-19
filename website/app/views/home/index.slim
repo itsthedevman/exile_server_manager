@@ -8,7 +8,7 @@
           | Management Platform
 
         p.lead.mb-5.text-muted.fs-4
-          | ESM connects your Arma 3 server to Discord with real-time notifications, territory management, and admin tools.
+          | ESM connects your Arma 3 server to Discord and the web with real-time notifications, territory management, rewards, and admin tools.
           br
           strong.text-light Stop logging into the game just to help players.
 
@@ -112,9 +112,37 @@
       .col-md-4
         .text-center.p-4
           i.bi.bi-gift.text-success.display-4.mb-4
-          h5.text-success.mb-3 Custom Rewards
-          p.text-muted Server-configured rewards and bonuses that keep players engaged and coming back
+          h5.text-success.mb-3 Rewards
+          p.text-muted Poptabs, respect, items, and vehicles from your server, plus codes for events and giveaways
           small.text-secondary.font-monospace = command_usage(:reward, show_arguments: false)
+
+.py-5.bg-secondary.bg-opacity-10
+  .container
+    .text-center.mb-5
+      h3.display-6.text-primary One Page for Every Server
+      p.text-muted.fs-5.mb-0 Your server's players, territories, and admin tools, in the browser
+
+    .row.g-4.justify-content-center
+      .col-lg-5
+        .card.h-100.bg-dark.border-secondary
+          .card-body.p-4
+            h5.text-light.mb-3
+              i.bi.bi-person-badge.text-info.me-2
+              | For Players
+            p.text-muted.mb-0
+              | Check on your player, pay and upgrade your territories, gamble from your locker, and claim rewards.
+
+      .col-lg-5
+        .card.h-100.bg-dark.border-secondary
+          .card-body.p-4
+            h5.text-light.mb-3
+              i.bi.bi-shield-lock.text-warning.me-2
+              | For Admins
+            p.text-muted.mb-0
+              | Look up any player, fix stuck characters, save bases from deletion, and run SQF, with the permissions you already set for your commands.
+
+    .text-center.mt-4
+      = link_to "See how it works", getting_started_docs_path, class: "btn btn-outline-primary"
 
 
 .py-5.bg-primary.bg-opacity-10

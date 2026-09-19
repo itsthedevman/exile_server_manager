@@ -13,7 +13,7 @@
 
       .row.g-lg-4
         .col-lg-8
-          p.mb-4 ESM has three main components that work together to connect your Arma 3 server with Discord:
+          p.mb-4 ESM has three main components that work together to connect your Arma 3 server with Discord and the web:
 
           .row.g-3.mb-4
             .col-md-4
@@ -35,7 +35,7 @@
                 .card-body.text-center.py-3
                   i.bi.bi-speedometer2.text-success.fs-2.mb-2
                   h6.text-success Web Dashboard
-                  p.small.text-muted.mb-0 Configure settings and manage everything
+                  p.small.text-muted.mb-0 Configure settings and use each server's dashboard
 
         .col-lg-4
           .card.bg-body.border.h-100
@@ -75,8 +75,9 @@
           h6.text-light.mb-3 What You Get:
           ul.mb-4
             li Discord commands for server interaction
+            li A page for every server on the website
             li Real-time XM8 notifications (raids, payments, sales)
-            li Territory management from Discord
+            li Territory management from Discord or the website
             li Stats checking, gambling, and rewards
 
           .d-grid
@@ -99,7 +100,8 @@
 
           h6.text-light.mb-3 What You Get:
           ul.mb-4
-            li Remote server administration via Discord
+            li Remote server administration via Discord or the website
+            li Reward packages for your players
             li Advanced player notification system
             li Web-based configuration dashboard
             li Comprehensive logging and monitoring
@@ -218,7 +220,7 @@
       .card-body
         .row.g-4
           .col-lg-8
-            p.mb-3 ESM provides comprehensive territory management through Discord, including payments, upgrades, member management, and role assignments.
+            p.mb-3 ESM provides comprehensive territory management through Discord and each server's page on the website, including payments, upgrades, member management, and role assignments.
 
             .row.g-3
               .col-md-6
@@ -254,6 +256,90 @@
                   li.font-monospace = command_usage(:add, show_arguments: false)
                   li.font-monospace = command_usage(:remove, show_arguments: false)
                   li.font-monospace = command_usage(:promote, show_arguments: false)
+
+    / Server Dashboards
+    .card.bg-primary.bg-opacity-10.border-primary.mb-4
+      .card-header.border-primary
+        h4.mb-0.text-primary
+          i.bi.bi-grid-1x2.me-2
+          | Server Dashboards
+      .card-body
+        .row.g-4
+          .col-lg-8
+            p.mb-3 Every server has its own dashboard on the website, bringing your player, your territories, and your server's admin tools together in one place.
+
+            .row.g-3
+              .col-md-6
+                h6.text-light.mb-2 Player Features:
+                ul.small.text-muted.mb-0
+                  li View your player's stats and locker
+                  li Pay and upgrade territories
+                  li Manage territory members
+                  li Reset a stuck player
+                  li Gamble and redeem rewards
+
+              .col-md-6
+                h6.text-light.mb-2 Admin Features:
+                ul.small.text-muted.mb-0
+                  li Look up any player
+                  li Adjust poptabs and respect
+                  li Heal, kill, or reset players
+                  li Restore territories marked for deletion
+                  li Run SQF from your browser
+
+            .alert.border-secondary.bg-dark.mt-3.mb-0
+              h6.text-primary.mb-2 Same Rules as Discord
+              p.small.mb-0 Every dashboard feature is a command underneath. It only appears when your community has that command enabled for you, with the same cooldowns and restrictions.
+
+          .col-lg-4.d-flex.align-items-stretch
+            .card.bg-dark.border-0.w-100
+              .card-body
+                h6.text-primary.mb-3 Getting There
+                ol.small.text-muted.mb-3.ps-3
+                  li.mb-1 Link your Steam account
+                  li.mb-1 Find the server on Discover
+                  li Favorite it for quick access
+                = link_to "Open Discover", discover_path, class: "btn btn-outline-primary btn-sm"
+
+    / Rewards
+    .card.bg-success.bg-opacity-10.border-success.mb-4
+      .card-header.border-success
+        h4.mb-0.text-success
+          i.bi.bi-gift.me-2
+          | Rewards
+      .card-body
+        .row.g-4
+          .col-lg-8
+            p.mb-3 Admins build reward packages for each server, and players claim them from Discord or the server's page on the website.
+
+            h6.text-light.mb-2 Packages
+            ul.small.text-muted.mb-3
+              li <strong>The default package</strong> is what players get from #{command_usage(:reward, show_arguments: false)} without a code. Every server has one.
+              li <strong>Code packages</strong> stay hidden until a player types the code. Give one out for joining your Discord, winning an event, or supporting the server.
+              li Packages can hold pocket poptabs, locker poptabs, respect, items, and vehicles.
+              li Each package can have its own cooldown: a length of time, or a number of uses. Without one, it uses the cooldown set for #{command_usage(:reward, show_arguments: false)}. The cooldown starts once the reward has been delivered.
+
+            h6.text-light.mb-2 Vehicles
+            p.small.text-muted.mb-3 A vehicle spawns next to the player, goes into one of their territories' virtual garages, or the admin can let the player choose. Players claim vehicles on the website, where they pick the territory and set the PIN that locks it.
+
+            h6.text-light.mb-2 Nothing Gets Lost
+            p.small.text-muted.mb-0 Poptabs and respect always arrive. If an item or vehicle can't be delivered, because of a full inventory, no safe place to spawn, or a full garage, it waits on the server's page until the player delivers it. A new reward can't be redeemed until then. After five failed attempts, delivery stops until an admin allows a retry.
+
+          .col-lg-4.d-flex.align-items-stretch
+            .card.bg-dark.border-0.w-100
+              .card-body
+                h6.text-success.mb-3 For Admins
+                ul.small.text-muted.mb-3
+                  li Build packages under <strong>Player Rewards</strong> in each server's settings
+                  li <strong>Reward Claims</strong>, under Tools, lists every reward still waiting to be delivered. Allow a retry, change what a player is owed, or give someone a reward directly.
+                  li <strong>Cooldowns</strong>, under Tools, shows who is waiting on what, and clears cooldowns
+                  li Vehicle rewards need @esm 2.1.0 or newer
+
+                h6.text-success.mb-3 For Players
+                ul.small.text-muted.mb-0
+                  li Open the server's page and use the Rewards card
+                  li Or run #{command_usage(:reward, show_arguments: false)}, adding a code if you have one
+                  li Be in game and alive when you claim
 
   / Player vs Server Mode
   .card.bg-secondary.bg-opacity-10.border-secondary.mb-5
