@@ -125,15 +125,16 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(response.body).to include("#{max_attempts} of #{max_attempts} attempts")
     end
 
-    # Nothing is blocked by an unfinished delivery, so the row saying one is running is the only thing wrong with it.
-    it "stops calling a long unfinished delivery a delivery" do
+    # The player's own attempt refuses to touch a claim that says a delivery is running, so one left behind by a bot
+    # that went down mid delivery is only an admin's to free.
+    it "stops calling a long unfinished delivery a delivery, and offers to free it" do
       create_claim(state: :in_flight, updated_at: 10.minutes.ago)
 
       get index_path
 
       expect(response.body).to include("Interrupted")
       expect(response.body).to include("did not finish")
-      expect(response.body).not_to include("Allow retry")
+      expect(response.body).to include("Allow retry")
     end
 
     # A claim only ever comes from the v2 command, so a community running nothing but v1 has a page that could never
@@ -416,14 +417,24 @@ RSpec.describe "Communities::RewardClaims", type: :request do
       expect(claim.attempt_count).to eq(0)
     end
 
-    # The reward command finds a claim whatever state it is in and only guards on failed, so every other state is
-    # already deliverable and there is nothing here to allow.
-    it "leaves a delivery that never reported back alone" do
+    # A live delivery is refused by the player's own attempt, so one still claiming to be running long afterwards is
+    # the one state only an admin can clear.
+    it "frees a delivery that never reported back" do
+      claim = create_claim(state: :in_flight, attempt_count: 2, updated_at: 10.minutes.ago)
+
+      patch claim_path(claim, "release")
+
+      expect(response).to have_http_status(:ok)
+      expect(claim.reload).to be_waiting
+      expect(claim.attempt_count).to eq(0)
+    end
+
+    it "leaves a delivery that is still running alone" do
       claim = create_claim(state: :in_flight, attempt_count: 2)
 
       patch claim_path(claim, "release")
 
-      expect(response.body).to include("can already be delivered")
+      expect(response.body).to include("is being delivered right now")
       expect(claim.reload).to be_in_flight
       expect(claim.attempt_count).to eq(2)
     end

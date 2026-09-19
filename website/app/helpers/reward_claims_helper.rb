@@ -124,8 +124,8 @@ module RewardClaimsHelper
   ##
   # Whether a delivery has been running long enough that it is not running any more.
   #
-  # The row is the only place this shows up. Nothing is blocked by it: the reward command finds a claim whatever
-  # state it is in, so the player can try again without anyone here doing anything first.
+  # A delivery settles its own claim however it ends, so the only way one stays here is the bot going down mid
+  # delivery. The player's next attempt is refused while it looks live, which is what makes this releasable.
   #
   # @param claim [ESM::ServerRewardClaim]
   #
@@ -183,7 +183,7 @@ module RewardClaimsHelper
   # @return [Boolean]
   #
   def reward_claim_retryable?(claim)
-    claim.failed?
+    claim.failed? || reward_claim_delivery_stalled?(claim)
   end
 
   ##

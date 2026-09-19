@@ -107,9 +107,18 @@ module Communities
       claim = find_claim
       not_found! if claim.nil?
 
-      # Every other state is one the reward command picks up on its own, so there is nothing here to allow.
-      unless claim.failed?
-        return render turbo_stream: create_info_toast("#{claim_label(claim)} can already be delivered")
+      # Every other state is one the reward command picks up on its own, so there is nothing here to allow. A delivery
+      # that still calls itself live long after any delivery could be is the exception: the command refuses to touch
+      # one, so only an admin can free it.
+      unless helpers.reward_claim_retryable?(claim)
+        message =
+          if claim.in_flight?
+            "#{claim_label(claim)} is being delivered right now"
+          else
+            "#{claim_label(claim)} can already be delivered"
+          end
+
+        return render turbo_stream: create_info_toast(message)
       end
 
       claim.update!(state: :waiting, attempt_count: 0)
