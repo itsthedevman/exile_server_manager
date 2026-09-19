@@ -252,5 +252,27 @@ RSpec.describe "Servers::Rewards", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("No territory with room in its garage")
     end
+
+    # One of these renders per vehicle, so a server that cannot answer would be asked by every picker on the page.
+    # Specs run against a null store, so this example brings its own: the behavior under test is the caching itself.
+    it "only asks the server once while the answer is still fresh" do
+      allow(ESM).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+
+      allow(ESM::Service::API).to receive(:call)
+        .with(:sync_command, any_args)
+        .and_raise(ESM::Service::API::Unreachable, "no responders")
+
+      3.times { get_territories }
+
+      expect(ESM::Service::API).to have_received(:call).with(:sync_command, any_args).once
+    end
+
+    it "refuses a player who cannot claim rewards here" do
+      allow_access(denied: true, reason: :disabled)
+
+      get_territories
+
+      expect(ESM::Service::API).not_to have_received(:call)
+    end
   end
 end

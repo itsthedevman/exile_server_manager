@@ -55,6 +55,8 @@ module Servers
     # rather than making every dashboard wait on it.
     #
     def territories
+      return unless check_for_command_access("reward")
+
       render partial: "servers/rewards/territory_select", locals: {
         current_server:,
         index: params.require(:index),
@@ -136,10 +138,12 @@ module Servers
     def player_territories
       ESM.cache.fetch("rewards/territories/#{current_server.id}/#{current_user.id}", expires_in: 15.seconds) do
         call_sync_command("territories") || []
+      rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
+        # Inside the fetch so the failure caches with everything else here. A page renders one of these per vehicle,
+        # so a server that cannot answer would otherwise be asked again by every picker, on every render.
+        Rails.logger.warn("[rewards#territories] #{current_server.server_id}: #{e.message}")
+        []
       end
-    rescue ESM::Service::API::Unreachable, ESM::Service::API::RemoteError => e
-      Rails.logger.warn("[rewards#territories] #{current_server.server_id}: #{e.message}")
-      []
     end
 
     # Overrides Commands#render_command_denied. The panel is the one thing this controller ever replaces, so a denial
