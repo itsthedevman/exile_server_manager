@@ -6,7 +6,12 @@
     p.lead.text-muted Configure your server settings
 
     / Download dropdown - available for both versions
-    .d-flex.justify-content-center.mt-3
+    .d-flex.justify-content-center.gap-2.mt-3
+      - if server.ui_v2?
+        = link_to server_path(server.public_id), class: "btn btn-outline-secondary"
+          i.bi.bi-grid-1x2.me-2
+          | Dashboard
+
       .dropdown
         button.btn.btn-info.dropdown-toggle[
           type="button"
