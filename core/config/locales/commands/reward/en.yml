@@ -3,7 +3,7 @@ en:
   commands:
     reward:
       description: Requests a reward package to be deployed on the provided server
-      description_extra: After running this command, you will be sent a confirmation message in your PMs with me. From here, you'll confirm you are online and alive before I send deliver the rewards to you.
+      description_extra: After running this command, you will be sent a confirmation message in your PMs with me. From here, you'll confirm you are online and alive before I deliver the rewards to you.
       examples:
         - description: Requests the default reward to be delivered to you on `esm_malden`.
           arguments:
