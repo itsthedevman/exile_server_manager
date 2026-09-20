@@ -18,13 +18,13 @@ RSpec.describe "Servers", type: :request do
     # The cards only render for a server that is up, so that is the baseline and offline gets its own examples
     before { allow_any_instance_of(ESM::Server).to receive(:connected?).and_return(true) }
 
-    # Allowing exactly one command leaves the hub rendering exactly what that command puts on it. Allowing everything
-    # would drag every other card's game-server reads into these examples for no benefit.
     # The dashboard lands first and fills its cards in from #features, so the cards are asked for where they render
     def get_features
       get "/servers/#{server.public_id}/features"
     end
 
+    # Allowing exactly one command leaves the hub rendering exactly what that command puts on it. Allowing everything
+    # would drag every other card's game-server reads into these examples for no benefit.
     def allow_only(allowed)
       allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
         verdict =
@@ -71,6 +71,15 @@ RSpec.describe "Servers", type: :request do
 
         expect(response.body).not_to include("SQF Console")
       end
+    end
+
+    # Every card links out to a page of its own, and none of those pages is inside this frame
+    it "sends the cards' links to the whole page rather than back into the frame" do
+      allow_only("me")
+
+      get_features
+
+      expect(response.body).to include(%(target="_top"))
     end
 
     it "offers the lookup bar to an admin who can view a player" do
@@ -197,7 +206,7 @@ RSpec.describe "Servers", type: :request do
         get_features
 
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Join #{server.server_id} to get started")
+        expect(response.body).to include("Join #{server.server_id} first")
         expect(response.body).not_to include("My Player")
       end
 
@@ -216,7 +225,7 @@ RSpec.describe "Servers", type: :request do
         get_features
 
         expect(response.body).to include("Admin tools")
-        expect(response.body).not_to include("Join #{server.server_id} to get started")
+        expect(response.body).not_to include("Join #{server.server_id} first")
       end
 
       # The answer is the same for every reload, and a player who has never joined is exactly who would otherwise
