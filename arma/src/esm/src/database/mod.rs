@@ -131,6 +131,14 @@ impl Database {
         .await
     }
 
+    pub async fn account_exists(
+        &self,
+        arguments: HashMap<String, String>,
+    ) -> QueryResult {
+        let mut connection = self.connection().await.map_err(QueryError::System)?;
+        queries::account_exists(&self, &mut connection, &arguments).await
+    }
+
     pub async fn command_all_territories(
         &self,
         arguments: HashMap<String, String>,

@@ -6,6 +6,7 @@ pub use crate::database::*;
 pub use crate::*;
 
 // I have this separated so Rust compiler errors will be localized to a line vs the entire macro
+import_and_export!(account_exists);
 import_and_export!(add_xm8_notifications);
 import_and_export!(check_if_territory_exists);
 import_and_export!(check_if_territory_owner);
@@ -30,6 +31,7 @@ import_and_export!(update_xm8_notification_state);
 // Generates a Queries struct containing these attributes and the contents of their
 // corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
 load_sql! {
+    account_exists,
     account_name_lookup,
     check_if_territory_exists,
     check_if_territory_owner,

@@ -362,6 +362,7 @@ async fn database_query(message: Message) -> MessageResult {
                 .collect();
 
             match name {
+                "account_exists" => DATABASE.account_exists(arguments).await,
                 "all_territories" => {
                     DATABASE.command_all_territories(arguments).await
                 }
