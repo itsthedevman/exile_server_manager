@@ -1,5 +1,7 @@
 / locals: current_server, cards_available, admin_tools_available, player_joined
-= turbo_frame_tag "server_features"
+/ Every link in here leads to a page of its own rather than back into this frame. A stream answers wherever it names,
+/ so the cards' own forms are unaffected.
+= turbo_frame_tag "server_features", target: "_top"
   - if cards_available || admin_tools_available
     - if cards_available && !player_joined
       = render "servers/not_joined", current_server:

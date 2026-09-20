@@ -12,7 +12,7 @@
   - elsif current_user.registered?
     / Asking the game server whether this player has ever joined is a round trip, so the page lands first and this
     / fills in behind it.
-    = turbo_frame_tag "server_features", src: features_server_path(current_server.public_id), loading: :lazy
+    = turbo_frame_tag "server_features", src: features_server_path(current_server.public_id), loading: :lazy, target: "_top"
       .card
         .card-body.text-center.text-muted.py-5
           .spinner-border.spinner-border-sm.me-2[role="status"]
