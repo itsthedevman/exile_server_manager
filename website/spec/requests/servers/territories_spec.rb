@@ -367,5 +367,21 @@ RSpec.describe "Servers::Territories", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # A settled territory action is worth one look at the territory and one at the player who paid for it. Nothing
+    # makes the browser stop asking after that, and each ask would otherwise be a fresh read of the game server.
+    it "reads the server twice for a settled command, however often it is asked about" do
+      allow(ESM).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+      allow(ESM::Service::API).to receive(:call).with(:sync_command, any_args).and_return([])
+
+      command = create(
+        :service_command,
+        user:, server:, command_name: "pay", status: :completed, arguments: {territory_id: "a3f9k"}
+      )
+
+      3.times { get_status(command.public_id) }
+
+      expect(ESM::Service::API).to have_received(:call).with(:sync_command, any_args).twice
+    end
   end
 end

@@ -79,7 +79,7 @@ module TerritoryLoading
     # Every other command leaves the id untouched and falls back to it.
     territory_id = command.arguments[:new_territory_id].presence || command.arguments[:territory_id]
 
-    load_territory(territory_id, force: true)
+    load_territory(territory_id, force: first_read_after?(command, :territory))
   end
 
   # The territory snapshot used to rebuild the retry button after a failed

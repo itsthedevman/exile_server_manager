@@ -86,10 +86,12 @@ module PlayerLoading
     # A reset-all wipes every player, so there's no single overview to reload - skip the read entirely.
     return if command.command_name == "reset" && command.arguments[:target].blank?
 
-    viewed_uid = session[:viewing_player_uid]
-    return load_player(force: true) if viewed_uid.blank?
+    force = first_read_after?(command, :player)
 
-    player_from(target_player_snapshot(viewed_uid, force: true))
+    viewed_uid = session[:viewing_player_uid]
+    return load_player(force:) if viewed_uid.blank?
+
+    player_from(target_player_snapshot(viewed_uid, force:))
   end
 
   def current_player_cache_key
