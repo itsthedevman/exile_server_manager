@@ -25,10 +25,19 @@ pub struct Config {
     #[serde(default = "default_updater_url")]
     pub updater_url: String,
 
-    /// Maximum milliseconds to spend on the entire boot-check network path.
-    /// Applies as a shared deadline across manifest fetch + artifact download.
+    /// Maximum milliseconds to spend deciding whether an update exists: manifest fetch, signature, and parse.
+    /// This is the cost every boot pays, including the boots where the update host is unreachable.
     #[serde(default = "default_updater_timeout_ms")]
     pub updater_timeout_ms: u64,
+
+    /// Maximum milliseconds to spend downloading and swapping the extension, once an update is known to exist.
+    ///
+    /// Separate from `updater_timeout_ms` because the two bound different risks. The check runs on every boot and
+    /// must not stall a server whose update host is down. The download runs on roughly one boot per release, and the
+    /// extension is 8 to 13MB depending on platform, which TCP slow start alone cannot deliver inside a budget meant
+    /// for a 2KB manifest.
+    #[serde(default = "default_updater_download_timeout_ms")]
+    pub updater_download_timeout_ms: u64,
 
     /// Path to the updater log file.
     /// Defaults to `@esm/log/updater.log` relative to cwd.
@@ -42,6 +51,7 @@ impl Default for Config {
             updater_enabled: default_updater_enabled(),
             updater_url: default_updater_url(),
             updater_timeout_ms: default_updater_timeout_ms(),
+            updater_download_timeout_ms: default_updater_download_timeout_ms(),
             updater_log_path: default_updater_log_path(),
         }
     }
@@ -57,6 +67,10 @@ fn default_updater_url() -> String {
 
 fn default_updater_timeout_ms() -> u64 {
     800
+}
+
+fn default_updater_download_timeout_ms() -> u64 {
+    30_000
 }
 
 fn default_updater_log_path() -> String {

@@ -9,9 +9,11 @@ use updater_lib::Updater;
 
 /// Check for and apply an ESM extension update.
 ///
-/// Computes a deadline from `config.updater_timeout_ms`, then delegates to
-/// `updater_lib::Updater::run_boot_check`. Always returns a human-readable
-/// string logged to the Arma RPT — never panics or blocks indefinitely.
+/// Computes the check deadline from `config.updater_timeout_ms`, then delegates
+/// to `updater_lib::Updater::run_boot_check`, which takes its own budget from
+/// `config.updater_download_timeout_ms` for an install. Always returns a
+/// human-readable string logged to the Arma RPT — never panics or blocks
+/// indefinitely.
 ///
 /// Possible return values:
 /// - `"No updates available."` — running version is current, or check failed

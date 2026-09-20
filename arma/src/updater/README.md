@@ -50,8 +50,36 @@ one that escaped is visible immediately rather than at the moment it declines an
 
 ## Boot path
 
-`check_update` runs inside Arma's startup with a shared network deadline across the manifest fetch and the download,
-default 800ms.
+`check_update` runs inside Arma's startup under two deadlines.
+`updater_timeout_ms` (800ms) bounds deciding whether an update exists: the manifest fetch, the signature, the parse.
+`updater_download_timeout_ms` (30s) bounds installing one, and starts fresh once the manifest says there is something
+to install.
+
+The split is about what each one protects.
+The check is paid on every boot, including the boots where the update host is unreachable, so it has to be short.
+The download happens on about one boot per release, and the extension is 8 to 13MB depending on platform, which TCP
+slow start alone cannot deliver inside a budget sized for a 2KB manifest.
+Arma imposes no deadline on `callExtension`, and this runs in `preInit` with nobody connected, so the larger budget
+costs startup latency on that one boot and nothing else.
+
+Every extension variant the operating system can load is installed, the running bitness first, not just the one this
+build was compiled as.
+A 64-bit CLI cannot tell whether the owner launches `arma3server.exe` or `arma3server_x64.exe`, and one recorded
+version per component has to mean every variant on disk is at that version.
+
+A recorded version is a claim about files, so a variant missing from disk is reinstalled even when the record says it
+is current.
+Otherwise the version comparison reports nothing to do and the server starts with no extension at all.
+
+A `requires` that is not satisfied still defers that reinstall, because an extension the installed mod cannot drive is
+not an improvement on the one already loaded.
+When nothing is loaded the RPT says that outright rather than filing it as a pending update, since the CLI installs in
+dependency order and fixes both halves in one run.
+
+The RPT line names the components the boot path saw but will not install, since it only ever swaps the extension:
+`Updates available for @esm 2.1.0: stop the server and run esm_updater update all`.
+Those are compared against `installed_versions.yml` rather than merely read out of the manifest, which names every
+component in every release.
 
 It fails open on everything.
 A dead host, a 404, a bad signature, a checksum mismatch, or a blown deadline all leave the server booting normally on
@@ -98,11 +126,15 @@ A missing file, a missing key, or a parse error all fall back to defaults, so a 
 |-----|---------|--|
 | `updater_enabled` | `true` | `false` returns before any network request is made. |
 | `updater_url` | `https://esmbot.com/updates/arma/versions.json` | The `.sig` is fetched from the same path plus `.sig`. |
-| `updater_timeout_ms` | `800` | Shared deadline across the whole boot-check network path. |
+| `updater_timeout_ms` | `800` | Deadline for the boot check: manifest fetch, signature, parse. |
+| `updater_download_timeout_ms` | `30000` | Deadline for the boot-time install, once an update is known to exist. |
 | `updater_log_path` | `@esm/log/updater.log` | |
 
 `updater_enabled`, `updater_timeout_ms`, and `updater_log_path` are set from the website's server configuration
 page, and the generated `config.yml` is what carries them to the server.
+`updater_download_timeout_ms` is readable from `config.yml` but not offered on that page either, since an owner has
+no way to know what their own link needs and the default is generous enough that raising it is a diagnosis, not a
+setting.
 `updater_url` is deliberately not offered there: the only address that works is the compiled default, so the
 setting has no use beyond silently stopping a server from updating.
 It stays readable from `config.yml` because `bin/updater_tester` writes it, and the CLI's `--manifest-url` is the

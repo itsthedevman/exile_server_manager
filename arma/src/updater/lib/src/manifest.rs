@@ -29,6 +29,28 @@ pub fn current_platform() -> &'static str {
     }
 }
 
+/// Every platform key this operating system can load, the running bitness first.
+///
+/// Which extension a server needs is a property of the Arma binary its owner launches, not of the build the updater
+/// itself happens to be: `bin/package` ships one 64-bit `esm_updater.exe`, and it cannot tell whether the server
+/// starts `arma3server.exe` or `arma3server_x64.exe`. Installing every variant the OS can load removes the guess, and
+/// the one Arma never loads costs a download and then sits dormant.
+///
+/// The running bitness leads so that a budget running out mid-install has already replaced the file that matters.
+pub fn platforms_for_current_os() -> &'static [&'static str] {
+    if cfg!(target_os = "windows") {
+        if cfg!(target_pointer_width = "64") {
+            &["windows-x64", "windows-x86"]
+        } else {
+            &["windows-x86", "windows-x64"]
+        }
+    } else if cfg!(target_pointer_width = "64") {
+        &["linux-x64", "linux-x86"]
+    } else {
+        &["linux-x86", "linux-x64"]
+    }
+}
+
 /// A downloadable file and the checksum it has to match.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Artifact {
@@ -77,6 +99,25 @@ impl ComponentVersion {
         self.artifacts
             .get(current_platform())
             .or_else(|| self.artifacts.get(PLATFORM_ANY))
+    }
+
+    /// Every artifact this operating system can use, paired with the platform key that named it.
+    ///
+    /// A release that offers only some of the platforms is normal rather than an error: 32-bit Linux was dropped in
+    /// 2.1.0, so a current manifest has no `linux-x86` key at all.
+    pub fn artifacts_for_current_os(&self) -> Vec<(&'static str, &Artifact)> {
+        if let Some(artifact) = self.artifacts.get(PLATFORM_ANY) {
+            return vec![(PLATFORM_ANY, artifact)];
+        }
+
+        platforms_for_current_os()
+            .iter()
+            .filter_map(|platform| {
+                self.artifacts
+                    .get(*platform)
+                    .map(|artifact| (*platform, artifact))
+            })
+            .collect()
     }
 }
 

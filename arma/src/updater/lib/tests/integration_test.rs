@@ -289,7 +289,7 @@ fn test_boot_check_installs_newer_extension_and_records_it() {
     );
 
     match result {
-        BootCheckResult::Updated { component, version } => {
+        BootCheckResult::Updated { component, version, .. } => {
             assert_eq!(component, "esm");
             assert_eq!(version, "2.0.0");
         }
@@ -366,6 +366,7 @@ fn test_boot_check_defers_on_unmet_dependency() {
     let tmpdir = TempDir::new().unwrap();
     let dir = tmpdir.path().to_path_buf();
     std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"working-extension").unwrap();
 
     let (result, server) = boot_check_against(
         &dir,
@@ -377,13 +378,26 @@ fn test_boot_check_defers_on_unmet_dependency() {
         vec![],
     );
 
-    match result {
-        BootCheckResult::Pending { component, reason } => {
+    match &result {
+        BootCheckResult::Pending {
+            component,
+            reason,
+            nothing_installed,
+        } => {
             assert_eq!(component, "esm");
             assert!(reason.contains("@esm"), "reason should name the dep: {reason}");
+            assert!(
+                !nothing_installed,
+                "the extension on disk still works, so this is a deferral and not an outage"
+            );
         }
         other => panic!("expected Pending, got {other:?}"),
     }
+    assert!(
+        result.to_status_string().contains("Update pending"),
+        "got {}",
+        result.to_status_string()
+    );
     assert!(
         server.request_count() <= 2,
         "a deferred update must not download; requests={}",
@@ -1099,6 +1113,255 @@ fn test_installed_versions_roundtrips_through_disk() {
     assert!(
         contents.starts_with('#'),
         "the record should explain itself to whoever opens it:\n{contents}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: every variant this OS can load is installed, not just the bitness the
+// updater itself was compiled as.
+//
+// A 64-bit updater cannot tell whether the owner launches the 32-bit or the
+// 64-bit Arma server, so installing one variant and recording the component as
+// current leaves the other stale forever: the record says there is nothing to
+// do, and the boot check believes it.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_installs_every_variant_for_this_os() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"old-64").unwrap();
+    std::fs::write(dir.join("@esm/esm.so"), b"old-32").unwrap();
+
+    with_cwd(&dir, || {
+        installed_versions::record(Component::Esm, &Version::new(1, 0, 0)).unwrap()
+    });
+
+    let sixty_four = b"new-64-bytes".to_vec();
+    let thirty_two = b"new-32-bytes".to_vec();
+    let sha_64 = sha256_hex(&sixty_four);
+    let sha_32 = sha256_hex(&thirty_two);
+
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/x64","sha256":"{sha_64}"}},"linux-x86":{{"url":"{base}/x86","sha256":"{sha_32}"}}}},"requires":{{}}}}}}"#
+            )
+        },
+        vec![
+            ("/x64".into(), sixty_four.clone()),
+            ("/x86".into(), thirty_two.clone()),
+        ],
+    );
+
+    assert!(
+        matches!(result, BootCheckResult::Updated { .. }),
+        "expected Updated, got {result:?}"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm_x64.so")).unwrap(),
+        sixty_four,
+        "the running bitness must be replaced"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm.so")).unwrap(),
+        thirty_two,
+        "the other bitness must be replaced too, or it stays stale forever"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a variant that fails to install leaves the version unrecorded.
+//
+// One version is recorded per component, so it has to mean every variant on
+// disk is at that version. Recording after a partial install would report a
+// server as current while one of its extensions is a release behind.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_records_nothing_when_one_variant_fails() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"old-64").unwrap();
+    std::fs::write(dir.join("@esm/esm.so"), b"old-32").unwrap();
+
+    with_cwd(&dir, || {
+        installed_versions::record(Component::Esm, &Version::new(1, 0, 0)).unwrap()
+    });
+
+    let sixty_four = b"new-64-bytes".to_vec();
+    let sha_64 = sha256_hex(&sixty_four);
+    let corrupt = b"not-what-the-manifest-promised".to_vec();
+    let sha_32 = sha256_hex(b"something-else-entirely");
+
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/x64","sha256":"{sha_64}"}},"linux-x86":{{"url":"{base}/x86","sha256":"{sha_32}"}}}},"requires":{{}}}}}}"#
+            )
+        },
+        vec![("/x64".into(), sixty_four), ("/x86".into(), corrupt)],
+    );
+
+    assert!(
+        matches!(result, BootCheckResult::Ok),
+        "a failed variant must fail open, got {result:?}"
+    );
+
+    let recorded = with_cwd(&dir, || installed_versions::load().unwrap());
+    assert_eq!(
+        recorded.version_of(Component::Esm),
+        Version::new(1, 0, 0),
+        "a partial install must not be recorded as done"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm.so")).unwrap(),
+        b"old-32",
+        "a checksum mismatch must leave the file it was meant to replace alone"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a version record is a claim about files, so a missing extension is
+// reinstalled even when the recorded version is current.
+//
+// Without this the comparison says there is nothing to do, and the server
+// starts with no extension at all and nothing in the RPT to say why.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_reinstalls_an_extension_that_is_not_on_disk() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    with_cwd(&dir, || {
+        installed_versions::record(Component::Esm, &Version::new(2, 0, 0)).unwrap()
+    });
+
+    let artifact = b"reinstalled-extension".to_vec();
+    let sha = sha256_hex(&artifact);
+
+    // Same version as the record, and no file on disk.
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"2.0.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"{sha}"}}}},"requires":{{}}}}}}"#
+            )
+        },
+        vec![("/artifact".into(), artifact.clone())],
+    );
+
+    assert!(
+        matches!(result, BootCheckResult::Updated { .. }),
+        "a missing extension must be put back, got {result:?}"
+    );
+    assert_eq!(
+        std::fs::read(dir.join("@esm/esm_x64.so")).unwrap(),
+        artifact,
+        "the extension must exist after the check that claimed it was current"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: the RPT line names what the boot path saw and will not install.
+//
+// The boot check only swaps the extension, so a server whose mod is a release
+// behind used to read "No updates available." with the difference visible only
+// in a log file nobody opens.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_reports_components_only_the_cli_installs() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+    std::fs::write(dir.join("@esm/esm_x64.so"), b"current-extension").unwrap();
+
+    with_cwd(&dir, || {
+        installed_versions::record(Component::Esm, &Version::new(2, 1, 0)).unwrap();
+        installed_versions::record(Component::EsmMod, &Version::new(2, 0, 5)).unwrap();
+        installed_versions::record(Component::ModUpdater, &Version::new(1, 0, 0)).unwrap();
+    });
+
+    // The extension is current, the mod is behind, and mod_updater matches what is installed.
+    let (result, _server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"2.1.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"nope"}}}},"requires":{{}}}},"@esm":{{"version":"2.1.0","artifacts":{{"any":{{"url":"{base}/mod","sha256":"nope"}}}}}},"mod_updater":{{"version":"1.0.0","artifacts":{{"any":{{"url":"{base}/pbo","sha256":"nope"}}}}}}}}"#
+            )
+        },
+        vec![],
+    );
+
+    match &result {
+        BootCheckResult::ManualUpdates { components } => {
+            assert_eq!(
+                components,
+                &vec!["@esm 2.1.0".to_string()],
+                "only components newer than what is installed belong in the notice"
+            );
+        }
+        other => panic!("expected ManualUpdates, got {other:?}"),
+    }
+
+    let status = result.to_status_string();
+    assert!(
+        status.contains("@esm 2.1.0") && status.contains("esm_updater update all"),
+        "the RPT line must name the component and what to run: {status}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: a blocked repair with no extension on disk says so.
+//
+// Deferring is right when a working extension is loaded, but with nothing on
+// disk the server starts and every `callExtension "esm"` fails. "Update
+// pending" reads as routine, so the line has to name the outage and the fix.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_boot_check_says_so_when_a_blocked_update_leaves_no_extension() {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    // The mod record is behind what the release requires, and no extension file exists.
+    with_cwd(&dir, || {
+        installed_versions::record(Component::Esm, &Version::new(2, 1, 0)).unwrap();
+        installed_versions::record(Component::EsmMod, &Version::new(0, 1, 0)).unwrap();
+    });
+
+    let (result, server) = boot_check_against(
+        &dir,
+        |base| {
+            format!(
+                r#"{{"esm":{{"version":"2.1.0","artifacts":{{"linux-x64":{{"url":"{base}/artifact","sha256":"abc"}}}},"requires":{{"@esm":">=2.1.0"}}}}}}"#
+            )
+        },
+        vec![],
+    );
+
+    match &result {
+        BootCheckResult::Pending {
+            nothing_installed, ..
+        } => assert!(
+            nothing_installed,
+            "nothing is on disk, so the result has to carry that"
+        ),
+        other => panic!("expected Pending, got {other:?}"),
+    }
+
+    let status = result.to_status_string();
+    assert!(
+        status.contains("No esm is installed") && status.contains("esm_updater update all"),
+        "the RPT line must name the outage and the fix: {status}"
+    );
+    assert!(
+        server.request_count() <= 2,
+        "a blocked update must not download; requests={}",
+        server.request_count()
     );
 }
 

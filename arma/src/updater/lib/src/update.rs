@@ -37,6 +37,13 @@ pub enum BootCheckResult {
         component: String,
         /// New version string.
         version: String,
+        /// Components the boot path will not install, as `name version` strings.
+        manual: Vec<String>,
+    },
+    /// Nothing for the extension, but the manifest offers components only the CLI installs.
+    ManualUpdates {
+        /// Components waiting on an operator, as `name version` strings.
+        components: Vec<String>,
     },
     /// An update is available but a prerequisite is not yet satisfied.
     Pending {
@@ -44,6 +51,8 @@ pub enum BootCheckResult {
         component: String,
         /// Human-readable reason the update was deferred.
         reason: String,
+        /// Set when the deferral leaves nothing on disk for this component at all.
+        nothing_installed: bool,
     },
 }
 
@@ -54,14 +63,46 @@ impl BootCheckResult {
         match self {
             BootCheckResult::Ok => "No updates available.".into(),
             BootCheckResult::Disabled => "Auto-updater is disabled.".into(),
-            BootCheckResult::Updated { component, version } => {
-                format!("Successfully updated {component} to v{version}.")
+            BootCheckResult::Updated {
+                component,
+                version,
+                manual,
+            } => {
+                let updated = format!("Successfully updated {component} to v{version}.");
+
+                if manual.is_empty() {
+                    updated
+                } else {
+                    format!("{updated} {}", manual_sentence(manual))
+                }
             }
-            BootCheckResult::Pending { component, reason } => {
-                format!("Update pending for {component}: {reason}.")
+            BootCheckResult::ManualUpdates { components } => manual_sentence(components),
+            BootCheckResult::Pending {
+                component,
+                reason,
+                nothing_installed,
+            } => {
+                let fix = "stop the server and run esm_updater update all";
+
+                if *nothing_installed {
+                    format!("No {component} is installed and the update is blocked: {reason}. To fix it, {fix}.")
+                } else {
+                    format!("Update pending for {component}: {reason}. To apply it, {fix}.")
+                }
             }
         }
     }
+}
+
+/// The RPT sentence naming what the boot path saw but will not install.
+///
+/// The boot check only ever swaps the extension, so without this the RPT reads "No updates available." on a server
+/// whose mod is a release behind, and the only record of the difference is a log file nobody opens.
+fn manual_sentence(components: &[String]) -> String {
+    format!(
+        "Updates available for {}: stop the server and run esm_updater update all.",
+        components.join(", ")
+    )
 }
 
 /// Which component(s) the CLI update command should touch.
@@ -204,17 +245,9 @@ impl Updater {
         //
         // So the owner learns an update exists on the boot they would have found out anyway, and applies it when the
         // server is down.
-        if let Some(eu) = &manifest.extension_updater {
-            log::info!(
-                "[check_update] extension_updater {} available",
-                eu.version
-            );
-        }
-        if let Some(mu) = &manifest.mod_updater {
-            log::info!("[check_update] mod_updater {} available", mu.version);
-        }
-        if let Some(at) = &manifest.esm_mod {
-            log::info!("[check_update] @esm {} available", at.version);
+        let manual = manual_updates(&manifest, &installed);
+        for entry in &manual {
+            log::info!("[check_update] {entry} available, installed by the CLI with the server stopped");
         }
 
         // -- Check extension update ----------------------------------------
@@ -226,7 +259,7 @@ impl Updater {
                     manifest_elapsed_ms,
                     verify_elapsed_ms,
                 );
-                return Ok(BootCheckResult::Ok);
+                return Ok(nothing_to_swap(manual));
             }
             Some(c) => c,
         };
@@ -236,11 +269,24 @@ impl Updater {
         // directly because Arma has not loaded it yet.
         let current_ver = installed.version_of(Component::Esm);
 
-        if esm_comp.version <= current_ver {
+        // A version record is a claim about files, and the files are what Arma loads. An extension recorded as current
+        // but absent from disk would otherwise never be replaced: the comparison says there is nothing to do, and the
+        // server starts with no extension at all and no complaint from here.
+        let outdated = esm_comp.version > current_ver;
+        let missing = missing_extension_variants(esm_comp);
+
+        if !outdated && missing.is_empty() {
             log::info!(
                 "[check_update] extension is current ({current_ver})"
             );
-            return Ok(BootCheckResult::Ok);
+            return Ok(nothing_to_swap(manual));
+        }
+
+        if !outdated {
+            log::warn!(
+                "[check_update] extension records {current_ver} but {} is missing from disk, reinstalling it",
+                missing.join(", ")
+            );
         }
 
         // -- Check dependency requirements ---------------------------------
@@ -248,19 +294,33 @@ impl Updater {
             && !req.matches(&installed_mod_ver)
         {
             let reason = format!("@esm {installed_mod_ver} does not satisfy {req}");
-            log::info!("[check_update] esm {} deferred: {reason}", esm_comp.version);
+
+            // Deferring is the right call when a working extension is already loaded: better the current one than a
+            // newer one the installed mod cannot drive. With nothing on disk it is the whole server, so it is worth
+            // saying out loud rather than filing as a pending update the owner reads past.
+            if missing.is_empty() {
+                log::info!("[check_update] esm {} deferred: {reason}", esm_comp.version);
+            } else {
+                log::warn!(
+                    "[check_update] esm {} deferred: {reason}, and {} is missing, so nothing will load",
+                    esm_comp.version,
+                    missing.join(", ")
+                );
+            }
+
             return Ok(BootCheckResult::Pending {
                 component: "esm".into(),
                 reason,
+                nothing_installed: !missing.is_empty(),
             });
         }
 
         // -- Download and swap --------------------------------------------
-        match download_and_swap_extension(esm_comp, deadline) {
+        match download_and_swap_extension(esm_comp, cfg.updater_download_timeout_ms, !outdated) {
             Ok(()) => {}
             Err(e) => {
                 log::warn!("[check_update] extension update failed (fail-open): {e}");
-                return Ok(BootCheckResult::Ok);
+                return Ok(nothing_to_swap(manual));
             }
         }
 
@@ -273,6 +333,7 @@ impl Updater {
         Ok(BootCheckResult::Updated {
             component: "esm".into(),
             version: esm_comp.version.to_string(),
+            manual,
         })
     }
 
@@ -286,7 +347,10 @@ impl Updater {
         manifest_url_override: Option<String>,
         running_cli: &Version,
     ) -> Result<Vec<UpdatedComponent>, UpdaterError> {
-        let deadline = Instant::now() + Duration::from_secs(30);
+        // Ten minutes covers every component on a slow link, including both extension variants on Windows, where the
+        // two `.dll` files are 13MB each. Nothing here is racing a server start: the operator ran this with the
+        // server stopped and can interrupt it. The bound exists so a stalled connection ends rather than hangs.
+        let deadline = Instant::now() + Duration::from_secs(600);
         let cfg = Config::new().with_manifest_url(manifest_url_override);
 
         let manifest = load_manifest(&cfg.updater_url, deadline)?;
@@ -421,6 +485,51 @@ fn artifact_for(comp: &ComponentVersion) -> Result<&Artifact, UpdaterError> {
     })
 }
 
+/// The components the manifest offers that only the CLI installs, newest-first order as the manifest lists them.
+///
+/// Compared against what is installed rather than merely present in the manifest: every manifest names every
+/// component, so "the manifest has a `mod_updater` entry" says nothing about whether this server needs it.
+fn manual_updates(
+    manifest: &VersionManifest,
+    installed: &installed_versions::InstalledVersions,
+) -> Vec<String> {
+    [
+        ("@esm", Component::EsmMod, &manifest.esm_mod),
+        (
+            "extension_updater",
+            Component::ExtensionUpdater,
+            &manifest.extension_updater,
+        ),
+        ("mod_updater", Component::ModUpdater, &manifest.mod_updater),
+    ]
+    .into_iter()
+    .filter_map(|(name, component, offered)| {
+        let offered = offered.as_ref()?;
+
+        (offered.version > installed.version_of(component))
+            .then(|| format!("{name} {}", offered.version))
+    })
+    .collect()
+}
+
+/// The result for a boot where the extension was left alone, which still has to report what the CLI is owed.
+fn nothing_to_swap(manual: Vec<String>) -> BootCheckResult {
+    if manual.is_empty() {
+        BootCheckResult::Ok
+    } else {
+        BootCheckResult::ManualUpdates { components: manual }
+    }
+}
+
+/// The platform keys whose extension file this release offers but disk does not have.
+fn missing_extension_variants(comp: &ComponentVersion) -> Vec<&'static str> {
+    comp.artifacts_for_current_os()
+        .into_iter()
+        .filter_map(|(platform, _)| esm_extension_filename(platform))
+        .filter(|filename| !Path::new("@esm").join(filename).exists())
+        .collect()
+}
+
 /// The manifest's CLI version, when it is newer than `running`.
 fn newer_cli_than(manifest: &VersionManifest, running: &Version) -> Option<Version> {
     manifest
@@ -552,42 +661,36 @@ fn swap_file(source: &Path, dest: &Path) -> Result<(), UpdaterError> {
     }
 }
 
-/// Download the ESM extension artifact, verify its checksum, and swap it in.
+/// Download every ESM extension variant this OS can load, verify each checksum, and swap them in.
 ///
-/// Creates `@esm/temp/` if needed, downloads the artifact, checks the SHA256,
-/// then calls `swap_file` to atomically replace the live extension.
+/// Creates `@esm/temp/` if needed and gets its own deadline rather than sharing the check's: by the time this runs the
+/// manifest has been fetched, verified, and found to offer something, which happens on about one boot per release.
+/// Arma imposes no deadline on `callExtension` and this runs in `preInit` with nobody connected, so the cost of the
+/// larger budget is startup latency on that one boot.
 fn download_and_swap_extension(
     comp: &ComponentVersion,
-    deadline: Instant,
+    download_timeout_ms: u64,
+    only_missing: bool,
 ) -> Result<(), UpdaterError> {
-    let download_started_at = Instant::now();
+    let started_at = Instant::now();
     let temp_dir = Path::new("@esm/temp");
     std::fs::create_dir_all(temp_dir)?;
     let temp_file = temp_dir.join("esm_update");
 
-    let artifact = artifact_for(comp)?;
-    download_to(&artifact.url, &temp_file, deadline)?;
-    let download_elapsed_ms = download_started_at.elapsed().as_millis();
-
-    let checksum_started_at = Instant::now();
-    if let Err(e) = verify_sha256(&temp_file, &artifact.sha256) {
-        let _ = std::fs::remove_file(&temp_file);
-        return Err(e);
-    }
-    let checksum_elapsed_ms = checksum_started_at.elapsed().as_millis();
-
-    let swap_started_at = Instant::now();
-    let filename = esm_extension_filename();
-    let dest = Path::new("@esm").join(filename);
-    swap_file(&temp_file, &dest)?;
-    let swap_elapsed_ms = swap_started_at.elapsed().as_millis();
+    let deadline = Instant::now() + Duration::from_millis(download_timeout_ms);
+    install_extension_variants(
+        "check_update",
+        "esm",
+        comp,
+        &temp_file,
+        esm_extension_filename,
+        only_missing,
+        deadline,
+    )?;
 
     record_installed(Component::Esm, &comp.version);
 
-    log::info!(
-        "[check_update] download={download_elapsed_ms}ms \
-         checksum={checksum_elapsed_ms}ms swap={swap_elapsed_ms}ms"
-    );
+    log::info!("[check_update] install={}ms", started_at.elapsed().as_millis());
 
     Ok(())
 }
@@ -612,29 +715,28 @@ fn record_installed(component: Component, version: &Version) {
 /// here means a run that failed halfway says which of download, checksum, or swap it died on, and a run that
 /// succeeded says what it actually wrote, which is the question a support request usually turns on.
 fn install_artifact(
+    tag: &str,
     component: &str,
-    comp: &ComponentVersion,
+    artifact: &Artifact,
     temp: &Path,
     dest: &Path,
     deadline: Instant,
 ) -> Result<(), UpdaterError> {
-    let artifact = artifact_for(comp)?;
-
-    log::info!("[update] {component}: downloading {}", artifact.url);
+    log::info!("[{tag}] {component}: downloading {}", artifact.url);
 
     let download_started_at = Instant::now();
     download_to(&artifact.url, temp, deadline)?;
 
     let size = std::fs::metadata(temp).map(|meta| meta.len()).unwrap_or(0);
     log::info!(
-        "[update] {component}: downloaded {size} bytes in {}ms",
+        "[{tag}] {component}: downloaded {size} bytes in {}ms",
         download_started_at.elapsed().as_millis()
     );
 
     verify_sha256(temp, &artifact.sha256).inspect_err(|_| {
         let _ = std::fs::remove_file(temp);
     })?;
-    log::info!("[update] {component}: checksum verified");
+    log::info!("[{tag}] {component}: checksum verified");
 
     // The staged copy is removed whichever way the swap goes. Left behind it is a whole extension of dead
     // weight per failed attempt, and the most likely reason to fail here is a running server, which is also the
@@ -642,7 +744,50 @@ fn install_artifact(
     swap_file(temp, dest).inspect_err(|_| {
         let _ = std::fs::remove_file(temp);
     })?;
-    log::info!("[update] {component}: installed to {}", dest.display());
+    log::info!("[{tag}] {component}: installed to {}", dest.display());
+
+    Ok(())
+}
+
+/// Install every extension variant this operating system can load, the running bitness first.
+///
+/// One version is recorded per component, so it has to mean "every variant on disk is at this version". A partial
+/// install therefore records nothing and returns the failure: the next run re-downloads the variant that already
+/// landed, which costs a download and is the only outcome that keeps the record honest.
+/// With `only_missing`, a variant already on disk is left alone: that is the repair path, where the recorded version
+/// is current and the job is to put back a file that is not there rather than to reinstall the ones that are.
+fn install_extension_variants(
+    tag: &str,
+    component: &str,
+    comp: &ComponentVersion,
+    temp: &Path,
+    filename_for: fn(&str) -> Option<&'static str>,
+    only_missing: bool,
+    deadline: Instant,
+) -> Result<(), UpdaterError> {
+    let variants = comp.artifacts_for_current_os();
+
+    if variants.is_empty() {
+        return Err(UpdaterError::Parse(format!(
+            "release {} offers no artifact for {}",
+            comp.version,
+            manifest::current_platform()
+        )));
+    }
+
+    for (platform, artifact) in variants {
+        let Some(filename) = filename_for(platform) else {
+            log::warn!("[{tag}] {component}: no filename known for {platform}, skipping it");
+            continue;
+        };
+
+        let dest = Path::new("@esm").join(filename);
+        if only_missing && dest.exists() {
+            continue;
+        }
+
+        install_artifact(tag, &format!("{component} {platform}"), artifact, temp, &dest, deadline)?;
+    }
 
     Ok(())
 }
@@ -715,9 +860,8 @@ fn update_esm_extension(
     std::fs::create_dir_all(temp_dir)?;
 
     let temp_file = temp_dir.join("esm_update");
-    let dest = Path::new("@esm").join(esm_extension_filename());
 
-    install_artifact("esm", comp, &temp_file, &dest, deadline)?;
+    install_extension_variants("update", "esm", comp, &temp_file, esm_extension_filename, false, deadline)?;
     record_installed(Component::Esm, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -738,11 +882,18 @@ fn update_updater_extension(
     deadline: Instant,
 ) -> Result<UpdatedComponent, UpdaterError> {
     let started_at = Instant::now();
-    let dest = Path::new("@esm").join(updater_extension_filename());
     let temp = Path::new("@esm/temp/ext_updater");
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
 
-    install_artifact("extension_updater", comp, temp, &dest, deadline)?;
+    install_extension_variants(
+        "update",
+        "extension_updater",
+        comp,
+        temp,
+        updater_extension_filename,
+        false,
+        deadline,
+    )?;
     record_installed(Component::ExtensionUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -768,7 +919,7 @@ fn update_mod_updater_pbo(
     std::fs::create_dir_all(Path::new("@esm/temp"))?;
     std::fs::create_dir_all(Path::new("@esm/addons"))?;
 
-    install_artifact("mod_updater", comp, temp, dest, deadline)?;
+    install_artifact("update", "mod_updater", artifact_for(comp)?, temp, dest, deadline)?;
     record_installed(Component::ModUpdater, &comp.version);
 
     let elapsed_ms = started_at.elapsed().as_millis() as u64;
@@ -782,36 +933,28 @@ fn update_mod_updater_pbo(
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-/// Return the platform-appropriate filename for the updater's own Arma extension.
+/// The filename the updater's own Arma extension takes on `platform`.
 ///
 /// Named to match what `bin/package` ships and what the manifest offers per platform, since this is the file the
 /// `esm_updater` addon calls into during `preInit`.
-fn updater_extension_filename() -> &'static str {
-    if cfg!(target_os = "windows") {
-        if cfg!(target_pointer_width = "64") {
-            "esm_updater_x64.dll"
-        } else {
-            "esm_updater.dll"
-        }
-    } else if cfg!(target_pointer_width = "64") {
-        "esm_updater_x64.so"
-    } else {
-        "esm_updater.so"
+fn updater_extension_filename(platform: &str) -> Option<&'static str> {
+    match platform {
+        "windows-x64" => Some("esm_updater_x64.dll"),
+        "windows-x86" => Some("esm_updater.dll"),
+        "linux-x64" => Some("esm_updater_x64.so"),
+        "linux-x86" => Some("esm_updater.so"),
+        _ => None,
     }
 }
 
-/// Return the platform-appropriate filename for the ESM Arma extension.
-fn esm_extension_filename() -> &'static str {
-    if cfg!(target_os = "windows") {
-        if cfg!(target_pointer_width = "64") {
-            "esm_x64.dll"
-        } else {
-            "esm.dll"
-        }
-    } else if cfg!(target_pointer_width = "64") {
-        "esm_x64.so"
-    } else {
-        "esm.so"
+/// The filename the ESM Arma extension takes on `platform`.
+fn esm_extension_filename(platform: &str) -> Option<&'static str> {
+    match platform {
+        "windows-x64" => Some("esm_x64.dll"),
+        "windows-x86" => Some("esm.dll"),
+        "linux-x64" => Some("esm_x64.so"),
+        "linux-x86" => Some("esm.so"),
+        _ => None,
     }
 }
 
