@@ -22,7 +22,7 @@ RSpec.describe "Servers::Territories", type: :request do
     # Boundary stubs. The real call is a blocking NATS request/reply whose bot-side
     # handler marks the row non-pending; mirror that so idempotency behaves as it
     # does in production. Poll is skipped so specs don't wait on a settle.
-    allow(ESM::Service::API).to receive(:call) do |_action, command_id:|
+    allow(ESM::Service::API).to receive(:call).with(:async_command, any_args) do |_action, command_id:|
       ESM::ServiceCommand.find(command_id).dispatched!
     end
     allow(Poll).to receive(:until)

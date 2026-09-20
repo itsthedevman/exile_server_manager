@@ -59,8 +59,9 @@
         i.bi.bi-grid-1x2.me-3
         span.fw-medium Dashboard
 
-      / An outdated server can't answer any of these, so the rail stops offering them and the dashboard explains why
-      - if server_supported? && current_user.registered? && command_accessible?("me")
+      / An outdated server can't answer any of these, so the rail stops offering them and the dashboard explains why.
+      / A server that has never seen this player has no character for the page to show either.
+      - if server_supported? && current_user.registered? && command_accessible?("me") && player_joined_server?
         = link_to me_server_players_path(current_server.public_id),
           class: class_names( \
             "list-group-item list-group-item-action d-flex align-items-center py-3",

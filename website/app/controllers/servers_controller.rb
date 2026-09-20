@@ -2,6 +2,7 @@
 
 class ServersController < AuthenticatedController
   include Commands
+  include PlayerRegistration
   include ServerVersion
 
   COMMAND_CARDS = %w[me gamble reward]
@@ -13,10 +14,21 @@ class ServersController < AuthenticatedController
   def show
     not_found! if current_server.nil?
 
-    cards_available = COMMAND_CARDS.any? { |c| command_accessible?(c) }
-    admin_tools_available = ADMIN_TOOLS.any? { |c| command_accessible?(c) }
+    render locals: {current_server:}
+  end
 
-    render locals: {current_server:, cards_available:, admin_tools_available:}
+  # What this viewer can actually do here, loaded lazily into the dashboard because answering it means asking the game
+  # server whether it has ever seen them. A player it has not is offered nothing that acts on a character they do not
+  # have, rather than a row of cards that each fail in their own way.
+  def features
+    not_found! if current_server.nil?
+
+    render partial: "servers/features", locals: {
+      current_server:,
+      cards_available: COMMAND_CARDS.any? { |c| command_accessible?(c) },
+      admin_tools_available: ADMIN_TOOLS.any? { |c| command_accessible?(c) },
+      player_joined: player_joined_server?
+    }
   end
 
   # What Steam knows about the server right now: its map, how many are on, and the game version. Loaded lazily into

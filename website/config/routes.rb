@@ -241,8 +241,10 @@ Rails.application.routes.draw do
   # /servers/:id
   resources :servers, only: [:show] do
     # /servers/:id/live
+    # /servers/:id/features
     member do
       get :live
+      get :features
     end
 
     # /servers/:server_id/players

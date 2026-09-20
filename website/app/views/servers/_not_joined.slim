@@ -1,0 +1,17 @@
+/ locals: current_server
+.card
+  .card-body.text-center.py-5
+    i.bi.bi-controller.display-4.text-info.mb-3.d-block
+    h4.mb-2 Join #{current_server.server_id} to get started
+    p.text-muted.mx-auto style="max-width: 34rem;"
+      | Everything here works on your character, and #{current_server.server_id} has never seen you in game. Hop on once and come back - your player, territories, and rewards will be waiting.
+
+    button.btn.btn-outline-secondary[
+      type="button"
+      title=server_address(current_server)
+      data-controller="clipboard"
+      data-action="click->clipboard#copy"
+      data-clipboard-text-value=server_address(current_server)
+    ]
+      i.bi.bi-clipboard.me-1
+      span[data-clipboard-target="label"] Copy connection

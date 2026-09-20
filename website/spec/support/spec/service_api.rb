@@ -21,8 +21,8 @@ module Spec
     KNOWN_ACTIONS = %i[
       async_command channel channel_send community_channels community_delete community_membership
       community_modifiable_by community_roles community_users ping requests_accept requests_decline
-      servers_connected servers_reconnect servers_update sync_command territory_admins user_communities
-      user_community_permissions
+      server_account_exists servers_connected servers_reconnect servers_update sync_command territory_admins
+      user_communities user_community_permissions
     ].freeze
 
     # Whether the viewer may manage the community: the gate behind `check_for_community_access!` and every "Manage"

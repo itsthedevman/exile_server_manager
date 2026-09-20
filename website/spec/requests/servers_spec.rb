@@ -20,6 +20,11 @@ RSpec.describe "Servers", type: :request do
 
     # Allowing exactly one command leaves the hub rendering exactly what that command puts on it. Allowing everything
     # would drag every other card's game-server reads into these examples for no benefit.
+    # The dashboard lands first and fills its cards in from #features, so the cards are asked for where they render
+    def get_features
+      get "/servers/#{server.public_id}/features"
+    end
+
     def allow_only(allowed)
       allow(ESM::CommandAccess).to receive(:new) do |command_name:, **|
         verdict =
@@ -51,7 +56,7 @@ RSpec.describe "Servers", type: :request do
       it "hides its card even though nothing else would have blocked it" do
         create(:command_configuration, community:, command_name: "me", enabled: false)
 
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).not_to include("My Player")
       end
@@ -62,7 +67,7 @@ RSpec.describe "Servers", type: :request do
         create(:command_configuration, community:, command_name: "sqf", enabled: false)
         service_api.administrator = true
 
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).not_to include("SQF Console")
       end
@@ -71,7 +76,7 @@ RSpec.describe "Servers", type: :request do
     it "offers the lookup bar to an admin who can view a player" do
       allow_only("info")
 
-      get "/servers/#{server.public_id}"
+      get_features
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Admin tools")
@@ -175,10 +180,56 @@ RSpec.describe "Servers", type: :request do
     it "keeps the admin section off the page entirely for a player" do
       allow_only("me")
 
-      get "/servers/#{server.public_id}"
+      get_features
 
       expect(response.body).not_to include("Admin tools")
       expect(response.body).not_to include("players/lookup")
+    end
+
+    # Everything on a card acts on a character, and a server that has never seen this player has none to act on. The
+    # cards would each fail in their own way, so the page says the one thing that is actually true instead.
+    context "when the player has never joined the server" do
+      before { service_api.answer(:server_account_exists, false) }
+
+      it "asks them to join, in place of the cards" do
+        allow_only("me")
+
+        get_features
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Join #{server.server_id} to get started")
+        expect(response.body).not_to include("My Player")
+      end
+
+      it "keeps My Player out of the sidebar too" do
+        allow_only("me")
+
+        get "/servers/#{server.public_id}"
+
+        expect(response.body).not_to include("My Player")
+      end
+
+      # An admin manages a server whether or not they have ever played on it
+      it "still gives an admin their tools" do
+        allow_only("info")
+
+        get_features
+
+        expect(response.body).to include("Admin tools")
+        expect(response.body).not_to include("Join #{server.server_id} to get started")
+      end
+
+      # The answer is the same for every reload, and a player who has never joined is exactly who would otherwise
+      # reach the game server on each one
+      it "only asks the server once while the answer is still fresh" do
+        allow(ESM).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+        allow_only("me")
+
+        3.times { get_features }
+
+        expect(ESM::Service::API).to have_received(:call)
+          .with(:server_account_exists, any_args).once
+      end
     end
 
     context "when the player can be rewarded" do
@@ -194,7 +245,7 @@ RSpec.describe "Servers", type: :request do
       end
 
       it "shows the default package" do
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Daily Drop")
@@ -204,7 +255,7 @@ RSpec.describe "Servers", type: :request do
 
       # A count is not an answer to "what am I getting". The package reads as a receipt now, one line per thing.
       it "names the items a package holds" do
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).to include("x2")
       end
@@ -214,14 +265,14 @@ RSpec.describe "Servers", type: :request do
       it "keeps every other package off the page" do
         ESM::ServerReward.create!(server_id: server.id, reward_id: "secret_sauce", player_poptabs: 100)
 
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).not_to include("secret_sauce")
       end
 
       context "and the server is up" do
         it "offers to redeem the package" do
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).to include("Redeem")
           expect(response.body).to include(%(action="/servers/#{server.public_id}/reward"))
@@ -230,7 +281,7 @@ RSpec.describe "Servers", type: :request do
         # The way any package other than the default is taken. Owners hand the ID out however they like, which is what
         # makes a coupon possible.
         it "takes a typed code for anything else" do
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).to include(%(name="reward_id"))
           expect(response.body).to include("Reward code")
@@ -243,7 +294,7 @@ RSpec.describe "Servers", type: :request do
             reward_vehicles: [{class_name: "Exile_Chopper_Hummingbird", spawn_location: "player_decides"}]
           )
 
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).to include("Where should it go?")
           expect(response.body).to include(%(name="vehicles[0][pin_code]"))
@@ -264,7 +315,7 @@ RSpec.describe "Servers", type: :request do
             cooldown_amount: 1
           )
 
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).to include("2 uses left")
         end
@@ -283,7 +334,7 @@ RSpec.describe "Servers", type: :request do
             cooldown_amount: 1
           )
 
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).not_to include("Daily Drop")
         end
@@ -298,7 +349,7 @@ RSpec.describe "Servers", type: :request do
             server_id: server.id
           )
 
-          get "/servers/#{server.public_id}"
+          get_features
 
           expect(response.body).to include("Available in")
 
@@ -313,7 +364,7 @@ RSpec.describe "Servers", type: :request do
       it "shows what is still owed and takes the packages off the page until it is finished" do
         ESM::ServerRewardClaim.create!(server_id: server.id, user_id: user.id, player_poptabs: 25)
 
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).to include("Rewards waiting for you")
         expect(response.body).to include("only redeem a new reward once this one is delivered")
@@ -331,7 +382,7 @@ RSpec.describe "Servers", type: :request do
           state_details: {failures: [{bucket: "vehicles", name: "Hatchback", reason: "No room to spawn here"}]}
         )
 
-        get "/servers/#{server.public_id}"
+        get_features
 
         expect(response.body).to include("Hatchback: No room to spawn here")
         expect(response.body).to include("Needs an admin")

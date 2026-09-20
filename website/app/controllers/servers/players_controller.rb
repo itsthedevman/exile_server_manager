@@ -3,6 +3,7 @@
 module Servers
   class PlayersController < RegisteredController
     include PlayerLoading
+    include PlayerRegistration
     include Commands
     include ServerVersion
 

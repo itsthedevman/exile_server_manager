@@ -4,6 +4,7 @@ module Servers
   class TerritoriesController < RegisteredController
     include TerritoryLoading
     include PlayerLoading
+    include PlayerRegistration
     include Commands
     include ServerVersion
 
