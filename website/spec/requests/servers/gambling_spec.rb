@@ -80,6 +80,46 @@ RSpec.describe "Servers::Gambling", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # Each attempt is a real call against someone's game server, and a refused one records no cooldown, so nothing
+    # else stands between a loop and the server it is asking.
+    describe "how fast they can be sent" do
+      before { allow_access(denied: false) }
+
+      # Specs run against a null store, which cannot hold the marker this is made of
+      it "refuses a second attempt sent immediately after the first" do
+        allow(ESM).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+
+        post_gamble
+
+        expect { post_gamble }.not_to change(ESM::ServiceCommand, :count)
+        expect(response.body).to include("Give it a moment")
+      end
+
+      it "refuses one while the player's last gamble is still out" do
+        create(:service_command, user:, server:, command_name: "gamble", status: :dispatched)
+
+        expect { post_gamble }.not_to change(ESM::ServiceCommand, :count)
+        expect(response.body).to include("still running")
+      end
+
+      # The row settles itself however the attempt ends, so one still calling itself live long afterwards was being
+      # carried by a process that is gone
+      it "lets one through when the last attempt was abandoned long ago" do
+        create(
+          :service_command,
+          user:, server:, command_name: "gamble", status: :dispatched, created_at: 10.minutes.ago
+        )
+
+        expect { post_gamble }.to change(ESM::ServiceCommand, :count).by(1)
+      end
+
+      it "leaves another player's attempt out of it" do
+        create(:service_command, user: create(:user), server:, command_name: "gamble", status: :dispatched)
+
+        expect { post_gamble }.to change(ESM::ServiceCommand, :count).by(1)
+      end
+    end
   end
 
   describe "GET status" do
@@ -87,7 +127,7 @@ RSpec.describe "Servers::Gambling", type: :request do
       get "/servers/#{server.public_id}/gamble/commands/#{public_id}/status", as: :turbo_stream
     end
 
-    it "serves the caller's own command by its public id" do
+    it "serves the caller's own command by its public id, regardless of how fast it is asked for" do
       command = create(:service_command, user:, server:, command_name: "gamble")
       get_status(command.public_id)
 

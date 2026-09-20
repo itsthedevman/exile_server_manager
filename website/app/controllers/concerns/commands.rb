@@ -5,11 +5,24 @@ module Commands
 
   include CommandGating
 
+  # The least time between two attempts at the same command on the same server, whatever came of the first one. A
+  # community's own cooldown is a game rule and is only recorded once something actually happened, so a refusal can
+  # otherwise be repeated as fast as a client can send it. This is the floor underneath that, well below the smallest
+  # cooldown anyone configures.
+  DISPATCH_FLOOR = 1.second
+
+  # How long a dispatch that has not reported back still counts as running. The bot settles a command's row however it
+  # ends, so anything older than this was being carried by a process that is now gone.
+  DISPATCH_WINDOW = 1.minute
+
   private
 
   ##
   # Runs the CommandAccess verdict for command_name against the current user. On a denial, renders the
   # player-facing reason into the command's result slot and returns false so the caller can bail.
+  #
+  # An action that runs a command is also held to a rate of its own. Only those: a page reading the server puts the
+  # same command name behind several frames at once, and they are cached rather than dispatched.
   #
   # @param command_name [String, Symbol] The name of the command
   #
@@ -17,15 +30,81 @@ module Commands
   #
   def check_for_command_access(command_name)
     verdict = command_verdict(command_name)
-    return true if verdict.allowed?
 
-    if verdict.reason == :server_offline && offline_server_visit?
-      redirect_to server_path(current_server.public_id)
-    else
-      render_command_denied(command_denied_message(verdict.reason))
+    if !verdict.allowed?
+      if verdict.reason == :server_offline && offline_server_visit?
+        redirect_to server_path(current_server.public_id)
+      else
+        render_command_denied(command_denied_message(verdict.reason))
+      end
+
+      return false
     end
 
+    return true if request.get?
+
+    check_for_dispatch_rate(command_name)
+  end
+
+  ##
+  # Whether this player may dispatch command_name right now, refusing the two ways a page can outrun the server it is
+  # asking: several attempts at once, and one attempt after another as fast as they can be sent.
+  #
+  # @param command_name [String, Symbol] The name of the command
+  #
+  # @return [Boolean] true when the dispatch may go ahead
+  #
+  def check_for_dispatch_rate(command_name)
+    # Written before it is read, so two requests arriving together cannot both find it missing. The loser waits the
+    # same moment the sender of a second attempt would.
+    unless ESM.cache.write(dispatch_rate_key(command_name), true, expires_in: DISPATCH_FLOOR, unless_exist: true)
+      render_command_denied("That was quick. Give it a moment and try again.")
+      return false
+    end
+
+    return true unless command_dispatch_running?(command_name)
+
+    render_command_denied("That's still running. Give it a moment.")
     false
+  end
+
+  ##
+  # Whether this player already has an attempt at command_name out against the current server.
+  #
+  # @param command_name [String, Symbol] The name of the command
+  #
+  # @return [Boolean]
+  #
+  def command_dispatch_running?(command_name)
+    ESM::ServiceCommand
+      .where(user_id: current_user.id, server_id: current_server&.id, command_name: command_name.to_s)
+      .where(status: [:pending, :dispatched], created_at: DISPATCH_WINDOW.ago..)
+      .exists?
+  end
+
+  def dispatch_rate_key(command_name)
+    "command_dispatch/#{current_user.id}/#{current_server&.id}/#{command_name}"
+  end
+
+  ##
+  # Whether this settled command's result still has to be read back from the game server.
+  #
+  # What a command changed is worth one fresh read, and the poller that asks for it stops on its own. Nothing makes
+  # the browser stop, though, so every later request for the same settled command reads the cache the rest of the
+  # page reads rather than reaching the server again.
+  #
+  # Each kind of read counts on its own: a territory action changes the territory and the player who paid for it, and
+  # both are worth one look.
+  #
+  # @param command [ESM::ServiceCommand] the settled command
+  # @param scope [Symbol] what is being read back
+  #
+  # @return [Boolean]
+  #
+  def first_read_after?(command, scope)
+    key = "command_read/#{command.public_id}/#{scope}"
+
+    ESM.cache.write(key, true, expires_in: DISPATCH_WINDOW, unless_exist: true)
   end
 
   ##
