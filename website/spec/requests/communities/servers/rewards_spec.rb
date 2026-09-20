@@ -77,7 +77,7 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
       get "#{base_path}/default/edit"
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("without naming a package")
+      expect(response.body).to include("without providing a package code")
     end
 
     it "asks where each vehicle should go" do
@@ -392,7 +392,7 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
 
       get "/communities/#{community.public_id}/servers/#{server.public_id}/edit"
 
-      expect(response.body).to include("without naming a package")
+      expect(response.body).to include("without providing a package code")
       expect(response.body).to include("Code packages")
     end
 
@@ -402,7 +402,7 @@ RSpec.describe "Communities::Servers::Rewards", type: :request do
       get "/communities/#{community.public_id}/servers/#{server.public_id}/edit"
 
       expect(response.body).to include("No default package")
-      expect(response.body).to include("without a code get nothing")
+      expect(response.body).to include("without a code will receive nothing")
     end
 
     # The amounts are a hover away in the tooltip. The row is for finding the package, not reading it.
