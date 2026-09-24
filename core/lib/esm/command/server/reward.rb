@@ -4,6 +4,8 @@ module ESM
   module Command
     module Server
       class Reward < ApplicationCommand
+        include RewardContents
+
         MINIMUM_SERVER_VERSION = ESM::Server::MINIMUM_REWARD_VEHICLES_VERSION
 
         # Nothing retries on its own, so every attempt is the player running the command again. Reaching this many
@@ -13,6 +15,10 @@ module ESM
         # What a delivery form may decide about a vehicle. Everything else on a claim's entry belongs to the admin who
         # configured the package.
         DELIVERY_CHOICE_KEYS = %i[spawn_location territory_id pin_code].freeze
+
+        # Spawn locations that require input from the player that we can't easily get from a Discord interaction: where
+        # they want their vehicle, or which territory's virtual garage to add it to.
+        WEBSITE_ONLY_LOCATIONS = %w[player_decides virtual_garage].freeze
 
         #################################
         #
@@ -45,6 +51,7 @@ module ESM
           check_for_pending_request!
 
           claim = load_and_check_claim!
+          check_for_discord_deliverable!(claim)
 
           add_request(to: current_user, description: request_description(claim))
 
@@ -60,8 +67,10 @@ module ESM
           reply(embed)
         end
 
+        # Requests can also be accepted from the website's My Requests page. Either way, the player hasn't given any
+        # input about their vehicles, so this is treated as a Discord delivery.
         def on_request_accepted
-          response = deliver_reward!
+          response = deliver_reward!(from_website: false)
 
           embed =
             if target_server.reward_vehicles_supported?
@@ -71,12 +80,29 @@ module ESM
             end
 
           reply(embed_from_message!(embed))
+
+          return if @held_vehicles.blank?
+
+          # The server's receipt only covers what it was sent
+          vehicles = describe_vehicles(@held_vehicles).join_map(", ") { |vehicle| "`#{vehicle.display_name}`" }
+
+          reply(
+            ESM::Embed.build(
+              :info,
+              description: I18n.t(
+                "commands.reward.messages.held_for_website",
+                user: current_user.mention,
+                vehicles:,
+                url: server_url(target_server)
+              )
+            )
+          )
         end
 
         # The page reads the claim back out of the database itself, so the reply carries only what the row cannot say
         # afterwards: how the attempt went, and any failure that was dropped rather than kept for a retry.
         def on_website_execute
-          response = deliver_reward!
+          response = deliver_reward!(from_website: true)
 
           reply(state: response.state, failures: failure_details(response))
         end
@@ -225,13 +251,10 @@ module ESM
           if target_server.reward_vehicles_supported? && (value = contents.vehicles).present?
             value = value.join_map("\n") do |vehicle|
               location =
-                case vehicle.spawn_location
-                when "nearby"
+                if website_only?(vehicle)
+                  "claim on the server's dashboard"
+                else
                   "spawned nearby"
-                when "virtual_garage"
-                  "added to your virtual garage"
-                when "player_decides"
-                  "spawn location to be decided"
                 end
 
               "#{vehicle.display_name} - #{location}"
@@ -259,6 +282,30 @@ module ESM
           end
 
           claim
+        end
+
+        #
+        # Refuses a Discord redemption when everything in it is a vehicle that requires the player's input. Otherwise
+        # the player would confirm in their DMs for a delivery that gives them nothing.
+        #
+        # @param reward [ESM::ServerReward, ESM::ServerRewardClaim] the package or claim being redeemed
+        #
+        # @return [void]
+        #
+        def check_for_discord_deliverable!(reward)
+          return unless target_server.reward_vehicles_supported?
+
+          contents = reward.contents
+          return if contents.player_poptabs.positive? || contents.locker_poptabs.positive? || contents.respect.positive?
+          return if contents.items.present?
+          return unless contents.vehicles.present? && contents.vehicles.all? { |vehicle| website_only?(vehicle) }
+
+          raise_error!(:website_only, user: current_user, url: server_url(target_server))
+        end
+
+        # Accepts a stored vehicle hash or a described one
+        def website_only?(vehicle)
+          WEBSITE_ONLY_LOCATIONS.include?(vehicle.to_h[:spawn_location])
         end
 
         def check_for_exhausted_claim!(claim)
@@ -289,10 +336,15 @@ module ESM
         # in how they report it, since Discord answers with an embed the extension built and the website answers with
         # something its own page can render.
         #
+        # @param from_website [Boolean] whether the player has given input about their vehicles. From Discord, vehicles
+        #   that require it are held on the claim for the website.
+        #
         # @return [ESM::Message::Data] the extension's response data
         #
-        def deliver_reward!
+        def deliver_reward!(from_website:)
           reward = load_and_check_claim!
+          check_for_discord_deliverable!(reward) unless from_website
+
           is_package = reward.is_a?(ESM::ServerReward)
 
           # Below the minimum version vehicles are not part of the reward at all. Holding them on a claim until the
@@ -302,6 +354,13 @@ module ESM
           # Resolved before the package becomes a claim. A form that no longer lines up should not leave the player
           # holding a mailbox they have to work through in place of a package they could simply redeem again.
           vehicles = delivery_vehicles(is_package ? reward.reward_vehicles : reward.vehicles) if vehicles_supported
+
+          # The server would refuse these, and each refusal would count as a failed attempt the player can't fix from
+          # Discord
+          @held_vehicles = []
+          if vehicles_supported && !from_website
+            @held_vehicles, vehicles = vehicles.partition { |vehicle| website_only?(vehicle) }
+          end
 
           # A claim row is where a partial delivery lives, so the package becomes one before it is attempted
           claim = is_package ? create_claim(reward, vehicles_supported:) : reward
@@ -338,7 +397,7 @@ module ESM
             raise_error!(:delivery_stalled, user: current_user)
           end
 
-          settle_claim!(claim, response)
+          settle_claim!(claim, response, held_vehicles: @held_vehicles)
 
           response
         end
@@ -442,14 +501,19 @@ module ESM
         # reported as a failure but cannot be retried, so it is dropped and the claim can still settle. The same goes
         # for vehicles an older server was never sent.
         #
+        # Vehicles held for the website stay owed without counting an attempt. The server never tried them, and the
+        # attempt limit is for repeated failures, not for input we couldn't ask for.
+        #
         # @param claim [ESM::ServerRewardClaim] the claim that was just attempted
         # @param result [ESM::Message::Data] the extension's response data
+        # @param held_vehicles [Array<Hash>] vehicles held for the website instead of being sent
         #
         # @return [void]
         #
-        def settle_claim!(claim, result)
+        def settle_claim!(claim, result, held_vehicles: [])
           undelivered_items = result.undelivered_items.presence || {}
-          undelivered_vehicles = result.undelivered_vehicles.presence || []
+          refused_vehicles = result.undelivered_vehicles.presence || []
+          undelivered_vehicles = refused_vehicles + held_vehicles
 
           if undelivered_items.blank? && undelivered_vehicles.blank?
             start_package_cooldown(claim)
@@ -457,7 +521,12 @@ module ESM
             return claim.destroy!
           end
 
-          attempt_count = claim.attempt_count + 1
+          attempted = undelivered_items.present? || refused_vehicles.present?
+          attempt_count = attempted ? claim.attempt_count + 1 : claim.attempt_count
+
+          held_failures = describe_vehicles(held_vehicles).map do |vehicle|
+            {bucket: "vehicles", name: vehicle.display_name, reason: I18n.t("commands.reward.held_for_website_reason")}
+          end
 
           # No cooldown on a partial. The player still has an unfinished claim, and the cooldown gates issuing a new
           # package, not finishing this one.
@@ -468,9 +537,9 @@ module ESM
             items: undelivered_items,
             vehicles: undelivered_vehicles,
             state: (attempt_count >= MAX_DELIVERY_ATTEMPTS) ? :failed : :waiting,
-            state_details: {failures: failure_details(result)},
+            state_details: {failures: failure_details(result) + held_failures},
             attempt_count:,
-            last_attempt_at: Time.current
+            last_attempt_at: attempted ? Time.current : claim.last_attempt_at
           )
         end
 

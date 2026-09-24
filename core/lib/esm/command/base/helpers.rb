@@ -499,6 +499,10 @@ module ESM
           "#{base_url}/requests"
         end
 
+        def server_url(server)
+          "#{base_url}/servers/#{server.public_id}"
+        end
+
         def server_players_url(server)
           "#{base_url}/servers/#{server.public_id}/players"
         end

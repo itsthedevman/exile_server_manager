@@ -1070,46 +1070,79 @@ describe ESM::Command::Server::Reward, category: "command" do
         describe "settling the claim" do
           include_context "settling the claim"
 
-          context "when a vehicle needs a spawn location only the website can ask for" do
-            let(:reward_vehicles) do
-              [{class_name: vehicle_class, spawn_location: "player_decides"}]
+          # Test players spawn at [0, 0, 0], which is ocean, so the server can't find anywhere to spawn this and refuses
+          # it with no_safe_position
+          let(:refused_vehicle) { {class_name: vehicle_class, spawn_location: "nearby"} }
+
+          # These require the player's input, so Discord holds them on the claim instead of sending them to the server
+          %w[player_decides virtual_garage].each do |spawn_location|
+            context "when a vehicle's spawn location is #{spawn_location}" do
+              # The follow-up pointing the player at the website
+              let!(:number_of_messages) { 5 }
+
+              let(:reward_vehicles) do
+                [{class_name: vehicle_class, spawn_location:}]
+              end
+
+              it "delivers the rest and keeps the vehicle on the claim without counting an attempt" do
+                execute_command
+
+                expect(claim).to be_present
+                expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
+
+                # The poptabs landed, so they must not be owed a second time
+                expect(claim.player_poptabs).to eq(0)
+
+                expect(claim.attempt_count).to eq(0)
+                expect(claim.last_attempt_at).to be_nil
+
+                failure = claim.state_details[:failures].first
+
+                expect(failure[:bucket]).to eq("vehicles")
+                expect(failure[:name]).to eq("Hatchback")
+                expect(failure[:reason]).to match("requires your input")
+
+                # They still have an unfinished claim, so nothing should be gating a retry
+                expect(reward_cooldown).to be_nil
+              end
+
+              it "sends the player to the website for it" do
+                execute_command
+
+                request = ESM.discord_bot.test_outbox.retrieve("Before we get to the good stuff")&.content
+                expect(request.description).to match(/\*\*Vehicles:\*\* .+ - claim on the server's dashboard/)
+
+                embed = ESM.discord_bot.test_outbox.retrieve("These require your input")&.content
+
+                expect(embed).not_to be(nil)
+                expect(embed.description).to match("Hatchback")
+                expect(embed.description).to include("/servers/#{server.public_id}")
+              end
+            end
+          end
+
+          context "when everything left needs the website" do
+            before do
+              server.server_rewards.default.first.update!(
+                player_poptabs: 0,
+                reward_vehicles: [{class_name: vehicle_class, spawn_location: "player_decides"}]
+              )
             end
 
-            it "keeps the vehicle on the claim and does not start the cooldown" do
-              execute_command
+            it "refuses before asking the player to confirm anything" do
+              expect {
+                execute!(arguments: {server_id: server.server_id})
+              }.to raise_error(ESM::Exception::CheckFailure) do |error|
+                expect(error.to_embed.description).to match("vehicles that require your input")
+              end
 
-              expect(claim).to be_present
-              expect(claim.vehicles.first[:class_name]).to eq(vehicle_class)
-
-              # The poptabs landed, so they must not be owed a second time
-              expect(claim.player_poptabs).to eq(0)
-
-              expect(claim.attempt_count).to eq(1)
-              expect(claim.last_attempt_at).to be_present
-              failure = claim.state_details[:failures].first
-
-              expect(failure[:bucket]).to eq("vehicles")
-              expect(failure[:name]).to eq("Hatchback")
-              expect(failure[:reason]).to match("website")
-
-              # They still have an unfinished claim, so nothing should be gating a retry
-              expect(reward_cooldown).to be_nil
-            end
-
-            it "tells the player what is still owed" do
-              execute_command
-
-              embed = ESM.discord_bot.test_outbox.retrieve("Partially Delivered")&.content
-
-              expect(embed).not_to be(nil)
-              expect(embed.description).to match("Hatchback")
+              expect(claim).to be_nil
+              expect(ESM::Request.where(requestor_user_id: user.id)).to be_empty
             end
           end
 
           context "when a claim fails a second time" do
-            let(:reward_vehicles) do
-              [{class_name: vehicle_class, spawn_location: "player_decides"}]
-            end
+            let(:reward_vehicles) { [refused_vehicle] }
 
             it "counts the attempt and keeps what is still owed" do
               execute_command
@@ -1180,9 +1213,7 @@ describe ESM::Command::Server::Reward, category: "command" do
             # The invalid item adds the extra "Invalid Reward Item" admin log
             let!(:number_of_messages) { 5 }
 
-            let(:reward_vehicles) do
-              [{class_name: vehicle_class, spawn_location: "player_decides"}]
-            end
+            let(:reward_vehicles) { [refused_vehicle] }
 
             before do
               server.server_rewards.default.first.update!(reward_items: {NotAThingAnyoneOwns: 1})
@@ -1207,9 +1238,7 @@ describe ESM::Command::Server::Reward, category: "command" do
             # The invalid item adds the extra "Invalid Reward Item" admin log
             let!(:number_of_messages) { 5 }
 
-            let(:reward_vehicles) do
-              [{class_name: vehicle_class, spawn_location: "player_decides"}]
-            end
+            let(:reward_vehicles) { [refused_vehicle] }
 
             before do
               server.server_rewards.default.first.update!(
@@ -1239,9 +1268,7 @@ describe ESM::Command::Server::Reward, category: "command" do
           end
 
           context "when a claim runs out of attempts" do
-            let(:reward_vehicles) do
-              [{class_name: vehicle_class, spawn_location: "player_decides"}]
-            end
+            let(:reward_vehicles) { [refused_vehicle] }
 
             # One short of the cap, standing in for a player who has already tried and failed that many times
             let!(:pending_claim) do

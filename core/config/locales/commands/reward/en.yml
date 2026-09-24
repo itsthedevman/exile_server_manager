@@ -30,6 +30,14 @@ en:
 
           Nothing is lost. Your server's admins can release it from the website.
         invalid_pin_code: "Sorry %{user}, a vehicle's pin has to be exactly four digits"
+        website_only: |-
+          Hey %{user}, this reward has vehicles that require your input. Please head to the server's dashboard to claim it:
+          %{url}
+      messages:
+        held_for_website: |-
+          Hey %{user}, you still have %{vehicles} waiting for you. These require your input, so please head to the server's dashboard to claim them:
+          %{url}
+      held_for_website_reason: "requires your input on the server's dashboard"
       request_descriptions:
         reward_base: |-
           Hey there, %{user}!
