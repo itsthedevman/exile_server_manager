@@ -1,6 +1,29 @@
 # frozen_string_literal: true
 
+# Every Discord command is registered globally. A guild copy sits alongside the global one rather than replacing it,
+# so registering in a community's guild as well shows every command twice there.
 namespace :commands do
+  # Discord registers everything under a top-level name as one command, so /community reset_cooldown is registered by
+  # sending all of /community.
+  resolve_root_name = lambda do |name|
+    abort "Usage: rake commands:<task>[command_name]" if name.blank?
+
+    root_name =
+      if ESM::Command.by_namespace.key?(name.to_sym)
+        name.to_sym
+      elsif (command_class = ESM::Command[name])
+        (command_class.namespace[:segments].first || command_class.namespace[:command_name]).to_sym
+      end
+
+    abort "No command named '#{name}'" if root_name.nil?
+
+    root_name
+  end
+
+  registered_globally = lambda do |root_name|
+    ESM.discord_bot.get_application_commands.select { |command| command.name == root_name.to_s }
+  end
+
   desc "List all available commands with their usage"
   task list: :environment do
     ESM::Command.load
@@ -12,88 +35,53 @@ namespace :commands do
     puts JSON.pretty_generate(commands)
   end
 
-  desc "Delete a single Discord command by name (global + every community guild)"
+  desc "Register one Discord command that Discord does not have yet"
+  task :create, [:name] => :discord_bot do |_task, args|
+    root_name = resolve_root_name.call(args[:name])
+
+    if registered_globally.call(root_name).any?
+      abort "'/#{root_name}' is already registered. Use rake commands:update[#{root_name}] to change it"
+    end
+
+    print "Creating '/#{root_name}'..."
+    ESM::Command.register_command(root_name, ESM::Command.by_namespace[root_name], nil)
+    puts " done"
+  end
+
+  desc "Re-register one Discord command that Discord already has"
+  task :update, [:name] => :discord_bot do |_task, args|
+    root_name = resolve_root_name.call(args[:name])
+
+    if registered_globally.call(root_name).none?
+      abort "'/#{root_name}' is not registered. Use rake commands:create[#{root_name}] to add it"
+    end
+
+    # Registering a name Discord already has overwrites it in place
+    print "Updating '/#{root_name}'..."
+    ESM::Command.register_command(root_name, ESM::Command.by_namespace[root_name], nil)
+    puts " done"
+  end
+
+  # Taken as Discord has it rather than resolved against the code, since the usual reason to delete a command is that
+  # the code no longer has it
+  desc "Delete one top-level Discord command by name"
   task :delete, [:name] => :discord_bot do |_task, args|
     name = args[:name].presence
     abort "Usage: rake commands:delete[command_name]" if name.nil?
 
-    remove = lambda do |label, server_id|
-      print "  #{label}..."
-
-      matches = ESM.discord_bot.get_application_commands(server_id:).select { |command| command.name == name }
-
-      matches.each(&:delete)
-      puts " removed #{matches.size}"
-    rescue => e
-      puts " skipped (#{e.class}: #{e.message})"
-    end
-
-    puts "Deleting '#{name}'..."
-    remove.call("global", nil)
-
-    ESM::Community.all.each do |community|
-      remove.call(community.community_id, community.guild_id)
-    end
-  end
-
-  desc "Re-register one Discord command globally, and in any community guild that already has it"
-  task :update, [:name] => :discord_bot do |_task, args|
-    name = args[:name].presence
-    abort "Usage: rake commands:update[command_name]" if name.nil?
-
-    # Discord registers everything under a top-level name as one command, so updating /community reset_cooldown means
-    # re-sending all of /community. Registering a name Discord already has overwrites it in place.
-    root_name =
-      if ESM::Command.by_namespace.key?(name.to_sym)
-        name.to_sym
-      elsif (command_class = ESM::Command[name])
-        (command_class.namespace[:segments].first || command_class.namespace[:command_name]).to_sym
-      end
-
-    abort "No command named '#{name}'" if root_name.nil?
-
-    segments_or_command = ESM::Command.by_namespace[root_name]
-
-    update = lambda do |label, server_id|
-      print "  #{label}..."
-
-      # A guild without its own copy already uses the global one, and registering there would add a duplicate
-      if server_id && ESM.discord_bot.get_application_commands(server_id:).none? { |command| command.name == root_name.to_s }
-        puts " not registered here"
-        next
-      end
-
-      ESM::Command.register_command(root_name, segments_or_command, server_id)
-      puts " done"
-    rescue => e
-      puts " skipped (#{e.class}: #{e.message})"
-    end
-
-    puts "Updating '/#{root_name}'..."
-    update.call("global", nil)
-
-    ESM::Community.all.each do |community|
-      update.call(community.community_id, community.guild_id)
-    end
+    print "Deleting '/#{name}'..."
+    matches = registered_globally.call(name)
+    matches.each(&:delete)
+    puts " removed #{matches.size}"
   end
 
   desc "Delete and re-register all Discord commands"
   task seed: :discord_bot do
-    print "Deleting all global commands..."
+    print "Deleting all commands..."
     ESM.discord_bot.get_application_commands.each(&:delete)
     puts " done"
 
-    ESM::Community.all.each do |community|
-      print "  Deleting commands for #{community.community_id}..."
-      ESM.discord_bot.get_application_commands(server_id: community.guild_id).each(&:delete)
-      puts " done"
-
-      print "  Registering commands for #{community.community_id}..."
-      ESM::Command.register_commands(community.guild_id)
-      puts " done"
-    end
-
-    print "  Registering global commands..."
+    print "Registering all commands..."
     ESM::Command.register_commands
     puts " done"
   end

@@ -174,11 +174,11 @@ module ESM
     end
 
     #
-    # Registers admin and development commands as "server commands" for the community
-    # These are only present on the Discord and are not global
+    # Registers every command with Discord
     #
-    # @param community_discord_id [String, Integer, NilClass] The community's guild ID to register the command to the
-    #   the community. Otherwise, it'll register it globally
+    # @param community_discord_id [String, Integer, NilClass] The guild ID to register the commands to. Otherwise,
+    #   they are registered globally. A guild copy sits alongside the global one, so doing both shows every command
+    #   twice in that guild
     #
     def self.register_commands(community_discord_id = nil)
       by_namespace.each do |name, segments_or_command|
