@@ -2,16 +2,6 @@ use uuid::Uuid;
 
 use super::*;
 
-// Limit tampering
-fn query() -> &'static str {
-    r#"
-    INSERT INTO
-        xm8_notification (uuid, recipient_uid, territory_id, type, content)
-    VALUES
-        (:uuid, :uid, :territory_id, :type, :content);
-    "#
-}
-
 pub async fn add_xm8_notifications(
     context: &Database,
     connection: &mut Conn,
@@ -38,7 +28,7 @@ pub async fn add_xm8_notifications(
     // Execute the query
     let result = connection
         .exec_batch(
-            query(),
+            &context.sql.add_xm8_notifications,
             recipient_uids.iter().map(|uid| {
                 params! {
                     "uuid" => Uuid::new_v4().to_string(),

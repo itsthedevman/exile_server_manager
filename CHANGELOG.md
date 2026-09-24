@@ -23,6 +23,7 @@ Changes to the `@esm` Arma 3 mod: the SQF, the extension, and the updater that s
 - Rewards deliver what they can: poptabs and respect always redeem, and any item or vehicle that doesn't make it comes back with its reason (no safe spot to spawn, no garage, garage full) so the bot can hold it for another attempt
 - `all_territories` query now returns territory level, object count, last-paid timestamp, and stolen/deleted state, and includes territories whose owner account is missing instead of silently excluding them
 - The "you are dead" reply now tells the player to be in game and alive, then spawn in and try again
+- SQL queries are compiled into the extension instead of read from `@esm/sql/queries`, so a query always matches the extension running it. `@esm/sql` now holds only the database setup scripts
 
 ### Removed
 

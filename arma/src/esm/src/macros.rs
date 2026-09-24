@@ -39,23 +39,13 @@ macro_rules! random_bs_go {
     }};
 }
 
+// Compiled in rather than read off the server, so a query always matches the extension that runs it. A missing
+// file is a build error.
 #[macro_export]
 macro_rules! include_sql {
-    ($name:expr) => {{
-        let path = concat!("./@esm/sql/queries/", $name, ".sql");
-
-        match fs::read_to_string(path) {
-            Ok(c) => c,
-            Err(e) => {
-                error!(
-                    "Failed to load file at @esm/sql/queries/{}.sql. Reason: {e}",
-                    $name
-                );
-
-                String::new()
-            }
-        }
-    }};
+    ($name:expr) => {
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/database/sql/", $name, ".sql")).to_string()
+    };
 }
 
 // Generates the Queries struct from the SQL files
@@ -72,23 +62,6 @@ macro_rules! load_sql {
                 Queries {
                     $($names: include_sql!(stringify!($names))),*
                 }
-            }
-
-            pub fn validate(&self) -> ESMResult {
-                $(
-                    if self.$names.is_empty() {
-                        return Self::format_error(stringify!($names));
-                    }
-                )*
-
-                Ok(())
-            }
-
-            fn format_error(name: &str) -> ESMResult {
-                Err(format!(
-                    "Failed to load {name}.sql. Please ensure @esm/sql/queries/{name}.sql exists and contains valid SQL"
-                )
-                .into())
             }
         }
 

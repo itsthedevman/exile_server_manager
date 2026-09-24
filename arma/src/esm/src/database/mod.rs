@@ -70,9 +70,6 @@ impl Database {
     }
 
     pub async fn connect(&self) -> Result<(), String> {
-        // Validate SQL scripts
-        self.sql.validate().map_err(|e| e.to_string())?;
-
         // Get connection string from config or INI file
         let database_url =
             connection_string(&crate::CONFIG.server_mod_name, self.extdb_version)

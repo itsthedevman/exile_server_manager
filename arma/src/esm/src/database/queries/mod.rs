@@ -28,11 +28,11 @@ import_and_export!(set_territory_payment_counter);
 import_and_export!(update_xm8_attempt_counter);
 import_and_export!(update_xm8_notification_state);
 
-// Generates a Queries struct containing these attributes and the contents of their
-// corresponding SQL file. These files MUST exist in @esm/sql/queries or there will be errors
+// Generates a Queries struct holding the contents of each name's SQL file in src/database/sql, compiled in
 load_sql! {
     account_exists,
     account_name_lookup,
+    add_xm8_notifications,
     check_if_territory_exists,
     check_if_territory_owner,
     command_all_territories,
@@ -50,8 +50,11 @@ load_sql! {
     command_territory_info,
     decode_territory_id,
     get_territory_payment_counter,
+    get_xm8_notifications,
     increment_territory_payment_counter,
-    set_territory_payment_counter
+    set_territory_payment_counter,
+    update_xm8_attempt_counter,
+    update_xm8_notification_state
 }
 
 /// Read one column off a row, converted to `T`.

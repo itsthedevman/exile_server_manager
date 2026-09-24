@@ -26,39 +26,12 @@ impl Notification {
     }
 }
 
-// Limit tampering
-fn query() -> &'static str {
-    r#"
-    SELECT
-        CONCAT('["', GROUP_CONCAT(DISTINCT uuid SEPARATOR '","'), '"]') as uuids,
-        CONCAT('["', GROUP_CONCAT(DISTINCT recipient_uid SEPARATOR '","'), '"]') as recipient_uids,
-        type,
-        content,
-        MIN(created_at) as created_at
-    FROM
-        xm8_notification
-    WHERE
-        acknowledged_at IS NULL
-        AND (
-            last_attempt_at IS NULL
-            OR last_attempt_at < DATE_SUB(NOW(), INTERVAL 30 SECOND)
-        )
-        AND attempt_count < 10
-    GROUP BY
-        territory_id, type, content
-    ORDER BY
-        MIN(created_at) ASC
-    LIMIT
-        100;
-    "#
-}
-
 pub async fn get_xm8_notifications(
-    _context: &Database,
+    context: &Database,
     connection: &mut Conn,
 ) -> Result<Vec<Notification>, Error> {
     let result = connection
-        .query_map(query(), |r| Notification::from_tuple(r))
+        .query_map(&context.sql.get_xm8_notifications, |r| Notification::from_tuple(r))
         .await;
 
     let notifications = match result {

@@ -6,22 +6,8 @@ struct NotificationState {
     pub state_details: String,
 }
 
-// Limit tampering
-fn query() -> &'static str {
-    r#"
-    UPDATE
-        xm8_notification
-    SET
-        state = :state,
-        state_details = :state_details,
-        acknowledged_at = CURRENT_TIME()
-    WHERE
-        uuid = :uuid;
-    "#
-}
-
 pub async fn update_xm8_notification_state(
-    _context: &Database,
+    context: &Database,
     connection: &mut Conn,
     state_by_uuid: HashMap<String, JSONValue>,
 ) -> Result<(), QueryError> {
@@ -37,7 +23,7 @@ pub async fn update_xm8_notification_state(
 
     connection
         .exec_batch(
-            query(),
+            &context.sql.update_xm8_notification_state,
             state_by_uuid.iter().map(|(uuid, state)| {
                 params! {
                     "uuid" => uuid,
