@@ -55,11 +55,19 @@ enum Commands {
     /// Download and install updates.
     ///
     /// Stop your server first. Every file is checked against a signature and a checksum before anything is
-    /// replaced, and a file that fails either check is left alone.
+    /// replaced, and a file that fails either check is left alone. Anything already up to date is skipped unless
+    /// --force is given.
     Update {
         /// Which part of ESM to update.
         #[arg(default_value = "all")]
         target: UpdateTarget,
+
+        /// Reinstall even what is already up to date.
+        ///
+        /// For repairing an install whose files were deleted or damaged. The updater only knows the versions it
+        /// recorded, so it cannot tell that anything is missing on its own.
+        #[arg(long)]
+        force: bool,
 
         /// Use a different update source. Rarely needed outside testing.
         #[arg(long)]
@@ -74,6 +82,13 @@ enum Commands {
 
     /// Download and apply all updates (alias for `update all`).
     Install {
+        /// Reinstall even what is already up to date.
+        ///
+        /// For repairing an install whose files were deleted or damaged. The updater only knows the versions it
+        /// recorded, so it cannot tell that anything is missing on its own.
+        #[arg(long)]
+        force: bool,
+
         /// Use a different update source. Rarely needed outside testing.
         #[arg(long)]
         manifest_url: Option<String>,
@@ -174,9 +189,31 @@ fn enter_server_root(server_root: Option<String>) -> Result<(), Box<dyn std::err
     .into())
 }
 
-/// A server root is any folder holding an `@esm`.
+/// What an ESM install puts in `@esm`, any one of which marks a real one. `bin` alone covers a first-time install
+/// from `@esm-install.zip`, which carries nothing but the updater.
+const INSTALL_MARKERS: [&str; 5] = ["addons", "bin", "installed_versions.yml", "config.yml", "esm.key"];
+
+/// A server root is a folder holding an `@esm` that something actually installed.
+///
+/// A bare `@esm` is not enough. Logging creates `@esm/log` relative to wherever a process runs, so a folder that once
+/// hosted a stray run has an `@esm` holding nothing but logs. Counting that meant a run from such a folder settled
+/// there instead of falling back to its own install, and reported every component as 0.0.0.
 fn is_server_root(path: &Path) -> bool {
-    path.join("@esm").is_dir()
+    let esm = path.join("@esm");
+
+    INSTALL_MARKERS.iter().any(|marker| esm.join(marker).exists()) || holds_an_extension(&esm)
+}
+
+/// Whether `esm` contains an extension build, `esm*.dll` or `esm*.so`, for an install that has nothing else yet.
+fn holds_an_extension(esm: &Path) -> bool {
+    let Ok(entries) = std::fs::read_dir(esm) else {
+        return false;
+    };
+
+    entries.filter_map(Result::ok).any(|entry| {
+        let name = entry.file_name().to_string_lossy().to_lowercase();
+        name.starts_with("esm") && (name.ends_with(".dll") || name.ends_with(".so"))
+    })
 }
 
 /// Work back to the server root from the running binary, installed at `<root>/@esm/bin/esm_updater`.
@@ -280,13 +317,15 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
 
         Commands::Update {
             target,
+            force,
             manifest_url,
             server_root,
         } => {
             enter_server_root(server_root)?;
 
             let selection: UpdateSelection = target.into();
-            let updated = Updater::run_cli_update(selection, manifest_url, &running_version())?;
+            let updated =
+                Updater::run_cli_update(selection, force, manifest_url, &running_version())?;
             for comp in &updated {
                 // The library already logged this component's trail; stdout is for the operator watching.
                 println!(
@@ -295,19 +334,24 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
                 );
             }
             if updated.is_empty() {
-                println!("Nothing to update.");
+                println!("Nothing to update. Use --force to reinstall anyway.");
             }
             Ok(0)
         }
 
         Commands::Install {
+            force,
             manifest_url,
             server_root,
         } => {
             enter_server_root(server_root)?;
 
-            let updated =
-                Updater::run_cli_update(UpdateSelection::All, manifest_url, &running_version())?;
+            let updated = Updater::run_cli_update(
+                UpdateSelection::All,
+                force,
+                manifest_url,
+                &running_version(),
+            )?;
             for comp in &updated {
                 // The library already logged this component's trail; stdout is for the operator watching.
                 println!(
@@ -316,9 +360,58 @@ fn run(cli: Cli) -> Result<i32, Box<dyn std::error::Error>> {
                 );
             }
             if updated.is_empty() {
-                println!("Nothing to update.");
+                println!("Nothing to update. Use --force to reinstall.");
             }
             Ok(0)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_server_root;
+    use std::path::PathBuf;
+
+    /// A fresh directory under the system temp dir, named for the test so parallel runs never share one.
+    fn scratch(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("esm_updater_cli_{name}_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("@esm")).unwrap();
+        root
+    }
+
+    /// The folder that sent a check to 0.0.0 on every component: an `@esm` that only ever received logs.
+    #[test]
+    fn an_esm_holding_only_logs_is_not_a_server() {
+        let root = scratch("logs_only");
+        std::fs::create_dir_all(root.join("@esm/log")).unwrap();
+
+        let found = is_server_root(&root);
+        std::fs::remove_dir_all(&root).unwrap();
+
+        assert!(!found);
+    }
+
+    /// `@esm-install.zip` carries the updater and nothing else, and has to be recognised before its first update.
+    #[test]
+    fn a_first_time_install_is_a_server() {
+        let root = scratch("first_install");
+        std::fs::create_dir_all(root.join("@esm/bin")).unwrap();
+
+        let found = is_server_root(&root);
+        std::fs::remove_dir_all(&root).unwrap();
+
+        assert!(found);
+    }
+
+    #[test]
+    fn an_extension_alone_marks_a_server() {
+        let root = scratch("extension_only");
+        std::fs::write(root.join("@esm/esm_x64.dll"), b"").unwrap();
+
+        let found = is_server_root(&root);
+        std::fs::remove_dir_all(&root).unwrap();
+
+        assert!(found);
     }
 }

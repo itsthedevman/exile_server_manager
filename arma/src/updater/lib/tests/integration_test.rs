@@ -916,6 +916,7 @@ fn test_cli_update_rejects_a_manifest_not_signed_by_the_production_key() {
     let result = with_cwd(&dir, || {
         Updater::run_cli_update(
             UpdateSelection::All,
+            false,
             Some(format!("{}/versions.json", server.base_url)),
             &Version::new(1, 0, 0),
         )
@@ -991,6 +992,7 @@ fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
         test_key::set(&raw_pub);
         let result = Updater::run_cli_update(
             UpdateSelection::Updater,
+            false,
             Some(format!("{}/versions.json", server.base_url)),
             &Version::new(2, 1, 0),
         );
@@ -1022,6 +1024,97 @@ fn test_cli_update_installs_updater_components_where_the_server_loads_them() {
         std::fs::read(dir.join("@esm/addons/exile_server_manager_updater.pbo")).unwrap(),
         pbo,
         "the updater addon belongs in @esm/addons, where Arma looks for PBOs"
+    );
+}
+
+/// Run `update updater` against a server whose extension_updater is current and whose mod_updater is a release behind,
+/// returning which components were installed.
+fn update_updater_with_one_current(force: bool) -> Vec<String> {
+    let extension = b"updater-extension-2.1.0".to_vec();
+    let extension_sha = sha256_hex(&extension);
+    let pbo = b"updater-pbo-2.1.0".to_vec();
+    let pbo_sha = sha256_hex(&pbo);
+
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path().to_path_buf();
+    std::fs::create_dir_all(dir.join("@esm")).unwrap();
+
+    let port = free_port();
+    let base_url = format!("http://127.0.0.1:{port}");
+
+    let manifest = format!(
+        r#"{{
+          "extension_updater": {{
+            "version": "2.1.0",
+            "artifacts": {{
+              "linux-x64":   {{"url": "{base_url}/esm_updater_x64.so",  "sha256": "{extension_sha}"}},
+              "linux-x86":   {{"url": "{base_url}/esm_updater.so",      "sha256": "{extension_sha}"}},
+              "windows-x64": {{"url": "{base_url}/esm_updater_x64.dll", "sha256": "{extension_sha}"}},
+              "windows-x86": {{"url": "{base_url}/esm_updater.dll",     "sha256": "{extension_sha}"}}
+            }}
+          }},
+          "mod_updater": {{
+            "version": "2.1.0",
+            "artifacts": {{"any": {{"url": "{base_url}/exile_server_manager_updater.pbo", "sha256": "{pbo_sha}"}}}}
+          }}
+        }}"#
+    );
+
+    let (raw_pub, sig) = sign_for_test(manifest.as_bytes());
+
+    let server = MockServer::on_port(
+        port,
+        vec![
+            ("/versions.json".into(), manifest.as_bytes().to_vec()),
+            ("/versions.json.sig".into(), sig),
+            ("/esm_updater_x64.so".into(), extension.clone()),
+            ("/esm_updater.so".into(), extension.clone()),
+            ("/esm_updater_x64.dll".into(), extension.clone()),
+            ("/esm_updater.dll".into(), extension),
+            ("/exile_server_manager_updater.pbo".into(), pbo),
+        ],
+    );
+    write_config(&dir, &format!("{}/versions.json", server.base_url));
+
+    with_cwd(&dir, || {
+        installed_versions::record(Component::ExtensionUpdater, &Version::new(2, 1, 0)).unwrap();
+        installed_versions::record(Component::ModUpdater, &Version::new(2, 0, 0)).unwrap();
+
+        test_key::set(&raw_pub);
+        let result = Updater::run_cli_update(
+            UpdateSelection::Updater,
+            force,
+            Some(format!("{}/versions.json", server.base_url)),
+            &Version::new(2, 1, 0),
+        );
+        test_key::clear();
+
+        result.unwrap().into_iter().map(|component| component.name).collect()
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Test: `update` installs only what is behind, the same comparison `check` makes.
+//
+// It used to install every selected component the manifest offered, so `update all` on a current server downloaded
+// the whole release again, around 40MB on Windows, while `check` on the same server said there was nothing to do.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_cli_update_skips_components_already_up_to_date() {
+    assert_eq!(update_updater_with_one_current(false), vec!["mod_updater".to_string()]);
+}
+
+// ---------------------------------------------------------------------------
+// Test: `--force` reinstalls what the version record calls current.
+//
+// The record cannot see deleted or damaged files, so forcing is the only way an operator repairs an install it
+// believes is fine.
+// ---------------------------------------------------------------------------
+#[test]
+fn test_cli_update_force_reinstalls_current_components() {
+    assert_eq!(
+        update_updater_with_one_current(true),
+        vec!["extension_updater".to_string(), "mod_updater".to_string()]
     );
 }
 

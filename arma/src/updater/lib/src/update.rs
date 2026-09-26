@@ -337,13 +337,18 @@ impl Updater {
         })
     }
 
-    /// Full CLI update: fetch manifest, verify, download and install all
-    /// selected components with proper dependency ordering.
+    /// Full CLI update: fetch manifest, verify, download and install the selected components that are behind, with
+    /// proper dependency ordering.
+    ///
+    /// A component already at the offered version is skipped, the same comparison `run_check` makes, so `update all`
+    /// on a current server downloads nothing. `force` installs every selected component regardless, which is how an
+    /// install whose files were deleted or damaged gets repaired: the version record cannot see that.
     ///
     /// Unlike `run_boot_check` this fails hard on any error — the operator
     /// is present and needs to know what went wrong.
     pub fn run_cli_update(
         selection: UpdateSelection,
+        force: bool,
         manifest_url_override: Option<String>,
         running_cli: &Version,
     ) -> Result<Vec<UpdatedComponent>, UpdaterError> {
@@ -388,27 +393,41 @@ impl Updater {
             UpdateSelection::All | UpdateSelection::Updater
         );
 
-        // @esm first when esm depends on it.
+        let wanted = |offered: &ComponentVersion, component: Component| {
+            force || offered.version > installed.version_of(component)
+        };
+
+        let install_esm = manifest
+            .esm
+            .as_ref()
+            .is_some_and(|comp| update_ext && wanted(comp, Component::Esm));
+
+        // @esm first when esm depends on it. That dependency only pulls the mod in when esm is actually about to
+        // install; a current extension has nothing to be ordered ahead of.
         if let Some(comp) = &manifest.esm_mod
-            && (update_mod || (esm_needs_mod_first && update_ext))
+            && ((update_mod && wanted(comp, Component::EsmMod)) || (install_esm && esm_needs_mod_first))
         {
             results.push(update_mod_bundle(comp, deadline)?);
         }
 
         // esm extension.
         if let Some(comp) = &manifest.esm
-            && update_ext
+            && install_esm
         {
             results.push(update_esm_extension(comp, deadline)?);
         }
 
         // Updater components.
         if update_updater {
-            if let Some(comp) = &manifest.extension_updater {
+            if let Some(comp) = &manifest.extension_updater
+                && wanted(comp, Component::ExtensionUpdater)
+            {
                 results.push(update_updater_extension(comp, deadline)?);
             }
 
-            if let Some(comp) = &manifest.mod_updater {
+            if let Some(comp) = &manifest.mod_updater
+                && wanted(comp, Component::ModUpdater)
+            {
                 results.push(update_mod_updater_pbo(comp, deadline)?);
             }
         }

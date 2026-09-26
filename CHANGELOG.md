@@ -8,6 +8,15 @@ Changes to the `@esm` Arma 3 mod: the SQF, the extension, and the updater that s
 
 ## [Unreleased]
 
+### Added
+
+- `esm_updater update --force` (and `install --force`) reinstalls selected components regardless of `installed_versions.yml`, for repairing missing or damaged files the version record can't see
+
+### Fixed
+
+- `esm_updater update` skips components already at the offered version, using the same comparison as `check`. It previously reinstalled every component in the target on each run.
+- Server root detection requires an actual install in `@esm/`: `addons/`, `bin/`, `installed_versions.yml`, `config.yml`, `esm.key`, or an extension build. Previously a stray `@esm/log/` from running elsewhere shadowed the real install, and every component read as `0.0.0`.
+
 ## @esm v2.1.0 — 12026-09-20
 
 ### Added
