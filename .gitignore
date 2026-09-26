@@ -98,6 +98,7 @@ arma/src/updater/lib/keys/*
 arma/bin/upload
 arma/bin/release
 arma/bin/staging
+arma/bin/store_version
 bin/release
 arma/tools/server/@exile/addons/*.pbo
 arma/tools/server/@exile/addons/*.bisign

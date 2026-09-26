@@ -1,0 +1,10 @@
+# Written by the ESM updater. Records the version of each component currently installed so the next
+# update check knows what it is comparing against.
+#
+# Safe to delete. The updater treats a missing entry as "very old", so removing this file causes the
+# next check to reinstall everything and write it out again.
+
+esm: 2.1.0
+"@esm": 2.1.0
+extension_updater: 1.0.0
+mod_updater: 1.0.0
