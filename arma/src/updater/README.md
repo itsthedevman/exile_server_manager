@@ -39,7 +39,11 @@ what declares the checksum in the first place.
 
 ### Building against a different key
 
-`ESM_UPDATER_PUBKEY_PATH` points a build at another DER public key instead of the committed default.
+`bin/build --updater-key <pubkey>` (or `bin/package --updater-key`) builds against another DER public key instead
+of the committed default.
+Under the hood that sets `ESM_UPDATER_PUBKEY_PATH` for the updater's build script, but only for that build: the build
+tool strips the variable from every cargo run it makes, so exporting it in a shell does nothing.
+It used to be exported from `arma/.envrc.local`, and every build in that shell quietly trusted the test key.
 The two are mutually exclusive by construction: neither build will accept a manifest signed for the other, so a
 manifest that reaches the wrong binary fails its signature check rather than installing successfully.
 

@@ -83,6 +83,11 @@ pub fn print_header(ctx: &BuildContext) {
         rows.push(("extra mods", names.join(", ")));
     }
 
+    // An updater on another key rejects every official manifest, so a build carrying one says so every time
+    if let Some(key) = ctx.args.updater_key() {
+        rows.push(("updater key", shorten_path(&key.to_string_lossy())));
+    }
+
     // The build still runs and looks like any other, so without this nothing says the server is getting something else
     if let Some(version) = ctx.args.esm_version() {
         rows.push(("@esm", format!("v{version} (previous version)")));

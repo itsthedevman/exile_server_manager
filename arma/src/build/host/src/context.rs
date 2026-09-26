@@ -85,6 +85,14 @@ pub struct Args {
     #[arg(long)]
     updater_url: Option<String>,
 
+    /// DER public key the updater extension verifies manifests against, instead of the committed release key.
+    ///
+    /// The only way a build trusts another key, e.g. `src/updater/lib/keys/test.pub` for a manifest bin/updater_tester
+    /// signed. `ESM_UPDATER_PUBKEY_PATH` is stripped from every cargo run, because as an ambient export it kept
+    /// producing updaters that rejected every official manifest without a single line saying so.
+    #[arg(long)]
+    updater_key: Option<String>,
+
     /// Deploy a released @esm from tools/previous_versions instead of the one this tree builds, e.g. `2.0.4`
     ///
     /// For testing the bot against a version servers are still running. The build still happens, so the staging tree
@@ -272,6 +280,14 @@ impl Args {
         self.start_only
     }
 
+    /// `--updater-key` made absolute. The updater's build script refuses a relative path, since it runs from its own
+    /// crate root and would resolve one against a different directory than the one it was typed in.
+    pub fn updater_key(&self) -> Option<PathBuf> {
+        self.updater_key.as_deref().filter(|path| !path.is_empty()).map(|path| {
+            std::path::absolute(path).unwrap_or_else(|_| PathBuf::from(path))
+        })
+    }
+
     pub fn has_key_file(&self) -> bool {
         !self.key_file.is_empty() && self.key_file_path().exists()
     }
@@ -333,6 +349,15 @@ impl BuildContext {
                  built 64-bit and nothing else. Drop --x32, or add --target=windows"
                     .into(),
             ));
+        }
+
+        // Checked up front, since otherwise it surfaces as a build script panic partway through the extension build
+        if let Some(key) = args.updater_key().filter(|key| !key.is_file()) {
+            return Err(BuildError::General(format!(
+                "--updater-key names {}, which does not exist. It takes the DER public key, e.g. \
+                 src/updater/lib/keys/test.pub",
+                key.display()
+            )));
         }
 
         let git_path = find_git_root()?;

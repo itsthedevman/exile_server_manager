@@ -87,11 +87,39 @@ pub fn record_build(ctx: &BuildContext) -> BuildResult {
 /// artifact from the other profile is the wrong artifact, and it is the same filename either way, so the name
 /// cannot be what tells them apart. `--features` is there for the same reason: a release carrying `development` is
 /// not the release a later plain `--release` run is asking for.
+///
+/// `--updater-key` is in it for the same reason again, and because the watcher cannot see it: the key lives outside
+/// the watched sources, so without the stamp a run that dropped the flag would find the test-key updater staged,
+/// see no source changes, and deploy it.
 fn build_profile(ctx: &BuildContext) -> String {
-    profile_name(ctx.args.build_os(), ctx.args.build_arch(), ctx.args.release, &ctx.args.extension_features())
+    let updater_key = ctx.args.updater_key().map(|path| key_fingerprint(&path));
+
+    profile_name(
+        ctx.args.build_os(),
+        ctx.args.build_arch(),
+        ctx.args.release,
+        &ctx.args.extension_features(),
+        updater_key.as_deref(),
+    )
 }
 
-fn profile_name(os: BuildOS, arch: BuildArch, release: bool, features: &[String]) -> String {
+/// The last four bytes of the key, in hex. The same label `src/updater/lib/build.rs` compiles in, so the stamp and
+/// the extension's own startup line name a key the same way. An unreadable key gets a label too: `BuildContext::new`
+/// has already refused a missing one, and the build itself reports anything worse.
+fn key_fingerprint(path: &std::path::Path) -> String {
+    match fs::read(path) {
+        Ok(key) => key.iter().rev().take(4).rev().map(|byte| format!("{byte:02x}")).collect(),
+        Err(_) => "unreadable".to_owned(),
+    }
+}
+
+fn profile_name(
+    os: BuildOS,
+    arch: BuildArch,
+    release: bool,
+    features: &[String],
+    updater_key: Option<&str>,
+) -> String {
     let arch = match arch {
         BuildArch::X32 => "x32",
         BuildArch::X64 => "x64",
@@ -107,11 +135,18 @@ fn profile_name(os: BuildOS, arch: BuildArch, release: bool, features: &[String]
         .filter(|feature| release || *feature != "development")
         .collect();
 
-    if extra_features.is_empty() {
-        format!("{os}-{arch}-{profile}")
-    } else {
-        format!("{os}-{arch}-{profile}+{}", extra_features.join(","))
+    let mut name = format!("{os}-{arch}-{profile}");
+
+    if !extra_features.is_empty() {
+        name.push_str(&format!("+{}", extra_features.join(",")));
     }
+
+    // Absent for the committed key, so every stamp written before the flag existed still matches
+    if let Some(key) = updater_key {
+        name.push_str(&format!("@updater_key:{key}"));
+    }
+
+    name
 }
 
 /// What produced the tree that is there now, or `None` when nothing has recorded one.
@@ -163,19 +198,19 @@ mod tests {
     #[test]
     fn release_and_development_are_different_profiles_despite_the_shared_filename() {
         assert_ne!(
-            profile_name(BuildOS::Linux, BuildArch::X64, false, &development()),
-            profile_name(BuildOS::Linux, BuildArch::X64, true, &[])
+            profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), None),
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &[], None)
         );
     }
 
     #[test]
     fn target_and_architecture_each_stand_on_their_own() {
-        let baseline = profile_name(BuildOS::Linux, BuildArch::X64, false, &development());
+        let baseline = profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), None);
 
-        assert_ne!(baseline, profile_name(BuildOS::Windows, BuildArch::X64, false, &development()));
+        assert_ne!(baseline, profile_name(BuildOS::Windows, BuildArch::X64, false, &development(), None));
         assert_ne!(
-            profile_name(BuildOS::Windows, BuildArch::X64, false, &development()),
-            profile_name(BuildOS::Windows, BuildArch::X32, false, &development())
+            profile_name(BuildOS::Windows, BuildArch::X64, false, &development(), None),
+            profile_name(BuildOS::Windows, BuildArch::X32, false, &development(), None)
         );
     }
 
@@ -183,7 +218,7 @@ mod tests {
     #[test]
     fn development_does_not_repeat_the_feature_its_profile_implies() {
         assert_eq!(
-            profile_name(BuildOS::Linux, BuildArch::X64, false, &development()),
+            profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), None),
             "linux-x64-development"
         );
     }
@@ -193,8 +228,21 @@ mod tests {
     #[test]
     fn a_release_carrying_extra_features_is_not_a_plain_release() {
         assert_ne!(
-            profile_name(BuildOS::Linux, BuildArch::X64, true, &[]),
-            profile_name(BuildOS::Linux, BuildArch::X64, true, &development())
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &[], None),
+            profile_name(BuildOS::Linux, BuildArch::X64, true, &development(), None)
         );
+    }
+
+    /// The failure `--updater-key` was added to end. An updater built against the test key is the same file as one
+    /// built against the release key, and nothing under the watched sources changes between them, so only the stamp
+    /// can make the next run without the flag rebuild instead of deploying an updater that rejects real manifests.
+    #[test]
+    fn an_updater_on_another_key_is_not_the_same_build() {
+        let release_key = profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), None);
+        let test_key = profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), Some("1a2b3c4d"));
+
+        assert_ne!(release_key, test_key);
+        assert_eq!(release_key, "linux-x64-development");
+        assert_ne!(test_key, profile_name(BuildOS::Linux, BuildArch::X64, false, &development(), Some("5e6f7a8b")));
     }
 }

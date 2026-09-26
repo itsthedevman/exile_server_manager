@@ -14,6 +14,9 @@ use crate::{
 /// Linker def file giving the extension cdylibs the decorated export names Arma x86 looks for.
 const WINDOWS_X86_EXPORTS: &str = "windows-x86-exports.def";
 
+/// What `src/updater/lib/build.rs` reads to swap in another verification key. Only `--updater-key` sets it.
+const UPDATER_KEY_VAR: &str = "ESM_UPDATER_PUBKEY_PATH";
+
 pub fn build_extension(ctx: &mut BuildContext) -> BuildResult {
     let mut sp = MultiSpinner::start("Building extension");
     let sub_lines = sp.sub_lines();
@@ -96,7 +99,13 @@ fn build_updater(ctx: &BuildContext, sub_lines: &SubLines) -> BuildResult {
     };
     args.extend_from_slice(&release_flags);
 
-    run_cargo(&args, &updater_path.to_string_lossy(), sub_lines, &windows_rustflags(ctx))?;
+    let mut env = windows_rustflags(ctx);
+
+    if let Some(key) = ctx.args.updater_key() {
+        env.push((UPDATER_KEY_VAR.to_owned(), key.to_string_lossy().into_owned()));
+    }
+
+    run_cargo(&args, &updater_path.to_string_lossy(), sub_lines, &env)?;
 
     let build_dir = if ctx.args.release { "release" } else { "debug" };
     let src = match ctx.args.build_os() {
@@ -170,8 +179,11 @@ fn run_cargo(
     sub_lines: &SubLines,
     env: &[(String, String)],
 ) -> BuildResult {
+    // Removed before `env` is applied, so the key only reaches a build that asked for it with `--updater-key`. Left
+    // to the environment, a shell that exported it for one test built every later updater against the test key.
     let mut child = Command::new("cargo")
         .args(args)
+        .env_remove(UPDATER_KEY_VAR)
         .envs(env.iter().map(|(key, value)| (key.as_str(), value.as_str())))
         .current_dir(working_dir)
         .stdout(Stdio::piped())

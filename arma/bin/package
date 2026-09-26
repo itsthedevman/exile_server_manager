@@ -9,6 +9,10 @@
 # --local builds only what a Linux x64 test server can run, skipping the two Windows targets, the Windows CLI, the
 # tests, and both zips. It exists so bin/updater_tester can rebuild in under a minute instead of cross-compiling
 # platforms nobody is about to run. The result is not distributable and marks itself as such.
+#
+# --updater-key <pubkey> builds the updater extensions and CLI against another DER public key, which is how
+# bin/updater_tester gets a package that trusts the manifests it signs. Without it they always get the committed
+# release key, whatever the shell exports. bin/upload refuses to publish a package built on any other.
 
 set -ueo pipefail
 trap "exit" INT
@@ -35,17 +39,39 @@ readonly updater_version=$(
 
 skip_updater=false
 local_build=false
+updater_key=""
 
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
     --skip-updater)
         skip_updater=true
+        shift
         ;;
     --local)
         local_build=true
+        shift
+        ;;
+    --updater-key)
+        updater_key="$2"
+        shift 2
+        ;;
+    *)
+        echo "Unknown argument: $1"
+        exit 1
         ;;
     esac
 done
+
+# The CLI is built with cargo directly rather than through bin/build, so it needs the same rule bin/build applies to
+# the extensions: another verification key only when --updater-key names one, never because a shell exported it.
+if [[ -n "$updater_key" ]]; then
+    ESM_UPDATER_PUBKEY_PATH="$(realpath "$updater_key")"
+    export ESM_UPDATER_PUBKEY_PATH
+    readonly build_key_flag=(--updater-key "$ESM_UPDATER_PUBKEY_PATH")
+else
+    unset ESM_UPDATER_PUBKEY_PATH
+    readonly build_key_flag=()
+fi
 
 # Derived rather than hardcoded, because the two flags cut different steps out of the same run.
 if [[ "$local_build" == true ]]; then
@@ -126,7 +152,7 @@ if [[ "$local_build" == false ]]; then
     ##################################
     # Extension - Windows (x32)
     echo_step "Building esm.dll"
-    run_command ./bin/build --only=extension --release --target=windows --x32
+    run_command ./bin/build --only=extension --release "${build_key_flag[@]}" --target=windows --x32
     run_command cp $build_dir/esm.dll $release_dir/@esm
 
     if [[ "$skip_updater" == false ]]; then
@@ -136,7 +162,7 @@ if [[ "$local_build" == false ]]; then
     ##################################
     # Extension - Windows (x64)
     echo_step "Building esm_x64.dll"
-    run_command ./bin/build --only=extension --release --target=windows
+    run_command ./bin/build --only=extension --release "${build_key_flag[@]}" --target=windows
     run_command cp $build_dir/esm_x64.dll $release_dir/@esm
 
     if [[ "$skip_updater" == false ]]; then
@@ -147,7 +173,7 @@ fi
 ##################################
 # Extension - Linux (x64)
 echo_step "Building esm_x64.so"
-run_command ./bin/build --only=extension --release --target=linux
+run_command ./bin/build --only=extension --release "${build_key_flag[@]}" --target=linux
 run_command cp $build_dir/esm_x64.so $release_dir/@esm
 
 if [[ "$skip_updater" == false ]]; then

@@ -9,13 +9,14 @@
 # Neither starts a server. bin/dev already does that, and a second boot path would only drift from the one being
 # tested.
 #
-#   bin/updater_tester serve --key ~/test.key      # build, sign, and serve
-#   bin/stage --esm 2.0.0                          # record the extension as a version behind
-#   bin/build --updater-url <url> --start-server   # watch the boot check swap it in
+#   bin/updater_tester serve --key ~/test.key                             # build, sign, and serve
+#   bin/stage --esm 2.0.0                                                 # record the extension as a version behind
+#   bin/build --updater-url <url> --updater-key <pubkey> --start-server   # watch the boot check swap it in
 #
-# The key is the private half of whatever this build verifies against, which locally means whatever
-# ESM_UPDATER_PUBKEY_PATH points at. bin/manifest compares the two and refuses a mismatch, so the wrong key fails
-# there rather than as an unexplained signature error on a server twenty minutes later.
+# --key is the private half, and --pubkey the public half the package is built to trust, defaulting to
+# src/updater/lib/keys/test.pub. bin/manifest compares the two and refuses a mismatch, so the wrong key fails there
+# rather than as an unexplained signature error on a server twenty minutes later. The server's own build has to
+# trust the same key, which is why the bin/build line printed at the end carries --updater-key.
 
 set -ueo pipefail
 trap "exit" INT
@@ -33,13 +34,16 @@ readonly testbed_root=$root_dir/target/updater_testbed
 # idle unless a cross-machine build is running, making it the one open port free to borrow.
 readonly default_port=54321
 
+# Local and gitignored, like every key in that directory but the release one
+readonly default_pubkey=$root_dir/src/updater/lib/keys/test.pub
+
 ##################################
 # Functions
 
 function usage() {
     echo "Usage:"
-    echo "  bin/updater_tester serve --key <path> [--port <n>] [--bind <addr>] [--base-url <url>]"
-    echo "                           [--skip-build]"
+    echo "  bin/updater_tester serve --key <path> [--pubkey <path>] [--port <n>] [--bind <addr>]"
+    echo "                           [--base-url <url>] [--skip-build]"
     echo
     echo "Staging a server against the manifest this serves is bin/stage; see bin/build stage --help."
 }
@@ -55,6 +59,7 @@ function crate_version() {
 
 function run_serve() {
     local key_path=""
+    local pubkey_path=$default_pubkey
     local port=$default_port
     local bind=""
     local base_url=""
@@ -64,6 +69,10 @@ function run_serve() {
         case $1 in
         --key)
             key_path="$2"
+            shift 2
+            ;;
+        --pubkey)
+            pubkey_path="$2"
             shift 2
             ;;
         --port)
@@ -100,6 +109,12 @@ function run_serve() {
         exit 1
     fi
 
+    if [[ ! -f $pubkey_path ]]; then
+        echo "Fatal - no public key at $pubkey_path"
+        echo "  Pass --pubkey with the DER public half of --key"
+        exit 1
+    fi
+
     # host.docker.internal resolves to the default bridge gateway from inside a container, so binding there is
     # reachable from every container while staying unreachable from the rest of the network, which 0.0.0.0 is not.
     if [[ -z $bind ]]; then
@@ -120,7 +135,7 @@ function run_serve() {
     fi
 
     if [[ $skip_build == false ]]; then
-        ./bin/package --local
+        ./bin/package --local --updater-key "$pubkey_path"
     fi
 
     # bin/manifest appends the version directory, so a local layout matches the published one and the artifact URLs
@@ -163,7 +178,7 @@ function run_serve() {
     echo
     echo "Stage a server behind it, then point its boot check here:"
     echo "  bin/stage --esm <version>"
-    echo "  bin/build --updater-url $base_url/versions.json --start-server"
+    echo "  bin/build --updater-url $base_url/versions.json --updater-key $pubkey_path --start-server"
     echo
     echo "A container that cannot reach this is being stopped by the host firewall, not by anything here:"
     echo "the fetch times out rather than refusing. Serve on a port the host already allows."
